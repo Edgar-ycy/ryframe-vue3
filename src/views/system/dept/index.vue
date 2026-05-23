@@ -1,0 +1,149 @@
+<template>
+  <div class="page-container">
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>部门列表</span>
+          <el-button v-permission="'system:dept:create'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
+        </div>
+      </template>
+      <el-table v-loading="loading" :data="tableData" border stripe row-key="id" default-expand-all
+        :tree-props="{ children: 'children' }">
+        <el-table-column prop="name" label="部门名称" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="sort" label="排序" width="80" align="center" />
+        <el-table-column prop="status" label="状态" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '禁用' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_at" label="创建时间" width="170" />
+        <el-table-column label="操作" width="180" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button v-permission="'system:dept:create'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
+            <el-button v-permission="'system:dept:update'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:dept:delete'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <!-- 新增/编辑弹窗 -->
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="500px" @close="resetForm">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="上级部门">
+          <el-tree-select
+            v-model="form.parent_id"
+            :data="deptOptions"
+            :props="{ label: 'name', value: 'id', children: 'children' }"
+            placeholder="根部门（不选则为顶级）"
+            clearable check-strictly
+            style="width:100%"
+          />
+        </el-form-item>
+        <el-form-item label="部门名称" prop="name">
+          <el-input v-model="form.name" placeholder="请输入部门名称" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="form.sort" :min="0" :max="999" />
+        </el-form-item>
+        <el-form-item v-if="dialog.isEdit" label="状态">
+          <el-radio-group v-model="form.status">
+            <el-radio value="1">正常</el-radio>
+            <el-radio value="2">禁用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { listDept, getDept, createDept, updateDept, deleteDept } from '@/api/modules/dept'
+
+const loading = ref(false)
+const tableData = ref([])
+const deptOptions = ref([])
+
+async function fetchData() {
+  loading.value = true
+  try {
+    const res = await listDept()
+    tableData.value = res.rows || []
+    deptOptions.value = res.rows || []
+  } finally { loading.value = false }
+}
+
+// ----- 新增/编辑 -----
+const dialog = ref({ visible: false, title: '', isEdit: false })
+const formRef = ref<FormInstance>()
+const submitLoading = ref(false)
+const currentEditId = ref<number | null>(null)
+
+const form = ref<{ parent_id?: number; name: string; sort: number; status: string }>({ parent_id: undefined, name: '', sort: 0, status: '1' })
+
+const rules = { name: [{ required: true, message: '请输入部门名称', trigger: 'blur' }] }
+
+function resetForm() {
+  form.value.parent_id = undefined; form.value.name = ''; form.value.sort = 0; form.value.status = '1'
+  formRef.value?.clearValidate()
+}
+
+function handleAdd(parentId?: number) {
+  currentEditId.value = null
+  dialog.value.title = '新增部门'; dialog.value.isEdit = false
+  resetForm()
+  form.value.parent_id = parentId || undefined
+  dialog.value.visible = true
+}
+
+async function handleEdit(row) {
+  currentEditId.value = row.id
+  dialog.value.title = '编辑部门'; dialog.value.isEdit = true
+  resetForm()
+  const res = await getDept(row.id)
+  const d = res.data || res
+  form.value.parent_id = d.parent_id
+  form.value.name = d.name
+  form.value.sort = d.sort ?? 0
+  form.value.status = d.status
+  dialog.value.visible = true
+}
+
+async function handleSubmit() {
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+  submitLoading.value = true
+  try {
+    const data = { name: form.value.name, parent_id: form.value.parent_id, sort: form.value.sort }
+    if (dialog.value.isEdit) {
+      await updateDept(currentEditId.value!, { ...data, status: form.value.status } as any)
+      ElMessage.success('更新成功')
+    } else {
+      await createDept(data as any)
+      ElMessage.success('新增成功')
+    }
+    dialog.value.visible = false
+    fetchData()
+  } finally { submitLoading.value = false }
+}
+
+// ----- 删除 -----
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(`确认删除部门"${row.name}"吗？`, '警告', { type: 'warning' })
+    await deleteDept(row.id)
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch { /* cancelled */ }
+}
+
+onMounted(() => fetchData())
+</script>
+
+<style scoped>
+.card-header { display: flex; justify-content: space-between; align-items: center }
+</style>

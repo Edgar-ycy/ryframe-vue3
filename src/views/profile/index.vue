@@ -93,7 +93,6 @@
 import { useUserStore } from '@/stores/user'
 import { updateProfile, changePassword, getProfile, updateAvatar, type ProfileInfo } from '@/api/modules/auth'
 
-
 const userStore = useUserStore()
 const router = useRouter()
 

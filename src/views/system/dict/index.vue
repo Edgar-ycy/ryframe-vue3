@@ -7,19 +7,19 @@
           <template #header>
             <div class="card-header">
               <span>字典类型</span>
-              <el-button v-permission="'system:dict:list'" type="primary" size="small" icon="Plus" @click="handleAddType">新增</el-button>
+              <el-button v-permission="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddType">新增</el-button>
             </div>
           </template>
           <el-table v-loading="typeLoading" :data="typeList" border stripe highlight-current-row
             @row-click="handleTypeClick">
-            <el-table-column prop="name" label="字典名称" min-width="100" show-overflow-tooltip />
+            <el-table-column prop="name" label="字典名称" min-width="110" show-overflow-tooltip />
             <el-table-column prop="code" label="字典编码" width="100" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" width="60" align="center">
+            <el-table-column prop="status" label="状态" width="80" align="center">
               <template #default="{ row }">
-                <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '禁用' }}</el-tag>
+                <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="80" align="center">
+            <el-table-column label="操作" width="120" fixed="right" align="center">
               <template #default="{ row }">
                 <el-button type="primary" link icon="Edit" size="small" @click.stop="handleEditType(row)">编辑</el-button>
                 <el-button type="danger" link icon="Delete" size="small" @click.stop="handleDeleteType(row)">删除</el-button>
@@ -42,7 +42,7 @@
           <template #header>
             <div class="card-header">
               <span>字典数据{{ currentType ? ` — ${currentType.name}` : '' }}</span>
-              <el-button v-if="currentType" v-permission="'system:dict:list'" type="primary" size="small" icon="Plus" @click="handleAddData">新增</el-button>
+              <el-button v-if="currentType" v-permission="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddData">新增</el-button>
             </div>
           </template>
           <el-table v-loading="dataLoading" :data="dataList" border stripe>
@@ -51,7 +51,7 @@
             <el-table-column prop="sort" label="排序" width="70" align="center" />
             <el-table-column prop="status" label="状态" width="80" align="center">
               <template #default="{ row }">
-                <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '禁用' }}</el-tag>
+                <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" align="center">
@@ -78,7 +78,7 @@
         <el-form-item v-if="typeDialog.isEdit" label="状态">
           <el-radio-group v-model="typeForm.status">
             <el-radio value="1">正常</el-radio>
-            <el-radio value="2">禁用</el-radio>
+            <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -103,7 +103,7 @@
         <el-form-item v-if="dataDialog.isEdit" label="状态">
           <el-radio-group v-model="dataForm.status">
             <el-radio value="1">正常</el-radio>
-            <el-radio value="2">禁用</el-radio>
+            <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -123,7 +123,7 @@ import {
 
 // ===== 字典类型 =====
 const typeLoading = ref(false)
-const typeList = ref([])
+const typeList = ref<any[]>([])
 const typeTotal = ref(0)
 const typePage = ref({ page: 1, pageSize: 10 })
 
@@ -191,7 +191,7 @@ async function handleDeleteType(row) {
 
 // ===== 字典数据 =====
 const dataLoading = ref(false)
-const dataList = ref([])
+const dataList = ref<any[]>([])
 const currentType = ref<any>(null)
 
 async function handleTypeClick(row) {
@@ -203,7 +203,7 @@ async function fetchDataList(typeCode) {
   dataLoading.value = true
   try {
     const res = await listDictData({ type_code: typeCode })
-    dataList.value = res.rows || []
+    dataList.value = res.rows || res.data || []
   } finally { dataLoading.value = false }
 }
 

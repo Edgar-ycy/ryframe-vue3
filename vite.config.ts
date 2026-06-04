@@ -20,8 +20,6 @@ export default defineConfig({
             'ElMessageBox',
             'ElNotification',
             'ElLoading',
-            'FormInstance',
-            'FormRules',
           ],
         },
       ],
@@ -44,7 +42,7 @@ export default defineConfig({
     // API 代理：将 /api 请求转发到后端
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8081',
         changeOrigin: true,
       },
     },

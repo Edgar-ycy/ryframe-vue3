@@ -51,6 +51,19 @@ export function filterTree<T extends TreeNode>(
   }, [])
 }
 
+/** 将扁平列表（含 parent_id）转为树形结构 */
+export function listToTree<T extends { id: number | string; parent_id?: number | string | null }>(
+  list: T[],
+  parentId: number | string | null = null,
+): (T & { children: T[] })[] {
+  return list
+    .filter(item => (item.parent_id ?? null) === parentId)
+    .map(item => ({
+      ...item,
+      children: listToTree(list, item.id),
+    })) as any
+}
+
 /** 遍历树节点执行回调 */
 export function traverseTree<T extends TreeNode>(
   tree: T[],

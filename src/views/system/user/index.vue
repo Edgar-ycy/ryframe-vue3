@@ -12,7 +12,7 @@
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="用户状态" clearable style="width:120px">
             <el-option label="正常" value="1" />
-            <el-option label="禁用" value="2" />
+            <el-option label="停用" value="0" />
           </el-select>
         </el-form-item>
         <el-form-item label="部门">
@@ -39,25 +39,23 @@
         <div class="card-header">
           <span>用户列表</span>
           <div>
-            <el-button v-permission="'system:user:create'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
-            <el-button v-permission="'system:user:delete'" :disabled="!selectIds.length" type="danger" icon="Delete" @click="handleBatchDelete">批量删除</el-button>
+            <el-button v-permission="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
           </div>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="50" align="center" />
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="username" label="用户名" min-width="100" show-overflow-tooltip />
-        <el-table-column prop="nickname" label="昵称" min-width="100" show-overflow-tooltip />
-        <el-table-column prop="email" label="邮箱" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="username" label="用户名" width="100" show-overflow-tooltip />
+        <el-table-column prop="nickname" label="昵称" width="100" show-overflow-tooltip />
+        <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="dept_name" label="部门" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="dept_name" label="部门" width="120" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-switch
               v-model="row.status"
               :active-value="'1'"
-              :inactive-value="'2'"
+              :inactive-value="'0'"
               @change="(val) => handleChangeStatus(row, val)"
             />
           </template>
@@ -65,9 +63,9 @@
         <el-table-column prop="created_at" label="创建时间" width="170" />
         <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:user:update'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:user:resetPwd'" type="warning" link icon="Key" @click="handleResetPwd(row)">重置密码</el-button>
-            <el-button v-permission="'system:user:delete'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:user:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:user:edit'" type="warning" link icon="Key" @click="handleResetPwd(row)">重置密码</el-button>
+            <el-button v-permission="'system:user:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -115,7 +113,7 @@
         <el-form-item v-if="dialog.isEdit" label="状态">
           <el-radio-group v-model="form.status">
             <el-radio value="1">正常</el-radio>
-            <el-radio value="2">禁用</el-radio>
+            <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="角色">
@@ -146,16 +144,16 @@
 </template>
 
 <script setup lang="ts">
-import { listUser, getUser, createUser, updateUser, deleteUser, batchDeleteUser, resetPassword, changeUserStatus } from '@/api/modules/user'
-import { listRole, listRoleNoPage } from '@/api/modules/role'
-import { listDept } from '@/api/modules/dept'
+import { listUser, getUser, createUser, updateUser, deleteUser, resetPassword, changeUserStatus } from '@/api/modules/user'
+import { listRole } from '@/api/modules/role'
+import { getDeptTree } from '@/api/modules/dept'
 
 // ----- 搜索 & 表格 -----
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
-const selectIds = ref([])
-const deptTree = ref([])
+const selectIds = ref<any[]>([])
+const deptTree = ref<any[]>([])
 const roleList = ref<any[]>([])
 
 const queryParams = ref({
@@ -179,13 +177,13 @@ async function fetchData() {
 }
 
 async function loadDeptTree() {
-  const res = await listDept()
-  deptTree.value = res.rows || []
+  const res = await getDeptTree()
+  deptTree.value = (res as any).data || (res as any).rows || []
 }
 
 async function loadRoleList() {
-  const res = await listRoleNoPage()
-  roleList.value = res.rows || []
+  const res = await listRole({ page: 1, pageSize: 1000 })
+  roleList.value = (res as any).rows || []
 }
 
 function handleSearch() {
@@ -207,13 +205,13 @@ function handleSelectionChange(rows) {
 
 // ----- 状态切换 -----
 async function handleChangeStatus(row, val) {
-  const text = val === '1' ? '启用' : '禁用'
+  const text = val === '1' ? '启用' : '停用'
   try {
     await ElMessageBox.confirm(`确认要${text}"${row.username}"吗？`, '提示', { type: 'warning' })
     await changeUserStatus({ user_id: row.id, status: val })
     ElMessage.success(`${text}成功`)
   } catch {
-    row.status = val === '1' ? '2' : '1'
+    row.status = val === '1' ? '0' : '1'
   }
 }
 
@@ -320,14 +318,7 @@ async function handleDelete(row) {
   } catch { /* cancelled */ }
 }
 
-async function handleBatchDelete() {
-  try {
-    await ElMessageBox.confirm(`确认删除选中的 ${selectIds.value.length} 个用户吗？`, '警告', { type: 'warning' })
-    await batchDeleteUser(selectIds.value.join(','))
-    ElMessage.success('删除成功')
-    fetchData()
-  } catch { /* cancelled */ }
-}
+
 
 // ----- 重置密码 -----
 const pwdDialog = ref({ visible: false })
@@ -362,6 +353,8 @@ async function handlePwdSubmit() {
     pwdLoading.value = false
   }
 }
+
+
 
 // ----- 初始化 -----
 onMounted(() => {

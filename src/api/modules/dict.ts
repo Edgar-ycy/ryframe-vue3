@@ -6,24 +6,31 @@ const DICT_TYPE_BASE = '/system/dict/types'
 
 export interface DictTypeQuery {
   [key: string]: any
-  page_num?: number
-  page_size?: number
-  dict_name?: string
-  dict_type?: string
-  status?: string
+  page?: number
+  pageSize?: number
 }
 
 export interface DictTypeForm {
   [key: string]: any
-  dict_name: string
-  dict_type: string
-  status: string
+  name: string
+  code: string
+  status?: string
   remark?: string
 }
 
 /** 字典类型分页列表 */
 export function listDictType(params: DictTypeQuery) {
   return request({ url: `${DICT_TYPE_BASE}/list`, method: 'get', params })
+}
+
+/** 字典类型不分页列表 */
+export function listDictTypeNoPage(params?: DictTypeQuery) {
+  return request({ url: `${DICT_TYPE_BASE}/listNoPage`, method: 'get', params })
+}
+
+/** 导出字典类型 */
+export function exportDictType(params?: any) {
+  return request({ url: `${DICT_TYPE_BASE}/export`, method: 'get', params, responseType: 'blob' })
 }
 
 /** 创建字典类型 */
@@ -47,23 +54,20 @@ const DICT_DATA_BASE = '/system/dict/data'
 
 export interface DictDataQuery {
   [key: string]: any
-  page_num?: number
-  page_size?: number
-  dict_type?: string
-  dict_label?: string
+  page?: number
+  pageSize?: number
+  type_code?: string
+  label?: string
   status?: string
 }
 
 export interface DictDataForm {
   [key: string]: any
-  dict_type: string
-  dict_label: string
-  dict_value: string
-  dict_sort?: number
-  css_class?: string
-  list_class?: string
-  is_default?: string
-  status: string
+  type_code: string
+  label: string
+  value: string
+  sort?: number
+  status?: string
   remark?: string
 }
 
@@ -74,7 +78,7 @@ export function getDictData(typeCode: string) {
 
 /** 字典数据列表(按type_code查询) */
 export function listDictData(params: DictDataQuery) {
-  return request({ url: `${DICT_DATA_BASE}/listNoPage`, method: 'get', params })
+  return request({ url: DICT_DATA_BASE, method: 'get', params })
 }
 
 /** 创建字典数据 */

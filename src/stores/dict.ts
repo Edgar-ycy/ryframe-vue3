@@ -81,7 +81,7 @@ export const useDictStore = defineStore('dict', {
         const res: any = await getDictData(typeCode)
         const data = res.rows || res.data || res
         const list: DictOption[] = Array.isArray(data)
-          ? data.map((d: any) => ({ label: d.label, value: d.value }))
+          ? data.map((d: any) => ({ label: d.dictLabel ?? d.label, value: d.dictValue ?? d.value }))
           : []
         this.cache[typeCode] = { data: list, loadedAt: Date.now() }
         return list

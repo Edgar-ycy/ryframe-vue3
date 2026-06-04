@@ -25,6 +25,23 @@
             show-password
           />
         </el-form-item>
+        <el-form-item prop="captcha_code">
+          <div style="display:flex;gap:8px">
+            <el-input
+              v-model="loginForm.captcha_code"
+              placeholder="验证码"
+              prefix-icon="Picture"
+              maxlength="4"
+              style="flex:1"
+            />
+            <div style="width:120px;height:40px;cursor:pointer;flex-shrink:0" @click="refreshCaptcha">
+              <img v-if="captchaImage" :src="captchaImage" alt="验证码" style="width:100%;height:100%;border-radius:4px" />
+              <div v-else style="width:100%;height:100%;background:#f0f2f5;display:flex;align-items:center;justify-content:center;color:#909399;font-size:12px;border-radius:4px">
+                加载中...
+              </div>
+            </div>
+          </div>
+        </el-form-item>
         <el-form-item>
           <el-button
             type="primary"
@@ -44,6 +61,7 @@
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
 import { getUserMenus } from '@/api/modules/menu'
+import { getCaptcha } from '@/api/modules/auth'
 import type { RouteRecordRaw } from 'vue-router'
 
 const router = useRouter()
@@ -57,16 +75,35 @@ const loading = ref(false)
 interface LoginForm {
   username: string
   password: string
+  captcha_code: string
 }
 
 const loginForm = ref<LoginForm>({
   username: 'admin',
   password: 'admin123',
+  captcha_code: '',
 })
 
 const loginRules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  captcha_code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
+}
+
+// ----- 验证码 -----
+const captchaImage = ref('')
+const captchaId = ref('')
+
+async function refreshCaptcha() {
+  try {
+    const res = await getCaptcha() as any
+    const data = res.data || res
+    captchaId.value = data.captcha_id
+    captchaImage.value = data.image_base64
+    loginForm.value.captcha_code = ''
+  } catch {
+    captchaImage.value = ''
+  }
 }
 
 const handleLogin = async () => {
@@ -75,9 +112,9 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    // 1. 登录（自动获取用户信息 + 权限码）
-    await userStore.login(loginForm.value.username, loginForm.value.password)
-    // 2. 获取菜单并生成动态路由（优先数据库菜单，失败降级为权限过滤）
+    // 登录（captcha_id/captcha_code 随登录请求一并发送，后端自行校验）
+    await userStore.login(loginForm.value.username, loginForm.value.password, captchaId.value, loginForm.value.captcha_code)
+    // 获取菜单并生成动态路由（优先数据库菜单，失败降级为权限过滤）
     let accessRoutes: RouteRecordRaw[]
     try {
       const menuRes = await getUserMenus() as any
@@ -98,10 +135,13 @@ const handleLogin = async () => {
     await router.push(redirect)
   } catch (error) {
     // 错误信息已在拦截器中处理
+    refreshCaptcha()
   } finally {
     loading.value = false
   }
 }
+
+onMounted(() => refreshCaptcha())
 </script>
 
 <style scoped>

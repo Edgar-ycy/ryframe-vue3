@@ -11,7 +11,7 @@ import { useUserStore } from '@/stores/user'
 export function useAuth() {
   const userStore = useUserStore()
 
-  const isAdmin = computed(() => userStore.isAdmin)
+  const isAdmin = computed(() => userStore.isAdmin || userStore.permissions.includes('*:*:*') || userStore.permissions.includes('*'))
   const isLoggedIn = computed(() => userStore.isLoggedIn)
   const permissions = computed(() => userStore.permissions)
   const roles = computed(() => userStore.roles)

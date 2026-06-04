@@ -11,7 +11,7 @@
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="角色状态" clearable style="width:120px">
             <el-option label="正常" value="1" />
-            <el-option label="禁用" value="2" />
+            <el-option label="停用" value="0" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -26,16 +26,16 @@
         <div class="card-header">
           <span>角色列表</span>
           <div>
-            <el-button v-permission="'system:role:create'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+            <el-button v-permission="'system:role:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
           </div>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="name" label="角色名称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="name" label="角色名称" min-width="130" show-overflow-tooltip />
         <el-table-column prop="code" label="角色编码" width="120" />
         <el-table-column prop="sort" label="排序" width="70" align="center" />
-        <el-table-column prop="data_scope" label="数据范围" width="120" align="center">
+        <el-table-column prop="data_scope" label="数据范围" width="130" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.data_scope === '1'" type="success">全部</el-tag>
             <el-tag v-else-if="row.data_scope === '2'" type="warning">自定义</el-tag>
@@ -46,14 +46,16 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'">{{ row.status === '1' ? '正常' : '禁用' }}</el-tag>
+            <el-tag :type="row.status === '1' ? 'success' : 'danger'">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="170" />
         <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:role:update'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:role:delete'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:role:edit'" type="success" link icon="Menu" @click="handleAssignMenus(row)">菜单</el-button>
+            <el-button v-permission="'system:role:edit'" type="warning" link icon="Key" @click="handleAssignPerms(row)">权限</el-button>
+            <el-button v-permission="'system:role:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -82,7 +84,7 @@
         <el-form-item v-if="dialog.isEdit" label="状态">
           <el-radio-group v-model="form.status">
             <el-radio value="1">正常</el-radio>
-            <el-radio value="2">禁用</el-radio>
+            <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="数据范围">
@@ -110,17 +112,55 @@
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 分配菜单弹窗 -->
+    <el-dialog v-model="menuDialog.visible" title="分配菜单" width="500px" @close="menuDialog.checkedKeys = []">
+      <el-tree
+        ref="menuTreeRef"
+        :data="menuTree"
+        :props="{ label: 'name', children: 'children' }"
+        node-key="id"
+        show-checkbox
+        default-expand-all
+        :default-checked-keys="menuDialog.checkedKeys"
+        @check="(_, { checkedKeys }) => menuDialog.checkedKeys = checkedKeys"
+      />
+      <template #footer>
+        <el-button @click="menuDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="menuDialog.loading" @click="handleMenuSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 分配权限弹窗 -->
+    <el-dialog v-model="permDialog.visible" title="分配权限" width="500px" @close="permDialog.checkedKeys = []">
+      <el-tree
+        ref="permTreeRef"
+        :data="permTree"
+        :props="{ label: 'name', children: 'children' }"
+        node-key="id"
+        show-checkbox
+        default-expand-all
+        :default-checked-keys="permDialog.checkedKeys"
+        @check="(_, { checkedKeys }) => permDialog.checkedKeys = checkedKeys"
+      />
+      <template #footer>
+        <el-button @click="permDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="permDialog.loading" @click="handlePermSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { listRole, getRole, createRole, updateRole, deleteRole } from '@/api/modules/role'
-import { listDept } from '@/api/modules/dept'
+import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus, assignPermissions } from '@/api/modules/role'
+import { getDeptTree } from '@/api/modules/dept'
+import { getMenuTree } from '@/api/modules/menu'
+import { getPermissionTree } from '@/api/modules/permission'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
-const deptTree = ref([])
+const deptTree = ref<any[]>([])
 
 const queryParams = ref({ page: 1, pageSize: 10, name: '', code: '', status: '' })
 
@@ -134,8 +174,8 @@ async function fetchData() {
 }
 
 async function loadDeptTree() {
-  const res = await listDept()
-  deptTree.value = (res.rows || [])
+  const res = await getDeptTree()
+  deptTree.value = ((res as any).data || (res as any).rows || [])
 }
 
 function handleSearch() { queryParams.value.page = 1; fetchData() }
@@ -209,7 +249,66 @@ async function handleDelete(row) {
   } catch { /* cancelled */ }
 }
 
-onMounted(() => { fetchData(); loadDeptTree() })
+// ----- 分配菜单 -----
+const menuDialog = ref({ visible: false, loading: false, checkedKeys: [] as number[], roleId: 0 })
+const menuTreeRef = ref<any>()
+const menuTree = ref<any[]>([])
+
+async function loadMenuTree() {
+  try {
+    const res = await getMenuTree() as any
+    menuTree.value = res.data || res.rows || res || []
+  } catch { menuTree.value = [] }
+}
+
+async function handleAssignMenus(row: any) {
+  menuDialog.value.roleId = row.id
+  // 获取当前角色的菜单
+  const res = await getRole(row.id) as any
+  const d = res.data || res
+  menuDialog.value.checkedKeys = d.menu_ids || []
+  menuDialog.value.visible = true
+}
+
+async function handleMenuSubmit() {
+  menuDialog.value.loading = true
+  try {
+    await assignMenus(menuDialog.value.roleId, { menu_ids: menuDialog.value.checkedKeys })
+    ElMessage.success('菜单分配成功')
+    menuDialog.value.visible = false
+  } finally { menuDialog.value.loading = false }
+}
+
+// ----- 分配权限 -----
+const permDialog = ref({ visible: false, loading: false, checkedKeys: [] as number[], roleId: 0 })
+const permTreeRef = ref<any>()
+const permTree = ref<any[]>([])
+
+async function loadPermTree() {
+  try {
+    const res = await getPermissionTree() as any
+    permTree.value = res.data || res.rows || res || []
+  } catch { permTree.value = [] }
+}
+
+async function handleAssignPerms(row: any) {
+  permDialog.value.roleId = row.id
+  const res = await getRole(row.id) as any
+  const d = res.data || res
+  permDialog.value.checkedKeys = d.perm_ids || []
+  permDialog.value.visible = true
+}
+
+async function handlePermSubmit() {
+  permDialog.value.loading = true
+  try {
+    await assignPermissions(permDialog.value.roleId, { perm_ids: permDialog.value.checkedKeys })
+    ElMessage.success('权限分配成功')
+    permDialog.value.visible = false
+  } finally { permDialog.value.loading = false }
+}
+
+onMounted(() => { fetchData(); loadDeptTree(); loadMenuTree(); loadPermTree() })
 </script>
 
 <style scoped>

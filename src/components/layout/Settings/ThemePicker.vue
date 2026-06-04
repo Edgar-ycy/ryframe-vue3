@@ -30,17 +30,19 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  modelValue: '#409EFF',
+  modelValue: '#6366F1',
   label: '主题色',
   presetColors: () => [
-    '#409EFF', // 蓝色（默认）
-    '#1890FF', // 天蓝
-    '#52C41A', // 绿色
-    '#FA541C', // 橙色
-    '#722ED1', // 紫色
-    '#EB2F96', // 粉色
-    '#13C2C2', // 青色
-    '#F5222D', // 红色
+    '#6366F1', // Indigo（默认）
+    '#8B5CF6', // Violet
+    '#EC4899', // Pink
+    '#F43F5E', // Rose
+    '#F97316', // Orange
+    '#EAB308', // Yellow
+    '#22C55E', // Green
+    '#06B6D4', // Cyan
+    '#3B82F6', // Blue
+    '#1E293B', // Slate
   ],
 })
 

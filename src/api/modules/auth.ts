@@ -3,12 +3,13 @@ import request from '@/api/request'
 export interface LoginParams {
   username: string
   password: string
+  captcha_id?: string
+  captcha_code?: string
 }
 
 export interface LoginResult {
   access_token: string
   refresh_token: string
-  expires_in: number
   user_info?: {
     id: number
     username: string
@@ -64,5 +65,92 @@ export function getUserInfo() {
   return request<UserInfo>({
     url: '/auth/me',
     method: 'get',
+  })
+}
+
+// ========== 验证码 ==========
+
+/** 生成验证码 */
+export function getCaptcha(params?: { captcha_type?: string }) {
+  return request<{ captcha_id: string; image_base64: string }>({
+    url: '/auth/captcha/generate',
+    method: 'get',
+    params,
+  })
+}
+
+/** 校验验证码 */
+export function verifyCaptcha(data: { captcha_id: string; captcha_code: string }) {
+  return request<{ valid: boolean }>({
+    url: '/auth/captcha/verify',
+    method: 'post',
+    data,
+  })
+}
+
+// ========== 个人中心 ==========
+
+export interface ProfileInfo {
+  user_id: number
+  username: string
+  nickname: string
+  email?: string
+  phone?: string
+  avatar?: string
+  dept_id?: number
+  dept_name?: string
+  status?: string
+  login_ip?: string
+  login_date?: string
+  created_at?: string
+  roles?: string[]
+  permissions?: string[]
+}
+
+export interface ProfileUpdateParams {
+  nickname: string
+  email?: string
+  phone?: string
+  sex?: string
+}
+
+export interface PasswordChangeParams {
+  old_password: string
+  new_password: string
+}
+
+/** 获取个人信息 */
+export function getProfile() {
+  return request<ProfileInfo>({
+    url: '/auth/profile',
+    method: 'get',
+  })
+}
+
+/** 更新个人信息 */
+export function updateProfile(data: ProfileUpdateParams) {
+  return request({
+    url: '/auth/profile',
+    method: 'put',
+    data,
+  })
+}
+
+/** 修改密码 */
+export function changePassword(data: PasswordChangeParams) {
+  return request({
+    url: '/auth/profile/password',
+    method: 'put',
+    data,
+  })
+}
+
+/** 更新头像（FormData 直接传文件，不设 Content-Type，浏览器自动加 boundary；后端返回 avatar_url） */
+export function updateAvatar(data: FormData) {
+  return request<{ avatar_url: string }>({
+    url: '/auth/profile/avatar',
+    method: 'put',
+    data,
+    headers: { 'Content-Type': undefined as any },
   })
 }

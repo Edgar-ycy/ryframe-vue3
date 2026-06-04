@@ -43,15 +43,20 @@
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="job_name" label="任务名称" min-width="140" show-overflow-tooltip />
         <el-table-column prop="job_group" label="任务组" width="100" />
-        <el-table-column prop="invoke_target" label="调用目标" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="job_message" label="日志信息" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="status" label="执行状态" width="90" align="center">
+        <el-table-column prop="invoke_target" label="调用目标" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="job_message" label="日志信息" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="status" label="执行状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '成功' : '失败' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="duration" label="耗时(ms)" width="100" align="center" />
         <el-table-column prop="created_at" label="执行时间" width="170" />
+        <el-table-column label="操作" width="80" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
@@ -62,6 +67,29 @@
         @change="fetchData"
       />
     </el-card>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="调度日志详情" width="550px">
+      <el-descriptions :column="2" border size="small">
+        <el-descriptions-item label="任务名称">{{ detailRow.job_name }}</el-descriptions-item>
+        <el-descriptions-item label="任务组">{{ detailRow.job_group }}</el-descriptions-item>
+        <el-descriptions-item label="调用目标" :span="2">{{ detailRow.invoke_target }}</el-descriptions-item>
+        <el-descriptions-item label="执行状态">
+          <el-tag :type="detailRow.status === '1' ? 'success' : 'danger'" size="small">{{ detailRow.status === '1' ? '成功' : '失败' }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="耗时">{{ detailRow.duration }} ms</el-descriptions-item>
+        <el-descriptions-item label="执行时间" :span="2">{{ detailRow.created_at }}</el-descriptions-item>
+        <el-descriptions-item label="日志信息" :span="2">
+          <div style="max-height:200px;overflow-y:auto;word-break:break-all">{{ detailRow.job_message }}</div>
+        </el-descriptions-item>
+        <el-descriptions-item v-if="detailRow.exception_info" label="异常信息" :span="2">
+          <div style="max-height:200px;overflow-y:auto;word-break:break-all;font-size:12px;font-family:monospace;color:var(--el-color-danger)">{{ detailRow.exception_info }}</div>
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="detailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -69,9 +97,9 @@
 import { listJobLog, clearJobLog } from '@/api/modules/job'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
-const dateRange = ref([])
+const dateRange = ref<any[]>([])
 
 const queryParams = ref({
   page: 1, pageSize: 10, job_name: '', status: '', begin_time: '', end_time: '',
@@ -101,6 +129,14 @@ async function handleClear() {
     await clearJobLog()
     ElMessage.success('清空成功'); fetchData()
   } catch { /* cancelled */ }
+}
+
+// ----- 详情 -----
+const detailVisible = ref(false)
+const detailRow = ref<any>({})
+function handleDetail(row: any) {
+  detailRow.value = row
+  detailVisible.value = true
 }
 
 onMounted(() => fetchData())

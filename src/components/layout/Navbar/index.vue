@@ -56,12 +56,14 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
+import { useSettingsStore } from '@/stores/settings'
 import Settings from '../Settings/index.vue'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
+const settingsStore = useSettingsStore()
 
 const settingsVisible = ref(false)
 
@@ -70,7 +72,7 @@ const breadcrumbs = computed(() => {
   return matched
 })
 
-const isDark = ref(appStore.theme === 'dark')
+const isDark = computed(() => settingsStore.theme === 'dark')
 
 function toggleFullscreen() {
   if (document.fullscreenElement) {
@@ -81,8 +83,7 @@ function toggleFullscreen() {
 }
 
 function toggleTheme(val: boolean) {
-  appStore.setTheme(val ? 'dark' : 'light')
-  document.documentElement.classList.toggle('dark', val)
+  settingsStore.setTheme(val ? 'dark' : 'light')
 }
 
 const handleCommand = async (command: string) => {

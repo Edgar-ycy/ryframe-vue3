@@ -34,8 +34,8 @@ export const useUserStore = defineStore('user', {
 
   actions: {
     /** 登录 */
-    async login(username: string, password: string) {
-      const res = await loginApi({ username, password }) as any
+    async login(username: string, password: string, captchaId?: string, captchaCode?: string) {
+      const res = await loginApi({ username, password, captcha_id: captchaId, captcha_code: captchaCode }) as any
       const authData = res.data || res
       this.token = authData.access_token
       setToken(authData.access_token)

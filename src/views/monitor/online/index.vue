@@ -18,15 +18,15 @@
     <el-card shadow="never" style="margin-top:12px">
       <template #header><span>在线用户（{{ tableData.length }} 人）</span></template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="token_id" label="会话编号" width="200" show-overflow-tooltip />
+        <el-table-column prop="token_id" label="会话编号" width="220" show-overflow-tooltip />
         <el-table-column prop="username" label="用户名" width="100" />
         <el-table-column prop="dept_name" label="部门" width="120" show-overflow-tooltip />
-        <el-table-column prop="ipaddr" label="IP地址" width="140" />
+        <el-table-column prop="ipaddr" label="IP地址" width="150" />
         <el-table-column prop="login_location" label="登录地点" width="120" show-overflow-tooltip />
-        <el-table-column prop="browser" label="浏览器" width="100" show-overflow-tooltip />
-        <el-table-column prop="os" label="操作系统" width="100" show-overflow-tooltip />
+        <el-table-column prop="browser" label="浏览器" width="110" show-overflow-tooltip />
+        <el-table-column prop="os" label="操作系统" width="110" show-overflow-tooltip />
         <el-table-column prop="login_time" label="登录时间" width="170" />
-        <el-table-column label="操作" width="100" fixed="right" align="center">
+        <el-table-column label="操作" width="90" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="danger" link icon="SwitchButton" @click="handleForceLogout(row)">强退</el-button>
           </template>
@@ -40,7 +40,7 @@
 import { listOnlineUser, forceLogout } from '@/api/modules/monitor'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const queryParams = ref({ username: '', ipaddr: '' })
 
 async function fetchData() {

@@ -4,43 +4,28 @@ const BASE = '/tools/gen'
 
 export interface GenQuery {
   [key: string]: any
-  page_num?: number
-  page_size?: number
+  page?: number
+  pageSize?: number
   table_name?: string
   table_comment?: string
 }
 
-/** 分页查询数据库表 */
+/** 查询数据库表列表 */
 export function listTable(params: GenQuery) {
-  return request({ url: `${BASE}/tables/list`, method: 'get', params })
-}
-
-/** 获取表信息 */
-export function getTableInfo(tableName: string) {
-  return request({ url: `${BASE}/${tableName}`, method: 'get' })
+  return request({ url: `${BASE}/tables`, method: 'get', params })
 }
 
 /** 预览代码 */
-export function previewCode(tableName: string) {
-  return request({ url: `${BASE}/preview/${tableName}`, method: 'get' })
+export function previewCode(data: { table_name: string; module_name?: string; business_name?: string; class_name?: string }) {
+  return request({ url: `${BASE}/preview`, method: 'post', data })
 }
 
-/** 生成代码（下载） */
-export function downloadCode(tableNames: string) {
-  return request({ url: `${BASE}/download/${tableNames}`, method: 'get', responseType: 'blob' })
+/** 生成代码（写盘到项目目录） */
+export function generateCode(data: { table_name: string; module_name?: string; business_name?: string; class_name?: string }) {
+  return request({ url: `${BASE}/generate`, method: 'post', data })
 }
 
-/** 导入表 */
-export function importTable(tables: string[]) {
-  return request({ url: `${BASE}/import`, method: 'post', data: { tables } })
-}
-
-/** 同步表结构 */
-export function syncTable(tableName: string) {
-  return request({ url: `${BASE}/sync/${tableName}`, method: 'put' })
-}
-
-/** 删除表 */
-export function deleteTable(tableName: string) {
-  return request({ url: `${BASE}/${tableName}`, method: 'delete' })
+/** 下载生成代码（打包 zip） */
+export function downloadCode(data: { table_name: string; module_name?: string; business_name?: string; class_name?: string }) {
+  return request({ url: `${BASE}/download`, method: 'post', data, responseType: 'blob' })
 }

@@ -32,21 +32,28 @@ const whiteList = ['/login']
 
 /**
  * 获取菜单并生成路由
- * 优先调用后端菜单 API，失败时降级到权限码过滤静态路由
+ * 依次尝试多个端点，最终降级到权限码过滤静态路由
  */
 async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>, userStore: ReturnType<typeof useUserStore>): Promise<RouteRecordRaw[]> {
-  try {
-    // 优先：从后端获取当前用户的菜单树
-    const menuRes = await getUserMenus() as any
-    const menuTree = menuRes.rows || menuRes.data || menuRes || []
-    if (menuTree.length > 0) {
-      console.log('[Router] 使用后端菜单树生成动态路由')
-      return permissionStore.generateRoutes(menuTree)
+  // 端点列表：依次尝试，任一成功即停止
+  const endpoints: Array<{ name: string; fn: () => Promise<any> }> = [
+    { name: '/system/menus/tree', fn: getUserMenus },
+  ]
+
+  for (const ep of endpoints) {
+    try {
+      const menuRes = await ep.fn() as any
+      const menuTree = menuRes.rows || menuRes.data || menuRes || []
+      if (Array.isArray(menuTree) && menuTree.length > 0) {
+        console.log(`[Router] 通过 ${ep.name} 获取菜单树，生成动态路由`)
+        return permissionStore.generateRoutes(menuTree)
+      }
+    } catch (e) {
+      console.warn(`[Router] ${ep.name} 不可用:`, (e as Error).message)
     }
-  } catch (e) {
-    console.warn('[Router] 后端菜单 API 不可用，降级为静态路由+权限过滤:', (e as Error).message)
   }
-  // 降级：用权限码过滤静态路由模块
+
+  // 全部端点失败 → 降级到静态路由 + 权限过滤
   console.log('[Router] 降级模式：根据权限码过滤静态路由')
   return permissionStore.generateRoutesFallback(userStore.permissions)
 }

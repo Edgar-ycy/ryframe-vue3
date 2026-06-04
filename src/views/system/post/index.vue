@@ -11,7 +11,7 @@
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="岗位状态" clearable style="width:120px">
             <el-option label="正常" value="1" />
-            <el-option label="禁用" value="2" />
+            <el-option label="停用" value="0" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -25,24 +25,24 @@
       <template #header>
         <div class="card-header">
           <span>岗位列表</span>
-          <el-button v-permission="'system:post:create'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+          <el-button v-permission="'system:post:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="name" label="岗位名称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="name" label="岗位名称" min-width="130" show-overflow-tooltip />
         <el-table-column prop="code" label="岗位编码" width="140" />
         <el-table-column prop="sort" label="排序" width="70" align="center" />
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '禁用' }}</el-tag>
+            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="170" />
         <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:post:update'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:post:delete'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:post:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:post:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -70,7 +70,7 @@
         <el-form-item v-if="dialog.isEdit" label="状态">
           <el-radio-group v-model="form.status">
             <el-radio value="1">正常</el-radio>
-            <el-radio value="2">禁用</el-radio>
+            <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -86,7 +86,7 @@
 import { listPost, getPost, createPost, updatePost, deletePost } from '@/api/modules/post'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
 const queryParams = ref({ page: 1, pageSize: 10, name: '', code: '', status: '' })
 

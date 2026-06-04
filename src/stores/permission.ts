@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { resolveComponent, LAYOUT } from '@/router/componentMap'
 import { filterAsyncRoutes } from '@/router/permission'
+import { constantRoutes } from '@/router/routes/constant'
 import { systemRoutes } from '@/router/routes/modules/system'
 import { monitorRoutes } from '@/router/routes/modules/monitor'
 import { toolsRoutes } from '@/router/routes/modules/tools'
@@ -13,6 +14,20 @@ const fallbackAsyncRoutes: RouteRecordRaw[] = [
   ...monitorRoutes,
   ...toolsRoutes,
 ]
+
+/** 提取 constantRoutes 中 Layout 组件的可见子路由，作为独立顶级菜单项（首页、个人中心等） */
+function getConstantMenus(): RouteRecordRaw[] {
+  const layoutRoute = constantRoutes.find(r => r.path === '/' && r.children)
+  if (!layoutRoute) return []
+  // 取出子路由，过滤 hidden，将相对路径解析为绝对路径
+  const children = layoutRoute.children || []
+  return children
+    .filter(c => !c.meta?.hidden)
+    .map(c => ({
+      ...c,
+      path: '/' + String(c.path).replace(/^\/+/, ''),
+    }))
+}
 
 interface PermissionState {
   /** 已注册的动态路由（含 hidden 页面） */
@@ -40,7 +55,8 @@ export const usePermissionStore = defineStore('permission', {
     generateRoutes(menuTree: MenuTreeNode[]) {
       const routes = buildRoutesFromMenuTree(menuTree)
       this.routes = routes
-      this.menus = filterHiddenRoutes(routes)
+      // 侧边栏菜单 = 常量路由（首页/个人中心） + 动态路由（排除 hidden）
+      this.menus = [...getConstantMenus(), ...filterHiddenRoutes(routes)]
       this.isRoutesLoaded = true
       return routes
     },
@@ -54,7 +70,8 @@ export const usePermissionStore = defineStore('permission', {
     generateRoutesFallback(permissions: string[]) {
       const routes = filterAsyncRoutes(fallbackAsyncRoutes, permissions)
       this.routes = routes
-      this.menus = filterHiddenRoutes(routes)
+      // 侧边栏菜单 = 常量路由（首页/个人中心） + 权限过滤后的路由
+      this.menus = [...getConstantMenus(), ...filterHiddenRoutes(routes)]
       this.isRoutesLoaded = true
       return routes
     },
@@ -74,6 +91,13 @@ export const usePermissionStore = defineStore('permission', {
 /** 获取节点名称（兼容 name / menu_name） */
 function getNodeTitle(n: MenuTreeNode): string {
   return n.name ?? n.menu_name ?? ''
+}
+
+/** 判断 is_cache / is_frame（兼容 boolean / string / number） */
+function toBool(v: any): boolean {
+  if (typeof v === 'boolean') return v
+  if (typeof v === 'number') return v !== 0
+  return v === '1' || v === 'true'
 }
 
 /** 获取排序号（兼容 sort / order_num） */
@@ -122,7 +146,7 @@ function buildRoutesFromMenuTree(nodes: MenuTreeNode[], parentPath?: string): Ro
   const routes: RouteRecordRaw[] = []
 
   for (const node of nodes) {
-    // 跳过禁用的菜单
+    // 跳过停用的菜单（菜单 status 约定: '1'=正常, '0'=停用，与用户/角色接口相反）
     if (node.status !== '1') continue
 
     // 按钮（F）不产生路由
@@ -166,7 +190,7 @@ function buildDirectoryRoute(node: MenuTreeNode, _parentPath?: string): RouteRec
       icon: iconPascalCase(node.icon) || undefined,
       hidden: !isNodeVisible(node),
       alwaysShow: true,
-      noCache: node.is_cache === '1',
+      noCache: toBool(node.is_cache),
       sort: getNodeSort(node),
     },
     children,
@@ -195,10 +219,10 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
       title: getNodeTitle(node),
       icon: iconPascalCase(node.icon) || undefined,
       hidden: !isNodeVisible(node),
-      noCache: node.is_cache === '1',
+      noCache: toBool(node.is_cache),
       permission: node.perms || undefined,
       sort: getNodeSort(node),
-      ...(node.is_frame === '1' ? { isFrame: true } : {}),
+      ...(toBool(node.is_frame) ? { isFrame: true } : {}),
     },
   } as RouteRecordRaw
 

@@ -12,21 +12,46 @@ export function getHealth() {
   return request({ url: '/monitor/health', method: 'get' })
 }
 
+/** 缓存统计 */
+export function getCacheInfo() {
+  return request({ url: '/monitor/cache', method: 'get' })
+}
+
+/** Redis 命令统计 */
+export function getCacheCommands() {
+  return request({ url: '/monitor/cache/commands', method: 'get' })
+}
+
+/** 数据库连接池 */
+export function getDbPool() {
+  return request({ url: '/monitor/db-pool', method: 'get' })
+}
+
 // ========== 操作日志 (/system/operlogs) ==========
 
 export interface OperLogQuery {
   [key: string]: any
-  page_num?: number
-  page_size?: number
-  title?: string
+  page?: number
+  pageSize?: number
   oper_name?: string
   status?: string
-  oper_time?: string
+  begin_time?: string
+  end_time?: string
 }
 
 /** 操作日志分页 */
 export function listOperLog(params: OperLogQuery) {
   return request({ url: '/system/operlogs/list', method: 'get', params })
+}
+
+/** 操作日志不分页 */
+export function listOperLogNoPage(params?: OperLogQuery) {
+  return request({ url: '/system/operlogs/listNoPage', method: 'get', params })
+}
+
+/** 导出操作日志 */
+export function exportOperLog(params?: any) {
+  return request({ url: '/system/operlogs/export', method: 'get', params, responseType: 'blob' })
 }
 
 /** 清空操作日志 */
@@ -38,16 +63,27 @@ export function clearOperLog() {
 
 export interface LoginLogQuery {
   [key: string]: any
-  page_num?: number
-  page_size?: number
+  page?: number
+  pageSize?: number
   user_name?: string
   status?: string
-  login_time?: string
+  begin_time?: string
+  end_time?: string
 }
 
 /** 登录日志分页 */
 export function listLoginLog(params: LoginLogQuery) {
   return request({ url: '/system/loginlogs/list', method: 'get', params })
+}
+
+/** 登录日志不分页 */
+export function listLoginLogNoPage(params?: LoginLogQuery) {
+  return request({ url: '/system/loginlogs/listNoPage', method: 'get', params })
+}
+
+/** 导出登录日志 */
+export function exportLoginLog(params?: any) {
+  return request({ url: '/system/loginlogs/export', method: 'get', params, responseType: 'blob' })
 }
 
 /** 清空登录日志 */
@@ -59,14 +95,20 @@ export function clearLoginLog() {
 
 export interface OnlineUserQuery {
   [key: string]: any
-  page_num?: number
-  page_size?: number
-  user_name?: string
+  page?: number
+  pageSize?: number
+  username?: string
+  ipaddr?: string
 }
 
 /** 在线用户列表 */
 export function listOnlineUser(params: OnlineUserQuery) {
   return request({ url: '/system/online/list', method: 'get', params })
+}
+
+/** 在线用户不分页 */
+export function listOnlineUserNoPage(params?: OnlineUserQuery) {
+  return request({ url: '/system/online/listNoPage', method: 'get', params })
 }
 
 /** 强制下线 */

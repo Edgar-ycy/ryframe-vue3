@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import type { ElTree } from 'element-plus'
-import { listDept } from '@/api/modules/dept'
+import { getDeptTree } from '@/api/modules/dept'
 
 interface Props {
   modelValue?: number | number[]
@@ -80,8 +80,8 @@ watch(filterText, (val) => {
 
 async function loadDeptTree() {
   try {
-    const res = await listDept({}) as any
-    treeData.value = res.rows || []
+    const res = await getDeptTree() as any
+    treeData.value = res.data || res.rows || []
   } catch { /* ignore */ }
 }
 

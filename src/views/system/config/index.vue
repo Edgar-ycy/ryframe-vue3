@@ -19,20 +19,20 @@
       <template #header>
         <div class="card-header">
           <span>参数列表</span>
-          <el-button v-permission="'system:config:create'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+          <el-button v-permission="'system:config:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="name" label="参数名称" min-width="120" show-overflow-tooltip />
         <el-table-column prop="key" label="参数键名" min-width="140" show-overflow-tooltip />
         <el-table-column prop="value" label="参数键值" min-width="120" show-overflow-tooltip />
         <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
         <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="160" fixed="right" align="center">
+        <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:config:update'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:config:delete'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:config:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:config:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -73,7 +73,7 @@
 import { listConfig, getConfig, createConfig, updateConfig, deleteConfig } from '@/api/modules/config'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
 const queryParams = ref({ page: 1, pageSize: 10, name: '', key: '' })
 
@@ -125,7 +125,7 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialog.value.isEdit) {
-      await updateConfig(currentEditId.value!, { value: form.value.value } as any)
+      await updateConfig(currentEditId.value!, { name: form.value.name, value: form.value.value, remark: form.value.remark || undefined } as any)
       ElMessage.success('更新成功')
     } else {
       await createConfig({ name: form.value.name, key: form.value.key, value: form.value.value, remark: form.value.remark || undefined } as any)

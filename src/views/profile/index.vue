@@ -1,13 +1,13 @@
 <template>
   <div class="page-container">
     <el-row :gutter="16">
-      <!-- 基本信息 -->
+      <!-- 左侧：基本信息 -->
       <el-col :span="16">
         <el-card shadow="never">
           <template #header><span>基本信息</span></template>
           <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" style="max-width:500px">
             <el-form-item label="用户名">
-              <el-input v-model="userStore.username" disabled />
+              <el-input :model-value="userStore.username" disabled />
             </el-form-item>
             <el-form-item label="昵称" prop="nickname">
               <el-input v-model="form.nickname" placeholder="请输入昵称" maxlength="50" />
@@ -18,8 +18,24 @@
             <el-form-item label="手机号" prop="phone">
               <el-input v-model="form.phone" placeholder="请输入手机号" />
             </el-form-item>
+            <el-form-item label="性别">
+              <el-radio-group v-model="form.sex">
+                <el-radio value="0">男</el-radio>
+                <el-radio value="1">女</el-radio>
+                <el-radio value="2">未知</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="部门">
+              <el-input :model-value="profileInfo.dept_name || '-'" disabled />
+            </el-form-item>
             <el-form-item label="角色">
-              <el-tag v-for="role in userStore.roles" :key="role" style="margin-right:4px">{{ role }}</el-tag>
+              <template v-if="profileInfo.roles && profileInfo.roles.length">
+                <el-tag v-for="role in profileInfo.roles" :key="role" style="margin-right:4px">{{ role }}</el-tag>
+              </template>
+              <span v-else>-</span>
+            </el-form-item>
+            <el-form-item label="创建时间">
+              <el-input :model-value="profileInfo.created_at || '-'" disabled />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存</el-button>
@@ -33,9 +49,21 @@
         <el-card shadow="never">
           <template #header><span>头像</span></template>
           <div style="text-align:center;padding:16px 0">
-            <el-avatar :size="80" :src="userStore.avatar">
-              <el-icon :size="40"><UserFilled /></el-icon>
-            </el-avatar>
+            <el-upload
+              class="avatar-uploader"
+              :show-file-list="false"
+              :before-upload="beforeAvatarUpload"
+              :http-request="handleAvatarUpload"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+            >
+              <el-avatar :size="80" :src="avatarPreview" class="avatar-preview">
+                <el-icon :size="40"><UserFilled /></el-icon>
+              </el-avatar>
+              <div class="avatar-mask">
+                <el-icon :size="20"><Camera /></el-icon>
+                <span style="font-size:12px">更换头像</span>
+              </div>
+            </el-upload>
           </div>
         </el-card>
 
@@ -63,15 +91,34 @@
 
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
-import { updateUser } from '@/api/modules/user'
+import { updateProfile, changePassword, getProfile, updateAvatar, type ProfileInfo } from '@/api/modules/auth'
+
 
 const userStore = useUserStore()
+const router = useRouter()
 
-// ----- 基本信息 -----
+// ----- 个人信息（从 API 获取完整数据） -----
+const profileLoading = ref(true)
+const profileInfo = ref<ProfileInfo>({
+  user_id: 0,
+  username: '',
+  nickname: '',
+  email: '',
+  phone: '',
+  avatar: '',
+  dept_name: '',
+  roles: [],
+})
+
+// 头像预览地址（初始用 store，上传后即时更新）
+const avatarPreview = computed(() => profileInfo.value.avatar || userStore.avatar)
+
+// ----- 基本信息表单 -----
 const form = ref({
-  nickname: userStore.nickname || '',
-  email: userStore.email || '',
-  phone: userStore.phone || '',
+  nickname: '',
+  email: '',
+  phone: '',
+  sex: '',
 })
 
 const rules = {
@@ -87,17 +134,59 @@ async function handleSubmit() {
   if (!valid) return
   submitLoading.value = true
   try {
-    await updateUser(userStore.userId as number, {
+    await updateProfile({
       nickname: form.value.nickname,
       email: form.value.email || undefined,
       phone: form.value.phone || undefined,
-    } as any)
+      sex: form.value.sex || undefined,
+    })
     userStore.nickname = form.value.nickname
     userStore.email = form.value.email
     userStore.phone = form.value.phone
+    profileInfo.value.nickname = form.value.nickname
+    profileInfo.value.email = form.value.email
+    profileInfo.value.phone = form.value.phone
     ElMessage.success('保存成功')
   } finally {
     submitLoading.value = false
+  }
+}
+
+// ----- 头像上传 -----
+const avatarUploading = ref(false)
+
+function beforeAvatarUpload(file: File) {
+  const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+  if (!validTypes.includes(file.type)) {
+    ElMessage.error('头像仅支持 PNG / JPEG / GIF / WebP 格式')
+    return false
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.error('头像文件大小不能超过 2MB')
+    return false
+  }
+  return true
+}
+
+async function handleAvatarUpload(options: { file: File }) {
+  avatarUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', options.file)
+    const res = await updateAvatar(formData) as any
+    const data = res.data || res
+    const avatarUrl = data.avatar_url || ''
+    if (avatarUrl) {
+      // 同步 userStore（Navbar 等位置的头像显示）
+      userStore.avatar = avatarUrl
+      // 重新拉取个人信息，确保 profileInfo 与后端一致
+      await loadProfile()
+      ElMessage.success('头像更新成功')
+    }
+  } catch {
+    ElMessage.error('头像上传失败')
+  } finally {
+    avatarUploading.value = false
   }
 }
 
@@ -131,15 +220,13 @@ async function handleChangePwd() {
   if (!valid) return
   pwdLoading.value = true
   try {
-    // 调用更新密码接口
-    await updateUser(userStore.userId as number, {
+    await changePassword({
       old_password: pwdForm.value.old_password,
       new_password: pwdForm.value.new_password,
-    } as any)
+    })
     ElMessage.success('密码修改成功，请重新登录')
     pwdForm.value = { old_password: '', new_password: '', confirm_password: '' }
     pwdFormRef.value?.resetFields()
-    // 退出登录
     setTimeout(async () => {
       await userStore.logout()
       router.push('/login')
@@ -150,4 +237,78 @@ async function handleChangePwd() {
     pwdLoading.value = false
   }
 }
+
+// ----- 初始化加载个人信息 -----
+async function loadProfile() {
+  profileLoading.value = true
+  try {
+    const res = await getProfile() as any
+    const d = res.data || res
+    if (d) {
+      profileInfo.value = {
+        user_id: d.user_id ?? d.id ?? 0,
+        username: d.username ?? '',
+        nickname: d.nickname ?? '',
+        email: d.email ?? '',
+        phone: d.phone ?? '',
+        avatar: d.avatar ?? '',
+        dept_name: d.dept_name ?? d.dept?.dept_name ?? '',
+        roles: d.roles ?? [],
+        permissions: d.permissions ?? [],
+        created_at: d.created_at ?? '',
+      } as ProfileInfo
+      // 同步表单初始值
+      form.value.nickname = d.nickname ?? ''
+      form.value.email = d.email ?? ''
+      form.value.phone = d.phone ?? ''
+      form.value.sex = d.sex ?? ''
+    }
+  } catch {
+    // 降级：使用 userStore 的数据
+    form.value.nickname = userStore.nickname || ''
+    form.value.email = userStore.email || ''
+    form.value.phone = userStore.phone || ''
+  } finally {
+    profileLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadProfile()
+})
 </script>
+
+<style scoped>
+.page-container {
+  padding: 16px;
+}
+
+.avatar-uploader {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.avatar-preview {
+  transition: opacity 0.3s;
+}
+
+.avatar-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.avatar-uploader:hover .avatar-mask {
+  opacity: 1;
+}
+</style>

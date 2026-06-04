@@ -7,8 +7,8 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="状态" clearable style="width:100px">
-            <el-option label="成功" value="0" />
-            <el-option label="失败" value="1" />
+            <el-option label="成功" value="1" />
+            <el-option label="失败" value="0" />
           </el-select>
         </el-form-item>
         <el-form-item label="操作时间">
@@ -37,19 +37,24 @@
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="title" label="操作模块" min-width="120" show-overflow-tooltip />
         <el-table-column prop="business_type" label="业务类型" width="100" />
         <el-table-column prop="oper_name" label="操作人员" width="100" />
-        <el-table-column prop="oper_url" label="请求地址" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="oper_url" label="请求地址" min-width="200" show-overflow-tooltip />
         <el-table-column prop="oper_ip" label="操作IP" width="130" />
-        <el-table-column prop="status" label="状态" width="70" align="center">
+        <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === '0' ? 'success' : 'danger'" size="small">{{ row.status === '0' ? '成功' : '失败' }}</el-tag>
+            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '成功' : '失败' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="cost_time" label="耗时(ms)" width="90" align="center" />
+        <el-table-column prop="cost_time" label="耗时(ms)" width="100" align="center" />
         <el-table-column prop="oper_time" label="操作时间" width="170" />
+        <el-table-column label="操作" width="80" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
@@ -60,6 +65,35 @@
         @change="fetchData"
       />
     </el-card>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="操作日志详情" width="600px">
+      <el-descriptions :column="2" border size="small">
+        <el-descriptions-item label="操作模块">{{ detailRow.title }}</el-descriptions-item>
+        <el-descriptions-item label="业务类型">{{ detailRow.business_type }}</el-descriptions-item>
+        <el-descriptions-item label="操作人员">{{ detailRow.oper_name }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="detailRow.status === '1' ? 'success' : 'danger'" size="small">{{ detailRow.status === '1' ? '成功' : '失败' }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="请求方法">{{ detailRow.request_method }}</el-descriptions-item>
+        <el-descriptions-item label="操作 IP">{{ detailRow.oper_ip }}</el-descriptions-item>
+        <el-descriptions-item label="请求地址" :span="2">{{ detailRow.oper_url }}</el-descriptions-item>
+        <el-descriptions-item label="请求参数" :span="2">
+          <div style="max-height:150px;overflow-y:auto;word-break:break-all;font-size:12px;font-family:monospace">{{ detailRow.oper_param }}</div>
+        </el-descriptions-item>
+        <el-descriptions-item label="返回结果" :span="2">
+          <div style="max-height:150px;overflow-y:auto;word-break:break-all;font-size:12px;font-family:monospace">{{ detailRow.json_result }}</div>
+        </el-descriptions-item>
+        <el-descriptions-item label="耗时">{{ detailRow.cost_time }} ms</el-descriptions-item>
+        <el-descriptions-item label="操作时间">{{ detailRow.oper_time }}</el-descriptions-item>
+        <el-descriptions-item v-if="detailRow.error_msg" label="错误信息" :span="2">
+          <span style="color:var(--el-color-danger)">{{ detailRow.error_msg }}</span>
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="detailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -67,9 +101,9 @@
 import { listOperLog, clearOperLog } from '@/api/modules/monitor'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
-const dateRange = ref([])
+const dateRange = ref<any[]>([])
 
 const queryParams = ref({
   page: 1, pageSize: 10, oper_name: '', status: '', begin_time: '', end_time: '',
@@ -100,6 +134,14 @@ async function handleClear() {
     ElMessage.success('清空成功')
     fetchData()
   } catch { /* cancelled */ }
+}
+
+// ----- 详情 -----
+const detailVisible = ref(false)
+const detailRow = ref<any>({})
+function handleDetail(row: any) {
+  detailRow.value = row
+  detailVisible.value = true
 }
 
 onMounted(() => fetchData())

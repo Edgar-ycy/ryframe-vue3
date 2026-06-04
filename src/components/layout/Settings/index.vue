@@ -20,8 +20,8 @@
         <!-- 主题色 -->
         <div class="setting-section">
           <ThemePicker
-            :model-value="themeColor"
-            @update:model-value="onThemeColorChange"
+            :model-value="settingsStore.themeColor"
+            @update:model-value="settingsStore.setThemeColor"
           />
         </div>
 
@@ -68,13 +68,6 @@ type ComponentSize = 'large' | 'default' | 'small'
 
 const visible = defineModel<boolean>({ default: false })
 const settingsStore = useSettingsStore()
-const themeColor = ref('#409EFF')
-
-function onThemeColorChange(color: string) {
-  themeColor.value = color
-  // 设置 CSS 变量，动态修改主题色
-  document.documentElement.style.setProperty('--el-color-primary', color)
-}
 </script>
 
 <style scoped>

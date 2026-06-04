@@ -1,6 +1,6 @@
 <template>
   <div class="sidebar-container">
-    <div class="logo">
+    <div v-if="settingsStore.sidebarLogo" class="logo">
       <span v-show="!appStore.sidebarCollapsed">RyFrame</span>
       <span v-show="appStore.sidebarCollapsed" style="font-size: 16px;">R</span>
     </div>
@@ -9,9 +9,9 @@
         :default-active="activeMenu"
         :collapse="appStore.sidebarCollapsed"
         :unique-opened="true"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
+        :background-color="menuBgColor"
+        :text-color="menuTextColor"
+        :active-text-color="settingsStore.themeColor"
         @select="handleMenuSelect"
       >
         <template v-for="menu in permissionStore.menus" :key="menu.path">
@@ -55,14 +55,20 @@
 import { resolve } from 'path-browserify'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
+import { useSettingsStore } from '@/stores/settings'
 import type { RouteRecordRaw } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
 const permissionStore = usePermissionStore()
+const settingsStore = useSettingsStore()
 
 const activeMenu = computed(() => route.path)
+
+// 侧边栏配色：深色主题和浅色主题使用不同背景
+const menuBgColor = computed(() => settingsStore.theme === 'dark' ? '#1a1a2e' : '#111827')
+const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')
 
 function handleMenuSelect(indexPath: string) {
   router.push(indexPath)

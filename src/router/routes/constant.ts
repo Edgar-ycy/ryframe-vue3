@@ -19,6 +19,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/dashboard/index.vue'),
         meta: { title: '首页', icon: 'HomeFilled', affix: true },
       },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/profile/index.vue'),
+        meta: { title: '个人中心', icon: 'User' },
+      },
     ],
   },
   {
@@ -50,12 +56,6 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: '500',
     component: () => import('@/views/error/500.vue'),
     meta: { title: '服务器错误', hidden: true },
-  },
-  {
-    path: '/profile',
-    name: 'Profile',
-    component: () => import('@/views/profile/index.vue'),
-    meta: { title: '个人中心', icon: 'User' },
   },
   // 兜底路由：未匹配的路径
   { path: '/:pathMatch(.*)*', redirect: '/404', meta: { hidden: true } },

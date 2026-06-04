@@ -4,24 +4,24 @@
       <template #header>
         <div class="card-header">
           <span>部门列表</span>
-          <el-button v-permission="'system:dept:create'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
+          <el-button v-permission="'system:dept:add'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe row-key="id" default-expand-all
+      <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
         :tree-props="{ children: 'children' }">
-        <el-table-column prop="name" label="部门名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="sort" label="排序" width="80" align="center" />
+        <el-table-column prop="name" label="部门名称" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="sort" label="排序" width="70" align="center" />
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '禁用' }}</el-tag>
+            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="170" />
+
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:dept:create'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
-            <el-button v-permission="'system:dept:update'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:dept:delete'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:dept:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
+            <el-button v-permission="'system:dept:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:dept:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -49,7 +49,7 @@
         <el-form-item v-if="dialog.isEdit" label="状态">
           <el-radio-group v-model="form.status">
             <el-radio value="1">正常</el-radio>
-            <el-radio value="2">禁用</el-radio>
+            <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { listDept, getDept, createDept, updateDept, deleteDept } from '@/api/modules/dept'
+import { getDeptTree, getDept, createDept, updateDept, deleteDept } from '@/api/modules/dept'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -71,9 +71,10 @@ const deptOptions = ref([])
 async function fetchData() {
   loading.value = true
   try {
-    const res = await listDept()
-    tableData.value = res.rows || []
-    deptOptions.value = res.rows || []
+    const res = await getDeptTree() as any
+    const treeData = res.data || res || []
+    tableData.value = treeData
+    deptOptions.value = treeData
   } finally { loading.value = false }
 }
 
@@ -134,7 +135,7 @@ async function handleSubmit() {
 // ----- 删除 -----
 async function handleDelete(row) {
   try {
-    await ElMessageBox.confirm(`确认删除部门"${row.name}"吗？`, '警告', { type: 'warning' })
+    await ElMessageBox.confirm(`确认删除部门"${row.name}"吗？(子部门将一并删除)`, '警告', { type: 'warning' })
     await deleteDept(row.id)
     ElMessage.success('删除成功')
     fetchData()

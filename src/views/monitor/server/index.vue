@@ -38,8 +38,8 @@
           <template #header><span><el-icon><Connection /></el-icon> 健康检查</span></template>
           <div v-if="health" class="health-status">
             <el-tag :type="health.status === 'UP' ? 'success' : 'danger'" size="large">{{ health.status }}</el-tag>
-            <div class="info-row"><span>数据库</span><el-tag :type="health.database === 'connected' ? 'success' : 'danger'" size="small">{{ health.database }}</el-tag></div>
-            <div class="info-row"><span>Redis</span><el-tag :type="health.redis === 'connected' ? 'success' : (health.redis === 'not_configured' ? 'info' : 'danger')" size="small">{{ health.redis }}</el-tag></div>
+            <div class="info-row"><span>数据库</span><el-tag :type="health.checks?.database === 'UP' ? 'success' : 'danger'" size="small">{{ health.checks?.database || health.database }}</el-tag></div>
+            <div class="info-row"><span>Redis</span><el-tag :type="health.checks?.redis === 'UP' ? 'success' : (health.checks?.redis === 'not_configured' ? 'info' : 'danger')" size="small">{{ health.checks?.redis || health.redis }}</el-tag></div>
           </div>
         </el-card>
       </el-col>
@@ -64,8 +64,12 @@ interface ServerInfo {
 
 interface HealthInfo {
   status: string
-  database: string
-  redis: string
+  checks?: {
+    database: string
+    redis: string
+  }
+  database?: string
+  redis?: string
 }
 
 const info = ref<ServerInfo>({})

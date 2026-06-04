@@ -4,29 +4,36 @@ const BASE = '/system/menus'
 
 export interface MenuQuery {
   [key: string]: any
-  menu_name?: string
+  page?: number
+  pageSize?: number
+  name?: string
   status?: string
 }
 
 export interface MenuForm {
   [key: string]: any
-  menu_name: string
+  name: string
   parent_id?: number
-  order_num?: number
+  menu_type: string
   path?: string
   component?: string
   query?: string
-  is_frame?: string
-  is_cache?: string
-  menu_type: string
-  visible?: string
-  status: string
   perms?: string
   icon?: string
+  is_frame?: boolean
+  is_cache?: boolean
+  sort?: number
+  visible?: boolean
+  status?: string
   remark?: string
 }
 
+/** 菜单树 */
+export function getMenuTree()                { return request({ url: `${BASE}/tree`, method: 'get' }) }
+/** 菜单列表（分页） */
 export function listMenu(params?: MenuQuery)  { return request({ url: `${BASE}/list`, method: 'get', params }) }
+/** 菜单列表（不分页） */
+export function listMenuNoPage(params?: MenuQuery) { return request({ url: `${BASE}/listNoPage`, method: 'get', params }) }
 export function getMenu(id: number)            { return request({ url: `${BASE}/${id}`, method: 'get' }) }
 export function createMenu(data: MenuForm)     { return request({ url: BASE, method: 'post', data }) }
 export function updateMenu(id: number, data: Partial<MenuForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
@@ -49,7 +56,7 @@ export interface MenuTreeNode {
   query?: string
   is_frame?: string
   is_cache?: string
-  /** M=目录, C=菜单, F=按钮。若缺失则从 component 字段推断 */
+  /** M=目录, C=菜单, F=按钮（DB NOT NULL，必填。若缺失则从 component 字段推断） */
   menu_type?: string
   /** 是否可见（后端可能返回 boolean 或字符串 '0'/'1'） */
   visible?: boolean | string
@@ -70,3 +77,5 @@ export function getUserMenus() {
     method: 'get',
   })
 }
+
+

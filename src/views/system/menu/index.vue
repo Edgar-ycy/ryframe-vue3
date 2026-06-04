@@ -4,14 +4,19 @@
       <template #header>
         <div class="card-header">
           <span>菜单列表</span>
-          <el-button v-permission="'system:menu:create'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
+          <el-button v-permission="'system:menu:add'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe row-key="id" default-expand-all
+      <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }">
-        <el-table-column prop="name" label="菜单名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="path" label="路由地址" width="160" show-overflow-tooltip />
-        <el-table-column prop="component" label="组件路径" width="180" show-overflow-tooltip />
+        <el-table-column prop="name" label="菜单名称" min-width="140" show-overflow-tooltip />
+        <el-table-column label="类型" width="70" align="center">
+          <template #default="{ row }">
+            <el-tag :type="menuTypeTag(row.menu_type)" size="small">{{ menuTypeLabel(row.menu_type) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="path" label="路由地址" width="170" show-overflow-tooltip />
+        <el-table-column prop="component" label="组件路径" width="200" show-overflow-tooltip />
         <el-table-column label="图标" width="60" align="center">
           <template #default="{ row }">
             <el-icon v-if="row.icon"><component :is="row.icon" /></el-icon>
@@ -25,14 +30,14 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="70" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '禁用' }}</el-tag>
+            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:menu:create'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
-            <el-button v-permission="'system:menu:update'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:menu:delete'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:menu:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
+            <el-button v-permission="'system:menu:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:menu:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -51,8 +56,18 @@
             style="width:100%"
           />
         </el-form-item>
+        <el-form-item label="菜单类型" prop="menu_type">
+          <el-select v-model="form.menu_type" style="width:100%">
+            <el-option label="目录 (M)" value="M" />
+            <el-option label="菜单 (C)" value="C" />
+            <el-option label="按钮 (F)" value="F" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="菜单名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入菜单名称" />
+        </el-form-item>
+        <el-form-item label="权限标识">
+          <el-input v-model="form.perms" placeholder="如 system:user:list" />
         </el-form-item>
         <el-form-item label="路由地址">
           <el-input v-model="form.path" placeholder="如 /system/user" />
@@ -75,7 +90,7 @@
         <el-form-item v-if="dialog.isEdit" label="状态">
           <el-radio-group v-model="form.status">
             <el-radio value="1">正常</el-radio>
-            <el-radio value="2">禁用</el-radio>
+            <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -88,20 +103,30 @@
 </template>
 
 <script setup lang="ts">
-import { listMenu, getMenu, createMenu, updateMenu, deleteMenu } from '@/api/modules/menu'
+import { listToTree } from '@/utils/tree'
+import { listMenuNoPage, getMenu, createMenu, updateMenu, deleteMenu } from '@/api/modules/menu'
 
 const loading = ref(false)
 const tableData = ref([])
 const menuTreeOptions = ref([])
 
-// 扁平化树为列表用于表格展示（保留 children 供 tree-props）
+// ----- menu_type 显示辅助 -----
+function menuTypeLabel(type: string) {
+  const map: Record<string, string> = { M: '目录', C: '菜单', F: '按钮' }
+  return map[type] || type
+}
+function menuTypeTag(type: string) {
+  const map: Record<string, string> = { M: '', C: 'success', F: 'warning' }
+  return map[type] || 'info'
+}
+
 async function fetchData() {
   loading.value = true
   try {
-    const res = await listMenu()
-    tableData.value = res.rows || []
-    // 构建下拉选项（含"根节点"占位）
-    menuTreeOptions.value = res.rows || []
+    const res = await listMenuNoPage() as any
+    const flatList = res.rows || res.data || []
+    tableData.value = listToTree(flatList)
+    menuTreeOptions.value = listToTree(flatList)
   } finally { loading.value = false }
 }
 
@@ -114,8 +139,10 @@ const currentEditId = ref<number | null>(null)
 interface MenuFormState {
   parent_id?: number
   name: string
+  menu_type: string
   path: string
   component: string
+  perms: string
   icon: string
   sort: number
   visible: boolean
@@ -123,7 +150,7 @@ interface MenuFormState {
 }
 
 const form = ref<MenuFormState>({
-  parent_id: undefined, name: '', path: '', component: '', icon: '',
+  parent_id: undefined, name: '', menu_type: 'M', path: '', component: '', perms: '', icon: '',
   sort: 0, visible: true, status: '1',
 })
 
@@ -132,8 +159,8 @@ const rules = {
 }
 
 function resetForm() {
-  form.value.parent_id = undefined; form.value.name = ''; form.value.path = ''; form.value.component = ''
-  form.value.icon = ''; form.value.sort = 0; form.value.visible = true; form.value.status = '1'
+  form.value.parent_id = undefined; form.value.name = ''; form.value.menu_type = 'M'; form.value.path = ''; form.value.component = ''
+  form.value.perms = ''; form.value.icon = ''; form.value.sort = 0; form.value.visible = true; form.value.status = '1'
   formRef.value?.clearValidate()
 }
 
@@ -153,8 +180,10 @@ async function handleEdit(row) {
   const d = res.data || res
   form.value.parent_id = d.parent_id
   form.value.name = d.name
+  form.value.menu_type = d.menu_type || 'C'
   form.value.path = d.path || ''
   form.value.component = d.component || ''
+  form.value.perms = d.perms || ''
   form.value.icon = d.icon || ''
   form.value.sort = d.sort ?? 0
   form.value.visible = d.visible ?? true
@@ -169,7 +198,9 @@ async function handleSubmit() {
   try {
     const data = {
       name: form.value.name, parent_id: form.value.parent_id || undefined,
+      menu_type: form.value.menu_type,
       path: form.value.path || undefined, component: form.value.component || undefined,
+      perms: form.value.perms || undefined,
       icon: form.value.icon || undefined, sort: form.value.sort, visible: form.value.visible,
     }
     if (dialog.value.isEdit) {

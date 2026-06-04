@@ -4,23 +4,23 @@ const BASE = '/system/users'
 
 export interface UserQuery {
   [key: string]: any
-  page_num?: number
-  page_size?: number
-  user_name?: string
-  nick_name?: string
+  page?: number
+  pageSize?: number
+  username?: string
+  phone?: string
   status?: string
   dept_id?: number
 }
 
 export interface UserForm {
   [key: string]: any
-  user_name: string
-  nick_name: string
+  username: string
+  nickname: string
   password?: string
   email?: string
   phone?: string
   sex?: string
-  status: string
+  status?: string
   dept_id?: number
   role_ids?: number[]
   remark?: string
@@ -51,17 +51,32 @@ export function deleteUser(id: number) {
   return request({ url: `${BASE}/${id}`, method: 'delete' })
 }
 
-/** 批量删除用户 */
-export function batchDeleteUser(ids: string) {
-  return request({ url: `${BASE}/batch/${ids}`, method: 'delete' })
-}
-
-/** 重置密码 */
-export function resetPassword(id: number, data: { password: string }) {
-  return request({ url: `${BASE}/${id}/password`, method: 'put', data })
+/** 重置密码（管理员操作） */
+export function resetPassword(userId: number, data: { password: string }) {
+  return request({ url: `${BASE}/${userId}/password`, method: 'put', data })
 }
 
 /** 修改用户状态 */
 export function changeUserStatus(data: { user_id: number; status: string }) {
   return request({ url: `${BASE}/changeStatus`, method: 'put', data })
+}
+
+/** 批量删除用户 */
+export function batchDeleteUser(ids: number[]) {
+  return request({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' })
+}
+
+/** 导出用户 */
+export function exportUser(params?: any) {
+  return request({ url: `${BASE}/export`, method: 'get', params, responseType: 'blob' })
+}
+
+/** 下载导入模板 */
+export function downloadImportTemplate() {
+  return request({ url: `${BASE}/import-template`, method: 'get', responseType: 'blob' })
+}
+
+/** 导入用户 */
+export function importUser(data: FormData) {
+  return request({ url: `${BASE}/import`, method: 'post', data, headers: { 'Content-Type': 'multipart/form-data' } })
 }

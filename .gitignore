@@ -29,7 +29,6 @@ dist-ssr
 
 docs
 
-# Auto-generated
-src/auto-imports.d.ts
+# Auto-generated (auto-imports.d.ts 需提交到 VCS，否则 CI 类型检查失败)
 src/components.d.ts
 .qoder

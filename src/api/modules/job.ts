@@ -68,3 +68,8 @@ export interface JobLogQuery {
 export function listJobLog(params: JobLogQuery) {
   return request({ url: `${BASE}/logs`, method: 'get', params })
 }
+
+/** 清空调度日志 */
+export function clearJobLog() {
+  return request({ url: `${BASE}/logs`, method: 'delete' })
+}

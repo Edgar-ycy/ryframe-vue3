@@ -24,11 +24,6 @@ export function listJob(params: JobQuery) {
   return request({ url: `${BASE}/list`, method: 'get', params })
 }
 
-/** 查询定时任务详情 */
-export function getJob(id: number) {
-  return request({ url: `${BASE}/${id}`, method: 'get' })
-}
-
 /** 创建定时任务 */
 export function createJob(data: JobForm) {
   return request({ url: BASE, method: 'post', data })
@@ -72,9 +67,4 @@ export interface JobLogQuery {
 /** 分页查询调度日志 */
 export function listJobLog(params: JobLogQuery) {
   return request({ url: `${BASE}/logs`, method: 'get', params })
-}
-
-/** 清空调度日志 */
-export function clearJobLog() {
-  return request({ url: `${BASE}/logs`, method: 'delete' })
 }

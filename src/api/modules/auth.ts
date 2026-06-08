@@ -80,7 +80,7 @@ export function getCaptcha(params?: { captcha_type?: string }) {
 }
 
 /** 校验验证码 */
-export function verifyCaptcha(data: { captcha_id: string; captcha_code: string }) {
+export function verifyCaptcha(data: { captcha_id: string; code: string }) {
   return request<{ valid: boolean }>({
     url: '/auth/captcha/verify',
     method: 'post',

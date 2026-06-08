@@ -183,6 +183,10 @@ import { useAuth } from '@/hooks/useAuth'
 
 分页接口额外包含 `rows` 和 `total` 字段。
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=Edgar-ycy/ryframe-vue3&type=timeline&logscale&legend=top-left)](https://www.star-history.com/?repos=Edgar-ycy%2Fryframe-vue3&type=timeline&logscale=&legend=top-left)
+
 ## License
 
 MIT

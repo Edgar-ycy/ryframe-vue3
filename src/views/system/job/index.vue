@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import {
-  listJob, getJob, createJob, updateJob, deleteJob,
+  listJob, createJob, updateJob, deleteJob,
   runJob, pauseJob, resumeJob,
 } from '@/api/modules/job'
 
@@ -172,12 +172,10 @@ async function handleEdit(row) {
   currentEditId.value = row.id
   dialog.value.title = '编辑任务'; dialog.value.isEdit = true
   resetForm()
-  const res = await getJob(row.id)
-  const d = res.data || res
-  form.value.name = d.name || d.job_name; form.value.group_name = d.group_name || d.job_group
-  form.value.cron_expr = d.cron_expr || d.cron_expression
-  form.value.misfire_policy = d.misfire_policy ?? '1'; form.value.concurrent = d.concurrent ?? '1'
-  form.value.status = d.status; form.value.remark = d.remark || ''
+  form.value.name = row.name || row.job_name; form.value.group_name = row.group_name || row.job_group
+  form.value.cron_expr = row.cron_expr || row.cron_expression
+  form.value.misfire_policy = row.misfire_policy ?? '1'; form.value.concurrent = row.concurrent ?? '1'
+  form.value.status = row.status; form.value.remark = row.remark || ''
   dialog.value.visible = true
 }
 

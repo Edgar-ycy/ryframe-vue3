@@ -2,9 +2,10 @@ import request from '@/api/request'
 
 const BASE = '/common'
 
-/** 通用文件上传 */
+/** 通用文件上传（后端返回数组，通常取第一个） */
 export function uploadFile(data: FormData) {
-  return request<{
+  return request<Array<{
+    file_id: number
     file_url: string
     file_info: {
       original_name: string
@@ -14,17 +15,18 @@ export function uploadFile(data: FormData) {
       content_type: string
       upload_time: string
     }
-  }>({
+  }>>({
     url: `${BASE}/upload`,
     method: 'post',
     data,
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined as any },
   })
 }
 
-/** 图片上传 */
+/** 图片上传（后端返回数组，通常取第一个） */
 export function uploadImage(data: FormData) {
-  return request<{
+  return request<Array<{
+    file_id: number
     file_url: string
     file_info: {
       original_name: string
@@ -34,11 +36,11 @@ export function uploadImage(data: FormData) {
       content_type: string
       upload_time: string
     }
-  }>({
+  }>>({
     url: `${BASE}/upload/image`,
     method: 'post',
     data,
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined as any },
   })
 }
 

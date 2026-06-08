@@ -88,6 +88,14 @@ export function verifyCaptcha(data: { captcha_id: string; code: string }) {
   })
 }
 
+/** 查询验证码开关状态（公开接口） */
+export function getCaptchaConfig() {
+  return request<{ captcha_enabled: boolean }>({
+    url: '/auth/captcha/config',
+    method: 'get',
+  })
+}
+
 // ========== 个人中心 ==========
 
 export interface ProfileInfo {

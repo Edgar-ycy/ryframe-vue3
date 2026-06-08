@@ -25,7 +25,7 @@
             show-password
           />
         </el-form-item>
-        <el-form-item prop="captcha_code">
+        <el-form-item v-if="captchaEnabled" prop="captcha_code">
           <div style="display:flex;gap:8px">
             <el-input
               v-model="loginForm.captcha_code"
@@ -61,7 +61,7 @@
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
 import { getUserMenus } from '@/api/modules/menu'
-import { getCaptcha } from '@/api/modules/auth'
+import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
 import type { RouteRecordRaw } from 'vue-router'
 
 const router = useRouter()
@@ -91,8 +91,20 @@ const loginRules: FormRules = {
 }
 
 // ----- 验证码 -----
+const captchaEnabled = ref(false)
 const captchaImage = ref('')
 const captchaId = ref('')
+
+async function loadCaptchaConfig() {
+  try {
+    const res = await getCaptchaConfig() as any
+    const data = res.data || res
+    captchaEnabled.value = data.captcha_enabled === true
+  } catch {
+    // 接口不可用时默认显示验证码
+    captchaEnabled.value = true
+  }
+}
 
 async function refreshCaptcha() {
   try {
@@ -112,8 +124,13 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    // 登录（captcha_id/captcha_code 随登录请求一并发送，后端自行校验）
-    await userStore.login(loginForm.value.username, loginForm.value.password, captchaId.value, loginForm.value.captcha_code)
+    // 登录（验证码开启时才传 captcha_id/captcha_code）
+    await userStore.login(
+      loginForm.value.username,
+      loginForm.value.password,
+      captchaEnabled.value ? captchaId.value : undefined,
+      captchaEnabled.value ? loginForm.value.captcha_code : undefined,
+    )
     // 获取菜单并生成动态路由（优先数据库菜单，失败降级为权限过滤）
     let accessRoutes: RouteRecordRaw[]
     try {
@@ -135,13 +152,20 @@ const handleLogin = async () => {
     await router.push(redirect)
   } catch (error) {
     // 错误信息已在拦截器中处理
-    refreshCaptcha()
+    if (captchaEnabled.value) {
+      refreshCaptcha()
+    }
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => refreshCaptcha())
+onMounted(async () => {
+  await loadCaptchaConfig()
+  if (captchaEnabled.value) {
+    refreshCaptcha()
+  }
+})
 </script>
 
 <style scoped>

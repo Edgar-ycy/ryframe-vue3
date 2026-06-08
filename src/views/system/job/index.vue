@@ -34,7 +34,7 @@
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="id" label="ID" width="200" align="center" />
         <el-table-column prop="name" label="任务名称" min-width="120" show-overflow-tooltip />
         <el-table-column prop="group_name" label="任务组" />
         <el-table-column prop="cron_expr" label="Cron 表达式" show-overflow-tooltip />
@@ -56,7 +56,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" />
-        <el-table-column label="操作" fixed="right" align="center">
+        <el-table-column label="操作" min-width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:job:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="row.status === '1'" type="warning" link icon="VideoPause" @click="handlePause(row)">暂停</el-button>

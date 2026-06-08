@@ -39,7 +39,7 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" align="center">
+        <el-table-column label="操作" min-width="100" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:menu:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
             <el-button v-permission="'system:menu:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>

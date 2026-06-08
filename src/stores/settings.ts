@@ -1,6 +1,16 @@
 import { defineStore } from 'pinia'
+import { getConfigByKey } from '@/api/modules/config'
 
 type ComponentSize = 'large' | 'default' | 'small'
+
+/** 旧版皮肤名称 → 主题色 Hex 映射 */
+const SKIN_COLOR_MAP: Record<string, string> = {
+  'skin-blue':   '#3B82F6',
+  'skin-green':  '#22C55E',
+  'skin-purple': '#8B5CF6',
+  'skin-red':    '#F43F5E',
+  'skin-yellow': '#EAB308',
+}
 
 interface SettingsState {
   theme: 'light' | 'dark'
@@ -76,14 +86,38 @@ function hslToHex(h: number, s: number, l: number): string {
 function applyThemeColor(color: string) {
   const [r, g, b] = hexToRgb(color)
   const [h, s, l] = rgbToHsl(r, g, b)
+  // Element Plus 主色
   document.documentElement.style.setProperty('--el-color-primary', color)
+  // 自定义主色变量（用于 Navbar、TagsView 等）
+  document.documentElement.style.setProperty('--color-primary', color)
+  // RGB 分量（用于需要动态 rgba 的内联样式等）
+  document.documentElement.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`)
   // 生成 light-3 ~ light-9
   for (let i = 3; i <= 9; i++) {
     const lightL = Math.min(l + (9 - i) * 6.5, 95)
     document.documentElement.style.setProperty(`--el-color-primary-light-${i}`, hslToHex(h, s, lightL))
   }
   // 生成 dark-2（主色的深色变体）
-  document.documentElement.style.setProperty('--el-color-primary-dark-2', hslToHex(h, Math.min(s + 8, 100), Math.max(l - 8, 8)))
+  const darkColor = hslToHex(h, Math.min(s + 8, 100), Math.max(l - 8, 8))
+  document.documentElement.style.setProperty('--el-color-primary-dark-2', darkColor)
+  document.documentElement.style.setProperty('--color-primary-dark', darkColor)
+  // 生成 light 变体
+  const lightColor = hslToHex(h, Math.max(s - 4, 0), Math.min(l + 10, 95))
+  document.documentElement.style.setProperty('--color-primary-light', lightColor)
+
+  // === 侧边栏 / 标签页 / 表格 专用背景变量（含透明度，避免 SCSS 编译期 rgba() 问题）===
+  // 侧边栏背景渐变（三段色阶 + 微色相偏移，亮度 10%~18%，色相差异清晰可见）
+  document.documentElement.style.setProperty('--sidebar-bg', `linear-gradient(180deg, hsl(${h}, 30%, 18%) 0%, hsl(${h + 3}, 26%, 14%) 60%, hsl(${h + 6}, 22%, 10%) 100%)`)
+  // 侧边栏菜单项 hover 背景
+  document.documentElement.style.setProperty('--sidebar-item-hover-bg', `rgba(${r}, ${g}, ${b}, 0.12)`)
+  // 侧边栏菜单项激活背景
+  document.documentElement.style.setProperty('--sidebar-item-active-bg', `linear-gradient(135deg, rgba(${r}, ${g}, ${b}, 0.25) 0%, rgba(${r}, ${g}, ${b}, 0.20) 100%)`)
+  // 标签页激活背景（浅色）
+  document.documentElement.style.setProperty('--tag-active-bg', `rgba(${r}, ${g}, ${b}, 0.1)`)
+  // 标签页激活背景（暗色）
+  document.documentElement.style.setProperty('--tag-active-bg-dark', `rgba(${r}, ${g}, ${b}, 0.2)`)
+  // 表格行 hover 背景（暗色）
+  document.documentElement.style.setProperty('--table-row-hover-bg', `rgba(${r}, ${g}, ${b}, 0.05)`)
 }
 
 function applyTheme(theme: 'light' | 'dark') {
@@ -141,6 +175,46 @@ export const useSettingsStore = defineStore('settings', {
       applyTheme(this.theme)
       applyThemeColor(this.themeColor)
       applyComponentSize(this.componentSize)
+    },
+
+    /**
+     * 从后端配置表同步皮肤/主题设置到前端
+     * - sys.index.sideTheme → theme (light/dark)
+     * - sys.index.skinName  → themeColor (hex)
+     */
+    async syncFromServer() {
+      let changed = false
+      // 同步侧边栏主题
+      try {
+        const res = await getConfigByKey('sys.index.sideTheme')
+        const sideTheme = (res as any)?.data as string | undefined
+        if (sideTheme) {
+          const theme = sideTheme === 'theme-dark' ? 'dark' : 'light'
+          if (theme !== this.theme) {
+            this.theme = theme
+            applyTheme(theme)
+            changed = true
+          }
+        }
+      } catch { /* 服务器不可用或无此配置时静默跳过 */ }
+
+      // 同步皮肤样式
+      try {
+        const res = await getConfigByKey('sys.index.skinName')
+        const skinName = (res as any)?.data as string | undefined
+        if (skinName && SKIN_COLOR_MAP[skinName]) {
+          const color = SKIN_COLOR_MAP[skinName]
+          if (color !== this.themeColor) {
+            this.themeColor = color
+            applyThemeColor(color)
+            changed = true
+          }
+        }
+      } catch { /* 服务器不可用或无此配置时静默跳过 */ }
+
+      if (changed) {
+        saveSettings(this.$state)
+      }
     },
   },
 })

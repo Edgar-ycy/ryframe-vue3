@@ -27,4 +27,9 @@ const settingsStore = useSettingsStore()
 
 // 初始化时应用持久化设置到 DOM
 settingsStore.initSettings()
+
+// 从后端同步皮肤/主题配置（覆盖 localStorage 的默认值）
+onMounted(() => {
+  settingsStore.syncFromServer()
+})
 </script>

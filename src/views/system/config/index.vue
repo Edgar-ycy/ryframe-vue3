@@ -70,6 +70,9 @@
 
 <script setup lang="ts">
 import { listConfig, getConfig, createConfig, updateConfig, deleteConfig } from '@/api/modules/config'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -137,6 +140,10 @@ async function handleSubmit() {
         console.warn('[Config] PUT 成功但返回 value 与请求不一致:', { sent: payload.value, returned: updated.value })
       }
       ElMessage.success('更新成功')
+      // 如果修改的是皮肤/主题相关配置，立即应用到页面
+      if (form.value.key === 'sys.index.skinName' || form.value.key === 'sys.index.sideTheme') {
+        settingsStore.syncFromServer()
+      }
     } else {
       await createConfig({ name: form.value.name, key: form.value.key, value: String(form.value.value), remark: form.value.remark || undefined } as any)
       ElMessage.success('新增成功')
@@ -158,5 +165,3 @@ async function handleDelete(row) {
 
 onMounted(() => fetchData())
 </script>
-
-

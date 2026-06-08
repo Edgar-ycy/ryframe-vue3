@@ -66,8 +66,8 @@ const settingsStore = useSettingsStore()
 
 const activeMenu = computed(() => route.path)
 
-// 侧边栏配色：深色主题和浅色主题使用不同背景
-const menuBgColor = computed(() => settingsStore.theme === 'dark' ? '#1a1a2e' : '#111827')
+// 侧边栏菜单背景色：由侧边栏容器背景渐变负责，菜单自身保持透明让渐变透出
+const menuBgColor = computed(() => 'transparent')
 const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')
 
 function handleMenuSelect(indexPath: string) {

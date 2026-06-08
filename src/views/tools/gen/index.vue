@@ -25,9 +25,9 @@
         <el-table-column prop="table_name" label="表名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="table_comment" label="表描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="class_name" label="实体类" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column prop="updated_at" label="更新时间" width="170" />
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column prop="created_at" label="创建时间" />
+        <el-table-column prop="updated_at" label="更新时间" />
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link icon="View" @click="handlePreview(row)">预览</el-button>
             <el-button type="success" link icon="Download" @click="handleGen(row)">生成</el-button>
@@ -39,7 +39,6 @@
         v-model:page-size="queryParams.pageSize"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -117,7 +116,4 @@ async function handleGen(row: any) {
 onMounted(() => fetchData())
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) { margin-bottom: 0 }
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

@@ -33,9 +33,9 @@
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="name" label="角色名称" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="code" label="角色编码" width="120" />
-        <el-table-column prop="sort" label="排序" width="70" align="center" />
-        <el-table-column prop="data_scope" label="数据范围" width="130" align="center">
+        <el-table-column prop="code" label="角色编码" />
+        <el-table-column prop="sort" label="排序" align="center" />
+        <el-table-column prop="data_scope" label="数据范围" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.data_scope === '1'" type="success">全部</el-tag>
             <el-tag v-else-if="row.data_scope === '2'" type="warning">自定义</el-tag>
@@ -44,13 +44,13 @@
             <el-tag v-else type="danger">仅本人</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="80" align="center">
+        <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right" align="center">
+        <el-table-column prop="created_at" label="创建时间" />
+        <el-table-column label="操作" min-width="100" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-permission="'system:role:edit'" type="success" link icon="Menu" @click="handleAssignMenus(row)">菜单</el-button>
@@ -64,7 +64,6 @@
         v-model:page-size="queryParams.pageSize"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -311,7 +310,4 @@ async function handlePermSubmit() {
 onMounted(() => { fetchData(); loadDeptTree(); loadMenuTree(); loadPermTree() })
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) { margin-bottom: 0 }
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

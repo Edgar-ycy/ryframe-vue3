@@ -36,7 +36,7 @@
             />
             <div style="width:120px;height:40px;cursor:pointer;flex-shrink:0" @click="refreshCaptcha">
               <img v-if="captchaImage" :src="captchaImage" alt="验证码" style="width:100%;height:100%;border-radius:4px" />
-              <div v-else style="width:100%;height:100%;background:#f0f2f5;display:flex;align-items:center;justify-content:center;color:#909399;font-size:12px;border-radius:4px">
+              <div v-else class="captcha-placeholder">
                 加载中...
               </div>
             </div>
@@ -166,5 +166,16 @@ onMounted(() => refreshCaptcha())
   margin-bottom: 30px;
   font-size: 24px;
   color: var(--color-text-primary);
+}
+.captcha-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--border-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  border-radius: 4px;
 }
 </style>

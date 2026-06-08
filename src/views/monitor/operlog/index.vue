@@ -39,18 +39,18 @@
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="title" label="操作模块" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="business_type" label="业务类型" width="100" />
-        <el-table-column prop="oper_name" label="操作人员" width="100" />
+        <el-table-column prop="business_type" label="业务类型" />
+        <el-table-column prop="oper_name" label="操作人员" />
         <el-table-column prop="oper_url" label="请求地址" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="oper_ip" label="操作IP" width="130" />
-        <el-table-column prop="status" label="状态" width="80" align="center">
+        <el-table-column prop="oper_ip" label="操作IP" />
+        <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '成功' : '失败' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="cost_time" label="耗时(ms)" width="100" align="center" />
-        <el-table-column prop="oper_time" label="操作时间" width="170" />
-        <el-table-column label="操作" width="80" fixed="right" align="center">
+        <el-table-column prop="cost_time" label="耗时(ms)" align="center" />
+        <el-table-column prop="oper_time" label="操作时间" />
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
           </template>
@@ -61,7 +61,6 @@
         v-model:page-size="queryParams.pageSize"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -147,7 +146,4 @@ function handleDetail(row: any) {
 onMounted(() => fetchData())
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) { margin-bottom: 0 }
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

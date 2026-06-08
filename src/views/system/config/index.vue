@@ -28,8 +28,8 @@
         <el-table-column prop="key" label="参数键名" min-width="140" show-overflow-tooltip />
         <el-table-column prop="value" label="参数键值" min-width="120" show-overflow-tooltip />
         <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="150" fixed="right" align="center">
+        <el-table-column prop="created_at" label="创建时间" />
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:config:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-permission="'system:config:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
@@ -41,7 +41,6 @@
         v-model:page-size="queryParams.pageSize"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -125,13 +124,27 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialog.value.isEdit) {
-      await updateConfig(currentEditId.value!, { name: form.value.name, value: form.value.value, remark: form.value.remark || undefined } as any)
+      // 确保 value 是字符串类型（textarea 绑定的值始终是 string，此处防御）
+      const payload = {
+        name: form.value.name,
+        value: String(form.value.value),
+        remark: form.value.remark || undefined,
+      }
+      const res = await updateConfig(currentEditId.value!, payload as any) as any
+      // 后端返回的数据与 payload 不一致时警告
+      const updated = res?.data || res
+      if (updated && updated.value !== payload.value) {
+        console.warn('[Config] PUT 成功但返回 value 与请求不一致:', { sent: payload.value, returned: updated.value })
+      }
       ElMessage.success('更新成功')
     } else {
-      await createConfig({ name: form.value.name, key: form.value.key, value: form.value.value, remark: form.value.remark || undefined } as any)
+      await createConfig({ name: form.value.name, key: form.value.key, value: String(form.value.value), remark: form.value.remark || undefined } as any)
       ElMessage.success('新增成功')
     }
-    dialog.value.visible = false; fetchData()
+    dialog.value.visible = false
+    await fetchData()
+  } catch (e: any) {
+    console.error('[Config] 提交失败:', e)
   } finally { submitLoading.value = false }
 }
 
@@ -146,7 +159,4 @@ async function handleDelete(row) {
 onMounted(() => fetchData())
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) { margin-bottom: 0 }
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

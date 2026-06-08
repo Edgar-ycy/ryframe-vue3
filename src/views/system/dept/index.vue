@@ -10,14 +10,14 @@
       <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
         :tree-props="{ children: 'children' }">
         <el-table-column prop="name" label="部门名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="sort" label="排序" width="70" align="center" />
-        <el-table-column prop="status" label="状态" width="80" align="center">
+        <el-table-column prop="sort" label="排序" align="center" />
+        <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:dept:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
             <el-button v-permission="'system:dept:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
@@ -145,6 +145,4 @@ async function handleDelete(row) {
 onMounted(() => fetchData())
 </script>
 
-<style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

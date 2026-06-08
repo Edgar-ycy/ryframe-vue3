@@ -42,17 +42,17 @@
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="job_name" label="任务名称" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="job_group" label="任务组" width="100" />
+        <el-table-column prop="job_group" label="任务组" />
         <el-table-column prop="invoke_target" label="调用目标" min-width="200" show-overflow-tooltip />
         <el-table-column prop="job_message" label="日志信息" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="status" label="执行状态" width="80" align="center">
+        <el-table-column prop="status" label="执行状态" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '成功' : '失败' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="duration" label="耗时(ms)" width="100" align="center" />
-        <el-table-column prop="created_at" label="执行时间" width="170" />
-        <el-table-column label="操作" width="80" fixed="right" align="center">
+        <el-table-column prop="duration" label="耗时(ms)" align="center" />
+        <el-table-column prop="created_at" label="执行时间" />
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
           </template>
@@ -63,7 +63,6 @@
         v-model:page-size="queryParams.pageSize"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -142,7 +141,4 @@ function handleDetail(row: any) {
 onMounted(() => fetchData())
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) { margin-bottom: 0 }
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

@@ -6,21 +6,4 @@
   </div>
 </template>
 
-<style scoped>
-.error-page {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-.error-page h1 {
-  font-size: 72px;
-  color: var(--color-text-secondary);
-}
-.error-page p {
-  font-size: 16px;
-  color: var(--color-text-secondary);
-}
-</style>
+

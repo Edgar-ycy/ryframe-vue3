@@ -13,13 +13,13 @@
           <el-table v-loading="typeLoading" :data="typeList" border stripe highlight-current-row
             @row-click="handleTypeClick">
             <el-table-column prop="name" label="字典名称" min-width="110" show-overflow-tooltip />
-            <el-table-column prop="code" label="字典编码" width="100" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" width="80" align="center">
+            <el-table-column prop="code" label="字典编码" show-overflow-tooltip />
+            <el-table-column prop="status" label="状态" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120" fixed="right" align="center">
+            <el-table-column label="操作" fixed="right" align="center">
               <template #default="{ row }">
                 <el-button type="primary" link icon="Edit" size="small" @click.stop="handleEditType(row)">编辑</el-button>
                 <el-button type="danger" link icon="Delete" size="small" @click.stop="handleDeleteType(row)">删除</el-button>
@@ -47,14 +47,14 @@
           </template>
           <el-table v-loading="dataLoading" :data="dataList" border stripe>
             <el-table-column prop="label" label="字典标签" min-width="120" show-overflow-tooltip />
-            <el-table-column prop="value" label="字典键值" width="120" />
-            <el-table-column prop="sort" label="排序" width="70" align="center" />
-            <el-table-column prop="status" label="状态" width="80" align="center">
+            <el-table-column prop="value" label="字典键值" />
+            <el-table-column prop="sort" label="排序" align="center" />
+            <el-table-column prop="status" label="状态" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120" align="center">
+            <el-table-column label="操作" align="center">
               <template #default="{ row }">
                 <el-button type="primary" link icon="Edit" size="small" @click="handleEditData(row)">编辑</el-button>
                 <el-button type="danger" link icon="Delete" size="small" @click="handleDeleteData(row)">删除</el-button>
@@ -266,6 +266,4 @@ async function handleDeleteData(row) {
 onMounted(() => fetchTypeList())
 </script>
 
-<style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

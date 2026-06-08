@@ -8,48 +8,54 @@
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
-        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }">
-        <el-table-column prop="name" label="菜单名称" min-width="140" show-overflow-tooltip />
-        <el-table-column label="类型" width="70" align="center">
+        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+        default-expand-all>
+        <el-table-column prop="name" label="菜单名称" min-width="150" show-overflow-tooltip />
+        <el-table-column label="类型" align="center">
           <template #default="{ row }">
             <el-tag :type="menuTypeTag(row.menu_type)" size="small">{{ menuTypeLabel(row.menu_type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="path" label="路由地址" width="170" show-overflow-tooltip />
-        <el-table-column prop="component" label="组件路径" width="200" show-overflow-tooltip />
-        <el-table-column label="图标" width="60" align="center">
+        <el-table-column prop="path" label="路由地址" show-overflow-tooltip />
+        <el-table-column prop="component" label="组件路径" show-overflow-tooltip />
+        <el-table-column label="图标" align="center">
           <template #default="{ row }">
-            <el-icon v-if="row.icon"><component :is="row.icon" /></el-icon>
+            <el-icon v-if="row.icon" :size="18"><component :is="row.icon" /></el-icon>
           </template>
         </el-table-column>
-        <el-table-column prop="sort" label="排序" width="60" align="center" />
-        <el-table-column prop="visible" label="可见" width="60" align="center">
+        <el-table-column prop="sort" label="排序" align="center" />
+        <el-table-column prop="visible" label="可见" align="center">
           <template #default="{ row }">
             <el-tag :type="row.visible ? 'success' : 'info'" size="small">{{ row.visible ? '是' : '否' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="70" align="center">
+        <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
+            <el-switch
+              v-model="row.status"
+              :active-value="'1'"
+              :inactive-value="'0'"
+              @change="(val: string) => handleChangeStatus(row, val)"
+            />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:menu:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
             <el-button v-permission="'system:menu:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:menu:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:menu:remove'" type="danger" link icon="Delete" :loading="deletingId === row.id" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="550px" @close="resetForm">
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="600px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="上级菜单">
           <el-tree-select
             v-model="form.parent_id"
-            :data="menuTreeOptions"
+            :data="parentOptions"
             :props="{ label: 'name', value: 'id', children: 'children' }"
             placeholder="根菜单（不选则为顶级）"
             clearable check-strictly
@@ -57,31 +63,31 @@
           />
         </el-form-item>
         <el-form-item label="菜单类型" prop="menu_type">
-          <el-select v-model="form.menu_type" style="width:100%">
+          <el-select v-model="form.menu_type" style="width:100%" @change="onMenuTypeChange">
             <el-option label="目录 (M)" value="M" />
             <el-option label="菜单 (C)" value="C" />
             <el-option label="按钮 (F)" value="F" />
           </el-select>
         </el-form-item>
         <el-form-item label="菜单名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入菜单名称" />
+          <el-input v-model="form.name" placeholder="请输入菜单名称" maxlength="50" />
         </el-form-item>
-        <el-form-item label="权限标识">
-          <el-input v-model="form.perms" placeholder="如 system:user:list" />
-        </el-form-item>
-        <el-form-item label="路由地址">
+        <el-form-item v-if="form.menu_type !== 'F'" label="路由地址" prop="path">
           <el-input v-model="form.path" placeholder="如 /system/user" />
         </el-form-item>
-        <el-form-item label="组件路径">
+        <el-form-item v-if="form.menu_type === 'C'" label="组件路径" prop="component">
           <el-input v-model="form.component" placeholder="如 system/user/index" />
         </el-form-item>
+        <el-form-item label="权限标识" prop="perms">
+          <el-input v-model="form.perms" placeholder="如 system:user:list" />
+        </el-form-item>
         <el-form-item label="图标">
-          <el-input v-model="form.icon" placeholder="如 Setting（Element Plus 图标名）" />
+          <IconSelect v-model="form.icon" />
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" :max="999" />
         </el-form-item>
-        <el-form-item label="可见">
+        <el-form-item v-if="form.menu_type !== 'F'" label="可见">
           <el-radio-group v-model="form.visible">
             <el-radio :value="true">显示</el-radio>
             <el-radio :value="false">隐藏</el-radio>
@@ -104,13 +110,27 @@
 
 <script setup lang="ts">
 import { listToTree } from '@/utils/tree'
+import type { TreeNode } from '@/utils/tree'
 import { listMenuNoPage, getMenu, createMenu, updateMenu, deleteMenu } from '@/api/modules/menu'
+import IconSelect from '@/components/common/IconSelect.vue'
 
+// ===== 数据加载 =====
 const loading = ref(false)
-const tableData = ref([])
-const menuTreeOptions = ref([])
+const tableData = ref<TreeNode[]>([])
+const allMenuTree = ref<TreeNode[]>([])
 
-// ----- menu_type 显示辅助 -----
+async function fetchData() {
+  loading.value = true
+  try {
+    const res = await listMenuNoPage() as any
+    const flatList = res.rows || res.data || []
+    const tree = listToTree(flatList)
+    tableData.value = tree
+    allMenuTree.value = tree
+  } finally { loading.value = false }
+}
+
+// ===== menu_type 显示辅助 =====
 function menuTypeLabel(type: string) {
   const map: Record<string, string> = { M: '目录', C: '菜单', F: '按钮' }
   return map[type] || type
@@ -120,17 +140,20 @@ function menuTypeTag(type: string) {
   return map[type] || 'info'
 }
 
-async function fetchData() {
-  loading.value = true
+// ===== 状态切换 =====
+async function handleChangeStatus(row: any, val: string) {
+  const text = val === '1' ? '启用' : '停用'
   try {
-    const res = await listMenuNoPage() as any
-    const flatList = res.rows || res.data || []
-    tableData.value = listToTree(flatList)
-    menuTreeOptions.value = listToTree(flatList)
-  } finally { loading.value = false }
+    await ElMessageBox.confirm(`确认要${text}菜单"${row.name}"吗？`, '提示', { type: 'warning' })
+    await updateMenu(row.id, { status: val } as any)
+    ElMessage.success(`${text}成功`)
+    fetchData()
+  } catch {
+    row.status = val === '1' ? '0' : '1'
+  }
 }
 
-// ----- 新增/编辑 -----
+// ===== 新增/编辑 =====
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
@@ -154,14 +177,52 @@ const form = ref<MenuFormState>({
   sort: 0, visible: true, status: '1',
 })
 
-const rules = {
-  name: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
+const rules = computed<FormRules>(() => {
+  const baseRules: FormRules = {
+    name: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
+    menu_type: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
+  }
+  if (form.value.menu_type !== 'F') {
+    baseRules.path = [{ required: true, message: '请输入路由地址', trigger: 'blur' }]
+  }
+  if (form.value.menu_type === 'C') {
+    baseRules.component = [{ required: true, message: '请输入组件路径', trigger: 'blur' }]
+  }
+  if (form.value.menu_type === 'F') {
+    baseRules.perms = [{ required: true, message: '请输入权限标识', trigger: 'blur' }]
+  }
+  return baseRules
+})
+
+function onMenuTypeChange() {
+  formRef.value?.clearValidate()
 }
 
 function resetForm() {
   form.value.parent_id = undefined; form.value.name = ''; form.value.menu_type = 'M'; form.value.path = ''; form.value.component = ''
   form.value.perms = ''; form.value.icon = ''; form.value.sort = 0; form.value.visible = true; form.value.status = '1'
+  currentEditId.value = null
   formRef.value?.clearValidate()
+}
+
+/** 编辑模式下过滤掉自身及后代节点的父级选项树 */
+const parentOptions = computed(() => {
+  if (!dialog.value.isEdit || !currentEditId.value) {
+    return allMenuTree.value
+  }
+  return excludeSubtree(allMenuTree.value, currentEditId.value)
+})
+
+/** 从树中移除指定 id 的整个子树 */
+function excludeSubtree(tree: TreeNode[], excludeId: number): TreeNode[] {
+  return tree.reduce<TreeNode[]>((acc, node) => {
+    if (node.id === excludeId) return acc
+    const children = node.children?.length
+      ? excludeSubtree(node.children as TreeNode[], excludeId)
+      : []
+    acc.push({ ...node, children } as TreeNode)
+    return acc
+  }, [])
 }
 
 function handleAdd(parentId?: number) {
@@ -172,13 +233,13 @@ function handleAdd(parentId?: number) {
   dialog.value.visible = true
 }
 
-async function handleEdit(row) {
-  currentEditId.value = row.id
+async function handleEdit(row: any) {
   dialog.value.title = '编辑菜单'; dialog.value.isEdit = true
   resetForm()
+  currentEditId.value = row.id
   const res = await getMenu(row.id)
   const d = res.data || res
-  form.value.parent_id = d.parent_id
+  form.value.parent_id = d.parent_id ?? undefined
   form.value.name = d.name
   form.value.menu_type = d.menu_type || 'C'
   form.value.path = d.path || ''
@@ -186,8 +247,8 @@ async function handleEdit(row) {
   form.value.perms = d.perms || ''
   form.value.icon = d.icon || ''
   form.value.sort = d.sort ?? 0
-  form.value.visible = d.visible ?? true
-  form.value.status = d.status
+  form.value.visible = d.visible === true || d.visible === '1' || d.visible === 1
+  form.value.status = d.status ?? '1'
   dialog.value.visible = true
 }
 
@@ -196,12 +257,16 @@ async function handleSubmit() {
   if (!valid) return
   submitLoading.value = true
   try {
-    const data = {
-      name: form.value.name, parent_id: form.value.parent_id || undefined,
+    const data: Record<string, any> = {
+      name: form.value.name,
+      parent_id: form.value.parent_id || undefined,
       menu_type: form.value.menu_type,
-      path: form.value.path || undefined, component: form.value.component || undefined,
+      path: form.value.path || undefined,
+      component: form.value.component || undefined,
       perms: form.value.perms || undefined,
-      icon: form.value.icon || undefined, sort: form.value.sort, visible: form.value.visible,
+      icon: form.value.icon || undefined,
+      sort: form.value.sort,
+      visible: form.value.visible,
     }
     if (dialog.value.isEdit) {
       await updateMenu(currentEditId.value!, { ...data, status: form.value.status } as any)
@@ -211,23 +276,30 @@ async function handleSubmit() {
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false
-    fetchData()
+    await fetchData()
   } finally { submitLoading.value = false }
 }
 
-// ----- 删除 -----
-async function handleDelete(row) {
+// ===== 删除 =====
+const deletingId = ref<number | null>(null)
+
+async function handleDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确认删除菜单"${row.name}"吗？(子菜单将一并删除)`, '警告', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确认删除菜单"${row.name}"吗？如有子菜单将一并删除。`,
+      '警告',
+      { type: 'warning', confirmButtonText: '确认删除' },
+    )
+    deletingId.value = row.id
     await deleteMenu(row.id)
     ElMessage.success('删除成功')
-    fetchData()
-  } catch { /* cancelled */ }
+    await fetchData()
+  } catch {
+    /* cancelled or error */
+  } finally {
+    deletingId.value = null
+  }
 }
 
 onMounted(() => fetchData())
 </script>
-
-<style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>

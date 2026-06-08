@@ -29,9 +29,9 @@
               <el-input :model-value="profileInfo.dept_name || '-'" disabled />
             </el-form-item>
             <el-form-item label="角色">
-              <template v-if="profileInfo.roles && profileInfo.roles.length">
-                <el-tag v-for="role in profileInfo.roles" :key="role" style="margin-right:4px">{{ role }}</el-tag>
-              </template>
+              <div v-if="profileInfo.roles && profileInfo.roles.length" class="role-tags">
+                <el-tag v-for="role in profileInfo.roles" :key="role">{{ role }}</el-tag>
+              </div>
               <span v-else>-</span>
             </el-form-item>
             <el-form-item label="创建时间">
@@ -278,8 +278,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-container {
-  padding: 16px;
+.role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
 }
 
 .avatar-uploader {

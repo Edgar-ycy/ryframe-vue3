@@ -301,17 +301,54 @@ a:hover {
   margin-bottom: 16px;
 }
 
+/* ====== Card Header ====== */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ====== Search Card ====== */
+.search-card {
+  .el-form-item {
+    margin-bottom: 0;
+  }
+}
+
+/* ====== Error Pages ====== */
+.error-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--bg-color-page);
+  color: var(--color-text-primary);
+
+  h1 {
+    font-size: 72px;
+    color: var(--color-text-secondary);
+  }
+
+  p {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+  }
+}
+
 /* ====== Element Plus Overrides ====== */
 .el-card {
   border-radius: var(--border-radius-lg) !important;
   border: 1px solid var(--border-color-base) !important;
   box-shadow: var(--shadow-sm) !important;
-  overflow: hidden;
 
   .el-card__header {
     border-bottom: 1px solid var(--border-color-light);
     font-weight: 600;
     padding: 16px 20px;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
   }
 
   .el-card__body {
@@ -468,5 +505,70 @@ html.dark {
 
   .el-dialog {
     --el-dialog-bg-color: var(--bg-color);
+  }
+
+  .el-descriptions {
+    --el-descriptions-table-bg: var(--bg-color);
+    --el-descriptions-item-bordered-label-background: var(--border-color-light);
+  }
+
+  .el-tree {
+    --el-tree-bg-color: var(--bg-color);
+  }
+
+  .el-radio {
+    --el-radio-text-color: var(--color-text-regular);
+  }
+
+  .el-empty {
+    --el-empty-fill-color-0: var(--border-color-light);
+  }
+
+  .el-tabs {
+    --el-tabs-header-background: var(--bg-color);
+  }
+
+  .el-dropdown {
+    --el-dropdown-menuItem-hover-fill: var(--border-color-light);
+    --el-dropdown-menuItem-hover-color: var(--color-primary);
+  }
+
+  .el-input-number {
+    --el-input-bg-color: var(--border-color-light);
+  }
+
+  .el-progress {
+    --el-progress-text-color: var(--color-text-regular);
+  }
+
+  .el-switch {
+    --el-switch-off-color: var(--border-color-base);
+  }
+
+  .error-page {
+    background: var(--bg-color-page);
+    color: var(--color-text-primary);
+
+    h1 {
+      color: var(--color-text-secondary);
+    }
+
+    p {
+      color: var(--color-text-secondary);
+    }
+  }
+
+  .search-card {
+    background-color: var(--bg-color) !important;
+    border-color: var(--border-color-base) !important;
+  }
+
+  .login-container {
+    background: linear-gradient(135deg, #3730a3 0%, #5b21b6 100%);
+  }
+
+  .login-card {
+    background: var(--bg-color);
+    color: var(--color-text-primary);
   }
 }

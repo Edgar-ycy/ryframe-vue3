@@ -105,7 +105,7 @@ onMounted(async () => {
 
 <style scoped>
 .gauge-wrapper { text-align: center; padding: 10px 0 }
-.info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--el-border-color-lighter); font-size: 13px }
+.info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color-base); font-size: 13px }
 .info-row:last-child { border-bottom: none }
 .sys-info { margin-top: 8px }
 .health-status { display: flex; flex-direction: column; gap: 12px; align-items: flex-start }

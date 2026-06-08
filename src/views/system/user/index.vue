@@ -38,19 +38,17 @@
       <template #header>
         <div class="card-header">
           <span>用户列表</span>
-          <div>
-            <el-button v-permission="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
-          </div>
+          <el-button v-permission="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe @selection-change="handleSelectionChange">
         <el-table-column prop="id" label="ID" width="70" align="center" />
-        <el-table-column prop="username" label="用户名" width="100" show-overflow-tooltip />
-        <el-table-column prop="nickname" label="昵称" width="100" show-overflow-tooltip />
-        <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="dept_name" label="部门" width="120" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="80" align="center">
+        <el-table-column prop="username" label="用户名" show-overflow-tooltip />
+        <el-table-column prop="nickname" label="昵称" show-overflow-tooltip />
+        <el-table-column prop="email" label="邮箱" show-overflow-tooltip />
+        <el-table-column prop="phone" label="手机号" show-overflow-tooltip />
+        <el-table-column prop="dept_name" label="部门" show-overflow-tooltip />
+        <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
             <el-switch
               v-model="row.status"
@@ -60,12 +58,12 @@
             />
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right" align="center">
+        <el-table-column prop="created_at" label="创建时间" />
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:user:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-permission="'system:user:edit'" type="warning" link icon="Key" @click="handleResetPwd(row)">重置密码</el-button>
-            <el-button v-permission="'system:user:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:user:remove'" type="danger" link icon="Delete" :loading="deletingId === row.id" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -76,7 +74,6 @@
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -98,6 +95,13 @@
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-radio-group v-model="form.sex">
+            <el-radio value="0">男</el-radio>
+            <el-radio value="1">女</el-radio>
+            <el-radio value="2">未知</el-radio>
+          </el-radio-group>
         </el-form-item>
         <el-form-item label="部门">
           <el-tree-select
@@ -171,6 +175,7 @@ async function fetchData() {
     const res = await listUser(queryParams.value)
     tableData.value = res.rows || []
     total.value = res.total || 0
+    selectIds.value = []
   } finally {
     loading.value = false
   }
@@ -222,25 +227,23 @@ const submitLoading = ref(false)
 const currentEditId = ref<number | null>(null)
 
 const form = ref({
-  username: '', password: '', nickname: '', email: '', phone: '',
+  username: '', password: '', nickname: '', email: '', phone: '', sex: '2',
   dept_id: undefined, status: '1', role_ids: [],
 })
 
-const rules = {
+const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码至少6位', trigger: 'blur' }],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
+  email: [{ type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }],
 }
 
 function resetForm() {
-  form.value.username = ''
-  form.value.password = ''
-  form.value.nickname = ''
-  form.value.email = ''
-  form.value.phone = ''
-  form.value.dept_id = undefined
-  form.value.status = '1'
-  form.value.role_ids = []
+  form.value = {
+    username: '', password: '', nickname: '', email: '', phone: '', sex: '2',
+    dept_id: undefined, status: '1', role_ids: [],
+  }
+  currentEditId.value = null
   formRef.value?.clearValidate()
 }
 
@@ -252,20 +255,23 @@ function handleAdd() {
   dialog.value.visible = true
 }
 
-async function handleEdit(row) {
-  currentEditId.value = row.id
+async function handleEdit(row: any) {
   dialog.value.title = '编辑用户'
   dialog.value.isEdit = true
   resetForm()
+  currentEditId.value = row.id
   const res = await getUser(row.id)
   const d = res.data || res
   form.value.username = d.username || d.user?.username || ''
   form.value.nickname = d.nickname || d.user?.nickname || ''
   form.value.email = d.email || d.user?.email || ''
   form.value.phone = d.phone || d.user?.phone || ''
+  form.value.sex = d.sex ?? d.user?.sex ?? '2'
   form.value.dept_id = d.dept_id ?? d.user?.dept_id
   form.value.status = d.status ?? d.user?.status ?? '1'
-  form.value.role_ids = (d.roles || []).map(r => r.id)
+  // roles 可能是 [{id, name}, ...] 或纯 id 数组
+  const roles = d.roles || d.user?.roles || []
+  form.value.role_ids = roles.map((r: any) => typeof r === 'object' ? r.id : r)
   dialog.value.visible = true
 }
 
@@ -282,6 +288,7 @@ async function handleSubmit() {
         nickname: form.value.nickname,
         email: form.value.email || undefined,
         phone: form.value.phone || undefined,
+        sex: form.value.sex || undefined,
         dept_id: form.value.dept_id,
         status: form.value.status,
         role_ids: form.value.role_ids.length ? form.value.role_ids : undefined,
@@ -295,6 +302,7 @@ async function handleSubmit() {
         nickname: form.value.nickname,
         email: form.value.email || undefined,
         phone: form.value.phone || undefined,
+        sex: form.value.sex || undefined,
         dept_id: form.value.dept_id,
         role_ids: form.value.role_ids.length ? form.value.role_ids : undefined,
       }
@@ -309,16 +317,25 @@ async function handleSubmit() {
 }
 
 // ----- 删除 -----
-async function handleDelete(row) {
+const deletingId = ref<number | null>(null)
+
+async function handleDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确认删除用户"${row.username}"吗？`, '警告', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确认删除用户"${row.username}"吗？`,
+      '警告',
+      { type: 'warning', confirmButtonText: '确认删除' },
+    )
+    deletingId.value = row.id
     await deleteUser(row.id)
     ElMessage.success('删除成功')
-    fetchData()
-  } catch { /* cancelled */ }
+    await fetchData()
+  } catch {
+    /* cancelled or error */
+  } finally {
+    deletingId.value = null
+  }
 }
-
-
 
 // ----- 重置密码 -----
 const pwdDialog = ref({ visible: false })
@@ -354,8 +371,6 @@ async function handlePwdSubmit() {
   }
 }
 
-
-
 // ----- 初始化 -----
 onMounted(() => {
   fetchData()
@@ -364,13 +379,3 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) {
-  margin-bottom: 0;
-}
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-</style>

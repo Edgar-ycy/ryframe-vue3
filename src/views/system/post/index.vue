@@ -31,15 +31,15 @@
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="name" label="岗位名称" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="code" label="岗位编码" width="140" />
-        <el-table-column prop="sort" label="排序" width="70" align="center" />
-        <el-table-column prop="status" label="状态" width="80" align="center">
+        <el-table-column prop="code" label="岗位编码" />
+        <el-table-column prop="sort" label="排序" align="center" />
+        <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="160" fixed="right" align="center">
+        <el-table-column prop="created_at" label="创建时间" />
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:post:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-permission="'system:post:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
@@ -51,7 +51,6 @@
         v-model:page-size="queryParams.pageSize"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -158,7 +157,4 @@ async function handleDelete(row) {
 onMounted(() => fetchData())
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) { margin-bottom: 0 }
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

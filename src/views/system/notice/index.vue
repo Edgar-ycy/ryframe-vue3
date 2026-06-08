@@ -36,18 +36,18 @@
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
         <el-table-column prop="content" label="内容" min-width="200" show-overflow-tooltip />
-        <el-table-column label="类型" width="80" align="center">
+        <el-table-column label="类型" align="center">
           <template #default="{ row }">
             <el-tag :type="row.notice_type === 'notice' ? 'primary' : 'warning'" size="small">{{ row.notice_type === 'notice' ? '通知' : '公告' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="80" align="center">
+        <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : row.status === '2' ? 'info' : 'warning'" size="small">{{ row.status === '1' ? '已发布' : row.status === '2' ? '已关闭' : '草稿' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="140" fixed="right" align="center">
+        <el-table-column prop="created_at" label="创建时间" />
+        <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:notice:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-permission="'system:notice:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
@@ -59,7 +59,6 @@
         v-model:page-size="queryParams.pageSize"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
-        style="margin-top:16px;justify-content:flex-end"
         @change="fetchData"
       />
     </el-card>
@@ -171,7 +170,4 @@ async function handleDelete(row) {
 onMounted(() => fetchData())
 </script>
 
-<style scoped>
-.search-card :deep(.el-form-item) { margin-bottom: 0 }
-.card-header { display: flex; justify-content: space-between; align-items: center }
-</style>
+

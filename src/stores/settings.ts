@@ -106,8 +106,8 @@ function applyThemeColor(color: string) {
   document.documentElement.style.setProperty('--color-primary-light', lightColor)
 
   // === 侧边栏 / 标签页 / 表格 专用背景变量（含透明度，避免 SCSS 编译期 rgba() 问题）===
-  // 侧边栏背景渐变（三段色阶 + 微色相偏移，亮度 10%~18%，色相差异清晰可见）
-  document.documentElement.style.setProperty('--sidebar-bg', `linear-gradient(180deg, hsl(${h}, 30%, 18%) 0%, hsl(${h + 3}, 26%, 14%) 60%, hsl(${h + 6}, 22%, 10%) 100%)`)
+  // 侧边栏背景渐变（基于主题色色相，保持深色现代风格）
+  document.documentElement.style.setProperty('--sidebar-bg', `linear-gradient(180deg, hsl(${h}, 30%, 9%) 0%, hsl(${h}, 25%, 6%) 100%)`)
   // 侧边栏菜单项 hover 背景
   document.documentElement.style.setProperty('--sidebar-item-hover-bg', `rgba(${r}, ${g}, ${b}, 0.12)`)
   // 侧边栏菜单项激活背景

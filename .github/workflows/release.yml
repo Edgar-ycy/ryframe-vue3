@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'V*', 'v*' ]
+
+# 防止并发推送
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PNPM_VERSION: "10"
+
+jobs:
+  # ============================================================
+  # Nightly 自动发布 (push main, 复用固定 nightly tag)
+  # ============================================================
+  nightly:
+    name: Create Nightly Release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Production build
+        run: pnpm run build
+
+      - name: Package dist
+        run: |
+          cd dist
+          tar -czf ../ryframe-vue3-nightly-dist.tar.gz .
+          zip -r ../ryframe-vue3-nightly-dist.zip .
+
+      - name: Force update nightly tag
+        run: |
+          git tag -f nightly
+          git push -f origin nightly
+
+      - name: Create Nightly Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: Nightly
+          body: |
+            ## 🔧 Nightly Build
+
+            自动构建于 `main` 分支。
+
+            - Commit: ${{ github.sha }}
+            - 时间: ${{ github.event.head_commit.timestamp }}
+
+            > ⚠️ 这是开发中的快照版本，可能不稳定。
+          prerelease: true
+          files: |
+            ryframe-vue3-nightly-dist.tar.gz
+            ryframe-vue3-nightly-dist.zip
+
+  # ============================================================
+  # Stable 发布 (手动创建 V* 或 v* tag 触发)
+  # ============================================================
+  stable:
+    name: Create Stable Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/V') || startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Production build
+        run: pnpm run build
+
+      - name: Package dist
+        run: |
+          RELEASE_TAG="${{ github.ref_name }}"
+          cd dist
+          tar -czf "../ryframe-vue3-${RELEASE_TAG}-dist.tar.gz" .
+          zip -r "../ryframe-vue3-${RELEASE_TAG}-dist.zip" .
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          # 从 CHANGELOG.md 提取当前版本的 release notes
+          if [ -f CHANGELOG.md ]; then
+            awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md | tail -n +2 > release_body.md
+          fi
+          if [ ! -s release_body.md ]; then
+            echo "## Release ${{ github.ref_name }}" > release_body.md
+            echo "" >> release_body.md
+            echo "Commit: ${{ github.sha }}" >> release_body.md
+          fi
+
+      - name: Create Stable Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: release_body.md
+          prerelease: false
+          files: |
+            ryframe-vue3-${{ github.ref_name }}-dist.tar.gz
+            ryframe-vue3-${{ github.ref_name }}-dist.zip

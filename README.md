@@ -171,6 +171,8 @@ import { useAuth } from '@/hooks/useAuth'
 
 本项目为前后端分离架构的前端部分，需搭配后端 API 服务使用。
 
+> 🔗 **配套后端**: [RyFrame](https://github.com/Edgar-ycy/ryframe) — 基于 Rust + Axum 的现代化企业级后端框架，提供完整的认证授权、系统管理、监控运维等 API 服务。
+
 后端 API 采用 RESTful 风格，统一响应格式：
 
 ```json

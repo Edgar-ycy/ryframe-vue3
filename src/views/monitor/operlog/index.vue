@@ -37,7 +37,7 @@
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="id" label="ID" width="170" align="center" />
         <el-table-column prop="title" label="操作模块" min-width="120" show-overflow-tooltip />
         <el-table-column prop="business_type" label="业务类型" />
         <el-table-column prop="oper_name" label="操作人员" />

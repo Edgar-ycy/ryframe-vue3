@@ -62,7 +62,6 @@ import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
 import { getUserMenus } from '@/api/modules/menu'
 import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
-import type { RouteRecordRaw } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
@@ -131,21 +130,11 @@ const handleLogin = async () => {
       captchaEnabled.value ? captchaId.value : undefined,
       captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )
-    // 获取菜单并生成动态路由（优先数据库菜单，失败降级为权限过滤）
-    let accessRoutes: RouteRecordRaw[]
-    try {
-      const menuRes = await getUserMenus() as any
-      const menuTree = menuRes.rows || menuRes.data || menuRes || []
-      if (menuTree.length > 0) {
-        accessRoutes = permissionStore.generateRoutes(menuTree)
-      } else {
-        throw new Error('菜单树为空，降级')
-      }
-    } catch {
-      console.warn('[Login] 后端菜单 API 不可用，使用静态路由+权限过滤降级方案')
-      accessRoutes = permissionStore.generateRoutesFallback(userStore.permissions)
-    }
-    accessRoutes.forEach(r => router.addRoute(r as RouteRecordRaw))
+    // 获取菜单并生成动态路由
+    const menuRes = await getUserMenus() as any
+    const menuTree = menuRes.rows || menuRes.data || menuRes || []
+    const accessRoutes = permissionStore.generateRoutes(menuTree)
+    accessRoutes.forEach(r => router.addRoute(r))
 
     ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'

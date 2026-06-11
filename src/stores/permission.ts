@@ -1,19 +1,8 @@
 import { defineStore } from 'pinia'
 import { resolveComponent, LAYOUT } from '@/router/componentMap'
-import { filterAsyncRoutes } from '@/router/permission'
 import { constantRoutes } from '@/router/routes/constant'
-import { systemRoutes } from '@/router/routes/modules/system'
-import { monitorRoutes } from '@/router/routes/modules/monitor'
-import { toolsRoutes } from '@/router/routes/modules/tools'
 import type { MenuTreeNode } from '@/api/modules/menu'
 import type { RouteRecordRaw } from 'vue-router'
-
-/** 降级用：静态路由模块集合（当后端菜单 API 不可用时使用） */
-const fallbackAsyncRoutes: RouteRecordRaw[] = [
-  ...systemRoutes,
-  ...monitorRoutes,
-  ...toolsRoutes,
-]
 
 /** 提取 constantRoutes 中 Layout 组件的可见子路由，作为独立顶级菜单项（首页、个人中心等） */
 function getConstantMenus(): RouteRecordRaw[] {
@@ -56,21 +45,6 @@ export const usePermissionStore = defineStore('permission', {
       const routes = buildRoutesFromMenuTree(menuTree)
       this.routes = routes
       // 侧边栏菜单 = 常量路由（首页/个人中心） + 动态路由（排除 hidden）
-      this.menus = [...getConstantMenus(), ...filterHiddenRoutes(routes)]
-      this.isRoutesLoaded = true
-      return routes
-    },
-
-    /**
-     * 降级方案：从用户权限码过滤静态路由模块
-     *
-     * 当后端菜单 API 不可用时（如 /system/menus/list 返回 400），
-     * 使用此方法根据用户权限码从硬编码路由中筛选。
-     */
-    generateRoutesFallback(permissions: string[]) {
-      const routes = filterAsyncRoutes(fallbackAsyncRoutes, permissions)
-      this.routes = routes
-      // 侧边栏菜单 = 常量路由（首页/个人中心） + 权限过滤后的路由
       this.menus = [...getConstantMenus(), ...filterHiddenRoutes(routes)]
       this.isRoutesLoaded = true
       return routes

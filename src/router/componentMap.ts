@@ -7,14 +7,13 @@
  * 当后端新增菜单页面时，只需在此表中添加一行映射即可。
  */
 import type { Component } from 'vue'
-import Layout from '@/components/layout/index.vue'
 
 type ComponentLoader = () => Promise<Component>
 
 // ===== 特殊组件 =====
 
 /** Layout 布局组件 */
-const LAYOUT: ComponentLoader = () => Promise.resolve(Layout) as any
+const LAYOUT: ComponentLoader = () => import('@/components/layout/index.vue')
 
 /** 内链 iframe 组件 */
 const INNER_LINK: ComponentLoader = () => import('@/views/redirect/index.vue')

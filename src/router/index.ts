@@ -31,31 +31,13 @@ const router = createRouter({
 const whiteList = ['/login']
 
 /**
- * 获取菜单并生成路由
- * 依次尝试多个端点，最终降级到权限码过滤静态路由
+ * 从后端菜单树生成动态路由（纯数据库驱动，无静态降级）
  */
-async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>, userStore: ReturnType<typeof useUserStore>): Promise<RouteRecordRaw[]> {
-  // 端点列表：依次尝试，任一成功即停止
-  const endpoints: Array<{ name: string; fn: () => Promise<any> }> = [
-    { name: '/system/menus/tree', fn: getUserMenus },
-  ]
-
-  for (const ep of endpoints) {
-    try {
-      const menuRes = await ep.fn() as any
-      const menuTree = menuRes.rows || menuRes.data || menuRes || []
-      if (Array.isArray(menuTree) && menuTree.length > 0) {
-        console.log(`[Router] 通过 ${ep.name} 获取菜单树，生成动态路由`)
-        return permissionStore.generateRoutes(menuTree)
-      }
-    } catch (e) {
-      console.warn(`[Router] ${ep.name} 不可用:`, (e as Error).message)
-    }
-  }
-
-  // 全部端点失败 → 降级到静态路由 + 权限过滤
-  console.log('[Router] 降级模式：根据权限码过滤静态路由')
-  return permissionStore.generateRoutesFallback(userStore.permissions)
+async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>): Promise<RouteRecordRaw[]> {
+  const menuRes = await getUserMenus() as any
+  const menuTree = menuRes.rows || menuRes.data || menuRes || []
+  console.log('[Router] 通过 /system/menus/tree 获取菜单树，生成动态路由')
+  return permissionStore.generateRoutes(menuTree)
 }
 
 // 全局前置守卫
@@ -79,8 +61,8 @@ router.beforeEach(async (to, from, next) => {
         if (!userStore.permissions.length) {
           await userStore.getUserInfo()
         }
-        // 2. 获取菜单并生成路由（优先数据库菜单，失败降级为权限过滤）
-        const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore, userStore)
+        // 2. 获取菜单并生成路由
+        const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore)
         // 3. 注册到 Vue Router（作为顶层路由添加）
         for (const route of accessRoutes) {
           router.addRoute(route as RouteRecordRaw)

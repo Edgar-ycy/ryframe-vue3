@@ -5,7 +5,7 @@ const BASE = '/common'
 /** 通用文件上传（后端返回数组，通常取第一个） */
 export function uploadFile(data: FormData) {
   return request<Array<{
-    file_id: number
+    file_id: number | string
     file_url: string
     file_info: {
       original_name: string
@@ -26,7 +26,7 @@ export function uploadFile(data: FormData) {
 /** 图片上传（后端返回数组，通常取第一个） */
 export function uploadImage(data: FormData) {
   return request<Array<{
-    file_id: number
+    file_id: number | string
     file_url: string
     file_info: {
       original_name: string

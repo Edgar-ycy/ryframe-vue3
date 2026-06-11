@@ -25,7 +25,7 @@
         <el-table-column prop="login_location" label="登录地点" show-overflow-tooltip />
         <el-table-column prop="browser" label="浏览器" show-overflow-tooltip />
         <el-table-column prop="os" label="操作系统" show-overflow-tooltip />
-        <el-table-column prop="login_time" label="登录时间" />
+        <el-table-column prop="login_time" label="登录时间" min-width="180" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="danger" link icon="SwitchButton" @click="handleForceLogout(row)">强退</el-button>

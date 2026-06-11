@@ -13,7 +13,7 @@ export interface MenuQuery {
 export interface MenuForm {
   [key: string]: any
   name: string
-  parent_id?: number
+  parent_id?: number | string
   menu_type: string
   path?: string
   component?: string
@@ -34,20 +34,21 @@ export function getMenuTree()                { return request({ url: `${BASE}/tr
 export function listMenu(params?: MenuQuery)  { return request({ url: `${BASE}/list`, method: 'get', params }) }
 /** 菜单列表（不分页） */
 export function listMenuNoPage(params?: MenuQuery) { return request({ url: `${BASE}/listNoPage`, method: 'get', params }) }
-export function getMenu(id: number)            { return request({ url: `${BASE}/${id}`, method: 'get' }) }
+export function getMenu(id: number | string)            { return request({ url: `${BASE}/${id}`, method: 'get' }) }
 export function createMenu(data: MenuForm)     { return request({ url: BASE, method: 'post', data }) }
-export function updateMenu(id: number, data: Partial<MenuForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
-export function deleteMenu(id: number)         { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
+export function updateMenu(id: number | string, data: Partial<MenuForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
+export function deleteMenu(id: number | string)         { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
 
 // ---- 动态菜单 ----
 
 /** 后端返回的菜单树节点（兼容不同后端版本字段名） */
 export interface MenuTreeNode {
-  id: number
+  /** id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
+  id: number | string
   /** 菜单名称（后端可能返回 name 或 menu_name） */
   menu_name?: string
   name?: string
-  parent_id: number | null
+  parent_id: number | string | null
   order_num?: number
   /** 排序号（后端可能返回 sort 或 order_num） */
   sort?: number

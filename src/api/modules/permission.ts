@@ -3,7 +3,8 @@ import request from '@/api/request'
 const BASE = '/system/permissions'
 
 export interface PermissionTreeNode {
-  id: number
+  /** id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
+  id: number | string
   name: string
   code: string
   children?: PermissionTreeNode[]

@@ -7,7 +7,8 @@ import { refreshToken as refreshTokenApi } from '@/api/modules/auth'
 export interface ApiResponse<T = any> {
   code: number
   data: T
-  message: string
+  /** 后端返回的消息字段为 msg */
+  msg: string
   /** 分页数据（由拦截器从 data.rows 提升到顶层，方便视图访问） */
   rows?: any[]
   /** 分页总数（由拦截器从 data.total 提升到顶层，方便视图访问） */
@@ -44,7 +45,7 @@ function redirectToLogin() {
   removeToken()
   // 使用动态 import 避免循环依赖
   import('@/router').then(({ default: router }) => {
-    router.push('/login')
+    router.push('/login').then()
   })
 }
 
@@ -82,8 +83,8 @@ service.interceptors.response.use(
     }
 
     // 业务错误（400 / 409 等）
-    ElMessage.error(data.message || '请求失败')
-    return Promise.reject(new Error(data.message || 'Error'))
+    ElMessage.error(data.msg || '请求失败')
+    return Promise.reject(new Error(data.msg || 'Error'))
   },
   async (error) => {
     // HTTP 错误（无 response 对象）
@@ -96,7 +97,7 @@ service.interceptors.response.use(
 
     switch (status) {
       case 400:
-        ElMessage.error(data?.message || '请求参数错误')
+        ElMessage.error(data?.msg || data?.message || '请求参数错误')
         break
       case 401: {
         // 登录页上的 401 仅提示，不清除 token
@@ -147,13 +148,13 @@ service.interceptors.response.use(
         ElMessage.error('没有操作权限')
         break
       case 404:
-        ElMessage.error('请求的资源不存在')
+        ElMessage.error(data?.msg || data?.message || '请求的资源不存在')
         break
       case 500:
         ElMessage.error('服务器内部错误')
         break
       default:
-        ElMessage.error(data?.message || `请求失败 (${status})`)
+        ElMessage.error(data?.msg || data?.message || `请求失败 (${status})`)
     }
 
     return Promise.reject(error)

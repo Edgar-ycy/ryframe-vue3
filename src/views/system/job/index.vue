@@ -40,7 +40,7 @@
         <el-table-column prop="cron_expr" label="Cron 表达式" show-overflow-tooltip />
         <el-table-column prop="misfire_policy" label="错过策略" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.misfire_policy === '1'" size="small">立即执行</el-tag>
+            <el-tag v-if="row.misfire_policy === '1'" type="primary" size="small">立即执行</el-tag>
             <el-tag v-else-if="row.misfire_policy === '2'" type="warning" size="small">执行一次</el-tag>
             <el-tag v-else type="danger" size="small">放弃执行</el-tag>
           </template>
@@ -55,8 +55,9 @@
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '正常' : '暂停' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" />
-        <el-table-column label="操作" min-width="120" fixed="right" align="center">
+        <el-table-column prop="create_time" label="创建时间" />
+        <el-table-column prop="update_time" label="更新时间" />
+        <el-table-column label="操作" min-width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:job:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="row.status === '1'" type="warning" link icon="VideoPause" @click="handlePause(row)">暂停</el-button>
@@ -98,6 +99,12 @@
             <el-option label="执行一次" value="2" />
             <el-option label="放弃执行" value="3" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="并发执行">
+          <el-radio-group v-model="form.concurrent">
+            <el-radio value="1">允许</el-radio>
+            <el-radio value="0">禁止</el-radio>
+          </el-radio-group>
         </el-form-item>
         <el-form-item v-if="dialog.isEdit" label="状态">
           <el-radio-group v-model="form.status">
@@ -144,10 +151,10 @@ function handleReset() { queryParams.value.name = ''; queryParams.value.group_na
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
-const currentEditId = ref<number | null>(null)
+const currentEditId = ref<string | null>(null)
 
 const form = ref({
-  name: '', group_name: 'DEFAULT', cron_expr: '',
+  name: '', group_name: 'default', cron_expr: '',
   misfire_policy: '1', concurrent: '1', status: '1', remark: '',
 })
 
@@ -158,7 +165,7 @@ const rules = {
 }
 
 function resetForm() {
-  form.value = { name: '', group_name: 'DEFAULT', cron_expr: '', misfire_policy: '1', concurrent: '1', status: '1', remark: '' }
+  form.value = { name: '', group_name: 'default', cron_expr: '', misfire_policy: '1', concurrent: '1', status: '1', remark: '' }
   formRef.value?.clearValidate()
 }
 
@@ -172,8 +179,8 @@ async function handleEdit(row) {
   currentEditId.value = row.id
   dialog.value.title = '编辑任务'; dialog.value.isEdit = true
   resetForm()
-  form.value.name = row.name || row.job_name; form.value.group_name = row.group_name || row.job_group
-  form.value.cron_expr = row.cron_expr || row.cron_expression
+  form.value.name = row.name; form.value.group_name = row.group_name
+  form.value.cron_expr = row.cron_expr
   form.value.misfire_policy = row.misfire_policy ?? '1'; form.value.concurrent = row.concurrent ?? '1'
   form.value.status = row.status; form.value.remark = row.remark || ''
   dialog.value.visible = true

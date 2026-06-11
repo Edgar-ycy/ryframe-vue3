@@ -18,30 +18,30 @@ export interface RoleForm {
   sort?: number
   status?: string
   data_scope?: string
-  menu_ids?: number[]
+  menu_ids?: (number | string)[]
   remark?: string
 }
 
 export function listRole(params: RoleQuery)    { return request({ url: `${BASE}/list`, method: 'get', params }) }
 export function listRoleNoPage(params?: RoleQuery) { return request({ url: `${BASE}/listNoPage`, method: 'get', params }) }
 export function exportRole(params?: any)  { return request({ url: `${BASE}/export`, method: 'get', params, responseType: 'blob' }) }
-export function getRole(id: number)           { return request({ url: `${BASE}/${id}`, method: 'get' }) }
+export function getRole(id: number | string)           { return request({ url: `${BASE}/${id}`, method: 'get' }) }
 export function createRole(data: RoleForm)    { return request({ url: BASE, method: 'post', data }) }
-export function updateRole(id: number, data: Partial<RoleForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
-export function deleteRole(id: number)        { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
-export function batchDeleteRole(ids: number[]) { return request({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' }) }
+export function updateRole(id: number | string, data: Partial<RoleForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
+export function deleteRole(id: number | string)        { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
+export function batchDeleteRole(ids: (number | string)[]) { return request({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' }) }
 
 /** 分配权限 */
-export function assignPermissions(roleId: number, data: { perm_ids: number[] }) {
+export function assignPermissions(roleId: number | string, data: { perm_ids: (number | string)[] }) {
   return request({ url: `${BASE}/${roleId}/permissions`, method: 'put', data })
 }
 
 /** 分配菜单 */
-export function assignMenus(roleId: number, data: { menu_ids: number[] }) {
+export function assignMenus(roleId: number | string, data: { menu_ids: (number | string)[] }) {
   return request({ url: `${BASE}/${roleId}/menus`, method: 'put', data })
 }
 
 /** 设置数据权限 */
-export function setDataScope(roleId: number, data: { data_scope: string; dept_ids?: number[] }) {
+export function setDataScope(roleId: number | string, data: { data_scope: string; dept_ids?: (number | string)[] }) {
   return request({ url: `${BASE}/${roleId}/data-scope`, method: 'put', data })
 }

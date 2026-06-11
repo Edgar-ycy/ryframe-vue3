@@ -54,7 +54,6 @@
           <template #default="{ row }">
             <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-permission="'system:role:edit'" type="success" link icon="Menu" @click="handleAssignMenus(row)">菜单</el-button>
-            <el-button v-permission="'system:role:edit'" type="warning" link icon="Key" @click="handleAssignPerms(row)">权限</el-button>
             <el-button v-permission="'system:role:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -130,31 +129,13 @@
       </template>
     </el-dialog>
 
-    <!-- 分配权限弹窗 -->
-    <el-dialog v-model="permDialog.visible" title="分配权限" width="500px" @close="permDialog.checkedKeys = []">
-      <el-tree
-        ref="permTreeRef"
-        :data="permTree"
-        :props="{ label: 'name', children: 'children' }"
-        node-key="id"
-        show-checkbox
-        default-expand-all
-        :default-checked-keys="permDialog.checkedKeys"
-        @check="(_, { checkedKeys }) => permDialog.checkedKeys = checkedKeys"
-      />
-      <template #footer>
-        <el-button @click="permDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="permDialog.loading" @click="handlePermSubmit">确定</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus, assignPermissions } from '@/api/modules/role'
+import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { getMenuTree } from '@/api/modules/menu'
-import { getPermissionTree } from '@/api/modules/permission'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -278,36 +259,7 @@ async function handleMenuSubmit() {
   } finally { menuDialog.value.loading = false }
 }
 
-// ----- 分配权限 -----
-const permDialog = ref({ visible: false, loading: false, checkedKeys: [] as number[], roleId: 0 })
-const permTreeRef = ref<any>()
-const permTree = ref<any[]>([])
-
-async function loadPermTree() {
-  try {
-    const res = await getPermissionTree() as any
-    permTree.value = res.data || res.rows || res || []
-  } catch { permTree.value = [] }
-}
-
-async function handleAssignPerms(row: any) {
-  permDialog.value.roleId = row.id
-  const res = await getRole(row.id) as any
-  const d = res.data || res
-  permDialog.value.checkedKeys = d.perm_ids || []
-  permDialog.value.visible = true
-}
-
-async function handlePermSubmit() {
-  permDialog.value.loading = true
-  try {
-    await assignPermissions(permDialog.value.roleId, { perm_ids: permDialog.value.checkedKeys })
-    ElMessage.success('权限分配成功')
-    permDialog.value.visible = false
-  } finally { permDialog.value.loading = false }
-}
-
-onMounted(() => { fetchData(); loadDeptTree(); loadMenuTree(); loadPermTree() })
+onMounted(() => { fetchData(); loadDeptTree(); loadMenuTree() })
 </script>
 
 

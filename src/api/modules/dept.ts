@@ -12,7 +12,7 @@ export interface DeptQuery {
 
 export interface DeptForm {
   [key: string]: any
-  parent_id?: number
+  parent_id?: number | string
   name: string
   sort?: number
   status?: string
@@ -24,7 +24,7 @@ export function getDeptTree()             { return request({ url: `${BASE}/tree`
 export function listDept(params?: DeptQuery) { return request({ url: `${BASE}/list`, method: 'get', params }) }
 /** 部门列表（不分页） */
 export function listDeptNoPage(params?: DeptQuery) { return request({ url: `${BASE}/listNoPage`, method: 'get', params }) }
-export function getDept(id: number)            { return request({ url: `${BASE}/${id}`, method: 'get' }) }
+export function getDept(id: number | string)            { return request({ url: `${BASE}/${id}`, method: 'get' }) }
 export function createDept(data: DeptForm)     { return request({ url: BASE, method: 'post', data }) }
-export function updateDept(id: number, data: Partial<DeptForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
-export function deleteDept(id: number)         { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
+export function updateDept(id: number | string, data: Partial<DeptForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
+export function deleteDept(id: number | string)         { return request({ url: `${BASE}/${id}`, method: 'delete' }) }

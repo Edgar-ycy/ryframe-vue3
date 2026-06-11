@@ -18,7 +18,7 @@
             range-separator="—"
             start-placeholder="开始时间"
             end-placeholder="结束时间"
-            value-format="YYYY-MM-DDTHH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ss[Z]"
             style="width:340px"
           />
         </el-form-item>
@@ -43,15 +43,14 @@
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="job_name" label="任务名称" min-width="140" show-overflow-tooltip />
         <el-table-column prop="job_group" label="任务组" />
-        <el-table-column prop="invoke_target" label="调用目标" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="job_message" label="日志信息" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="message" label="日志信息" min-width="180" show-overflow-tooltip />
         <el-table-column prop="status" label="执行状态" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? '成功' : '失败' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="duration" label="耗时(ms)" align="center" />
-        <el-table-column prop="created_at" label="执行时间" />
+        <el-table-column prop="cost_ms" label="耗时(ms)" align="center" />
+        <el-table-column prop="start_time" label="执行时间" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
@@ -72,17 +71,16 @@
       <el-descriptions :column="2" border size="small">
         <el-descriptions-item label="任务名称">{{ detailRow.job_name }}</el-descriptions-item>
         <el-descriptions-item label="任务组">{{ detailRow.job_group }}</el-descriptions-item>
-        <el-descriptions-item label="调用目标" :span="2">{{ detailRow.invoke_target }}</el-descriptions-item>
         <el-descriptions-item label="执行状态">
           <el-tag :type="detailRow.status === '1' ? 'success' : 'danger'" size="small">{{ detailRow.status === '1' ? '成功' : '失败' }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="耗时">{{ detailRow.duration }} ms</el-descriptions-item>
-        <el-descriptions-item label="执行时间" :span="2">{{ detailRow.created_at }}</el-descriptions-item>
+        <el-descriptions-item label="耗时">{{ detailRow.cost_ms }} ms</el-descriptions-item>
+        <el-descriptions-item label="执行时间" :span="2">{{ detailRow.start_time }}</el-descriptions-item>
         <el-descriptions-item label="日志信息" :span="2">
-          <div style="max-height:200px;overflow-y:auto;word-break:break-all">{{ detailRow.job_message }}</div>
+          <div style="max-height:200px;overflow-y:auto;word-break:break-all">{{ detailRow.message }}</div>
         </el-descriptions-item>
-        <el-descriptions-item v-if="detailRow.exception_info" label="异常信息" :span="2">
-          <div style="max-height:200px;overflow-y:auto;word-break:break-all;font-size:12px;font-family:monospace;color:var(--el-color-danger)">{{ detailRow.exception_info }}</div>
+        <el-descriptions-item v-if="detailRow.error_msg" label="异常信息" :span="2">
+          <div style="max-height:200px;overflow-y:auto;word-break:break-all;font-size:12px;font-family:monospace;color:var(--el-color-danger)">{{ detailRow.error_msg }}</div>
         </el-descriptions-item>
       </el-descriptions>
       <template #footer>

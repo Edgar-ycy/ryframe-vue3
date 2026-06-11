@@ -30,27 +30,27 @@ export function createJob(data: JobForm) {
 }
 
 /** 更新定时任务 */
-export function updateJob(id: number, data: Partial<JobForm>) {
+export function updateJob(id: number | string, data: Partial<JobForm>) {
   return request({ url: `${BASE}/${id}`, method: 'put', data })
 }
 
 /** 删除定时任务 */
-export function deleteJob(id: number) {
+export function deleteJob(id: number | string) {
   return request({ url: `${BASE}/${id}`, method: 'delete' })
 }
 
 /** 立即触发一次 */
-export function runJob(id: number) {
+export function runJob(id: number | string) {
   return request({ url: `${BASE}/${id}/trigger`, method: 'post' })
 }
 
 /** 暂停任务 */
-export function pauseJob(id: number) {
+export function pauseJob(id: number | string) {
   return request({ url: `${BASE}/${id}/pause`, method: 'post' })
 }
 
 /** 恢复任务 */
-export function resumeJob(id: number) {
+export function resumeJob(id: number | string) {
   return request({ url: `${BASE}/${id}/resume`, method: 'post' })
 }
 

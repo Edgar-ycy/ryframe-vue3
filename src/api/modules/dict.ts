@@ -39,12 +39,12 @@ export function createDictType(data: DictTypeForm) {
 }
 
 /** 更新字典类型 */
-export function updateDictType(id: number, data: Partial<DictTypeForm>) {
+export function updateDictType(id: number | string, data: Partial<DictTypeForm>) {
   return request({ url: `${DICT_TYPE_BASE}/${id}`, method: 'put', data })
 }
 
 /** 删除字典类型 */
-export function deleteDictType(id: number) {
+export function deleteDictType(id: number | string) {
   return request({ url: `${DICT_TYPE_BASE}/${id}`, method: 'delete' })
 }
 
@@ -87,11 +87,11 @@ export function createDictData(data: DictDataForm) {
 }
 
 /** 更新字典数据 */
-export function updateDictData(id: number, data: Partial<DictDataForm>) {
+export function updateDictData(id: number | string, data: Partial<DictDataForm>) {
   return request({ url: `${DICT_DATA_BASE}/${id}`, method: 'put', data })
 }
 
 /** 删除字典数据 */
-export function deleteDictData(id: number) {
+export function deleteDictData(id: number | string) {
   return request({ url: `${DICT_DATA_BASE}/${id}`, method: 'delete' })
 }

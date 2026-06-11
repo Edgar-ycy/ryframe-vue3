@@ -11,7 +11,8 @@ export interface LoginResult {
   access_token: string
   refresh_token: string
   user_info?: {
-    id: number
+    /** id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
+    id: number | string
     username: string
     nickname: string
     email?: string
@@ -23,7 +24,8 @@ export interface LoginResult {
 }
 
 export interface UserInfo {
-  id: number
+  /** id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
+  id: number | string
   username: string
   nickname: string
   avatar?: string
@@ -99,13 +101,14 @@ export function getCaptchaConfig() {
 // ========== 个人中心 ==========
 
 export interface ProfileInfo {
-  user_id: number
+  /** user_id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
+  user_id: number | string
   username: string
   nickname: string
   email?: string
   phone?: string
   avatar?: string
-  dept_id?: number
+  dept_id?: number | string
   dept_name?: string
   status?: string
   login_ip?: string

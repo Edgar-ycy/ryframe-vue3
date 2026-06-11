@@ -92,9 +92,9 @@ function applyThemeColor(color: string) {
   document.documentElement.style.setProperty('--color-primary', color)
   // RGB 分量（用于需要动态 rgba 的内联样式等）
   document.documentElement.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`)
-  // 生成 light-3 ~ light-9
+  // 生成 light-3 ~ light-9（i 越大越浅，light-9 最接近白色）
   for (let i = 3; i <= 9; i++) {
-    const lightL = Math.min(l + (9 - i) * 6.5, 95)
+    const lightL = Math.min(l + (i - 3) * 6.5, 95)
     document.documentElement.style.setProperty(`--el-color-primary-light-${i}`, hslToHex(h, s, lightL))
   }
   // 生成 dark-2（主色的深色变体）

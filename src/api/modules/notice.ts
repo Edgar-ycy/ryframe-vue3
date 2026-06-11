@@ -22,7 +22,7 @@ export interface NoticeForm {
 
 export function listNotice(params: NoticeQuery) { return request({ url: `${BASE}/list`, method: 'get', params }) }
 export function listNoticeNoPage(params?: NoticeQuery) { return request({ url: `${BASE}/listNoPage`, method: 'get', params }) }
-export function getNotice(id: number) { return request({ url: `${BASE}/${id}`, method: 'get' }) }
+export function getNotice(id: number | string) { return request({ url: `${BASE}/${id}`, method: 'get' }) }
 export function createNotice(data: NoticeForm) { return request({ url: BASE, method: 'post', data }) }
-export function updateNotice(id: number, data: Partial<NoticeForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
-export function deleteNotice(id: number) { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
+export function updateNotice(id: number | string, data: Partial<NoticeForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
+export function deleteNotice(id: number | string) { return request({ url: `${BASE}/${id}`, method: 'delete' }) }

@@ -9,7 +9,7 @@ export interface UserQuery {
   username?: string
   phone?: string
   status?: string
-  dept_id?: number
+  dept_id?: number | string
 }
 
 export interface UserForm {
@@ -21,8 +21,8 @@ export interface UserForm {
   phone?: string
   sex?: string
   status?: string
-  dept_id?: number
-  role_ids?: number[]
+  dept_id?: number | string
+  role_ids?: (number | string)[]
   remark?: string
 }
 
@@ -32,7 +32,7 @@ export function listUser(params: UserQuery) {
 }
 
 /** 查询用户详情 */
-export function getUser(id: number) {
+export function getUser(id: number | string) {
   return request({ url: `${BASE}/${id}`, method: 'get' })
 }
 
@@ -42,27 +42,27 @@ export function createUser(data: UserForm) {
 }
 
 /** 更新用户 */
-export function updateUser(id: number, data: Partial<UserForm>) {
+export function updateUser(id: number | string, data: Partial<UserForm>) {
   return request({ url: `${BASE}/${id}`, method: 'put', data })
 }
 
 /** 删除用户 */
-export function deleteUser(id: number) {
+export function deleteUser(id: number | string) {
   return request({ url: `${BASE}/${id}`, method: 'delete' })
 }
 
 /** 重置密码（管理员操作） */
-export function resetPassword(userId: number, data: { password: string }) {
+export function resetPassword(userId: number | string, data: { password: string }) {
   return request({ url: `${BASE}/${userId}/password`, method: 'put', data })
 }
 
 /** 修改用户状态 */
-export function changeUserStatus(data: { user_id: number; status: string }) {
+export function changeUserStatus(data: { user_id: number | string; status: string }) {
   return request({ url: `${BASE}/changeStatus`, method: 'put', data })
 }
 
 /** 批量删除用户 */
-export function batchDeleteUser(ids: number[]) {
+export function batchDeleteUser(ids: (number | string)[]) {
   return request({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' })
 }
 

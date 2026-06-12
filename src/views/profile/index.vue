@@ -102,6 +102,7 @@
 <script setup lang="ts">
 import {useUserStore} from '@/stores/user'
 import {updateProfile, changePassword, getProfile, updateAvatar, type ProfileInfo} from '@/api/modules/auth'
+import { UserFilled, Camera } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()

@@ -138,10 +138,10 @@ a:hover {
 
   .hamburger {
     cursor: pointer;
-    font-size: 18px;
+    font-size: 24px;
     color: var(--color-text-regular);
     margin-right: 16px;
-    padding: 6px;
+    padding: 4px;
     border-radius: 8px;
     transition: all 0.2s;
 
@@ -158,10 +158,13 @@ a:hover {
   .navbar-right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 12px;
 
     .navbar-action {
-      padding: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
       border-radius: 8px;
       cursor: pointer;
       color: var(--color-text-regular);
@@ -240,9 +243,8 @@ a:hover {
 
     .el-icon-close {
       margin-left: 6px;
-      font-size: 10px;
       border-radius: 50%;
-      padding: 1px;
+      padding: 2px;
       transition: all 0.2s;
 
       &:hover {
@@ -423,6 +425,65 @@ html.dark {
   --color-text-secondary: #94A3B8;
   --border-color-base: #1E293B;
   --border-color-light: #1A2236;
+
+  /* ====== Element Plus 全局暗色变量 ====== */
+  --el-bg-color: #111827;
+  --el-bg-color-overlay: #1E293B;
+  --el-bg-color-page: #0F172A;
+  --el-text-color-primary: #F1F5F9;
+  --el-text-color-regular: #CBD5E1;
+  --el-text-color-secondary: #94A3B8;
+  --el-text-color-placeholder: #64748B;
+  --el-text-color-disabled: #4B5563;
+  --el-border-color: #1E293B;
+  --el-border-color-light: #334155;
+  --el-border-color-lighter: #1E293B;
+  --el-border-color-extra-light: #1E293B;
+  --el-border-color-dark: #475569;
+  --el-fill-color: #1E293B;
+  --el-fill-color-light: #1A2236;
+  --el-fill-color-lighter: #334155;
+  --el-fill-color-blank: #111827;
+  --el-mask-color: rgba(0, 0, 0, 0.6);
+
+  /* Button */
+  --el-button-bg-color: #1E293B;
+  --el-button-border-color: #334155;
+  --el-button-text-color: #CBD5E1;
+  --el-button-hover-bg-color: #334155;
+  --el-button-hover-border-color: #475569;
+  --el-button-active-bg-color: #0F172A;
+  --el-button-disabled-bg-color: #1E293B;
+  --el-button-disabled-border-color: #334155;
+  --el-button-disabled-text-color: #64748B;
+
+  /* Form */
+  --el-form-label-color: #CBD5E1;
+  --el-input-bg-color: #1E293B;
+  --el-input-border-color: #334155;
+  --el-input-hover-border-color: #475569;
+  --el-input-focus-border-color: var(--color-primary);
+  --el-input-placeholder-color: #64748B;
+  --el-input-text-color: #CBD5E1;
+
+  /* Menu */
+  --el-menu-bg-color: #111827;
+  --el-menu-text-color: #CBD5E1;
+  --el-menu-hover-bg-color: rgba(99, 102, 241, 0.1);
+  --el-menu-active-color: #818CF8;
+  --el-menu-border-color: transparent;
+
+  /* Popover / Dropdown / Select */
+  --el-popover-bg-color: #1E293B;
+  --el-popover-border-color: #334155;
+  --el-dropdown-menuItem-hover-fill: var(--border-color-light);
+  --el-dropdown-menuItem-hover-color: var(--color-primary);
+  --el-select-option-hover-bg: #334155;
+
+  /* Tag */
+  --el-tag-bg-color: #1E293B;
+  --el-tag-border-color: #334155;
+  --el-tag-text-color: #CBD5E1;
 
   .sidebar-container {
     background: var(--sidebar-bg);

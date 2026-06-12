@@ -12,6 +12,7 @@
           {{ view.title || view.name }}
           <el-icon
             v-if="!view.affix"
+            :size="10"
             class="el-icon-close"
             @click.stop="closeView(view)"
           >
@@ -25,6 +26,7 @@
 
 <script setup lang="ts">
 import { useTagsViewStore } from '@/stores/tagsView'
+import { Close } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()

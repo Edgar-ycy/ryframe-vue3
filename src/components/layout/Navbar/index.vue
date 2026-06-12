@@ -15,21 +15,21 @@
     <!-- 右侧操作 -->
     <div class="navbar-right">
       <!-- 全屏切换 -->
-      <el-icon class="navbar-action" @click="toggleFullscreen" style="cursor:pointer;font-size:18px;margin-right:12px">
+      <el-icon class="navbar-action" :size="24" @click="toggleFullscreen">
         <FullScreen />
       </el-icon>
       <!-- 主题切换 -->
       <el-switch
         v-model="isDark"
         inline-prompt
-        style="--el-switch-on-color: #409EFF; margin-right:12px"
+        style="--el-switch-on-color: #409EFF"
         @change="toggleTheme"
       >
         <template #active-icon><el-icon><Moon /></el-icon></template>
         <template #inactive-icon><el-icon><Sunny /></el-icon></template>
       </el-switch>
       <!-- 布局设置 -->
-      <el-icon class="navbar-action" style="cursor:pointer;font-size:18px;margin-right:12px" @click="settingsVisible = true">
+      <el-icon class="navbar-action" :size="24" @click="settingsVisible = true">
         <Setting />
       </el-icon>
       <el-dropdown @command="handleCommand">
@@ -54,9 +54,10 @@
 </template>
 
 <script setup lang="ts">
-import { useAppStore } from '@/stores/app'
-import { useUserStore } from '@/stores/user'
-import { useSettingsStore } from '@/stores/settings'
+import {useAppStore} from '@/stores/app'
+import {useUserStore} from '@/stores/user'
+import {useSettingsStore} from '@/stores/settings'
+import {ArrowDown, Expand, Fold, FullScreen, Moon, Setting, Sunny, UserFilled} from '@element-plus/icons-vue'
 import Settings from '../Settings/index.vue'
 
 const route = useRoute()
@@ -68,8 +69,7 @@ const settingsStore = useSettingsStore()
 const settingsVisible = ref(false)
 
 const breadcrumbs = computed(() => {
-  const matched = route.matched.filter(item => item.meta?.title)
-  return matched
+    return route.matched.filter(item => item.meta?.title)
 })
 
 const isDark = computed(() => settingsStore.theme === 'dark')

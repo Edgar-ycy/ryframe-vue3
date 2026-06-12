@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { getServerInfo, getHealth } from '@/api/modules/monitor'
+import { Cpu, Monitor, Odometer, Connection } from '@element-plus/icons-vue'
 
 interface ServerInfo {
   cpu_usage?: number
@@ -109,6 +110,6 @@ onMounted(async () => {
 .info-row:last-child { border-bottom: none }
 .sys-info { margin-top: 8px }
 .health-status { display: flex; flex-direction: column; gap: 12px; align-items: flex-start }
-.health-status > .el-tag { margin-bottom: 8px }
+
 .health-status .info-row { width: 100% }
 </style>

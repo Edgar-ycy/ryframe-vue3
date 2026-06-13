@@ -74,7 +74,7 @@ export interface MenuTreeNode {
  */
 export function getUserMenus() {
   return request<MenuTreeNode[]>({
-    url: `${BASE}/tree`,
+    url: `${BASE}/user-tree`,
     method: 'get',
   })
 }

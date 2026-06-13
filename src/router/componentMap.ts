@@ -38,6 +38,7 @@ const componentMap: Record<string, ComponentLoader> = {
   'system/notice/index':  () => import('@/views/system/notice/index.vue'),
   'system/job/index':     () => import('@/views/system/job/index.vue'),
   'system/job/log':       () => import('@/views/system/job/log.vue'),
+  'system/permission/index': () => import('@/views/system/permission/index.vue'),
   'system/operlog/index':   () => import('@/views/monitor/operlog/index.vue'),
   'system/logininfor/index': () => import('@/views/monitor/loginlog/index.vue'),
 

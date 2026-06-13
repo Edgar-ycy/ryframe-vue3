@@ -36,12 +36,12 @@ const whiteList = ['/login']
 async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>): Promise<RouteRecordRaw[]> {
   const menuRes = await getUserMenus() as any
   const menuTree = menuRes.rows || menuRes.data || menuRes || []
-  console.log('[Router] 通过 /system/menus/tree 获取菜单树，生成动态路由')
+  console.log('[Router] 通过 /system/menus/user-tree 获取菜单树，生成动态路由')
   return permissionStore.generateRoutes(menuTree)
 }
 
 // 全局前置守卫
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, from) => {
   document.title = `${to.meta?.title || ''} - RyFrame`
 
   const userStore = useUserStore()
@@ -50,8 +50,7 @@ router.beforeEach(async (to, from, next) => {
   if (userStore.token) {
     // 已登录
     if (to.path === '/login') {
-      next({ path: '/' })
-      return
+      return { path: '/' }
     }
 
     // 首次加载：动态路由未生成则请求用户信息 + 菜单树
@@ -71,21 +70,21 @@ router.beforeEach(async (to, from, next) => {
         //    若当前路由是由 catch-all (/:pathMatch(.*)*) 重定向而来，
         //    则回到原始目标路径（此时动态路由已注册，可正确匹配）
         const targetPath = (to.redirectedFrom as any)?.fullPath || to.path
-        next({ path: targetPath, query: to.query, replace: true })
+        return { path: targetPath, query: to.query, replace: true }
       } catch (error) {
         await userStore.logout()
-        next(`/login?redirect=${to.path}`)
+        return `/login?redirect=${to.path}`
       }
-    } else {
-      next()
     }
-  } else {
-    if (whiteList.includes(to.path)) {
-      next()
-    } else {
-      next(`/login?redirect=${to.path}`)
-    }
+    // 已加载路由，放行
+    return true
   }
+
+  // 未登录
+  if (whiteList.includes(to.path)) {
+    return true
+  }
+  return `/login?redirect=${to.path}`
 })
 
 export default router

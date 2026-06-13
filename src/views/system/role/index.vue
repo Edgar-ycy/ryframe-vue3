@@ -54,6 +54,7 @@
           <template #default="{ row }">
             <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
             <el-button v-permission="'system:role:edit'" type="success" link icon="Menu" @click="handleAssignMenus(row)">菜单</el-button>
+            <el-button v-permission="'system:role:edit'" type="warning" link icon="Key" @click="handleAssignPerms(row)">权限</el-button>
             <el-button v-permission="'system:role:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -129,13 +130,42 @@
       </template>
     </el-dialog>
 
+    <!-- 分配权限弹窗 -->
+    <el-dialog v-model="permDialog.visible" title="分配权限" width="550px" @close="permDialog.checkedKeys = []">
+      <el-tree
+        ref="permTreeRef"
+        :data="permTree"
+        :props="{ label: 'name', children: 'children' }"
+        node-key="id"
+        show-checkbox
+        default-expand-all
+        :default-checked-keys="permDialog.checkedKeys"
+        @check="(_: any, { checkedKeys }: any) => permDialog.checkedKeys = checkedKeys"
+      >
+        <template #default="{ data }">
+          <div class="perm-tree-node">
+            <span>{{ data.name }}</span>
+            <el-tag v-if="data.perm_type" :type="data.perm_type === 'api' ? 'info' : 'success'" size="small" style="margin-left:8px">
+              {{ data.perm_type === 'api' ? 'API' : '菜单' }}
+            </el-tag>
+            <span v-if="data.code" style="color:#909399;font-size:12px;margin-left:8px">{{ data.code }}</span>
+          </div>
+        </template>
+      </el-tree>
+      <template #footer>
+        <el-button @click="permDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="permDialog.loading" @click="handlePermSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus } from '@/api/modules/role'
+import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus, assignPermissions } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { getMenuTree } from '@/api/modules/menu'
+import { getPermissionTree, getRolePermissions } from '@/api/modules/permission'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -259,7 +289,41 @@ async function handleMenuSubmit() {
   } finally { menuDialog.value.loading = false }
 }
 
-onMounted(() => { fetchData(); loadDeptTree(); loadMenuTree() })
+// ----- 分配权限 -----
+const permDialog = ref({ visible: false, loading: false, checkedKeys: [] as (number | string)[], roleId: 0 })
+const permTreeRef = ref<any>()
+const permTree = ref<any[]>([])
+
+async function loadPermTree() {
+  try {
+    const res = await getPermissionTree() as any
+    permTree.value = res.data || res.rows || res || []
+  } catch { permTree.value = [] }
+}
+
+async function handleAssignPerms(row: any) {
+  permDialog.value.roleId = row.id
+  // 获取当前角色已分配的权限ID
+  try {
+    const res = await getRolePermissions(row.id) as any
+    const ids = res.data || res || []
+    permDialog.value.checkedKeys = Array.isArray(ids) ? ids : []
+  } catch {
+    permDialog.value.checkedKeys = []
+  }
+  permDialog.value.visible = true
+}
+
+async function handlePermSubmit() {
+  permDialog.value.loading = true
+  try {
+    await assignPermissions(permDialog.value.roleId, { perm_ids: permDialog.value.checkedKeys.map(String) })
+    ElMessage.success('权限分配成功')
+    permDialog.value.visible = false
+  } finally { permDialog.value.loading = false }
+}
+
+onMounted(() => { fetchData(); loadDeptTree(); loadMenuTree(); loadPermTree() })
 </script>
 
 

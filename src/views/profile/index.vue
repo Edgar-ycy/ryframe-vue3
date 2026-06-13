@@ -239,7 +239,7 @@ async function handleChangePwd() {
         pwdFormRef.value?.resetFields()
         setTimeout(async () => {
             await userStore.logout()
-            router.push('/login')
+            await router.push('/login')
         }, 1500)
     } catch {
         /* 错误已在拦截器处理 */

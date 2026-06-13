@@ -16,6 +16,8 @@
 </template>
 
 <script setup lang="ts">
+import type { WritableComputedRef } from 'vue'
+
 interface Props {
   total: number
   page?: number
@@ -42,11 +44,14 @@ const emit = defineEmits<{
   'change': []
 }>()
 
-const currentPage = ref(props.page)
-const currentPageSize = ref(props.pageSize)
-
-watch(() => props.page, (v) => { currentPage.value = v })
-watch(() => props.pageSize, (v) => { currentPageSize.value = v })
+const currentPage = computed({
+  get: () => props.page,
+  set: (v) => emit('update:page', v),
+}) as WritableComputedRef<number>
+const currentPageSize = computed({
+  get: () => props.pageSize,
+  set: (v) => emit('update:pageSize', v),
+}) as WritableComputedRef<number>
 
 function handleSizeChange(pageSize: number) {
   emit('update:pageSize', pageSize)

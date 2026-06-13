@@ -121,7 +121,7 @@
         show-checkbox
         default-expand-all
         :default-checked-keys="menuDialog.checkedKeys"
-        @check="(_, { checkedKeys }) => menuDialog.checkedKeys = checkedKeys"
+        @check="(_: any, { checkedKeys }: any) => menuDialog.checkedKeys = checkedKeys"
       />
       <template #footer>
         <el-button @click="menuDialog.visible = false">取消</el-button>
@@ -185,7 +185,7 @@ function handleAdd() {
   dialog.value.visible = true
 }
 
-async function handleEdit(row) {
+async function handleEdit(row:any) {
   currentEditId.value = row.id
   dialog.value.title = '编辑角色'; dialog.value.isEdit = true
   resetForm()
@@ -215,17 +215,17 @@ async function handleSubmit() {
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false
-    fetchData()
+    await fetchData()
   } finally { submitLoading.value = false }
 }
 
 // ----- 删除 -----
-async function handleDelete(row) {
+async function handleDelete(row:any) {
   try {
     await ElMessageBox.confirm(`确认删除角色"${row.name}"吗？`, '警告', { type: 'warning' })
     await deleteRole(row.id)
     ElMessage.success('删除成功')
-    fetchData()
+    await fetchData()
   } catch { /* cancelled */ }
 }
 

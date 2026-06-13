@@ -208,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { Search } from '@element-plus/icons-vue'
+import {ArrowRight, Folder, FolderOpened, Search} from '@element-plus/icons-vue'
 import { listUser, getUser, createUser, updateUser, deleteUser, resetPassword, changeUserStatus } from '@/api/modules/user'
 import { listRole } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
@@ -222,16 +222,14 @@ const selectedDeptId = ref<number | undefined>(undefined)
 const selectedDeptName = ref('')
 
 /** 带"全部"根节点的展示树 */
-const displayDeptTree = computed(() => {
-  const allNode = { id: 0, name: '全部', children: deptTree.value }
-  return [allNode]
-})
+const displayDeptTree = ref<any[]>([])
 
 async function loadDeptTree() {
   deptTreeLoading.value = true
   try {
     const res = await getDeptTree()
     deptTree.value = (res as any).data || (res as any).rows || []
+    displayDeptTree.value = [{ id: 0, name: '全部', children: deptTree.value }]
   } finally {
     deptTreeLoading.value = false
   }

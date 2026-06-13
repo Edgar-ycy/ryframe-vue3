@@ -131,7 +131,7 @@ async function handleClear() {
     await ElMessageBox.confirm('确认清空所有操作日志吗？此操作不可恢复。', '警告', { type: 'warning' })
     await clearOperLog()
     ElMessage.success('清空成功')
-    fetchData()
+    await fetchData()
   } catch { /* cancelled */ }
 }
 

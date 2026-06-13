@@ -142,7 +142,7 @@ const handleLogin = async () => {
   } catch (error) {
     // 错误信息已在拦截器中处理
     if (captchaEnabled.value) {
-      refreshCaptcha()
+      await refreshCaptcha()
     }
   } finally {
     loading.value = false
@@ -152,7 +152,7 @@ const handleLogin = async () => {
 onMounted(async () => {
   await loadCaptchaConfig()
   if (captchaEnabled.value) {
-    refreshCaptcha()
+    await refreshCaptcha()
   }
 })
 </script>

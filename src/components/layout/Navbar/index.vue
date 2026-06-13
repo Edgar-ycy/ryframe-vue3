@@ -23,7 +23,6 @@
         v-model="isDark"
         inline-prompt
         style="--el-switch-on-color: #409EFF"
-        @change="toggleTheme"
       >
         <template #active-icon><el-icon><Moon /></el-icon></template>
         <template #inactive-icon><el-icon><Sunny /></el-icon></template>
@@ -72,7 +71,10 @@ const breadcrumbs = computed(() => {
     return route.matched.filter(item => item.meta?.title)
 })
 
-const isDark = computed(() => settingsStore.theme === 'dark')
+const isDark = computed({
+  get: () => settingsStore.theme === 'dark',
+  set: (val: boolean) => settingsStore.setTheme(val ? 'dark' : 'light'),
+})
 
 function toggleFullscreen() {
   if (document.fullscreenElement) {
@@ -80,10 +82,6 @@ function toggleFullscreen() {
   } else {
     document.documentElement.requestFullscreen()
   }
-}
-
-function toggleTheme(val: boolean) {
-  settingsStore.setTheme(val ? 'dark' : 'light')
 }
 
 const handleCommand = async (command: string) => {
@@ -95,10 +93,10 @@ const handleCommand = async (command: string) => {
         return
       }
       await userStore.logout()
-      router.push('/login')
+      await router.push('/login')
       break
     case 'profile':
-      router.push('/profile')
+      await router.push('/profile')
       break
   }
 }

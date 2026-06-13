@@ -175,7 +175,7 @@ function handleAdd() {
   resetForm(); dialog.value.visible = true
 }
 
-async function handleEdit(row) {
+async function handleEdit(row:any) {
   currentEditId.value = row.id
   dialog.value.title = '编辑任务'; dialog.value.isEdit = true
   resetForm()
@@ -204,12 +204,12 @@ async function handleSubmit() {
       await createJob(data as any)
       ElMessage.success('新增成功')
     }
-    dialog.value.visible = false; fetchData()
+    dialog.value.visible = false; await fetchData()
   } finally { submitLoading.value = false }
 }
 
 // ----- 操作 -----
-async function handleRun(row) {
+async function handleRun(row:any) {
   try {
     await ElMessageBox.confirm(`确认立即执行任务"${row.name || row.job_name}"吗？`, '提示', { type: 'info' })
     await runJob(row.id)
@@ -217,28 +217,28 @@ async function handleRun(row) {
   } catch { /* cancelled */ }
 }
 
-async function handlePause(row) {
+async function handlePause(row:any) {
   try {
     await ElMessageBox.confirm(`确认暂停任务"${row.name || row.job_name}"吗？`, '提示', { type: 'warning' })
     await pauseJob(row.id)
     ElMessage.success('已暂停')
-    fetchData()
+    await fetchData()
   } catch { /* cancelled */ }
 }
 
-async function handleResume(row) {
+async function handleResume(row:any) {
   try {
     await resumeJob(row.id)
     ElMessage.success('已恢复')
-    fetchData()
+    await fetchData()
   } catch { /* error handled */ }
 }
 
-async function handleDelete(row) {
+async function handleDelete(row:any) {
   try {
     await ElMessageBox.confirm(`确认删除任务"${row.name || row.job_name}"吗？`, '警告', { type: 'warning' })
     await deleteJob(row.id)
-    ElMessage.success('删除成功'); fetchData()
+    ElMessage.success('删除成功'); await fetchData()
   } catch { /* cancelled */ }
 }
 

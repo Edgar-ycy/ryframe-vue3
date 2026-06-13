@@ -6,10 +6,10 @@
     </div>
     <el-scrollbar>
       <el-menu
-        :default-active="activeMenu"
+        :default-active="route.path"
         :collapse="appStore.sidebarCollapsed"
         :unique-opened="true"
-        :background-color="menuBgColor"
+        :background-color="'transparent'"
         :text-color="menuTextColor"
         :active-text-color="settingsStore.themeColor"
         @select="handleMenuSelect"
@@ -64,10 +64,7 @@ const appStore = useAppStore()
 const permissionStore = usePermissionStore()
 const settingsStore = useSettingsStore()
 
-const activeMenu = computed(() => route.path)
-
-// 侧边栏菜单背景色：由侧边栏容器背景渐变负责，菜单自身保持透明让渐变透出
-const menuBgColor = computed(() => 'transparent')
+// 侧边栏菜单文字颜色
 const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')
 
 function handleMenuSelect(indexPath: string) {

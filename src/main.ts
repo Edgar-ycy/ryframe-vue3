@@ -17,6 +17,13 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 // 自定义指令
 import directives from './directives'
+import permission from './directives/permission'
+import debounce from './directives/debounce'
+import copy from './directives/copy'
+import throttle from './directives/throttle'
+import watermark from './directives/watermark'
+import lazy from './directives/lazy'
+import longpress from './directives/longpress'
 
 // 全局样式
 import './styles/index.scss'
@@ -32,5 +39,15 @@ app.use(router)
 app.use(pinia)
 app.use(ElementPlus, { locale: zhCn })
 app.use(directives)
+
+// 显式逐条注册自定义指令：Volar 需直接追踪 app.directive() 调用链才能识别模板中的 v-xxx 指令
+// 插件 app.use() 内部的调用链无法被 Volar 静态分析追溯
+app.directive('permission', permission)
+app.directive('debounce', debounce)
+app.directive('copy', copy)
+app.directive('throttle', throttle)
+app.directive('watermark', watermark)
+app.directive('lazy', lazy)
+app.directive('longpress', longpress)
 
 app.mount('#app')

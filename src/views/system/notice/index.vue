@@ -131,7 +131,7 @@ function handleAdd() {
   resetForm(); dialog.value.visible = true
 }
 
-async function handleEdit(row) {
+async function handleEdit(row:any) {
   currentEditId.value = row.id
   dialog.value.title = '编辑公告'; dialog.value.isEdit = true
   resetForm()
@@ -155,15 +155,15 @@ async function handleSubmit() {
       await createNotice(data as any)
       ElMessage.success('新增成功')
     }
-    dialog.value.visible = false; fetchData()
+    dialog.value.visible = false; await fetchData()
   } finally { submitLoading.value = false }
 }
 
-async function handleDelete(row) {
+async function handleDelete(row:any) {
   try {
     await ElMessageBox.confirm(`确认删除公告"${row.title}"吗？`, '警告', { type: 'warning' })
     await deleteNotice(row.id)
-    ElMessage.success('删除成功'); fetchData()
+    ElMessage.success('删除成功'); await fetchData()
   } catch { /* cancelled */ }
 }
 

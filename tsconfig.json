@@ -20,6 +20,9 @@
     },
     "types": ["vite/client", "node"]
   },
+  "vueCompilerOptions": {
+    "target": 3.5
+  },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",

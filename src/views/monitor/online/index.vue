@@ -61,7 +61,7 @@ async function handleForceLogout(row) {
     await ElMessageBox.confirm(`确认强制下线用户"${row.username}"吗？`, '警告', { type: 'warning' })
     await forceLogout(row.token_id)
     ElMessage.success('已强制下线')
-    fetchData()
+    await fetchData()
   } catch { /* cancelled */ }
 }
 

@@ -154,7 +154,7 @@ function handleAddType() {
   resetTypeForm(); typeDialog.value.visible = true
 }
 
-async function handleEditType(row) {
+async function handleEditType(row:any) {
   currentTypeEditId.value = row.id
   typeDialog.value.title = '编辑字典类型'; typeDialog.value.isEdit = true
   resetTypeForm()
@@ -175,17 +175,17 @@ async function handleTypeSubmit() {
       ElMessage.success('新增成功')
     }
     typeDialog.value.visible = false
-    fetchTypeList()
+    await fetchTypeList()
   } finally { typeSubmitLoading.value = false }
 }
 
-async function handleDeleteType(row) {
+async function handleDeleteType(row:any) {
   try {
     await ElMessageBox.confirm(`确认删除字典类型"${row.name}"吗？`, '警告', { type: 'warning' })
     await deleteDictType(row.id)
     ElMessage.success('删除成功')
     if (currentType.value?.id === row.id) { currentType.value = null; dataList.value = [] }
-    fetchTypeList()
+    await fetchTypeList()
   } catch { /* cancelled */ }
 }
 
@@ -194,12 +194,12 @@ const dataLoading = ref(false)
 const dataList = ref<any[]>([])
 const currentType = ref<any>(null)
 
-async function handleTypeClick(row) {
+async function handleTypeClick(row:any) {
   currentType.value = row
   await fetchDataList(row.code)
 }
 
-async function fetchDataList(typeCode) {
+async function fetchDataList(typeCode:any) {
   dataLoading.value = true
   try {
     const res = await listDictData({ type_code: typeCode })
@@ -225,7 +225,7 @@ function handleAddData() {
   resetDataForm(); dataDialog.value.visible = true
 }
 
-function handleEditData(row) {
+function handleEditData(row:any) {
   currentDataEditId.value = row.id
   dataDialog.value.title = '编辑字典数据'; dataDialog.value.isEdit = true
   resetDataForm()
@@ -250,16 +250,16 @@ async function handleDataSubmit() {
       ElMessage.success('新增成功')
     }
     dataDialog.value.visible = false
-    fetchDataList(currentType.value.code)
+    await fetchDataList(currentType.value.code)
   } finally { dataSubmitLoading.value = false }
 }
 
-async function handleDeleteData(row) {
+async function handleDeleteData(row:any) {
   try {
     await ElMessageBox.confirm(`确认删除字典数据"${row.label}"吗？`, '警告', { type: 'warning' })
     await deleteDictData(row.id)
     ElMessage.success('删除成功')
-    fetchDataList(currentType.value.code)
+    await fetchDataList(currentType.value.code)
   } catch { /* cancelled */ }
 }
 

@@ -101,7 +101,7 @@ function handleAdd(parentId?: number) {
   dialog.value.visible = true
 }
 
-async function handleEdit(row) {
+async function handleEdit(row:any) {
   currentEditId.value = row.id
   dialog.value.title = '编辑部门'; dialog.value.isEdit = true
   resetForm()
@@ -128,17 +128,17 @@ async function handleSubmit() {
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false
-    fetchData()
+    await fetchData()
   } finally { submitLoading.value = false }
 }
 
 // ----- 删除 -----
-async function handleDelete(row) {
+async function handleDelete(row:any) {
   try {
     await ElMessageBox.confirm(`确认删除部门"${row.name}"吗？(子部门将一并删除)`, '警告', { type: 'warning' })
     await deleteDept(row.id)
     ElMessage.success('删除成功')
-    fetchData()
+    await fetchData()
   } catch { /* cancelled */ }
 }
 

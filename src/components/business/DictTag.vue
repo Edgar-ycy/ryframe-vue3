@@ -10,6 +10,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useDictStore } from '@/stores/dict'
 
 interface Props {
@@ -59,5 +60,9 @@ async function loadLabel() {
   tagType.value = colorMap[String(props.value)] || 'info'
 }
 
-watchEffect(() => { loadLabel() })
+watch(
+  [() => props.typeCode, () => props.value, () => props.colorMap],
+  () => { loadLabel() },
+  { immediate: true },
+)
 </script>

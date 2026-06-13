@@ -147,7 +147,7 @@ async function handleChangeStatus(row: any, val: string) {
     await ElMessageBox.confirm(`确认要${text}菜单"${row.name}"吗？`, '提示', { type: 'warning' })
     await updateMenu(row.id, { status: val } as any)
     ElMessage.success(`${text}成功`)
-    fetchData()
+    await fetchData()
   } catch {
     row.status = val === '1' ? '0' : '1'
   }

@@ -19,7 +19,7 @@
 ## 功能模块
 
 - **Dashboard**: 首页工作台，关键指标与快捷入口
-- **系统管理**: 用户管理、角色管理（菜单/权限/数据权限分配）、菜单管理、部门管理、岗位管理、字典管理、参数配置、通知公告、定时任务
+- **系统管理**: 用户管理、角色管理（菜单/权限/数据权限分配）、菜单管理、部门管理、岗位管理、字典管理、参数配置、通知公告
 - **系统监控**: 在线用户、服务监控、操作日志、登录日志
 - **系统工具**: 代码生成
 - **个人中心**: 个人信息编辑、密码修改、头像更新
@@ -57,7 +57,7 @@ ryframe-vue3/
 │   ├── views/              # 页面视图
 │   │   ├── dashboard/      #   首页
 │   │   ├── login/          #   登录页
-│   │   ├── system/         #   系统管理（user/role/menu/dept/post/dict/config/notice/job）
+│   │   ├── system/         #   系统管理（user/role/menu/dept/post/dict/config/notice）
 │   │   ├── monitor/        #   系统监控（online/server/operlog/loginlog）
 │   │   ├── tools/          #   系统工具（代码生成）
 │   │   ├── profile/        #   个人中心

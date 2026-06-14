@@ -10,7 +10,6 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
 import { useDictStore } from '@/stores/dict'
 
 interface Props {

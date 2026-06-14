@@ -36,7 +36,6 @@ const whiteList = ['/login']
 async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>): Promise<RouteRecordRaw[]> {
   const menuRes = await getUserMenus() as any
   const menuTree = menuRes.rows || menuRes.data || menuRes || []
-  console.log('[Router] 通过 /system/menus/tree 获取菜单树，生成动态路由')
   return permissionStore.generateRoutes(menuTree)
 }
 

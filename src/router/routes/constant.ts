@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router'
+import type {RouteRecordRaw} from 'vue-router'
 
 // 无需权限的基础路由
 export const constantRoutes: RouteRecordRaw[] = [
@@ -57,6 +57,12 @@ export const constantRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/error/500.vue'),
     meta: { title: '服务器错误', hidden: true },
   },
-  // 兜底路由：未匹配的路径
-  { path: '/:pathMatch(.*)*', redirect: '/404', meta: { hidden: true } },
+  // 兜底路由：必须放在 constantRoutes 最后，确保在所有路由注册完成后才作为 fallback 生效
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/404',
+    meta: { hidden: true },
+  },
 ]
+
+

@@ -58,15 +58,12 @@
 </template>
 
 <script setup lang="ts">
-import { useUserStore } from '@/stores/user'
-import { usePermissionStore } from '@/stores/permission'
-import { getUserMenus } from '@/api/modules/menu'
-import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
+import {useUserStore} from '@/stores/user'
+import {getCaptcha, getCaptchaConfig} from '@/api/modules/auth'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
-const permissionStore = usePermissionStore()
 
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
@@ -130,15 +127,9 @@ const handleLogin = async () => {
       captchaEnabled.value ? captchaId.value : undefined,
       captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )
-    // 获取菜单并生成动态路由
-    const menuRes = await getUserMenus() as any
-    const menuTree = menuRes.rows || menuRes.data || menuRes || []
-    const accessRoutes = permissionStore.generateRoutes(menuTree)
-    accessRoutes.forEach(r => router.addRoute(r))
-
     ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
-    await router.push(redirect)
+    await router.replace(redirect === '/login' ? '/' : redirect)
   } catch (error) {
     // 错误信息已在拦截器中处理
     if (captchaEnabled.value) {

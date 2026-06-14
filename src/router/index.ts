@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { constantRoutes } from './routes/constant'
-import { useUserStore } from '@/stores/user'
-import { usePermissionStore } from '@/stores/permission'
-import { getUserMenus } from '@/api/modules/menu'
+import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router'
+import {constantRoutes} from './routes/constant'
+import {useUserStore} from '@/stores/user'
+import {usePermissionStore} from '@/stores/permission'
+import {getUserMenus} from '@/api/modules/menu'
 
 // 扩展 vue-router 的 RouteMeta
 declare module 'vue-router' {
@@ -39,18 +39,30 @@ async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof use
   return permissionStore.generateRoutes(menuTree)
 }
 
+/** 注册动态路由（catch-all 已在 constantRoutes 中，无需在此追加） */
+function addRuntimeRoutes(routes: RouteRecordRaw[]) {
+  for (const route of routes) {
+    if (route.name && router.hasRoute(route.name)) continue
+    router.addRoute(route)
+  }
+}
+
+function getOriginalFullPath(to: any): string {
+  return to.redirectedFrom?.fullPath || to.fullPath || to.path || '/'
+}
+
 // 全局前置守卫
-router.beforeEach(async (to, from, next) => {
+// 使用 Vue Router 4 推荐的 return 模式，而非已废弃的 next(location)
+router.beforeEach(async (to, from) => {
   document.title = `${to.meta?.title || ''} - RyFrame`
 
   const userStore = useUserStore()
   const permissionStore = usePermissionStore()
 
   if (userStore.token) {
-    // 已登录
+    // 已登录 → 访问登录页则重定向到首页
     if (to.path === '/login') {
-      next({ path: '/' })
-      return
+      return { path: '/' }
     }
 
     // 首次加载：动态路由未生成则请求用户信息 + 菜单树
@@ -62,28 +74,23 @@ router.beforeEach(async (to, from, next) => {
         }
         // 2. 获取菜单并生成路由
         const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore)
-        // 3. 注册到 Vue Router（作为顶层路由添加）
-        for (const route of accessRoutes) {
-          router.addRoute(route as RouteRecordRaw)
-        }
-        // 4. 重新导航：replace 当前历史记录，避免回退到登录页
-        //    若当前路由是由 catch-all (/:pathMatch(.*)*) 重定向而来，
-        //    则回到原始目标路径（此时动态路由已注册，可正确匹配）
-        const targetPath = (to.redirectedFrom as any)?.fullPath || to.path
-        next({ path: targetPath, query: to.query, replace: true })
-      } catch (error) {
+        // 3. 注册到 Vue Router 作为顶层路由
+        addRuntimeRoutes(accessRoutes)
+        // 4. 重新导航到原始目标（此时动态路由已注册，可正确匹配）
+        return { path: getOriginalFullPath(to), replace: true }
+      } catch (_error) {
         await userStore.logout()
-        next(`/login?redirect=${to.path}`)
+        return { path: '/login', query: { redirect: getOriginalFullPath(to) } }
       }
-    } else {
-      next()
     }
+    // 路由已加载，正常放行
+    return true
   } else {
+    // 未登录：白名单放行，其余重定向到登录页
     if (whiteList.includes(to.path)) {
-      next()
-    } else {
-      next(`/login?redirect=${to.path}`)
+      return true
     }
+    return { path: '/login', query: { redirect: getOriginalFullPath(to) } }
   }
 })
 

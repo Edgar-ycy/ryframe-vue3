@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { resolveComponent, LAYOUT } from '@/router/componentMap'
 import { constantRoutes } from '@/router/routes/constant'
-import type { MenuTreeNode } from '@/api/modules/menu'
+import type { MenuTreeNode } from '@/api/types'
 import type { RouteRecordRaw } from 'vue-router'
 
 /** 提取 constantRoutes 中 Layout 组件的可见子路由，作为独立顶级菜单项（首页、个人中心等） */
@@ -38,7 +38,7 @@ export const usePermissionStore = defineStore('permission', {
     /**
      * 核心方法：从后端菜单树生成 Vue Router 路由
      *
-     * @param menuTree - 后端 /system/menus/user 返回的菜单树
+     * @param menuTree - 后端 /system/menus/user-tree 返回的菜单树
      * @returns 生成的路由数组（可直接 addRoute）
      */
     generateRoutes(menuTree: MenuTreeNode[]) {
@@ -83,7 +83,13 @@ function getNodeSort(n: MenuTreeNode): number {
 function isNodeVisible(n: MenuTreeNode): boolean {
   if (n.visible === undefined || n.visible === null) return true
   if (typeof n.visible === 'boolean') return n.visible
-  return n.visible !== '0' // 字符串 '0' 表示隐藏
+  return n.visible !== 0 && n.visible !== '0' // 字符串/数字 0 表示隐藏
+}
+
+/** 判断菜单是否启用；后端约定 status='1' 为启用，缺省时兼容旧数据 */
+function isNodeEnabled(n: MenuTreeNode): boolean {
+  if (n.status === undefined || n.status === null || n.status === '') return true
+  return String(n.status) === '1'
 }
 
 /** 推断菜单类型：若 menu_type 缺失，从 component 字段推导 */
@@ -121,7 +127,7 @@ function buildRoutesFromMenuTree(nodes: MenuTreeNode[], parentPath?: string): Ro
 
   for (const node of nodes) {
     // 跳过停用的菜单（菜单 status 约定: '1'=正常, '0'=停用，与用户/角色接口相反）
-    if (node.status !== '1') continue
+    if (!isNodeEnabled(node)) continue
 
     // 按钮（F）不产生路由
     const type = getMenuType(node)
@@ -156,12 +162,12 @@ function buildDirectoryRoute(node: MenuTreeNode, _parentPath?: string): RouteRec
 
   const route: RouteRecordRaw = {
     path: dirPath,
-    name: node.path.replace(/\//g, '_'),
+    name: getRouteName(node),
     component: LAYOUT,
     redirect: visibleChildren[0] ? `${dirPath}/${visibleChildren[0].path}`.replace(/\/\//g, '/') : dirPath,
     meta: {
       title: getNodeTitle(node),
-      icon: iconPascalCase(node.icon) || undefined,
+      icon: iconPascalCase(node.icon || '') || undefined,
       hidden: !isNodeVisible(node),
       alwaysShow: true,
       noCache: toBool(node.is_cache),
@@ -179,19 +185,20 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
   const component = resolveComponent(compPath)
 
   // 子节点路径：若以 / 开头且父路径存在，则去父路径前缀转为相对路径
-  let routePath = node.path
-  if (parentPath && node.path.startsWith(parentPath)) {
-    routePath = node.path.slice(parentPath.length).replace(/^\//, '') || ''
+  const nodePath = node.path || ''
+  let routePath = nodePath
+  if (parentPath && nodePath.startsWith(parentPath)) {
+    routePath = nodePath.slice(parentPath.length).replace(/^\//, '') || ''
   }
-  if (!routePath) routePath = node.path
+  if (!routePath) routePath = nodePath
 
   const route = {
     path: routePath,
-    name: node.path.replace(/\//g, '_'),
+    name: getRouteName(node),
     component: component || undefined,
     meta: {
       title: getNodeTitle(node),
-      icon: iconPascalCase(node.icon) || undefined,
+      icon: iconPascalCase(node.icon || '') || undefined,
       hidden: !isNodeVisible(node),
       noCache: toBool(node.is_cache),
       permission: node.perms || undefined,
@@ -214,11 +221,15 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
 }
 
 /** 路径规范化：去除首尾斜杠，添加前导 / */
-function normalizePath(path: string): string {
+function normalizePath(path?: string): string {
   if (!path) return '/'
   let p = path.trim()
   p = p.replace(/^\/+/, '').replace(/\/+$/, '')
   return '/' + p
+}
+
+function getRouteName(node: MenuTreeNode): string {
+  return normalizePath(node.path).replace(/\//g, '_') || `menu_${node.id}`
 }
 
 // ============================================================

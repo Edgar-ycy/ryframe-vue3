@@ -1,39 +1,11 @@
 import request from '@/api/request'
+import type { Id, LoginResult, UserInfo } from '@/api/types'
 
 export interface LoginParams {
   username: string
   password: string
   captcha_id?: string
   captcha_code?: string
-}
-
-export interface LoginResult {
-  access_token: string
-  refresh_token: string
-  user_info?: {
-    /** id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
-    id: number | string
-    username: string
-    nickname: string
-    email?: string
-    phone?: string
-    avatar?: string
-    roles?: string[]
-    perms?: string[]
-  }
-}
-
-export interface UserInfo {
-  /** id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
-  id: number | string
-  username: string
-  nickname: string
-  avatar?: string
-  email?: string
-  phone?: string
-  roles?: string[]
-  perms?: string[]
-  permissions?: string[]
 }
 
 /** 登录 */
@@ -102,13 +74,13 @@ export function getCaptchaConfig() {
 
 export interface ProfileInfo {
   /** user_id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
-  user_id: number | string
+  user_id: Id
   username: string
   nickname: string
   email?: string
   phone?: string
   avatar?: string
-  dept_id?: number | string
+  dept_id?: Id
   dept_name?: string
   status?: string
   login_ip?: string
@@ -162,6 +134,5 @@ export function updateAvatar(data: FormData) {
     url: '/auth/profile/avatar',
     method: 'put',
     data,
-    headers: { 'Content-Type': undefined as any },
   })
 }

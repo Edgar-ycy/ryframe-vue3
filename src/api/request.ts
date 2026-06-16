@@ -2,17 +2,25 @@ import axios, { type AxiosResponse, type InternalAxiosRequestConfig, type AxiosR
 import { ElMessage } from 'element-plus'
 import { getToken, removeToken, getRefreshToken, setToken, setRefreshToken } from '@/utils/auth'
 import { refreshToken as refreshTokenApi } from '@/api/modules/auth'
+import type { ApiResponse } from '@/api/types'
 
-// 后端统一响应结构
-export interface ApiResponse<T = any> {
-  code: number
-  data: T
-  /** 后端返回的消息字段为 msg */
-  msg: string
-  /** 分页数据（由拦截器从 data.rows 提升到顶层，方便视图访问） */
-  rows?: any[]
-  /** 分页总数（由拦截器从 data.total 提升到顶层，方便视图访问） */
-  total?: number
+export type { ApiResponse } from '@/api/types'
+
+function getResponseMessage(data: any, fallback = '请求失败') {
+  return data?.msg || data?.message || fallback
+}
+
+function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig) {
+  if (!(config.data instanceof FormData)) return
+
+  const headers = config.headers as any
+  if (typeof headers.delete === 'function') {
+    headers.delete('Content-Type')
+    headers.delete('content-type')
+  } else {
+    delete headers['Content-Type']
+    delete headers['content-type']
+  }
 }
 
 // 创建 Axios 实例
@@ -56,6 +64,7 @@ service.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    removeJsonContentTypeForFormData(config)
     return config
   },
   (error) => Promise.reject(error),
@@ -83,8 +92,8 @@ service.interceptors.response.use(
     }
 
     // 业务错误（400 / 409 等）
-    ElMessage.error(data.msg || '请求失败')
-    return Promise.reject(new Error(data.msg || 'Error'))
+    ElMessage.error(getResponseMessage(data))
+    return Promise.reject(new Error(getResponseMessage(data, 'Error')))
   },
   async (error) => {
     // HTTP 错误（无 response 对象）
@@ -97,12 +106,12 @@ service.interceptors.response.use(
 
     switch (status) {
       case 400:
-        ElMessage.error(data?.msg || data?.message || '请求参数错误')
+        ElMessage.error(getResponseMessage(data, '请求参数错误'))
         break
       case 401: {
         // 登录页上的 401 仅提示，不清除 token
         if (window.location.pathname === '/login') {
-          ElMessage.error(data?.msg || data?.message || '请求失败')
+          ElMessage.error(getResponseMessage(data))
           break
         }
         // 排除刷新令牌接口本身（防止死循环）
@@ -148,13 +157,13 @@ service.interceptors.response.use(
         ElMessage.error('没有操作权限')
         break
       case 404:
-        ElMessage.error(data?.msg || data?.message || '请求的资源不存在')
+        ElMessage.error(getResponseMessage(data, '请求的资源不存在'))
         break
       case 500:
         ElMessage.error('服务器内部错误')
         break
       default:
-        ElMessage.error(data?.msg || data?.message || `请求失败 (${status})`)
+        ElMessage.error(getResponseMessage(data, `请求失败 (${status})`))
     }
 
     return Promise.reject(error)

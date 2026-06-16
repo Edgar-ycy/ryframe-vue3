@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { ApiResponse } from '@/api/request'
+import type { ApiResponse } from '@/api/types'
 
 interface PaginationParams {
   page: number

@@ -19,7 +19,6 @@ export function uploadFile(data: FormData) {
     url: `${BASE}/upload`,
     method: 'post',
     data,
-    headers: { 'Content-Type': undefined as any },
   })
 }
 
@@ -40,7 +39,6 @@ export function uploadImage(data: FormData) {
     url: `${BASE}/upload/image`,
     method: 'post',
     data,
-    headers: { 'Content-Type': undefined as any },
   })
 }
 

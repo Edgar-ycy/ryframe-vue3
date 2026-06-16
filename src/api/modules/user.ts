@@ -78,5 +78,5 @@ export function downloadImportTemplate() {
 
 /** 导入用户 */
 export function importUser(data: FormData) {
-  return request({ url: `${BASE}/import`, method: 'post', data, headers: { 'Content-Type': 'multipart/form-data' } })
+  return request({ url: `${BASE}/import`, method: 'post', data })
 }

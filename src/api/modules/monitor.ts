@@ -1,4 +1,4 @@
-import request from '@/api/request'
+import request, { axiosInstance } from '@/api/request'
 
 // ========== 服务器监控 (/monitor) ==========
 
@@ -25,6 +25,13 @@ export function getCacheCommands() {
 /** 数据库连接池 */
 export function getDbPool() {
   return request({ url: '/monitor/db-pool', method: 'get' })
+}
+
+/** Prometheus 指标文本 */
+export function getMetrics() {
+  return axiosInstance.get<string>('/monitor/metrics', {
+    responseType: 'text',
+  })
 }
 
 // ========== 操作日志 (/system/operlogs) ==========

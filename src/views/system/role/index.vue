@@ -120,6 +120,7 @@
         :props="{ label: 'name', children: 'children' }"
         node-key="id"
         show-checkbox
+        check-strictly
         default-expand-all
         :default-checked-keys="menuDialog.checkedKeys"
         @check="(_: any, { checkedKeys }: any) => menuDialog.checkedKeys = checkedKeys"
@@ -138,6 +139,7 @@
         :props="{ label: 'name', children: 'children' }"
         node-key="id"
         show-checkbox
+        check-strictly
         default-expand-all
         :default-checked-keys="permDialog.checkedKeys"
         @check="(_: any, { checkedKeys }: any) => permDialog.checkedKeys = checkedKeys"
@@ -162,6 +164,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus, assignPermissions } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { getMenuTree } from '@/api/modules/menu'
@@ -278,6 +281,9 @@ async function handleAssignMenus(row: any) {
   const d = res.data || res
   menuDialog.value.checkedKeys = d.menu_ids || []
   menuDialog.value.visible = true
+  // 显式设置勾选状态（避免依赖 default-checked-keys 的首次渲染行为）
+  await nextTick()
+  menuTreeRef.value?.setCheckedKeys(menuDialog.value.checkedKeys)
 }
 
 async function handleMenuSubmit() {
@@ -312,6 +318,9 @@ async function handleAssignPerms(row: any) {
     permDialog.value.checkedKeys = []
   }
   permDialog.value.visible = true
+  // 显式设置勾选状态（避免依赖 default-checked-keys 的首次渲染行为）
+  await nextTick()
+  permTreeRef.value?.setCheckedKeys(permDialog.value.checkedKeys)
 }
 
 async function handlePermSubmit() {

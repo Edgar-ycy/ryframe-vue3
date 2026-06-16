@@ -14,7 +14,7 @@ export function getHealth() {
 
 /** 缓存统计 */
 export function getCacheInfo() {
-  return request({ url: '/monitor/cache', method: 'get' })
+  return request<CacheInfo>({ url: '/monitor/cache', method: 'get' })
 }
 
 /** Redis 命令统计 */
@@ -24,7 +24,64 @@ export function getCacheCommands() {
 
 /** 数据库连接池 */
 export function getDbPool() {
-  return request({ url: '/monitor/db-pool', method: 'get' })
+  return request<DbPoolInfo>({ url: '/monitor/db-pool', method: 'get' })
+}
+
+export interface RuntimeFeatureFlag {
+  key: string
+  description: string
+  enabled: boolean
+  system: boolean
+}
+
+export interface RuntimeStatus {
+  message_queue: {
+    healthy: boolean
+  }
+  task_queue: {
+    len: number | null
+  }
+  feature_flags: RuntimeFeatureFlag[]
+  upload_circuit_breaker: {
+    state: string
+  }
+}
+
+/** 主应用运行时组件状态 */
+export function getRuntimeStatus() {
+  return request<RuntimeStatus>({ url: '/monitor/runtime', method: 'get' })
+}
+
+export interface CacheInfo {
+  available: boolean
+  mode: string
+  server?: {
+    version: string
+    mode: string
+    os: string
+    uptime_days: number
+    connected_clients: number
+  } | null
+  keys: {
+    total_keys: number
+    online_users: number
+    captchas: number
+    rate_limits: number
+    dict_cache: number
+    config_cache: number
+  }
+  memory?: {
+    used_memory_human: string
+    used_memory_peak_human: string
+    mem_fragmentation_ratio: number
+    used_memory: number
+  } | null
+}
+
+export interface DbPoolInfo {
+  status: string
+  active_connections?: number | null
+  timestamp: string
 }
 
 /** Prometheus 指标文本 */

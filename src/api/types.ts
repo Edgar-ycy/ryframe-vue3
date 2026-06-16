@@ -2,10 +2,9 @@ export type Id = number | string
 
 export interface ApiResponse<T = any> {
   code: number
-  data: T
-  msg?: string
-  message?: string
-  rows?: any[]
+  msg: string
+  data?: T
+  rows?: T extends any[] ? T : any[]
   total?: number
 }
 
@@ -62,4 +61,3 @@ export interface MenuTreeNode {
   remark?: string
   children?: MenuTreeNode[]
 }
-

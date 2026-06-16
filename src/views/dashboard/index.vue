@@ -56,7 +56,7 @@ async function fetchStats() {
     ])
     statsCards.value[0].value = userRes.total ?? 0
     statsCards.value[1].value = roleRes.total ?? 0
-    statsCards.value[2].value = (onlineRes.rows || []).length
+    statsCards.value[2].value = onlineRes.total ?? (onlineRes.rows || []).length
     statsCards.value[3].value = operLogRes.total ?? 0
   } catch {
     // 接口不可用时保持默认 --

@@ -42,6 +42,9 @@ const componentMap: Record<string, ComponentLoader> = {
 
   // ── 系统监控 ──
   'monitor/server/index':   () => import('@/views/monitor/server/index.vue'),
+  'monitor/runtime/index':  () => import('@/views/monitor/runtime/index.vue'),
+  'monitor/cache/index':    () => import('@/views/monitor/cache/index.vue'),
+  'monitor/db-pool/index':  () => import('@/views/monitor/db-pool/index.vue'),
   'monitor/operlog/index':  () => import('@/views/monitor/operlog/index.vue'),
   'monitor/loginlog/index': () => import('@/views/monitor/loginlog/index.vue'),
   'monitor/online/index':   () => import('@/views/monitor/online/index.vue'),

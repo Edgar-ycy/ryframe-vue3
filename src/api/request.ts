@@ -1,13 +1,13 @@
 import axios, { type AxiosResponse, type InternalAxiosRequestConfig, type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
-import { getToken, removeToken, getRefreshToken, setToken, setRefreshToken } from '@/utils/auth'
+import { getToken, removeToken, getRefreshToken, setToken, setRefreshToken, getTenantId } from '@/utils/auth'
 import { refreshToken as refreshTokenApi } from '@/api/modules/auth'
 import type { ApiResponse } from '@/api/types'
 
 export type { ApiResponse } from '@/api/types'
 
 function getResponseMessage(data: any, fallback = '请求失败') {
-  return data?.msg || data?.message || fallback
+  return data?.msg || fallback
 }
 
 function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig) {
@@ -64,6 +64,7 @@ service.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    config.headers['X-Tenant-Id'] = getTenantId()
     removeJsonContentTypeForFormData(config)
     return config
   },
@@ -82,13 +83,7 @@ service.interceptors.response.use(
 
     // 业务成功
     if (data.code === 200) {
-      // 将分页数据从 data.data 提升到顶层，方便视图通过 res.rows / res.total 访问
-      const result: any = { ...data }
-      if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
-        if ('rows' in data.data) result.rows = data.data.rows
-        if ('total' in data.data) result.total = data.data.total
-      }
-      return result
+      return data
     }
 
     // 业务错误（400 / 409 等）
@@ -131,6 +126,7 @@ service.interceptors.response.use(
             refreshQueue = []
             // 重试原请求
             config.headers.Authorization = `Bearer ${newToken}`
+            config.headers['X-Tenant-Id'] = getTenantId()
             return service(config)
           } catch {
             isRefreshing = false
@@ -145,6 +141,7 @@ service.interceptors.response.use(
             refreshQueue.push({
               resolve: (token: string) => {
                 config.headers.Authorization = `Bearer ${token}`
+                config.headers['X-Tenant-Id'] = getTenantId()
                 resolve(service(config))
               },
               reject,

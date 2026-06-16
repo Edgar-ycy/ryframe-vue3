@@ -11,12 +11,12 @@ export const constantRoutes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('@/components/layout/index.vue'),
-    redirect: '/dashboard',
+    redirect: '/index',
     children: [
       {
-        path: 'dashboard',
-        name: 'Dashboard',
-        component: () => import('@/views/dashboard/index.vue'),
+        path: 'index',
+        name: 'Index',
+        component: () => import('@/views/index.vue'),
         meta: { title: '首页', icon: 'HomeFilled', affix: true },
       },
       {

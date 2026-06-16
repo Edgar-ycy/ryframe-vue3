@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia'
-import { resolveComponent, LAYOUT } from '@/router/componentMap'
-import { constantRoutes } from '@/router/routes/constant'
-import type { MenuTreeNode } from '@/api/types'
-import type { RouteRecordRaw } from 'vue-router'
+import {defineStore} from 'pinia'
+import {LAYOUT, resolveComponent} from '@/router/componentMap'
+import {constantRoutes} from '@/router/routes/constant'
+import type {MenuTreeNode} from '@/api/types'
+import type {RouteRecordRaw} from 'vue-router'
 
 /** 提取 constantRoutes 中 Layout 组件的可见子路由，作为独立顶级菜单项（首页、个人中心等） */
 function getConstantMenus(): RouteRecordRaw[] {
@@ -114,7 +114,7 @@ function iconPascalCase(icon: string): string {
 // ============================================================
 
 /** 与 constantRoutes 冲突的路径，跳过不生成动态路由 */
-const SKIP_PATHS = new Set(['/', '/dashboard', '/login', '/404', '/401', '/403', '/500', '/redirect', '/profile'])
+const SKIP_PATHS = new Set(['/', '/index', '/login', '/404', '/401', '/403', '/500', '/redirect', '/profile'])
 
 /**
  * 将后端菜单树节点（含 children）递归转为路由
@@ -160,7 +160,7 @@ function buildDirectoryRoute(node: MenuTreeNode, _parentPath?: string): RouteRec
 
   const visibleChildren = children.filter(c => c.meta?.hidden !== true)
 
-  const route: RouteRecordRaw = {
+  return {
     path: dirPath,
     name: getRouteName(node),
     component: LAYOUT,
@@ -175,8 +175,6 @@ function buildDirectoryRoute(node: MenuTreeNode, _parentPath?: string): RouteRec
     },
     children,
   }
-
-  return route
 }
 
 /** C 菜单 → 路由（叶子页面节点） */

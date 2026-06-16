@@ -25,7 +25,7 @@ const PARENT_VIEW: ComponentLoader = () => Promise.resolve({ template: '<router-
 
 const componentMap: Record<string, ComponentLoader> = {
   // ── 首页 ──
-  'dashboard/index': () => import('@/views/dashboard/index.vue'),
+  'index': () => import('@/views/index.vue'),
 
   // ── 系统管理 ──
   'system/user/index':    () => import('@/views/system/user/index.vue'),

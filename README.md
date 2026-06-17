@@ -92,7 +92,7 @@ pnpm install
 pnpm dev
 ```
 
-开发服务器默认运行在 `http://localhost:5173`，支持热模块替换（HMR）。
+开发服务器默认运行在 `http://localhost:80`，支持热模块替换（HMR）。
 
 ### 构建生产版本
 

@@ -66,6 +66,41 @@
       </el-row>
     </el-card>
 
+    <el-card class="info-card donate-card">
+      <template #header>
+        <span>💝 支持项目</span>
+      </template>
+      <p class="donate-desc">🦀 你的支持是唯一的燃料 🚀</p>
+      <el-row :gutter="32" justify="center">
+        <el-col :xs="12" :sm="8" :md="6">
+          <div class="donate-item">
+            <el-image
+              :src="donateWechat"
+              fit="contain"
+              class="donate-qrcode"
+              preview-teleported
+              :preview-src-list="[donateWechat]"
+              lazy
+            />
+            <span class="donate-label">微信赞赏</span>
+          </div>
+        </el-col>
+        <el-col :xs="12" :sm="8" :md="6">
+          <div class="donate-item">
+            <el-image
+              :src="donateAlipay"
+              fit="contain"
+              class="donate-qrcode"
+              preview-teleported
+              :preview-src-list="[donateAlipay]"
+              lazy
+            />
+            <span class="donate-label">支付宝赞赏</span>
+          </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
     <el-card class="info-card">
       <template #header>
         <span>ℹ️ 项目信息</span>
@@ -88,6 +123,8 @@
 
 <script setup lang="ts">
 // 纯静态页面，无任何后端请求
+import donateWechat from '@/assets/donate-wechat.png'
+import donateAlipay from '@/assets/donate-alipay.jpg'
 
 const features = [
   {
@@ -279,5 +316,36 @@ const frontendTechs = [
   font-size: 12px;
   color: var(--color-text-secondary);
   line-height: 1.4;
+}
+
+.donate-card {
+  border-color: var(--el-color-warning-light-5);
+}
+
+.donate-desc {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.donate-item {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.donate-qrcode {
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-light);
+}
+
+.donate-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 </style>

@@ -1,6 +1,6 @@
 import axios, { type AxiosResponse, type InternalAxiosRequestConfig, type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
-import { getToken, removeToken, getRefreshToken, setToken, setRefreshToken, getTenantId } from '@/utils/auth'
+import { getToken, getRefreshToken, setToken, setRefreshToken, getTenantId } from '@/utils/auth'
 import { refreshToken as refreshTokenApi } from '@/api/modules/auth'
 import type { ApiResponse } from '@/api/types'
 
@@ -45,16 +45,25 @@ async function doRefreshToken(): Promise<string> {
   if (!newToken) throw new Error('刷新令牌失败')
   setToken(newToken)
   if (newRefreshToken) setRefreshToken(newRefreshToken)
+  const [{ useUserStore }, { refreshAccessibleRoutes }] = await Promise.all([
+    import('@/stores/user'),
+    import('@/router'),
+  ])
+  await useUserStore().getUserInfo()
+  await refreshAccessibleRoutes()
   return newToken
 }
 
 /** 跳转到登录页 */
 function redirectToLogin() {
-  removeToken()
-  // 使用动态 import 避免循环依赖
-  import('@/router').then(({ default: router }) => {
-    router.push('/login').then()
-  })
+  import('@/stores/user')
+    .then(({ useUserStore }) => useUserStore().clearClientState())
+    .finally(() => {
+      // 使用动态 import 避免循环依赖
+      import('@/router').then(({ default: router }) => {
+        router.push('/login').then()
+      })
+    })
 }
 
 // ========== 请求拦截器 ==========

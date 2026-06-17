@@ -52,10 +52,10 @@
         <el-table-column prop="created_at" label="创建时间" />
         <el-table-column label="操作" min-width="100" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:role:edit'" type="success" link icon="Menu" @click="handleAssignMenus(row)">菜单</el-button>
-            <el-button v-permission="'system:role:edit'" type="warning" link icon="Key" @click="handleAssignPerms(row)">权限</el-button>
-            <el-button v-permission="'system:role:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" :disabled="isProtectedRole(row)" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-permission="'system:role:edit'" type="success" link icon="Menu" :disabled="isProtectedRole(row)" @click="handleAssignMenus(row)">菜单</el-button>
+            <el-button v-permission="'system:role:edit'" type="warning" link icon="Key" :disabled="isProtectedRole(row)" @click="handleAssignPerms(row)">权限</el-button>
+            <el-button v-permission="'system:role:remove'" type="danger" link icon="Delete" :disabled="isProtectedRole(row)" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -169,6 +169,7 @@ import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus, ass
 import { getDeptTree } from '@/api/modules/dept'
 import { getMenuTree } from '@/api/modules/menu'
 import { getPermissionTree, getRolePermissions } from '@/api/modules/permission'
+import { usePermission } from '@/hooks/usePermission'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -176,6 +177,17 @@ const total = ref(0)
 const deptTree = ref<any[]>([])
 
 const queryParams = ref({ page: 1, pageSize: 10, name: '', code: '', status: '' })
+const { isAdmin } = usePermission()
+
+function isProtectedRole(row: any) {
+  return row?.code === 'admin' && !isAdmin()
+}
+
+function guardProtectedRole(row: any) {
+  if (!isProtectedRole(row)) return true
+  ElMessage.warning('禁止操作超级管理员角色')
+  return false
+}
 
 async function fetchData() {
   loading.value = true
@@ -219,6 +231,7 @@ function handleAdd() {
 }
 
 async function handleEdit(row:any) {
+  if (!guardProtectedRole(row)) return
   currentEditId.value = row.id
   dialog.value.title = '编辑角色'; dialog.value.isEdit = true
   resetForm()
@@ -254,6 +267,7 @@ async function handleSubmit() {
 
 // ----- 删除 -----
 async function handleDelete(row:any) {
+  if (!guardProtectedRole(row)) return
   try {
     await ElMessageBox.confirm(`确认删除角色"${row.name}"吗？`, '警告', { type: 'warning' })
     await deleteRole(row.id)
@@ -275,6 +289,7 @@ async function loadMenuTree() {
 }
 
 async function handleAssignMenus(row: any) {
+  if (!guardProtectedRole(row)) return
   menuDialog.value.roleId = row.id
   // 获取当前角色的菜单
   const res = await getRole(row.id) as any
@@ -308,6 +323,7 @@ async function loadPermTree() {
 }
 
 async function handleAssignPerms(row: any) {
+  if (!guardProtectedRole(row)) return
   permDialog.value.roleId = row.id
   // 获取当前角色已分配的权限ID
   try {

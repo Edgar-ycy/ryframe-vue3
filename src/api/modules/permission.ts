@@ -4,29 +4,79 @@ const BASE = '/system/permissions'
 const ROLE_BASE = '/system/roles'
 
 export interface PermissionTreeNode {
-  /** id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
   id: number | string
   name: string
   code: string
   parent_id?: number | string | null
-  perm_type?: string
-  path?: string | null
-  http_method?: string | null
+  perm_type?: 'api' | 'menu' | string
   icon?: string | null
   sort?: number
   status?: string
   children?: PermissionTreeNode[]
 }
 
-/** 获取权限树（用于角色权限分配） */
-export function getPermissionTree() {
+export interface PermissionForm {
+  name: string
+  code: string
+  parent_id?: number | string | null
+  perm_type: 'api' | 'menu' | string
+  icon?: string | null
+  sort?: number
+  status?: string
+}
+
+export interface PermissionSyncReport {
+  scanned: number
+  existing: number
+  created: number
+  missing: string[]
+}
+
+export function getPermissionTree(params?: { perm_type?: string }) {
   return request<PermissionTreeNode[]>({
     url: `${BASE}/tree`,
+    method: 'get',
+    params,
+  })
+}
+
+export function getPermission(id: number | string) {
+  return request<PermissionTreeNode>({
+    url: `${BASE}/${id}`,
     method: 'get',
   })
 }
 
-/** 查询角色已分配的权限ID列表 */
+export function createPermission(data: PermissionForm) {
+  return request<PermissionTreeNode>({
+    url: BASE,
+    method: 'post',
+    data,
+  })
+}
+
+export function updatePermission(id: number | string, data: Partial<PermissionForm>) {
+  return request<PermissionTreeNode>({
+    url: `${BASE}/${id}`,
+    method: 'put',
+    data,
+  })
+}
+
+export function deletePermission(id: number | string) {
+  return request({
+    url: `${BASE}/${id}`,
+    method: 'delete',
+  })
+}
+
+export function syncApiPermissions() {
+  return request<PermissionSyncReport>({
+    url: `${BASE}/sync`,
+    method: 'post',
+  })
+}
+
 export function getRolePermissions(roleId: number | string) {
   return request<string[]>({
     url: `${ROLE_BASE}/${roleId}/permissions`,

@@ -27,6 +27,8 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
+const dynamicRouteNames = new Set<string | symbol>()
+
 // 白名单：无需登录即可访问
 const whiteList = ['/login']
 
@@ -44,7 +46,24 @@ function addRuntimeRoutes(routes: RouteRecordRaw[]) {
   for (const route of routes) {
     if (route.name && router.hasRoute(route.name)) continue
     router.addRoute(route)
+    if (route.name) dynamicRouteNames.add(route.name)
   }
+}
+
+export function resetDynamicRoutes() {
+  for (const name of dynamicRouteNames) {
+    if (router.hasRoute(name)) router.removeRoute(name)
+  }
+  dynamicRouteNames.clear()
+}
+
+export async function refreshAccessibleRoutes() {
+  const permissionStore = usePermissionStore()
+  resetDynamicRoutes()
+  permissionStore.resetRoutes()
+  const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore)
+  addRuntimeRoutes(accessRoutes)
+  return accessRoutes
 }
 
 function getOriginalFullPath(to: any): string {
@@ -73,9 +92,7 @@ router.beforeEach(async (to, from) => {
           await userStore.getUserInfo()
         }
         // 2. 获取菜单并生成路由
-        const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore)
-        // 3. 注册到 Vue Router 作为顶层路由
-        addRuntimeRoutes(accessRoutes)
+        await refreshAccessibleRoutes()
         // 4. 重新导航到原始目标（此时动态路由已注册，可正确匹配）
         return { path: getOriginalFullPath(to), replace: true }
       } catch (_error) {

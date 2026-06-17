@@ -182,7 +182,7 @@
         </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="form.role_ids" multiple placeholder="请选择角色" style="width:100%">
-            <el-option v-for="r in roleList" :key="r.id" :label="r.name" :value="r.id" />
+            <el-option v-for="r in assignableRoleList" :key="r.id" :label="r.name" :value="r.id" :disabled="r.status !== '1'" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -212,6 +212,7 @@ import {ArrowRight, Folder, FolderOpened, Search} from '@element-plus/icons-vue'
 import { listUser, getUser, createUser, updateUser, deleteUser, resetPassword, changeUserStatus } from '@/api/modules/user'
 import { listRole } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
+import { usePermission } from '@/hooks/usePermission'
 
 // ===== 部门树（左侧） =====
 const deptTreeRef = ref()
@@ -274,6 +275,10 @@ const tableData = ref<any[]>([])
 const total = ref(0)
 const selectIds = ref<any[]>([])
 const roleList = ref<any[]>([])
+const { isAdmin } = usePermission()
+const assignableRoleList = computed(() =>
+  isAdmin() ? roleList.value : roleList.value.filter(role => role.code !== 'admin'),
+)
 
 const queryParams = ref({
   page: 1,
@@ -299,6 +304,12 @@ async function fetchData() {
 async function loadRoleList() {
   const res = await listRole({ page: 1, pageSize: 1000 })
   roleList.value = (res as any).rows || []
+}
+
+function hasForbiddenRoleSelection() {
+  if (isAdmin()) return false
+  const adminRole = roleList.value.find(role => role.code === 'admin')
+  return !!adminRole && form.value.role_ids.includes(adminRole.id)
 }
 
 function handleSearch() {
@@ -387,6 +398,10 @@ async function handleSubmit() {
   const fields = dialog.value.isEdit ? ['nickname'] : ['username', 'password', 'nickname']
   const valid = await formRef.value?.validateField(fields).catch(() => false)
   if (valid === false) return
+  if (hasForbiddenRoleSelection()) {
+    ElMessage.warning('禁止分配超级管理员角色')
+    return
+  }
 
   submitLoading.value = true
   try {

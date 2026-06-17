@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { login as loginApi, logout as logoutApi, getUserInfo } from '@/api/modules/auth'
-import { getToken, setToken, removeToken, setRefreshToken } from '@/utils/auth'
+import { getToken, setToken, removeToken, setRefreshToken, removeTenantId } from '@/utils/auth'
+import { usePermissionStore } from '@/stores/permission'
+import { useTagsViewStore } from '@/stores/tagsView'
 
 interface UserState {
   token: string
@@ -77,8 +79,17 @@ export const useUserStore = defineStore('user', {
     /** 登出 */
     async logout() {
       try { await logoutApi() } catch { /* ignore */ }
+      await this.clearClientState()
+    },
+
+    async clearClientState() {
       this.resetState()
+      usePermissionStore().resetRoutes()
+      useTagsViewStore().closeAllViews()
       removeToken()
+      removeTenantId()
+      const { resetDynamicRoutes } = await import('@/router')
+      resetDynamicRoutes()
     },
 
     /** 重置状态 */

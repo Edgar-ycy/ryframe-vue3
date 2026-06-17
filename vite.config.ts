@@ -39,7 +39,7 @@ export default defineConfig({
 
     // 开发服务器
     server: {
-        port: 5173,
+        port: 80,
         host: '0.0.0.0',
         // API 代理：将 /api 请求转发到后端
         proxy: {

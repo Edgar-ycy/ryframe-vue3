@@ -16,8 +16,6 @@
             <el-tag :type="menuTypeTag(row.menu_type)" size="small">{{ menuTypeLabel(row.menu_type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="path" label="路由地址" show-overflow-tooltip />
-        <el-table-column prop="component" label="组件路径" show-overflow-tooltip />
         <el-table-column label="图标" align="center">
           <template #default="{ row }">
             <el-icon v-if="row.icon" :size="18"><component :is="row.icon" /></el-icon>
@@ -62,24 +60,8 @@
             style="width:100%"
           />
         </el-form-item>
-        <el-form-item label="菜单类型" prop="menu_type">
-          <el-select v-model="form.menu_type" style="width:100%" @change="onMenuTypeChange">
-            <el-option label="目录 (M)" value="M" />
-            <el-option label="菜单 (C)" value="C" />
-            <el-option label="按钮 (F)" value="F" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="菜单名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入菜单名称" maxlength="50" />
-        </el-form-item>
-        <el-form-item v-if="form.menu_type !== 'F'" label="路由地址" prop="path">
-          <el-input v-model="form.path" placeholder="如 /system/user" />
-        </el-form-item>
-        <el-form-item v-if="form.menu_type === 'C'" label="组件路径" prop="component">
-          <el-input v-model="form.component" placeholder="如 system/user/index" />
-        </el-form-item>
-        <el-form-item label="权限标识" prop="perms">
-          <el-input v-model="form.perms" placeholder="如 system:user:list" />
         </el-form-item>
         <el-form-item label="图标">
           <IconSelect v-model="form.icon" />
@@ -163,9 +145,6 @@ interface MenuFormState {
   parent_id?: number
   name: string
   menu_type: string
-  path: string
-  component: string
-  perms: string
   icon: string
   sort: number
   visible: boolean
@@ -173,34 +152,19 @@ interface MenuFormState {
 }
 
 const form = ref<MenuFormState>({
-  parent_id: undefined, name: '', menu_type: 'M', path: '', component: '', perms: '', icon: '',
+  parent_id: undefined, name: '', menu_type: 'M', icon: '',
   sort: 0, visible: true, status: '1',
 })
 
 const rules = computed<FormRules>(() => {
-  const baseRules: FormRules = {
+  return {
     name: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
-    menu_type: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
   }
-  if (form.value.menu_type !== 'F') {
-    baseRules.path = [{ required: true, message: '请输入路由地址', trigger: 'blur' }]
-  }
-  if (form.value.menu_type === 'C') {
-    baseRules.component = [{ required: true, message: '请输入组件路径', trigger: 'blur' }]
-  }
-  if (form.value.menu_type === 'F') {
-    baseRules.perms = [{ required: true, message: '请输入权限标识', trigger: 'blur' }]
-  }
-  return baseRules
 })
 
-function onMenuTypeChange() {
-  formRef.value?.clearValidate()
-}
-
 function resetForm() {
-  form.value.parent_id = undefined; form.value.name = ''; form.value.menu_type = 'M'; form.value.path = ''; form.value.component = ''
-  form.value.perms = ''; form.value.icon = ''; form.value.sort = 0; form.value.visible = true; form.value.status = '1'
+  form.value.parent_id = undefined; form.value.name = ''; form.value.menu_type = 'M'; form.value.icon = ''
+  form.value.sort = 0; form.value.visible = true; form.value.status = '1'
   currentEditId.value = null
   formRef.value?.clearValidate()
 }
@@ -230,6 +194,7 @@ function handleAdd(parentId?: number) {
   dialog.value.title = '新增菜单'; dialog.value.isEdit = false
   resetForm()
   form.value.parent_id = parentId || undefined
+  form.value.menu_type = parentId ? 'C' : 'M'
   dialog.value.visible = true
 }
 
@@ -242,9 +207,6 @@ async function handleEdit(row: any) {
   form.value.parent_id = d.parent_id ?? undefined
   form.value.name = d.name
   form.value.menu_type = d.menu_type || 'C'
-  form.value.path = d.path || ''
-  form.value.component = d.component || ''
-  form.value.perms = d.perms || ''
   form.value.icon = d.icon || ''
   form.value.sort = d.sort ?? 0
   form.value.visible = d.visible === true || d.visible === '1' || d.visible === 1
@@ -261,9 +223,6 @@ async function handleSubmit() {
       name: form.value.name,
       parent_id: form.value.parent_id || undefined,
       menu_type: form.value.menu_type,
-      path: form.value.path || undefined,
-      component: form.value.component || undefined,
-      perms: form.value.perms || undefined,
       icon: form.value.icon || undefined,
       sort: form.value.sort,
       visible: form.value.visible,

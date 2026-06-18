@@ -33,7 +33,6 @@
       <template #header>
         <div class="card-header">
           <span>操作日志</span>
-          <el-button type="danger" icon="Delete" @click="handleClear">清空日志</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
@@ -97,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { listOperLog, clearOperLog } from '@/api/modules/monitor'
+import { listOperLog } from '@/api/modules/monitor'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -124,15 +123,6 @@ function handleReset() {
   queryParams.value.oper_name = ''; queryParams.value.status = ''; queryParams.value.begin_time = ''; queryParams.value.end_time = ''
   dateRange.value = []
   handleSearch()
-}
-
-async function handleClear() {
-  try {
-    await ElMessageBox.confirm('确认清空所有操作日志吗？此操作不可恢复。', '警告', { type: 'warning' })
-    await clearOperLog()
-    ElMessage.success('清空成功')
-    await fetchData()
-  } catch { /* cancelled */ }
 }
 
 // ----- 详情 -----

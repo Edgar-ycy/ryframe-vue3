@@ -30,7 +30,7 @@ const router = createRouter({
 const dynamicRouteNames = new Set<string | symbol>()
 
 // 白名单：无需登录即可访问
-const whiteList = ['/login']
+const whiteList = ['/login', '/reset-password']
 
 /**
  * 从后端菜单树生成动态路由（纯数据库驱动，无静态降级）

@@ -16,14 +16,19 @@ export interface UserForm {
   [key: string]: any
   username: string
   nickname: string
-  password?: string
   email?: string
   phone?: string
-  sex?: string
   status?: string
   dept_id?: number | string
   role_ids?: (number | string)[]
   remark?: string
+}
+
+export interface PasswordResetRequestResult {
+  request_id: string
+  reset_token: string
+  reset_url: string
+  expires_at: string
 }
 
 /** 分页查询用户列表 */
@@ -51,9 +56,13 @@ export function deleteUser(id: number | string) {
   return request({ url: `${BASE}/${id}`, method: 'delete' })
 }
 
-/** 重置密码（管理员操作） */
-export function resetPassword(userId: number | string, data: { password: string }) {
-  return request({ url: `${BASE}/${userId}/password`, method: 'put', data })
+/** 发起密码重置请求（管理员操作） */
+export function requestPasswordReset(userId: number | string, data: { reason: string }) {
+  return request<PasswordResetRequestResult>({
+    url: `${BASE}/${userId}/password-reset-requests`,
+    method: 'post',
+    data,
+  })
 }
 
 /** 修改用户状态 */

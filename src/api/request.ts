@@ -114,7 +114,7 @@ service.interceptors.response.use(
         break
       case 401: {
         // 登录页上的 401 仅提示，不清除 token
-        if (window.location.pathname === '/login') {
+        if (['/login', '/reset-password'].includes(window.location.pathname)) {
           ElMessage.error(getResponseMessage(data))
           break
         }

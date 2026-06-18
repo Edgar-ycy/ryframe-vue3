@@ -118,11 +118,6 @@ export function exportOperLog(params?: any) {
   return request({ url: '/system/operlogs/export', method: 'get', params, responseType: 'blob' })
 }
 
-/** 清空操作日志 */
-export function clearOperLog() {
-  return request({ url: '/system/operlogs/clean', method: 'delete' })
-}
-
 // ========== 登录日志 (/system/loginlogs) ==========
 
 export interface LoginLogQuery {
@@ -148,11 +143,6 @@ export function listLoginLogNoPage(params?: LoginLogQuery) {
 /** 导出登录日志 */
 export function exportLoginLog(params?: any) {
   return request({ url: '/system/loginlogs/export', method: 'get', params, responseType: 'blob' })
-}
-
-/** 清空登录日志 */
-export function clearLoginLog() {
-  return request({ url: '/system/loginlogs/clean', method: 'delete' })
 }
 
 // ========== 在线用户 (/system/online) ==========

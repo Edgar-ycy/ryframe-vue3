@@ -18,13 +18,6 @@
                         <el-form-item label="手机号" prop="phone">
                             <el-input v-model="form.phone" placeholder="请输入手机号"/>
                         </el-form-item>
-                        <el-form-item label="性别">
-                            <el-radio-group v-model="form.sex">
-                                <el-radio value="0">男</el-radio>
-                                <el-radio value="1">女</el-radio>
-                                <el-radio value="2">未知</el-radio>
-                            </el-radio-group>
-                        </el-form-item>
                         <el-form-item label="部门">
                             <el-input :model-value="profileInfo.dept_name || '-'" disabled/>
                         </el-form-item>
@@ -128,7 +121,6 @@ const form = ref({
     nickname: '',
     email: '',
     phone: '',
-    sex: '',
 })
 
 const rules = {
@@ -148,7 +140,6 @@ async function handleSubmit() {
             nickname: form.value.nickname,
             email: form.value.email || undefined,
             phone: form.value.phone || undefined,
-            sex: form.value.sex || undefined,
         })
         userStore.nickname = form.value.nickname
         userStore.email = form.value.email
@@ -271,7 +262,6 @@ async function loadProfile() {
             form.value.nickname = d.nickname ?? ''
             form.value.email = d.email ?? ''
             form.value.phone = d.phone ?? ''
-            form.value.sex = d.sex ?? ''
         }
     } catch {
         // 降级：使用 userStore 的数据

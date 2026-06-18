@@ -114,7 +114,7 @@
           <el-table-column label="操作" min-width="100" fixed="right" align="center">
             <template #default="{ row }">
               <el-button v-permission="'system:user:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button v-permission="'system:user:edit'" type="warning" link icon="Key" @click="handleResetPwd(row)">重置密码</el-button>
+              <el-button v-permission="'system:user:edit'" type="warning" link icon="Key" @click="handleResetPwd(row)">发起重置</el-button>
               <el-button v-permission="'system:user:remove'" type="danger" link icon="Delete" :loading="deletingId === row.id" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
@@ -144,9 +144,6 @@
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" :disabled="dialog.isEdit" placeholder="请输入用户名" maxlength="50" />
         </el-form-item>
-        <el-form-item v-if="!dialog.isEdit" label="密码" prop="password">
-          <el-input v-model="form.password" type="password" placeholder="请输入密码（至少6位）" show-password />
-        </el-form-item>
         <el-form-item label="昵称" prop="nickname">
           <el-input v-model="form.nickname" placeholder="请输入昵称" maxlength="50" />
         </el-form-item>
@@ -155,13 +152,6 @@
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
-        </el-form-item>
-        <el-form-item label="性别">
-          <el-radio-group v-model="form.sex">
-            <el-radio value="0">男</el-radio>
-            <el-radio value="1">女</el-radio>
-            <el-radio value="2">未知</el-radio>
-          </el-radio-group>
         </el-form-item>
         <el-form-item label="部门">
           <el-tree-select
@@ -192,16 +182,41 @@
       </template>
     </el-dialog>
 
-    <!-- 重置密码弹窗 -->
-    <el-dialog v-model="pwdDialog.visible" title="重置密码" width="400px">
+    <!-- 发起密码重置弹窗 -->
+    <el-dialog v-model="pwdDialog.visible" title="发起密码重置" width="420px">
       <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="80px">
-        <el-form-item label="新密码" prop="password">
-          <el-input v-model="pwdForm.password" type="password" placeholder="请输入新密码（至少6位）" show-password />
+        <el-form-item label="原因" prop="reason">
+          <el-input
+            v-model="pwdForm.reason"
+            type="textarea"
+            :rows="4"
+            maxlength="512"
+            show-word-limit
+            placeholder="请输入发起密码重置的原因"
+          />
         </el-form-item>
       </el-form>
+      <el-alert
+        v-if="pwdResetLink"
+        type="success"
+        title="重置链接已生成"
+        :closable="false"
+        show-icon
+        class="reset-link-alert"
+      />
+      <el-input
+        v-if="pwdResetLink"
+        :model-value="pwdResetLink"
+        readonly
+        class="reset-link-input"
+      >
+        <template #append>
+          <el-button icon="DocumentCopy" @click="copyResetLink">复制</el-button>
+        </template>
+      </el-input>
       <template #footer>
         <el-button @click="pwdDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="pwdLoading" @click="handlePwdSubmit">确定</el-button>
+        <el-button type="primary" :loading="pwdLoading" @click="handlePwdSubmit">发起</el-button>
       </template>
     </el-dialog>
   </div>
@@ -209,7 +224,8 @@
 
 <script setup lang="ts">
 import {ArrowRight, Folder, FolderOpened, Search} from '@element-plus/icons-vue'
-import { listUser, getUser, createUser, updateUser, deleteUser, resetPassword, changeUserStatus } from '@/api/modules/user'
+import { listUser, getUser, createUser, updateUser, deleteUser, requestPasswordReset, changeUserStatus } from '@/api/modules/user'
+import type { PasswordResetRequestResult } from '@/api/modules/user'
 import { listRole } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { usePermission } from '@/hooks/usePermission'
@@ -293,8 +309,12 @@ async function fetchData() {
   loading.value = true
   try {
     const res = await listUser(queryParams.value)
-    tableData.value = res.rows || []
-    total.value = res.total || 0
+    if (Array.isArray(res.rows)) {
+      tableData.value = res.rows
+    }
+    if (typeof res.total === 'number') {
+      total.value = res.total
+    }
     selectIds.value = []
   } finally {
     loading.value = false
@@ -347,20 +367,19 @@ const submitLoading = ref(false)
 const currentEditId = ref<number | null>(null)
 
 const form = ref({
-  username: '', password: '', nickname: '', email: '', phone: '', sex: '2',
+  username: '', nickname: '', email: '', phone: '',
   dept_id: undefined as number | undefined, status: '1', role_ids: [] as any[],
 })
 
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码至少6位', trigger: 'blur' }],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
   email: [{ type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }],
 }
 
 function resetForm() {
   form.value = {
-    username: '', password: '', nickname: '', email: '', phone: '', sex: '2',
+    username: '', nickname: '', email: '', phone: '',
     dept_id: undefined, status: '1', role_ids: [],
   }
   currentEditId.value = null
@@ -386,7 +405,6 @@ async function handleEdit(row: any) {
   form.value.nickname = d.nickname || d.user?.nickname || ''
   form.value.email = d.email || d.user?.email || ''
   form.value.phone = d.phone || d.user?.phone || ''
-  form.value.sex = d.sex ?? d.user?.sex ?? '2'
   form.value.dept_id = d.dept_id ?? d.user?.dept_id
   form.value.status = d.status ?? d.user?.status ?? '1'
   const roles = d.roles || d.user?.roles || []
@@ -395,7 +413,7 @@ async function handleEdit(row: any) {
 }
 
 async function handleSubmit() {
-  const fields = dialog.value.isEdit ? ['nickname'] : ['username', 'password', 'nickname']
+  const fields = dialog.value.isEdit ? ['nickname'] : ['username', 'nickname']
   const valid = await formRef.value?.validateField(fields).catch(() => false)
   if (valid === false) return
   if (hasForbiddenRoleSelection()) {
@@ -410,7 +428,6 @@ async function handleSubmit() {
         nickname: form.value.nickname,
         email: form.value.email || undefined,
         phone: form.value.phone || undefined,
-        sex: form.value.sex || undefined,
         dept_id: form.value.dept_id,
         status: form.value.status,
         role_ids: form.value.role_ids.length ? form.value.role_ids : undefined,
@@ -420,16 +437,14 @@ async function handleSubmit() {
     } else {
       const data = {
         username: form.value.username,
-        password: form.value.password,
         nickname: form.value.nickname,
         email: form.value.email || undefined,
         phone: form.value.phone || undefined,
-        sex: form.value.sex || undefined,
         dept_id: form.value.dept_id,
         role_ids: form.value.role_ids.length ? form.value.role_ids : undefined,
       }
       await createUser(data as any)
-      ElMessage.success('新增成功')
+      ElMessage.success('用户已创建，状态为待激活')
     }
     dialog.value.visible = false
     fetchData()
@@ -462,20 +477,26 @@ async function handleDelete(row: any) {
 // ===== 重置密码 =====
 const pwdDialog = ref({ visible: false })
 const pwdFormRef = ref<FormInstance>()
-const pwdForm = ref({ password: '' })
+const pwdForm = ref({ reason: '' })
 const pwdLoading = ref(false)
 const pwdUserId = ref<number | null>(null)
+const pwdResult = ref<PasswordResetRequestResult | null>(null)
+const pwdResetLink = computed(() => {
+  const url = pwdResult.value?.reset_url
+  if (!url) return ''
+  return new URL(url, window.location.origin).toString()
+})
 
 const pwdRules = {
-  password: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码至少6位', trigger: 'blur' },
+  reason: [
+    { required: true, message: '请输入重置原因', trigger: 'blur' },
   ],
 }
 
 function handleResetPwd(row: any) {
   pwdUserId.value = row.id
-  pwdForm.value.password = ''
+  pwdForm.value.reason = ''
+  pwdResult.value = null
   pwdFormRef.value?.clearValidate()
   pwdDialog.value.visible = true
 }
@@ -485,12 +506,18 @@ async function handlePwdSubmit() {
   if (!valid) return
   pwdLoading.value = true
   try {
-    await resetPassword(pwdUserId.value!, { password: pwdForm.value.password })
-    ElMessage.success('密码重置成功')
-    pwdDialog.value.visible = false
+    const res = await requestPasswordReset(pwdUserId.value!, { reason: pwdForm.value.reason.trim() })
+    pwdResult.value = (res as any).data || (res as any)
+    ElMessage.success('密码重置请求已发起')
   } finally {
     pwdLoading.value = false
   }
+}
+
+async function copyResetLink() {
+  if (!pwdResetLink.value) return
+  await navigator.clipboard.writeText(pwdResetLink.value)
+  ElMessage.success('重置链接已复制')
 }
 
 // ===== 初始化 =====
@@ -631,6 +658,14 @@ onMounted(() => {
   :deep(.el-table) {
     flex: 1;
   }
+}
+
+.reset-link-alert {
+  margin-top: 8px;
+}
+
+.reset-link-input {
+  margin-top: 10px;
 }
 
 // ===== 响应式 =====

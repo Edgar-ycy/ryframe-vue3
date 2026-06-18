@@ -53,7 +53,6 @@
         <el-table-column label="操作" min-width="100" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" :disabled="isProtectedRole(row)" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:role:edit'" type="success" link icon="Menu" :disabled="isProtectedRole(row)" @click="handleAssignMenus(row)">菜单</el-button>
             <el-button v-permission="'system:role:edit'" type="warning" link icon="Key" :disabled="isProtectedRole(row)" @click="handleAssignPerms(row)">权限</el-button>
             <el-button v-permission="'system:role:remove'" type="danger" link icon="Delete" :disabled="isProtectedRole(row)" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -112,25 +111,6 @@
       </template>
     </el-dialog>
 
-    <!-- 分配菜单弹窗 -->
-    <el-dialog v-model="menuDialog.visible" title="分配菜单" width="500px" @close="menuDialog.checkedKeys = []">
-      <el-tree
-        ref="menuTreeRef"
-        :data="menuTree"
-        :props="{ label: 'name', children: 'children' }"
-        node-key="id"
-        show-checkbox
-        check-strictly
-        default-expand-all
-        :default-checked-keys="menuDialog.checkedKeys"
-        @check="(_: any, { checkedKeys }: any) => menuDialog.checkedKeys = checkedKeys"
-      />
-      <template #footer>
-        <el-button @click="menuDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="menuDialog.loading" @click="handleMenuSubmit">确定</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 分配权限弹窗 -->
     <el-dialog v-model="permDialog.visible" title="分配权限" width="550px" @close="permDialog.checkedKeys = []">
       <el-tree
@@ -165,9 +145,8 @@
 
 <script setup lang="ts">
 import { nextTick } from 'vue'
-import { listRole, getRole, createRole, updateRole, deleteRole, assignMenus, assignPermissions } from '@/api/modules/role'
+import { listRole, getRole, createRole, updateRole, deleteRole, assignPermissions } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
-import { getMenuTree } from '@/api/modules/menu'
 import { getPermissionTree, getRolePermissions } from '@/api/modules/permission'
 import { usePermission } from '@/hooks/usePermission'
 
@@ -276,40 +255,6 @@ async function handleDelete(row:any) {
   } catch { /* cancelled */ }
 }
 
-// ----- 分配菜单 -----
-const menuDialog = ref({ visible: false, loading: false, checkedKeys: [] as number[], roleId: 0 })
-const menuTreeRef = ref<any>()
-const menuTree = ref<any[]>([])
-
-async function loadMenuTree() {
-  try {
-    const res = await getMenuTree() as any
-    menuTree.value = res.data || res.rows || res || []
-  } catch { menuTree.value = [] }
-}
-
-async function handleAssignMenus(row: any) {
-  if (!guardProtectedRole(row)) return
-  menuDialog.value.roleId = row.id
-  // 获取当前角色的菜单
-  const res = await getRole(row.id) as any
-  const d = res.data || res
-  menuDialog.value.checkedKeys = d.menu_ids || []
-  menuDialog.value.visible = true
-  // 显式设置勾选状态（避免依赖 default-checked-keys 的首次渲染行为）
-  await nextTick()
-  menuTreeRef.value?.setCheckedKeys(menuDialog.value.checkedKeys)
-}
-
-async function handleMenuSubmit() {
-  menuDialog.value.loading = true
-  try {
-    await assignMenus(menuDialog.value.roleId, { menu_ids: menuDialog.value.checkedKeys })
-    ElMessage.success('菜单分配成功')
-    menuDialog.value.visible = false
-  } finally { menuDialog.value.loading = false }
-}
-
 // ----- 分配权限 -----
 const permDialog = ref({ visible: false, loading: false, checkedKeys: [] as (number | string)[], roleId: 0 })
 const permTreeRef = ref<any>()
@@ -348,7 +293,7 @@ async function handlePermSubmit() {
   } finally { permDialog.value.loading = false }
 }
 
-onMounted(() => { fetchData(); loadDeptTree(); loadMenuTree(); loadPermTree() })
+onMounted(() => { fetchData(); loadDeptTree(); loadPermTree() })
 </script>
 
 

@@ -9,6 +9,12 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { title: '登录', hidden: true },
   },
   {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('@/views/reset-password/index.vue'),
+    meta: { title: '重置密码', hidden: true },
+  },
+  {
     path: '/',
     component: () => import('@/components/layout/index.vue'),
     redirect: '/index',
@@ -64,5 +70,4 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { hidden: true },
   },
 ]
-
 

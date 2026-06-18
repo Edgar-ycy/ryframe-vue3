@@ -18,13 +18,7 @@ export interface MenuForm {
   name: string
   parent_id?: Id
   menu_type: string
-  path?: string
-  component?: string
-  query?: string
-  perms?: string
   icon?: string
-  is_frame?: boolean
-  is_cache?: boolean
   sort?: number
   visible?: boolean
   status?: string
@@ -65,4 +59,3 @@ export function getUserMenus() {
     method: 'get',
   })
 }
-

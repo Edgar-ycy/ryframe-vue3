@@ -18,7 +18,6 @@ export interface RoleForm {
   sort?: number
   status?: string
   data_scope?: string
-  menu_ids?: (number | string)[]
   remark?: string
 }
 
@@ -34,11 +33,6 @@ export function batchDeleteRole(ids: (number | string)[]) { return request({ url
 /** 分配权限 */
 export function assignPermissions(roleId: number | string, data: { perm_ids: (number | string)[] }) {
   return request({ url: `${BASE}/${roleId}/permissions`, method: 'put', data })
-}
-
-/** 分配菜单 */
-export function assignMenus(roleId: number | string, data: { menu_ids: (number | string)[] }) {
-  return request({ url: `${BASE}/${roleId}/menus`, method: 'put', data })
 }
 
 /** 设置数据权限 */

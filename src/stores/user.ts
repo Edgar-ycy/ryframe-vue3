@@ -53,7 +53,7 @@ export const useUserStore = defineStore('user', {
         this.phone = userInfo.phone || ''
         this.avatar = userInfo.avatar || ''
         this.roles = userInfo.roles || []
-        this.permissions = userInfo.perms || userInfo.permissions || []
+        this.permissions = userInfo.perms || []
       }
       return res
     },
@@ -70,8 +70,7 @@ export const useUserStore = defineStore('user', {
         this.phone = d.phone || ''
         this.avatar = d.avatar || ''
         this.roles = d.roles || []
-        // 后端可能返回 perms 或 permissions 字段，两者都尝试读取
-        this.permissions = d.perms || d.permissions || []
+        this.permissions = d.perms || []
       }
       return res
     },

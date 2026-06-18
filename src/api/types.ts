@@ -29,7 +29,6 @@ export interface UserInfo {
   avatar?: string
   roles?: string[]
   perms?: string[]
-  permissions?: string[]
 }
 
 export interface LoginResult {
@@ -45,19 +44,12 @@ export interface MenuTreeNode {
   parent_id?: Id | null
   name?: string
   menu_name?: string
-  path?: string
-  component?: string
-  redirect?: string
-  query?: string
   menu_type?: 'M' | 'C' | 'F' | string
-  perms?: string
   icon?: string
   visible?: boolean | string | number
   status?: string | number
   sort?: number
   order_num?: number
-  is_frame?: boolean | string | number
-  is_cache?: boolean | string | number
   remark?: string
   children?: MenuTreeNode[]
 }

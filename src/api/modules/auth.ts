@@ -35,6 +35,21 @@ export function refreshToken(data: { refresh_token: string }) {
 }
 
 /** 获取当前用户信息 */
+export interface CompletePasswordResetParams {
+  request_id: string
+  token: string
+  new_password: string
+}
+
+/** 完成密码重置 */
+export function completePasswordReset(data: CompletePasswordResetParams) {
+  return request({
+    url: '/auth/password-reset/complete',
+    method: 'post',
+    data,
+  })
+}
+
 export function getUserInfo() {
   return request<UserInfo>({
     url: '/auth/me',
@@ -94,7 +109,6 @@ export interface ProfileUpdateParams {
   nickname: string
   email?: string
   phone?: string
-  sex?: string
 }
 
 export interface PasswordChangeParams {

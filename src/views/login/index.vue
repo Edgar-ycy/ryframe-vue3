@@ -150,7 +150,9 @@ onMounted(async () => {
 
 <style scoped>
 .login-container {
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,7 +160,7 @@ onMounted(async () => {
 }
 
 .login-card {
-  width: 400px;
+  width: min(400px, calc(100vw - 32px));
   padding: 40px;
   background: #fff;
   border-radius: 8px;
@@ -181,5 +183,16 @@ onMounted(async () => {
   color: var(--color-text-secondary);
   font-size: 12px;
   border-radius: 4px;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 24px 18px;
+  }
+
+  .login-title {
+    margin-bottom: 22px;
+    font-size: 20px;
+  }
 }
 </style>

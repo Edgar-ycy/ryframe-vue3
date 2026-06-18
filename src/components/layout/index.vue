@@ -1,7 +1,12 @@
 <template>
-  <div class="app-wrapper" :class="{ 'sidebar-collapse': appStore.sidebarCollapsed, 'no-tagsview': !settingsStore.tagsView }">
+  <div class="app-wrapper" :class="{ 'sidebar-collapse': appStore.sidebarCollapsed, 'no-tagsview': !settingsStore.tagsView, 'is-mobile': appStore.isMobile }">
     <!-- 侧边栏 -->
     <Sidebar />
+    <div
+      v-if="appStore.isMobile && !appStore.sidebarCollapsed"
+      class="mobile-sidebar-mask"
+      @click="appStore.closeSidebar()"
+    />
     <!-- 右侧主体 -->
     <div class="main-container">
       <!-- 顶栏 -->
@@ -30,6 +35,7 @@ settingsStore.initSettings()
 
 // 从后端同步皮肤/主题配置（覆盖 localStorage 的默认值）
 onMounted(() => {
+  appStore.initResponsive()
   settingsStore.syncFromServer()
 })
 </script>

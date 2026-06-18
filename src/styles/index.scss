@@ -16,6 +16,9 @@ html, body {
   font-size: 14px;
   color: var(--color-text-primary);
   background: var(--bg-color-page);
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -42,6 +45,7 @@ a:hover {
 
   .main-container {
     min-height: 100%;
+    min-width: 0;
     margin-left: var(--sidebar-width);
     transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -49,6 +53,10 @@ a:hover {
   &.sidebar-collapse .main-container {
     margin-left: var(--sidebar-collapsed-width);
   }
+}
+
+.mobile-sidebar-mask {
+  display: none;
 }
 
 /* ====== Sidebar — 深色现代风格 ====== */
@@ -414,6 +422,222 @@ a:hover {
 
 .el-select .el-input__wrapper {
   border-radius: 8px;
+}
+
+/* ====== Mobile Layout ====== */
+@media (max-width: 768px) {
+  html,
+  body,
+  #app {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .app-wrapper {
+    overflow-x: hidden;
+
+    .main-container,
+    &.sidebar-collapse .main-container {
+      width: 100%;
+      margin-left: 0;
+    }
+  }
+
+  .sidebar-container {
+    width: min(82vw, 280px);
+    max-width: 280px;
+    transform: translateX(0);
+    box-shadow: var(--shadow-md);
+    transition:
+      transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .el-menu {
+      width: 100%;
+    }
+  }
+
+  .app-wrapper.sidebar-collapse .sidebar-container {
+    width: min(82vw, 280px);
+    transform: translateX(-100%);
+  }
+
+  .mobile-sidebar-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: block;
+    background: rgba(15, 23, 42, 0.42);
+  }
+
+  .navbar {
+    height: 48px;
+    padding: 0 12px;
+    z-index: 999;
+
+    .hamburger {
+      margin-right: 8px;
+      font-size: 22px;
+    }
+
+    .breadcrumb {
+      display: none;
+    }
+
+    .navbar-right {
+      gap: 6px;
+      margin-left: auto;
+
+      .navbar-action {
+        padding: 4px;
+      }
+
+      .user-info {
+        gap: 4px;
+        padding: 2px 4px;
+
+        > span:not(.el-avatar) {
+          display: none;
+        }
+      }
+    }
+  }
+
+  .tags-view-container {
+    height: 34px;
+
+    .tags-view-wrapper {
+      padding: 0 6px;
+    }
+
+    .tags-view-item {
+      height: 24px;
+      line-height: 24px;
+      padding: 0 9px;
+    }
+  }
+
+  .app-main {
+    min-height: calc(100dvh - 48px - 34px);
+    padding: 10px;
+    overflow-x: hidden;
+  }
+
+  .no-tagsview .app-main {
+    min-height: calc(100dvh - 48px);
+  }
+
+  .page-container {
+    padding: 12px;
+    border-radius: var(--border-radius-base);
+    box-shadow: none;
+
+    h2 {
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+  }
+
+  .search-bar {
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 12px;
+
+    .el-form-item,
+    .el-form-item__content {
+      width: 100%;
+    }
+
+    .el-input,
+    .el-select,
+    .el-date-editor {
+      width: 100% !important;
+    }
+  }
+
+  .table-toolbar,
+  .card-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .table-toolbar > div,
+  .card-header > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .el-card {
+    border-radius: var(--border-radius-base) !important;
+
+    .el-card__header {
+      padding: 12px;
+    }
+
+    .el-card__body {
+      padding: 12px;
+    }
+  }
+
+  .el-table {
+    font-size: 12px;
+
+    .cell {
+      padding: 0 8px;
+    }
+  }
+
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .el-pagination__total,
+    .el-pagination__sizes,
+    .el-pagination__jump {
+      display: none;
+    }
+  }
+
+  .el-dialog {
+    width: calc(100vw - 24px) !important;
+    margin: 8vh auto 0 !important;
+  }
+
+  .el-drawer {
+    width: min(88vw, 360px) !important;
+  }
+
+  .el-form--inline {
+    .el-form-item {
+      width: 100%;
+      margin-right: 0;
+    }
+
+    .el-input,
+    .el-select,
+    .el-date-editor {
+      width: 100% !important;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    .navbar-right {
+      gap: 4px;
+    }
+
+    .navbar-action:first-child {
+      display: none;
+    }
+  }
+
+  .app-main {
+    padding: 8px;
+  }
 }
 
 /* ====== Dark Mode ====== */

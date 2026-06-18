@@ -69,6 +69,9 @@ const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' 
 
 function handleMenuSelect(indexPath: string) {
   router.push(indexPath)
+  if (appStore.isMobile) {
+    appStore.closeSidebar()
+  }
 }
 
 /** 获取可见子节点（排除 hidden） */

@@ -1,17 +1,46 @@
 import { defineStore } from 'pinia'
 
+const MOBILE_BREAKPOINT = 768
+const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT
+
 interface AppState {
   sidebarCollapsed: boolean
+  isMobile: boolean
+  responsiveInitialized: boolean
 }
 
 export const useAppStore = defineStore('app', {
-  state: (): AppState => ({
-    sidebarCollapsed: false,
-  }),
+  state: (): AppState => {
+    const isMobile = isMobileViewport()
+
+    return {
+      sidebarCollapsed: isMobile,
+      isMobile,
+      responsiveInitialized: false,
+    }
+  },
 
   actions: {
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed
+    },
+    closeSidebar() {
+      this.sidebarCollapsed = true
+    },
+    initResponsive() {
+      if (this.responsiveInitialized || typeof window === 'undefined') return
+
+      this.responsiveInitialized = true
+      const syncViewport = () => {
+        const nextIsMobile = isMobileViewport()
+        if (nextIsMobile !== this.isMobile) {
+          this.isMobile = nextIsMobile
+          this.sidebarCollapsed = nextIsMobile
+        }
+      }
+
+      syncViewport()
+      window.addEventListener('resize', syncViewport, { passive: true })
     },
   },
 })

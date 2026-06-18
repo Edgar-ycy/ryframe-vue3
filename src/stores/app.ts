@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 1024
 const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT
 
 interface AppState {

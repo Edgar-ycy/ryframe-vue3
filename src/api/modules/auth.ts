@@ -9,11 +9,12 @@ export interface LoginParams {
 }
 
 /** 登录 */
-export function login(data: LoginParams) {
+export function login(data: LoginParams, tenantId: string) {
   return request<LoginResult>({
     url: '/auth/login',
     method: 'post',
     data,
+    headers: { 'X-Tenant-Id': tenantId },
   })
 }
 

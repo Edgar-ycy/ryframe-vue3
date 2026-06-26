@@ -1,24 +1,22 @@
 <template>
   <div class="navbar">
-    <!-- 折叠按钮 -->
     <div class="hamburger" @click="appStore.toggleSidebar()">
       <el-icon><Fold v-if="!appStore.sidebarCollapsed" /><Expand v-else /></el-icon>
     </div>
 
-    <!-- 面包屑 -->
     <el-breadcrumb class="breadcrumb" separator="/">
       <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.path" :to="item.path">
         {{ item.meta?.title }}
       </el-breadcrumb-item>
     </el-breadcrumb>
 
-    <!-- 右侧操作 -->
     <div class="navbar-right">
-      <!-- 全屏切换 -->
+      <el-tag effect="plain" type="info">
+        {{ userStore.tenantName || userStore.tenantId }} · {{ userStore.tenantId }}
+      </el-tag>
       <el-icon class="navbar-action" :size="24" @click="toggleFullscreen">
         <FullScreen />
       </el-icon>
-      <!-- 主题切换 -->
       <el-switch
         v-model="isDark"
         inline-prompt
@@ -27,7 +25,6 @@
         <template #active-icon><el-icon><Moon /></el-icon></template>
         <template #inactive-icon><el-icon><Sunny /></el-icon></template>
       </el-switch>
-      <!-- 布局设置 -->
       <el-icon class="navbar-action" :size="24" @click="settingsVisible = true">
         <Setting />
       </el-icon>
@@ -46,18 +43,17 @@
           </el-dropdown-menu>
         </template>
       </el-dropdown>
-      <!-- 布局设置抽屉 -->
       <Settings v-model="settingsVisible" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {useAppStore} from '@/stores/app'
-import {useUserStore} from '@/stores/user'
-import {useSettingsStore} from '@/stores/settings'
-import {ArrowDown, Expand, Fold, FullScreen, Moon, Setting, Sunny, UserFilled} from '@element-plus/icons-vue'
+import { ArrowDown, Expand, Fold, FullScreen, Moon, Setting, Sunny, UserFilled } from '@element-plus/icons-vue'
 import Settings from '../Settings/index.vue'
+import { useAppStore } from '@/stores/app'
+import { useSettingsStore } from '@/stores/settings'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,9 +63,7 @@ const settingsStore = useSettingsStore()
 
 const settingsVisible = ref(false)
 
-const breadcrumbs = computed(() => {
-    return route.matched.filter(item => item.meta?.title)
-})
+const breadcrumbs = computed(() => route.matched.filter(item => item.meta?.title))
 
 const isDark = computed({
   get: () => settingsStore.theme === 'dark',

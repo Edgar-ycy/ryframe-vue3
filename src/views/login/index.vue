@@ -9,6 +9,14 @@
         size="large"
         @keyup.enter="handleLogin"
       >
+        <el-form-item prop="tenant_id">
+          <el-input
+            v-model="loginForm.tenant_id"
+            placeholder="租户标识"
+            prefix-icon="OfficeBuilding"
+            autocomplete="organization"
+          />
+        </el-form-item>
         <el-form-item prop="username">
           <el-input
             v-model="loginForm.username"
@@ -35,7 +43,12 @@
               style="flex:1"
             />
             <div style="width:120px;height:40px;cursor:pointer;flex-shrink:0" @click="refreshCaptcha">
-              <img v-if="captchaImage" :src="captchaImage" alt="验证码" style="width:100%;height:100%;border-radius:4px" />
+              <img
+                v-if="captchaImage"
+                :src="captchaImage"
+                alt="验证码"
+                style="width:100%;height:100%;border-radius:4px"
+              />
               <div v-else class="captcha-placeholder">
                 加载中...
               </div>
@@ -49,7 +62,7 @@
             style="width: 100%"
             @click="handleLogin"
           >
-            登 录
+            登录
           </el-button>
         </el-form-item>
       </el-form>
@@ -58,8 +71,9 @@
 </template>
 
 <script setup lang="ts">
-import {useUserStore} from '@/stores/user'
-import {getCaptcha, getCaptchaConfig} from '@/api/modules/auth'
+import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
+import { useUserStore } from '@/stores/user'
+import { getTenantId } from '@/utils/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -69,24 +83,26 @@ const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
 interface LoginForm {
+  tenant_id: string
   username: string
   password: string
   captcha_code: string
 }
 
 const loginForm = ref<LoginForm>({
+  tenant_id: getTenantId(),
   username: 'admin',
   password: 'admin123',
   captcha_code: '',
 })
 
 const loginRules: FormRules = {
+  tenant_id: [{ required: true, message: '请输入租户标识', trigger: 'blur' }],
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   captcha_code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
 }
 
-// ----- 验证码 -----
 const captchaEnabled = ref(false)
 const captchaImage = ref('')
 const captchaId = ref('')
@@ -97,7 +113,6 @@ async function loadCaptchaConfig() {
     const data = res.data || res
     captchaEnabled.value = data.captcha_enabled === true
   } catch {
-    // 接口不可用时默认显示验证码
     captchaEnabled.value = true
   }
 }
@@ -120,18 +135,17 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    // 登录（验证码开启时才传 captcha_id/captcha_code）
     await userStore.login(
       loginForm.value.username,
       loginForm.value.password,
+      loginForm.value.tenant_id.trim(),
       captchaEnabled.value ? captchaId.value : undefined,
       captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )
     ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
     await router.replace(redirect === '/login' ? '/' : redirect)
-  } catch (error) {
-    // 错误信息已在拦截器中处理
+  } catch {
     if (captchaEnabled.value) {
       await refreshCaptcha()
     }
@@ -150,7 +164,6 @@ onMounted(async () => {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
   min-height: 100dvh;
   padding: 24px 16px;
   display: flex;
@@ -173,6 +186,7 @@ onMounted(async () => {
   font-size: 24px;
   color: var(--color-text-primary);
 }
+
 .captcha-placeholder {
   width: 100%;
   height: 100%;

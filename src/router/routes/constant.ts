@@ -1,6 +1,5 @@
-import type {RouteRecordRaw} from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 
-// 无需权限的基础路由
 export const constantRoutes: RouteRecordRaw[] = [
   {
     path: '/login',
@@ -30,6 +29,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         name: 'Profile',
         component: () => import('@/views/profile/index.vue'),
         meta: { title: '个人中心', icon: 'User', hidden: true },
+      },
+      {
+        path: 'platform/tenants',
+        name: 'PlatformTenants',
+        component: () => import('@/views/platform/tenant/index.vue'),
+        meta: { title: '租户管理', icon: 'OfficeBuilding', hidden: true },
       },
     ],
   },
@@ -63,11 +68,9 @@ export const constantRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/error/500.vue'),
     meta: { title: '服务器错误', hidden: true },
   },
-  // 兜底路由：必须放在 constantRoutes 最后，确保在所有路由注册完成后才作为 fallback 生效
   {
     path: '/:pathMatch(.*)*',
     redirect: '/404',
     meta: { hidden: true },
   },
 ]
-

@@ -22,6 +22,8 @@ export interface PageResponse<T> {
 
 export interface UserInfo {
   id: Id
+  tenant_id?: string
+  tenant_name?: string
   username: string
   nickname?: string
   email?: string

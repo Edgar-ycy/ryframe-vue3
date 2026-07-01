@@ -21,7 +21,11 @@
             <el-icon v-if="row.icon" :size="18"><component :is="row.icon" /></el-icon>
           </template>
         </el-table-column>
-        <el-table-column prop="perm_code" label="关联权限" min-width="190" show-overflow-tooltip />
+        <el-table-column label="关联权限" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ permissionLabel(row) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="sort" label="排序" align="center" />
         <el-table-column prop="visible" label="可见" align="center">
           <template #default="{ row }">
@@ -104,10 +108,10 @@
 </template>
 
 <script setup lang="ts">
-import { listToTree } from '@/utils/tree'
 import type { TreeNode } from '@/utils/tree'
-import { listMenuNoPage, getMenu, createMenu, updateMenu, deleteMenu } from '@/api/modules/menu'
+import { getMenuTree, createMenu, updateMenu, deleteMenu } from '@/api/modules/menu'
 import { getPermissionTree } from '@/api/modules/permission'
+import type { PermissionTreeNode } from '@/api/modules/permission'
 import { getRouteKeyByPermissionCode } from '@/router/pageRegistry'
 import IconSelect from '@/components/common/IconSelect.vue'
 
@@ -115,18 +119,24 @@ import IconSelect from '@/components/common/IconSelect.vue'
 const loading = ref(false)
 const tableData = ref<TreeNode[]>([])
 const allMenuTree = ref<TreeNode[]>([])
-const permissionOptions = ref<Array<{ id: string | number; name: string; code: string }>>([])
+interface PermissionOption {
+  id: string
+  name: string
+  code: string
+}
 
-function flattenPermissions(nodes: any[]): Array<{ id: string | number; name: string; code: string }> {
+const permissionOptions = ref<PermissionOption[]>([])
+
+function flattenPermissions(nodes: PermissionTreeNode[]): PermissionOption[] {
   return nodes.flatMap(node => [
-    { id: node.id, name: node.name, code: node.code },
+    { id: String(node.id), name: node.name, code: node.code },
     ...flattenPermissions(node.children || []),
   ])
 }
 
 async function loadPermissionOptions() {
   const res = await getPermissionTree()
-  permissionOptions.value = flattenPermissions((res as any).data || (res as any).rows || [])
+  permissionOptions.value = flattenPermissions(res.data || [])
 }
 
 function handlePermissionChange(permissionId?: number | string) {
@@ -134,6 +144,12 @@ function handlePermissionChange(permissionId?: number | string) {
   form.value.route_key = form.value.menu_type === 'C'
     ? (getRouteKeyByPermissionCode(selected?.code) || '')
     : ''
+}
+
+function permissionLabel(menu: TreeNode): string {
+  if (menu.perm_id == null) return '-'
+  const permission = permissionOptions.value.find(option => option.id === String(menu.perm_id))
+  return permission ? `${permission.name} (${permission.code})` : (menu.perm_code || '-')
 }
 
 function handleMenuTypeChange(type: string | number | boolean | undefined) {
@@ -149,9 +165,8 @@ function handleMenuTypeChange(type: string | number | boolean | undefined) {
 async function fetchData() {
   loading.value = true
   try {
-    const res = await listMenuNoPage() as any
-    const flatList = res.rows || res.data || []
-    const tree = listToTree(flatList)
+    const res = await getMenuTree()
+    const tree = (res.data || []) as TreeNode[]
     tableData.value = tree
     allMenuTree.value = tree
   } finally { loading.value = false }
@@ -184,10 +199,10 @@ async function handleChangeStatus(row: any, val: string) {
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
-const currentEditId = ref<number | null>(null)
+const currentEditId = ref<number | string | null>(null)
 
 interface MenuFormState {
-  parent_id?: number
+  parent_id?: number | string
   name: string
   menu_type: string
   perm_id?: number | string
@@ -229,7 +244,7 @@ const parentOptions = computed(() => {
 })
 
 /** 从树中移除指定 id 的整个子树 */
-function excludeSubtree(tree: TreeNode[], excludeId: number): TreeNode[] {
+function excludeSubtree(tree: TreeNode[], excludeId: number | string): TreeNode[] {
   return tree.reduce<TreeNode[]>((acc, node) => {
     if (node.id === excludeId) return acc
     const children = node.children?.length
@@ -240,7 +255,7 @@ function excludeSubtree(tree: TreeNode[], excludeId: number): TreeNode[] {
   }, [])
 }
 
-function handleAdd(parentId?: number) {
+function handleAdd(parentId?: number | string) {
   currentEditId.value = null
   dialog.value.title = '新增菜单'; dialog.value.isEdit = false
   resetForm()
@@ -253,12 +268,14 @@ async function handleEdit(row: any) {
   dialog.value.title = '编辑菜单'; dialog.value.isEdit = true
   resetForm()
   currentEditId.value = row.id
-  const res = await getMenu(row.id)
-  const d = res.data || res
+  if (permissionOptions.value.length === 0) {
+    await loadPermissionOptions()
+  }
+  const d = row
   form.value.parent_id = d.parent_id ?? undefined
   form.value.name = d.name
   form.value.menu_type = d.menu_type || 'C'
-  form.value.perm_id = d.perm_id ?? undefined
+  form.value.perm_id = d.perm_id == null ? undefined : String(d.perm_id)
   form.value.route_key = d.route_key || ''
   form.value.icon = d.icon || ''
   form.value.sort = d.sort ?? 0

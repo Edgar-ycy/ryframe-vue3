@@ -47,6 +47,9 @@ export interface MenuTreeNode {
   name?: string
   menu_name?: string
   menu_type?: 'M' | 'C' | 'F' | string
+  perm_id?: Id | null
+  perm_code?: string | null
+  route_key?: string | null
   icon?: string
   visible?: boolean | string | number
   status?: string | number

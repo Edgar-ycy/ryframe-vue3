@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>部门列表</span>
-          <el-button v-permission="'system:dept:add'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
+          <el-button v-perm="'system:dept:add'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
@@ -19,9 +19,9 @@
 
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:dept:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
-            <el-button v-permission="'system:dept:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:dept:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-perm="'system:dept:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
+            <el-button v-perm="'system:dept:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-perm="'system:dept:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

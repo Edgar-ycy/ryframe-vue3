@@ -7,7 +7,7 @@
           <template #header>
             <div class="card-header">
               <span>字典类型</span>
-              <el-button v-permission="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddType">新增</el-button>
+              <el-button v-perm="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddType">新增</el-button>
             </div>
           </template>
           <el-table v-loading="typeLoading" :data="typeList" border stripe highlight-current-row
@@ -42,7 +42,7 @@
           <template #header>
             <div class="card-header">
               <span>字典数据{{ currentType ? ` — ${currentType.name}` : '' }}</span>
-              <el-button v-if="currentType" v-permission="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddData">新增</el-button>
+              <el-button v-if="currentType" v-perm="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddData">新增</el-button>
             </div>
           </template>
           <el-table v-loading="dataLoading" :data="dataList" border stripe>

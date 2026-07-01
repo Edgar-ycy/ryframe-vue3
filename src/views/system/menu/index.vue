@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>菜单列表</span>
-          <el-button v-permission="'system:menu:add'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
+          <el-button v-perm="'system:menu:add'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
@@ -21,6 +21,7 @@
             <el-icon v-if="row.icon" :size="18"><component :is="row.icon" /></el-icon>
           </template>
         </el-table-column>
+        <el-table-column prop="perm_code" label="关联权限" min-width="190" show-overflow-tooltip />
         <el-table-column prop="sort" label="排序" align="center" />
         <el-table-column prop="visible" label="可见" align="center">
           <template #default="{ row }">
@@ -39,9 +40,9 @@
         </el-table-column>
         <el-table-column label="操作" min-width="100" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:menu:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
-            <el-button v-permission="'system:menu:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:menu:remove'" type="danger" link icon="Delete" :loading="deletingId === row.id" @click="handleDelete(row)">删除</el-button>
+            <el-button v-perm="'system:menu:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">新增</el-button>
+            <el-button v-perm="'system:menu:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-perm="'system:menu:remove'" type="danger" link icon="Delete" :loading="deletingId === row.id" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -63,8 +64,20 @@
         <el-form-item label="菜单名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入菜单名称" maxlength="50" />
         </el-form-item>
-        <el-form-item label="图标">
+        <el-form-item label="菜单类型" prop="menu_type">
+          <el-radio-group v-model="form.menu_type" @change="handleMenuTypeChange">
+            <el-radio value="M">目录</el-radio>
+            <el-radio value="C">菜单</el-radio>
+            <el-radio value="F">按钮</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="菜单图标">
           <IconSelect v-model="form.icon" />
+        </el-form-item>
+        <el-form-item label="关联权限" prop="perm_id">
+          <el-select v-model="form.perm_id" filterable clearable placeholder="请选择权限" style="width:100%" @change="handlePermissionChange">
+            <el-option v-for="option in permissionOptions" :key="option.id" :label="`${option.name} (${option.code})`" :value="option.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" :max="999" />
@@ -94,12 +107,44 @@
 import { listToTree } from '@/utils/tree'
 import type { TreeNode } from '@/utils/tree'
 import { listMenuNoPage, getMenu, createMenu, updateMenu, deleteMenu } from '@/api/modules/menu'
+import { getPermissionTree } from '@/api/modules/permission'
+import { getRouteKeyByPermissionCode } from '@/router/pageRegistry'
 import IconSelect from '@/components/common/IconSelect.vue'
 
 // ===== 数据加载 =====
 const loading = ref(false)
 const tableData = ref<TreeNode[]>([])
 const allMenuTree = ref<TreeNode[]>([])
+const permissionOptions = ref<Array<{ id: string | number; name: string; code: string }>>([])
+
+function flattenPermissions(nodes: any[]): Array<{ id: string | number; name: string; code: string }> {
+  return nodes.flatMap(node => [
+    { id: node.id, name: node.name, code: node.code },
+    ...flattenPermissions(node.children || []),
+  ])
+}
+
+async function loadPermissionOptions() {
+  const res = await getPermissionTree()
+  permissionOptions.value = flattenPermissions((res as any).data || (res as any).rows || [])
+}
+
+function handlePermissionChange(permissionId?: number | string) {
+  const selected = permissionOptions.value.find(option => String(option.id) === String(permissionId))
+  form.value.route_key = form.value.menu_type === 'C'
+    ? (getRouteKeyByPermissionCode(selected?.code) || '')
+    : ''
+}
+
+function handleMenuTypeChange(type: string | number | boolean | undefined) {
+  if (type === 'M') {
+    form.value.route_key = ''
+  } else if (type === 'F') {
+    form.value.route_key = ''
+  } else if (type === 'C') {
+    handlePermissionChange(form.value.perm_id)
+  }
+}
 
 async function fetchData() {
   loading.value = true
@@ -145,6 +190,8 @@ interface MenuFormState {
   parent_id?: number
   name: string
   menu_type: string
+  perm_id?: number | string
+  route_key: string
   icon: string
   sort: number
   visible: boolean
@@ -152,18 +199,22 @@ interface MenuFormState {
 }
 
 const form = ref<MenuFormState>({
-  parent_id: undefined, name: '', menu_type: 'M', icon: '',
+  parent_id: undefined, name: '', menu_type: 'M', perm_id: undefined, route_key: '', icon: '',
   sort: 0, visible: true, status: '1',
 })
 
 const rules = computed<FormRules>(() => {
-  return {
+  const result: FormRules = {
     name: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
   }
+  if (form.value.menu_type !== 'M') {
+    result.perm_id = [{ required: true, message: '菜单需关联查询权限，按钮必须关联操作权限', trigger: 'change' }]
+  }
+  return result
 })
 
 function resetForm() {
-  form.value.parent_id = undefined; form.value.name = ''; form.value.menu_type = 'M'; form.value.icon = ''
+  form.value.parent_id = undefined; form.value.name = ''; form.value.menu_type = 'M'; form.value.perm_id = undefined; form.value.route_key = ''; form.value.icon = ''
   form.value.sort = 0; form.value.visible = true; form.value.status = '1'
   currentEditId.value = null
   formRef.value?.clearValidate()
@@ -207,6 +258,8 @@ async function handleEdit(row: any) {
   form.value.parent_id = d.parent_id ?? undefined
   form.value.name = d.name
   form.value.menu_type = d.menu_type || 'C'
+  form.value.perm_id = d.perm_id ?? undefined
+  form.value.route_key = d.route_key || ''
   form.value.icon = d.icon || ''
   form.value.sort = d.sort ?? 0
   form.value.visible = d.visible === true || d.visible === '1' || d.visible === 1
@@ -217,12 +270,18 @@ async function handleEdit(row: any) {
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
+  if (form.value.menu_type === 'C' && !form.value.route_key) {
+    ElMessage.error('所选权限没有对应的前端页面，请选择该页面的查询权限')
+    return
+  }
   submitLoading.value = true
   try {
     const data: Record<string, any> = {
       name: form.value.name,
       parent_id: form.value.parent_id || undefined,
       menu_type: form.value.menu_type,
+      perm_id: form.value.perm_id || undefined,
+      route_key: form.value.menu_type === 'F' ? undefined : form.value.route_key,
       icon: form.value.icon || undefined,
       sort: form.value.sort,
       visible: form.value.visible,
@@ -245,7 +304,7 @@ const deletingId = ref<number | null>(null)
 async function handleDelete(row: any) {
   try {
     await ElMessageBox.confirm(
-      `确认删除菜单"${row.name}"吗？如有子菜单将一并删除。`,
+      `确认删除菜单"${row.name}"吗？存在子菜单时需先处理子菜单。`,
       '警告',
       { type: 'warning', confirmButtonText: '确认删除' },
     )
@@ -260,5 +319,8 @@ async function handleDelete(row: any) {
   }
 }
 
-onMounted(() => fetchData())
+onMounted(() => {
+  fetchData()
+  loadPermissionOptions()
+})
 </script>

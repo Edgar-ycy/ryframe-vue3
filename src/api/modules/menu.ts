@@ -18,6 +18,8 @@ export interface MenuForm {
   name: string
   parent_id?: Id
   menu_type: string
+  perm_id?: Id
+  route_key?: string
   icon?: string
   sort?: number
   visible?: boolean
@@ -55,7 +57,7 @@ export function deleteMenu(id: Id) {
 
 export function getUserMenus() {
   return request<MenuTreeNode[]>({
-    url: `${BASE}/user-tree`,
+    url: `/system/user/get-menus`,
     method: 'get',
   })
 }

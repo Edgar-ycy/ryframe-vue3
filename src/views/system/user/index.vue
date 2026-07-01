@@ -88,7 +88,7 @@
         <template #header>
           <div class="card-header">
             <span>用户列表</span>
-            <el-button v-permission="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+            <el-button v-perm="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
           </div>
         </template>
 
@@ -113,9 +113,9 @@
           <el-table-column prop="created_at" label="创建时间" />
           <el-table-column label="操作" min-width="100" fixed="right" align="center">
             <template #default="{ row }">
-              <el-button v-permission="'system:user:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button v-permission="'system:user:edit'" type="warning" link icon="Key" @click="handleResetPwd(row)">发起重置</el-button>
-              <el-button v-permission="'system:user:remove'" type="danger" link icon="Delete" :loading="deletingId === row.id" @click="handleDelete(row)">删除</el-button>
+              <el-button v-perm="'system:user:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+              <el-button v-perm="'system:user:edit'" type="warning" link icon="Key" @click="handleResetPwd(row)">发起重置</el-button>
+              <el-button v-perm="'system:user:remove'" type="danger" link icon="Delete" :loading="deletingId === row.id" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
 

@@ -5,10 +5,10 @@
         <div class="card-header">
           <span>权限列表</span>
           <div class="toolbar">
-            <el-button v-permission="'system:permission:add'" type="primary" icon="Plus" @click="handleAdd()">
+            <el-button v-perm="'system:perm:add'" type="primary" icon="Plus" @click="handleAdd()">
               新增
             </el-button>
-            <el-button v-permission="'system:permission:sync'" icon="RefreshRight" :loading="syncLoading" @click="handleSync">
+            <el-button v-perm="'system:perm:sync'" icon="RefreshRight" :loading="syncLoading" @click="handleSync">
               同步接口权限
             </el-button>
             <el-button icon="Refresh" @click="fetchData">刷新</el-button>
@@ -78,13 +78,13 @@
         </el-table-column>
         <el-table-column label="操作" width="210" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:permission:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">
+            <el-button v-perm="'system:perm:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">
               新增
             </el-button>
-            <el-button v-permission="'system:permission:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">
+            <el-button v-perm="'system:perm:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">
               编辑
             </el-button>
-            <el-button v-permission="'system:permission:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">
+            <el-button v-perm="'system:perm:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">
               删除
             </el-button>
           </template>

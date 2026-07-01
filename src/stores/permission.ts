@@ -86,7 +86,7 @@ function buildRoutesFromMenuTree(nodes: MenuTreeNode[], parentPath?: string): Ro
     const type = getMenuType(node)
     if (type === 'F') continue
 
-    const page = getMenuPage(node.id)
+    const page = getMenuPage(node.route_key)
     if (page && SKIP_PATHS.has(normalizePath(page.path))) continue
 
     const route = nodeToRoute(node, parentPath)
@@ -104,18 +104,22 @@ function nodeToRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw | 
 }
 
 function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw {
-  const page = getMenuPage(node.id)
+  const page = getMenuPage(node.route_key)
   const dirPath = normalizePath(page?.path || `/menu-${node.id}`)
   const children = node.children?.length
     ? buildRoutesFromMenuTree(node.children, dirPath)
     : []
   const visibleChildren = children.filter(c => c.meta?.hidden !== true)
+  const firstChildPath = visibleChildren[0]?.path
+  const redirect = firstChildPath
+    ? (String(firstChildPath).startsWith('/') ? firstChildPath : `${dirPath}/${firstChildPath}`.replace(/\/\//g, '/'))
+    : dirPath
 
   return {
     path: dirPath,
     name: getRouteName(node),
     component: LAYOUT,
-    redirect: visibleChildren[0] ? `${dirPath}/${visibleChildren[0].path}`.replace(/\/\//g, '/') : dirPath,
+    redirect,
     meta: {
       title: getNodeTitle(node),
       icon: iconPascalCase(node.icon || '') || undefined,
@@ -128,7 +132,7 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw {
 }
 
 function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw | null {
-  const page = getMenuPage(node.id)
+  const page = getMenuPage(node.route_key)
   if (!page?.component) return null
 
   const nodePath = page.path
@@ -159,7 +163,7 @@ function normalizePath(path?: string): string {
 }
 
 function getRouteName(node: MenuTreeNode): string {
-  const page = getMenuPage(node.id)
+  const page = getMenuPage(node.route_key)
   return normalizePath(page?.path).replace(/\//g, '_') || `menu_${node.id}`
 }
 

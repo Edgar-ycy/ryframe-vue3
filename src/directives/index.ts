@@ -9,7 +9,7 @@ import longpress from './longpress'
 
 /** 所有自定义指令的注册表（key: 指令名, value: 指令定义） */
 export const directiveMap: Record<string, Directive> = {
-  permission,
+  perm: permission,
   debounce,
   copy,
   throttle,

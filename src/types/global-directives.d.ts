@@ -2,8 +2,8 @@ import type { Directive } from 'vue'
 
 declare module '@vue/runtime-core' {
   export interface GlobalDirectives {
-    /** v-permission 权限控制指令，用法: v-permission="'user:add'" */
-    permission: Directive<HTMLElement, string | string[]>
+    /** v-perm 权限控制指令，用法: v-perm="'user:add'" */
+    perm: Directive<HTMLElement, string | string[]>
     /** v-debounce 防抖指令，用法: v-debounce:500="handleClick" */
     debounce: Directive<HTMLElement, (...args: any[]) => void>
     /** v-copy 一键复制指令，用法: v-copy="'要复制的文本'" */

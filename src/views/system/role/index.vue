@@ -26,7 +26,7 @@
         <div class="card-header">
           <span>角色列表</span>
           <div>
-            <el-button v-permission="'system:role:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+            <el-button v-perm="'system:role:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
           </div>
         </div>
       </template>
@@ -52,9 +52,9 @@
         <el-table-column prop="created_at" label="创建时间" />
         <el-table-column label="操作" min-width="100" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:role:edit'" type="primary" link icon="Edit" :disabled="isProtectedRole(row)" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:role:edit'" type="warning" link icon="Key" :disabled="isProtectedRole(row)" @click="handleAssignPerms(row)">权限</el-button>
-            <el-button v-permission="'system:role:remove'" type="danger" link icon="Delete" :disabled="isProtectedRole(row)" @click="handleDelete(row)">删除</el-button>
+            <el-button v-perm="'system:role:edit'" type="primary" link icon="Edit" :disabled="isProtectedRole(row)" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-perm="'system:role:edit'" type="warning" link icon="Key" :disabled="isProtectedRole(row)" @click="handleAssignPerms(row)">权限</el-button>
+            <el-button v-perm="'system:role:remove'" type="danger" link icon="Delete" :disabled="isProtectedRole(row)" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -119,7 +119,6 @@
         :props="{ label: 'name', children: 'children' }"
         node-key="id"
         show-checkbox
-        check-strictly
         default-expand-all
         :default-checked-keys="permDialog.checkedKeys"
         @check="(_: any, { checkedKeys }: any) => permDialog.checkedKeys = checkedKeys"

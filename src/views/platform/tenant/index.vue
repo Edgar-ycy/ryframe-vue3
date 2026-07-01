@@ -4,7 +4,7 @@
       <template #header>
         <div class="header">
           <span>租户管理</span>
-          <el-button type="primary" @click="openCreate">创建租户</el-button>
+          <el-button v-perm="'tenant:add'" type="primary" @click="openCreate">创建租户</el-button>
         </div>
       </template>
 
@@ -27,8 +27,8 @@
         </el-table-column>
         <el-table-column label="操作" width="180">
           <template #default="{ row }">
-            <el-button link @click="openEdit(row)">编辑</el-button>
-            <el-button link :disabled="row.tenant_id === 'system'" @click="toggle(row)">
+            <el-button v-perm="'tenant:edit'" link @click="openEdit(row)">编辑</el-button>
+            <el-button v-perm="'tenant:status'" link :disabled="row.tenant_id === 'system'" @click="toggle(row)">
               {{ row.status === '1' ? '停用' : '启用' }}
             </el-button>
           </template>

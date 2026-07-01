@@ -29,7 +29,7 @@
       <template #header>
         <div class="card-header">
           <span>通知公告</span>
-          <el-button v-permission="'system:notice:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+          <el-button v-perm="'system:notice:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
@@ -49,8 +49,8 @@
         <el-table-column prop="created_at" label="创建时间" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:notice:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-permission="'system:notice:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button v-perm="'system:notice:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-perm="'system:notice:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

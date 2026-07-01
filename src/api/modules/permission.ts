@@ -1,6 +1,6 @@
 import request from '@/api/request'
 
-const BASE = '/system/permissions'
+const BASE = '/system/perms'
 const ROLE_BASE = '/system/roles'
 
 export interface PermissionTreeNode {

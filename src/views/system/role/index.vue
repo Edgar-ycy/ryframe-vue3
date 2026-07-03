@@ -15,8 +15,8 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'system:role:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button v-perm="'system:role:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -26,6 +26,7 @@
         <div class="card-header">
           <span>角色列表</span>
           <div>
+            <el-button v-perm="'system:role:export'" icon="Download" :loading="exportLoading" @click="handleExport">导出</el-button>
             <el-button v-perm="'system:role:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
           </div>
         </div>
@@ -107,7 +108,8 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-if="dialog.isEdit" v-perm="'system:role:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:role:add'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -135,7 +137,7 @@
       </el-tree>
       <template #footer>
         <el-button @click="permDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="permDialog.loading" @click="handlePermSubmit">确定</el-button>
+        <el-button v-perm="'system:role:edit'" type="primary" :loading="permDialog.loading" @click="handlePermSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -144,10 +146,11 @@
 
 <script setup lang="ts">
 import { nextTick } from 'vue'
-import { listRole, getRole, createRole, updateRole, deleteRole, assignPermissions } from '@/api/modules/role'
+import { listRole, getRole, createRole, updateRole, deleteRole, assignPermissions, exportRole } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { getPermissionTree, getRolePermissions } from '@/api/modules/permission'
 import { usePermission } from '@/hooks/usePermission'
+import { useDownload } from '@/hooks/useDownload'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -156,6 +159,11 @@ const deptTree = ref<any[]>([])
 
 const queryParams = ref({ page: 1, pageSize: 10, name: '', code: '', status: '' })
 const { isAdmin } = usePermission()
+const { downloading: exportLoading, downloadBlob } = useDownload()
+
+function handleExport() {
+  return downloadBlob(() => exportRole(queryParams.value), { filename: '角色数据.xlsx' })
+}
 
 function isProtectedRole(row: any) {
   return row?.code === 'admin' && !isAdmin()
@@ -294,5 +302,3 @@ async function handlePermSubmit() {
 
 onMounted(() => { fetchData(); loadDeptTree(); loadPermTree() })
 </script>
-
-

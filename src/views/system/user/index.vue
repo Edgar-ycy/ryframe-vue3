@@ -77,8 +77,8 @@
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-            <el-button icon="Refresh" @click="handleReset">重置</el-button>
+            <el-button v-perm="'system:user:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+            <el-button v-perm="'system:user:list'" icon="Refresh" @click="handleReset">重置</el-button>
           </el-form-item>
         </el-form>
       </el-card>
@@ -88,7 +88,10 @@
         <template #header>
           <div class="card-header">
             <span>用户列表</span>
-            <el-button v-perm="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+            <div>
+              <el-button v-perm="'system:user:export'" icon="Download" :loading="exportLoading" @click="handleExport">导出</el-button>
+              <el-button v-perm="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+            </div>
           </div>
         </template>
 
@@ -103,11 +106,15 @@
           <el-table-column prop="status" label="状态" align="center">
             <template #default="{ row }">
               <el-switch
+                v-if="hasPermission('system:user:edit')"
                 v-model="row.status"
                 :active-value="'1'"
                 :inactive-value="'0'"
                 @change="(val) => handleChangeStatus(row, val)"
               />
+              <el-tag v-else :type="row.status === '1' ? 'success' : 'danger'" size="small">
+                {{ row.status === '1' ? '正常' : '停用' }}
+              </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="created_at" label="创建时间" />
@@ -178,7 +185,8 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-if="dialog.isEdit" v-perm="'system:user:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:user:add'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -211,12 +219,12 @@
         class="reset-link-input"
       >
         <template #append>
-          <el-button icon="DocumentCopy" @click="copyResetLink">复制</el-button>
+          <el-button v-perm="'system:user:edit'" icon="DocumentCopy" @click="copyResetLink">复制</el-button>
         </template>
       </el-input>
       <template #footer>
         <el-button @click="pwdDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="pwdLoading" @click="handlePwdSubmit">发起</el-button>
+        <el-button v-perm="'system:user:edit'" type="primary" :loading="pwdLoading" @click="handlePwdSubmit">发起</el-button>
       </template>
     </el-dialog>
   </div>
@@ -224,11 +232,12 @@
 
 <script setup lang="ts">
 import {ArrowRight, Folder, FolderOpened, Search} from '@element-plus/icons-vue'
-import { listUser, getUser, createUser, updateUser, deleteUser, requestPasswordReset, changeUserStatus } from '@/api/modules/user'
+import { listUser, getUser, createUser, updateUser, deleteUser, requestPasswordReset, changeUserStatus, exportUser } from '@/api/modules/user'
 import type { PasswordResetRequestResult } from '@/api/modules/user'
 import { listRole } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { usePermission } from '@/hooks/usePermission'
+import { useDownload } from '@/hooks/useDownload'
 
 // ===== 部门树（左侧） =====
 const deptTreeRef = ref()
@@ -291,7 +300,8 @@ const tableData = ref<any[]>([])
 const total = ref(0)
 const selectIds = ref<any[]>([])
 const roleList = ref<any[]>([])
-const { isAdmin } = usePermission()
+const { isAdmin, hasPermission } = usePermission()
+const { downloading: exportLoading, downloadBlob } = useDownload()
 const assignableRoleList = computed(() =>
   isAdmin() ? roleList.value : roleList.value.filter(role => role.code !== 'admin'),
 )
@@ -304,6 +314,10 @@ const queryParams = ref({
   status: '',
   dept_id: undefined as number | undefined,
 })
+
+function handleExport() {
+  return downloadBlob(() => exportUser(queryParams.value), { filename: '用户数据.xlsx' })
+}
 
 async function fetchData() {
   loading.value = true
@@ -714,4 +728,3 @@ onMounted(() => {
   }
 }
 </style>
-

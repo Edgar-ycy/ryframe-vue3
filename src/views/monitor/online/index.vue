@@ -9,8 +9,8 @@
           <el-input v-model="queryParams.ipaddr" placeholder="请输入IP地址" clearable />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="fetchData">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'monitor:online:list'" type="primary" icon="Search" @click="fetchData">搜索</el-button>
+          <el-button v-perm="'monitor:online:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -28,7 +28,7 @@
         <el-table-column prop="login_time" label="登录时间" min-width="180" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="danger" link icon="SwitchButton" @click="handleForceLogout(row)">强退</el-button>
+            <el-button v-perm="'monitor:online:force-logout'" type="danger" link icon="SwitchButton" @click="handleForceLogout(row)">强退</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -67,5 +67,4 @@ async function handleForceLogout(row) {
 
 onMounted(() => fetchData())
 </script>
-
 

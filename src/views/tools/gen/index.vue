@@ -9,8 +9,8 @@
           <el-input v-model="queryParams.table_comment" placeholder="请输入表描述" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'tools:gen:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button v-perm="'tools:gen:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -29,8 +29,8 @@
         <el-table-column prop="updated_at" label="更新时间" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link icon="View" @click="handlePreview(row)">预览</el-button>
-            <el-button type="success" link icon="Download" @click="handleGen(row)">生成</el-button>
+            <el-button v-perm="'tools:gen:list'" type="primary" link icon="View" @click="handlePreview(row)">预览</el-button>
+            <el-button v-perm="'tools:gen:add'" type="success" link icon="Download" @click="handleGen(row)">生成</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -35,11 +35,15 @@
         <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
             <el-switch
+              v-if="hasPermission('system:menu:edit')"
               v-model="row.status"
               :active-value="'1'"
               :inactive-value="'0'"
               @change="(val: string) => handleChangeStatus(row, val)"
             />
+            <el-tag v-else :type="row.status === '1' ? 'success' : 'danger'" size="small">
+              {{ row.status === '1' ? '正常' : '停用' }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" min-width="100" fixed="right" align="center">
@@ -101,7 +105,8 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-if="dialog.isEdit" v-perm="'system:menu:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:menu:add'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -114,9 +119,11 @@ import { getPermissionTree } from '@/api/modules/permission'
 import type { PermissionTreeNode } from '@/api/modules/permission'
 import { getRouteKeyByPermissionCode } from '@/router/pageRegistry'
 import IconSelect from '@/components/common/IconSelect.vue'
+import { usePermission } from '@/hooks/usePermission'
 
 // ===== 数据加载 =====
 const loading = ref(false)
+const { hasPermission } = usePermission()
 const tableData = ref<TreeNode[]>([])
 const allMenuTree = ref<TreeNode[]>([])
 interface PermissionOption {

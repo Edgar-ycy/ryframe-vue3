@@ -23,8 +23,8 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'system:operlog:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button v-perm="'system:operlog:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -33,6 +33,7 @@
       <template #header>
         <div class="card-header">
           <span>操作日志</span>
+          <el-button v-perm="'system:operlog:export'" icon="Download" :loading="exportLoading" @click="handleExport">导出</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
@@ -51,7 +52,7 @@
         <el-table-column prop="oper_time" label="操作时间" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
+            <el-button v-perm="'system:operlog:list'" type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -96,16 +97,22 @@
 </template>
 
 <script setup lang="ts">
-import { listOperLog } from '@/api/modules/monitor'
+import { listOperLog, exportOperLog } from '@/api/modules/monitor'
+import { useDownload } from '@/hooks/useDownload'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
 const dateRange = ref<any[]>([])
+const { downloading: exportLoading, downloadBlob } = useDownload()
 
 const queryParams = ref({
   page: 1, pageSize: 10, oper_name: '', status: '', begin_time: '', end_time: '',
 })
+
+function handleExport() {
+  return downloadBlob(() => exportOperLog(queryParams.value), { filename: '操作日志.xlsx' })
+}
 
 async function fetchData() {
   loading.value = true

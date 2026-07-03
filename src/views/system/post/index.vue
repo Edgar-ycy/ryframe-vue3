@@ -15,8 +15,8 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'system:post:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button v-perm="'system:post:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -25,7 +25,10 @@
       <template #header>
         <div class="card-header">
           <span>岗位列表</span>
-          <el-button v-perm="'system:post:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+          <div>
+            <el-button v-perm="'system:post:export'" icon="Download" :loading="exportLoading" @click="handleExport">导出</el-button>
+            <el-button v-perm="'system:post:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+          </div>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
@@ -75,19 +78,26 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-if="dialog.isEdit" v-perm="'system:post:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:post:add'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { listPost, getPost, createPost, updatePost, deletePost } from '@/api/modules/post'
+import { listPost, getPost, createPost, updatePost, deletePost, exportPost } from '@/api/modules/post'
+import { useDownload } from '@/hooks/useDownload'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
 const queryParams = ref({ page: 1, pageSize: 10, name: '', code: '', status: '' })
+const { downloading: exportLoading, downloadBlob } = useDownload()
+
+function handleExport() {
+  return downloadBlob(() => exportPost(queryParams.value), { filename: '岗位数据.xlsx' })
+}
 
 async function fetchData() {
   loading.value = true
@@ -156,5 +166,3 @@ async function handleDelete(row) {
 
 onMounted(() => fetchData())
 </script>
-
-

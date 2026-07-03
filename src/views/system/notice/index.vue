@@ -19,8 +19,8 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'system:notice:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button v-perm="'system:notice:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -87,7 +87,8 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-if="dialog.isEdit" v-perm="'system:notice:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:notice:add'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -169,5 +170,4 @@ async function handleDelete(row:any) {
 
 onMounted(() => fetchData())
 </script>
-
 

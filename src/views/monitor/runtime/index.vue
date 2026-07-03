@@ -48,7 +48,7 @@
       <template #header>
         <div class="card-header">
           <span>功能开关</span>
-          <el-button :loading="loading" icon="Refresh" @click="fetchRuntime">刷新</el-button>
+          <el-button v-perm="'monitor:runtime:list'" :loading="loading" icon="Refresh" @click="fetchRuntime">刷新</el-button>
         </div>
       </template>
 

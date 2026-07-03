@@ -9,8 +9,8 @@
           <el-input v-model="queryParams.key" placeholder="请输入参数键名" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'system:config:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button v-perm="'system:config:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -19,7 +19,10 @@
       <template #header>
         <div class="card-header">
           <span>参数列表</span>
-          <el-button v-perm="'system:config:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+          <div>
+            <el-button v-perm="'system:config:export'" icon="Download" :loading="exportLoading" @click="handleExport">导出</el-button>
+            <el-button v-perm="'system:config:add'" type="primary" icon="Plus" @click="handleAdd">新增</el-button>
+          </div>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
@@ -62,15 +65,17 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-if="dialog.isEdit" v-perm="'system:config:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:config:add'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { listConfig, getConfig, createConfig, updateConfig, deleteConfig } from '@/api/modules/config'
+import { listConfig, getConfig, createConfig, updateConfig, deleteConfig, exportConfig } from '@/api/modules/config'
 import { useSettingsStore } from '@/stores/settings'
+import { useDownload } from '@/hooks/useDownload'
 
 const settingsStore = useSettingsStore()
 
@@ -78,6 +83,11 @@ const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
 const queryParams = ref({ page: 1, pageSize: 10, name: '', key: '' })
+const { downloading: exportLoading, downloadBlob } = useDownload()
+
+function handleExport() {
+  return downloadBlob(() => exportConfig(queryParams.value), { filename: '参数数据.xlsx' })
+}
 
 async function fetchData() {
   loading.value = true

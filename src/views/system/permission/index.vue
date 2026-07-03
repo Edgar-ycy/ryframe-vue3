@@ -11,7 +11,7 @@
             <el-button v-perm="'system:perm:sync'" icon="RefreshRight" :loading="syncLoading" @click="handleSync">
               同步接口权限
             </el-button>
-            <el-button icon="Refresh" @click="fetchData">刷新</el-button>
+            <el-button v-perm="'system:perm:list'" icon="Refresh" @click="fetchData">刷新</el-button>
           </div>
         </div>
       </template>
@@ -132,7 +132,8 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-if="currentEditId" v-perm="'system:perm:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:perm:add'" type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>

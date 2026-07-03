@@ -76,7 +76,8 @@
       </el-form>
       <template #footer>
         <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="submit">{{ editingTenantId ? '保存' : '创建' }}</el-button>
+        <el-button v-if="editingTenantId" v-perm="'tenant:edit'" type="primary" @click="submit">保存</el-button>
+        <el-button v-else v-perm="'tenant:add'" type="primary" @click="submit">创建</el-button>
       </template>
     </el-dialog>
   </div>

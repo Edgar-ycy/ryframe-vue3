@@ -50,7 +50,7 @@
           <template #header>
             <div class="card-header">
               <span>Redis 信息</span>
-              <el-button :loading="loading" icon="Refresh" @click="fetchData">刷新</el-button>
+              <el-button v-perm="'monitor:cache:list'" :loading="loading" icon="Refresh" @click="fetchData">刷新</el-button>
             </div>
           </template>
 

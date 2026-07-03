@@ -7,7 +7,10 @@
           <template #header>
             <div class="card-header">
               <span>字典类型</span>
-              <el-button v-perm="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddType">新增</el-button>
+              <div>
+                <el-button v-perm="'system:dict:export'" size="small" icon="Download" :loading="exportLoading" @click="handleExport">导出</el-button>
+                <el-button v-perm="'system:dict:add'" type="primary" size="small" icon="Plus" @click="handleAddType">新增</el-button>
+              </div>
             </div>
           </template>
           <el-table v-loading="typeLoading" :data="typeList" border stripe highlight-current-row
@@ -21,8 +24,8 @@
             </el-table-column>
             <el-table-column label="操作" fixed="right" align="center">
               <template #default="{ row }">
-                <el-button type="primary" link icon="Edit" size="small" @click.stop="handleEditType(row)">编辑</el-button>
-                <el-button type="danger" link icon="Delete" size="small" @click.stop="handleDeleteType(row)">删除</el-button>
+                <el-button v-perm="'system:dict:edit'" type="primary" link icon="Edit" size="small" @click.stop="handleEditType(row)">编辑</el-button>
+                <el-button v-perm="'system:dict:remove'" type="danger" link icon="Delete" size="small" @click.stop="handleDeleteType(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -56,8 +59,8 @@
             </el-table-column>
             <el-table-column label="操作" align="center">
               <template #default="{ row }">
-                <el-button type="primary" link icon="Edit" size="small" @click="handleEditData(row)">编辑</el-button>
-                <el-button type="danger" link icon="Delete" size="small" @click="handleDeleteData(row)">删除</el-button>
+                <el-button v-perm="'system:dict:edit'" type="primary" link icon="Edit" size="small" @click="handleEditData(row)">编辑</el-button>
+                <el-button v-perm="'system:dict:remove'" type="danger" link icon="Delete" size="small" @click="handleDeleteData(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -84,7 +87,8 @@
       </el-form>
       <template #footer>
         <el-button @click="typeDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="typeSubmitLoading" @click="handleTypeSubmit">确定</el-button>
+        <el-button v-if="typeDialog.isEdit" v-perm="'system:dict:edit'" type="primary" :loading="typeSubmitLoading" @click="handleTypeSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:dict:add'" type="primary" :loading="typeSubmitLoading" @click="handleTypeSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -109,7 +113,8 @@
       </el-form>
       <template #footer>
         <el-button @click="dataDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dataSubmitLoading" @click="handleDataSubmit">确定</el-button>
+        <el-button v-if="dataDialog.isEdit" v-perm="'system:dict:edit'" type="primary" :loading="dataSubmitLoading" @click="handleDataSubmit">确定</el-button>
+        <el-button v-else v-perm="'system:dict:add'" type="primary" :loading="dataSubmitLoading" @click="handleDataSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -117,15 +122,21 @@
 
 <script setup lang="ts">
 import {
-  listDictType, createDictType, updateDictType, deleteDictType,
+  listDictType, createDictType, updateDictType, deleteDictType, exportDictType,
   listDictData, createDictData, updateDictData, deleteDictData,
 } from '@/api/modules/dict'
+import { useDownload } from '@/hooks/useDownload'
 
 // ===== 字典类型 =====
 const typeLoading = ref(false)
 const typeList = ref<any[]>([])
 const typeTotal = ref(0)
 const typePage = ref({ page: 1, pageSize: 10 })
+const { downloading: exportLoading, downloadBlob } = useDownload()
+
+function handleExport() {
+  return downloadBlob(() => exportDictType(typePage.value), { filename: '字典类型.xlsx' })
+}
 
 async function fetchTypeList() {
   typeLoading.value = true
@@ -265,5 +276,3 @@ async function handleDeleteData(row:any) {
 
 onMounted(() => fetchTypeList())
 </script>
-
-

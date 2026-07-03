@@ -38,7 +38,7 @@
       <template #header>
         <div class="card-header">
           <span>数据库连接池</span>
-          <el-button :loading="loading" icon="Refresh" @click="fetchData">刷新</el-button>
+          <el-button v-perm="'monitor:db-pool:list'" :loading="loading" icon="Refresh" @click="fetchData">刷新</el-button>
         </div>
       </template>
 

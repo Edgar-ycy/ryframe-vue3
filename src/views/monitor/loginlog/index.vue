@@ -23,8 +23,8 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'system:logininfor:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button v-perm="'system:logininfor:list'" icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -33,6 +33,7 @@
       <template #header>
         <div class="card-header">
           <span>登录日志</span>
+          <el-button v-perm="'system:logininfor:export'" icon="Download" :loading="exportLoading" @click="handleExport">导出</el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
@@ -53,7 +54,7 @@
         <el-table-column prop="login_time" label="登录时间" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
+            <el-button v-perm="'system:logininfor:list'" type="primary" link icon="View" @click="handleDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -88,16 +89,22 @@
 </template>
 
 <script setup lang="ts">
-import { listLoginLog } from '@/api/modules/monitor'
+import { listLoginLog, exportLoginLog } from '@/api/modules/monitor'
+import { useDownload } from '@/hooks/useDownload'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
 const dateRange = ref<any[]>([])
+const { downloading: exportLoading, downloadBlob } = useDownload()
 
 const queryParams = ref({
   page: 1, pageSize: 10, user_name: '', status: '', begin_time: '', end_time: '',
 })
+
+function handleExport() {
+  return downloadBlob(() => exportLoginLog(queryParams.value), { filename: '登录日志.xlsx' })
+}
 
 async function fetchData() {
   loading.value = true

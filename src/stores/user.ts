@@ -35,6 +35,7 @@ export const useUserStore = defineStore('user', {
 
   getters: {
     isAdmin: (state): boolean => state.roles.includes('admin'),
+    isSuper: (state): boolean => state.roles.includes('admin') || state.permissions.includes('*:*:*'),
     isLoggedIn: (state): boolean => !!state.token,
   },
 

@@ -178,7 +178,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="form.role_ids" multiple placeholder="请选择角色" style="width:100%">
+          <el-select v-model="form.role_ids" multiple placeholder="请选择角色" :disabled="disableRoleSelect" style="width:100%">
             <el-option v-for="r in assignableRoleList" :key="r.id" :label="r.name" :value="r.id" :disabled="r.status !== '1'" />
           </el-select>
         </el-form-item>
@@ -232,12 +232,13 @@
 
 <script setup lang="ts">
 import {ArrowRight, Folder, FolderOpened, Search} from '@element-plus/icons-vue'
-import { listUser, getUser, createUser, updateUser, deleteUser, requestPasswordReset, changeUserStatus, exportUser } from '@/api/modules/user'
+import { listUser, getUser, createUser, updateUser, assignRole, deleteUser, requestPasswordReset, changeUserStatus, exportUser } from '@/api/modules/user'
 import type { PasswordResetRequestResult } from '@/api/modules/user'
 import { listRole } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { usePermission } from '@/hooks/usePermission'
 import { useDownload } from '@/hooks/useDownload'
+import { useUserStore } from '@/stores/user'
 
 // ===== 部门树（左侧） =====
 const deptTreeRef = ref()
@@ -302,8 +303,9 @@ const selectIds = ref<any[]>([])
 const roleList = ref<any[]>([])
 const { isAdmin, hasPermission } = usePermission()
 const { downloading: exportLoading, downloadBlob } = useDownload()
+const userStore = useUserStore()
 const assignableRoleList = computed(() =>
-  isAdmin() ? roleList.value : roleList.value.filter(role => role.code !== 'admin'),
+  isAdmin() ? roleList.value : roleList.value.filter(role => role.is_super !== 1 && role.code !== 'admin'),
 )
 
 const queryParams = ref({
@@ -342,7 +344,7 @@ async function loadRoleList() {
 
 function hasForbiddenRoleSelection() {
   if (isAdmin()) return false
-  const adminRole = roleList.value.find(role => role.code === 'admin')
+  const adminRole = roleList.value.find(role => role.is_super === 1 || role.code === 'admin')
   return !!adminRole && form.value.role_ids.includes(adminRole.id)
 }
 
@@ -379,6 +381,7 @@ const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
 const currentEditId = ref<number | null>(null)
+const disableRoleSelect = ref(false)
 
 const form = ref({
   username: '', nickname: '', email: '', phone: '',
@@ -397,6 +400,7 @@ function resetForm() {
     dept_id: undefined, status: '1', role_ids: [],
   }
   currentEditId.value = null
+  disableRoleSelect.value = false
   formRef.value?.clearValidate()
 }
 
@@ -413,6 +417,7 @@ async function handleEdit(row: any) {
   dialog.value.isEdit = true
   resetForm()
   currentEditId.value = row.id
+  disableRoleSelect.value = String(row.id) === String(userStore.userId) && !userStore.isSuper
   const res = await getUser(row.id)
   const d = res.data || res
   form.value.username = d.username || d.user?.username || ''
@@ -444,9 +449,11 @@ async function handleSubmit() {
         phone: form.value.phone || undefined,
         dept_id: form.value.dept_id,
         status: form.value.status,
-        role_ids: form.value.role_ids.length ? form.value.role_ids : undefined,
       }
       await updateUser(currentEditId.value!, data as any)
+      if (!disableRoleSelect.value) {
+        await assignRole(currentEditId.value!, form.value.role_ids)
+      }
       ElMessage.success('更新成功')
     } else {
       const data = {
@@ -455,9 +462,10 @@ async function handleSubmit() {
         email: form.value.email || undefined,
         phone: form.value.phone || undefined,
         dept_id: form.value.dept_id,
-        role_ids: form.value.role_ids.length ? form.value.role_ids : undefined,
       }
-      await createUser(data as any)
+      const res = await createUser(data as any) as any
+      const user = res.data || res
+      await assignRole(user.id, form.value.role_ids)
       ElMessage.success('用户已创建，状态为待激活')
     }
     dialog.value.visible = false

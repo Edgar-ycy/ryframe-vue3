@@ -65,6 +65,15 @@ export function requestPasswordReset(userId: number | string, data: { reason: st
   })
 }
 
+/** 给用户分配角色 */
+export function assignRole(userId: number | string, roleIds: (number | string)[]) {
+  return request({
+    url: '/system/user/assign-role',
+    method: 'post',
+    data: { user_id: String(userId), role_ids: roleIds.map(String) },
+  })
+}
+
 /** 修改用户状态 */
 export function changeUserStatus(data: { user_id: number | string; status: string }) {
   return request({ url: `${BASE}/changeStatus`, method: 'put', data })

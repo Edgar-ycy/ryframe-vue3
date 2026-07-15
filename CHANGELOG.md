@@ -1,4 +1,19 @@
-# Changelog
+﻿# Changelog
+
+## [v0.3.1] - 2026-07-15
+
+### Added
+
+- 增加 ESLint 与 Vitest 依赖，补齐前端静态检查与测试工具链
+- 增加 `.editorconfig` 保持跨编辑器编码一致性
+
+### Changed
+
+- 删除无用文件（空目录 `.qoder/` `docs/`、编辑器临时文件、未引用图片）
+- `vite.config.ts` 窄范围过滤 `@vueuse/core` 的 Rolldown 纯注解误报，其余构建告警保持可见
+- 修正 pnpm 10 与 node_modules store 的不一致问题，重建依赖目录
+
+---
 
 ## [v0.3.0] - 2026-07-01
 
@@ -11,7 +26,7 @@
 ### Changed
 
 - 将权限指令统一调整为 `v-perm`
-- 优化菜单关联权限的展示与数据处理
+- 优化菜单关联权限的显示与数据处理
 - 重构路由权限管理并完善移动端布局适配
 - 调整开发服务器默认端口说明
 - 更新 CI 使用的 pnpm 版本
@@ -36,3 +51,7 @@
 - 组合式 API hooks：useAuth、useCrud、useDict、useDownload、useForm、useLoading、usePermission、useTable、useTheme
 - GitHub Actions CI 流水线（类型检查 + 构建）
 - GitHub Actions Release 流水线（Nightly 自动发布 + Stable Tag 发布）
+
+所有值得注意的项目变更都将记录在此文件中。
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
+版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。

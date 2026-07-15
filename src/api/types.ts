@@ -44,8 +44,7 @@ export interface LoginResult {
 export interface MenuTreeNode {
   id: Id
   parent_id?: Id | null
-  name?: string
-  menu_name?: string
+  name: string
   menu_type?: 'M' | 'C' | 'F' | string
   perm_id?: Id | null
   perm_code?: string | null
@@ -53,8 +52,7 @@ export interface MenuTreeNode {
   icon?: string
   visible?: boolean | string | number
   status?: string | number
-  sort?: number
-  order_num?: number
+  sort: number
   remark?: string
   children?: MenuTreeNode[]
 }

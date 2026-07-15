@@ -8,8 +8,7 @@
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
-        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
-        default-expand-all>
+        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }">
         <el-table-column prop="name" label="菜单名称" min-width="150" show-overflow-tooltip />
         <el-table-column label="类型" align="center">
           <template #default="{ row }">

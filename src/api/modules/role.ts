@@ -1,6 +1,7 @@
 import request from '@/api/request'
 
 const BASE = '/system/roles'
+const ASSIGN_BASE = '/system/role'
 
 export interface RoleQuery {
   [key: string]: any
@@ -31,11 +32,28 @@ export function deleteRole(id: number | string)        { return request({ url: `
 export function batchDeleteRole(ids: (number | string)[]) { return request({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' }) }
 
 /** 分配权限 */
-export function assignPermissions(roleId: number | string, data: { perm_ids: (number | string)[] }) {
-  return request({ url: `${BASE}/${roleId}/permissions`, method: 'put', data })
+export function assignPerm(roleId: number | string, permIds: (number | string)[]) {
+  return request({
+    url: `${ASSIGN_BASE}/assign-perm`,
+    method: 'post',
+    data: { role_id: String(roleId), perm_ids: permIds.map(String) },
+  })
 }
 
-/** 设置数据权限 */
-export function setDataScope(roleId: number | string, data: { data_scope: string; dept_ids?: (number | string)[] }) {
-  return request({ url: `${BASE}/${roleId}/data-scope`, method: 'put', data })
+/** 分配自定义数据权限部门 */
+export function assignDept(roleId: number | string, deptIds: (number | string)[]) {
+  return request({
+    url: `${ASSIGN_BASE}/assign-dept`,
+    method: 'post',
+    data: { role_id: String(roleId), dept_ids: deptIds.map(String) },
+  })
+}
+
+/** 更新角色数据权限范围 */
+export function updateRoleDataScope(roleId: number | string, dataScope: string) {
+  return request({
+    url: `${ASSIGN_BASE}/update-data-scope`,
+    method: 'post',
+    data: { role_id: String(roleId), data_scope: dataScope },
+  })
 }

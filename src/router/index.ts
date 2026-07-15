@@ -3,6 +3,7 @@ import {constantRoutes} from './routes/constant'
 import {useUserStore} from '@/stores/user'
 import {usePermissionStore} from '@/stores/permission'
 import {getUserMenus} from '@/api/modules/menu'
+import {hasPermission} from '@/utils/permission'
 
 // 扩展 vue-router 的 RouteMeta
 declare module 'vue-router' {
@@ -18,6 +19,7 @@ declare module 'vue-router' {
     sort?: number
     isFrame?: boolean
     buttonPerms?: string[]
+    requiresPermission?: boolean
   }
 }
 
@@ -38,7 +40,8 @@ const whiteList = ['/login', '/reset-password']
 async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>): Promise<RouteRecordRaw[]> {
   const menuRes = await getUserMenus() as any
   const menuTree = menuRes.rows || menuRes.data || menuRes || []
-  return permissionStore.generateRoutes(menuTree)
+  const userStore = useUserStore()
+  return permissionStore.generateRoutes(menuTree, userStore.permissions, userStore.roles)
 }
 
 /** 注册动态路由（catch-all 已在 constantRoutes 中，无需在此追加） */
@@ -70,6 +73,13 @@ function getOriginalFullPath(to: any): string {
   return to.redirectedFrom?.fullPath || to.fullPath || to.path || '/'
 }
 
+function canAccessRoute(userStore: ReturnType<typeof useUserStore>, route: any): boolean {
+  if (!route.meta?.requiresPermission) return true
+  const required = route.meta?.permission
+  return typeof required === 'string'
+    && hasPermission(userStore.permissions, required, userStore.roles)
+}
+
 // 全局前置守卫
 // 使用 Vue Router 4 推荐的 return 模式，而非已废弃的 next(location)
 router.beforeEach(async (to, from) => {
@@ -99,6 +109,9 @@ router.beforeEach(async (to, from) => {
         await userStore.logout()
         return { path: '/login', query: { redirect: getOriginalFullPath(to) } }
       }
+    }
+    if (!canAccessRoute(userStore, to)) {
+      return { path: '/403', replace: true }
     }
     // 路由已加载，正常放行
     return true

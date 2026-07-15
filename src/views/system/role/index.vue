@@ -51,11 +51,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" />
-        <el-table-column label="操作" min-width="100" fixed="right" align="center">
+        <el-table-column label="操作" min-width="280" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'system:role:edit'" type="primary" link icon="Edit" :disabled="isProtectedRole(row)" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-perm="'system:role:edit'" type="warning" link icon="Key" :disabled="isProtectedRole(row)" @click="handleAssignPerms(row)">权限</el-button>
-            <el-button v-perm="'system:role:remove'" type="danger" link icon="Delete" :disabled="isProtectedRole(row)" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="!isProtectedRole(row)" v-perm="'system:role:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="!isProtectedRole(row)" v-perm="'system:role:edit'" type="warning" link icon="Key" @click="handleAssignPerms(row)">权限</el-button>
+            <el-button v-if="!isProtectedRole(row)" v-perm="'system:role:edit'" type="success" link icon="DataAnalysis" @click="handleDataScope(row)">数据权限</el-button>
+            <el-button v-if="!isProtectedRole(row)" v-perm="'system:role:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -85,25 +86,6 @@
             <el-radio value="1">正常</el-radio>
             <el-radio value="0">停用</el-radio>
           </el-radio-group>
-        </el-form-item>
-        <el-form-item label="数据范围">
-          <el-select v-model="form.data_scope" style="width:100%">
-            <el-option label="全部数据权限" value="1" />
-            <el-option label="自定义数据权限" value="2" />
-            <el-option label="本部门数据权限" value="3" />
-            <el-option label="本部门及以下" value="4" />
-            <el-option label="仅本人数据" value="5" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="form.data_scope === '2'" label="选择部门">
-          <el-tree-select
-            v-model="form.dept_ids"
-            :data="deptTree"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            placeholder="请选择部门"
-            multiple check-strictly show-checkbox
-            style="width:100%"
-          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -141,12 +123,41 @@
       </template>
     </el-dialog>
 
+    <!-- 数据权限弹窗 -->
+    <el-dialog v-model="dataScopeDialog.visible" title="设置数据权限" width="560px" @close="resetDataScopeDialog">
+      <el-form label-width="110px">
+        <el-form-item label="数据范围" required>
+          <el-select v-model="dataScopeDialog.dataScope" style="width:100%">
+            <el-option label="全部数据权限" value="1" />
+            <el-option label="自定义数据权限" value="2" />
+            <el-option label="本部门数据权限" value="3" />
+            <el-option label="本部门及以下" value="4" />
+            <el-option label="仅本人数据" value="5" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="dataScopeDialog.dataScope === '2'" label="自定义部门" required>
+          <el-tree-select
+            v-model="dataScopeDialog.deptIds"
+            :data="deptTree"
+            :props="{ label: 'name', value: 'id', children: 'children' }"
+            placeholder="请选择部门"
+            multiple check-strictly show-checkbox
+            style="width:100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dataScopeDialog.visible = false">取消</el-button>
+        <el-button v-perm="'system:role:edit'" type="primary" :loading="dataScopeDialog.loading" @click="handleDataScopeSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { nextTick } from 'vue'
-import { listRole, getRole, createRole, updateRole, deleteRole, assignPermissions, exportRole } from '@/api/modules/role'
+import { listRole, getRole, createRole, updateRole, deleteRole, assignPerm, assignDept, updateRoleDataScope, exportRole } from '@/api/modules/role'
 import { getDeptTree } from '@/api/modules/dept'
 import { getPermissionTree, getRolePermissions } from '@/api/modules/permission'
 import { usePermission } from '@/hooks/usePermission'
@@ -166,7 +177,7 @@ function handleExport() {
 }
 
 function isProtectedRole(row: any) {
-  return row?.code === 'admin' && !isAdmin()
+  return (row?.is_super === 1 || row?.code === 'admin') && !isAdmin()
 }
 
 function guardProtectedRole(row: any) {
@@ -198,14 +209,14 @@ const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
 const currentEditId = ref<number | null>(null)
 
-const form = ref({ name: '', code: '', sort: 0, status: '1', data_scope: '1', dept_ids: [] })
+const form = ref({ name: '', code: '', sort: 0, status: '1' })
 const rules = {
   name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
   code: [{ required: true, message: '请输入角色编码', trigger: 'blur' }],
 }
 
 function resetForm() {
-  form.value.name = ''; form.value.code = ''; form.value.sort = 0; form.value.status = '1'; form.value.data_scope = '1'; form.value.dept_ids = []
+  form.value.name = ''; form.value.code = ''; form.value.sort = 0; form.value.status = '1'
   formRef.value?.clearValidate()
 }
 
@@ -227,8 +238,6 @@ async function handleEdit(row:any) {
   form.value.code = d.code
   form.value.sort = d.sort ?? 0
   form.value.status = d.status
-  form.value.data_scope = d.data_scope || '1'
-  form.value.dept_ids = d.dept_ids || []
   dialog.value.visible = true
 }
 
@@ -239,11 +248,11 @@ async function handleSubmit() {
   try {
     if (dialog.value.isEdit) {
       await updateRole(currentEditId.value!, {
-        name: form.value.name, sort: form.value.sort, status: form.value.status, data_scope: form.value.data_scope,
+        name: form.value.name, sort: form.value.sort, status: form.value.status,
       })
       ElMessage.success('更新成功')
     } else {
-      await createRole({ name: form.value.name, code: form.value.code, sort: form.value.sort, data_scope: form.value.data_scope } as any)
+      await createRole({ name: form.value.name, code: form.value.code, sort: form.value.sort } as any)
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false
@@ -294,10 +303,55 @@ async function handleAssignPerms(row: any) {
 async function handlePermSubmit() {
   permDialog.value.loading = true
   try {
-    await assignPermissions(permDialog.value.roleId, { perm_ids: permDialog.value.checkedKeys.map(String) })
+    await assignPerm(permDialog.value.roleId, permDialog.value.checkedKeys)
     ElMessage.success('权限分配成功')
     permDialog.value.visible = false
   } finally { permDialog.value.loading = false }
+}
+
+// ----- 数据权限 -----
+const dataScopeDialog = ref({
+  visible: false,
+  loading: false,
+  roleId: '' as number | string,
+  dataScope: '1',
+  deptIds: [] as (number | string)[],
+})
+
+function resetDataScopeDialog() {
+  dataScopeDialog.value.roleId = ''
+  dataScopeDialog.value.dataScope = '1'
+  dataScopeDialog.value.deptIds = []
+}
+
+async function handleDataScope(row: any) {
+  if (!guardProtectedRole(row)) return
+  const res = await getRole(row.id) as any
+  const role = res.data || res
+  dataScopeDialog.value.roleId = row.id
+  dataScopeDialog.value.dataScope = role.data_scope || '1'
+  dataScopeDialog.value.deptIds = role.dept_ids || []
+  dataScopeDialog.value.visible = true
+}
+
+async function handleDataScopeSubmit() {
+  if (dataScopeDialog.value.dataScope === '2' && dataScopeDialog.value.deptIds.length === 0) {
+    ElMessage.warning('自定义数据权限至少选择一个部门')
+    return
+  }
+  dataScopeDialog.value.loading = true
+  try {
+    await updateRoleDataScope(dataScopeDialog.value.roleId, dataScopeDialog.value.dataScope)
+    await assignDept(
+      dataScopeDialog.value.roleId,
+      dataScopeDialog.value.dataScope === '2' ? dataScopeDialog.value.deptIds : [],
+    )
+    ElMessage.success('数据权限更新成功')
+    dataScopeDialog.value.visible = false
+    await fetchData()
+  } finally {
+    dataScopeDialog.value.loading = false
+  }
 }
 
 onMounted(() => { fetchData(); loadDeptTree(); loadPermTree() })

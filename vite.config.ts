@@ -62,8 +62,11 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/vue') || id.includes('node_modules/vue-router') || id.includes('node_modules/pinia')) return 'vue-vendor'
           },
         },
-        onLog(level, log) {
-          if (log.code === 'INVALID_ANNOTATION') return
+        onLog(_level, log) {
+          const isVueUsePureAnnotation =
+            log.code === 'INVALID_ANNOTATION' && log.id?.includes('@vueuse/core')
+
+          if (isVueUsePureAnnotation) return
         },
       },
     },

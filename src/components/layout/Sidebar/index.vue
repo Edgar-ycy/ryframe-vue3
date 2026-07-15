@@ -71,7 +71,14 @@ const userStore = useUserStore()
 
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
-  && (userStore.permissions.includes('tenant:manage') || userStore.permissions.includes('*:*:*')),
+  && (
+    userStore.isAdmin
+    || userStore.permissions.includes('*:*:*')
+    || (
+      userStore.permissions.includes('tenant:manage')
+      && userStore.permissions.includes('tenant:list')
+    )
+  ),
 )
 
 const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')

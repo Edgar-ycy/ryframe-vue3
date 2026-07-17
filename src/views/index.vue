@@ -1,351 +1,277 @@
 <template>
-  <div class="index-container">
-    <div class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">RyFrame</h1>
-        <p class="hero-subtitle">企业级 Rust 全栈快速开发框架</p>
-        <p class="hero-desc">
-          基于 Axum + Vue 3 + Element Plus 构建，提供开箱即用的后台管理解决方案
-        </p>
+  <main class="workspace">
+    <header class="workspace-header">
+      <div>
+        <p class="workspace-label">工作台</p>
+        <h1>你好，{{ displayName }}</h1>
+        <p class="workspace-subtitle">当前登录信息与可访问功能均来自本次会话。</p>
       </div>
-    </div>
+      <el-tag type="success" effect="plain">已登录</el-tag>
+    </header>
 
-    <el-row :gutter="20" class="feature-section">
-      <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in features" :key="item.title">
-        <el-card shadow="hover" class="feature-card">
-          <div class="feature-icon">
-            <el-icon :size="28">
-              <component :is="item.icon" />
+    <section class="account-summary" aria-label="账号概览">
+      <dl>
+        <div>
+          <dt>账号</dt>
+          <dd>{{ userStore.username || '-' }}</dd>
+        </div>
+        <div>
+          <dt>当前租户</dt>
+          <dd>{{ tenantLabel }}</dd>
+        </div>
+        <div>
+          <dt>角色</dt>
+          <dd>{{ roleLabel }}</dd>
+        </div>
+        <div>
+          <dt>可访问功能</dt>
+          <dd>{{ allLinks.length }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="quick-section">
+      <div class="section-heading">
+        <div>
+          <h2>快捷入口</h2>
+          <p>入口根据当前角色和权限自动更新。</p>
+        </div>
+      </div>
+
+      <div v-if="quickLinks.length" class="quick-grid">
+        <button
+          v-for="link in quickLinks"
+          :key="link.path"
+          type="button"
+          class="quick-link"
+          @click="openLink(link.path)"
+        >
+          <span class="quick-icon">
+            <el-icon :size="22">
+              <component :is="link.icon || 'Grid'" />
             </el-icon>
-          </div>
-          <h3 class="feature-title">{{ item.title }}</h3>
-          <p class="feature-desc">{{ item.desc }}</p>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="20">
-      <el-col :xs="24" :md="12">
-        <el-card class="tech-card">
-          <template #header>
-            <span class="tech-header">🦀 后端技术栈</span>
-          </template>
-          <div class="tech-tags">
-            <el-tag v-for="tech in backendTechs" :key="tech" class="tech-tag" effect="plain">
-              {{ tech }}
-            </el-tag>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :md="12">
-        <el-card class="tech-card">
-          <template #header>
-            <span class="tech-header">🎨 前端技术栈</span>
-          </template>
-          <div class="tech-tags">
-            <el-tag v-for="tech in frontendTechs" :key="tech" class="tech-tag" type="success" effect="plain">
-              {{ tech }}
-            </el-tag>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-card class="info-card">
-      <template #header>
-        <span>📋 核心能力</span>
-      </template>
-      <el-row :gutter="20">
-        <el-col :xs="24" :sm="12" :md="8" v-for="cap in capabilities" :key="cap.title">
-          <div class="cap-item">
-            <el-icon :size="20" color="#409EFF"><component :is="cap.icon" /></el-icon>
-            <span class="cap-title">{{ cap.title }}</span>
-            <p class="cap-desc">{{ cap.desc }}</p>
-          </div>
-        </el-col>
-      </el-row>
-    </el-card>
-
-    <el-card class="info-card donate-card">
-      <template #header>
-        <span>💝 支持项目</span>
-      </template>
-      <p class="donate-desc">🦀 你的支持是唯一的燃料 🚀</p>
-      <el-row :gutter="32" justify="center">
-        <el-col :xs="12" :sm="8" :md="6">
-          <div class="donate-item">
-            <el-image
-              :src="donateWechat"
-              fit="contain"
-              class="donate-qrcode"
-              preview-teleported
-              :preview-src-list="[donateWechat]"
-              lazy
-            />
-            <span class="donate-label">微信赞赏</span>
-          </div>
-        </el-col>
-        <el-col :xs="12" :sm="8" :md="6">
-          <div class="donate-item">
-            <el-image
-              :src="donateAlipay"
-              fit="contain"
-              class="donate-qrcode"
-              preview-teleported
-              :preview-src-list="[donateAlipay]"
-              lazy
-            />
-            <span class="donate-label">支付宝赞赏</span>
-          </div>
-        </el-col>
-      </el-row>
-    </el-card>
-
-    <el-card class="info-card">
-      <template #header>
-        <span>ℹ️ 项目信息</span>
-      </template>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="项目名称">RyFrame</el-descriptions-item>
-        <el-descriptions-item label="当前版本">v0.1.0</el-descriptions-item>
-        <el-descriptions-item label="后端语言">Rust 2024 Edition</el-descriptions-item>
-        <el-descriptions-item label="前端语言">TypeScript 5+</el-descriptions-item>
-        <el-descriptions-item label="Web 框架">Axum 0.8</el-descriptions-item>
-        <el-descriptions-item label="ORM">SeaORM 2.0</el-descriptions-item>
-        <el-descriptions-item label="前端框架">Vue 3.5 + Element Plus 2</el-descriptions-item>
-        <el-descriptions-item label="构建工具">Vite 8</el-descriptions-item>
-        <el-descriptions-item label="数据库">MySQL 8.0 / PostgreSQL</el-descriptions-item>
-        <el-descriptions-item label="许可证">MIT</el-descriptions-item>
-      </el-descriptions>
-    </el-card>
-  </div>
+          </span>
+          <span class="quick-title">{{ link.title }}</span>
+          <el-icon class="quick-arrow"><ArrowRight /></el-icon>
+        </button>
+      </div>
+      <el-empty v-else description="当前账号没有可访问的业务功能" />
+    </section>
+  </main>
 </template>
 
 <script setup lang="ts">
-// 纯静态页面，无任何后端请求
-import donateWechat from '@/assets/donate-wechat.png'
-import donateAlipay from '@/assets/donate-alipay.jpg'
+import { ArrowRight } from '@element-plus/icons-vue'
+import { usePermission } from '@/hooks/usePermission'
+import { usePermissionStore } from '@/stores/permission'
+import { useUserStore } from '@/stores/user'
+import {
+  collectDashboardLinks,
+  type DashboardLink,
+} from './dashboardLinks'
 
-const features = [
-  {
-    title: 'RBAC 权限管理',
-    desc: '菜单/按钮/API 三级细粒度权限控制，支持数据权限隔离',
-    icon: 'Lock',
-  },
-  {
-    title: '代码生成器',
-    desc: '基于 Proc Macro 的代码生成，一键生成 CRUD 前后端代码',
-    icon: 'MagicStick',
-  },
-  {
-    title: '系统监控',
-    desc: '服务器资源、缓存、DB 连接池、运行时指标实时监控',
-    icon: 'Monitor',
-  },
-  {
-    title: '链路追踪',
-    desc: 'OpenTelemetry 分布式链路追踪，快速定位性能瓶颈',
-    icon: 'Connection',
-  },
-  {
-    title: '消息队列',
-    desc: '集成 Kafka 消息队列，支持异步任务与事件驱动架构',
-    icon: 'Message',
-  },
-  {
-    title: '文件管理',
-    desc: 'MinIO / S3 对象存储，支持文件上传、下载、MD5 去重',
-    icon: 'Folder',
-  },
-  {
-    title: 'Excel 导入导出',
-    desc: '基于 calamine + rust_xlsxwriter 的高性能 Excel 处理',
-    icon: 'Document',
-  },
-  {
-    title: '国际化 i18n',
-    desc: '前后端完整的国际化支持，轻松扩展多语言',
-    icon: 'ChatLineSquare',
-  },
-]
+const router = useRouter()
+const permissionStore = usePermissionStore()
+const userStore = useUserStore()
+const { hasAllPermissions, isAdmin } = usePermission()
 
-const capabilities = [
-  { title: 'JWT 双 Token 认证', desc: 'Access Token + Refresh Token 无感刷新', icon: 'Key' },
-  { title: 'Argon2 密码哈希', desc: '安全的密码存储方案', icon: 'Lock' },
-  { title: 'Redis 缓存', desc: '高性能缓存与会话管理', icon: 'Coin' },
-  { title: 'gRPC 微服务', desc: '基于 Tonic 的高性能服务间通信', icon: 'Connection' },
-  { title: 'Prometheus 指标', desc: 'Prometheus 格式系统指标暴露', icon: 'TrendCharts' },
-  { title: 'OpenAPI 文档', desc: '基于 Utoipa 的自动 API 文档生成', icon: 'Notebook' },
-  { title: '多数据源', desc: '动态多数据源切换支持', icon: 'Grid' },
-  { title: '操作日志', desc: '完整的操作日志记录与审计', icon: 'EditPen' },
-  { title: '邮件发送', desc: '基于 Lettre 的 SMTP 邮件服务', icon: 'Message' },
-  { title: '验证码', desc: '图片验证码与邮件验证码支持', icon: 'Picture' },
-  { title: 'XSS 防护', desc: '基于 Ammonia 的 HTML 净化', icon: 'Warning' },
-  { title: '多租户', desc: '内置租户隔离，一套系统服务多客户', icon: 'OfficeBuilding' },
-]
+const displayName = computed(() => userStore.nickname || userStore.username || '用户')
+const tenantLabel = computed(() => userStore.tenantName || userStore.tenantId || '-')
+const roleLabel = computed(() => userStore.roles.length ? userStore.roles.join('、') : '-')
+const canManageTenants = computed(() =>
+  userStore.tenantId === 'system'
+  && (isAdmin() || hasAllPermissions('tenant:manage', 'tenant:list')),
+)
 
-const backendTechs = [
-  'Rust 2024', 'Axum 0.8', 'Tokio', 'SeaORM 2.0',
-  'Argon2', 'JWT', 'Redis', 'MySQL / PostgreSQL',
-  'OpenTelemetry', 'Tonic (gRPC)', 'Kafka', 'MinIO / S3',
-  'Prometheus', 'Utoipa (OpenAPI)', 'Lettre (SMTP)',
-  'calamine', 'rust_xlsxwriter', 'Ammonia (XSS)',
-]
+const allLinks = computed<DashboardLink[]>(() => {
+  const links = collectDashboardLinks(permissionStore.menus, Number.MAX_SAFE_INTEGER)
+  if (canManageTenants.value) {
+    links.push({ title: '租户管理', path: '/platform/tenants', icon: 'OfficeBuilding' })
+  }
+  return links
+})
+const quickLinks = computed(() => allLinks.value.slice(0, 8))
 
-const frontendTechs = [
-  'Vue 3.5', 'TypeScript 5+', 'Element Plus 2',
-  'Vite 8', 'Pinia 3', 'Vue Router 5',
-  'Axios', 'Sass', '@vueuse/core',
-]
+function openLink(path: string): void {
+  void router.push(path)
+}
 </script>
 
 <style scoped>
-.index-container {
-  width: 100%;
-  padding: 24px;
+.workspace {
+  min-height: 100%;
+  padding: 28px;
+  color: var(--color-text-primary);
+  background: #f6f8fa;
 }
 
-.hero-section {
-  text-align: center;
-  padding: 40px 0 32px;
-  margin: -24px -24px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-}
-
-.hero-title {
-  font-size: 46px;
-  font-weight: 700;
-  margin: 0 0 8px;
-  letter-spacing: 4px;
-}
-
-.hero-subtitle {
-  font-size: 20px;
-  margin: 0 0 12px;
-  font-weight: 400;
-  opacity: 0.9;
-}
-
-.hero-desc {
-  font-size: 15px;
+.workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  max-width: 1120px;
   margin: 0 auto;
-  max-width: 520px;
-  line-height: 1.6;
-  opacity: 0.8;
+  padding: 4px 0 24px;
+  border-bottom: 1px solid #dce2e8;
 }
 
-.feature-section {
-  margin-top: 24px;
-}
-
-.feature-card {
-  margin-bottom: 20px;
-  text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  height: 100%;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-}
-
-.feature-icon {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-}
-
-.feature-title {
+.workspace-label {
   margin: 0 0 6px;
-  font-size: 15px;
-  color: var(--color-text-primary);
-}
-
-.feature-desc {
-  margin: 0;
+  color: #31736f;
   font-size: 13px;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
+  font-weight: 700;
 }
 
-.tech-card {
-  margin-top: 8px;
-  height: 100%;
+h1,
+h2,
+p {
+  margin-top: 0;
 }
 
-.tech-header {
-  font-weight: 600;
-}
-
-.tech-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tech-tag {
-  margin: 0;
-}
-
-.info-card {
-  margin-top: 20px;
-}
-
-.cap-item {
-  padding: 12px 0;
-  text-align: center;
-}
-
-.cap-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.cap-desc {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  line-height: 1.4;
-}
-
-.donate-card {
-  border-color: var(--el-color-warning-light-5);
-}
-
-.donate-desc {
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  margin: 0 0 20px;
-}
-
-.donate-item {
-  text-align: center;
+h1 {
   margin-bottom: 8px;
+  font-size: 28px;
+  line-height: 1.25;
 }
 
-.donate-qrcode {
-  width: 100%;
-  max-width: 200px;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  border: 1px solid var(--el-border-color-light);
-}
-
-.donate-label {
-  display: block;
-  margin-top: 8px;
-  font-size: 13px;
+.workspace-subtitle,
+.section-heading p {
+  margin-bottom: 0;
   color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.account-summary {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 0;
+  border-bottom: 1px solid #dce2e8;
+}
+
+.account-summary dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.account-summary dl > div {
+  min-width: 0;
+  padding: 0 20px;
+  border-left: 1px solid #dce2e8;
+}
+
+.account-summary dl > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.account-summary dt {
+  margin-bottom: 8px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.account-summary dd {
+  overflow: hidden;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-section {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-top: 28px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+h2 {
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quick-link {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 18px;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #d7dee5;
+  border-radius: 6px;
+  color: inherit;
+  text-align: left;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.quick-link:hover,
+.quick-link:focus-visible {
+  border-color: #4c8f8a;
+  box-shadow: 0 4px 14px rgb(38 81 78 / 10%);
+  outline: none;
+}
+
+.quick-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 6px;
+  color: #2f6f6b;
+  background: #e8f3f2;
+}
+
+.quick-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-arrow {
+  color: #8a97a5;
+}
+
+@media (width <= 900px) {
+  .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width <= 640px) {
+  .workspace {
+    padding: 20px 16px;
+  }
+
+  .account-summary dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 0;
+  }
+
+  .account-summary dl > div:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

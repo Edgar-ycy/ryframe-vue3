@@ -1,38 +1,25 @@
-import request from '@/api/request'
+import request from '@/shared/http/client'
+import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
+import type { Id } from '@/shared/http/types'
 
 const BASE = '/system/perms'
 const ROLE_BASE = '/system/roles'
 
-export interface PermissionTreeNode {
-  id: number | string
-  name: string
-  code: string
-  parent_id?: number | string | null
-  perm_type?: 'api' | 'menu' | string
-  icon?: string | null
-  sort?: number
-  status?: string
-  children?: PermissionTreeNode[]
+export type PermissionType = ApiSchema<'PermissionType'>
+export type PermissionTreeNode = Omit<
+  ApiSchema<'PermissionTreeNode'>,
+  'children' | 'perm_type'
+> & {
+  children: PermissionTreeNode[]
+  perm_type: PermissionType
 }
-
-export interface PermissionForm {
-  name: string
-  code: string
-  parent_id?: number | string | null
-  perm_type: 'api' | 'menu' | string
-  icon?: string | null
-  sort?: number
-  status?: string
+export type PermissionRecord = Omit<ApiSchema<'PermissionVo'>, 'perm_type'> & {
+  perm_type: PermissionType
 }
+export type PermissionForm = OperationJsonBody<'post_system_perms'>
+export type PermissionSyncReport = ApiSchema<'PermissionSyncReport'>
 
-export interface PermissionSyncReport {
-  scanned: number
-  existing: number
-  created: number
-  missing: string[]
-}
-
-export function getPermissionTree(params?: { perm_type?: string }) {
+export function getPermissionTree(params?: OperationQuery<'get_system_perms_tree'>) {
   return request<PermissionTreeNode[]>({
     url: `${BASE}/tree`,
     method: 'get',
@@ -40,30 +27,31 @@ export function getPermissionTree(params?: { perm_type?: string }) {
   })
 }
 
-export function getPermission(id: number | string) {
-  return request<PermissionTreeNode>({
+export function getPermission(id: Id) {
+  return request<PermissionRecord>({
     url: `${BASE}/${id}`,
     method: 'get',
   })
 }
 
 export function createPermission(data: PermissionForm) {
-  return request<PermissionTreeNode>({
+  return request<PermissionRecord>({
     url: BASE,
     method: 'post',
     data,
   })
 }
 
-export function updatePermission(id: number | string, data: Partial<PermissionForm>) {
-  return request<PermissionTreeNode>({
+export function updatePermission(id: Id, data: PermissionForm) {
+  const body: OperationJsonBody<'put_system_perms_by_id'> = data
+  return request<PermissionRecord>({
     url: `${BASE}/${id}`,
     method: 'put',
-    data,
+    data: body,
   })
 }
 
-export function deletePermission(id: number | string) {
+export function deletePermission(id: Id) {
   return request({
     url: `${BASE}/${id}`,
     method: 'delete',
@@ -77,7 +65,7 @@ export function syncApiPermissions() {
   })
 }
 
-export function getRolePermissions(roleId: number | string) {
+export function getRolePermissions(roleId: Id) {
   return request<string[]>({
     url: `${ROLE_BASE}/${roleId}/permissions`,
     method: 'get',

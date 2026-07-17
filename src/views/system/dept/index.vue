@@ -7,8 +7,10 @@
           <el-button v-perm="'system:dept:add'" type="primary" icon="Plus" @click="handleAdd()">新增</el-button>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe row-key="id"
-        :tree-props="{ children: 'children' }">
+      <el-table
+        v-loading="loading" :data="tableData" border stripe row-key="id"
+        :tree-props="{ children: 'children' }"
+      >
         <el-table-column prop="name" label="部门名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="sort" label="排序" align="center" />
         <el-table-column prop="status" label="状态" align="center">
@@ -64,16 +66,18 @@
 
 <script setup lang="ts">
 import { getDeptTree, getDept, createDept, updateDept, deleteDept } from '@/api/modules/dept'
+import type { DeptNode } from '@/api/modules/dept'
+import type { Id } from '@/shared/http/types'
 
 const loading = ref(false)
-const tableData = ref([])
-const deptOptions = ref([])
+const tableData = ref<DeptNode[]>([])
+const deptOptions = ref<DeptNode[]>([])
 
 async function fetchData() {
   loading.value = true
   try {
-    const res = await getDeptTree() as any
-    const treeData = res.data || res || []
+    const res = await getDeptTree()
+    const treeData = res.data ?? []
     tableData.value = treeData
     deptOptions.value = treeData
   } finally { loading.value = false }
@@ -83,9 +87,9 @@ async function fetchData() {
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
-const currentEditId = ref<number | null>(null)
+const currentEditId = ref<Id | null>(null)
 
-const form = ref<{ parent_id?: number; name: string; sort: number; status: string }>({ parent_id: undefined, name: '', sort: 0, status: '1' })
+const form = ref<{ parent_id?: Id; name: string; sort: number; status: string }>({ parent_id: undefined, name: '', sort: 0, status: '1' })
 
 const rules = { name: [{ required: true, message: '请输入部门名称', trigger: 'blur' }] }
 
@@ -94,7 +98,7 @@ function resetForm() {
   formRef.value?.clearValidate()
 }
 
-function handleAdd(parentId?: number) {
+function handleAdd(parentId?: Id) {
   currentEditId.value = null
   dialog.value.title = '新增部门'; dialog.value.isEdit = false
   resetForm()
@@ -102,13 +106,14 @@ function handleAdd(parentId?: number) {
   dialog.value.visible = true
 }
 
-async function handleEdit(row:any) {
+async function handleEdit(row: DeptNode) {
   currentEditId.value = row.id
   dialog.value.title = '编辑部门'; dialog.value.isEdit = true
   resetForm()
   const res = await getDept(row.id)
-  const d = res.data || res
-  form.value.parent_id = d.parent_id
+  if (!res.data) throw new Error('部门详情响应缺少数据')
+  const d = res.data
+  form.value.parent_id = d.parent_id ?? undefined
   form.value.name = d.name
   form.value.sort = d.sort ?? 0
   form.value.status = d.status
@@ -122,10 +127,10 @@ async function handleSubmit() {
   try {
     const data = { name: form.value.name, parent_id: form.value.parent_id, sort: form.value.sort }
     if (dialog.value.isEdit) {
-      await updateDept(currentEditId.value!, { ...data, status: form.value.status } as any)
+      await updateDept(currentEditId.value!, { ...data, status: form.value.status })
       ElMessage.success('更新成功')
     } else {
-      await createDept(data as any)
+      await createDept(data)
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false
@@ -134,7 +139,7 @@ async function handleSubmit() {
 }
 
 // ----- 删除 -----
-async function handleDelete(row:any) {
+async function handleDelete(row: DeptNode) {
   try {
     await ElMessageBox.confirm(`确认删除部门"${row.name}"吗？(子部门将一并删除)`, '警告', { type: 'warning' })
     await deleteDept(row.id)
@@ -145,4 +150,3 @@ async function handleDelete(row:any) {
 
 onMounted(() => fetchData())
 </script>
-

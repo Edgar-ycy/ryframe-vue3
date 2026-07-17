@@ -58,7 +58,7 @@
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
-        v-model:page-size="queryParams.pageSize"
+        v-model:page-size="queryParams.page_size"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
@@ -97,17 +97,17 @@
 </template>
 
 <script setup lang="ts">
-import { listOperLog, exportOperLog } from '@/api/modules/monitor'
+import { listOperLog, exportOperLog, type OperLogRecord } from '@/api/modules/monitor'
 import { useDownload } from '@/hooks/useDownload'
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<OperLogRecord[]>([])
 const total = ref(0)
-const dateRange = ref<any[]>([])
+const dateRange = ref<[string, string] | []>([])
 const { downloading: exportLoading, downloadBlob } = useDownload()
 
 const queryParams = ref({
-  page: 1, pageSize: 10, oper_name: '', status: '', begin_time: '', end_time: '',
+  page: 1, page_size: 10, oper_name: '', status: '', begin_time: '', end_time: '',
 })
 
 function handleExport() {
@@ -134,13 +134,12 @@ function handleReset() {
 
 // ----- 详情 -----
 const detailVisible = ref(false)
-const detailRow = ref<any>({})
-function handleDetail(row: any) {
+const detailRow = ref<Partial<OperLogRecord>>({})
+function handleDetail(row: OperLogRecord) {
   detailRow.value = row
   detailVisible.value = true
 }
 
 onMounted(() => fetchData())
 </script>
-
 

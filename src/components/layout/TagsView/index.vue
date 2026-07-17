@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { useTagsViewStore } from '@/stores/tagsView'
+import type { TagView } from '@/stores/tagsView'
 import { Close } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -37,9 +38,9 @@ function addView(r: typeof route) {
   if (!r.name) return
   tagsViewStore.addView({
     path: r.path,
-    name: r.name as string,
-    title: r.meta?.title as string | undefined,
-    affix: (r.meta?.affix as boolean) ?? false,
+    name: String(r.name),
+    title: typeof r.meta.title === 'string' ? r.meta.title : undefined,
+    affix: r.meta.affix === true,
   })
 }
 
@@ -49,15 +50,15 @@ router.afterEach((to) => addView(to))
 // 初始加载：afterEach 不会在首次进入时触发，手动添加当前路由
 addView(route)
 
-function isActive(view) {
+function isActive(view: TagView) {
   return view.path === route.path
 }
 
-function goToView(view) {
+function goToView(view: TagView) {
   router.push(view.path)
 }
 
-function closeView(view) {
+function closeView(view: TagView) {
   tagsViewStore.removeView(view)
   // 如果关闭的是当前标签，跳转到上一个
   if (isActive(view)) {

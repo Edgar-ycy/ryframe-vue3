@@ -20,9 +20,9 @@ export function matchPermission(owned: string, required: string): boolean {
 }
 
 export function hasPermission(
-  permissions: string[],
+  permissions: readonly string[],
   required: PermissionValue,
-  roles: string[] = [],
+  roles: readonly string[] = [],
 ): boolean {
   if (!required || required.length === 0) return true
   if (roles.includes('admin')) return true
@@ -34,9 +34,9 @@ export function hasPermission(
 }
 
 export function hasAllPermissions(
-  permissions: string[],
-  required: string[],
-  roles: string[] = [],
+  permissions: readonly string[],
+  required: readonly string[],
+  roles: readonly string[] = [],
 ): boolean {
   if (!required.length) return true
   if (roles.includes('admin')) return true

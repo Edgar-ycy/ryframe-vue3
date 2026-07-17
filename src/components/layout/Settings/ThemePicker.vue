@@ -57,16 +57,19 @@ defineEmits<{
   align-items: center;
   gap: 12px;
 }
+
 .theme-picker-label {
   font-size: 14px;
   color: var(--el-text-color-regular);
   min-width: 60px;
 }
+
 .theme-presets {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
+
 .preset-item {
   width: 20px;
   height: 20px;
@@ -75,6 +78,7 @@ defineEmits<{
   border: 2px solid transparent;
   transition: all 0.2s;
 }
+
 .preset-item:hover,
 .preset-item.active {
   border-color: #333;

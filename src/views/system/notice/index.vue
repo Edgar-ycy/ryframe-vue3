@@ -56,7 +56,7 @@
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
-        v-model:page-size="queryParams.pageSize"
+        v-model:page-size="queryParams.page_size"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
@@ -95,12 +95,20 @@
 </template>
 
 <script setup lang="ts">
-import { listNotice, getNotice, createNotice, updateNotice, deleteNotice } from '@/api/modules/notice'
+import {
+  listNotice,
+  getNotice,
+  createNotice,
+  updateNotice,
+  deleteNotice,
+  type NoticeRecord,
+} from '@/api/modules/notice'
+import type { Id } from '@/shared/http/types'
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<NoticeRecord[]>([])
 const total = ref(0)
-const queryParams = ref({ page: 1, pageSize: 10, title: '', notice_type: '', status: '' })
+const queryParams = ref({ page: 1, page_size: 10, title: '', notice_type: '', status: '' })
 
 async function fetchData() {
   loading.value = true
@@ -117,7 +125,7 @@ function handleReset() { queryParams.value.title = ''; queryParams.value.notice_
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
-const currentEditId = ref<number | null>(null)
+const currentEditId = ref<Id | null>(null)
 const form = ref({ title: '', notice_type: 'notice', content: '', status: '1' })
 const rules = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
@@ -132,12 +140,13 @@ function handleAdd() {
   resetForm(); dialog.value.visible = true
 }
 
-async function handleEdit(row:any) {
+async function handleEdit(row: NoticeRecord) {
   currentEditId.value = row.id
   dialog.value.title = '编辑公告'; dialog.value.isEdit = true
   resetForm()
   const res = await getNotice(row.id)
-  const d = res.data || res
+  if (!res.data) throw new Error('公告详情响应缺少数据')
+  const d = res.data
   form.value.title = d.title; form.value.notice_type = d.notice_type || 'notice'
   form.value.content = d.content; form.value.status = d.status
   dialog.value.visible = true
@@ -148,19 +157,23 @@ async function handleSubmit() {
   if (!valid) return
   submitLoading.value = true
   try {
-    const data = { title: form.value.title, content: form.value.content, notice_type: form.value.notice_type || undefined }
+    const data = {
+      title: form.value.title,
+      content: form.value.content,
+      notice_type: form.value.notice_type,
+    }
     if (dialog.value.isEdit) {
-      await updateNotice(currentEditId.value!, { ...data, status: form.value.status } as any)
+      await updateNotice(currentEditId.value!, { ...data, status: form.value.status })
       ElMessage.success('更新成功')
     } else {
-      await createNotice(data as any)
+      await createNotice(data)
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false; await fetchData()
   } finally { submitLoading.value = false }
 }
 
-async function handleDelete(row:any) {
+async function handleDelete(row: NoticeRecord) {
   try {
     await ElMessageBox.confirm(`确认删除公告"${row.title}"吗？`, '警告', { type: 'warning' })
     await deleteNotice(row.id)
@@ -170,4 +183,3 @@ async function handleDelete(row:any) {
 
 onMounted(() => fetchData())
 </script>
-

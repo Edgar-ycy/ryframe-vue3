@@ -1,19 +1,9 @@
-import request from '@/api/request'
+import request, { requestBlob } from '@/shared/http/client'
+import type { ApiSchema, OperationQuery } from '@/api/contract'
 
 const BASE = '/common'
 
-export interface UploadResult {
-  file_id: number | string
-  file_url: string
-  file_info: {
-    original_name: string
-    storage_name: string
-    file_path: string
-    file_size: number
-    content_type: string
-    upload_time: string
-  }
-}
+export type UploadResult = ApiSchema<'UploadResponse'>
 
 /** 通用文件上传（后端返回数组，通常取第一个） */
 export function uploadFile(data: FormData) {
@@ -43,11 +33,13 @@ export function uploadAvatar(data: FormData) {
 }
 
 /** 文件下载 */
-export function downloadFile(path: string, bucket?: string) {
-  return request({
+export function downloadFile(
+  path: OperationQuery<'get_common_file_download'>['path'],
+  bucket?: OperationQuery<'get_common_file_download'>['bucket'],
+) {
+  return requestBlob({
     url: `${BASE}/file/download`,
     method: 'get',
     params: { path, bucket },
-    responseType: 'blob',
   })
 }

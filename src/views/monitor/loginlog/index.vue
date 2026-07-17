@@ -3,23 +3,23 @@
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline>
         <el-form-item label="用户名">
-          <el-input v-model="queryParams.user_name" placeholder="请输入用户名" clearable/>
+          <el-input v-model="queryParams.user_name" placeholder="请输入用户名" clearable />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="状态" clearable style="width:100px">
-            <el-option label="成功" value="1"/>
-            <el-option label="失败" value="0"/>
+            <el-option label="成功" value="1" />
+            <el-option label="失败" value="0" />
           </el-select>
         </el-form-item>
         <el-form-item label="登录时间">
           <el-date-picker
-              v-model="dateRange"
-              type="datetimerange"
-              range-separator="—"
-              start-placeholder="开始时间"
-              end-placeholder="结束时间"
-              value-format="YYYY-MM-DDTHH:mm:ss"
-              style="width:340px"
+            v-model="dateRange"
+            type="datetimerange"
+            range-separator="—"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            style="width:340px"
           />
         </el-form-item>
         <el-form-item>
@@ -39,18 +39,19 @@
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="user_name" label="用户名" />
         <el-table-column prop="ipaddr" label="IP地址" />
-        <el-table-column prop="login_location" label="登录地点" show-overflow-tooltip/>
-        <el-table-column prop="browser" label="浏览器" show-overflow-tooltip/>
-        <el-table-column prop="os" label="操作系统" show-overflow-tooltip/>
+        <el-table-column prop="login_location" label="登录地点" show-overflow-tooltip />
+        <el-table-column prop="browser" label="浏览器" show-overflow-tooltip />
+        <el-table-column prop="os" label="操作系统" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{
+            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
+              {{
                 row.status === '1' ? '成功' : '失败'
               }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="msg" label="提示消息" min-width="150" show-overflow-tooltip/>
+        <el-table-column prop="msg" label="提示消息" min-width="150" show-overflow-tooltip />
         <el-table-column prop="login_time" label="登录时间" />
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
@@ -59,11 +60,11 @@
         </el-table-column>
       </el-table>
       <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.pageSize"
-          :total="total" :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper" background
-          @change="fetchData"
+        v-model:current-page="queryParams.page"
+        v-model:page-size="queryParams.page_size"
+        :total="total" :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper" background
+        @change="fetchData"
       />
     </el-card>
 
@@ -89,17 +90,17 @@
 </template>
 
 <script setup lang="ts">
-import { listLoginLog, exportLoginLog } from '@/api/modules/monitor'
+import { listLoginLog, exportLoginLog, type LoginLogRecord } from '@/api/modules/monitor'
 import { useDownload } from '@/hooks/useDownload'
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<LoginLogRecord[]>([])
 const total = ref(0)
-const dateRange = ref<any[]>([])
+const dateRange = ref<[string, string] | []>([])
 const { downloading: exportLoading, downloadBlob } = useDownload()
 
 const queryParams = ref({
-  page: 1, pageSize: 10, user_name: '', status: '', begin_time: '', end_time: '',
+  page: 1, page_size: 10, user_name: '', status: '', begin_time: '', end_time: '',
 })
 
 function handleExport() {
@@ -135,13 +136,12 @@ function handleReset() {
 
 // ----- 详情 -----
 const detailVisible = ref(false)
-const detailRow = ref<any>({})
-function handleDetail(row: any) {
+const detailRow = ref<Partial<LoginLogRecord>>({})
+function handleDetail(row: LoginLogRecord) {
   detailRow.value = row
   detailVisible.value = true
 }
 
 onMounted(() => fetchData())
 </script>
-
 

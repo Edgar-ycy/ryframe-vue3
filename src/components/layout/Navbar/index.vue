@@ -20,7 +20,7 @@
       <el-switch
         v-model="isDark"
         inline-prompt
-        style="--el-switch-on-color: #409EFF"
+        class="theme-switch"
       >
         <template #active-icon><el-icon><Moon /></el-icon></template>
         <template #inactive-icon><el-icon><Sunny /></el-icon></template>
@@ -54,6 +54,7 @@ import Settings from '../Settings/index.vue'
 import { useAppStore } from '@/stores/app'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
+import { logoutSession } from '@/app/session/sessionCoordinator'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,11 +71,17 @@ const isDark = computed({
   set: (val: boolean) => settingsStore.setTheme(val ? 'dark' : 'light'),
 })
 
-function toggleFullscreen() {
-  if (document.fullscreenElement) {
-    document.exitFullscreen()
-  } else {
-    document.documentElement.requestFullscreen()
+async function toggleFullscreen(): Promise<void> {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen()
+    }
+    else {
+      await document.documentElement.requestFullscreen()
+    }
+  }
+  catch {
+    ElMessage.warning('当前浏览器无法切换全屏模式')
   }
 }
 
@@ -86,8 +93,7 @@ const handleCommand = async (command: string) => {
       } catch {
         return
       }
-      await userStore.logout()
-      await router.push('/login')
+      await logoutSession()
       break
     case 'profile':
       await router.push('/profile')
@@ -95,3 +101,9 @@ const handleCommand = async (command: string) => {
   }
 }
 </script>
+
+<style scoped>
+.theme-switch {
+  --el-switch-on-color: #409eff;
+}
+</style>

@@ -1,59 +1,58 @@
-import request from '@/api/request'
+import request, { requestBlob } from '@/shared/http/client'
+import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
+import { stripPagination, type Id } from '@/shared/http/types'
 
 const BASE = '/system/roles'
-const ASSIGN_BASE = '/system/role'
 
-export interface RoleQuery {
-  [key: string]: any
-  page?: number
-  pageSize?: number
-  name?: string
-  code?: string
-  status?: string
+export type RoleDataScope = '1' | '2' | '3' | '4' | '5'
+
+export type RoleQuery = OperationQuery<'get_system_roles'>
+type RoleAllQuery = OperationQuery<'get_system_roles_all'>
+type RoleExportQuery = OperationQuery<'get_system_roles_export'>
+export type RoleCreateInput = Omit<OperationJsonBody<'post_system_roles'>, 'data_scope'> & {
+  data_scope?: RoleDataScope
+}
+export type RoleUpdateInput = OperationJsonBody<'put_system_roles_by_id'>
+export type RoleRecord = Omit<ApiSchema<'RoleVo'>, 'data_scope'> & {
+  data_scope: RoleDataScope
+}
+export type ReplaceRoleDataScopeInput = {
+  data_scope: RoleDataScope
+  dept_ids: Id[]
 }
 
-export interface RoleForm {
-  [key: string]: any
-  name: string
-  code: string
-  sort?: number
-  status?: string
-  data_scope?: string
-  remark?: string
+export function listRole(params: RoleQuery)    { return request<RoleRecord[]>({ url: BASE, method: 'get', params }) }
+export function listRoleNoPage(params?: RoleAllQuery) {
+  return request<RoleRecord[]>({
+    url: `${BASE}/all`, method: 'get', params: stripPagination(params),
+  })
 }
-
-export function listRole(params: RoleQuery)    { return request({ url: `${BASE}/list`, method: 'get', params }) }
-export function listRoleNoPage(params?: RoleQuery) { return request({ url: `${BASE}/listNoPage`, method: 'get', params }) }
-export function exportRole(params?: any)  { return request({ url: `${BASE}/export`, method: 'get', params, responseType: 'blob' }) }
-export function getRole(id: number | string)           { return request({ url: `${BASE}/${id}`, method: 'get' }) }
-export function createRole(data: RoleForm)    { return request({ url: BASE, method: 'post', data }) }
-export function updateRole(id: number | string, data: Partial<RoleForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
-export function deleteRole(id: number | string)        { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
-export function batchDeleteRole(ids: (number | string)[]) { return request({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' }) }
+export function exportRole(params?: RoleExportQuery) {
+  return requestBlob({ url: `${BASE}/export`, method: 'get', params: stripPagination(params) })
+}
+export function getRole(id: Id)           { return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
+export function createRole(data: RoleCreateInput)    { return request<RoleRecord>({ url: BASE, method: 'post', data }) }
+export function updateRole(id: Id, data: RoleUpdateInput) { return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'put', data }) }
+export function deleteRole(id: Id)        { return request<void>({ url: `${BASE}/${id}`, method: 'delete' }) }
+export function batchDeleteRole(ids: Id[]) { return request<void>({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' }) }
 
 /** 分配权限 */
-export function assignPerm(roleId: number | string, permIds: (number | string)[]) {
+export function replaceRolePermissions(roleId: Id, permIds: Id[]) {
   return request({
-    url: `${ASSIGN_BASE}/assign-perm`,
-    method: 'post',
-    data: { role_id: String(roleId), perm_ids: permIds.map(String) },
+    url: `${BASE}/${roleId}/permissions`,
+    method: 'put',
+    data: { perm_ids: permIds.map(String) },
   })
 }
 
-/** 分配自定义数据权限部门 */
-export function assignDept(roleId: number | string, deptIds: (number | string)[]) {
+/** 原子替换数据范围和自定义部门。 */
+export function replaceRoleDataScope(roleId: Id, data: ReplaceRoleDataScopeInput) {
   return request({
-    url: `${ASSIGN_BASE}/assign-dept`,
-    method: 'post',
-    data: { role_id: String(roleId), dept_ids: deptIds.map(String) },
-  })
-}
-
-/** 更新角色数据权限范围 */
-export function updateRoleDataScope(roleId: number | string, dataScope: string) {
-  return request({
-    url: `${ASSIGN_BASE}/update-data-scope`,
-    method: 'post',
-    data: { role_id: String(roleId), data_scope: dataScope },
+    url: `${BASE}/${roleId}/data-scope`,
+    method: 'put',
+    data: {
+      data_scope: data.data_scope,
+      dept_ids: data.dept_ids.map(String),
+    },
   })
 }

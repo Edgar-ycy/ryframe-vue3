@@ -23,10 +23,10 @@
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="table_name" label="表名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="table_comment" label="表描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="class_name" label="实体类" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="created_at" label="创建时间" />
-        <el-table-column prop="updated_at" label="更新时间" />
+        <el-table-column prop="comment" label="表描述" min-width="200" show-overflow-tooltip />
+        <el-table-column label="字段数" width="100" align="center">
+          <template #default="{ row }">{{ row.columns.length }}</template>
+        </el-table-column>
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-perm="'tools:gen:list'" type="primary" link icon="View" @click="handlePreview(row)">预览</el-button>
@@ -36,7 +36,7 @@
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
-        v-model:page-size="queryParams.pageSize"
+        v-model:page-size="queryParams.page_size"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
@@ -60,19 +60,18 @@
         <el-button @click="previewVisible = false">关闭</el-button>
       </template>
     </el-dialog>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { listTable, previewCode, generateCode } from '@/api/modules/tools'
+import { generateCode, listTable, previewCode, type TableInfo } from '@/api/modules/tools'
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<TableInfo[]>([])
 const total = ref(0)
 
 const queryParams = ref({
-  page: 1, pageSize: 10, table_name: '', table_comment: '',
+  page: 1, page_size: 10, table_name: '', table_comment: '',
 })
 
 async function fetchData() {
@@ -92,13 +91,12 @@ const previewVisible = ref(false)
 const previewTab = ref('')
 const previewFiles = ref<{ name: string; content: string }[]>([])
 
-async function handlePreview(row: any) {
+async function handlePreview(row: TableInfo) {
   try {
-    const res = await previewCode({ table_name: row.table_name }) as any
-    const data = res.data || res
-    previewFiles.value = Object.entries(data).map(([name, content]) => ({
-      name: name as string,
-      content: content as string,
+    const res = await previewCode({ tables: [row.table_name] })
+    previewFiles.value = (res.data || []).map(file => ({
+      name: file.path,
+      content: file.content,
     }))
     previewTab.value = previewFiles.value[0]?.name || ''
     previewVisible.value = true
@@ -106,14 +104,17 @@ async function handlePreview(row: any) {
 }
 
 // ----- 生成代码 -----
-async function handleGen(row: any) {
+async function handleGen(row: TableInfo) {
   try {
-    await generateCode({ table_name: row.table_name })
-    ElMessage.success('代码生成成功')
+    const res = await generateCode({ tables: [row.table_name] })
+    if (!res.data) throw new Error('代码生成响应缺少数据')
+    const { written, skipped } = res.data
+    const message = skipped.length > 0
+      ? `已写入 ${written.length} 个文件，跳过 ${skipped.length} 个已存在文件`
+      : `已写入 ${written.length} 个文件`
+    ElMessage.success(message)
   } catch { /* error handled */ }
 }
 
 onMounted(() => fetchData())
 </script>
-
-

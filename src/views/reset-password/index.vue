@@ -24,10 +24,10 @@
           <el-input
             v-model="form.newPassword"
             type="password"
-            placeholder="新密码"
+            placeholder="至少 8 位，含大小写字母、数字和符号"
             prefix-icon="Lock"
             show-password
-            maxlength="72"
+            :maxlength="PASSWORD_POLICY.max_length"
           />
         </el-form-item>
         <el-form-item prop="confirmPassword">
@@ -37,7 +37,7 @@
             placeholder="确认新密码"
             prefix-icon="Lock"
             show-password
-            maxlength="72"
+            :maxlength="PASSWORD_POLICY.max_length"
           />
         </el-form-item>
         <el-form-item>
@@ -63,15 +63,23 @@
 
 <script setup lang="ts">
 import { completePasswordReset } from '@/api/modules/auth'
+import type { FormItemRule } from 'element-plus'
+import {
+  PASSWORD_POLICY,
+  newPasswordValidationMessage,
+} from '@/shared/security/passwordPolicy'
 
 const route = useRoute()
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 
-const requestId = computed(() => String(route.query.requestId || ''))
+const tenantId = computed(() => String(route.query.tenant_id || ''))
+const resetRequestIdentifier = computed(() => String(route.query.request_id || ''))
 const token = computed(() => String(route.query.token || ''))
-const missingParams = computed(() => !requestId.value || !token.value)
+const missingParams = computed(
+  () => !tenantId.value || !resetRequestIdentifier.value || !token.value,
+)
 
 const form = ref({
   newPassword: '',
@@ -86,10 +94,15 @@ const validateConfirm = (_rule: unknown, value: string, callback: (error?: Error
   callback()
 }
 
+const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) => {
+  const message = newPasswordValidationMessage(String(value ?? ''))
+  callback(message ? new Error(message) : undefined)
+}
+
 const rules: FormRules = {
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 72, message: '密码长度必须在 6-72 个字符之间', trigger: 'blur' },
+    { validator: validateNewPassword, trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
@@ -105,7 +118,8 @@ async function handleSubmit() {
   loading.value = true
   try {
     await completePasswordReset({
-      request_id: requestId.value,
+      tenant_id: tenantId.value,
+      request_id: resetRequestIdentifier.value,
       token: token.value,
       new_password: form.value.newPassword,
     })
@@ -128,7 +142,7 @@ function goLogin() {
   display: grid;
   place-items: center;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.9)),
+    linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(255 255 255 / 90%)),
     #eef2f6;
 }
 
@@ -138,7 +152,7 @@ function goLogin() {
   background: #fff;
   border: 1px solid #d8dee8;
   border-radius: 8px;
-  box-shadow: 0 18px 46px rgba(38, 52, 75, 0.16);
+  box-shadow: 0 18px 46px rgb(38 52 75 / 16%);
 }
 
 .reset-brand {
@@ -169,7 +183,7 @@ h1 {
   margin-top: 4px;
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .reset-panel {
     padding: 28px 18px 22px;
   }

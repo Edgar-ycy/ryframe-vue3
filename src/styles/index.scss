@@ -1,7 +1,7 @@
 /* ====== Global Styles ====== */
-@use './variables.scss';
-@use './mixins.scss';
-@use './transition.scss';
+@use './variables';
+@use './mixins';
+@use './transition';
 
 * {
   margin: 0;
@@ -11,13 +11,12 @@
 
 html, body {
   height: 100%;
-  font-family: 'Inter', 'Helvetica Neue', Helvetica, 'PingFang SC',
+  font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   font-size: 14px;
   color: var(--color-text-primary);
   background: var(--bg-color-page);
   overflow-x: hidden;
-  -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -85,10 +84,9 @@ a:hover {
     font-weight: 700;
     letter-spacing: 1px;
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-    -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgb(255 255 255 / 6%);
   }
 
   .el-scrollbar {
@@ -220,6 +218,7 @@ a:hover {
     align-items: center;
     overflow-x: auto;
     gap: 4px;
+
     @include mixins.scrollbar;
   }
 
@@ -256,7 +255,7 @@ a:hover {
       transition: all 0.2s;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgb(0 0 0 / 10%);
       }
     }
   }
@@ -425,7 +424,7 @@ a:hover {
 }
 
 /* ====== Mobile Layout ====== */
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   html,
   body,
   #app {
@@ -476,7 +475,7 @@ a:hover {
     inset: 0;
     z-index: 1000;
     display: block;
-    background: rgba(15, 23, 42, 0.42);
+    background: rgb(15 23 42 / 42%);
   }
 
   .navbar {
@@ -523,8 +522,7 @@ a:hover {
     height: calc(100dvh - 44px - env(safe-area-inset-top));
     min-height: 0;
     padding: 8px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden auto;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -635,7 +633,7 @@ a:hover {
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .navbar {
     .navbar-right {
       gap: 4px;
@@ -679,7 +677,7 @@ html.dark {
   --el-fill-color-light: #1A2236;
   --el-fill-color-lighter: #334155;
   --el-fill-color-blank: #111827;
-  --el-mask-color: rgba(0, 0, 0, 0.6);
+  --el-mask-color: rgb(0 0 0 / 60%);
 
   /* Button */
   --el-button-bg-color: #1E293B;
@@ -704,7 +702,7 @@ html.dark {
   /* Menu */
   --el-menu-bg-color: #111827;
   --el-menu-text-color: #CBD5E1;
-  --el-menu-hover-bg-color: rgba(99, 102, 241, 0.1);
+  --el-menu-hover-bg-color: rgb(99 102 241 / 10%);
   --el-menu-active-color: #818CF8;
   --el-menu-border-color: transparent;
 
@@ -725,7 +723,7 @@ html.dark {
   }
 
   .navbar {
-    background-color: rgba(17, 24, 39, 0.8);
+    background-color: rgb(17 24 39 / 80%);
     border-bottom-color: var(--border-color-base);
     backdrop-filter: blur(12px);
   }
@@ -749,7 +747,7 @@ html.dark {
     }
 
     .el-icon-close:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgb(255 255 255 / 10%);
     }
   }
 

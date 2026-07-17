@@ -195,7 +195,7 @@ export const useSettingsStore = defineStore('settings', {
 
       try {
         const res = await getConfigByKey('sys.index.sideTheme')
-        const sideTheme = (res as any)?.data as string | undefined
+        const sideTheme = res.data
         if (sideTheme) {
           const theme = sideTheme === 'theme-dark' ? 'dark' : 'light'
           if (theme !== this.theme) {
@@ -210,7 +210,7 @@ export const useSettingsStore = defineStore('settings', {
 
       try {
         const res = await getConfigByKey('sys.index.skinName')
-        const skinName = (res as any)?.data as string | undefined
+        const skinName = res.data
         if (skinName && SKIN_COLOR_MAP[skinName]) {
           const color = SKIN_COLOR_MAP[skinName]
           if (color !== this.themeColor) {

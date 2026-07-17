@@ -1,4 +1,6 @@
-type ComponentLoader = () => Promise<any>
+import type { Component } from 'vue'
+
+type ComponentLoader = () => Promise<{ default: Component }>
 
 export interface MenuPageRegistryEntry {
   path: string
@@ -37,7 +39,7 @@ export function getMenuPage(routeKey?: string | null): MenuPageRegistryEntry | u
   return routeKey ? menuPageRegistry[routeKey] : undefined
 }
 
-const permissionRouteKeys: Record<string, string> = {
+export const permissionRouteKeys: Readonly<Record<string, string>> = Object.freeze({
   'system:user:list': 'system.user',
   'system:role:list': 'system.role',
   'system:menu:list': 'system.menu',
@@ -55,7 +57,7 @@ const permissionRouteKeys: Record<string, string> = {
   'monitor:cache:list': 'monitor.cache',
   'monitor:db-pool:list': 'monitor.db-pool',
   'tools:gen:list': 'tools.gen',
-}
+})
 
 export function getRouteKeyByPermissionCode(permissionCode?: string | null): string | undefined {
   return permissionCode ? permissionRouteKeys[permissionCode] : undefined

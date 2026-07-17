@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+
+src/api/generated/** linguist-generated=true
+openapi/openapi.json linguist-generated=true

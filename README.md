@@ -1,6 +1,6 @@
 # RyFrame Vue3
 
-现代化企业级后台管理系统前端，基于 Vue 3 + TypeScript + Element Plus 构建，采用前后端分离架构，配套 Rust 后端 API。
+现代化企业级后台管理系统前端，基于 Vue 3 + TypeScript + Element Plus 构建。前端与 Rust 后端分别使用独立 Git 仓库、CI 和发布流程，通过 HTTP API 契约协作。
 
 ## 技术栈
 
@@ -11,10 +11,9 @@
 | 构建工具 | Vite | ^8.0 |
 | UI 组件库 | Element Plus | ^2.14 |
 | 状态管理 | Pinia | ^3.0 |
-| 路由 | Vue Router | ^4.6 |
-| HTTP 请求 | Axios | ^1.16 |
-| CSS 预处理 | Sass | ^1.100 |
-| 工具库 | VueUse | ^14.3 |
+| 路由 | Vue Router | ^5.1 |
+| HTTP 请求 | Axios | ^1.17 |
+| CSS 预处理 | Sass | ^1.101 |
 
 ## 功能模块
 
@@ -27,47 +26,27 @@
 
 ## 项目结构
 
-```
+```text
 ryframe-vue3/
-├── public/                 # 静态资源（不参与编译）
+├── openapi/openapi.json   # 后端 OpenAPI 契约快照
 ├── src/
-│   ├── api/                # 接口层
-│   │   ├── modules/        #   业务 API 模块（auth/user/role/menu/dept/...）
-│   │   └── request.ts      #   Axios 实例封装（拦截器、Token 刷新、错误处理）
-│   ├── assets/             # 资源文件（图片、图标等）
-│   ├── components/         # 全局组件
-│   │   ├── business/       #   业务组件（部门树、字典选择器等）
-│   │   ├── common/         #   通用组件（分页、图标选择器、工具栏）
-│   │   └── layout/         #   布局组件（侧边栏、导航栏、标签页）
-│   ├── directives/         # 自定义指令（权限、防抖、节流、水印等）
-│   ├── hooks/              # 组合式函数（useAuth / useCRUD / useTable / useDict 等）
-│   ├── router/             # 路由配置
-│   │   ├── routes/         #   路由定义（常量路由 + 模块路由）
-│   │   ├── index.ts        #   路由实例 + 前置守卫（动态路由注册）
-│   │   └── permission.ts   #   权限路由生成
-│   ├── stores/             # Pinia 状态管理
-│   │   ├── app.ts          #   应用全局状态
-│   │   ├── user.ts         #   用户认证状态
-│   │   ├── permission.ts   #   权限/菜单/路由状态
-│   │   ├── settings.ts     #   主题/布局设置
-│   │   ├── tagsView.ts     #   标签页状态
-│   │   └── dict.ts         #   字典数据缓存
-│   ├── styles/             # 全局样式（SCSS 变量、混入、过渡动画）
-│   ├── utils/              # 工具函数（Token 存取、树操作、表单校验、文件下载）
-│   ├── views/              # 页面视图
-│   │   ├── dashboard/      #   首页
-│   │   ├── login/          #   登录页
-│   │   ├── system/         #   系统管理（user/role/menu/dept/post/dict/config/notice）
-│   │   ├── monitor/        #   系统监控（online/server/operlog/loginlog）
-│   │   ├── tools/          #   系统工具（代码生成）
-│   │   ├── profile/        #   个人中心
-│   │   └── error/          #   错误页面（401/403/404/500）
-│   ├── App.vue             # 根组件
-│   └── main.ts             # 应用入口
-├── .env                    # 默认环境变量
-├── .env.development        # 开发环境变量
-├── .env.production         # 生产环境变量
-├── index.html
+│   ├── app/session/        # Token 刷新、退出和会话协调
+│   ├── shared/             # 运行时配置、HTTP 基础层和生成式安全策略
+│   ├── api/contract.ts     # 生成契约的稳定类型入口
+│   ├── api/generated/      # OpenAPI 生成类型，禁止手工修改
+│   ├── api/modules/        # 业务 API 请求函数和语义类型
+│   ├── router/             # 守卫、动态路由、页面白名单和常量路由
+│   ├── stores/             # Pinia 跨页面状态
+│   ├── components/         # 布局和可复用组件
+│   ├── directives/         # 权限和交互指令
+│   ├── hooks/              # 组合式逻辑
+│   ├── styles/             # 全局样式和设计 token
+│   ├── utils/              # 无状态工具
+│   ├── views/              # 页面编排
+│   ├── App.vue
+│   └── main.ts
+├── scripts/                # 源码、架构和 API 契约检查
+├── ARCHITECTURE.md
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
@@ -77,13 +56,14 @@ ryframe-vue3/
 
 ### 环境要求
 
-- **Node.js** >= 18
-- **pnpm** >= 9（推荐）
+- **Node.js** ^20.19.0 或 >= 22.12.0
+- **pnpm** 10.28.2（以 `packageManager` 字段为准，推荐通过 Corepack 使用）
 
 ### 安装依赖
 
 ```bash
 pnpm install
+pnpm exec playwright install chromium
 ```
 
 ### 启动开发服务器
@@ -102,6 +82,25 @@ pnpm build
 
 构建产物输出至 `dist/` 目录。
 
+### 完整工程检查
+
+```bash
+pnpm check
+```
+
+该命令依次执行源码卫生、架构边界、OpenAPI 快照、菜单 `route_key` 集合、密码策略、生成类型、ESLint、Stylelint、Vue TSC、覆盖率测试、生产构建和 Playwright 浏览器冒烟测试；任何警告都会使检查失败。
+
+### 同步 API 契约
+
+后端接口变更后，从后端仓库快照生成前端类型：
+
+```powershell
+$env:RYFRAME_OPENAPI_SOURCE='..\openapi\openapi.json'
+pnpm api:sync
+```
+
+CI 会从后端主分支同步契约，重新生成 `src/api/generated/schema.ts` 和 `src/shared/security/passwordPolicy.generated.json` 并检查 Git diff。API 模块通过 `src/api/contract.ts` 引用生成类型，不手工复制 DTO 字段；新密码表单统一使用生成策略，不复制长度或正则。
+
 ### 预览构建结果
 
 ```bash
@@ -116,6 +115,7 @@ pnpm preview
 |------|------|------|
 | `VITE_APP_TITLE` | 应用标题（显示在浏览器标签页） | `RyFrame 管理后台` |
 | `VITE_APP_BASE_API` | API 基础路径 | `/api/v1` |
+| `VITE_APP_PROXY_TARGET` | 开发服务器代理的后端地址 | `http://localhost:8080` |
 
 环境变量按 `development` / `production` 分别在 `.env.development` 和 `.env.production` 中配置。
 
@@ -124,10 +124,12 @@ pnpm preview
 开发环境下，Vite 开发服务器会将 `/api` 开头的请求代理到后端服务。代理目标在 `vite.config.ts` 中配置：
 
 ```ts
+const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
+
 server: {
   proxy: {
     '/api': {
-      target: 'http://localhost:8081',   // 后端服务地址
+      target: proxyTarget,
       changeOrigin: true,
     },
   },
@@ -139,7 +141,7 @@ server: {
 `@` 映射到 `src/` 目录，可在项目中直接使用：
 
 ```ts
-import { useAuth } from '@/hooks/useAuth'
+import { usePermission } from '@/hooks/usePermission'
 ```
 
 ## 核心特性
@@ -154,18 +156,19 @@ import { useAuth } from '@/hooks/useAuth'
 
 - **Token 管理**: Bearer Token 自动注入，401 时自动刷新并重放排队请求
 - **错误处理**: 统一 HTTP 状态码映射与业务错误码提示
-- **响应解包**: 拦截器自动处理分页数据（`rows` / `total`）提升
+- **响应适配**: 拦截器统一处理业务响应包络与文件下载响应
 
 ### 动态路由
 
 - 首页加载时从后端获取用户菜单树，动态注册 Vue Router 路由
-- 支持多端点降级：菜单树 API 不可用时，自动降级为权限码过滤静态路由
+- 页面组件只能从本地 `pageRegistry.ts` 白名单解析，后端不能下发任意组件路径
 - 首次路由导航自动 replace，避免回退到登录页
 
-### 字典缓存
+### 密码策略
 
-- 字典数据按需加载并全局缓存，避免重复请求
-- 多个页面共享同一字典实例，保持数据一致性
+- 个人修改、密码重置和租户管理员初始密码共用后端 OpenAPI 发布的策略
+- 同步脚本生成只读策略配置，页面只调用统一验证器
+- 密码修改成功后清理旧会话并返回登录页
 
 ## 与后端对接
 
@@ -178,12 +181,17 @@ import { useAuth } from '@/hooks/useAuth'
 ```json
 {
   "code": 200,
-  "message": "操作成功",
+  "msg": "操作成功",
   "data": { ... }
 }
 ```
 
 分页接口额外包含 `rows` 和 `total` 字段。
+`/all` 与导出接口只发送业务筛选字段；API 模块会通过 `stripPagination` 移除 `page` 和 `page_size`。
+
+## 文档
+
+- [架构与演进指南](ARCHITECTURE.md)：当前前端架构、主要耦合问题、目标依赖方向和分阶段改造计划。
 
 ## Star History
 

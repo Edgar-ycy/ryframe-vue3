@@ -48,7 +48,7 @@
                 :src="captchaImage"
                 alt="验证码"
                 style="width:100%;height:100%;border-radius:4px"
-              />
+              >
               <div v-else class="captcha-placeholder">
                 加载中...
               </div>
@@ -74,6 +74,7 @@
 import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
+import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
 
 const router = useRouter()
 const route = useRoute()
@@ -82,19 +83,7 @@ const userStore = useUserStore()
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
-interface LoginForm {
-  tenant_id: string
-  username: string
-  password: string
-  captcha_code: string
-}
-
-const loginForm = ref<LoginForm>({
-  tenant_id: getTenantId(),
-  username: 'admin',
-  password: 'admin123',
-  captcha_code: '',
-})
+const loginForm = ref(createInitialLoginForm(getTenantId(), import.meta.env.DEV))
 
 const loginRules: FormRules = {
   tenant_id: [{ required: true, message: '请输入租户标识', trigger: 'blur' }],
@@ -109,9 +98,8 @@ const captchaId = ref('')
 
 async function loadCaptchaConfig() {
   try {
-    const res = await getCaptchaConfig() as any
-    const data = res.data || res
-    captchaEnabled.value = data.captcha_enabled === true
+    const res = await getCaptchaConfig()
+    captchaEnabled.value = res.data?.captcha_enabled === true
   } catch {
     captchaEnabled.value = true
   }
@@ -119,8 +107,9 @@ async function loadCaptchaConfig() {
 
 async function refreshCaptcha() {
   try {
-    const res = await getCaptcha() as any
-    const data = res.data || res
+    const res = await getCaptcha()
+    if (!res.data) throw new Error('验证码响应缺少数据')
+    const data = res.data
     captchaId.value = data.captcha_id
     captchaImage.value = data.image_base64
     loginForm.value.captcha_code = ''
@@ -143,8 +132,7 @@ const handleLogin = async () => {
       captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )
     ElMessage.success('登录成功')
-    const redirect = (route.query.redirect as string) || '/'
-    await router.replace(redirect === '/login' ? '/' : redirect)
+    await router.replace(resolveLoginRedirect(route.query.redirect))
   } catch {
     if (captchaEnabled.value) {
       await refreshCaptcha()
@@ -177,7 +165,7 @@ onMounted(async () => {
   padding: 40px;
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 30px rgb(0 0 0 / 15%);
 }
 
 .login-title {
@@ -199,7 +187,7 @@ onMounted(async () => {
   border-radius: 4px;
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .login-card {
     padding: 24px 18px;
   }

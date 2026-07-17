@@ -51,7 +51,7 @@
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
-        v-model:page-size="queryParams.pageSize"
+        v-model:page-size="queryParams.page_size"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
@@ -86,13 +86,22 @@
 </template>
 
 <script setup lang="ts">
-import { listPost, getPost, createPost, updatePost, deletePost, exportPost } from '@/api/modules/post'
+import {
+  listPost,
+  getPost,
+  createPost,
+  updatePost,
+  deletePost,
+  exportPost,
+  type PostRecord,
+} from '@/api/modules/post'
 import { useDownload } from '@/hooks/useDownload'
+import type { Id } from '@/shared/http/types'
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<PostRecord[]>([])
 const total = ref(0)
-const queryParams = ref({ page: 1, pageSize: 10, name: '', code: '', status: '' })
+const queryParams = ref({ page: 1, page_size: 10, name: '', code: '', status: '' })
 const { downloading: exportLoading, downloadBlob } = useDownload()
 
 function handleExport() {
@@ -114,7 +123,7 @@ function handleReset() { queryParams.value.name = ''; queryParams.value.code = '
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
-const currentEditId = ref<number | null>(null)
+const currentEditId = ref<Id | null>(null)
 const form = ref({ name: '', code: '', sort: 0, status: '1' })
 const rules = {
   name: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
@@ -129,12 +138,13 @@ function handleAdd() {
   resetForm(); dialog.value.visible = true
 }
 
-async function handleEdit(row) {
+async function handleEdit(row: PostRecord) {
   currentEditId.value = row.id
   dialog.value.title = '编辑岗位'; dialog.value.isEdit = true
   resetForm()
   const res = await getPost(row.id)
-  const d = res.data || res
+  if (!res.data) throw new Error('岗位详情响应缺少数据')
+  const d = res.data
   form.value.name = d.name; form.value.code = d.code
   form.value.sort = d.sort ?? 0; form.value.status = d.status
   dialog.value.visible = true
@@ -146,17 +156,21 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialog.value.isEdit) {
-      await updatePost(currentEditId.value!, { name: form.value.name, sort: form.value.sort, status: form.value.status } as any)
+      await updatePost(currentEditId.value!, {
+        name: form.value.name,
+        sort: form.value.sort,
+        status: form.value.status,
+      })
       ElMessage.success('更新成功')
     } else {
-      await createPost({ name: form.value.name, code: form.value.code, sort: form.value.sort } as any)
+      await createPost({ name: form.value.name, code: form.value.code, sort: form.value.sort })
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false; fetchData()
   } finally { submitLoading.value = false }
 }
 
-async function handleDelete(row) {
+async function handleDelete(row: PostRecord) {
   try {
     await ElMessageBox.confirm(`确认删除岗位"${row.name}"吗？`, '警告', { type: 'warning' })
     await deletePost(row.id)

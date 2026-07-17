@@ -1,9 +1,15 @@
-import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router'
-import {constantRoutes} from './routes/constant'
-import {useUserStore} from '@/stores/user'
-import {usePermissionStore} from '@/stores/permission'
-import {getUserMenus} from '@/api/modules/menu'
-import {hasPermission} from '@/utils/permission'
+import {
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+} from 'vue-router'
+import { constantRoutes } from './routes/constant'
+import { useUserStore } from '@/stores/user'
+import { usePermissionStore } from '@/stores/permission'
+import { getUserMenus } from '@/api/modules/menu'
+import { clearSession } from '@/app/session/sessionCoordinator'
+import { RuntimeRouteRegistry } from './runtimeRouteRegistry'
+import { createNavigationGuard } from './navigationGuard'
 
 // 扩展 vue-router 的 RouteMeta
 declare module 'vue-router' {
@@ -29,35 +35,21 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
-const dynamicRouteNames = new Set<string | symbol>()
-
-// 白名单：无需登录即可访问
-const whiteList = ['/login', '/reset-password']
+const runtimeRouteRegistry = new RuntimeRouteRegistry(router)
 
 /**
  * 从后端菜单树生成动态路由（纯数据库驱动，无静态降级）
  */
 async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>): Promise<RouteRecordRaw[]> {
-  const menuRes = await getUserMenus() as any
-  const menuTree = menuRes.rows || menuRes.data || menuRes || []
+  const menuRes = await getUserMenus()
+  const menuTree = menuRes.data ?? menuRes.rows ?? []
   const userStore = useUserStore()
   return permissionStore.generateRoutes(menuTree, userStore.permissions, userStore.roles)
 }
 
 /** 注册动态路由（catch-all 已在 constantRoutes 中，无需在此追加） */
-function addRuntimeRoutes(routes: RouteRecordRaw[]) {
-  for (const route of routes) {
-    if (route.name && router.hasRoute(route.name)) continue
-    router.addRoute(route)
-    if (route.name) dynamicRouteNames.add(route.name)
-  }
-}
-
 export function resetDynamicRoutes() {
-  for (const name of dynamicRouteNames) {
-    if (router.hasRoute(name)) router.removeRoute(name)
-  }
-  dynamicRouteNames.clear()
+  runtimeRouteRegistry.reset()
 }
 
 export async function refreshAccessibleRoutes() {
@@ -65,63 +57,22 @@ export async function refreshAccessibleRoutes() {
   resetDynamicRoutes()
   permissionStore.resetRoutes()
   const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore)
-  addRuntimeRoutes(accessRoutes)
+  runtimeRouteRegistry.add(accessRoutes)
   return accessRoutes
 }
 
-function getOriginalFullPath(to: any): string {
-  return to.redirectedFrom?.fullPath || to.fullPath || to.path || '/'
-}
-
-function canAccessRoute(userStore: ReturnType<typeof useUserStore>, route: any): boolean {
-  if (!route.meta?.requiresPermission) return true
-  const required = route.meta?.permission
-  return typeof required === 'string'
-    && hasPermission(userStore.permissions, required, userStore.roles)
-}
+const navigationGuard = createNavigationGuard({
+  getUser: useUserStore,
+  getPermissionState: usePermissionStore,
+  refreshAccessibleRoutes,
+  clearSession,
+})
 
 // 全局前置守卫
-// 使用 Vue Router 4 推荐的 return 模式，而非已废弃的 next(location)
-router.beforeEach(async (to, from) => {
+// 使用 Vue Router 的 return 模式，避免命令式 next(location) 分支遗漏。
+router.beforeEach((to) => {
   document.title = `${to.meta?.title || ''} - RyFrame`
-
-  const userStore = useUserStore()
-  const permissionStore = usePermissionStore()
-
-  if (userStore.token) {
-    // 已登录 → 访问登录页则重定向到首页
-    if (to.path === '/login') {
-      return { path: '/' }
-    }
-
-    // 首次加载：动态路由未生成则请求用户信息 + 菜单树
-    if (!permissionStore.isRoutesLoaded) {
-      try {
-        // 1. 获取用户基本信息 + 权限码
-        if (!userStore.permissions.length) {
-          await userStore.getUserInfo()
-        }
-        // 2. 获取菜单并生成路由
-        await refreshAccessibleRoutes()
-        // 4. 重新导航到原始目标（此时动态路由已注册，可正确匹配）
-        return { path: getOriginalFullPath(to), replace: true }
-      } catch (_error) {
-        await userStore.logout()
-        return { path: '/login', query: { redirect: getOriginalFullPath(to) } }
-      }
-    }
-    if (!canAccessRoute(userStore, to)) {
-      return { path: '/403', replace: true }
-    }
-    // 路由已加载，正常放行
-    return true
-  } else {
-    // 未登录：白名单放行，其余重定向到登录页
-    if (whiteList.includes(to.path)) {
-      return true
-    }
-    return { path: '/login', query: { redirect: getOriginalFullPath(to) } }
-  }
+  return navigationGuard(to)
 })
 
 export default router

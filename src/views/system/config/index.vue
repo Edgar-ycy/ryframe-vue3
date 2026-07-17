@@ -41,7 +41,7 @@
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
-        v-model:page-size="queryParams.pageSize"
+        v-model:page-size="queryParams.page_size"
         :total="total" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
@@ -73,16 +73,25 @@
 </template>
 
 <script setup lang="ts">
-import { listConfig, getConfig, createConfig, updateConfig, deleteConfig, exportConfig } from '@/api/modules/config'
+import {
+  listConfig,
+  getConfig,
+  createConfig,
+  updateConfig,
+  deleteConfig,
+  exportConfig,
+  type ConfigRecord,
+} from '@/api/modules/config'
 import { useSettingsStore } from '@/stores/settings'
 import { useDownload } from '@/hooks/useDownload'
+import type { Id } from '@/shared/http/types'
 
 const settingsStore = useSettingsStore()
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<ConfigRecord[]>([])
 const total = ref(0)
-const queryParams = ref({ page: 1, pageSize: 10, name: '', key: '' })
+const queryParams = ref({ page: 1, page_size: 10, name: '', key: '' })
 const { downloading: exportLoading, downloadBlob } = useDownload()
 
 function handleExport() {
@@ -104,7 +113,7 @@ function handleReset() { queryParams.value.name = ''; queryParams.value.key = ''
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
-const currentEditId = ref<number | null>(null)
+const currentEditId = ref<Id | null>(null)
 const form = ref({ name: '', key: '', value: '', remark: '' })
 const rules = {
   name: [{ required: true, message: '请输入参数名称', trigger: 'blur' }],
@@ -120,12 +129,13 @@ function handleAdd() {
   resetForm(); dialog.value.visible = true
 }
 
-async function handleEdit(row:any) {
+async function handleEdit(row: ConfigRecord) {
   currentEditId.value = row.id
   dialog.value.title = '编辑参数'; dialog.value.isEdit = true
   resetForm()
   const res = await getConfig(row.id)
-  const d = res.data || res
+  if (!res.data) throw new Error('参数详情响应缺少数据')
+  const d = res.data
   form.value.name = d.name; form.value.key = d.key
   form.value.value = d.value; form.value.remark = d.remark || ''
   dialog.value.visible = true
@@ -137,35 +147,29 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (dialog.value.isEdit) {
-      // 确保 value 是字符串类型（textarea 绑定的值始终是 string，此处防御）
-      const payload = {
-        name: form.value.name,
-        value: String(form.value.value),
-        remark: form.value.remark || undefined,
-      }
-      const res = await updateConfig(currentEditId.value!, payload as any) as any
-      // 后端返回的数据与 payload 不一致时警告
-      const updated = res?.data || res
-      if (updated && updated.value !== payload.value) {
-        console.warn('[Config] PUT 成功但返回 value 与请求不一致:', { sent: payload.value, returned: updated.value })
-      }
+      await updateConfig(currentEditId.value!, { value: form.value.value })
       ElMessage.success('更新成功')
       // 如果修改的是皮肤/主题相关配置，立即应用到页面
       if (form.value.key === 'sys.index.skinName' || form.value.key === 'sys.index.sideTheme') {
         await settingsStore.syncFromServer()
       }
     } else {
-      await createConfig({ name: form.value.name, key: form.value.key, value: String(form.value.value), remark: form.value.remark || undefined } as any)
+      await createConfig({
+        name: form.value.name,
+        key: form.value.key,
+        value: form.value.value,
+        remark: form.value.remark || undefined,
+      })
       ElMessage.success('新增成功')
     }
     dialog.value.visible = false
     await fetchData()
-  } catch (e: any) {
-    console.error('[Config] 提交失败:', e)
+  } catch {
+    // 请求错误由 HTTP 层统一展示。
   } finally { submitLoading.value = false }
 }
 
-async function handleDelete(row:any) {
+async function handleDelete(row: ConfigRecord) {
   try {
     await ElMessageBox.confirm(`确认删除参数"${row.name}"吗？`, '警告', { type: 'warning' })
     await deleteConfig(row.id)

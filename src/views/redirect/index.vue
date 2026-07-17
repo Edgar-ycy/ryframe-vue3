@@ -27,9 +27,11 @@ onMounted(() => {
   font-size: 14px;
   color: var(--color-text-secondary);
 }
+
 .loading-icon {
   animation: spin 1s linear infinite;
 }
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

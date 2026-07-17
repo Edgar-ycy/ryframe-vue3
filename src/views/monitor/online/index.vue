@@ -37,10 +37,10 @@
 </template>
 
 <script setup lang="ts">
-import { listOnlineUser, forceLogout } from '@/api/modules/monitor'
+import { listOnlineUser, forceLogout, type OnlineUserRecord } from '@/api/modules/monitor'
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<OnlineUserRecord[]>([])
 const queryParams = ref({ username: '', ipaddr: '' })
 
 async function fetchData() {
@@ -56,7 +56,7 @@ function handleReset() {
   fetchData()
 }
 
-async function handleForceLogout(row) {
+async function handleForceLogout(row: OnlineUserRecord) {
   try {
     await ElMessageBox.confirm(`确认强制下线用户"${row.username}"吗？`, '警告', { type: 'warning' })
     await forceLogout(row.token_id)
@@ -67,4 +67,3 @@ async function handleForceLogout(row) {
 
 onMounted(() => fetchData())
 </script>
-

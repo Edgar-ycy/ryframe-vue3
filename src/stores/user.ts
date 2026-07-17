@@ -1,14 +1,13 @@
 import { defineStore } from 'pinia'
-import { getUserInfo, login as loginApi, logout as logoutApi } from '@/api/modules/auth'
-import { getTenantId, getToken, removeTenantId, removeToken, setRefreshToken, setTenantId, setToken } from '@/utils/auth'
-import { usePermissionStore } from '@/stores/permission'
-import { useTagsViewStore } from '@/stores/tagsView'
+import { getUserInfo, login as loginApi, type UserInfo } from '@/api/modules/auth'
+import type { Id } from '@/shared/http/types'
+import { getTenantId, getToken, setRefreshToken, setTenantId, setToken } from '@/utils/auth'
 
 interface UserState {
   token: string
   tenantId: string
   tenantName: string
-  userId: number | string
+  userId: Id | ''
   username: string
   nickname: string
   avatar: string
@@ -50,8 +49,9 @@ export const useUserStore = defineStore('user', {
       const res = await loginApi(
         { username, password, captcha_id: captchaId, captcha_code: captchaCode },
         tenantId,
-      ) as any
-      const authData = res.data || res
+      )
+      const authData = res.data
+      if (!authData) throw new Error('登录响应缺少认证数据')
       const userInfo = authData.user_info
 
       if (!authData.access_token || !userInfo?.tenant_id) {
@@ -70,7 +70,7 @@ export const useUserStore = defineStore('user', {
 
       this.userId = userInfo.id
       this.username = userInfo.username
-      this.nickname = userInfo.nickname
+      this.nickname = userInfo.nickname || ''
       this.email = userInfo.email || ''
       this.phone = userInfo.phone || ''
       this.avatar = userInfo.avatar || ''
@@ -80,43 +80,24 @@ export const useUserStore = defineStore('user', {
     },
 
     async getUserInfo() {
-      const res = await getUserInfo() as any
-      const d = res.data || res
-      if (d) {
-        if (d.tenant_id) {
-          this.tenantId = d.tenant_id
-          this.tenantName = d.tenant_name || d.tenant_id
-          setTenantId(d.tenant_id)
-        }
-        this.userId = d.id
-        this.username = d.username
-        this.nickname = d.nickname
-        this.email = d.email || ''
-        this.phone = d.phone || ''
-        this.avatar = d.avatar || ''
-        this.roles = d.roles || []
-        this.permissions = d.perms || []
-      }
+      const res = await getUserInfo()
+      if (!res.data) throw new Error('用户信息响应缺少数据')
+      this.applyUserInfo(res.data)
       return res
     },
 
-    async logout() {
-      try {
-        await logoutApi()
-      } catch {
-        // ignore
-      }
-      await this.clearClientState()
-    },
-
-    async clearClientState() {
-      this.resetState()
-      usePermissionStore().resetRoutes()
-      useTagsViewStore().closeAllViews()
-      removeToken()
-      removeTenantId()
-      const { resetDynamicRoutes } = await import('@/router')
-      resetDynamicRoutes()
+    applyUserInfo(userInfo: UserInfo) {
+      this.tenantId = userInfo.tenant_id
+      this.tenantName = userInfo.tenant_name || userInfo.tenant_id
+      setTenantId(userInfo.tenant_id)
+      this.userId = userInfo.id
+      this.username = userInfo.username
+      this.nickname = userInfo.nickname || ''
+      this.email = userInfo.email || ''
+      this.phone = userInfo.phone || ''
+      this.avatar = userInfo.avatar || ''
+      this.roles = userInfo.roles || []
+      this.permissions = userInfo.perms || []
     },
 
     resetState() {

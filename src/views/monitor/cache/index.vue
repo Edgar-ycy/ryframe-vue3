@@ -132,7 +132,7 @@ async function fetchData() {
       getCacheCommands(),
     ])
     cacheInfo.value = infoRes.data || null
-    const data = commandsRes.data as any
+    const data = commandsRes.data
     commandStats.value = data && !data.error ? data : {}
   } finally {
     loading.value = false

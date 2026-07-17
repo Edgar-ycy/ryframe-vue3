@@ -1,34 +1,35 @@
-import request from '@/api/request'
+import request, { requestBlob } from '@/shared/http/client'
+import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
+import { stripPagination, type Id } from '@/shared/http/types'
 
 const BASE = '/system/configs'
 
-export interface ConfigQuery {
-  [key: string]: any
-  page?: number
-  pageSize?: number
-}
+export type ConfigQuery = OperationQuery<'get_system_configs'>
+type ConfigAllQuery = OperationQuery<'get_system_configs_all'>
+type ConfigExportQuery = OperationQuery<'get_system_configs_export'>
+export type ConfigCreateInput = OperationJsonBody<'post_system_configs'>
+export type ConfigUpdateInput = OperationJsonBody<'put_system_configs_by_id'>
+export type ConfigRecord = ApiSchema<'ConfigVo'>
 
-export interface ConfigForm {
-  [key: string]: any
-  name: string
-  key: string
-  value: string
-  remark?: string
+export function listConfig(params: ConfigQuery) { return request<ConfigRecord[]>({ url: BASE, method: 'get', params }) }
+export function listConfigNoPage(params?: ConfigAllQuery) {
+  return request<ConfigRecord[]>({
+    url: `${BASE}/all`, method: 'get', params: stripPagination(params),
+  })
 }
-
-export function listConfig(params: ConfigQuery) { return request({ url: `${BASE}/list`, method: 'get', params }) }
-export function listConfigNoPage(params?: ConfigQuery) { return request({ url: `${BASE}/listNoPage`, method: 'get', params }) }
-export function exportConfig(params?: any) { return request({ url: `${BASE}/export`, method: 'get', params, responseType: 'blob' }) }
-export function getConfig(id: number | string)      { return request({ url: `${BASE}/${id}`, method: 'get' }) }
+export function exportConfig(params?: ConfigExportQuery) {
+  return requestBlob({ url: `${BASE}/export`, method: 'get', params: stripPagination(params) })
+}
+export function getConfig(id: Id)      { return request<ConfigRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
 
 /** 按 Key 查询参数值 */
 export function getConfigByKey(key: string) {
-  return request({ url: `${BASE}/configKey/${key}`, method: 'get' })
+  return request<string>({ url: `${BASE}/key/${key}`, method: 'get' })
 }
 
-export function createConfig(data: ConfigForm) { return request({ url: BASE, method: 'post', data }) }
-export function updateConfig(id: number | string, data: Partial<ConfigForm>) { return request({ url: `${BASE}/${id}`, method: 'put', data }) }
-export function deleteConfig(id: number | string) { return request({ url: `${BASE}/${id}`, method: 'delete' }) }
+export function createConfig(data: ConfigCreateInput) { return request<ConfigRecord>({ url: BASE, method: 'post', data }) }
+export function updateConfig(id: Id, data: ConfigUpdateInput) { return request<ConfigRecord>({ url: `${BASE}/${id}`, method: 'put', data }) }
+export function deleteConfig(id: Id) { return request<void>({ url: `${BASE}/${id}`, method: 'delete' }) }
 
 /** 刷新参数缓存 */
-export function refreshConfigCache() { return request({ url: `${BASE}/refreshCache`, method: 'delete' }) }
+export function refreshConfigCache() { return request({ url: `${BASE}/cache`, method: 'delete' }) }

@@ -72,6 +72,7 @@ function confirmSelect() {
   max-height: 320px;
   overflow-y: auto;
 }
+
 .icon-item {
   display: flex;
   flex-direction: column;
@@ -85,15 +86,18 @@ function confirmSelect() {
   transition: all 0.2s;
   gap: 4px;
 }
+
 .icon-item:hover {
   border-color: var(--el-color-primary);
   color: var(--el-color-primary);
 }
+
 .icon-item.active {
   border-color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
   color: var(--el-color-primary);
 }
+
 .icon-name {
   font-size: 10px;
   max-width: 70px;

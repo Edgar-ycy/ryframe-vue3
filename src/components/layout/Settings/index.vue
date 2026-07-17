@@ -72,6 +72,7 @@ const settingsStore = useSettingsStore()
 
 <style scoped>
 .drawer-body { padding: 0 8px; }
+
 .setting-section {
   display: flex;
   align-items: center;
@@ -79,11 +80,13 @@ const settingsStore = useSettingsStore()
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
+
 .setting-label {
   font-size: 14px;
   color: var(--el-text-color-regular);
   min-width: 70px;
 }
+
 .setting-hint {
   font-size: 12px;
   color: var(--el-text-color-secondary);

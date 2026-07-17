@@ -1,5 +1,5 @@
 @mixin clearfix {
-  &:after {
+  &::after {
     content: '';
     display: table;
     clear: both;
@@ -11,13 +11,16 @@
     width: 6px;
     height: 6px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: #C0C4CC;
     border-radius: 3px;
   }
+
   &::-webkit-scrollbar-thumb:hover {
     background: #909399;
   }
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
@@ -27,6 +30,7 @@
   &::-webkit-scrollbar-thumb {
     background: #374151;
   }
+
   &::-webkit-scrollbar-thumb:hover {
     background: #4B5563;
   }

@@ -48,7 +48,13 @@
           <el-input v-model="form.admin_username" />
         </el-form-item>
         <el-form-item v-if="!editingTenantId" label="初始密码" prop="admin_password">
-          <el-input v-model="form.admin_password" type="password" show-password />
+          <el-input
+            v-model="form.admin_password"
+            type="password"
+            :maxlength="PASSWORD_POLICY.max_length"
+            placeholder="至少 8 位，含大小写字母、数字和符号"
+            show-password
+          />
         </el-form-item>
         <el-form-item label="域名">
           <el-input v-model="form.domain" />
@@ -84,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FormInstance, FormRules } from 'element-plus'
+import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
 import {
   createTenant,
   listTenants,
@@ -93,6 +99,10 @@ import {
   type CreateTenantPayload,
   type Tenant,
 } from '@/api/modules/tenant'
+import {
+  PASSWORD_POLICY,
+  newPasswordValidationMessage,
+} from '@/shared/security/passwordPolicy'
 
 const loading = ref(false)
 const visible = ref(false)
@@ -113,18 +123,26 @@ const form = reactive<CreateTenantPayload>({
   admin_password: '',
 })
 
+const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) => {
+  const message = newPasswordValidationMessage(String(value ?? ''))
+  callback(message ? new Error(message) : undefined)
+}
+
 const rules: FormRules = {
   tenant_id: [{ required: true, message: '请输入租户标识', trigger: 'blur' }],
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   admin_username: [{ required: true, message: '请输入管理员账号', trigger: 'blur' }],
-  admin_password: [{ required: true, min: 8, message: '初始密码至少 8 位', trigger: 'blur' }],
+  admin_password: [
+    { required: true, message: '请输入初始密码', trigger: 'blur' },
+    { validator: validateNewPassword, trigger: 'blur' },
+  ],
 }
 
 async function load() {
   loading.value = true
   try {
-    const result: any = await listTenants()
-    tenants.value = result.data || result
+    const result = await listTenants()
+    tenants.value = result.data ?? []
   } finally {
     loading.value = false
   }

@@ -21,24 +21,14 @@ export function useDownload() {
 
   /** 下载 Blob */
   async function downloadBlob(
-    fetchFn: () => Promise<any>,
+    fetchFn: () => Promise<Blob>,
     options: DownloadOptions = {},
   ) {
     downloading.value = true
     progress.value = 0
     try {
-      const res = await fetchFn()
-      const blob = res instanceof Blob ? res : new Blob([res.data || res], { type: res?.type || 'application/octet-stream' })
-      
-      // 尝试从响应头获取文件名
-      let filename = options.filename || 'download'
-      const disposition = res?.headers?.['content-disposition'] || ''
-      const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
-      if (match) {
-        filename = decodeURIComponent(match[1].replace(/['"]/g, ''))
-      }
-
-      downloadBlobDirect(blob, filename)
+      const blob = await fetchFn()
+      downloadBlobDirect(blob, options.filename || 'download')
       progress.value = 100
       ElMessage.success('下载成功')
     } catch {

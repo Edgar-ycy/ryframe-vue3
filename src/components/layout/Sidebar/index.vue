@@ -54,9 +54,9 @@
 </template>
 
 <script setup lang="ts">
-import { resolve } from 'path-browserify'
 import { OfficeBuilding } from '@element-plus/icons-vue'
-import type { RouteRecordRaw } from 'vue-router'
+import type { RouteMeta, RouteRecordRaw } from 'vue-router'
+import { usePermission } from '@/hooks/usePermission'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
 import { useSettingsStore } from '@/stores/settings'
@@ -68,17 +68,11 @@ const appStore = useAppStore()
 const permissionStore = usePermissionStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
+const { hasAllPermissions, isAdmin } = usePermission()
 
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
-  && (
-    userStore.isAdmin
-    || userStore.permissions.includes('*:*:*')
-    || (
-      userStore.permissions.includes('tenant:manage')
-      && userStore.permissions.includes('tenant:list')
-    )
-  ),
+  && (isAdmin() || hasAllPermissions('tenant:manage', 'tenant:list')),
 )
 
 const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')
@@ -103,12 +97,12 @@ function isSubMenu(menu: RouteRecordRaw): boolean {
 function leafPath(menu: RouteRecordRaw): string {
   const visible = visibleChildren(menu)
   if (visible.length === 1) {
-    return resolve(menu.path, visible[0].path)
+    return resolvePath(menu.path, visible[0].path)
   }
   return menu.path
 }
 
-function leafMeta(menu: RouteRecordRaw): Record<string, any> {
+function leafMeta(menu: RouteRecordRaw): RouteMeta {
   const visible = visibleChildren(menu)
   if (visible.length === 1) {
     return visible[0].meta || {}
@@ -117,6 +111,7 @@ function leafMeta(menu: RouteRecordRaw): Record<string, any> {
 }
 
 function resolvePath(parentPath: string, childPath: string): string {
-  return resolve(parentPath, childPath)
+  if (childPath.startsWith('/')) return childPath
+  return `${parentPath.replace(/\/$/, '')}/${childPath}`.replace(/\/{2,}/g, '/')
 }
 </script>

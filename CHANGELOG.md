@@ -1,17 +1,101 @@
-﻿# Changelog
+# Changelog
+
+## [Unreleased]
+
+## [v0.4.0] - 2026-07-17
+
+### Added
+
+- 新增用户管理 `DepartmentTree` 组件和 `useUserManagement` composable，分离部门筛选、查询、提交与状态动作
+- 新增角色、菜单和权限管理领域 composable 与表单对话框，页面只保留列表展示和交互编排
+- 新增菜单树纯函数测试和统一 `confirmAction`，区分用户取消与真实请求失败
+- 新增独立用户角色分配对话框
+- 新增后端 OpenAPI 快照同步、`openapi-typescript` 生成和 Git diff 契约门禁
+- 新增 API 架构与契约检查，覆盖 119 个操作、34 个查询操作、成功响应、写请求体和字符串 ID
+- 新增基于 OpenAPI `x-ryframe-menu-routes` 和 TypeScript AST 的跨仓库页面注册表门禁
+- 新增由 OpenAPI `x-ryframe-password-policy` 生成的密码策略、运行时验证器和契约一致性测试
+- 新增工作台快捷入口与登录初始状态纯函数测试，覆盖权限筛选、开发凭据和安全重定向
+- 新增 Playwright 浏览器冒烟测试与独立 CI job，覆盖登录、刷新恢复、动态菜单、权限拒绝、退出及移动端布局
+- 新增运行时数据库拓扑表，分别展示主库、命名只读副本、`ryframe_device` 业务数据源、轮询策略及每个节点的动态连接状态
+
+### Changed
+
+- Release 工作流按触发标签精确提取对应版本说明，保留空的 `Unreleased` 区段且不再发布错误章节
+- 用户管理页改为页面编排层，复用独立部门树、表单、角色分配、密码重置组件和领域 composable
+- 密码重置完成请求统一显式发送 `tenant_id`、`request_id` 和一次性 token，并携带租户请求头
+- 角色权限和数据范围改为资源化整体替换接口，数据范围只发送一次原子请求
+- 用户创建一次提交资料与角色；资料、角色和状态更新分别使用资源根、`/{id}/roles` 和 `/{id}/status`
+- 用户状态、角色数据范围和权限类型使用有限联合类型，移除任意字符串契约
+- 14 个 API 模块统一通过 `src/api/contract.ts` 引用生成查询、请求体和响应模型，只保留请求函数和必要的语义窄类型
+- CI 在类型检查前校验后端主分支契约、生成文件和 API 模块边界
+- 运行时监控直接使用 OpenAPI 生成的主库/副本/业务数据源与对象存储健康类型，展示 RustFS 后端、端点和实际连通状态
+- `/all` 与导出函数改为使用各自 operation 的生成查询类型，并统一通过 `stripPagination` 清除分页键
+- 字典管理拆为类型/数据对话框与 `useDictManagement`，个人中心拆为资料、头像和密码组件，页面只负责组合与状态同步
+- 首页改为基于真实会话和权限菜单的操作工作台，删除不存在的 Kafka、gRPC 能力说明及捐赠素材
+- 密码重置、个人修改密码和租户管理员密码统一使用后端生成策略；开发模式才预填初始化账号，生产构建保持账号密码为空
+
+### Fixed
+
+- 重置用户查询时同步清空部门筛选，初始化字典和部门数据时使用独立失败处理
+- 状态切换取消或失败时恢复原值，删除及状态请求失败不再被确认框捕获逻辑静默吞掉
+- 修复公告创建人、个人资料部门和上传文件 ID 的前端契约可能退化为 JavaScript `number`，并纠正健康检查时间戳类型
+- 修复导出和全量查询携带 `page/page_size`，导致后端拒绝未知参数或筛选语义不一致的问题
+- 修复个人中心和字典管理在移动端维持固定双栏而导致面板裁切、横向滚动的问题
+- 修复登录页默认密码与数据库初始化口径不一致，并拒绝外部、数组或登录页循环重定向
+- 修复字典分页使用 Element Plus 已弃用 `small` 属性产生的浏览器控制台警告，源码门禁禁止该写法回流
+- 修复服务监控页重复手写旧健康 DTO、继续读取已删除 `checks` 字段以及固定三栏在移动端溢出的问题
+
+### Validation
+
+- 源码卫生、ESLint `--max-warnings=0`、Stylelint `--max-warnings=0` 和 Vue TSC 全部通过
+- 45 个 Vitest 测试全部通过；覆盖率为语句 91.62%、分支 86.05%、函数 97.87%、行 97.48%
+- Vite 生产构建通过且无构建警告
+- 3 个 Playwright 浏览器用例通过，覆盖主库/`ryframe_device`/RustFS 运行时页面及移动端无溢出，并保持控制台零 warning/error
+
+---
 
 ## [v0.3.1] - 2026-07-15
 
 ### Added
 
 - 增加 ESLint 与 Vitest 依赖，补齐前端静态检查与测试工具链
-- 增加 `.editorconfig` 保持跨编辑器编码一致性
+- 增加动态菜单路由和权限匹配单元测试，并设置覆盖率阈值
+- 增加应用级 `SessionCoordinator`，统一刷新、退出和全局状态清理
+- 增加可注入的导航守卫和 `RuntimeRouteRegistry`，覆盖身份切换时的动态路由清理
+- 增加 Stylelint、源码卫生检查、`.editorconfig` 和 `.gitattributes`
+- 增加只读运行时配置模块，启动时校验 API 基础路径
 
 ### Changed
 
-- 删除无用文件（空目录 `.qoder/` `docs/`、编辑器临时文件、未引用图片）
-- `vite.config.ts` 窄范围过滤 `@vueuse/core` 的 Rolldown 纯注解误报，其余构建告警保持可见
+- 将 Axios 传输层迁移到无 Store、Router 和 UI 依赖的 `shared/http`
+- 将认证和菜单类型归还各自 API 模块，删除旧聚合 `api/types.ts`
+- 将菜单到路由的转换提取为可独立测试的纯函数
+- 区分 JSON、Blob 和文本请求返回类型，移除关键链路中的兼容式响应读取
+- TypeScript 开启完整严格模式，业务源码移除显式 `any`，所有后端 64 位 ID 统一为字符串
+- API 调用迁移到复数资源、根分页路径和 `/all`，删除旧接口 fallback
+- 运行时监控改为展示数据库、Redis、对象存储和上传熔断器等真实后端能力
+- 将用户编辑/角色分配和密码重置流程拆为独立组件，用户列表页只保留查询与编排
+- CI 无条件执行源码卫生、ESLint、Stylelint、类型检查、覆盖率测试和生产构建，所有警告按失败处理
+- `vite.config.ts` 窄范围过滤 `@vueuse/core` 的 Rolldown 纯注解误报，其余构建告警直接升级为构建错误
 - 修正 pnpm 10 与 node_modules store 的不一致问题，重建依赖目录
+- 分页查询统一发送 `page`/`page_size`，密码重置链接统一使用 `request_id`，与后端严格契约保持一致
+- 源码卫生检查禁止 `pageSize`、`pageNum`、`searchValue` 和 `requestId` 等旧 API 字段回流
+- 分页基类删除任意字符串索引，配置查询和字典数据查询改为显式字段，错误参数在开发期即可被类型检查发现
+
+### Removed
+
+- 删除未引用的业务/通用组件、指令、Hook、Store、工具函数、图片和临时目录
+- 删除旧 `api/request.ts`、`api/types.ts` 以及重复的 Axios/协议入口
+- 删除仓库内 `.pnpm-store` 和本次检查生成的无用中间产物
+
+### Validation
+
+- `pnpm check:sources`
+- `pnpm lint`
+- `pnpm lint:styles`
+- `pnpm typecheck`
+- `pnpm test:coverage`
+- `pnpm build`
 
 ---
 

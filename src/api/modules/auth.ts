@@ -1,12 +1,19 @@
-import request from '@/api/request'
-import type { Id, LoginResult, UserInfo } from '@/api/types'
+import request, { rawRequest } from '@/shared/http/client'
+import type {
+  ApiSchema,
+  OperationData,
+  OperationJsonBody,
+  OperationQuery,
+} from '@/api/contract'
 
-export interface LoginParams {
-  username: string
-  password: string
-  captcha_id?: string
-  captcha_code?: string
-}
+export type UserInfo = ApiSchema<'UserInfo'>
+export type LoginResult = OperationData<'post_auth_login'>
+export type LoginParams = OperationJsonBody<'post_auth_login'>
+export type RefreshParams = OperationJsonBody<'post_auth_refresh'>
+export type CompletePasswordResetParams = OperationJsonBody<'post_auth_password_reset_complete'>
+export type ProfileInfo = ApiSchema<'UserProfileResponse'>
+export type ProfileUpdateParams = OperationJsonBody<'put_auth_profile'>
+export type PasswordChangeParams = OperationJsonBody<'put_auth_profile_password'>
 
 /** 登录 */
 export function login(data: LoginParams, tenantId: string) {
@@ -15,6 +22,7 @@ export function login(data: LoginParams, tenantId: string) {
     method: 'post',
     data,
     headers: { 'X-Tenant-Id': tenantId },
+    skipAuthRefresh: true,
   })
 }
 
@@ -23,23 +31,19 @@ export function logout() {
   return request({
     url: '/auth/logout',
     method: 'post',
+    skipAuthRefresh: true,
   })
 }
 
 /** 刷新令牌 */
-export function refreshToken(data: { refresh_token: string }) {
-  return request<LoginResult>({
+export function refreshToken(data: RefreshParams, tenantId: string) {
+  return rawRequest<LoginResult>({
     url: '/auth/refresh',
     method: 'post',
     data,
+    headers: { 'X-Tenant-Id': tenantId },
+    skipAuthRefresh: true,
   })
-}
-
-/** 获取当前用户信息 */
-export interface CompletePasswordResetParams {
-  request_id: string
-  token: string
-  new_password: string
 }
 
 /** 完成密码重置 */
@@ -48,6 +52,8 @@ export function completePasswordReset(data: CompletePasswordResetParams) {
     url: '/auth/password-reset/complete',
     method: 'post',
     data,
+    headers: { 'X-Tenant-Id': data.tenant_id },
+    skipAuthRefresh: true,
   })
 }
 
@@ -61,8 +67,8 @@ export function getUserInfo() {
 // ========== 验证码 ==========
 
 /** 生成验证码 */
-export function getCaptcha(params?: { captcha_type?: string }) {
-  return request<{ captcha_id: string; image_base64: string }>({
+export function getCaptcha(params?: OperationQuery<'get_auth_captcha_generate'>) {
+  return request<OperationData<'get_auth_captcha_generate'>>({
     url: '/auth/captcha/generate',
     method: 'get',
     params,
@@ -70,8 +76,8 @@ export function getCaptcha(params?: { captcha_type?: string }) {
 }
 
 /** 校验验证码 */
-export function verifyCaptcha(data: { captcha_id: string; code: string }) {
-  return request<{ valid: boolean }>({
+export function verifyCaptcha(data: OperationJsonBody<'post_auth_captcha_verify'>) {
+  return request<OperationData<'post_auth_captcha_verify'>>({
     url: '/auth/captcha/verify',
     method: 'post',
     data,
@@ -80,42 +86,13 @@ export function verifyCaptcha(data: { captcha_id: string; code: string }) {
 
 /** 查询验证码开关状态（公开接口） */
 export function getCaptchaConfig() {
-  return request<{ captcha_enabled: boolean }>({
+  return request<OperationData<'get_auth_captcha_config'>>({
     url: '/auth/captcha/config',
     method: 'get',
   })
 }
 
 // ========== 个人中心 ==========
-
-export interface ProfileInfo {
-  /** user_id 为 number|string，后端 Snowflake ID 序列化为字符串避免 JS 精度丢失 */
-  user_id: Id
-  username: string
-  nickname: string
-  email?: string
-  phone?: string
-  avatar?: string
-  dept_id?: Id
-  dept_name?: string
-  status?: string
-  login_ip?: string
-  login_date?: string
-  created_at?: string
-  roles?: string[]
-  permissions?: string[]
-}
-
-export interface ProfileUpdateParams {
-  nickname: string
-  email?: string
-  phone?: string
-}
-
-export interface PasswordChangeParams {
-  old_password: string
-  new_password: string
-}
 
 /** 获取个人信息 */
 export function getProfile() {
@@ -145,7 +122,7 @@ export function changePassword(data: PasswordChangeParams) {
 
 /** 更新头像（FormData 直接传文件，不设 Content-Type，浏览器自动加 boundary；后端返回 avatar_url） */
 export function updateAvatar(data: FormData) {
-  return request<{ avatar_url: string }>({
+  return request<OperationData<'put_auth_profile_avatar'>>({
     url: '/auth/profile/avatar',
     method: 'put',
     data,

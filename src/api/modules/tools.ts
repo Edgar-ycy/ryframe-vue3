@@ -6,7 +6,8 @@ const BASE = '/tools/gen'
 export type GenQuery = OperationQuery<'get_tools_gen_tables'>
 export type ColumnInfo = ApiSchema<'ColumnInfo'>
 export type TableInfo = ApiSchema<'TableInfo'>
-export type GenerateOptions = OperationJsonBody<'post_tools_gen_generate'>
+export type GenerateOptions = OperationJsonBody<'post_tools_gen_preview'>
+export type GenerateRequest = OperationJsonBody<'post_tools_gen_generate'>
 export type GeneratedFile = ApiSchema<'GeneratedFile'>
 export type WriteReport = ApiSchema<'WriteReport'>
 
@@ -20,8 +21,8 @@ export function previewCode(data: GenerateOptions) {
   return request<GeneratedFile[]>({ url: `${BASE}/preview`, method: 'post', data })
 }
 
-/** 生成代码（写盘到项目目录） */
-export function generateCode(data: GenerateOptions) {
+/** 将生成代码写入指定的外部目录 */
+export function generateCode(data: GenerateRequest) {
   return request<WriteReport>({ url: `${BASE}/generate`, method: 'post', data })
 }
 

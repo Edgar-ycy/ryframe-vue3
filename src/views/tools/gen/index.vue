@@ -30,7 +30,7 @@
         <el-table-column label="操作" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-perm="'tools:gen:list'" type="primary" link icon="View" @click="handlePreview(row)">预览</el-button>
-            <el-button v-perm="'tools:gen:add'" type="success" link icon="Download" @click="handleGen(row)">生成</el-button>
+            <el-button v-perm="'tools:gen:add'" type="success" link icon="FolderAdd" @click="handleGen(row)">生成</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -60,11 +60,56 @@
         <el-button @click="previewVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="generateVisible"
+      title="生成代码"
+      width="min(520px, calc(100vw - 32px))"
+      :close-on-click-modal="!generating"
+      :close-on-press-escape="!generating"
+      :show-close="!generating"
+      @closed="resetGenerateForm"
+    >
+      <el-form
+        ref="generateFormRef"
+        :model="generateForm"
+        :rules="generateRules"
+        label-width="110px"
+        @submit.prevent
+      >
+        <el-form-item label="数据表">
+          <el-input :model-value="selectedTable?.table_name || ''" disabled />
+        </el-form-item>
+        <el-form-item label="服务端输出目录" prop="output_dir">
+          <el-input
+            v-model="generateForm.output_dir"
+            prefix-icon="FolderOpened"
+            placeholder="请输入绝对路径"
+            clearable
+            autofocus
+            @keyup.enter="submitGeneration"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button :disabled="generating" @click="generateVisible = false">取消</el-button>
+        <el-button
+          v-perm="'tools:gen:add'"
+          type="primary"
+          icon="MagicStick"
+          :loading="generating"
+          @click="submitGeneration"
+        >
+          生成
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { generateCode, listTable, previewCode, type TableInfo } from '@/api/modules/tools'
+import { buildGenerateRequest, isAbsoluteOutputPath } from './generationForm'
 
 const loading = ref(false)
 const tableData = ref<TableInfo[]>([])
@@ -104,16 +149,60 @@ async function handlePreview(row: TableInfo) {
 }
 
 // ----- 生成代码 -----
-async function handleGen(row: TableInfo) {
+const generateVisible = ref(false)
+const generateFormRef = ref<FormInstance>()
+const generating = ref(false)
+const selectedTable = ref<TableInfo | null>(null)
+const generateForm = reactive({ output_dir: '' })
+const generateRules: FormRules = {
+  output_dir: [
+    { required: true, whitespace: true, message: '请输入服务端输出目录', trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        if (isAbsoluteOutputPath(String(value || ''))) {
+          callback()
+        } else {
+          callback(new Error('请输入后端服务所在机器的绝对路径'))
+        }
+      },
+      trigger: ['blur', 'change'],
+    },
+  ],
+}
+
+function handleGen(row: TableInfo) {
+  selectedTable.value = row
+  generateForm.output_dir = ''
+  generateVisible.value = true
+  nextTick(() => generateFormRef.value?.clearValidate())
+}
+
+function resetGenerateForm() {
+  selectedTable.value = null
+  generateForm.output_dir = ''
+  generateFormRef.value?.clearValidate()
+}
+
+async function submitGeneration() {
+  const valid = await generateFormRef.value?.validate().catch(() => false)
+  if (!valid || !selectedTable.value) return
+
+  generating.value = true
   try {
-    const res = await generateCode({ tables: [row.table_name] })
+    const request = buildGenerateRequest(selectedTable.value.table_name, generateForm.output_dir)
+    const res = await generateCode(request)
     if (!res.data) throw new Error('代码生成响应缺少数据')
     const { written, skipped } = res.data
     const message = skipped.length > 0
       ? `已写入 ${written.length} 个文件，跳过 ${skipped.length} 个已存在文件`
       : `已写入 ${written.length} 个文件`
+    generateVisible.value = false
     ElMessage.success(message)
-  } catch { /* error handled */ }
+  } catch {
+    // 请求错误由 HTTP 层统一展示。
+  } finally {
+    generating.value = false
+  }
 }
 
 onMounted(() => fetchData())

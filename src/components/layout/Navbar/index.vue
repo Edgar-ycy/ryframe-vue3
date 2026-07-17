@@ -30,7 +30,7 @@
       </el-icon>
       <el-dropdown @command="handleCommand">
         <span class="user-info">
-          <el-avatar :size="32" :src="userStore.avatar">
+          <el-avatar :size="32" :src="avatarSrc">
             <el-icon><UserFilled /></el-icon>
           </el-avatar>
           <span>{{ userStore.nickname || userStore.username }}</span>
@@ -55,12 +55,14 @@ import { useAppStore } from '@/stores/app'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import { logoutSession } from '@/app/session/sessionCoordinator'
+import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const { imageSrc: avatarSrc } = useAuthenticatedImage(() => userStore.avatar)
 
 const settingsVisible = ref(false)
 

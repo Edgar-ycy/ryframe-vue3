@@ -12,7 +12,7 @@
         :disabled="uploading"
         accept="image/png,image/jpeg,image/gif,image/webp"
       >
-        <el-avatar :size="80" :src="src" class="avatar-preview">
+        <el-avatar :size="80" :src="imageSrc" class="avatar-preview">
           <el-icon :size="40">
             <UserFilled />
           </el-icon>
@@ -32,8 +32,9 @@
 import { Camera, UserFilled } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
 import { updateAvatar } from '@/api/modules/auth'
+import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 
-defineProps<{
+const props = defineProps<{
   src: string
 }>()
 
@@ -42,6 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const uploading = ref(false)
+const { imageSrc } = useAuthenticatedImage(() => props.src)
 const acceptedTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 const maxAvatarBytes = 2 * 1024 * 1024
 

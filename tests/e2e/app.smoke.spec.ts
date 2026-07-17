@@ -2,6 +2,26 @@ import { expect, test, type Page, type Route } from '@playwright/test'
 
 const apiBasePath = '/api/v1'
 
+interface ApiMockState {
+  unexpectedRequests: string[]
+  generationRequests: unknown[]
+  avatarDownloads: Array<{
+    path: string | null
+    bucket: string | null
+    authorization: string | undefined
+    tenantId: string | undefined
+  }>
+}
+
+const avatarPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+)
+
+function protectedAvatarUrl(filename: string): string {
+  return `${apiBasePath}/common/file/download?bucket=avatar&path=system/2026/07/17/${filename}`
+}
+
 function json(route: Route, body: unknown, status = 200): Promise<void> {
   return route.fulfill({
     status,
@@ -10,8 +30,11 @@ function json(route: Route, body: unknown, status = 200): Promise<void> {
   })
 }
 
-async function installApiMocks(page: Page): Promise<string[]> {
+async function installApiMocks(page: Page): Promise<ApiMockState> {
   const unexpectedRequests: string[] = []
+  const generationRequests: unknown[] = []
+  const avatarDownloads: ApiMockState['avatarDownloads'] = []
+  let avatarUrl = protectedAvatarUrl('old-avatar.png')
 
   await page.route(`**${apiBasePath}/**`, async (route) => {
     const request = route.request()
@@ -47,7 +70,7 @@ async function installApiMocks(page: Page): Promise<string[]> {
               phone: '13800000000',
               avatar: null,
               roles: ['operator'],
-              perms: ['system:dict:list', 'monitor:runtime:list'],
+              perms: ['system:dict:list', 'monitor:runtime:list', 'tools:gen:list', 'tools:gen:add'],
             },
           },
         })
@@ -71,7 +94,7 @@ async function installApiMocks(page: Page): Promise<string[]> {
             phone: '13800000000',
             avatar: null,
             roles: ['operator'],
-            perms: ['system:dict:list', 'monitor:runtime:list'],
+            perms: ['system:dict:list', 'monitor:runtime:list', 'tools:gen:list', 'tools:gen:add'],
           },
         })
         return
@@ -85,7 +108,7 @@ async function installApiMocks(page: Page): Promise<string[]> {
             nickname: '测试用户',
             email: 'operator@example.com',
             phone: '13800000000',
-            avatar: null,
+            avatar: avatarUrl,
             dept_name: '测试部门',
             roles: ['operator'],
             permissions: ['system:dict:list'],
@@ -94,6 +117,29 @@ async function installApiMocks(page: Page): Promise<string[]> {
           },
         })
         return
+      case `PUT ${apiBasePath}/auth/profile/avatar`:
+        avatarUrl = protectedAvatarUrl('new-avatar.png')
+        await json(route, {
+          code: 200,
+          msg: 'ok',
+          data: { avatar_url: avatarUrl },
+        })
+        return
+      case `GET ${apiBasePath}/common/file/download`: {
+        const headers = request.headers()
+        avatarDownloads.push({
+          path: url.searchParams.get('path'),
+          bucket: url.searchParams.get('bucket'),
+          authorization: headers.authorization,
+          tenantId: headers['x-tenant-id'],
+        })
+        if (headers.authorization !== 'Bearer access-token' || headers['x-tenant-id'] !== 'system') {
+          await json(route, { code: 401, msg: 'missing authentication' }, 401)
+          return
+        }
+        await route.fulfill({ status: 200, contentType: 'image/png', body: avatarPng })
+        return
+      }
       case `GET ${apiBasePath}/system/menus/current`:
         await json(route, {
           code: 200,
@@ -140,6 +186,30 @@ async function installApiMocks(page: Page): Promise<string[]> {
                   menu_type: 'C',
                   perm_code: 'monitor:runtime:list',
                   icon: 'DataLine',
+                  sort: 1,
+                  status: '1',
+                  visible: true,
+                  children: [],
+                },
+              ],
+            },
+            {
+              id: '2200',
+              name: '系统工具',
+              route_key: 'tools',
+              menu_type: 'M',
+              icon: 'Tools',
+              sort: 3,
+              status: '1',
+              visible: true,
+              children: [
+                {
+                  id: '2201',
+                  name: '代码生成',
+                  route_key: 'tools.gen',
+                  menu_type: 'C',
+                  perm_code: 'tools:gen:list',
+                  icon: 'MagicStick',
                   sort: 1,
                   status: '1',
                   visible: true,
@@ -207,13 +277,29 @@ async function installApiMocks(page: Page): Promise<string[]> {
       case `GET ${apiBasePath}/system/configs/key/sys.index.skinName`:
         await json(route, { code: 200, msg: 'ok', data: 'blue' })
         return
+      case `GET ${apiBasePath}/tools/gen/tables`:
+        await json(route, {
+          code: 200,
+          msg: 'ok',
+          rows: [{ table_name: 'sys_device', comment: '设备', columns: [{ name: 'id' }] }],
+          total: 1,
+        })
+        return
+      case `POST ${apiBasePath}/tools/gen/generate`:
+        generationRequests.push(request.postDataJSON())
+        await json(route, {
+          code: 200,
+          msg: 'ok',
+          data: { written: ['src/entities/device.rs'], skipped: [] },
+        })
+        return
       default:
         unexpectedRequests.push(key)
         await json(route, { code: 500, msg: `unexpected request: ${key}` }, 500)
     }
   })
 
-  return unexpectedRequests
+  return { unexpectedRequests, generationRequests, avatarDownloads }
 }
 
 function collectRuntimeIssues(page: Page): string[] {
@@ -240,7 +326,7 @@ async function login(page: Page): Promise<void> {
 }
 
 test('login, dynamic menu, permission denial and logout stay warning-free', async ({ page }) => {
-  const unexpectedRequests = await installApiMocks(page)
+  const { unexpectedRequests } = await installApiMocks(page)
   const runtimeIssues = collectRuntimeIssues(page)
 
   await login(page)
@@ -266,9 +352,81 @@ test('login, dynamic menu, permission denial and logout stay warning-free', asyn
   expect(runtimeIssues).toEqual([])
 })
 
+test('code generation requires an external output path before submitting', async ({ page }) => {
+  const { unexpectedRequests, generationRequests } = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  await page.goto('/tools/gen')
+  await expect(page.getByText('sys_device', { exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: '生成', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '生成代码' })
+  await expect(dialog).toBeVisible()
+  expect(generationRequests).toEqual([])
+
+  await dialog.getByRole('button', { name: '生成', exact: true }).click()
+  await expect(dialog.getByText('请输入服务端输出目录', { exact: true })).toBeVisible()
+  expect(generationRequests).toEqual([])
+
+  const outputDir = String.raw`D:\generated\ryframe-device`
+  await dialog.getByPlaceholder('请输入绝对路径').fill(outputDir)
+  await dialog.getByRole('button', { name: '生成', exact: true }).click()
+
+  await expect(page.getByText('已写入 1 个文件', { exact: true })).toBeVisible()
+  await expect(dialog).toBeHidden()
+  expect(generationRequests).toEqual([
+    {
+      output_dir: outputDir,
+      options: { tables: ['sys_device'] },
+    },
+  ])
+  expect(unexpectedRequests).toEqual([])
+  expect(runtimeIssues).toEqual([])
+})
+
+test('avatar upload refreshes every private image through authenticated downloads', async ({ page }) => {
+  const { avatarDownloads, unexpectedRequests } = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  await page.goto('/profile')
+
+  const profileAvatar = page.locator('.avatar-preview img')
+  const navbarAvatar = page.locator('.navbar .el-avatar img')
+  await expect(profileAvatar).toHaveAttribute('src', /^blob:/)
+  await expect(navbarAvatar).toHaveAttribute('src', /^blob:/)
+  const oldProfileSrc = await profileAvatar.getAttribute('src')
+  const downloadsBeforeUpload = avatarDownloads.length
+
+  await page.locator('.avatar-uploader input[type="file"]').setInputFiles({
+    name: 'new-avatar.png',
+    mimeType: 'image/png',
+    buffer: avatarPng,
+  })
+
+  await expect(page.getByText('头像更新成功', { exact: true })).toBeVisible()
+  await expect.poll(() => profileAvatar.getAttribute('src')).not.toBe(oldProfileSrc)
+  await expect(profileAvatar).toHaveAttribute('src', /^blob:/)
+  await expect(navbarAvatar).toHaveAttribute('src', /^blob:/)
+  await expect.poll(
+    () => avatarDownloads.slice(downloadsBeforeUpload)
+      .filter(download => download.path?.endsWith('/new-avatar.png')).length,
+  ).toBeGreaterThanOrEqual(2)
+
+  expect(avatarDownloads).not.toHaveLength(0)
+  expect(avatarDownloads.every(download => (
+    download.bucket === 'avatar'
+    && download.authorization === 'Bearer access-token'
+    && download.tenantId === 'system'
+  ))).toBe(true)
+  expect(unexpectedRequests).toEqual([])
+  expect(runtimeIssues).toEqual([])
+})
+
 test('profile and dictionary layouts stack without mobile overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  const unexpectedRequests = await installApiMocks(page)
+  const { unexpectedRequests } = await installApiMocks(page)
   const runtimeIssues = collectRuntimeIssues(page)
 
   await login(page)
@@ -307,7 +465,7 @@ test('profile and dictionary layouts stack without mobile overflow', async ({ pa
 
 test('runtime topology exposes ryframe_device and RustFS without mobile overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  const unexpectedRequests = await installApiMocks(page)
+  const { unexpectedRequests } = await installApiMocks(page)
   const runtimeIssues = collectRuntimeIssues(page)
 
   await login(page)

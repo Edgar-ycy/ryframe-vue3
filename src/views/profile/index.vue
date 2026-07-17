@@ -79,10 +79,9 @@ function handleProfileSaved(payload: ProfileUpdateParams): void {
   userStore.phone = payload.phone ?? ''
 }
 
-async function handleAvatarUpdated(avatarUrl: string): Promise<void> {
+function handleAvatarUpdated(avatarUrl: string): void {
   profile.value = { ...profile.value, avatar: avatarUrl }
   userStore.avatar = avatarUrl
-  await loadProfile()
 }
 
 onMounted(() => {

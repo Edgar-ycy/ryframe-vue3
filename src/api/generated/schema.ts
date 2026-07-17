@@ -3376,6 +3376,11 @@ export interface components {
             table_prefixes?: string[];
             tables: string[];
         };
+        GenerateRequestDto: {
+            options: components["schemas"]["GenerateOptionsDto"];
+            /** @description 后端服务所在机器上的代码输出根目录。 */
+            output_dir: string;
+        };
         /** @description 生成的文件 */
         GeneratedFile: {
             content: string;
@@ -6688,7 +6693,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenerateOptionsDto"];
+                "application/json": components["schemas"]["GenerateRequestDto"];
             };
         };
         responses: {

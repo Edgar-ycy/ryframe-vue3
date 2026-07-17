@@ -126,5 +126,6 @@ export function updateAvatar(data: FormData) {
     url: '/auth/profile/avatar',
     method: 'put',
     data,
+    timeout: 120000,
   })
 }

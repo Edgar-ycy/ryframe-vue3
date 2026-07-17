@@ -1,0 +1,21 @@
+name: Setup pnpm
+description: Install the pnpm version declared by package.json without installer bootstrapping
+
+runs:
+  using: composite
+  steps:
+    - name: Install declared pnpm version
+      shell: bash
+      run: |
+        set -euo pipefail
+        pnpm_version="$(
+          node <<'NODE'
+        const packageManager = require('./package.json').packageManager
+        const match = /^pnpm@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+.+)?$/.exec(packageManager ?? '')
+        if (!match) throw new Error('packageManager must declare an exact pnpm version')
+        process.stdout.write(match[1])
+        NODE
+        )"
+        npm install --global "pnpm@${pnpm_version}" \
+          --no-audit --no-fund --no-update-notifier
+        test "$(pnpm --version)" = "$pnpm_version"

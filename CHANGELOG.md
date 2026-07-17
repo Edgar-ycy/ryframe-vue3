@@ -11,7 +11,7 @@
 ### Fixed
 
 - CI 与 Release 工作流显式设置 Git 初始化默认分支，消除 `actions/checkout` 的默认分支 warning 提示
-- pnpm 安装器固定为 Node 24 兼容的 `pnpm/action-setup@v4.4.0`，直接安装 `packageManager` 声明的 pnpm 10，消除 v11 自更新布局警告和 bootstrap 审计输出
+- CI 与 Release 复用仓库内 pnpm 安装 Action，从 `packageManager` 读取精确版本并关闭安装审计噪声，消除第三方安装器的 v11 布局、Node `DEP0169` 和 bootstrap 审计警告
 
 ## [v0.4.0] - 2026-07-17
 

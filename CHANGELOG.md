@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [v0.4.1] - 2026-07-17
+
+### Changed
+
+- 前端包版本与检入的后端 OpenAPI 快照统一升级到 `0.4.1`，保持发布标签、构建产物和 API 契约一致
+
+### Fixed
+
+- CI 与 Release 工作流显式设置 Git 初始化默认分支，消除 `actions/checkout` 的默认分支 warning 提示
+- pnpm 安装器固定为 Node 24 兼容的 `pnpm/action-setup@v4.4.0`，直接安装 `packageManager` 声明的 pnpm 10，消除 v11 自更新布局警告和 bootstrap 审计输出
+
 ## [v0.4.0] - 2026-07-17
 
 ### Added

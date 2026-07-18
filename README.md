@@ -193,10 +193,6 @@ import { usePermission } from '@/hooks/usePermission'
 
 - [架构与演进指南](ARCHITECTURE.md)：当前前端架构、主要耦合问题、目标依赖方向和分阶段改造计划。
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/chart?repos=Edgar-ycy/ryframe-vue3&type=timeline&logscale&legend=top-left)](https://www.star-history.com/?repos=Edgar-ycy%2Fryframe-vue3&type=timeline&logscale=&legend=top-left)
-
 ## License
 
 MIT

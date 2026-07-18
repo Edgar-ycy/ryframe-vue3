@@ -117,7 +117,7 @@ pnpm preview
 | `VITE_APP_BASE_API` | API 基础地址；生产必须使用 API 子域的绝对 HTTPS 地址 | 开发 `/api/v1`，生产 `https://api.example.com/api/v1` |
 | `VITE_APP_PROXY_TARGET` | 开发服务器代理的后端地址 | `http://localhost:8080` |
 
-环境变量按 `development` / `production` 分别在 `.env.development` 和 `.env.production` 中配置。
+开发环境使用 `.env.development`；生产部署从已提交的 `.env.production.example` 复制为被忽略的 `.env.production`，再填写实际 API 子域。
 
 ### API 代理
 

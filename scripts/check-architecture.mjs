@@ -5,7 +5,7 @@ import process from 'node:process'
 const root = process.cwd()
 const errors = []
 const requiredFiles = [
-  '.env.production',
+  '.env.production.example',
   'openapi/openapi.json',
   'playwright.config.ts',
   'scripts/check-api-contract.mjs',
@@ -28,10 +28,10 @@ for (const relative of requiredFiles) {
   }
 }
 
-const productionEnvironment = await readFile(path.join(root, '.env.production'), 'utf8')
+const productionEnvironment = await readFile(path.join(root, '.env.production.example'), 'utf8')
 const productionApi = productionEnvironment.match(/^VITE_APP_BASE_API=(.+)$/m)?.[1]?.trim()
 if (!productionApi || !/^https:\/\/[^/]+\/api\/v1$/.test(productionApi)) {
-  errors.push('.env.production: VITE_APP_BASE_API must be an absolute HTTPS /api/v1 URL')
+  errors.push('.env.production.example: VITE_APP_BASE_API must be an absolute HTTPS /api/v1 URL')
 }
 
 const contractCheckSource = await readFile(

@@ -5,7 +5,6 @@ import { stripPagination } from '@/shared/http/types'
 // ========== 服务器监控 (/monitor) ==========
 
 export type ServerInfo = ApiSchema<'ServerInfo'>
-export type HealthInfo = ApiSchema<'HealthInfo'>
 export type CacheInfo = ApiSchema<'CacheInfo'>
 export type DbPoolInfo = ApiSchema<'DbPoolInfo'>
 export type RuntimeStatus = ApiSchema<'RuntimeStatus'>
@@ -13,11 +12,6 @@ export type RuntimeStatus = ApiSchema<'RuntimeStatus'>
 /** 服务器信息 */
 export function getServerInfo() {
   return request<ServerInfo>({ url: '/monitor/server', method: 'get' })
-}
-
-/** 健康检查 */
-export function getHealth() {
-  return request<HealthInfo>({ url: '/monitor/health', method: 'get' })
 }
 
 /** 缓存统计 */
@@ -119,6 +113,6 @@ export function listOnlineUserNoPage(params?: OnlineUserAllQuery) {
 }
 
 /** 强制下线 */
-export function forceLogout(tokenId: string) {
-  return request({ url: `/system/online/${tokenId}`, method: 'delete' })
+export function forceLogout(sid: string) {
+  return request({ url: `/system/online/${encodeURIComponent(sid)}`, method: 'delete' })
 }

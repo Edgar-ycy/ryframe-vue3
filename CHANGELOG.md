@@ -2,6 +2,44 @@
 
 ## [Unreleased]
 
+## [v0.5.0] - 2026-07-18
+
+### Added
+
+- 新增应用级会话协调器，覆盖初始化、已认证、匿名和依赖不可用状态，并支持页面重载静默恢复。
+- 新增 CSRF challenge、单标签 refresh single-flight 与 `BroadcastChannel` 多标签页会话协调。
+- 新增 session、认证 API、HTTP client、用户 Store 和关键 Vue 组件测试，以及首屏与异步 chunk bundle budget 门禁。
+
+### Changed
+
+- 登录响应只接收 access token；refresh token 改由 API 域的 HttpOnly Cookie 保存，refresh 改为空请求体。
+- Axios 普通与 raw transport 统一启用 credentials；access token、CSRF token 和用户会话只保存在 Pinia 协调器内存中。
+- 应用启动和路由守卫等待会话初始化，刷新成功后统一恢复用户、权限和动态路由。
+- 在线用户设备标识改为稳定 `sid`，健康检查切换为 `/livez` 与 `/readyz`，并同步 v0.5.0 OpenAPI 生成类型。
+- Element Plus 组件与图标改为按需导入，生产构建启用严格的 JS/CSS 体积预算和零 warning 门禁。
+
+### Removed
+
+- 删除 access/refresh token 的 localStorage 持久化 API，并在首次启动时清理旧版 token 键。
+- 删除旧 `RefreshRequest`、JSON `refresh_token` 响应字段和依赖 `X-Tenant-Id` 的刷新协议。
+
+### Fixed
+
+- 修复并发 `401`、多标签页同时刷新、服务端 refresh `409` 宽限重试及 `503` 依赖故障时的会话状态处理。
+- 密码重置页读取一次性 URL token 后立即清除查询参数，避免 token 留在地址栏和浏览器历史中。
+- 私有头像与文件统一经鉴权请求转换为 Blob URL，并保持头像 5 MiB、普通文件 10 MiB 和上传 120 秒提示一致。
+- 修复 Playwright 冷启动首次进入懒加载页面时 Vite 依赖优化重载导致动态路由模块返回 `504` 的问题。
+
+### Security
+
+- refresh Cookie 不再暴露给 JavaScript；access token 与 CSRF challenge 仅保存在页面内存，登出始终清理本地会话状态。
+- 认证请求统一携带 Cookie 与 `X-CSRF-Token`，不再从本地存储恢复明文 token。
+
+### Validation
+
+- session/auth/HTTP client 覆盖率门禁为 lines/functions/statements 90%、branches 80%；全部手写 TS/Vue 为 60%/50%。
+- CI 覆盖 contract、源码架构、ESLint/Stylelint 零 warning、typecheck、unit/coverage、生产构建、bundle budget 与 Playwright E2E。
+
 ## [v0.4.2]
 
 ### Added

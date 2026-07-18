@@ -3,7 +3,6 @@ name: Release
 on:
   push:
     branches: [ main ]
-    tags: [ 'V*', 'v*' ]
 
 # 防止并发推送
 concurrency:
@@ -84,74 +83,5 @@ jobs:
             ryframe-vue3-nightly-dist.tar.gz
             ryframe-vue3-nightly-dist.zip
 
-  # ============================================================
-  # Stable 发布 (手动创建 V* 或 v* tag 触发)
-  # ============================================================
-  stable:
-    name: Create Stable Release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/V') || startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: pnpm cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Production build
-        run: pnpm run build
-
-      - name: Package dist
-        run: |
-          RELEASE_TAG="${{ github.ref_name }}"
-          cd dist
-          tar -czf "../ryframe-vue3-${RELEASE_TAG}-dist.tar.gz" .
-          zip -r "../ryframe-vue3-${RELEASE_TAG}-dist.zip" .
-
-      - name: Extract changelog
-        id: changelog
-        run: |
-          # 按触发标签提取对应版本，避免误用 Unreleased 内容。
-          RELEASE_TAG="${{ github.ref_name }}"
-          if [ -f CHANGELOG.md ]; then
-            awk -v version="$RELEASE_TAG" '
-              index($0, "## [" version "]") == 1 { found=1; next }
-              found && /^## \[/ { exit }
-              found { print }
-            ' CHANGELOG.md > release_body.md
-          fi
-          if [ ! -s release_body.md ]; then
-            echo "## Release ${{ github.ref_name }}" > release_body.md
-            echo "" >> release_body.md
-            echo "Commit: ${{ github.sha }}" >> release_body.md
-          fi
-
-      - name: Create Stable Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body_path: release_body.md
-          prerelease: false
-          files: |
-            ryframe-vue3-${{ github.ref_name }}-dist.tar.gz
-            ryframe-vue3-${{ github.ref_name }}-dist.zip
+  # RC/stable artifacts are built and published only by the coordinated
+  # backend release workflow after all cross-repository gates pass.

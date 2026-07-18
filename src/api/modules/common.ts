@@ -11,6 +11,7 @@ export function uploadFile(data: FormData) {
     url: `${BASE}/upload`,
     method: 'post',
     data,
+    timeout: 120000,
   })
 }
 
@@ -20,6 +21,7 @@ export function uploadImage(data: FormData) {
     url: `${BASE}/upload/image`,
     method: 'post',
     data,
+    timeout: 120000,
   })
 }
 
@@ -29,6 +31,7 @@ export function uploadAvatar(data: FormData) {
     url: `${BASE}/upload/avatar`,
     method: 'post',
     data,
+    timeout: 120000,
   })
 }
 

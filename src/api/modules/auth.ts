@@ -9,40 +9,57 @@ import type {
 export type UserInfo = ApiSchema<'UserInfo'>
 export type LoginResult = OperationData<'post_auth_login'>
 export type LoginParams = OperationJsonBody<'post_auth_login'>
-export type RefreshParams = OperationJsonBody<'post_auth_refresh'>
+export type CsrfChallenge = OperationData<'get_auth_csrf'>
 export type CompletePasswordResetParams = OperationJsonBody<'post_auth_password_reset_complete'>
 export type ProfileInfo = ApiSchema<'UserProfileResponse'>
 export type ProfileUpdateParams = OperationJsonBody<'put_auth_profile'>
 export type PasswordChangeParams = OperationJsonBody<'put_auth_profile_password'>
 
 /** 登录 */
-export function login(data: LoginParams, tenantId: string) {
+export function getCsrfChallenge() {
+  return rawRequest<CsrfChallenge>({
+    url: '/auth/csrf',
+    method: 'get',
+    skipAuthRefresh: true,
+    skipTenantHeader: true,
+  })
+}
+
+export function login(data: LoginParams, tenantId: string, csrfToken: string) {
   return request<LoginResult>({
     url: '/auth/login',
     method: 'post',
     data,
-    headers: { 'X-Tenant-Id': tenantId },
+    headers: {
+      'X-Tenant-Id': tenantId,
+      'X-CSRF-Token': csrfToken,
+    },
     skipAuthRefresh: true,
   })
 }
 
 /** 登出 */
-export function logout() {
-  return request({
+export function logout(csrfToken: string, accessToken?: string) {
+  return rawRequest({
     url: '/auth/logout',
     method: 'post',
+    headers: {
+      'X-CSRF-Token': csrfToken,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     skipAuthRefresh: true,
+    skipTenantHeader: true,
   })
 }
 
 /** 刷新令牌 */
-export function refreshToken(data: RefreshParams, tenantId: string) {
+export function refreshToken(csrfToken: string) {
   return rawRequest<LoginResult>({
     url: '/auth/refresh',
     method: 'post',
-    data,
-    headers: { 'X-Tenant-Id': tenantId },
+    headers: { 'X-CSRF-Token': csrfToken },
     skipAuthRefresh: true,
+    skipTenantHeader: true,
   })
 }
 

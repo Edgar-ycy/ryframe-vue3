@@ -10,10 +10,12 @@ import { runtimeConfig } from '@/shared/config/runtimeConfig'
 declare module 'axios' {
   interface AxiosRequestConfig {
     skipAuthRefresh?: boolean
+    skipTenantHeader?: boolean
   }
 
   interface InternalAxiosRequestConfig {
     skipAuthRefresh?: boolean
+    skipTenantHeader?: boolean
     retryAfterRefresh?: boolean
   }
 }
@@ -24,6 +26,7 @@ export class HttpError extends Error {
     public readonly status?: number,
     public readonly code?: number,
     public readonly cause?: unknown,
+    public readonly retryAfterSeconds?: number,
   ) {
     super(message)
     this.name = 'HttpError'
@@ -34,7 +37,7 @@ export interface HttpSessionAdapter {
   getAccessToken(): string | null
   getTenantId(): string
   refreshAccessToken(): Promise<string>
-  handleUnauthorized(): Promise<void>
+  handleRefreshFailure(error: HttpError): Promise<void>
   reportError(error: HttpError): void
 }
 
@@ -48,7 +51,8 @@ export function configureHttpSession(adapter: HttpSessionAdapter): void {
 function createTransport() {
   return axios.create({
     baseURL: runtimeConfig.apiBaseUrl,
-    timeout: 15000,
+    timeout: 30000,
+    withCredentials: true,
     headers: { 'Content-Type': 'application/json' },
   })
 }
@@ -64,8 +68,8 @@ function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig): v
 
 transport.interceptors.request.use((config) => {
   const token = sessionAdapter?.getAccessToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  if (!config.headers['X-Tenant-Id']) {
+  if (token && !config.headers.Authorization) config.headers.Authorization = `Bearer ${token}`
+  if (!config.skipTenantHeader && !config.headers['X-Tenant-Id']) {
     config.headers['X-Tenant-Id'] = sessionAdapter?.getTenantId()
   }
   removeJsonContentTypeForFormData(config)
@@ -103,9 +107,15 @@ async function toHttpError(error: unknown): Promise<HttpError> {
       status,
       undefined,
       error,
+      parseRetryAfter(error.response?.headers['retry-after']),
     )
   }
   return new HttpError(error instanceof Error ? error.message : '请求失败', undefined, undefined, error)
+}
+
+function parseRetryAfter(value: unknown): number | undefined {
+  const seconds = Number(value)
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined
 }
 
 async function refreshSession(): Promise<string> {
@@ -114,8 +124,9 @@ async function refreshSession(): Promise<string> {
     refreshPromise = sessionAdapter
       .refreshAccessToken()
       .catch(async (error) => {
-        await sessionAdapter?.handleUnauthorized()
-        throw await toHttpError(error)
+        const httpError = await toHttpError(error)
+        await sessionAdapter?.handleRefreshFailure(httpError)
+        throw httpError
       })
       .finally(() => {
         refreshPromise = undefined
@@ -136,6 +147,7 @@ transport.interceptors.response.use(
       && !config.skipAuthRefresh
       && !config.retryAfterRefresh
       && sessionAdapter
+      && sessionAdapter.getAccessToken()
     ) {
       config.retryAfterRefresh = true
       const token = await refreshSession()
@@ -145,6 +157,13 @@ transport.interceptors.response.use(
     }
 
     const httpError = await toHttpError(error)
+    if (status === 401 && config?.retryAfterRefresh && sessionAdapter) {
+      await sessionAdapter.handleRefreshFailure(httpError)
+      return Promise.reject(httpError)
+    }
+    if (status === 401 && !config?.skipAuthRefresh && !sessionAdapter?.getAccessToken()) {
+      return Promise.reject(httpError)
+    }
     sessionAdapter?.reportError(httpError)
     return Promise.reject(httpError)
   },
@@ -175,8 +194,13 @@ export async function request<T = unknown>(
 export async function rawRequest<T>(
   config: AxiosRequestConfig,
 ): Promise<ApiResponse<T>> {
-  const response = await rawTransport.request<ApiResponse<T>>(config)
-  return parseEnvelope(response, false)
+  try {
+    const response = await rawTransport.request<ApiResponse<T>>(config)
+    return parseEnvelope(response, false)
+  }
+  catch (error) {
+    throw await toHttpError(error)
+  }
 }
 
 export async function requestBlob(config: AxiosRequestConfig): Promise<Blob> {

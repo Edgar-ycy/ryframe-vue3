@@ -45,7 +45,7 @@ const emit = defineEmits<{
 const uploading = ref(false)
 const { imageSrc } = useAuthenticatedImage(() => props.src)
 const acceptedTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
-const maxAvatarBytes = 2 * 1024 * 1024
+const maxAvatarBytes = 5 * 1024 * 1024
 
 function beforeUpload(file: File): boolean {
   if (!acceptedTypes.has(file.type)) {
@@ -53,7 +53,7 @@ function beforeUpload(file: File): boolean {
     return false
   }
   if (file.size > maxAvatarBytes) {
-    ElMessage.error('头像文件大小不能超过 2MB')
+    ElMessage.error('头像文件大小不能超过 5 MiB')
     return false
   }
   return true

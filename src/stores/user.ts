@@ -1,10 +1,14 @@
 import { defineStore } from 'pinia'
 import { getUserInfo, login as loginApi, type UserInfo } from '@/api/modules/auth'
+import { ensureCsrfToken, publishAuthenticatedSession } from '@/app/session/sessionCoordinator'
 import type { Id } from '@/shared/http/types'
-import { getTenantId, getToken, setRefreshToken, setTenantId, setToken } from '@/utils/auth'
+import { getTenantId, setTenantId } from '@/utils/auth'
+
+export type SessionStatus = 'initializing' | 'authenticated' | 'anonymous' | 'unavailable'
 
 interface UserState {
   token: string
+  sessionStatus: SessionStatus
   tenantId: string
   tenantName: string
   userId: Id | ''
@@ -19,7 +23,8 @@ interface UserState {
 
 export const useUserStore = defineStore('user', {
   state: (): UserState => ({
-    token: getToken() || '',
+    token: '',
+    sessionStatus: 'initializing',
     tenantId: getTenantId(),
     tenantName: '',
     userId: '',
@@ -46,9 +51,11 @@ export const useUserStore = defineStore('user', {
       captchaId?: string,
       captchaCode?: string,
     ) {
+      const csrfToken = await ensureCsrfToken()
       const res = await loginApi(
         { username, password, captcha_id: captchaId, captcha_code: captchaCode },
         tenantId,
+        csrfToken,
       )
       const authData = res.data
       if (!authData) throw new Error('登录响应缺少认证数据')
@@ -59,14 +66,10 @@ export const useUserStore = defineStore('user', {
       }
 
       this.token = authData.access_token
-      setToken(authData.access_token)
+      this.sessionStatus = 'authenticated'
       this.tenantId = userInfo.tenant_id
       this.tenantName = userInfo.tenant_name || userInfo.tenant_id
       setTenantId(userInfo.tenant_id)
-
-      if (authData.refresh_token) {
-        setRefreshToken(authData.refresh_token)
-      }
 
       this.userId = userInfo.id
       this.username = userInfo.username
@@ -76,6 +79,7 @@ export const useUserStore = defineStore('user', {
       this.avatar = userInfo.avatar || ''
       this.roles = userInfo.roles || []
       this.permissions = userInfo.perms || []
+      publishAuthenticatedSession(authData.access_token, userInfo)
       return res
     },
 
@@ -102,7 +106,8 @@ export const useUserStore = defineStore('user', {
 
     resetState() {
       this.token = ''
-      this.tenantId = 'system'
+      this.sessionStatus = 'anonymous'
+      this.tenantId = getTenantId()
       this.tenantName = ''
       this.userId = ''
       this.username = ''

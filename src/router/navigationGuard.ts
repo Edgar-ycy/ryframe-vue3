@@ -11,6 +11,7 @@ export interface NavigationTarget {
 
 export interface NavigationUser {
   token: string
+  sessionStatus: 'initializing' | 'authenticated' | 'anonymous' | 'unavailable'
   permissions: string[]
   roles: string[]
   getUserInfo(): Promise<unknown>
@@ -21,10 +22,12 @@ export interface NavigationPermissionState {
 }
 
 export interface NavigationGuardDependencies {
+  initializeSession(): Promise<void>
   getUser(): NavigationUser
   getPermissionState(): NavigationPermissionState
   refreshAccessibleRoutes(): Promise<unknown>
   clearSession(): Promise<void>
+  isKnownRoute(path: string): boolean
 }
 
 const authenticatedErrorPaths = new Set(['/403', '/500'])
@@ -32,13 +35,26 @@ const publicPaths = new Set(['/login', '/reset-password'])
 
 export function createNavigationGuard(dependencies: NavigationGuardDependencies) {
   return async (target: NavigationTarget): Promise<true | RouteLocationRaw> => {
+    await dependencies.initializeSession()
     const user = dependencies.getUser()
     const originalPath = getOriginalFullPath(target)
+
+    if (user.sessionStatus === 'unavailable') {
+      return target.path === '/500' ? true : { path: '/500', replace: true }
+    }
 
     if (!user.token) {
       return publicPaths.has(target.path)
         ? true
         : { path: '/login', query: { redirect: originalPath } }
+    }
+
+    if (
+      target.path === '/404'
+      && target.redirectedFrom
+      && dependencies.isKnownRoute(originalPath)
+    ) {
+      return { path: originalPath, replace: true }
     }
 
     if (target.path === '/login') return { path: '/' }

@@ -5,6 +5,7 @@ import process from 'node:process'
 const root = process.cwd()
 const errors = []
 const requiredFiles = [
+  '.env.production',
   'openapi/openapi.json',
   'playwright.config.ts',
   'scripts/check-api-contract.mjs',
@@ -25,6 +26,12 @@ for (const relative of requiredFiles) {
   catch {
     errors.push(`${relative}: required architecture file is missing`)
   }
+}
+
+const productionEnvironment = await readFile(path.join(root, '.env.production'), 'utf8')
+const productionApi = productionEnvironment.match(/^VITE_APP_BASE_API=(.+)$/m)?.[1]?.trim()
+if (!productionApi || !/^https:\/\/[^/]+\/api\/v1$/.test(productionApi)) {
+  errors.push('.env.production: VITE_APP_BASE_API must be an absolute HTTPS /api/v1 URL')
 }
 
 const contractCheckSource = await readFile(
@@ -68,6 +75,16 @@ for (const fragment of [
 ]) {
   if (!workflowSource.includes(fragment)) {
     errors.push(`.github/workflows/ci.yml: browser CI gate is missing ${fragment}`)
+  }
+}
+
+const releaseWorkflowSource = await readFile(
+  path.join(root, '.github/workflows/release.yml'),
+  'utf8',
+)
+for (const forbidden of ["tags: [ 'V*', 'v*' ]", 'Create Stable Release']) {
+  if (releaseWorkflowSource.includes(forbidden)) {
+    errors.push(`.github/workflows/release.yml: independent stable publishing is forbidden (${forbidden})`)
   }
 }
 

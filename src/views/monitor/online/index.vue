@@ -18,7 +18,7 @@
     <el-card shadow="never" style="margin-top:12px">
       <template #header><span>在线用户（{{ tableData.length }} 人）</span></template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="token_id" label="会话编号" show-overflow-tooltip />
+        <el-table-column prop="sid" label="会话编号" show-overflow-tooltip />
         <el-table-column prop="username" label="用户名" />
         <el-table-column prop="dept_name" label="部门" show-overflow-tooltip />
         <el-table-column prop="ipaddr" label="IP地址" />
@@ -59,7 +59,7 @@ function handleReset() {
 async function handleForceLogout(row: OnlineUserRecord) {
   try {
     await ElMessageBox.confirm(`确认强制下线用户"${row.username}"吗？`, '警告', { type: 'warning' })
-    await forceLogout(row.token_id)
+    await forceLogout(row.sid)
     ElMessage.success('已强制下线')
     await fetchData()
   } catch { /* cancelled */ }

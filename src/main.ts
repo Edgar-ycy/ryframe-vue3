@@ -3,23 +3,19 @@ import App from './App.vue'
 import router, { refreshAccessibleRoutes, resetDynamicRoutes } from './router'
 import pinia from './stores'
 import { installSessionCoordinator } from '@/app/session/sessionCoordinator'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import { elementIcons } from '@/shared/ui/icons'
 import directives from './directives'
 import './styles/index.scss'
 
 const app = createApp(App)
 
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+for (const [key, component] of Object.entries(elementIcons)) {
   app.component(key, component)
 }
 
 app.use(pinia)
 installSessionCoordinator({ router, refreshAccessibleRoutes, resetDynamicRoutes })
 app.use(router)
-app.use(ElementPlus, { locale: zhCn })
 app.use(directives)
 
 app.mount('#app')

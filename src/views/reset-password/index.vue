@@ -74,11 +74,14 @@ const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 
-const tenantId = computed(() => String(route.query.tenant_id || ''))
-const resetRequestIdentifier = computed(() => String(route.query.request_id || ''))
-const token = computed(() => String(route.query.token || ''))
+const tenantId = String(route.query.tenant_id || '')
+const resetRequestIdentifier = String(route.query.request_id || '')
+const token = String(route.query.token || '')
+if (typeof window !== 'undefined' && window.location.search) {
+  window.history.replaceState(window.history.state, '', route.path)
+}
 const missingParams = computed(
-  () => !tenantId.value || !resetRequestIdentifier.value || !token.value,
+  () => !tenantId || !resetRequestIdentifier || !token,
 )
 
 const form = ref({
@@ -118,9 +121,9 @@ async function handleSubmit() {
   loading.value = true
   try {
     await completePasswordReset({
-      tenant_id: tenantId.value,
-      request_id: resetRequestIdentifier.value,
-      token: token.value,
+      tenant_id: tenantId,
+      request_id: resetRequestIdentifier,
+      token,
       new_password: form.value.newPassword,
     })
     ElMessage.success('密码已重置')

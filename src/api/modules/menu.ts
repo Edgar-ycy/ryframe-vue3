@@ -46,9 +46,10 @@ export function deleteMenu(id: Id) {
   return request<void>({ url: `${BASE}/${id}`, method: 'delete' })
 }
 
-export function getUserMenus() {
+export function getUserMenus(options?: { skipAuthRefresh?: boolean }) {
   return request<MenuTreeNode[]>({
     url: `${BASE}/current`,
     method: 'get',
+    skipAuthRefresh: options?.skipAuthRefresh,
   })
 }

@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import * as Icons from '@element-plus/icons-vue'
+import { elementIcons } from '@/shared/ui/icons'
 
 const props = defineProps<{
   modelValue?: string
@@ -45,7 +45,7 @@ const selectedIcon = ref(props.modelValue || '')
 const tempIcon = ref('')
 
 // Element Plus 图标列表
-const epIcons = Object.keys(Icons).filter(k => k !== 'default' && k !== 'Menu')
+const epIcons = Object.keys(elementIcons)
 
 const filteredIcons = computed(() => {
   if (!search.value) return epIcons.slice(0, 100)

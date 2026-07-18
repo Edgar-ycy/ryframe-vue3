@@ -31,33 +31,14 @@
         </el-card>
       </el-col>
     </el-row>
-
-    <el-row :gutter="16" class="health-row">
-      <el-col :xs="24" :lg="12">
-        <el-card shadow="hover">
-          <template #header><span><el-icon><Connection /></el-icon> 健康检查</span></template>
-          <div v-if="health" class="health-status">
-            <el-tag :type="health.status === 'UP' ? 'success' : 'danger'" size="large">{{ health.status }}</el-tag>
-            <div class="info-row"><span>数据库</span><el-tag :type="health.database === 'UP' ? 'success' : 'danger'" size="small">{{ health.database }}</el-tag></div>
-            <div class="info-row"><span>Redis</span><el-tag :type="health.redis === 'UP' ? 'success' : (health.redis === 'not_configured' ? 'info' : 'danger')" size="small">{{ health.redis }}</el-tag></div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  getHealth,
-  getServerInfo,
-  type HealthInfo,
-  type ServerInfo,
-} from '@/api/modules/monitor'
-import { Cpu, Monitor, Odometer, Connection } from '@element-plus/icons-vue'
+import { getServerInfo, type ServerInfo } from '@/api/modules/monitor'
+import { Cpu, Monitor, Odometer } from '@element-plus/icons-vue'
 
 const info = ref<ServerInfo | null>(null)
-const health = ref<HealthInfo | null>(null)
 
 const cpuColor = computed(() => {
   const v = info.value?.cpu_usage ?? 0
@@ -82,12 +63,8 @@ const uptimeStr = computed(() => {
 })
 
 onMounted(async () => {
-  const [serverResult, healthResult] = await Promise.allSettled([
-    getServerInfo(),
-    getHealth(),
-  ])
-  if (serverResult.status === 'fulfilled') info.value = serverResult.value.data ?? null
-  if (healthResult.status === 'fulfilled') health.value = healthResult.value.data ?? null
+  const serverResult = await getServerInfo()
+  info.value = serverResult.data ?? null
 })
 </script>
 
@@ -95,10 +72,6 @@ onMounted(async () => {
 .gauge-wrapper {
   padding: 10px 0;
   text-align: center;
-}
-
-.health-row {
-  margin-top: 16px;
 }
 
 .info-row {
@@ -113,12 +86,4 @@ onMounted(async () => {
 
 .sys-info { margin-top: 8px }
 
-.health-status {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.health-status .info-row { width: 100% }
 </style>

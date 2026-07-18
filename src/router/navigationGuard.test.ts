@@ -12,9 +12,12 @@ function harness(options?: {
   permissions?: string[]
   roles?: string[]
   routesLoaded?: boolean
+  sessionStatus?: NavigationUser['sessionStatus']
+  knownRoute?: boolean
 }) {
   const user: NavigationUser = {
     token: options?.token ?? '',
+    sessionStatus: options?.sessionStatus ?? (options?.token ? 'authenticated' : 'anonymous'),
     permissions: options?.permissions ?? [],
     roles: options?.roles ?? [],
     getUserInfo: vi.fn(async () => undefined),
@@ -23,10 +26,12 @@ function harness(options?: {
     isRoutesLoaded: options?.routesLoaded ?? false,
   }
   const dependencies: NavigationGuardDependencies = {
+    initializeSession: vi.fn(async () => undefined),
     getUser: () => user,
     getPermissionState: () => permissionState,
     refreshAccessibleRoutes: vi.fn(async () => undefined),
     clearSession: vi.fn(async () => undefined),
+    isKnownRoute: vi.fn(() => options?.knownRoute ?? false),
   }
   return { user, dependencies, guard: createNavigationGuard(dependencies) }
 }
@@ -41,6 +46,29 @@ describe('createNavigationGuard', () => {
     })
   })
 
+  it('waits for silent session initialization before deciding navigation', async () => {
+    const state = harness()
+    state.user.sessionStatus = 'initializing'
+    state.dependencies.initializeSession = vi.fn(async () => {
+      state.user.token = 'restored-token'
+      state.user.sessionStatus = 'authenticated'
+      state.user.permissions = ['system:user:list']
+    })
+    state.guard = createNavigationGuard(state.dependencies)
+
+    await expect(state.guard({ path: '/users', fullPath: '/users' })).resolves.toEqual({
+      path: '/users',
+      replace: true,
+    })
+    expect(state.dependencies.initializeSession).toHaveBeenCalledOnce()
+  })
+
+  it('routes dependency outages to the service unavailable page', async () => {
+    const { guard } = harness({ sessionStatus: 'unavailable' })
+    await expect(guard({ path: '/users' })).resolves.toEqual({ path: '/500', replace: true })
+    await expect(guard({ path: '/500' })).resolves.toBe(true)
+  })
+
   it('loads user context and routes once before replaying the original target', async () => {
     const { user, dependencies, guard } = harness({ token: 'token' })
     await expect(guard({
@@ -50,6 +78,30 @@ describe('createNavigationGuard', () => {
     })).resolves.toEqual({ path: '/users?tab=active', replace: true })
     expect(user.getUserInfo).toHaveBeenCalledOnce()
     expect(dependencies.refreshAccessibleRoutes).toHaveBeenCalledOnce()
+  })
+
+  it('replays a valid deep link when silent refresh already installed its dynamic route', async () => {
+    const { dependencies, guard } = harness({
+      token: 'token',
+      routesLoaded: true,
+      knownRoute: true,
+    })
+
+    await expect(guard({
+      path: '/404',
+      fullPath: '/404',
+      redirectedFrom: { fullPath: '/tools/gen' },
+    })).resolves.toEqual({ path: '/tools/gen', replace: true })
+    expect(dependencies.isKnownRoute).toHaveBeenCalledWith('/tools/gen')
+  })
+
+  it('keeps a genuinely unknown deep link on 404', async () => {
+    const { guard } = harness({ token: 'token', routesLoaded: true, knownRoute: false })
+
+    await expect(guard({
+      path: '/404',
+      redirectedFrom: { fullPath: '/missing' },
+    })).resolves.toBe(true)
   })
 
   it('does not reload user context when permissions are already present', async () => {

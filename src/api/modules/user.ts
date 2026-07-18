@@ -98,5 +98,10 @@ export function downloadImportTemplate() {
 
 /** 导入用户 */
 export function importUser(data: FormData) {
-  return request<UserImportResult>({ url: `${BASE}/import`, method: 'post', data })
+  return request<UserImportResult>({
+    url: `${BASE}/import`,
+    method: 'post',
+    data,
+    timeout: 120000,
+  })
 }

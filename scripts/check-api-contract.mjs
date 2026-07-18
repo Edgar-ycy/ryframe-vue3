@@ -171,7 +171,11 @@ if (document.info?.title !== 'RyFrame API') {
 
 const paths = Object.entries(document.paths ?? {})
 const operationIds = new Set()
-const bodylessWriteAllowlist = new Set(['post_auth_logout', 'post_system_perms_sync'])
+const bodylessWriteAllowlist = new Set([
+  'post_auth_logout',
+  'post_auth_refresh',
+  'post_system_perms_sync',
+])
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete'])
 let operationCount = 0
 let queryOperationCount = 0

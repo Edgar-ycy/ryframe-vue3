@@ -2,10 +2,14 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import ElementPlus from 'unplugin-element-plus/vite'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
+  const isE2e = process.env.RYFRAME_E2E === '1'
 
   return {
     plugins: [
@@ -31,6 +35,11 @@ export default defineConfig(({ mode }) => {
         ],
         dts: 'src/auto-imports.d.ts',
       }),
+      Components({
+        resolvers: [ElementPlusResolver()],
+        dts: false,
+      }),
+      ElementPlus({}),
     ],
 
     resolve: {
@@ -38,6 +47,22 @@ export default defineConfig(({ mode }) => {
         '@': resolve(__dirname, 'src'),
       },
     },
+
+    optimizeDeps: isE2e
+      ? {
+          noDiscovery: true,
+          include: [
+            '@element-plus/icons-vue',
+            'axios',
+            'element-plus',
+            'element-plus/es',
+            'element-plus/es/components/*/style/css',
+            'pinia',
+            'vue',
+            'vue-router',
+          ],
+        }
+      : undefined,
 
     server: {
       port: 80,
@@ -53,6 +78,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
+      manifest: true,
       sourcemap: false,
       chunkSizeWarningLimit: 1200,
       rolldownOptions: {

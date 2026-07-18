@@ -114,7 +114,7 @@ pnpm preview
 | 变量 | 说明 | 示例 |
 |------|------|------|
 | `VITE_APP_TITLE` | 应用标题（显示在浏览器标签页） | `RyFrame 管理后台` |
-| `VITE_APP_BASE_API` | API 基础路径 | `/api/v1` |
+| `VITE_APP_BASE_API` | API 基础地址；生产必须使用 API 子域的绝对 HTTPS 地址 | 开发 `/api/v1`，生产 `https://api.example.com/api/v1` |
 | `VITE_APP_PROXY_TARGET` | 开发服务器代理的后端地址 | `http://localhost:8080` |
 
 环境变量按 `development` / `production` 分别在 `.env.development` 和 `.env.production` 中配置。

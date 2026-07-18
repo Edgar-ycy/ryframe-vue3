@@ -5,12 +5,45 @@ const apiBasePath = '/api/v1'
 interface ApiMockState {
   unexpectedRequests: string[]
   generationRequests: unknown[]
+  refreshRequests: number
+  refreshAttempts: Array<{
+    cookieJti: string | null
+    csrfToken: string | undefined
+    status: number
+  }>
+  logoutRequests: number
+  protectedUnauthorizedRequests: string[]
+  refreshSessionActive: boolean
+  expireAccessToken(): void
+  revokeRefreshSession(): void
+  queueRefreshConflict(): void
+  holdNextRefresh(): void
+  releaseRefresh(): void
+  setRefreshUnavailable(unavailable: boolean): void
   avatarDownloads: Array<{
     path: string | null
     bucket: string | null
     authorization: string | undefined
     tenantId: string | undefined
   }>
+}
+
+interface RefreshGate {
+  promise: Promise<void>
+  release(): void
+}
+
+const testUserInfo = {
+  id: '1001',
+  tenant_id: 'system',
+  tenant_name: '系统租户',
+  username: 'operator',
+  nickname: '测试用户',
+  email: 'operator@example.com',
+  phone: '13800000000',
+  avatar: null,
+  roles: ['operator'],
+  perms: ['system:dict:list', 'monitor:runtime:list', 'tools:gen:list', 'tools:gen:add'],
 }
 
 const avatarPng = Buffer.from(
@@ -22,64 +55,236 @@ function protectedAvatarUrl(filename: string): string {
   return `${apiBasePath}/common/file/download?bucket=avatar&path=system/2026/07/17/${filename}`
 }
 
-function json(route: Route, body: unknown, status = 200): Promise<void> {
+function json(
+  route: Route,
+  body: unknown,
+  status = 200,
+  headers?: Record<string, string>,
+): Promise<void> {
   return route.fulfill({
     status,
     contentType: 'application/json; charset=utf-8',
     body: JSON.stringify(body),
+    headers,
   })
+}
+
+function parseCookies(cookieHeader: string | undefined): Map<string, string> {
+  return new Map((cookieHeader ?? '').split(';').flatMap((part) => {
+    const separator = part.indexOf('=')
+    if (separator < 0) return []
+    return [[part.slice(0, separator).trim(), part.slice(separator + 1).trim()]]
+  }))
+}
+
+function createGate(): RefreshGate {
+  let release!: () => void
+  const promise = new Promise<void>((resolve) => { release = resolve })
+  return { promise, release }
+}
+
+function authResponse(accessToken: string) {
+  return {
+    code: 200,
+    msg: 'ok',
+    data: {
+      access_token: accessToken,
+      expires_in: 3600,
+      user_info: testUserInfo,
+    },
+  }
 }
 
 async function installApiMocks(page: Page): Promise<ApiMockState> {
   const unexpectedRequests: string[] = []
   const generationRequests: unknown[] = []
   const avatarDownloads: ApiMockState['avatarDownloads'] = []
+  const refreshAttempts: ApiMockState['refreshAttempts'] = []
+  const protectedUnauthorizedRequests: string[] = []
   let avatarUrl = protectedAvatarUrl('old-avatar.png')
+  let csrfCounter = 0
+  let refreshRequests = 0
+  let logoutRequests = 0
+  let refreshSessionActive = false
+  let refreshUnavailable = false
+  let refreshCounter = 0
+  let accessCounter = 0
+  let currentRefreshJti: string | null = null
+  let currentAccessToken: string | null = null
+  let refreshInFlightJti: string | null = null
+  let queuedRefreshConflicts = 0
+  let refreshGate: RefreshGate | undefined
+  const expiredAccessTokens = new Set<string>()
+  const recentlyRotatedRefreshJtis = new Set<string>()
 
-  await page.route(`**${apiBasePath}/**`, async (route) => {
+  const issueAccessToken = () => {
+    accessCounter += 1
+    currentAccessToken = `access-token-${accessCounter}`
+    return currentAccessToken
+  }
+  const issueRefreshJti = () => {
+    refreshCounter += 1
+    currentRefreshJti = `refresh-jti-${refreshCounter}`
+    return currentRefreshJti
+  }
+  const refreshCookie = (jti: string) => (
+    `ryframe_refresh_token=${jti}; Path=/api/v1/auth; HttpOnly; SameSite=Lax`
+  )
+  const deleteRefreshCookie = (
+    'ryframe_refresh_token=; Path=/api/v1/auth; Max-Age=0; HttpOnly; SameSite=Lax'
+  )
+  const hasValidCsrf = (headers: Record<string, string>) => {
+    const csrfToken = headers['x-csrf-token']
+    return Boolean(csrfToken && parseCookies(headers.cookie).get('ryframe_csrf') === csrfToken)
+  }
+  const hasValidAccess = (headers: Record<string, string>) => {
+    if (!currentAccessToken || expiredAccessTokens.has(currentAccessToken)) return false
+    return headers.authorization === `Bearer ${currentAccessToken}`
+      && headers['x-tenant-id'] === 'system'
+  }
+  const requireAccess = async (route: Route, label: string) => {
+    if (hasValidAccess(route.request().headers())) return true
+    protectedUnauthorizedRequests.push(route.request().headers()['x-e2e-probe'] ?? label)
+    await json(route, { code: 401, msg: 'access token expired' }, 401)
+    return false
+  }
+
+  await page.context().route(`**${apiBasePath}/**`, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const key = `${request.method()} ${url.pathname}`
 
     switch (key) {
+      case `GET ${apiBasePath}/auth/csrf`: {
+        csrfCounter += 1
+        const csrfToken = `csrf-${csrfCounter}`
+        await json(
+          route,
+          { code: 200, msg: 'ok', data: { csrf_token: csrfToken, expires_in: 300 } },
+          200,
+          { 'set-cookie': `ryframe_csrf=${csrfToken}; Path=/api/v1/auth; SameSite=Lax` },
+        )
+        return
+      }
       case `GET ${apiBasePath}/auth/captcha/config`:
         await json(route, { code: 200, msg: 'ok', data: { captcha_enabled: false } })
         return
       case `POST ${apiBasePath}/auth/login`: {
         const body = request.postDataJSON() as Record<string, unknown>
         const valid = request.headers()['x-tenant-id'] === 'system'
+          && hasValidCsrf(request.headers())
           && body.username === 'operator'
           && body.password === 'Strong@123'
         if (!valid) {
           await json(route, { code: 401, msg: 'invalid test credentials' }, 401)
           return
         }
-        await json(route, {
-          code: 200,
-          msg: 'ok',
-          data: {
-            access_token: 'access-token',
-            refresh_token: 'refresh-token',
-            user_info: {
-              id: '1001',
-              tenant_id: 'system',
-              tenant_name: '系统租户',
-              username: 'operator',
-              nickname: '测试用户',
-              email: 'operator@example.com',
-              phone: '13800000000',
-              avatar: null,
-              roles: ['operator'],
-              perms: ['system:dict:list', 'monitor:runtime:list', 'tools:gen:list', 'tools:gen:add'],
-            },
-          },
+        refreshSessionActive = true
+        recentlyRotatedRefreshJtis.clear()
+        const accessToken = issueAccessToken()
+        const refreshJti = issueRefreshJti()
+        await json(route, authResponse(accessToken), 200, {
+          'set-cookie': refreshCookie(refreshJti),
         })
         return
       }
+      case `POST ${apiBasePath}/auth/refresh`: {
+        refreshRequests += 1
+        const headers = request.headers()
+        const cookieJti = parseCookies(headers.cookie).get('ryframe_refresh_token') ?? null
+        const attempt = {
+          cookieJti,
+          csrfToken: headers['x-csrf-token'],
+          status: 0,
+        }
+        refreshAttempts.push(attempt)
+        const respond = async (
+          body: unknown,
+          status: number,
+          responseHeaders?: Record<string, string>,
+        ) => {
+          attempt.status = status
+          await json(route, body, status, responseHeaders)
+        }
+        if (refreshUnavailable) {
+          await respond({ code: 503, msg: 'redis unavailable' }, 503)
+          return
+        }
+        if (!refreshSessionActive || !currentRefreshJti || !hasValidCsrf(headers)) {
+          refreshSessionActive = false
+          currentRefreshJti = null
+          await respond({ code: 401, msg: 'no refresh session' }, 401, {
+            'set-cookie': deleteRefreshCookie,
+          })
+          return
+        }
+        if (queuedRefreshConflicts > 0) {
+          queuedRefreshConflicts -= 1
+          await respond({ code: 409, msg: 'refresh already in progress' }, 409, {
+            'retry-after': '0',
+          })
+          return
+        }
+        if (cookieJti !== currentRefreshJti) {
+          if (cookieJti && recentlyRotatedRefreshJtis.has(cookieJti)) {
+            await respond({ code: 409, msg: 'refresh already in progress' }, 409, {
+              'retry-after': '0',
+            })
+            return
+          }
+          refreshSessionActive = false
+          currentRefreshJti = null
+          await respond({ code: 401, msg: 'refresh replay detected' }, 401, {
+            'set-cookie': deleteRefreshCookie,
+          })
+          return
+        }
+        if (refreshInFlightJti === cookieJti) {
+          await respond({ code: 409, msg: 'refresh already in progress' }, 409, {
+            'retry-after': '0',
+          })
+          return
+        }
+
+        refreshInFlightJti = cookieJti
+        const gate = refreshGate
+        try {
+          if (gate) {
+            await gate.promise
+            if (refreshGate === gate) refreshGate = undefined
+          }
+          if (!refreshSessionActive || currentRefreshJti !== cookieJti) {
+            await respond({ code: 401, msg: 'refresh session revoked' }, 401, {
+              'set-cookie': deleteRefreshCookie,
+            })
+            return
+          }
+          recentlyRotatedRefreshJtis.add(cookieJti)
+          const accessToken = issueAccessToken()
+          const rotatedJti = issueRefreshJti()
+          await respond(authResponse(accessToken), 200, {
+            'set-cookie': refreshCookie(rotatedJti),
+          })
+        }
+        finally {
+          if (refreshInFlightJti === cookieJti) refreshInFlightJti = null
+        }
+        return
+      }
       case `POST ${apiBasePath}/auth/logout`:
-        await json(route, { code: 200, msg: 'ok' })
+        logoutRequests += 1
+        if (!hasValidCsrf(request.headers())) {
+          await json(route, { code: 403, msg: 'invalid csrf challenge' }, 403)
+          return
+        }
+        refreshSessionActive = false
+        currentRefreshJti = null
+        await json(route, { code: 200, msg: 'ok' }, 200, {
+          'set-cookie': deleteRefreshCookie,
+        })
         return
       case `GET ${apiBasePath}/auth/me`:
+        if (!await requireAccess(route, 'auth/me')) return
         await json(route, {
           code: 200,
           msg: 'ok',
@@ -99,6 +304,7 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         })
         return
       case `GET ${apiBasePath}/auth/profile`:
+        if (!await requireAccess(route, 'auth/profile')) return
         await json(route, {
           code: 200,
           msg: 'ok',
@@ -133,7 +339,7 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
           authorization: headers.authorization,
           tenantId: headers['x-tenant-id'],
         })
-        if (headers.authorization !== 'Bearer access-token' || headers['x-tenant-id'] !== 'system') {
+        if (!hasValidAccess(headers)) {
           await json(route, { code: 401, msg: 'missing authentication' }, 401)
           return
         }
@@ -141,6 +347,7 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         return
       }
       case `GET ${apiBasePath}/system/menus/current`:
+        if (!await requireAccess(route, 'system/menus/current')) return
         await json(route, {
           code: 200,
           msg: 'ok',
@@ -299,13 +506,41 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
     }
   })
 
-  return { unexpectedRequests, generationRequests, avatarDownloads }
+  return {
+    unexpectedRequests,
+    generationRequests,
+    avatarDownloads,
+    refreshAttempts,
+    protectedUnauthorizedRequests,
+    get refreshRequests() { return refreshRequests },
+    get logoutRequests() { return logoutRequests },
+    get refreshSessionActive() { return refreshSessionActive },
+    expireAccessToken() {
+      if (currentAccessToken) expiredAccessTokens.add(currentAccessToken)
+    },
+    revokeRefreshSession() {
+      refreshSessionActive = false
+      currentRefreshJti = null
+    },
+    queueRefreshConflict() { queuedRefreshConflicts += 1 },
+    holdNextRefresh() {
+      if (refreshGate) throw new Error('a refresh response is already held')
+      refreshGate = createGate()
+    },
+    releaseRefresh() {
+      refreshGate?.release()
+    },
+    setRefreshUnavailable(unavailable: boolean) { refreshUnavailable = unavailable },
+  }
 }
 
 function collectRuntimeIssues(page: Page): string[] {
   const issues: string[] = []
   page.on('console', (message) => {
     if (message.type() === 'warning' || message.type() === 'error') {
+      if (message.text() === 'Failed to load resource: the server responded with a status of 401 (Unauthorized)') {
+        return
+      }
       issues.push(`console.${message.type()}: ${message.text()}`)
     }
   })
@@ -325,8 +560,119 @@ async function login(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: '你好，测试用户' })).toBeVisible()
 }
 
-test('login, dynamic menu, permission denial and logout stay warning-free', async ({ page }) => {
-  const { unexpectedRequests } = await installApiMocks(page)
+async function requestCurrentUser(page: Page, label: string): Promise<number> {
+  return page.evaluate(async (probeLabel) => {
+    const moduleUrl = '/src/shared/http/client.ts'
+    const http = await import(moduleUrl) as {
+      request(config: Record<string, unknown>): Promise<{ code: number }>
+    }
+    const response = await http.request({
+      url: '/auth/me',
+      method: 'get',
+      headers: { 'X-E2E-Probe': probeLabel },
+    })
+    return response.code
+  }, label)
+}
+
+async function requestCurrentUserOutcome(
+  page: Page,
+  label: string,
+): Promise<{ ok: boolean; status?: number }> {
+  return page.evaluate(async (probeLabel) => {
+    const moduleUrl = '/src/shared/http/client.ts'
+    const http = await import(moduleUrl) as {
+      request(config: Record<string, unknown>): Promise<unknown>
+    }
+    try {
+      await http.request({
+        url: '/auth/me',
+        method: 'get',
+        headers: { 'X-E2E-Probe': probeLabel },
+      })
+      return { ok: true }
+    }
+    catch (error) {
+      const status = typeof error === 'object' && error !== null && 'status' in error
+        ? Number(error.status)
+        : undefined
+      return { ok: false, status: Number.isFinite(status) ? status : undefined }
+    }
+  }, label)
+}
+
+async function startCurrentUserRequest(page: Page, label: string): Promise<void> {
+  await page.evaluate((probeLabel) => {
+    const scope = window as typeof window & {
+      __ryframeE2eRequest?: { done: boolean; ok: boolean; status?: number }
+    }
+    scope.__ryframeE2eRequest = { done: false, ok: false }
+    const moduleUrl = '/src/shared/http/client.ts'
+    void (async () => {
+      const http = await import(moduleUrl) as {
+        request(config: Record<string, unknown>): Promise<unknown>
+      }
+      await http.request({
+        url: '/auth/me',
+        method: 'get',
+        headers: { 'X-E2E-Probe': probeLabel },
+      })
+    })().then(
+      () => { scope.__ryframeE2eRequest = { done: true, ok: true } },
+      (error: unknown) => {
+        const status = typeof error === 'object' && error !== null && 'status' in error
+          ? Number(error.status)
+          : undefined
+        scope.__ryframeE2eRequest = {
+          done: true,
+          ok: false,
+          status: Number.isFinite(status) ? status : undefined,
+        }
+      },
+    )
+  }, label)
+}
+
+async function backgroundRequestOutcome(page: Page) {
+  return page.evaluate(() => {
+    const scope = window as typeof window & {
+      __ryframeE2eRequest?: { done: boolean; ok: boolean; status?: number }
+    }
+    return scope.__ryframeE2eRequest ?? { done: false, ok: false }
+  })
+}
+
+async function sessionSnapshot(page: Page) {
+  return page.evaluate(async () => {
+    const moduleUrl = '/src/stores/user.ts'
+    const stores = await import(moduleUrl) as {
+      useUserStore(): { token: string; sessionStatus: string }
+    }
+    const user = stores.useUserStore()
+    return { token: user.token, status: user.sessionStatus }
+  })
+}
+
+async function observeRemoteRefreshStart(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const scope = window as typeof window & { __ryframeE2eSawRefreshStart?: boolean }
+    scope.__ryframeE2eSawRefreshStart = false
+    const observer = new BroadcastChannel('ryframe-auth-v0.5')
+    observer.addEventListener('message', (event) => {
+      if (event.data?.type === 'refresh-start') scope.__ryframeE2eSawRefreshStart = true
+    })
+  })
+}
+
+async function sawRemoteRefreshStart(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const scope = window as typeof window & { __ryframeE2eSawRefreshStart?: boolean }
+    return scope.__ryframeE2eSawRefreshStart === true
+  })
+}
+
+test('expired access can logout, delete its cookie and stay warning-free', async ({ page }) => {
+  const state = await installApiMocks(page)
   const runtimeIssues = collectRuntimeIssues(page)
 
   await login(page)
@@ -343,12 +689,220 @@ test('login, dynamic menu, permission denial and logout stay warning-free', asyn
   await expect(page.getByRole('heading', { name: '403' })).toBeVisible()
 
   await page.goto('/index')
+  const refreshCookieBeforeLogout = (await page.context().cookies())
+    .find(cookie => cookie.name === 'ryframe_refresh_token')
+  expect(refreshCookieBeforeLogout?.value).toMatch(/^refresh-jti-\d+$/)
+  state.expireAccessToken()
   await page.getByText('测试用户', { exact: true }).click()
   await page.getByText('退出登录', { exact: true }).click()
   await page.getByRole('button', { name: '确定', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
 
-  expect(unexpectedRequests).toEqual([])
+  await expect.poll(async () => (await page.context().cookies())
+    .some(cookie => cookie.name === 'ryframe_refresh_token')).toBe(false)
+  await expect.poll(() => sessionSnapshot(page)).toEqual({ token: '', status: 'anonymous' })
+
+  expect(state.logoutRequests).toBe(1)
+  expect(state.refreshSessionActive).toBe(false)
+  expect(state.unexpectedRequests).toEqual([])
+  expect(runtimeIssues).toEqual([])
+})
+
+test('refresh cookie restores a reloaded tab without persisting bearer tokens', async ({ page }) => {
+  const state = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  await expect.poll(async () => page.evaluate(() => ({
+    access: localStorage.getItem('ryframe_token'),
+    refresh: localStorage.getItem('ryframe_refresh_token'),
+  }))).toEqual({ access: null, refresh: null })
+
+  await page.reload()
+  await expect(page.locator('h1')).toContainText('测试用户')
+  expect(state.refreshRequests).toBeGreaterThanOrEqual(2)
+
+  const cookies = await page.context().cookies()
+  const refreshCookie = cookies.find(cookie => cookie.name === 'ryframe_refresh_token')
+  expect(refreshCookie?.httpOnly).toBe(true)
+  expect(state.unexpectedRequests).toEqual([])
+  expect(runtimeIssues).toEqual([])
+})
+
+test('a refresh dependency outage keeps the HttpOnly cookie and shows unavailable state', async ({ page }) => {
+  const state = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  const cookieBefore = (await page.context().cookies())
+    .find(cookie => cookie.name === 'ryframe_refresh_token')
+  expect(cookieBefore?.value).toBeTruthy()
+
+  state.setRefreshUnavailable(true)
+  await page.reload()
+  await expect(page).toHaveURL(/\/500$/)
+  await expect(page.getByRole('heading', { name: '503' })).toBeVisible()
+
+  const cookieAfter = (await page.context().cookies())
+    .find(cookie => cookie.name === 'ryframe_refresh_token')
+  expect(cookieAfter?.value).toBe(cookieBefore?.value)
+  expect(state.refreshRequests).toBeGreaterThanOrEqual(2)
+  expect(state.logoutRequests).toBe(0)
+  expect(state.unexpectedRequests).toEqual([])
+  expect(runtimeIssues.filter(issue => !issue.includes('503'))).toEqual([])
+})
+
+test('two concurrent 401 responses share one in-tab refresh and replay once', async ({ page }) => {
+  const state = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  const refreshBaseline = state.refreshRequests
+  state.expireAccessToken()
+  state.holdNextRefresh()
+
+  const requests = Promise.all([
+    requestCurrentUser(page, 'single-flight-one'),
+    requestCurrentUser(page, 'single-flight-two'),
+  ])
+  try {
+    await expect.poll(() => state.protectedUnauthorizedRequests
+      .filter(label => label.startsWith('single-flight-')).length).toBe(2)
+    await expect.poll(() => state.refreshRequests).toBe(refreshBaseline + 1)
+  }
+  finally {
+    state.releaseRefresh()
+  }
+
+  await expect(requests).resolves.toEqual([200, 200])
+  expect(state.refreshRequests).toBe(refreshBaseline + 1)
+  expect(state.refreshAttempts.slice(refreshBaseline).map(attempt => attempt.status)).toEqual([200])
+  expect(state.unexpectedRequests).toEqual([])
+  expect(runtimeIssues).toEqual([])
+})
+
+test('a 409 refresh conflict honors Retry-After and retries exactly once', async ({ page }) => {
+  const state = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  const refreshBaseline = state.refreshRequests
+  const cookieBefore = (await page.context().cookies())
+    .find(cookie => cookie.name === 'ryframe_refresh_token')
+  state.expireAccessToken()
+  state.queueRefreshConflict()
+
+  await expect(requestCurrentUser(page, 'retry-after')).resolves.toBe(200)
+
+  const attempts = state.refreshAttempts.slice(refreshBaseline)
+  expect(attempts.map(attempt => attempt.status)).toEqual([409, 200])
+  expect(attempts[0]?.cookieJti).toBe(cookieBefore?.value)
+  expect(attempts[1]?.cookieJti).toBe(cookieBefore?.value)
+  expect(attempts[0]?.csrfToken).not.toBe(attempts[1]?.csrfToken)
+  expect(state.refreshRequests).toBe(refreshBaseline + 2)
+  const cookieAfter = (await page.context().cookies())
+    .find(cookie => cookie.name === 'ryframe_refresh_token')
+  expect(cookieAfter?.value).not.toBe(cookieBefore?.value)
+  expect(state.unexpectedRequests).toEqual([])
+  expect(runtimeIssues.filter(issue => !issue.includes('409'))).toEqual([])
+})
+
+test('two real tabs coordinate an expired access token through one refresh', async ({ page, context }) => {
+  const state = await installApiMocks(page)
+  const firstTabIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  const secondTab = await context.newPage()
+  const secondTabIssues = collectRuntimeIssues(secondTab)
+  await secondTab.goto('/index')
+  await expect(secondTab.getByRole('heading', { name: '你好，测试用户' })).toBeVisible()
+  await observeRemoteRefreshStart(secondTab)
+
+  const refreshBaseline = state.refreshRequests
+  state.expireAccessToken()
+  state.holdNextRefresh()
+  const firstRequest = requestCurrentUser(page, 'tab-one')
+  let secondRequest: Promise<number> | undefined
+  try {
+    await expect.poll(() => state.refreshRequests).toBe(refreshBaseline + 1)
+    await expect.poll(() => sawRemoteRefreshStart(secondTab)).toBe(true)
+
+    secondRequest = requestCurrentUser(secondTab, 'tab-two')
+    await expect.poll(() => state.protectedUnauthorizedRequests
+      .filter(label => label === 'tab-one' || label === 'tab-two').length).toBe(2)
+    expect(state.refreshRequests).toBe(refreshBaseline + 1)
+  }
+  finally {
+    state.releaseRefresh()
+  }
+
+  await expect(Promise.all([firstRequest, secondRequest!])).resolves.toEqual([200, 200])
+  expect(state.refreshRequests).toBe(refreshBaseline + 1)
+  await expect.poll(() => sessionSnapshot(secondTab)).toMatchObject({
+    status: 'authenticated',
+  })
+  expect(state.unexpectedRequests).toEqual([])
+  expect(firstTabIssues).toEqual([])
+  expect(secondTabIssues).toEqual([])
+})
+
+test('expired access with a rejected refresh ends in logged-out anonymous state', async ({ page }) => {
+  const state = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  const refreshBaseline = state.refreshRequests
+  state.expireAccessToken()
+  state.revokeRefreshSession()
+
+  await expect(requestCurrentUserOutcome(page, 'expired-session'))
+    .resolves.toEqual({ ok: false, status: 401 })
+  await expect(page).toHaveURL(/\/login$/)
+  await expect.poll(() => sessionSnapshot(page)).toEqual({ token: '', status: 'anonymous' })
+  await expect.poll(async () => (await page.context().cookies())
+    .some(cookie => cookie.name === 'ryframe_refresh_token')).toBe(false)
+
+  expect(state.refreshRequests).toBe(refreshBaseline + 1)
+  expect(state.logoutRequests).toBe(0)
+  expect(state.unexpectedRequests).toEqual([])
+  expect(runtimeIssues).toEqual([])
+})
+
+test('logout wins a refresh race and a rotated cookie cannot resurrect the session', async ({ page }) => {
+  const state = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  const refreshBaseline = state.refreshRequests
+  state.expireAccessToken()
+  state.holdNextRefresh()
+  await startCurrentUserRequest(page, 'refresh-logout-race')
+
+  try {
+    await expect.poll(() => state.refreshRequests).toBe(refreshBaseline + 1)
+    await page.getByText('测试用户', { exact: true }).click()
+    await page.getByText('退出登录', { exact: true }).click()
+    await page.getByRole('button', { name: '确定', exact: true }).click()
+    await expect.poll(() => sessionSnapshot(page)).toEqual({ token: '', status: 'anonymous' })
+  }
+  finally {
+    state.releaseRefresh()
+  }
+
+  await expect.poll(() => backgroundRequestOutcome(page)).toEqual({
+    done: true,
+    ok: false,
+    status: 401,
+  })
+  await expect.poll(() => state.logoutRequests).toBe(1)
+  await expect(page).toHaveURL(/\/login$/)
+  await expect.poll(() => sessionSnapshot(page)).toEqual({ token: '', status: 'anonymous' })
+  await expect.poll(async () => (await page.context().cookies())
+    .some(cookie => cookie.name === 'ryframe_refresh_token')).toBe(false)
+
+  expect(state.refreshAttempts.slice(refreshBaseline).map(attempt => attempt.status)).toEqual([200])
+  expect(state.refreshSessionActive).toBe(false)
+  expect(state.unexpectedRequests).toEqual([])
   expect(runtimeIssues).toEqual([])
 })
 
@@ -417,7 +971,7 @@ test('avatar upload refreshes every private image through authenticated download
   expect(avatarDownloads).not.toHaveLength(0)
   expect(avatarDownloads.every(download => (
     download.bucket === 'avatar'
-    && download.authorization === 'Bearer access-token'
+    && /^Bearer access-token-\d+$/.test(download.authorization ?? '')
     && download.tenantId === 'system'
   ))).toBe(true)
   expect(unexpectedRequests).toEqual([])

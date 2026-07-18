@@ -47,4 +47,18 @@ describe('menu tree helpers', () => {
 
     expect(options.map(option => option.code)).toEqual(['system:root', 'system:child'])
   })
+
+  it('treats omitted child collections as empty leaves', () => {
+    const leafMenu = { ...menu('leaf'), children: undefined } as unknown as MenuTreeNode
+    const leafPermission = {
+      ...permission('leaf', 'system:leaf'), children: undefined,
+    } as unknown as PermissionTreeNode
+
+    expect(excludeMenuSubtree([leafMenu], 'other')).toEqual([
+      { ...leafMenu, children: [] },
+    ])
+    expect(flattenPermissionOptions([leafPermission])).toEqual([
+      { id: 'leaf', name: 'leaf', code: 'system:leaf' },
+    ])
+  })
 })

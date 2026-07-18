@@ -76,6 +76,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取短期 CSRF challenge
+         * @description GET /api/v1/auth/csrf
+         */
+        get: operations["get_auth_csrf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -85,10 +105,6 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * 用户登录
-         * @description POST /api/v1/auth/login
-         */
         post: operations["post_auth_login"];
         delete?: never;
         options?: never;
@@ -254,7 +270,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 通用文件上传（支持多文件、动态桶名） */
+        /** 通用文件上传（固定私有 `uploads` 桶） */
         post: operations["post_common_upload"];
         delete?: never;
         options?: never;
@@ -336,22 +352,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_monitor_db_pool"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/monitor/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_monitor_health"];
         put?: never;
         post?: never;
         delete?: never;
@@ -990,7 +990,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/online/{token_id}": {
+    "/api/v1/system/online/{sid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1004,7 +1004,7 @@ export interface paths {
          * 强制下线用户
          *     强制下线用户
          */
-        delete: operations["delete_system_online_by_token_id"];
+        delete: operations["delete_system_online_by_sid"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1547,6 +1547,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/livez": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_livez"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_readyz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1739,7 +1771,8 @@ export interface components {
                 login_location?: string | null;
                 login_time: string;
                 os?: string | null;
-                token_id: string;
+                /** @description Stable refresh-family session identifier, not an access-token JTI. */
+                sid: string;
                 username: string;
             }[];
             /** Format: int64 */
@@ -2034,6 +2067,24 @@ export interface components {
          *
          *     分页查询请使用 [`ApiPageResponse`]。
          */
+        ApiResponse_CsrfResponse: {
+            /** Format: int32 */
+            code: number;
+            data?: {
+                csrf_token: string;
+                expires_in: number;
+            };
+            msg: string;
+        };
+        /**
+         * @description 统一 API 响应结构体
+         *
+         *     成功响应（单对象/列表）：{"code": 200, "msg": "操作成功", "data": {...}}
+         *     成功响应（无数据）：{"code": 200, "msg": "操作成功"}
+         *     错误响应：{"code": 400, "msg": "参数校验失败: xxx"}
+         *
+         *     分页查询请使用 [`ApiPageResponse`]。
+         */
         ApiResponse_DbPoolInfo: {
             /** Format: int32 */
             code: number;
@@ -2130,32 +2181,12 @@ export interface components {
          *
          *     分页查询请使用 [`ApiPageResponse`]。
          */
-        ApiResponse_HealthInfo: {
-            /** Format: int32 */
-            code: number;
-            data?: {
-                database: string;
-                redis: string;
-                status: string;
-                timestamp: string;
-            };
-            msg: string;
-        };
-        /**
-         * @description 统一 API 响应结构体
-         *
-         *     成功响应（单对象/列表）：{"code": 200, "msg": "操作成功", "data": {...}}
-         *     成功响应（无数据）：{"code": 200, "msg": "操作成功"}
-         *     错误响应：{"code": 400, "msg": "参数校验失败: xxx"}
-         *
-         *     分页查询请使用 [`ApiPageResponse`]。
-         */
         ApiResponse_LoginResponse: {
             /** Format: int32 */
             code: number;
             data?: {
                 access_token: string;
-                refresh_token: string;
+                expires_in: number;
                 user_info: components["schemas"]["UserInfo"];
             };
             msg: string;
@@ -2873,7 +2904,8 @@ export interface components {
                 login_location?: string | null;
                 login_time: string;
                 os?: string | null;
-                token_id: string;
+                /** @description Stable refresh-family session identifier, not an access-token JTI. */
+                sid: string;
                 username: string;
             }[];
             msg: string;
@@ -3303,6 +3335,10 @@ export interface components {
             role_ids?: string[];
             username: string;
         };
+        CsrfResponse: {
+            csrf_token: string;
+            expires_in: number;
+        };
         DbPoolInfo: {
             /** Format: int64 */
             active_connections?: number | null;
@@ -3386,11 +3422,8 @@ export interface components {
             content: string;
             path: string;
         };
-        HealthInfo: {
-            database: string;
-            redis: string;
+        LivenessResponse: {
             status: string;
-            timestamp: string;
         };
         /** @description 登录日志视图对象 */
         LoginInfoVo: {
@@ -3423,7 +3456,7 @@ export interface components {
         };
         LoginResponse: {
             access_token: string;
-            refresh_token: string;
+            expires_in: number;
             user_info: components["schemas"]["UserInfo"];
         };
         MenuTreeNode: {
@@ -3479,7 +3512,8 @@ export interface components {
             login_location?: string | null;
             login_time: string;
             os?: string | null;
-            token_id: string;
+            /** @description Stable refresh-family session identifier, not an access-token JTI. */
+            sid: string;
             username: string;
         };
         OperLogPageQuery: {
@@ -3567,6 +3601,12 @@ export interface components {
             sort: number;
             status: string;
         };
+        ReadinessResponse: {
+            mysql: string;
+            object_storage: string;
+            redis: string;
+            status: string;
+        };
         /** @description Redis 内存信息 */
         RedisMemoryInfo: {
             /**
@@ -3602,9 +3642,6 @@ export interface components {
             uptime_days: number;
             /** @description Redis 版本 */
             version: string;
-        };
-        RefreshRequest: {
-            refresh_token: string;
         };
         ReplaceRoleDataScopeDto: {
             data_scope: string;
@@ -3966,6 +4003,20 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_CaptchaResponse"];
                 };
             };
+            /** @description 验证码请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 验证码 Redis 存储不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     get_auth_captcha_image: {
@@ -4013,12 +4064,49 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_CaptchaVerifyResponse"];
                 };
             };
+            /** @description 验证码校验过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 验证码 Redis 存储不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_auth_csrf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSRF challenge */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_CsrfResponse"];
+                };
+            };
         };
     };
     post_auth_login: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Signed CSRF challenge */
+                "X-CSRF-Token": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4056,7 +4144,10 @@ export interface operations {
     post_auth_logout: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Signed challenge; bound to sid when a refresh cookie is present */
+                "X-CSRF-Token": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4070,6 +4161,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiEmptyResponse"];
                 };
+            };
+            /** @description CSRF challenge 缺失、无效或与会话不匹配 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redis 会话或撤销服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4204,6 +4309,20 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_AvatarResponse"];
                 };
             };
+            /** @description 上传内容超过 5 MiB 限制 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 数据库或对象存储暂不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     put_auth_profile_password: {
@@ -4233,15 +4352,14 @@ export interface operations {
     post_auth_refresh: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Session-bound CSRF challenge */
+                "X-CSRF-Token": string;
+            };
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description 刷新成功 */
             200: {
@@ -4252,8 +4370,31 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_LoginResponse"];
                 };
             };
-            /** @description 令牌无效或已过期 */
+            /** @description 令牌无效、已过期、被撤销或确认重放 */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF challenge 缺失、无效或与会话不匹配 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 另一个 rotation attempt 正在处理 */
+            409: {
+                headers: {
+                    /** @description 再次刷新前等待的秒数 */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redis 会话服务不可用；显式重试必须复用原 X-CSRF-Token */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4284,6 +4425,20 @@ export interface operations {
                     "application/octet-stream": number[];
                 };
             };
+            /** @description 文件或对象不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 对象存储暂不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     post_common_upload: {
@@ -4307,6 +4462,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
+            };
+            /** @description 上传内容超过 10 MiB 限制 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 对象存储暂不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4332,6 +4501,20 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
             };
+            /** @description 上传内容超过 5 MiB 限制 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 对象存储暂不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     post_common_upload_image: {
@@ -4355,6 +4538,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
+            };
+            /** @description 上传内容超过 10 MiB 限制 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 对象存储暂不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4414,26 +4611,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_DbPoolInfo"];
-                };
-            };
-        };
-    };
-    get_monitor_health: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 运行健康状态 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_HealthInfo"];
                 };
             };
         };
@@ -5676,12 +5853,13 @@ export interface operations {
             };
         };
     };
-    delete_system_online_by_token_id: {
+    delete_system_online_by_sid: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                token_id: string;
+                /** @description Stable device-session identifier */
+                sid: string;
             };
             cookie?: never;
         };
@@ -5695,6 +5873,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiEmptyResponse"];
                 };
+            };
+            /** @description 会话不存在或不属于当前租户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Redis 会话服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -6753,6 +6945,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiPageResponse_TableInfo"];
+                };
+            };
+        };
+    };
+    get_livez: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 进程存活 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LivenessResponse"];
+                };
+            };
+        };
+    };
+    get_readyz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 必要依赖可用 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessResponse"];
+                };
+            };
+            /** @description 必要依赖不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessResponse"];
                 };
             };
         };

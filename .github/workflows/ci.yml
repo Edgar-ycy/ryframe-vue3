@@ -67,6 +67,9 @@ jobs:
       - name: Production build
         run: pnpm run build
 
+      - name: Enforce bundle budget
+        run: pnpm check:bundle
+
   # ============================================================
   # 代码风格检查
   # ============================================================

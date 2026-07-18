@@ -7,7 +7,7 @@ import { constantRoutes } from './routes/constant'
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
 import { getUserMenus } from '@/api/modules/menu'
-import { clearSession } from '@/app/session/sessionCoordinator'
+import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
 import { RuntimeRouteRegistry } from './runtimeRouteRegistry'
 import { createNavigationGuard } from './navigationGuard'
 
@@ -40,8 +40,11 @@ const runtimeRouteRegistry = new RuntimeRouteRegistry(router)
 /**
  * 从后端菜单树生成动态路由（纯数据库驱动，无静态降级）
  */
-async function fetchMenuAndGenerateRoutes(permissionStore: ReturnType<typeof usePermissionStore>): Promise<RouteRecordRaw[]> {
-  const menuRes = await getUserMenus()
+async function fetchMenuAndGenerateRoutes(
+  permissionStore: ReturnType<typeof usePermissionStore>,
+  options?: { skipAuthRefresh?: boolean },
+): Promise<RouteRecordRaw[]> {
+  const menuRes = await getUserMenus(options)
   const menuTree = menuRes.data ?? menuRes.rows ?? []
   const userStore = useUserStore()
   return permissionStore.generateRoutes(menuTree, userStore.permissions, userStore.roles)
@@ -52,20 +55,23 @@ export function resetDynamicRoutes() {
   runtimeRouteRegistry.reset()
 }
 
-export async function refreshAccessibleRoutes() {
+export async function refreshAccessibleRoutes(options?: { skipAuthRefresh?: boolean }) {
   const permissionStore = usePermissionStore()
   resetDynamicRoutes()
   permissionStore.resetRoutes()
-  const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore)
+  const accessRoutes = await fetchMenuAndGenerateRoutes(permissionStore, options)
   runtimeRouteRegistry.add(accessRoutes)
   return accessRoutes
 }
 
 const navigationGuard = createNavigationGuard({
+  initializeSession,
   getUser: useUserStore,
   getPermissionState: usePermissionStore,
   refreshAccessibleRoutes,
   clearSession,
+  isKnownRoute: (path) => router.resolve(path).matched
+    .some(record => record.path !== '/:pathMatch(.*)*'),
 })
 
 // 全局前置守卫

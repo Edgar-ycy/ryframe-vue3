@@ -1,12 +1,13 @@
-name: Release
+name: Nightly Source Release
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: [ CI ]
+    types: [ completed ]
 
 # 防止并发推送
 concurrency:
-  group: release-${{ github.ref }}
+  group: nightly-source-release
   cancel-in-progress: false
 
 env:
@@ -16,53 +17,51 @@ env:
 
 jobs:
   # ============================================================
-  # Nightly 自动发布 (push main, 复用固定 nightly tag)
+  # Nightly 自动发布（push main，复用固定 nightly tag）
   # ============================================================
   nightly:
     name: Create Nightly Release
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: pnpm cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Production build
-        run: pnpm run build
-
-      - name: Package dist
-        run: |
-          cd dist
-          tar -czf ../ryframe-vue3-nightly-dist.tar.gz .
-          zip -r ../ryframe-vue3-nightly-dist.zip .
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Force update nightly tag
+        env:
+          NIGHTLY_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          git tag -f nightly
-          git push -f origin nightly
+          set -euo pipefail
+          git tag -f nightly "${NIGHTLY_SHA}"
+          git push -f origin refs/tags/nightly
+
+      - name: Remove custom Nightly assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          error_log="$(mktemp)"
+          trap 'rm -f "${error_log}"' EXIT
+          if release_id="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/nightly" --jq '.id' 2>"${error_log}")"; then
+            asset_ids="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100" --jq '.[].id')"
+            while IFS= read -r asset_id; do
+              if [ -n "${asset_id}" ]; then
+                gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"
+              fi
+            done <<< "${asset_ids}"
+          elif grep -q 'HTTP 404' "${error_log}"; then
+            echo "Nightly release does not exist yet; no assets to remove."
+          else
+            cat "${error_log}" >&2
+            exit 1
+          fi
 
       - name: Create Nightly Release
         uses: softprops/action-gh-release@v3
@@ -70,18 +69,13 @@ jobs:
           tag_name: nightly
           name: Nightly
           body: |
-            ## 🔧 Nightly Build
+            ## 🔧 Nightly Source Snapshot
 
-            自动构建于 `main` 分支。
+            自动发布自 `main` 分支，仅提供 GitHub 生成的 Source code 归档。
 
-            - Commit: ${{ github.sha }}
-            - 时间: ${{ github.event.head_commit.timestamp }}
+            - Commit: ${{ github.event.workflow_run.head_sha }}
+            - CI 完成时间: ${{ github.event.workflow_run.updated_at }}
 
             > ⚠️ 这是开发中的快照版本，可能不稳定。
           prerelease: true
-          files: |
-            ryframe-vue3-nightly-dist.tar.gz
-            ryframe-vue3-nightly-dist.zip
-
-  # RC/stable artifacts are built and published only by the coordinated
-  # backend release workflow after all cross-repository gates pass.
+          make_latest: false

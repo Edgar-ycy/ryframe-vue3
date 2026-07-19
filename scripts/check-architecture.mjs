@@ -82,9 +82,51 @@ const releaseWorkflowSource = await readFile(
   path.join(root, '.github/workflows/release.yml'),
   'utf8',
 )
-for (const forbidden of ["tags: [ 'V*', 'v*' ]", 'Create Stable Release']) {
+for (const required of [
+  'workflow_run:',
+  'workflows: [ CI ]',
+  "github.event.workflow_run.conclusion == 'success'",
+  "github.event.workflow_run.event == 'push'",
+  "github.event.workflow_run.head_branch == 'main'",
+  'ref: ${{ github.event.workflow_run.head_sha }}',
+  'gh api --paginate',
+  'prerelease:',
+  'make_latest:',
+]) {
+  if (!releaseWorkflowSource.includes(required)) {
+    errors.push(`.github/workflows/release.yml: required Nightly source-release gate is missing (${required})`)
+  }
+}
+const strictReleaseShellBlocks = releaseWorkflowSource.match(/set -euo pipefail/g)?.length ?? 0
+const multilineReleaseShellBlocks = releaseWorkflowSource.match(/\brun: \|/g)?.length ?? 0
+if (strictReleaseShellBlocks !== multilineReleaseShellBlocks) {
+  errors.push('.github/workflows/release.yml: every multiline release shell block must enable strict mode')
+}
+const paginatedAssetSweeps = releaseWorkflowSource.match(/gh api --paginate/g)?.length ?? 0
+if (paginatedAssetSweeps < 1) {
+  errors.push('.github/workflows/release.yml: Nightly must purge paginated assets')
+}
+for (const forbidden of [
+  "tags: [ 'V*', 'v*' ]",
+  "tags: [ 'v*.*.*' ]",
+  'Create Stable Release',
+  'source-release:',
+  'make_latest: true',
+  'actions/setup-node',
+  'setup-pnpm',
+  'actions/cache',
+  'pnpm install --frozen-lockfile',
+  'pnpm run build',
+  'Package dist',
+  'nightly-dist',
+  'upload-artifact',
+  'git archive',
+  'ghcr.io/',
+  'docker/build-push-action',
+  'files:',
+]) {
   if (releaseWorkflowSource.includes(forbidden)) {
-    errors.push(`.github/workflows/release.yml: independent stable publishing is forbidden (${forbidden})`)
+    errors.push(`.github/workflows/release.yml: forbidden release behavior found (${forbidden})`)
   }
 }
 

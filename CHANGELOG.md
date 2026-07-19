@@ -32,6 +32,7 @@
 - 私有头像与文件统一经鉴权请求转换为 Blob URL，并保持头像 5 MiB、普通文件 10 MiB 和上传 120 秒提示一致。
 - 修复 Playwright 冷启动首次进入懒加载页面时 Vite 依赖优化重载导致动态路由模块返回 `504` 的问题。
 - 修复架构门禁依赖被 Git 忽略的 `.env.production`、导致 CI checkout 后必然缺失配置文件的问题；改为校验可提交的安全示例文件。
+- 修复 Browser Smoke 在整页重载后尚未完成 Cookie 会话恢复便使 access token 过期的竞态；同时移除残留的 `ryframe_device` 测试数据与断言。
 
 ### Security
 

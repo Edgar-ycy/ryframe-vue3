@@ -438,8 +438,8 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
               primary_connected: true,
               replica_count: 0,
               replicas: [],
-              source_count: 1,
-              sources: [{ name: 'ryframe_device', connected: true }],
+              source_count: 0,
+              sources: [],
               read_policy: 'primary',
             },
             redis: { configured: true, connected: true },
@@ -689,11 +689,13 @@ test('expired access can logout, delete its cookie and stay warning-free', async
   await expect(page.getByRole('heading', { name: '403' })).toBeVisible()
 
   await page.goto('/index')
+  const userMenu = page.getByText('测试用户', { exact: true })
+  await expect(userMenu).toBeVisible()
   const refreshCookieBeforeLogout = (await page.context().cookies())
     .find(cookie => cookie.name === 'ryframe_refresh_token')
   expect(refreshCookieBeforeLogout?.value).toMatch(/^refresh-jti-\d+$/)
   state.expireAccessToken()
-  await page.getByText('测试用户', { exact: true }).click()
+  await userMenu.click()
   await page.getByText('退出登录', { exact: true }).click()
   await page.getByRole('button', { name: '确定', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
@@ -1017,7 +1019,7 @@ test('profile and dictionary layouts stack without mobile overflow', async ({ pa
   expect(runtimeIssues).toEqual([])
 })
 
-test('runtime topology exposes ryframe_device and RustFS without mobile overflow', async ({ page }) => {
+test('runtime topology exposes RustFS without mobile overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   const { unexpectedRequests } = await installApiMocks(page)
   const runtimeIssues = collectRuntimeIssues(page)
@@ -1027,8 +1029,6 @@ test('runtime topology exposes ryframe_device and RustFS without mobile overflow
 
   await expect(page.getByRole('heading', { name: '数据库拓扑' })).toBeVisible()
   await expect(page.getByText('主库读取', { exact: true })).toBeVisible()
-  await expect(page.getByText('ryframe_device', { exact: true })).toBeVisible()
-  await expect(page.getByText('业务数据源', { exact: true })).toBeVisible()
   await expect(page.getByText('RUSTFS', { exact: true })).toBeVisible()
   await expect(page.getByText('http://127.0.0.1:9000', { exact: true })).toBeVisible()
 
@@ -1036,7 +1036,7 @@ test('runtime topology exposes ryframe_device and RustFS without mobile overflow
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
     nodeRows: document.querySelectorAll('.topology-section .el-table__row').length,
   }))
-  expect(layout).toEqual({ horizontalOverflow: false, nodeRows: 2 })
+  expect(layout).toEqual({ horizontalOverflow: false, nodeRows: 1 })
   expect(unexpectedRequests).toEqual([])
   expect(runtimeIssues).toEqual([])
 })

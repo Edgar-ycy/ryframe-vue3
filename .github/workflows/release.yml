@@ -34,12 +34,52 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      - name: Prepare exact Changelog notes
+        run: |
+          set -euo pipefail
+          version="$(node -e "const fs = require('node:fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); process.stdout.write(pkg.version)")"
+          if ! [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "package.json contains an invalid version: ${version}" >&2
+            exit 1
+          fi
+
+          heading="## [v${version}]"
+          awk -v heading="${heading}" '
+            !capturing && ($0 == heading || index($0, heading " - ") == 1) {
+              capturing = 1
+            }
+            capturing && /^## \[/ && !($0 == heading || index($0, heading " - ") == 1) {
+              exit
+            }
+            capturing {
+              print
+            }
+            END {
+              if (!capturing) exit 2
+            }
+          ' CHANGELOG.md > nightly-release-notes.md
+
+          if [ ! -s nightly-release-notes.md ]; then
+            echo "CHANGELOG.md section for v${version} is empty or missing" >&2
+            exit 1
+          fi
+          if ! grep -Eq '^- [^[:space:]].*' nightly-release-notes.md; then
+            echo "CHANGELOG.md section for v${version} must contain at least one update item" >&2
+            exit 1
+          fi
+
       - name: Force update nightly tag
         env:
           NIGHTLY_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          git tag -f nightly "${NIGHTLY_SHA}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a -f --cleanup=verbatim -F nightly-release-notes.md nightly "${NIGHTLY_SHA}"
+          if [ "$(git cat-file -t refs/tags/nightly)" != "tag" ]; then
+            echo "nightly must be an annotated tag" >&2
+            exit 1
+          fi
           git push -f origin refs/tags/nightly
 
       - name: Remove custom Nightly assets
@@ -68,14 +108,27 @@ jobs:
         with:
           tag_name: nightly
           name: Nightly
-          body: |
-            ## 🔧 Nightly Source Snapshot
-
-            自动发布自 `main` 分支，仅提供 GitHub 生成的 Source code 归档。
-
-            - Commit: ${{ github.event.workflow_run.head_sha }}
-            - CI 完成时间: ${{ github.event.workflow_run.updated_at }}
-
-            > ⚠️ 这是开发中的快照版本，可能不稳定。
+          body_path: nightly-release-notes.md
           prerelease: true
           make_latest: false
+
+      - name: Verify Nightly Release invariants
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          release_json="$(mktemp)"
+          trap 'rm -f "${release_json}"' EXIT
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/nightly" > "${release_json}"
+          python3 - "${release_json}" nightly-release-notes.md <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          release = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          expected = pathlib.Path(sys.argv[2]).read_text(encoding="utf-8")
+          if release.get("body") != expected:
+              raise SystemExit("published Nightly body does not exactly match CHANGELOG notes")
+          if release.get("assets") != []:
+              raise SystemExit("published Nightly must not contain custom assets")
+          PY

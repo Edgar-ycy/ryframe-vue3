@@ -19,6 +19,7 @@
 - Element Plus 组件与图标改为按需导入，生产构建启用严格的 JS/CSS 体积预算和零 warning 门禁。
 
 - GitHub Nightly 改为仅在 `main` CI 成功后发布纯源码快照，不再安装依赖、构建或上传 `dist` 归档；发布前分页清理旧的自定义附件，页面只保留 GitHub 自动生成的 Source code（zip/tar.gz）。RC 与 stable 继续由后端联合门禁创建项目级源码 Release，前端只维护同名 tag，不提前独立发布。
+- Nightly tag 改为 annotated tag，tag 说明和 Release body 共用从当前包版本 Changelog 精确提取的完整章节，不允许空说明或仅有版本标题。
 
 ### Removed
 
@@ -43,6 +44,7 @@
 
 - session/auth/HTTP client 覆盖率门禁为 lines/functions/statements 90%、branches 80%；全部手写 TS/Vue 为 60%/50%。
 - CI 覆盖 contract、源码架构、ESLint/Stylelint 零 warning、typecheck、unit/coverage、生产构建、bundle budget 与 Playwright E2E。
+- Nightly 发布门禁校验 Changelog 章节至少包含一条更新项、tag 必须为 annotated tag、发布后 body 必须与提取内容完全一致，且自定义 Release assets 必须为零。
 
 ## [v0.4.2]
 

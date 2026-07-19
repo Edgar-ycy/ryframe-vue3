@@ -89,6 +89,16 @@ for (const required of [
   "github.event.workflow_run.event == 'push'",
   "github.event.workflow_run.head_branch == 'main'",
   'ref: ${{ github.event.workflow_run.head_sha }}',
+  'CHANGELOG.md',
+  'nightly-release-notes.md',
+  "grep -Eq '^- [^[:space:]].*' nightly-release-notes.md",
+  'git tag -a -f --cleanup=verbatim -F nightly-release-notes.md nightly',
+  'git cat-file -t refs/tags/nightly',
+  'body_path: nightly-release-notes.md',
+  'release.get("body") != expected',
+  'release.get("assets") != []',
+  'published Nightly body does not exactly match CHANGELOG notes',
+  'published Nightly must not contain custom assets',
   'gh api --paginate',
   'prerelease:',
   'make_latest:',
@@ -105,6 +115,14 @@ if (strictReleaseShellBlocks !== multilineReleaseShellBlocks) {
 const paginatedAssetSweeps = releaseWorkflowSource.match(/gh api --paginate/g)?.length ?? 0
 if (paginatedAssetSweeps < 1) {
   errors.push('.github/workflows/release.yml: Nightly must purge paginated assets')
+}
+const changelogBodyPaths = releaseWorkflowSource.match(/body_path: nightly-release-notes\.md/g)?.length ?? 0
+if (changelogBodyPaths !== 1) {
+  errors.push('.github/workflows/release.yml: Nightly must use exactly one Changelog-derived body_path')
+}
+const nightlyTagCommands = releaseWorkflowSource.match(/^\s*git tag /gm)?.length ?? 0
+if (nightlyTagCommands !== 1) {
+  errors.push('.github/workflows/release.yml: Nightly must be created by exactly one annotated tag command')
 }
 for (const forbidden of [
   "tags: [ 'V*', 'v*' ]",
@@ -123,6 +141,9 @@ for (const forbidden of [
   'git archive',
   'ghcr.io/',
   'docker/build-push-action',
+  'git tag -f nightly',
+  'body: |',
+  'generate_release_notes:',
   'files:',
 ]) {
   if (releaseWorkflowSource.includes(forbidden)) {

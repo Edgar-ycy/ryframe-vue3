@@ -1,10 +1,8 @@
-import type { Component } from 'vue'
-
-type ComponentLoader = () => Promise<{ default: Component }>
+import type { RouteComponentLoader } from '@/router/namedRouteComponent'
 
 export interface MenuPageRegistryEntry {
   path: string
-  component?: ComponentLoader
+  component?: RouteComponentLoader
 }
 
 export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {

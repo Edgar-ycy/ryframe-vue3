@@ -5,11 +5,20 @@ export interface TagView {
   name?: string
   title?: string
   affix?: boolean
+  noCache?: boolean
 }
 
 interface TagsViewState {
   visitedViews: TagView[]
   cachedViews: string[]
+}
+
+function getCachedViewNames(views: readonly TagView[]): string[] {
+  return [...new Set(
+    views
+      .filter(view => view.name && !view.noCache)
+      .map(view => view.name as string),
+  )]
 }
 
 export const useTagsViewStore = defineStore('tagsView', {
@@ -20,20 +29,19 @@ export const useTagsViewStore = defineStore('tagsView', {
 
   actions: {
     addView(view: TagView) {
-      if (this.visitedViews.some(v => v.path === view.path)) return
-      this.visitedViews.push(view)
-      if (view.name && !this.cachedViews.includes(view.name)) {
-        this.cachedViews.push(view.name)
+      const existing = this.visitedViews.find(item => item.path === view.path)
+      if (existing) {
+        Object.assign(existing, view)
+      } else {
+        this.visitedViews.push({ ...view })
       }
+      this.cachedViews = getCachedViewNames(this.visitedViews)
     },
 
     removeView(view: TagView) {
       const i = this.visitedViews.findIndex(v => v.path === view.path)
       if (i > -1) this.visitedViews.splice(i, 1)
-      if (view.name) {
-        const j = this.cachedViews.indexOf(view.name)
-        if (j > -1) this.cachedViews.splice(j, 1)
-      }
+      this.cachedViews = getCachedViewNames(this.visitedViews)
     },
 
     closeAllViews() {

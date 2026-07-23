@@ -5,6 +5,7 @@ import process from 'node:process'
 const root = process.cwd()
 const excludedDirectories = new Set([
   '.git',
+  '.pnpm-store',
   'coverage',
   'dist',
   'node_modules',

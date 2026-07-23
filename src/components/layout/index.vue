@@ -38,4 +38,8 @@ onMounted(() => {
   appStore.initResponsive()
   settingsStore.syncFromServer()
 })
+
+onUnmounted(() => {
+  appStore.destroyResponsive()
+})
 </script>

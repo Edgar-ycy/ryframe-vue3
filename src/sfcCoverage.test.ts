@@ -175,7 +175,12 @@ describe('handwritten Vue SFC smoke coverage', () => {
     const componentErrors: string[] = []
     vi.stubGlobal('document', {
       body: { clientWidth: 1280, appendChild: vi.fn(), removeChild: vi.fn() },
-      documentElement: { clientWidth: 1280, style: { setProperty: vi.fn() } },
+      documentElement: {
+        clientWidth: 1280,
+        classList: { toggle: vi.fn() },
+        setAttribute: vi.fn(),
+        style: { setProperty: vi.fn() },
+      },
       querySelector: vi.fn(() => null),
       createElement: vi.fn(() => ({ style: {}, click: vi.fn(), remove: vi.fn() })),
       addEventListener: vi.fn(),
@@ -197,6 +202,8 @@ describe('handwritten Vue SFC smoke coverage', () => {
       app.provide(routeLocationKey, route as never)
       app.component('RouterLink', EmptyComponent)
       app.component('RouterView', EmptyComponent)
+      app.directive('loading', {})
+      app.directive('perm', {})
       for (const tag of componentTags()) app.component(tag, PassthroughComponent)
       app.config.warnHandler = () => undefined
       app.config.errorHandler = error => componentErrors.push(`${path}: ${String(error)}`)
@@ -204,15 +211,14 @@ describe('handwritten Vue SFC smoke coverage', () => {
       try {
         await renderToString(app)
       }
-      catch {
-        // Loading and entering setup still provides meaningful smoke coverage.
-        // Feature-level tests own behavior that needs a complete browser DOM.
+      catch (error) {
+        componentErrors.push(`${path}: ${String(error)}`)
       }
       rendered.push(path)
     }
 
     expect(rendered).toHaveLength(Object.keys(modules).length)
     expect(rendered.length).toBeGreaterThan(40)
-    expect(componentErrors.filter(error => !error.includes('reading \'toggle\''))).toEqual([])
+    expect(componentErrors).toEqual([])
   })
 })

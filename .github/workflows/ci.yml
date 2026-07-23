@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.pnpm-store
+            .pnpm-store
             **/node_modules
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
@@ -49,6 +49,9 @@ jobs:
 
       - name: Check source encoding and structure
         run: pnpm check:sources
+
+      - name: Reject prerelease dependencies
+        run: pnpm check:dependencies
 
       - name: Check architecture boundaries
         run: pnpm check:architecture
@@ -92,7 +95,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.pnpm-store
+            .pnpm-store
             **/node_modules
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
@@ -131,7 +134,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.pnpm-store
+            .pnpm-store
             **/node_modules
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
@@ -173,7 +176,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.pnpm-store
+            .pnpm-store
             **/node_modules
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |

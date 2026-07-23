@@ -71,7 +71,7 @@
           <el-input-number v-model="form.max_users" :min="1" />
         </el-form-item>
         <el-form-item label="最大角色数">
-          <el-input-number v-model="form.max_roles" :min="1" />
+          <el-input-number v-model="form.max_roles" :min="2" />
         </el-form-item>
         <el-form-item label="存储配额(MB)">
           <el-input-number v-model="form.max_storage_mb" :min="1" />
@@ -103,6 +103,7 @@ import {
   PASSWORD_POLICY,
   newPasswordValidationMessage,
 } from '@/shared/security/passwordPolicy'
+import { createTenantIdFormRules } from '@/utils/tenantIdFormRules'
 
 const loading = ref(false)
 const visible = ref(false)
@@ -129,7 +130,7 @@ const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) 
 }
 
 const rules: FormRules = {
-  tenant_id: [{ required: true, message: '请输入租户标识', trigger: 'blur' }],
+  tenant_id: createTenantIdFormRules(),
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   admin_username: [{ required: true, message: '请输入管理员账号', trigger: 'blur' }],
   admin_password: [
@@ -196,7 +197,7 @@ async function submit() {
       domain: form.domain || undefined,
       expire_at: form.expire_at || undefined,
       max_users: form.max_users || 1,
-      max_roles: form.max_roles || 1,
+      max_roles: form.max_roles || 2,
       max_storage_mb: form.max_storage_mb || 1,
       max_requests_per_min: form.max_requests_per_min || 1,
     })

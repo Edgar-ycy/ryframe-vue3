@@ -48,7 +48,7 @@
         >
           <span class="quick-icon">
             <el-icon :size="22">
-              <component :is="link.icon || 'Grid'" />
+              <component :is="resolveElementIcon(link.icon)" />
             </el-icon>
           </span>
           <span class="quick-title">{{ link.title }}</span>
@@ -63,6 +63,7 @@
 <script setup lang="ts">
 import { ArrowRight } from '@element-plus/icons-vue'
 import { usePermission } from '@/hooks/usePermission'
+import { resolveElementIcon } from '@/shared/ui/icons'
 import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
 import {
@@ -102,7 +103,7 @@ function openLink(path: string): void {
   min-height: 100%;
   padding: 28px;
   color: var(--color-text-primary);
-  background: #f6f8fa;
+  background: var(--bg-color-page);
 }
 
 .workspace-header {
@@ -112,12 +113,12 @@ function openLink(path: string): void {
   max-width: 1120px;
   margin: 0 auto;
   padding: 4px 0 24px;
-  border-bottom: 1px solid #dce2e8;
+  border-bottom: 1px solid var(--border-color-base);
 }
 
 .workspace-label {
   margin: 0 0 6px;
-  color: #31736f;
+  color: var(--color-primary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -145,7 +146,7 @@ h1 {
   max-width: 1120px;
   margin: 0 auto;
   padding: 24px 0;
-  border-bottom: 1px solid #dce2e8;
+  border-bottom: 1px solid var(--border-color-base);
 }
 
 .account-summary dl {
@@ -157,7 +158,7 @@ h1 {
 .account-summary dl > div {
   min-width: 0;
   padding: 0 20px;
-  border-left: 1px solid #dce2e8;
+  border-left: 1px solid var(--border-color-base);
 }
 
 .account-summary dl > div:first-child {
@@ -211,19 +212,19 @@ h2 {
   align-items: center;
   min-width: 0;
   padding: 14px;
-  border: 1px solid #d7dee5;
+  border: 1px solid var(--border-color-base);
   border-radius: 6px;
   color: inherit;
   text-align: left;
-  background: #fff;
+  background: var(--bg-color);
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .quick-link:hover,
 .quick-link:focus-visible {
-  border-color: #4c8f8a;
-  box-shadow: 0 4px 14px rgb(38 81 78 / 10%);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
   outline: none;
 }
 
@@ -233,8 +234,8 @@ h2 {
   height: 40px;
   place-items: center;
   border-radius: 6px;
-  color: #2f6f6b;
-  background: #e8f3f2;
+  color: var(--color-primary);
+  background: var(--border-color-light);
 }
 
 .quick-title {
@@ -246,7 +247,7 @@ h2 {
 }
 
 .quick-arrow {
-  color: #8a97a5;
+  color: var(--color-text-secondary);
 }
 
 @media (width <= 900px) {

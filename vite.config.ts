@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -6,13 +6,38 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import ElementPlus from 'unplugin-element-plus/vite'
 
+function normalizeBuildCommit(value: string | undefined): string {
+  const commit = value?.trim().toLowerCase()
+  if (!commit) return 'development'
+  if (!/^[0-9a-f]{40}$/.test(commit)) {
+    throw new Error('VITE_APP_BUILD_COMMIT must be a full 40-character Git commit SHA')
+  }
+  return commit
+}
+
+function buildIdentityPlugin(frontendCommit: string): Plugin {
+  return {
+    name: 'ryframe-build-identity',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'build-identity.json',
+        source: `${JSON.stringify({ frontend_commit: frontendCommit }, null, 2)}\n`,
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
   const isE2e = process.env.RYFRAME_E2E === '1'
+  const frontendCommit = normalizeBuildCommit(env.VITE_APP_BUILD_COMMIT)
 
   return {
     plugins: [
+      buildIdentityPlugin(frontendCommit),
       vue(),
       AutoImport({
         imports: [

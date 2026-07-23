@@ -5,6 +5,7 @@ import process from 'node:process'
 const root = process.cwd()
 const errors = []
 const requiredFiles = [
+  '.npmrc',
   '.env.production.example',
   'openapi/openapi.json',
   'playwright.config.ts',
@@ -61,11 +62,25 @@ for (const fragment of [
 }
 
 const packageDocument = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
+const requiredNodeRange = '^22.18.0 || >=24.11.0'
+if (packageDocument.engines?.node !== requiredNodeRange) {
+  errors.push(`package.json: engines.node must be ${requiredNodeRange}`)
+}
 if (packageDocument.scripts?.['test:e2e'] !== 'playwright test') {
   errors.push('package.json: test:e2e must run the Playwright suite')
 }
 if (!packageDocument.scripts?.check?.includes('pnpm test:e2e')) {
   errors.push('package.json: the full check command must include browser smoke tests')
+}
+if (!packageDocument.scripts?.check?.includes('pnpm check:dependencies')) {
+  errors.push('package.json: the full check command must include the prerelease dependency gate')
+}
+
+const npmConfig = await readFile(path.join(root, '.npmrc'), 'utf8')
+for (const setting of ['store-dir=.pnpm-store', 'engine-strict=true']) {
+  if (!npmConfig.split(/\r?\n/u).includes(setting)) {
+    errors.push(`.npmrc: required setting is missing (${setting})`)
+  }
 }
 
 const workflowSource = await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')

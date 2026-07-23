@@ -1,5 +1,9 @@
 <template>
-  <el-button :icon="selectedIcon || 'Plus'" @click="dialogVisible = true">
+  <el-button
+    :icon="resolveElementIcon(selectedIcon, 'Plus')"
+    :aria-label="selectedIcon ? `更换图标，当前为 ${selectedIcon}` : '选择图标'"
+    @click="openDialog"
+  >
     {{ selectedIcon ? '' : '选择图标' }}
   </el-button>
   <el-dialog v-model="dialogVisible" title="图标选择器" width="600px" append-to-body>
@@ -7,28 +11,32 @@
     <el-tabs v-model="activeTab">
       <el-tab-pane label="Element Plus" name="ep">
         <div class="icon-grid">
-          <div
+          <button
             v-for="icon in filteredIcons"
             :key="icon"
+            type="button"
             class="icon-item"
-            :class="{ active: selectedIcon === icon }"
+            :class="{ active: pendingIcon === icon }"
+            :aria-label="`选择 ${icon} 图标`"
+            :aria-pressed="pendingIcon === icon"
             @click="selectIcon(icon)"
           >
             <el-icon :size="20"><component :is="icon" /></el-icon>
             <span class="icon-name">{{ icon }}</span>
-          </div>
+          </button>
         </div>
       </el-tab-pane>
     </el-tabs>
     <template #footer>
-      <el-button @click="dialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="confirmSelect">确定</el-button>
+      <el-button @click="closeDialog">取消</el-button>
+      <el-button type="primary" @click="confirmSelection">确定</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { elementIcons } from '@/shared/ui/icons'
+import { elementIcons, resolveElementIcon } from '@/shared/ui/icons'
+import { useIconSelection } from './iconSelection'
 
 const props = defineProps<{
   modelValue?: string
@@ -38,11 +46,20 @@ const emit = defineEmits<{
   'update:modelValue': [val: string]
 }>()
 
-const dialogVisible = ref(false)
 const search = ref('')
 const activeTab = ref('ep')
-const selectedIcon = ref(props.modelValue || '')
-const tempIcon = ref('')
+const {
+  closeDialog,
+  confirmSelection,
+  dialogVisible,
+  openDialog,
+  pendingIcon,
+  selectedIcon,
+  selectIcon,
+} = useIconSelection(
+  () => props.modelValue,
+  value => emit('update:modelValue', value),
+)
 
 // Element Plus 图标列表
 const epIcons = Object.keys(elementIcons)
@@ -53,15 +70,6 @@ const filteredIcons = computed(() => {
   return epIcons.filter(i => i.toLowerCase().includes(q)).slice(0, 100)
 })
 
-function selectIcon(icon: string) {
-  tempIcon.value = icon
-}
-
-function confirmSelect() {
-  selectedIcon.value = tempIcon.value || selectedIcon.value
-  emit('update:modelValue', selectedIcon.value)
-  dialogVisible.value = false
-}
 </script>
 
 <style scoped>
@@ -82,12 +90,17 @@ function confirmSelect() {
   height: 72px;
   border: 1px solid var(--el-border-color-light);
   border-radius: 6px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  background: transparent;
   cursor: pointer;
   transition: all 0.2s;
   gap: 4px;
 }
 
-.icon-item:hover {
+.icon-item:hover,
+.icon-item:focus-visible {
   border-color: var(--el-color-primary);
   color: var(--el-color-primary);
 }

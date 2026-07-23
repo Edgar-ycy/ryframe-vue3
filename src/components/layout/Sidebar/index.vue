@@ -18,10 +18,9 @@
           <el-sub-menu
             v-if="isSubMenu(menu)"
             :index="menu.path"
-            :teleported="false"
           >
             <template #title>
-              <el-icon v-if="menu.meta?.icon"><component :is="menu.meta.icon" /></el-icon>
+              <el-icon v-if="menu.meta?.icon"><component :is="resolveElementIcon(menu.meta.icon)" /></el-icon>
               <span>{{ menu.meta?.title }}</span>
             </template>
             <el-menu-item
@@ -29,7 +28,7 @@
               :key="child.path"
               :index="resolvePath(menu.path, child.path)"
             >
-              <el-icon v-if="child.meta?.icon"><component :is="child.meta.icon" /></el-icon>
+              <el-icon v-if="child.meta?.icon"><component :is="resolveElementIcon(child.meta.icon)" /></el-icon>
               <template #title>{{ child.meta?.title }}</template>
             </el-menu-item>
           </el-sub-menu>
@@ -39,7 +38,7 @@
             :index="leafPath(menu)"
           >
             <el-icon v-if="leafMeta(menu).icon">
-              <component :is="leafMeta(menu).icon" />
+              <component :is="resolveElementIcon(leafMeta(menu).icon)" />
             </el-icon>
             <template #title>{{ leafMeta(menu).title }}</template>
           </el-menu-item>
@@ -57,6 +56,7 @@
 import { OfficeBuilding } from '@element-plus/icons-vue'
 import type { RouteMeta, RouteRecordRaw } from 'vue-router'
 import { usePermission } from '@/hooks/usePermission'
+import { resolveElementIcon } from '@/shared/ui/icons'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
 import { useSettingsStore } from '@/stores/settings'

@@ -28,27 +28,19 @@
 import { useTagsViewStore } from '@/stores/tagsView'
 import type { TagView } from '@/stores/tagsView'
 import { Close } from '@element-plus/icons-vue'
+import { installRouteTagSync } from './routeTagSync'
 
 const route = useRoute()
 const router = useRouter()
 const tagsViewStore = useTagsViewStore()
 
-// 添加标签页（跳过没有 name 的容器路由，如 Layout 根路由 / ）
-function addView(r: typeof route) {
-  if (!r.name) return
-  tagsViewStore.addView({
-    path: r.path,
-    name: String(r.name),
-    title: typeof r.meta.title === 'string' ? r.meta.title : undefined,
-    affix: r.meta.affix === true,
-  })
-}
+const removeRouteTagSync = installRouteTagSync(
+  router,
+  route,
+  view => tagsViewStore.addView(view),
+)
 
-// 使用 router.afterEach 监听路由变更加入标签
-router.afterEach((to) => addView(to))
-
-// 初始加载：afterEach 不会在首次进入时触发，手动添加当前路由
-addView(route)
+onUnmounted(removeRouteTagSync)
 
 function isActive(view: TagView) {
   return view.path === route.path

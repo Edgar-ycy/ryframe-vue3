@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import type { Component } from 'vue'
 import type { MenuTreeNode } from '@/api/modules/menu'
 import { buildAccessibleMenus, buildRoutesFromMenuTree } from './menuRouteBuilder'
+import { menuPageRegistry } from './pageRegistry'
+
+vi.mock('@/router', () => ({ refreshAccessibleRoutes: vi.fn() }))
 
 function node(overrides: Partial<MenuTreeNode>): MenuTreeNode {
   return {
@@ -105,5 +109,24 @@ describe('menu route builder', () => {
     expect(routes[0].path).toBe('/system/user')
     expect(routes[0].meta).toMatchObject({ hidden: true, icon: 'UserRound' })
     expect(routes[1].meta?.hidden).toBe(false)
+  })
+
+  it('names every dynamic page component after its generated route record', async () => {
+    const pageNodes = Object.entries(menuPageRegistry)
+      .filter(([routeKey, page]) => routeKey !== 'home' && page.component)
+      .map(([routeKey], index) => node({
+        id: String(index + 100),
+        route_key: routeKey,
+        perm_code: `${routeKey}:list`,
+      }))
+    const routes = buildRoutesFromMenuTree(pageNodes)
+
+    expect(routes).toHaveLength(pageNodes.length)
+    for (const route of routes) {
+      const load = route.component as unknown as () => Promise<Component>
+      const component = await load()
+      const name = (component as unknown as { name?: string }).name
+      expect(name, String(route.path)).toBe(String(route.name))
+    }
   })
 })

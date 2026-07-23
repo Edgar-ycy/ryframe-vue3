@@ -74,6 +74,7 @@
 import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
+import { createTenantIdFormRules } from '@/utils/tenantIdFormRules'
 import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
 
 const router = useRouter()
@@ -86,7 +87,7 @@ const loading = ref(false)
 const loginForm = ref(createInitialLoginForm(getTenantId(), import.meta.env.DEV))
 
 const loginRules: FormRules = {
-  tenant_id: [{ required: true, message: '请输入租户标识', trigger: 'blur' }],
+  tenant_id: createTenantIdFormRules(),
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   captcha_code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],

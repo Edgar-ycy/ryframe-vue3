@@ -29,7 +29,7 @@
         <el-table-column label="图标" align="center">
           <template #default="{ row }">
             <el-icon v-if="row.icon" :size="18">
-              <component :is="row.icon" />
+              <component :is="resolveElementIcon(row.icon)" />
             </el-icon>
           </template>
         </el-table-column>
@@ -112,6 +112,7 @@
 <script setup lang="ts">
 import MenuFormDialog from './components/MenuFormDialog.vue'
 import { useMenuManagement } from './composables/useMenuManagement'
+import { resolveElementIcon } from '@/shared/ui/icons'
 
 const {
   deletingId,

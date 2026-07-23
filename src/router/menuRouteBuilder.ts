@@ -3,6 +3,7 @@ import type { MenuTreeNode } from '@/api/modules/menu'
 import { LAYOUT } from '@/router/layout'
 import { constantRoutes } from '@/router/routes/constant'
 import { getMenuPage } from '@/router/pageRegistry'
+import { withRouteComponentName } from '@/router/namedRouteComponent'
 import { hasPermission } from '@/utils/permission'
 
 const SKIP_PATHS = new Set([
@@ -124,6 +125,7 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw {
 function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw | null {
   const page = getMenuPage(node.route_key)
   if (!page?.component) return null
+  const routeName = getRouteName(node)
 
   let routePath = page.path
   if (parentPath && routePath.startsWith(parentPath)) {
@@ -132,8 +134,8 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
 
   return {
     path: routePath,
-    name: getRouteName(node),
-    component: page.component,
+    name: routeName,
+    component: withRouteComponentName(routeName, page.component),
     meta: {
       title: node.name,
       icon: iconPascalCase(node.icon || '') || undefined,

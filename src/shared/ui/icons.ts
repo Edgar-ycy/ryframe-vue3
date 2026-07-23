@@ -2,6 +2,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
+  Bell,
   Camera,
   Check,
   CircleCheck,
@@ -14,9 +15,11 @@ import {
   DataAnalysis,
   DataLine,
   Delete,
+  Document,
   DocumentCopy,
   Download,
   Edit,
+  EditPen,
   Expand,
   Fold,
   Folder,
@@ -28,10 +31,14 @@ import {
   Key,
   Lock,
   MagicStick,
+  Management,
+  Menu,
   Monitor,
   Moon,
+  Notebook,
   Odometer,
   OfficeBuilding,
+  Operation,
   Picture,
   Plus,
   Refresh,
@@ -53,6 +60,7 @@ export const elementIcons = {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
+  Bell,
   Camera,
   Check,
   CircleCheck,
@@ -65,9 +73,11 @@ export const elementIcons = {
   DataAnalysis,
   DataLine,
   Delete,
+  Document,
   DocumentCopy,
   Download,
   Edit,
+  EditPen,
   Expand,
   Fold,
   Folder,
@@ -79,10 +89,14 @@ export const elementIcons = {
   Key,
   Lock,
   MagicStick,
+  Management,
+  Menu,
   Monitor,
   Moon,
+  Notebook,
   Odometer,
   OfficeBuilding,
+  Operation,
   Picture,
   Plus,
   Refresh,
@@ -98,3 +112,17 @@ export const elementIcons = {
   UserFilled,
   View,
 } as const
+
+export type ElementIconName = keyof typeof elementIcons
+
+/** Resolve database-driven icon names without rendering an empty component. */
+export function resolveElementIcon(
+  name: string | null | undefined,
+  fallback: ElementIconName = 'Grid',
+) {
+  if (name && Object.prototype.hasOwnProperty.call(elementIcons, name)) {
+    return elementIcons[name as ElementIconName]
+  }
+
+  return elementIcons[fallback]
+}

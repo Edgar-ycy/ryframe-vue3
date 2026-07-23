@@ -56,7 +56,7 @@ ryframe-vue3/
 
 ### 环境要求
 
-- **Node.js** ^20.19.0 或 >= 22.12.0
+- **Node.js** ^22.18.0 或 >= 24.11.0（与 Babel 8 的运行时要求一致）
 - **pnpm** 10.28.2（以 `packageManager` 字段为准，推荐通过 Corepack 使用）
 
 ### 安装依赖
@@ -81,6 +81,15 @@ pnpm build
 ```
 
 构建产物输出至 `dist/` 目录。
+
+用于 RC 或 stable 公网观察的产物必须嵌入当前完整提交 SHA：
+
+```bash
+test -z "$(git status --porcelain)"
+VITE_APP_BUILD_COMMIT="$(git rev-parse HEAD)" pnpm build
+```
+
+该构建会在 `dist/build-identity.json` 中记录提交身份，供发布观察流程确认线上产物确实来自目标标签。
 
 ### 完整工程检查
 
@@ -115,6 +124,7 @@ pnpm preview
 |------|------|------|
 | `VITE_APP_TITLE` | 应用标题（显示在浏览器标签页） | `RyFrame 管理后台` |
 | `VITE_APP_BASE_API` | API 基础地址；生产必须使用 API 子域的绝对 HTTPS 地址 | 开发 `/api/v1`，生产 `https://api.example.com/api/v1` |
+| `VITE_APP_BUILD_COMMIT` | RC/stable 构建对应的完整 40 位 Git 提交 SHA | `0123456789abcdef0123456789abcdef01234567` |
 | `VITE_APP_PROXY_TARGET` | 开发服务器代理的后端地址 | `http://localhost:8080` |
 
 开发环境使用 `.env.development`；生产部署从已提交的 `.env.production.example` 复制为被忽略的 `.env.production`，再填写实际 API 子域。

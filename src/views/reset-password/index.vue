@@ -68,6 +68,7 @@ import {
   PASSWORD_POLICY,
   newPasswordValidationMessage,
 } from '@/shared/security/passwordPolicy'
+import { isValidTenantId } from '@/shared/security/tenantId'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,7 +82,7 @@ if (typeof window !== 'undefined' && window.location.search) {
   window.history.replaceState(window.history.state, '', route.path)
 }
 const missingParams = computed(
-  () => !tenantId || !resetRequestIdentifier || !token,
+  () => !isValidTenantId(tenantId) || !resetRequestIdentifier || !token,
 )
 
 const form = ref({

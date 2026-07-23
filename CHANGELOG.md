@@ -6,6 +6,7 @@
 
 ### Added
 
+- 生产构建支持 `VITE_APP_BUILD_COMMIT`，并在 dist 根目录生成 `build-identity.json`，供 RC 自动观察校验实际部署的前端提交。
 - 新增应用级会话协调器，覆盖初始化、已认证、匿名和依赖不可用状态，并支持页面重载静默恢复。
 - 新增 CSRF challenge、单标签 refresh single-flight 与 `BroadcastChannel` 多标签页会话协调。
 - 新增 session、认证 API、HTTP client、用户 Store 和关键 Vue 组件测试，以及首屏与异步 chunk bundle budget 门禁。
@@ -28,6 +29,8 @@
 
 ### Fixed
 
+- 修复暗色模式下首页仍使用浅色背景、边框和快捷入口卡片，导致文字与内容显示异常的问题。
+- 补齐 MySQL 基线菜单使用的按需图标注册，为未知数据库图标提供统一回退，并修复折叠侧栏子菜单弹层被裁剪的问题。
 - 修复并发 `401`、多标签页同时刷新、服务端 refresh `409` 宽限重试及 `503` 依赖故障时的会话状态处理。
 - 密码重置页读取一次性 URL token 后立即清除查询参数，避免 token 留在地址栏和浏览器历史中。
 - 私有头像与文件统一经鉴权请求转换为 Blob URL，并保持头像 5 MiB、普通文件 10 MiB 和上传 120 秒提示一致。

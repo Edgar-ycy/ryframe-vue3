@@ -11,6 +11,11 @@ import { useTagsViewStore } from '@/stores/tagsView'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
+import {
+  isSessionMessage,
+  type SessionMessage,
+  type SessionOutboundMessage,
+} from './sessionMessage'
 
 interface SessionRuntime {
   router: Router
@@ -18,24 +23,39 @@ interface SessionRuntime {
   resetDynamicRoutes(): void
 }
 
-type SessionMessage =
-  | { type: 'refresh-start'; source: string; startedAt: number }
-  | { type: 'authenticated'; source: string; startedAt: number; accessToken: string; userInfo: UserInfo }
-  | { type: 'refresh-failed'; source: string; startedAt: number; status?: number }
-  | { type: 'logout'; source: string; at: number }
-
-type SessionOutboundMessage =
-  | { type: 'refresh-start'; startedAt: number }
-  | { type: 'authenticated'; startedAt: number; accessToken: string; userInfo: UserInfo }
-  | { type: 'refresh-failed'; startedAt: number; status?: number }
-  | { type: 'logout'; at: number }
-
 const CHANNEL_NAME = 'ryframe-auth-v0.5'
 const REMOTE_REFRESH_WAIT_MS = 8_000
 const CSRF_EXPIRY_SKEW_MS = 5_000
-const sourceId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-  ? crypto.randomUUID()
-  : `${Date.now()}-${Math.random()}`
+
+function randomIdentifier(): string | undefined {
+  if (typeof crypto !== 'undefined') {
+    const randomUuid: unknown = Reflect.get(crypto, 'randomUUID')
+    if (typeof randomUuid === 'function') {
+      const value: unknown = randomUuid.call(crypto)
+      if (typeof value === 'string' && value) return value
+    }
+    const values = crypto.getRandomValues(new Uint32Array(4))
+    return [...values].map(value => value.toString(16).padStart(8, '0')).join('')
+  }
+  return undefined
+}
+
+const sourceId = randomIdentifier()
+
+interface RemoteRefreshOperation {
+  operationId: string
+  source: string
+  startedAt: number
+  expiresAt: number
+  pending: boolean
+}
+
+interface RemoteRefreshWaiter {
+  operationId: string
+  resolve(token: string): void
+  reject(error: HttpError): void
+  timeoutId?: number
+}
 
 let runtime: SessionRuntime | undefined
 let channel: BroadcastChannel | undefined
@@ -45,14 +65,14 @@ let csrfPromise: Promise<string> | undefined
 let initializationPromise: Promise<void> | undefined
 let refreshPromise: Promise<string> | undefined
 let clearPromise: Promise<void> | undefined
-let remoteRefreshUntil = 0
+let remoteRefreshOperation: RemoteRefreshOperation | undefined
 let sessionEpoch = 0
 let latestLogoutAt = 0
+let latestSessionOperationAt = 0
+let latestSessionOperationId: string | undefined
+let latestSessionOperationIsLocal = false
 let sessionTerminating = false
-const remoteRefreshWaiters = new Set<{
-  resolve(token: string): void
-  reject(error: HttpError): void
-}>()
+const remoteRefreshWaiters = new Set<RemoteRefreshWaiter>()
 
 export function installSessionCoordinator(sessionRuntime: SessionRuntime): void {
   runtime = sessionRuntime
@@ -67,51 +87,120 @@ export function installSessionCoordinator(sessionRuntime: SessionRuntime): void 
 }
 
 function installBroadcastChannel(): void {
-  if (channel || typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return
+  if (
+    !sourceId
+    || channel
+    || typeof window === 'undefined'
+    || typeof BroadcastChannel === 'undefined'
+  ) return
   channel = new BroadcastChannel(CHANNEL_NAME)
-  channel.addEventListener('message', event => handleSessionMessage(event.data as SessionMessage))
+  channel.addEventListener('message', (event) => {
+    if (isSessionMessage(event.data)) handleSessionMessage(event.data)
+  })
+}
+
+function isNewerSessionOperation(
+  message: Extract<SessionMessage, { type: 'refresh-start' }>,
+): boolean {
+  if (message.startedAt !== latestSessionOperationAt) {
+    return message.startedAt > latestSessionOperationAt
+  }
+  if (latestSessionOperationIsLocal) return false
+  return !latestSessionOperationId || message.operationId > latestSessionOperationId
+}
+
+function startRemoteRefresh(
+  message: Extract<SessionMessage, { type: 'refresh-start' }>,
+): void {
+  if (message.startedAt <= latestLogoutAt) return
+  if (!isNewerSessionOperation(message)) return
+
+  latestSessionOperationAt = Math.max(latestSessionOperationAt, message.startedAt)
+  latestSessionOperationId = message.operationId
+  latestSessionOperationIsLocal = false
+  const next: RemoteRefreshOperation = {
+    operationId: message.operationId,
+    source: message.source,
+    startedAt: message.startedAt,
+    expiresAt: Date.now() + REMOTE_REFRESH_WAIT_MS,
+    pending: true,
+  }
+  remoteRefreshOperation = next
+  for (const waiter of remoteRefreshWaiters) scheduleRemoteRefreshWaiter(waiter, next)
+}
+
+function matchesCurrentRemoteRefresh(
+  message: Extract<SessionMessage, { type: 'authenticated' | 'refresh-failed' }>,
+): message is Extract<SessionMessage, { type: 'authenticated' | 'refresh-failed' }> {
+  const current = remoteRefreshOperation
+  if (
+    !current?.pending
+    || current.operationId !== message.operationId
+    || current.source !== message.source
+    || current.startedAt !== message.startedAt
+    || message.startedAt <= latestLogoutAt
+    || sessionTerminating
+    || latestSessionOperationIsLocal
+    || latestSessionOperationAt !== current.startedAt
+    || latestSessionOperationId !== current.operationId
+  ) return false
+
+  if (current.expiresAt <= Date.now()) {
+    current.pending = false
+    return false
+  }
+  return true
+}
+
+function settleRemoteRefreshWaiters(
+  operationId: string,
+  settle: (waiter: RemoteRefreshWaiter) => void,
+): void {
+  for (const waiter of remoteRefreshWaiters) {
+    if (waiter.operationId !== operationId) continue
+    remoteRefreshWaiters.delete(waiter)
+    if (waiter.timeoutId !== undefined) clearTimeout(waiter.timeoutId)
+    settle(waiter)
+  }
 }
 
 function handleSessionMessage(message: SessionMessage): void {
-  if (!message || message.source === sourceId) return
+  if (message.source === sourceId) return
   if (message.type === 'refresh-start') {
-    if (!Number.isFinite(message.startedAt) || message.startedAt <= latestLogoutAt) return
-    remoteRefreshUntil = Date.now() + REMOTE_REFRESH_WAIT_MS
+    startRemoteRefresh(message)
     return
   }
   if (message.type === 'authenticated') {
-    if (
-      !Number.isFinite(message.startedAt)
-      || message.startedAt <= latestLogoutAt
-      || sessionTerminating
-    ) return
-    remoteRefreshUntil = 0
+    if (!matchesCurrentRemoteRefresh(message)) return
+    remoteRefreshOperation!.pending = false
     applyAuthenticatedSession(message.accessToken, message.userInfo)
     void refreshRoutesAfterAuthentication(true).catch(async (error: unknown) => {
       if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
         await handleRefreshFailure(error)
       }
     })
-    for (const waiter of remoteRefreshWaiters) waiter.resolve(message.accessToken)
-    remoteRefreshWaiters.clear()
+    settleRemoteRefreshWaiters(message.operationId, waiter => waiter.resolve(message.accessToken))
     return
   }
   if (message.type === 'refresh-failed') {
-    if (!Number.isFinite(message.startedAt) || message.startedAt <= latestLogoutAt) return
-    remoteRefreshUntil = 0
+    if (!matchesCurrentRemoteRefresh(message)) return
+    remoteRefreshOperation!.pending = false
     const error = new HttpError('其他标签页刷新会话失败', message.status)
-    for (const waiter of remoteRefreshWaiters) waiter.reject(error)
-    remoteRefreshWaiters.clear()
+    settleRemoteRefreshWaiters(message.operationId, waiter => waiter.reject(error))
     return
   }
   if (message.type === 'logout') {
-    const logoutAt = Number.isFinite(message.at) ? message.at : Date.now()
-    latestLogoutAt = Math.max(latestLogoutAt, logoutAt)
+    if (message.at <= latestLogoutAt) return
+    latestLogoutAt = message.at
+    latestSessionOperationAt = Math.max(latestSessionOperationAt, message.at)
+    latestSessionOperationId = undefined
+    latestSessionOperationIsLocal = false
     void handleRemoteLogout()
   }
 }
 
 function postMessage(message: SessionOutboundMessage): void {
+  if (!sourceId) return
   try {
     channel?.postMessage({ ...message, source: sourceId })
   }
@@ -151,9 +240,13 @@ function invalidateCsrfToken(): void {
 export function publishAuthenticatedSession(accessToken: string, userInfo: UserInfo): void {
   applyAuthenticatedSession(accessToken, userInfo)
   invalidateCsrfToken()
+  const startedAt = nextSessionOperationTime()
+  const operationId = createOperationId(startedAt)
+  postMessage({ type: 'refresh-start', operationId, startedAt })
   postMessage({
     type: 'authenticated',
-    startedAt: nextSessionOperationTime(),
+    operationId,
+    startedAt,
     accessToken,
     userInfo,
   })
@@ -189,43 +282,72 @@ export function initializeSession(): Promise<void> {
   return initializationPromise
 }
 
-async function waitForRemoteRefresh(): Promise<string> {
-  const remaining = remoteRefreshUntil - Date.now()
-  if (remaining <= 0) throw new HttpError('远端刷新等待已结束', 409)
+function scheduleRemoteRefreshWaiter(
+  waiter: RemoteRefreshWaiter,
+  operation: RemoteRefreshOperation,
+): void {
+  if (waiter.timeoutId !== undefined) clearTimeout(waiter.timeoutId)
+  waiter.operationId = operation.operationId
+  const remaining = operation.expiresAt - Date.now()
+  waiter.timeoutId = window.setTimeout(() => {
+    if (!remoteRefreshWaiters.delete(waiter)) return
+    if (
+      remoteRefreshOperation?.operationId === waiter.operationId
+      && remoteRefreshOperation.pending
+    ) {
+      remoteRefreshOperation.pending = false
+    }
+    waiter.reject(new HttpError('等待其他标签页刷新超时', 409))
+  }, Math.max(remaining, 0))
+}
+
+async function waitForRemoteRefresh(operation: RemoteRefreshOperation): Promise<string> {
+  if (!operation.pending || operation.expiresAt <= Date.now()) {
+    operation.pending = false
+    throw new HttpError('远端刷新等待已结束', 409)
+  }
   return new Promise<string>((resolve, reject) => {
-    const waiter = { resolve, reject }
+    const waiter: RemoteRefreshWaiter = {
+      operationId: operation.operationId,
+      resolve,
+      reject,
+    }
     remoteRefreshWaiters.add(waiter)
-    window.setTimeout(() => {
-      if (!remoteRefreshWaiters.delete(waiter)) return
-      reject(new HttpError('等待其他标签页刷新超时', 409))
-    }, remaining)
+    scheduleRemoteRefreshWaiter(waiter, operation)
   })
 }
 
 export async function refreshAccessToken(): Promise<string> {
   if (sessionTerminating) throw new HttpError('会话正在退出', 401)
   const callerEpoch = sessionEpoch
-  if (!refreshPromise && remoteRefreshUntil > Date.now() && typeof window !== 'undefined') {
+  const remoteOperation = remoteRefreshOperation
+  if (
+    !refreshPromise
+    && remoteOperation?.pending
+    && remoteOperation.expiresAt > Date.now()
+    && typeof window !== 'undefined'
+  ) {
     try {
-      const token = await waitForRemoteRefresh()
+      const token = await waitForRemoteRefresh(remoteOperation)
       assertSessionEpoch(callerEpoch)
       return token
     }
     catch (error) {
       if (callerEpoch !== sessionEpoch) throw error
-      remoteRefreshUntil = 0
     }
   }
   if (!refreshPromise) {
     const refreshEpoch = sessionEpoch
     const startedAt = nextSessionOperationTime()
-    postMessage({ type: 'refresh-start', startedAt })
+    const operationId = createOperationId(startedAt)
+    postMessage({ type: 'refresh-start', operationId, startedAt })
     refreshPromise = performRefresh(refreshEpoch)
       .then((token) => {
         assertSessionEpoch(refreshEpoch)
         const userStore = useUserStore()
         postMessage({
           type: 'authenticated',
+          operationId,
           startedAt,
           accessToken: token,
           userInfo: userStoreToInfo(userStore),
@@ -236,6 +358,7 @@ export async function refreshAccessToken(): Promise<string> {
         if (refreshEpoch === sessionEpoch) {
           postMessage({
             type: 'refresh-failed',
+            operationId,
             startedAt,
             status: error instanceof HttpError ? error.status : undefined,
           })
@@ -307,15 +430,15 @@ function userStoreToInfo(user: ReturnType<typeof useUserStore>): UserInfo {
   return {
     id: user.userId,
     tenant_id: user.tenantId,
-    tenant_name: user.tenantName || undefined,
+    tenant_name: user.tenantName,
     username: user.username,
-    nickname: user.nickname || undefined,
+    nickname: user.nickname,
     avatar: user.avatar || undefined,
-    email: user.email || undefined,
-    phone: user.phone || undefined,
+    email: user.email,
+    phone: user.phone,
     roles: [...user.roles],
     perms: [...user.permissions],
-  } as UserInfo
+  }
 }
 
 async function handleRefreshFailure(error: HttpError): Promise<void> {
@@ -407,7 +530,24 @@ export async function logoutSession(): Promise<void> {
 }
 
 function nextSessionOperationTime(): number {
-  return Math.max(Date.now(), latestLogoutAt + 1)
+  latestSessionOperationAt = Math.max(
+    Date.now(),
+    latestLogoutAt + 1,
+    latestSessionOperationAt + 1,
+  )
+  return latestSessionOperationAt
+}
+
+function createOperationId(startedAt: number): string {
+  const nonce = randomIdentifier()
+  const operationId = sourceId && nonce
+    ? `${sourceId}:${startedAt}:${nonce}`
+    : `local:${startedAt}`
+  latestSessionOperationAt = Math.max(latestSessionOperationAt, startedAt)
+  latestSessionOperationId = operationId
+  latestSessionOperationIsLocal = true
+  if (remoteRefreshOperation?.pending) remoteRefreshOperation.pending = false
+  return operationId
 }
 
 function assertSessionEpoch(expected: number): void {
@@ -419,8 +559,14 @@ function assertSessionEpoch(expected: number): void {
 function invalidateSessionOperations(): void {
   sessionEpoch += 1
   latestLogoutAt = Math.max(latestLogoutAt, Date.now())
-  remoteRefreshUntil = 0
+  latestSessionOperationAt = Math.max(latestSessionOperationAt, latestLogoutAt)
+  latestSessionOperationId = undefined
+  latestSessionOperationIsLocal = true
+  remoteRefreshOperation = undefined
   const error = new HttpError('会话操作已取消', 401)
-  for (const waiter of remoteRefreshWaiters) waiter.reject(error)
+  for (const waiter of remoteRefreshWaiters) {
+    if (waiter.timeoutId !== undefined) clearTimeout(waiter.timeoutId)
+    waiter.reject(error)
+  }
   remoteRefreshWaiters.clear()
 }

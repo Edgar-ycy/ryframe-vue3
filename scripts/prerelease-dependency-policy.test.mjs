@@ -6,6 +6,7 @@ import {
   findPrereleaseVersionsInCiYaml,
   findPrereleaseVersionsInPackageJson,
   findPrereleaseVersionsInPnpmLock,
+  findPrereleaseVersionsInPnpmWorkspace,
 } from './prerelease-dependency-policy.mjs'
 
 test('detects registry, v-prefixed, arbitrary-label, and numeric prereleases', () => {
@@ -72,6 +73,25 @@ importers:
     findPrereleaseVersionsInPnpmLock(source),
     ['3.0.0-dev.3', '3.0.0-0', '3.0.0-0'],
   )
+})
+
+test('rejects prerelease workspace overrides without flagging stable overrides', () => {
+  const prereleaseSource = String.raw`
+overrides:
+  preview-package: "3.0.0-r\u0063.1"
+  stable-package: 4.2.1
+`
+  const stableSource = `
+overrides:
+  stable-package: 4.2.1
+  aliased-package: npm:replacement-package@5.0.0
+`
+
+  assert.deepEqual(
+    findPrereleaseVersionsInPnpmWorkspace(prereleaseSource),
+    ['3.0.0-rc.1'],
+  )
+  assert.deepEqual(findPrereleaseVersionsInPnpmWorkspace(stableSource), [])
 })
 
 test('parses workflow YAML and checks action, docker, and container references', () => {

@@ -1,14 +1,15 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { parse as parseYaml } from 'yaml'
 
 const root = process.cwd()
 const errors = []
 const requiredFiles = [
-  '.npmrc',
   '.env.production.example',
   'openapi/openapi.json',
   'playwright.config.ts',
+  'pnpm-workspace.yaml',
   'scripts/check-api-contract.mjs',
   'scripts/sync-api-contract.mjs',
   'src/api/contract.ts',
@@ -76,10 +77,27 @@ if (!packageDocument.scripts?.check?.includes('pnpm check:dependencies')) {
   errors.push('package.json: the full check command must include the prerelease dependency gate')
 }
 
-const npmConfig = await readFile(path.join(root, '.npmrc'), 'utf8')
-for (const setting of ['store-dir=.pnpm-store', 'engine-strict=true']) {
-  if (!npmConfig.split(/\r?\n/u).includes(setting)) {
-    errors.push(`.npmrc: required setting is missing (${setting})`)
+const workspaceConfig = parseYaml(
+  await readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8'),
+)
+if (packageDocument.pnpm !== undefined) {
+  errors.push('package.json: pnpm settings must live in pnpm-workspace.yaml')
+}
+for (const [setting, expected] of Object.entries({
+  storeDir: '.pnpm-store',
+  engineStrict: true,
+})) {
+  if (workspaceConfig?.[setting] !== expected) {
+    errors.push(`pnpm-workspace.yaml: ${setting} must be ${JSON.stringify(expected)}`)
+  }
+}
+for (const [dependency, expected] of Object.entries({
+  'fast-uri': '3.1.4',
+  immutable: '5.1.9',
+  'js-yaml': '4.3.0',
+})) {
+  if (workspaceConfig?.overrides?.[dependency] !== expected) {
+    errors.push(`pnpm-workspace.yaml: override ${dependency} must be ${expected}`)
   }
 }
 

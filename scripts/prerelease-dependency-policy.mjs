@@ -33,6 +33,10 @@ export function findPrereleaseVersionsInPnpmLock(source) {
   return findPrereleaseVersionsInValue(parseYaml(source, { maxAliasCount: 100 }))
 }
 
+export function findPrereleaseVersionsInPnpmWorkspace(source) {
+  return findPrereleaseVersionsInValue(parseYaml(source, { maxAliasCount: 100 }))
+}
+
 function findCiDependencyReferences(value, seen = new WeakSet()) {
   if (!value || typeof value !== 'object') return []
   if (seen.has(value)) return []

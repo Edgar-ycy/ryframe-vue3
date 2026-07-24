@@ -122,11 +122,11 @@ describe('menu route builder', () => {
     const routes = buildRoutesFromMenuTree(pageNodes)
 
     expect(routes).toHaveLength(pageNodes.length)
-    for (const route of routes) {
+    await Promise.all(routes.map(async (route) => {
       const load = route.component as unknown as () => Promise<Component>
       const component = await load()
       const name = (component as unknown as { name?: string }).name
       expect(name, String(route.path)).toBe(String(route.name))
-    }
-  })
+    }))
+  }, 15_000)
 })

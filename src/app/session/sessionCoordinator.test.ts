@@ -160,6 +160,89 @@ describe('session coordinator', () => {
     expect(authMocks.refreshToken).toHaveBeenCalledOnce()
   })
 
+  it('publishes unique operation IDs and correlates each authentication result', async () => {
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    session.installSessionCoordinator(runtime())
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+
+    session.publishAuthenticatedSession('first-token', userInfo)
+    session.publishAuthenticatedSession('second-token', userInfo)
+
+    const starts = broadcast.posted.filter(message => (
+      typeof message === 'object'
+      && message !== null
+      && 'type' in message
+      && message.type === 'refresh-start'
+    )) as Array<{ operationId: string }>
+    const completions = broadcast.posted.filter(message => (
+      typeof message === 'object'
+      && message !== null
+      && 'type' in message
+      && message.type === 'authenticated'
+    )) as Array<{ operationId: string }>
+
+    expect(starts).toHaveLength(2)
+    expect(completions).toHaveLength(2)
+    expect(completions.map(message => message.operationId))
+      .toEqual(starts.map(message => message.operationId))
+    expect(new Set(starts.map(message => message.operationId)).size).toBe(2)
+  })
+
+  it('uses getRandomValues when randomUUID is unavailable', async () => {
+    installBrowser()
+    const getRandomValues = vi.fn((values: Uint32Array) => {
+      values.set([1, 2, 3, 4])
+      return values
+    })
+    vi.stubGlobal('crypto', { getRandomValues })
+    const session = await import('./sessionCoordinator')
+    session.installSessionCoordinator(runtime())
+
+    session.publishAuthenticatedSession('fallback-token', userInfo)
+
+    const start = FakeBroadcastChannel.instances.at(-1)!.posted.find(message => (
+      typeof message === 'object'
+      && message !== null
+      && 'type' in message
+      && message.type === 'refresh-start'
+    )) as { operationId: string }
+    expect(getRandomValues).toHaveBeenCalledTimes(2)
+    expect(start.operationId).toMatch(
+      /^00000001000000020000000300000004:\d+:00000001000000020000000300000004$/,
+    )
+  })
+
+  it('keeps authentication local when secure randomness is unavailable', async () => {
+    installBrowser()
+    vi.stubGlobal('crypto', undefined)
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+
+    session.installSessionCoordinator(runtime())
+    expect(FakeBroadcastChannel.instances).toHaveLength(0)
+
+    expect(() => session.publishAuthenticatedSession('local-token', userInfo)).not.toThrow()
+    expect(useUserStore().token).toBe('local-token')
+    expect(FakeBroadcastChannel.instances).toHaveLength(0)
+  })
+
+  it('swallows BroadcastChannel send failures after applying local authentication', async () => {
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+    session.installSessionCoordinator(runtime())
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    vi.spyOn(broadcast, 'postMessage').mockImplementation(() => {
+      throw new Error('channel closed')
+    })
+
+    expect(() => session.publishAuthenticatedSession('local-token', userInfo)).not.toThrow()
+
+    expect(useUserStore().token).toBe('local-token')
+    expect(broadcast.postMessage).toHaveBeenCalledTimes(2)
+  })
+
   it('caches a live challenge, forces a new challenge, and rejects malformed challenges', async () => {
     const session = await import('./sessionCoordinator')
 
@@ -227,11 +310,13 @@ describe('session coordinator', () => {
     const broadcast = FakeBroadcastChannel.instances.at(-1)!
 
     const startedAt = Date.now()
-    broadcast.emit({ type: 'refresh-start', source: 'another-tab', startedAt })
+    const operationId = 'another-tab:remote-success'
+    broadcast.emit({ type: 'refresh-start', source: 'another-tab', operationId, startedAt })
     const refresh = session.refreshAccessToken()
     broadcast.emit({
       type: 'authenticated',
       source: 'another-tab',
+      operationId,
       startedAt,
       accessToken: 'remote-token',
       userInfo,
@@ -249,12 +334,260 @@ describe('session coordinator', () => {
     session.installSessionCoordinator(runtime())
     const broadcast = FakeBroadcastChannel.instances.at(-1)!
 
-    broadcast.emit({ type: 'refresh-start', source: 'another-tab', startedAt: Date.now() })
+    const startedAt = Date.now()
+    const operationId = 'another-tab:remote-failure'
+    broadcast.emit({ type: 'refresh-start', source: 'another-tab', operationId, startedAt })
     const refresh = session.refreshAccessToken()
-    broadcast.emit({ type: 'refresh-failed', source: 'another-tab', startedAt: Date.now(), status: 503 })
+    broadcast.emit({
+      type: 'refresh-failed',
+      source: 'another-tab',
+      operationId,
+      startedAt,
+      status: 503,
+    })
 
     await expect(refresh).resolves.toBe('memory-token')
     expect(authMocks.refreshToken).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the higher operation ID when remote refreshes share a timestamp', async () => {
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+    session.installSessionCoordinator(runtime())
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    const startedAt = Date.now()
+
+    useUserStore().token = 'current-token'
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'winning-tab',
+      operationId: 'operation-z',
+      startedAt,
+    })
+    const refresh = session.refreshAccessToken()
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'losing-tab',
+      operationId: 'operation-a',
+      startedAt,
+    })
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'losing-tab',
+      operationId: 'operation-a',
+      startedAt,
+      accessToken: 'losing-token',
+      userInfo,
+    })
+    await Promise.resolve()
+
+    expect(useUserStore().token).toBe('current-token')
+
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'winning-tab',
+      operationId: 'operation-z',
+      startedAt,
+      accessToken: 'winning-token',
+      userInfo,
+    })
+
+    await expect(refresh).resolves.toBe('winning-token')
+  })
+
+  it('ignores a completion that arrives after its remote operation expires', async () => {
+    vi.useFakeTimers()
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+    const appRuntime = runtime()
+    session.installSessionCoordinator(appRuntime)
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    const startedAt = Date.now()
+
+    useUserStore().token = 'current-token'
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'expired-tab',
+      operationId: 'expired-operation',
+      startedAt,
+    })
+    await vi.advanceTimersByTimeAsync(8_001)
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'expired-tab',
+      operationId: 'expired-operation',
+      startedAt,
+      accessToken: 'expired-token',
+      userInfo,
+    })
+
+    expect(useUserStore().token).toBe('current-token')
+    expect(appRuntime.refreshAccessibleRoutes).not.toHaveBeenCalled()
+  })
+
+  it('takes over locally after a remote refresh waiter times out', async () => {
+    vi.useFakeTimers()
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    session.installSessionCoordinator(runtime())
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'silent-tab',
+      operationId: 'silent-operation',
+      startedAt: Date.now(),
+    })
+    const refresh = session.refreshAccessToken()
+    await vi.advanceTimersByTimeAsync(8_000)
+
+    await expect(refresh).resolves.toBe('memory-token')
+    expect(authMocks.refreshToken).toHaveBeenCalledOnce()
+  })
+
+  it('ignores delayed authentication from an older operation after a newer refresh starts', async () => {
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+    session.installSessionCoordinator(runtime())
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    const oldStartedAt = Date.now()
+    const newStartedAt = oldStartedAt + 1
+
+    useUserStore().token = 'current-token'
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'old-tab',
+      operationId: 'old-tab:refresh',
+      startedAt: oldStartedAt,
+    })
+    const refresh = session.refreshAccessToken()
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'new-tab',
+      operationId: 'new-tab:refresh',
+      startedAt: newStartedAt,
+    })
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'old-tab',
+      operationId: 'old-tab:refresh',
+      startedAt: oldStartedAt,
+      accessToken: 'stale-token',
+      userInfo,
+    })
+    await Promise.resolve()
+
+    expect(useUserStore().token).toBe('current-token')
+    expect(authMocks.refreshToken).not.toHaveBeenCalled()
+
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'new-tab',
+      operationId: 'new-tab:refresh',
+      startedAt: newStartedAt,
+      accessToken: 'new-token',
+      userInfo,
+    })
+
+    await expect(refresh).resolves.toBe('new-token')
+    expect(useUserStore().token).toBe('new-token')
+  })
+
+  it('does not let a delayed failure from an older operation reject a newer refresh waiter', async () => {
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    session.installSessionCoordinator(runtime())
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    const oldStartedAt = Date.now()
+    const newStartedAt = oldStartedAt + 1
+
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'old-tab',
+      operationId: 'old-tab:refresh',
+      startedAt: oldStartedAt,
+    })
+    const refresh = session.refreshAccessToken()
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'new-tab',
+      operationId: 'new-tab:refresh',
+      startedAt: newStartedAt,
+    })
+    broadcast.emit({
+      type: 'refresh-failed',
+      source: 'old-tab',
+      operationId: 'old-tab:refresh',
+      startedAt: oldStartedAt,
+      status: 503,
+    })
+    await Promise.resolve()
+
+    expect(authMocks.refreshToken).not.toHaveBeenCalled()
+
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'new-tab',
+      operationId: 'new-tab:refresh',
+      startedAt: newStartedAt,
+      accessToken: 'new-token',
+      userInfo,
+    })
+
+    await expect(refresh).resolves.toBe('new-token')
+  })
+
+  it('does not let an older remote operation override a newer local refresh', async () => {
+    installBrowser()
+    let resolveRefresh!: (value: unknown) => void
+    authMocks.refreshToken.mockReturnValueOnce(new Promise(resolve => { resolveRefresh = resolve }))
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+    const appRuntime = runtime()
+    session.installSessionCoordinator(appRuntime)
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    useUserStore().token = 'current-token'
+
+    const refresh = session.refreshAccessToken()
+    await vi.waitFor(() => expect(authMocks.refreshToken).toHaveBeenCalledOnce())
+    const localStart = broadcast.posted.find(message => (
+      typeof message === 'object'
+      && message !== null
+      && 'type' in message
+      && message.type === 'refresh-start'
+    )) as { startedAt: number }
+    const oldStartedAt = localStart.startedAt - 1
+
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'old-tab',
+      operationId: 'old-tab:delayed-refresh',
+      startedAt: oldStartedAt,
+    })
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'old-tab',
+      operationId: 'old-tab:delayed-refresh',
+      startedAt: oldStartedAt,
+      accessToken: 'stale-token',
+      userInfo,
+    })
+    await Promise.resolve()
+
+    expect(useUserStore().token).toBe('current-token')
+    expect(appRuntime.refreshAccessibleRoutes).not.toHaveBeenCalled()
+
+    resolveRefresh({
+      code: 200,
+      msg: 'ok',
+      data: { access_token: 'local-token', expires_in: 3600, user_info: userInfo },
+    })
+
+    await expect(refresh).resolves.toBe('local-token')
+    expect(useUserStore().token).toBe('local-token')
   })
 
   it('handles a remote logout once and redirects only when needed', async () => {
@@ -276,24 +609,116 @@ describe('session coordinator', () => {
     expect(appRuntime.resetDynamicRoutes).toHaveBeenCalledOnce()
   })
 
-  it('ignores malformed, self-originated, and unknown broadcasts', async () => {
+  it('rejects malformed and schema-smuggling broadcasts without exposing their tokens', async () => {
+    installBrowser()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+    const appRuntime = runtime('/login')
+    session.installSessionCoordinator(appRuntime)
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    session.publishAuthenticatedSession('published-token', userInfo)
+
+    for (const message of [
+      null,
+      { type: 'unknown', source: 'another-tab' },
+      { type: 'logout', source: 'another-tab' },
+      { type: 'logout', source: 'another-tab', at: Date.now(), unexpected: true },
+      {
+        type: 'refresh-start',
+        source: 'another-tab',
+        operationId: 'another-tab:malformed',
+        startedAt: 'now',
+      },
+      {
+        type: 'authenticated',
+        source: 'another-tab',
+        operationId: 'another-tab:forged',
+        startedAt: Date.now(),
+        accessToken: 'forged-token',
+        userInfo: { ...userInfo, perms: ['*:*:*', 1] },
+      },
+      {
+        type: 'authenticated',
+        source: 'another-tab',
+        operationId: 'another-tab:smuggled',
+        startedAt: Date.now(),
+        accessToken: 'smuggled-token',
+        userInfo,
+        logout: true,
+      },
+    ]) {
+      broadcast.emit(message)
+    }
+    await Promise.resolve()
+
+    expect(useUserStore().token).toBe('published-token')
+    expect(useUserStore().sessionStatus).toBe('authenticated')
+    expect(appRuntime.resetDynamicRoutes).not.toHaveBeenCalled()
+    expect(appRuntime.router.replace).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
+  it('ignores self-originated broadcasts and accepts a valid remote logout', async () => {
     installBrowser()
     const session = await import('./sessionCoordinator')
     const appRuntime = runtime('/login')
     session.installSessionCoordinator(appRuntime)
     const broadcast = FakeBroadcastChannel.instances.at(-1)!
     session.publishAuthenticatedSession('published-token', userInfo)
-    const ownStart = broadcast.posted.find(message => (
+    const ownMessage = broadcast.posted.find(message => (
       typeof message === 'object' && message !== null && 'source' in message
     )) as { source?: string } | undefined
 
-    broadcast.emit(null)
-    broadcast.emit({ type: 'unknown', source: 'another-tab' })
-    if (ownStart?.source) broadcast.emit({ type: 'logout', source: ownStart.source })
+    if (ownMessage?.source) {
+      broadcast.emit({ type: 'logout', source: ownMessage.source, at: Date.now() })
+    }
     broadcast.emit({ type: 'logout', source: 'another-tab', at: Date.now() })
     await vi.waitFor(() => expect(appRuntime.resetDynamicRoutes).toHaveBeenCalledOnce())
 
     expect(appRuntime.router.replace).not.toHaveBeenCalled()
+  })
+
+  it('does not let stale authentication, refresh, or logout messages override a newer logout', async () => {
+    installBrowser()
+    const session = await import('./sessionCoordinator')
+    const { useUserStore } = await import('@/stores/user')
+    const appRuntime = runtime('/login')
+    session.installSessionCoordinator(appRuntime)
+    const broadcast = FakeBroadcastChannel.instances.at(-1)!
+    useUserStore().token = 'old-token'
+    useUserStore().sessionStatus = 'authenticated'
+
+    const logoutAt = Date.now()
+    broadcast.emit({ type: 'logout', source: 'another-tab', at: logoutAt })
+    await vi.waitFor(() => expect(appRuntime.resetDynamicRoutes).toHaveBeenCalledOnce())
+    session.publishAuthenticatedSession('new-token', userInfo)
+
+    broadcast.emit({
+      type: 'authenticated',
+      source: 'delayed-tab',
+      operationId: 'delayed-tab:stale-operation',
+      startedAt: logoutAt - 1,
+      accessToken: 'stale-token',
+      userInfo,
+    })
+    broadcast.emit({
+      type: 'refresh-start',
+      source: 'delayed-tab',
+      operationId: 'delayed-tab:stale-operation',
+      startedAt: logoutAt - 1,
+    })
+    broadcast.emit({ type: 'logout', source: 'delayed-tab', at: logoutAt })
+    await Promise.resolve()
+
+    expect(useUserStore().token).toBe('new-token')
+    expect(useUserStore().sessionStatus).toBe('authenticated')
+    expect(appRuntime.resetDynamicRoutes).toHaveBeenCalledOnce()
+
+    await expect(session.refreshAccessToken()).resolves.toBe('memory-token')
+    expect(authMocks.refreshToken).toHaveBeenCalledOnce()
   })
 
   it('marks a 503 unavailable but clears anonymous state for all other initialization failures', async () => {

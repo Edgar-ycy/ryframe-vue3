@@ -6,12 +6,14 @@ import {
   findPrereleaseVersionsInCiYaml,
   findPrereleaseVersionsInPackageJson,
   findPrereleaseVersionsInPnpmLock,
+  findPrereleaseVersionsInPnpmWorkspace,
 } from './prerelease-dependency-policy.mjs'
 
 const root = process.cwd()
 
 const sources = [
   ['package.json', findPrereleaseVersionsInPackageJson],
+  ['pnpm-workspace.yaml', findPrereleaseVersionsInPnpmWorkspace],
   ['pnpm-lock.yaml', findPrereleaseVersionsInPnpmLock],
 ]
 const findings = []
@@ -73,6 +75,6 @@ if (findings.length > 0) {
 }
 else {
   console.log(
-    `Prerelease dependency check passed (package.json, pnpm-lock.yaml, and ${ciYamlFiles.length} CI YAML files)`,
+    `Prerelease dependency check passed (package.json, pnpm-workspace.yaml, pnpm-lock.yaml, and ${ciYamlFiles.length} CI YAML files)`,
   )
 }

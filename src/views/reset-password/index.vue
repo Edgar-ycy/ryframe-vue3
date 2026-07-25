@@ -69,20 +69,23 @@ import {
   newPasswordValidationMessage,
 } from '@/shared/security/passwordPolicy'
 import { isValidTenantId } from '@/shared/security/tenantId'
+import { consumeResetPasswordFragment } from './resetCredentials'
 
 const route = useRoute()
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 
-const tenantId = String(route.query.tenant_id || '')
-const resetRequestIdentifier = String(route.query.request_id || '')
-const token = String(route.query.token || '')
-if (typeof window !== 'undefined' && window.location.search) {
-  window.history.replaceState(window.history.state, '', route.path)
-}
+const resetCredentials = typeof window === 'undefined'
+  ? { tenantId: '', resetRequestKey: '', token: '' }
+  : consumeResetPasswordFragment(window.location, window.history, route.path)
+const {
+  tenantId,
+  resetRequestKey,
+  token,
+} = resetCredentials
 const missingParams = computed(
-  () => !isValidTenantId(tenantId) || !resetRequestIdentifier || !token,
+  () => !isValidTenantId(tenantId) || !resetRequestKey || !token,
 )
 
 const form = ref({
@@ -123,7 +126,7 @@ async function handleSubmit() {
   try {
     await completePasswordReset({
       tenant_id: tenantId,
-      request_id: resetRequestIdentifier,
+      request_id: resetRequestKey,
       token,
       new_password: form.value.newPassword,
     })

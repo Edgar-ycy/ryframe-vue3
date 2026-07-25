@@ -2261,7 +2261,6 @@ export interface components {
             data?: {
                 expires_at: string;
                 request_id: string;
-                reset_token: string;
                 reset_url: string;
             };
             msg: string;
@@ -3552,7 +3551,6 @@ export interface components {
         PasswordResetRequestResponse: {
             expires_at: string;
             request_id: string;
-            reset_token: string;
             reset_url: string;
         };
         PermissionSyncReport: {
@@ -4632,6 +4630,13 @@ export interface operations {
                 content: {
                     "text/plain": string;
                 };
+            };
+            /** @description 缺少或无效的监控 Bearer Token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

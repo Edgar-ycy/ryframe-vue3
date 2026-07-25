@@ -1,200 +1,200 @@
-﻿name: CI
-
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  GIT_CONFIG_COUNT: "1"
-  GIT_CONFIG_KEY_0: init.defaultBranch
-  GIT_CONFIG_VALUE_0: main
-
-jobs:
-  # ============================================================
-  # 代码质量门禁
-  # ============================================================
-  check:
-    name: Type Check & Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: pnpm cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            .pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check source encoding and structure
-        run: pnpm check:sources
-
-      - name: Reject prerelease dependencies
-        run: pnpm check:dependencies
-
-      - name: Check architecture boundaries
-        run: pnpm check:architecture
-
-      - name: Check backend API contract
-        env:
-          RYFRAME_OPENAPI_SOURCE: https://raw.githubusercontent.com/Edgar-ycy/ryframe/main/openapi/openapi.json
-        run: |
-          pnpm api:sync
-          pnpm check:contract
-          git diff --exit-code -- openapi/openapi.json src/api/generated/schema.ts src/shared/security/passwordPolicy.generated.json
-
-      - name: TypeScript type check
-        run: pnpm typecheck
-
-      - name: Production build
-        run: pnpm run build
-
-      - name: Enforce bundle budget
-        run: pnpm check:bundle
-
-  # ============================================================
-  # 代码风格检查
-  # ============================================================
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    needs: check
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: pnpm cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            .pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run ESLint
-        run: pnpm lint
-
-      - name: Run Stylelint
-        run: pnpm lint:styles
-
-  # ============================================================
-  # 单元测试与覆盖率
-  # ============================================================
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: check
-    env:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: pnpm cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            .pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run tests
-        run: pnpm test:coverage
-
-      - name: Upload coverage
-        if: env.CODECOV_TOKEN != ''
-        uses: codecov/codecov-action@v5
-        with:
-          files: coverage/lcov.info
-          fail_ci_if_error: true
-          token: ${{ env.CODECOV_TOKEN }}
-
-  # ============================================================
-  # 浏览器级冒烟测试
-  # ============================================================
-  e2e:
-    name: Browser Smoke
-    runs-on: ubuntu-latest
-    needs: check
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: pnpm cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            .pnpm-store
-            **/node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run browser smoke tests
-        run: pnpm test:e2e
-
-      - name: Upload browser diagnostics on failure
-        if: failure()
-        uses: actions/upload-artifact@v6
-        with:
-          name: browser-smoke-diagnostics
-          path: test-results
-          if-no-files-found: ignore
+﻿name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GIT_CONFIG_COUNT: "1"
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
+
+jobs:
+  # ============================================================
+  # 代码质量门禁
+  # ============================================================
+  check:
+    name: Type Check & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check source encoding and structure
+        run: pnpm check:sources
+
+      - name: Reject prerelease dependencies
+        run: pnpm check:dependencies
+
+      - name: Check architecture boundaries
+        run: pnpm check:architecture
+
+      - name: Check backend API contract
+        env:
+          RYFRAME_OPENAPI_SOURCE: https://raw.githubusercontent.com/Edgar-ycy/ryframe/main/openapi/openapi.json
+        run: |
+          pnpm api:sync
+          pnpm check:contract
+          git diff --exit-code -- openapi/openapi.json src/api/generated/schema.ts src/shared/security/passwordPolicy.generated.json
+
+      - name: TypeScript type check
+        run: pnpm typecheck
+
+      - name: Production build
+        run: pnpm run build
+
+      - name: Enforce bundle budget
+        run: pnpm check:bundle
+
+  # ============================================================
+  # 代码风格检查
+  # ============================================================
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Run Stylelint
+        run: pnpm lint:styles
+
+  # ============================================================
+  # 单元测试与覆盖率
+  # ============================================================
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: check
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test:coverage
+
+      - name: Upload coverage
+        if: env.CODECOV_TOKEN != ''
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: true
+          token: ${{ env.CODECOV_TOKEN }}
+
+  # ============================================================
+  # 浏览器级冒烟测试
+  # ============================================================
+  e2e:
+    name: Browser Smoke
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .pnpm-store
+            **/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run browser smoke tests
+        run: pnpm test:e2e
+
+      - name: Upload browser diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-smoke-diagnostics
+          path: test-results
+          if-no-files-found: ignore

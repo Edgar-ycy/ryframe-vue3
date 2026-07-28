@@ -61,12 +61,29 @@ function json(
   status = 200,
   headers?: Record<string, string>,
 ): Promise<void> {
+  const normalizedBody = normalizeEnvelope(body)
   return route.fulfill({
     status,
     contentType: 'application/json; charset=utf-8',
-    body: JSON.stringify(body),
+    body: JSON.stringify(normalizedBody),
     headers,
   })
+}
+
+/** 将历史 Mock 响应转换为当前统一响应字段，确保浏览器侧始终校验真实契约。 */
+function normalizeEnvelope(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null || !('code' in body)) {
+    return body
+  }
+  const normalized = { ...(body as Record<string, unknown>) }
+  if (typeof normalized.msg === 'string' && typeof normalized.message !== 'string') {
+    normalized.message = normalized.msg
+  }
+  delete normalized.msg
+  if (typeof normalized.request_id !== 'string') {
+    normalized.request_id = 'e2e-request-id'
+  }
+  return normalized
 }
 
 function parseCookies(cookieHeader: string | undefined): Map<string, string> {
@@ -495,10 +512,14 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         await json(route, {
           code: 200,
           msg: 'ok',
-          rows: [
-            { id: '3001', name: '登录状态', code: 'sys_common_status', status: '1' },
-          ],
-          total: 1,
+          data: {
+            items: [{ id: '3001', name: '登录状态', code: 'sys_common_status', status: '1' }],
+            page: 1,
+            page_size: 10,
+            total: 1,
+            total_pages: 1,
+            max_page_size: 100,
+          },
         })
         return
       case `GET ${apiBasePath}/system/dict/data`:
@@ -527,8 +548,14 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         await json(route, {
           code: 200,
           msg: 'ok',
-          rows: [{ table_name: 'sys_device', comment: '设备', columns: [{ name: 'id' }] }],
-          total: 1,
+          data: {
+            items: [{ table_name: 'sys_device', comment: '设备', columns: [{ name: 'id' }] }],
+            page: 1,
+            page_size: 10,
+            total: 1,
+            total_pages: 1,
+            max_page_size: 100,
+          },
         })
         return
       case `POST ${apiBasePath}/tools/gen/generate`:

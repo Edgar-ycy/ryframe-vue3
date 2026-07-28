@@ -13,8 +13,9 @@ test('removes reset secrets from the address bar and still submits them', async 
         contentType: 'application/json; charset=utf-8',
         body: JSON.stringify({
           code: 200,
-          msg: 'ok',
+          message: 'ok',
           data: { csrf_token: 'csrf-reset', expires_in: 300 },
+          request_id: 'e2e-request-id',
         }),
       })
       return
@@ -24,7 +25,7 @@ test('removes reset secrets from the address bar and still submits them', async 
       await route.fulfill({
         status: 401,
         contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify({ code: 401, msg: 'anonymous session' }),
+        body: JSON.stringify({ code: 401, message: 'anonymous session', request_id: 'e2e-request-id' }),
       })
       return
     }
@@ -37,7 +38,7 @@ test('removes reset secrets from the address bar and still submits them', async 
       await route.fulfill({
         status: 200,
         contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify({ code: 200, msg: 'ok' }),
+        body: JSON.stringify({ code: 200, message: 'ok', request_id: 'e2e-request-id' }),
       })
       return
     }
@@ -45,7 +46,7 @@ test('removes reset secrets from the address bar and still submits them', async 
     await route.fulfill({
       status: 200,
       contentType: 'application/json; charset=utf-8',
-      body: JSON.stringify({ code: 200, msg: 'ok', data: null }),
+      body: JSON.stringify({ code: 200, message: 'ok', data: null, request_id: 'e2e-request-id' }),
     })
   })
 

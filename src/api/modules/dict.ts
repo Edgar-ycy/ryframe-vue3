@@ -1,4 +1,5 @@
-import request, { requestBlob } from '@/shared/http/client'
+import request from '@/shared/http/client'
+import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
@@ -8,7 +9,7 @@ const DICT_TYPE_BASE = '/system/dict/types'
 
 export type DictTypeQuery = OperationQuery<'get_system_dict_types'>
 type DictTypeAllQuery = OperationQuery<'get_system_dict_types_all'>
-type DictTypeExportQuery = OperationQuery<'get_system_dict_types_export'>
+type DictTypeExportQuery = Omit<DictTypeQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_dict_types_exports'>
 export type DictTypeCreateInput = OperationJsonBody<'post_system_dict_types'>
 export type DictTypeUpdateInput = OperationJsonBody<'put_system_dict_types_by_id'>
 export type DictTypeRecord = ApiSchema<'DictTypeVo'>
@@ -27,9 +28,7 @@ export function listDictTypeNoPage(params?: DictTypeAllQuery) {
 
 /** 导出字典类型 */
 export function exportDictType(params?: DictTypeExportQuery) {
-  return requestBlob({
-    url: `${DICT_TYPE_BASE}/export`, method: 'get', params: stripPagination(params),
-  })
+  return requestExportJob(`${DICT_TYPE_BASE}/exports`, stripPagination(params))
 }
 
 /** 创建字典类型 */

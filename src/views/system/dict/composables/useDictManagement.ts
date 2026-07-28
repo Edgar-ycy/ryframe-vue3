@@ -8,7 +8,7 @@ import {
   type DictTypeQuery,
   type DictTypeRecord,
 } from '@/api/modules/dict'
-import { useDownload } from '@/hooks/useDownload'
+import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { translate } from '@/i18n'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -26,7 +26,7 @@ export function useDictManagement() {
   const dataDialogVisible = ref(false)
   const editingData = ref<DictDataRecord | null>(null)
 
-  const { downloading: exportLoading, downloadBlob } = useDownload()
+  const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
   let typeRequestSequence = 0
   let dataRequestSequence = 0
 
@@ -72,7 +72,7 @@ export function useDictManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return downloadBlob(() => exportDictType(), {
+    return exportAndDownload(() => exportDictType(), {
       filename: translate('system.dict.exportFilename'),
     })
   }

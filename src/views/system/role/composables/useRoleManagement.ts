@@ -7,7 +7,7 @@ import {
 } from '@/api/modules/role'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permission'
-import { useDownload } from '@/hooks/useDownload'
+import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import { confirmAction } from '@/utils/confirmAction'
@@ -34,7 +34,7 @@ export function useRoleManagement() {
   const dataScopeRole = ref<RoleRecord | null>(null)
 
   const { isAdmin } = usePermission()
-  const { downloading: exportLoading, downloadBlob } = useDownload()
+  const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
 
   async function fetchData(): Promise<void> {
     loading.value = true
@@ -75,7 +75,7 @@ export function useRoleManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return downloadBlob(() => exportRole(queryParams.value), {
+    return exportAndDownload(() => exportRole(queryParams.value), {
       filename: translate('system.role.exportFilename'),
     })
   }

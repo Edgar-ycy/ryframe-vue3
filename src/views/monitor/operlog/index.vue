@@ -99,21 +99,21 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { listOperLog, exportOperLog, type OperLogRecord } from '@/api/modules/monitor'
-import { useDownload } from '@/hooks/useDownload'
+import { useAsyncExport } from '@/hooks/useAsyncExport'
 
 const { t } = useI18n()
 const loading = ref(false)
 const tableData = ref<OperLogRecord[]>([])
 const total = ref(0)
 const dateRange = ref<[string, string] | []>([])
-const { downloading: exportLoading, downloadBlob } = useDownload()
+const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
 
 const queryParams = ref({
   page: 1, page_size: 10, oper_name: '', status: '', begin_time: '', end_time: '',
 })
 
 function handleExport() {
-  return downloadBlob(() => exportOperLog(queryParams.value), { filename: t('monitor.operationLog.exportFilename') })
+  return exportAndDownload(() => exportOperLog(queryParams.value), { filename: t('monitor.operationLog.exportFilename') })
 }
 
 async function fetchData() {

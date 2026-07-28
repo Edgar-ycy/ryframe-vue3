@@ -252,8 +252,8 @@ if (operationCount < 119) errors.push(`expected at least 119 operations, found $
 if (Object.keys(schemas).length < 153) {
   errors.push(`expected at least 153 schemas, found ${Object.keys(schemas).length}`)
 }
-if (queryOperationCount < 34) {
-  errors.push(`expected at least 34 query operations, found ${queryOperationCount}`)
+if (queryOperationCount < 29) {
+  errors.push(`expected at least 29 query operations, found ${queryOperationCount}`)
 }
 
 if (errors.length > 0) {

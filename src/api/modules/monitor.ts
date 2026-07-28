@@ -1,5 +1,6 @@
-import request, { requestBlob, requestText } from '@/shared/http/client'
-import type { ApiSchema, OperationData, OperationQuery } from '@/api/contract'
+import request, { requestText } from '@/shared/http/client'
+import { requestExportJob } from './exportJob'
+import type { ApiSchema, OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type PageResponse } from '@/shared/http/types'
 
 // ========== 服务器监控 (/monitor) ==========
@@ -46,7 +47,7 @@ export function getMetrics() {
 
 export type OperLogQuery = OperationQuery<'get_system_operlogs'>
 type OperLogAllQuery = OperationQuery<'get_system_operlogs_all'>
-type OperLogExportQuery = OperationQuery<'get_system_operlogs_export'>
+type OperLogExportQuery = Omit<OperLogQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_operlogs_exports'>
 export type OperLogRecord = ApiSchema<'OperLogVo'>
 
 /** 操作日志分页 */
@@ -63,16 +64,14 @@ export function listOperLogNoPage(params?: OperLogAllQuery) {
 
 /** 导出操作日志 */
 export function exportOperLog(params?: OperLogExportQuery) {
-  return requestBlob({
-    url: '/system/operlogs/export', method: 'get', params: stripPagination(params),
-  })
+  return requestExportJob('/system/operlogs/exports', stripPagination(params))
 }
 
 // ========== 登录日志 (/system/loginlogs) ==========
 
 export type LoginLogQuery = OperationQuery<'get_system_loginlogs'>
 type LoginLogAllQuery = OperationQuery<'get_system_loginlogs_all'>
-type LoginLogExportQuery = OperationQuery<'get_system_loginlogs_export'>
+type LoginLogExportQuery = Omit<LoginLogQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_loginlogs_exports'>
 export type LoginLogRecord = ApiSchema<'LoginInfoVo'>
 
 /** 登录日志分页 */
@@ -89,9 +88,7 @@ export function listLoginLogNoPage(params?: LoginLogAllQuery) {
 
 /** 导出登录日志 */
 export function exportLoginLog(params?: LoginLogExportQuery) {
-  return requestBlob({
-    url: '/system/loginlogs/export', method: 'get', params: stripPagination(params),
-  })
+  return requestExportJob('/system/loginlogs/exports', stripPagination(params))
 }
 
 // ========== 在线用户 (/system/online) ==========

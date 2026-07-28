@@ -1,4 +1,5 @@
 import request, { requestBlob } from '@/shared/http/client'
+import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
@@ -10,7 +11,7 @@ export type UserStatus = UserManageableStatus | 'pending_activation'
 export type UserQuery = Omit<OperationQuery<'get_system_users'>, 'status'> & {
   status?: UserStatus
 }
-type UserExportQuery = OperationQuery<'get_system_users_export'>
+type UserExportQuery = Omit<UserQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_users_exports'>
 export type UserCreateInput = OperationJsonBody<'post_system_users'> & {
   role_ids: Id[]
 }
@@ -88,7 +89,7 @@ export function batchDeleteUser(ids: Id[]) {
 
 /** 导出用户 */
 export function exportUser(params?: UserExportQuery) {
-  return requestBlob({ url: `${BASE}/export`, method: 'get', params: stripPagination(params) })
+  return requestExportJob(`${BASE}/exports`, stripPagination(params))
 }
 
 /** 下载导入模板 */

@@ -1,4 +1,5 @@
-import request, { requestBlob } from '@/shared/http/client'
+import request from '@/shared/http/client'
+import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
@@ -8,7 +9,7 @@ export type RoleDataScope = '1' | '2' | '3' | '4' | '5'
 
 export type RoleQuery = OperationQuery<'get_system_roles'>
 type RoleAllQuery = OperationQuery<'get_system_roles_all'>
-type RoleExportQuery = OperationQuery<'get_system_roles_export'>
+type RoleExportQuery = Omit<RoleQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_roles_exports'>
 export type RoleCreateInput = Omit<OperationJsonBody<'post_system_roles'>, 'data_scope'> & {
   data_scope?: RoleDataScope
 }
@@ -28,7 +29,7 @@ export function listRoleNoPage(params?: RoleAllQuery) {
   })
 }
 export function exportRole(params?: RoleExportQuery) {
-  return requestBlob({ url: `${BASE}/export`, method: 'get', params: stripPagination(params) })
+  return requestExportJob(`${BASE}/exports`, stripPagination(params))
 }
 export function getRole(id: Id)           { return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
 export function createRole(data: RoleCreateInput)    { return request<RoleRecord>({ url: BASE, method: 'post', data }) }

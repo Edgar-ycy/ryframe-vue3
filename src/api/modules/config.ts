@@ -1,4 +1,5 @@
-import request, { requestBlob } from '@/shared/http/client'
+import request from '@/shared/http/client'
+import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
@@ -6,7 +7,7 @@ const BASE = '/system/configs'
 
 export type ConfigQuery = OperationQuery<'get_system_configs'>
 type ConfigAllQuery = OperationQuery<'get_system_configs_all'>
-type ConfigExportQuery = OperationQuery<'get_system_configs_export'>
+type ConfigExportQuery = Omit<ConfigQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_configs_exports'>
 export type ConfigCreateInput = OperationJsonBody<'post_system_configs'>
 export type ConfigUpdateInput = OperationJsonBody<'put_system_configs_by_id'>
 export type ConfigRecord = ApiSchema<'ConfigVo'>
@@ -18,7 +19,7 @@ export function listConfigNoPage(params?: ConfigAllQuery) {
   })
 }
 export function exportConfig(params?: ConfigExportQuery) {
-  return requestBlob({ url: `${BASE}/export`, method: 'get', params: stripPagination(params) })
+  return requestExportJob(`${BASE}/exports`, stripPagination(params))
 }
 export function getConfig(id: Id)      { return request<ConfigRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
 

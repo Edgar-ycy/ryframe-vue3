@@ -10,7 +10,7 @@ import {
 } from '@/api/modules/user'
 import { listRoleNoPage, type RoleRecord } from '@/api/modules/role'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
-import { useDownload } from '@/hooks/useDownload'
+import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
 import { translate } from '@/i18n'
@@ -43,7 +43,7 @@ export function useUserManagement() {
   const deletingId = ref<Id | null>(null)
 
   const { isAdmin, hasPermission } = usePermission()
-  const { downloading: exportLoading, downloadBlob } = useDownload()
+  const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
   const userStore = useUserStore()
 
   async function fetchData(): Promise<void> {
@@ -98,7 +98,7 @@ export function useUserManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return downloadBlob(
+    return exportAndDownload(
       () => exportUser(queryParams.value),
       { filename: translate('system.user.exportFilename') },
     )

@@ -1,4 +1,5 @@
-import request, { requestBlob } from '@/shared/http/client'
+import request from '@/shared/http/client'
+import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
@@ -6,7 +7,7 @@ const BASE = '/system/posts'
 
 export type PostQuery = OperationQuery<'get_system_posts'>
 type PostAllQuery = OperationQuery<'get_system_posts_all'>
-type PostExportQuery = OperationQuery<'get_system_posts_export'>
+type PostExportQuery = Omit<PostQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_posts_exports'>
 export type PostCreateInput = OperationJsonBody<'post_system_posts'>
 export type PostUpdateInput = OperationJsonBody<'put_system_posts_by_id'>
 export type PostRecord = ApiSchema<'PostVo'>
@@ -18,7 +19,7 @@ export function listPostNoPage(params?: PostAllQuery) {
   })
 }
 export function exportPost(params?: PostExportQuery) {
-  return requestBlob({ url: `${BASE}/export`, method: 'get', params: stripPagination(params) })
+  return requestExportJob(`${BASE}/exports`, stripPagination(params))
 }
 export function getPost(id: Id)           { return request<PostRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
 export function createPost(data: PostCreateInput)    { return request<PostRecord>({ url: BASE, method: 'post', data }) }

@@ -92,21 +92,21 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { listLoginLog, exportLoginLog, type LoginLogRecord } from '@/api/modules/monitor'
-import { useDownload } from '@/hooks/useDownload'
+import { useAsyncExport } from '@/hooks/useAsyncExport'
 
 const { t } = useI18n()
 const loading = ref(false)
 const tableData = ref<LoginLogRecord[]>([])
 const total = ref(0)
 const dateRange = ref<[string, string] | []>([])
-const { downloading: exportLoading, downloadBlob } = useDownload()
+const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
 
 const queryParams = ref({
   page: 1, page_size: 10, user_name: '', status: '', begin_time: '', end_time: '',
 })
 
 function handleExport() {
-  return downloadBlob(() => exportLoginLog(queryParams.value), { filename: t('monitor.loginLog.exportFilename') })
+  return exportAndDownload(() => exportLoginLog(queryParams.value), { filename: t('monitor.loginLog.exportFilename') })
 }
 
 async function fetchData() {

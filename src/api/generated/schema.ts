@@ -264,57 +264,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/common/exports/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 查询当前用户自己的导出任务。 */
-        get: operations["get_common_exports_by_id"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/common/exports/{id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** 取消当前用户尚未完成的导出任务。 */
-        post: operations["post_common_exports_by_id_cancel"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/common/exports/{id}/download": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 下载当前用户尚未过期的导出结果。 */
-        get: operations["get_common_exports_by_id_download"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/common/file/download": {
         parameters: {
             query?: never;
@@ -324,6 +273,74 @@ export interface paths {
         };
         /** 下载文件（薄层：HTTP 参数提取 + 构建响应头，业务委托 FileService） */
         get: operations["get_common_file_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/common/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前用户可以访问的最近导出任务。 */
+        get: operations["get_common_jobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/common/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前用户自己的导出任务。 */
+        get: operations["get_common_jobs_by_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/common/jobs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 取消当前用户尚未完成的导出任务。 */
+        post: operations["post_common_jobs_by_id_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/common/jobs/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 下载当前用户尚未过期的导出结果。 */
+        get: operations["get_common_jobs_by_id_download"];
         put?: never;
         post?: never;
         delete?: never;
@@ -633,17 +650,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/configs/export": {
+    "/api/v1/system/configs/exports": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** 导出参数配置 */
-        get: operations["get_system_configs_export"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** 创建参数配置异步导出任务。 */
+        post: operations["post_system_configs_exports"];
         delete?: never;
         options?: never;
         head?: never;
@@ -847,17 +864,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/dict/types/export": {
+    "/api/v1/system/dict/types/exports": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** 导出字典类型 */
-        get: operations["get_system_dict_types_export"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** 创建字典类型异步导出任务。 */
+        post: operations["post_system_dict_types_exports"];
         delete?: never;
         options?: never;
         head?: never;
@@ -916,17 +933,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/loginlogs/export": {
+    "/api/v1/system/loginlogs/exports": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** 导出登录日志 */
-        get: operations["get_system_loginlogs_export"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** 创建登录日志异步导出任务。 */
+        post: operations["post_system_loginlogs_exports"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1272,17 +1289,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/operlogs/export": {
+    "/api/v1/system/operlogs/exports": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** 导出操作日志 */
-        get: operations["get_system_operlogs_export"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** 创建操作日志异步导出任务。 */
+        post: operations["post_system_operlogs_exports"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1388,17 +1405,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/posts/export": {
+    "/api/v1/system/posts/exports": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** 导出岗位数据为 Excel */
-        get: operations["get_system_posts_export"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** 创建岗位异步导出任务。 */
+        post: operations["post_system_posts_exports"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1476,17 +1493,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/roles/export": {
+    "/api/v1/system/roles/exports": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** 导出角色数据为 Excel */
-        get: operations["get_system_roles_export"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** 创建角色异步导出任务。 */
+        post: operations["post_system_roles_exports"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1590,22 +1607,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["delete_system_users_batch_by_ids"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/users/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_system_users_export"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3040,6 +3041,40 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_ExportJobVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: date-time */
+                completed_at?: string | null;
+                content_type?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                error_message?: string | null;
+                /** Format: date-time */
+                expires_at?: string | null;
+                /** Format: int64 */
+                file_size?: number | null;
+                id: string;
+                resource: string;
+                result_file_name?: string | null;
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_GeneratedFile: {
             /**
              * Format: int32
@@ -3832,6 +3867,12 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /**
+         * @description 资源导出的筛选条件快照。
+         *
+         *     各资源沿用其列表接口的筛选字段，服务端会按资源类型严格反序列化并校验。
+         */
+        ExportRequestDto: unknown;
         FileUploadForm: {
             file: number[];
         };
@@ -5308,79 +5349,6 @@ export interface operations {
             };
         };
     };
-    get_common_exports_by_id: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 导出任务 ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 导出任务详情 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
-                };
-            };
-        };
-    };
-    post_common_exports_by_id_cancel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 导出任务 ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CancelExportJobDto"];
-            };
-        };
-        responses: {
-            /** @description 导出任务已取消 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
-                };
-            };
-        };
-    };
-    get_common_exports_by_id_download: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 导出任务 ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 导出文件 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
-                };
-            };
-        };
-    };
     get_common_file_download: {
         parameters: {
             query: {
@@ -5417,6 +5385,99 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    get_common_jobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 导出任务列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_ExportJobVo"];
+                };
+            };
+        };
+    };
+    get_common_jobs_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 导出任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 导出任务详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
+                };
+            };
+        };
+    };
+    post_common_jobs_by_id_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 导出任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelExportJobDto"];
+            };
+        };
+        responses: {
+            /** @description 导出任务已取消 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
+                };
+            };
+        };
+    };
+    get_common_jobs_by_id_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 导出任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 导出文件 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                };
             };
         };
     };
@@ -5940,25 +6001,29 @@ export interface operations {
             };
         };
     };
-    get_system_configs_export: {
+    post_system_configs_exports: {
         parameters: {
-            query?: {
-                name?: string;
-                key?: string;
+            query?: never;
+            header: {
+                /** @description 幂等键 */
+                "Idempotency-Key": string;
             };
-            header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequestDto"];
+            };
+        };
         responses: {
-            /** @description 导出配置 Excel */
-            200: {
+            /** @description 参数配置导出任务已创建 */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
                 };
             };
         };
@@ -6417,26 +6482,29 @@ export interface operations {
             };
         };
     };
-    get_system_dict_types_export: {
+    post_system_dict_types_exports: {
         parameters: {
-            query?: {
-                name?: string;
-                code?: string;
-                status?: string;
+            query?: never;
+            header: {
+                /** @description 幂等键 */
+                "Idempotency-Key": string;
             };
-            header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequestDto"];
+            };
+        };
         responses: {
-            /** @description 导出字典类型 Excel */
-            200: {
+            /** @description 字典类型导出任务已创建 */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
                 };
             };
         };
@@ -6546,27 +6614,29 @@ export interface operations {
             };
         };
     };
-    get_system_loginlogs_export: {
+    post_system_loginlogs_exports: {
         parameters: {
-            query?: {
-                user_name?: string;
-                status?: string;
-                begin_time?: string;
-                end_time?: string;
+            query?: never;
+            header: {
+                /** @description 幂等键 */
+                "Idempotency-Key": string;
             };
-            header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequestDto"];
+            };
+        };
         responses: {
-            /** @description 导出登录日志 Excel */
-            200: {
+            /** @description 登录日志导出任务已创建 */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
                 };
             };
         };
@@ -7210,27 +7280,29 @@ export interface operations {
             };
         };
     };
-    get_system_operlogs_export: {
+    post_system_operlogs_exports: {
         parameters: {
-            query?: {
-                oper_name?: string;
-                status?: string;
-                begin_time?: string;
-                end_time?: string;
+            query?: never;
+            header: {
+                /** @description 幂等键 */
+                "Idempotency-Key": string;
             };
-            header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequestDto"];
+            };
+        };
         responses: {
-            /** @description 导出操作日志 Excel */
-            200: {
+            /** @description 操作日志导出任务已创建 */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
                 };
             };
         };
@@ -7450,26 +7522,29 @@ export interface operations {
             };
         };
     };
-    get_system_posts_export: {
+    post_system_posts_exports: {
         parameters: {
-            query?: {
-                name?: string;
-                code?: string;
-                status?: string;
+            query?: never;
+            header: {
+                /** @description 幂等键 */
+                "Idempotency-Key": string;
             };
-            header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequestDto"];
+            };
+        };
         responses: {
-            /** @description 导出岗位 Excel */
-            200: {
+            /** @description 岗位导出任务已创建 */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
                 };
             };
         };
@@ -7645,26 +7720,29 @@ export interface operations {
             };
         };
     };
-    get_system_roles_export: {
+    post_system_roles_exports: {
         parameters: {
-            query?: {
-                name?: string;
-                code?: string;
-                status?: string;
+            query?: never;
+            header: {
+                /** @description 幂等键 */
+                "Idempotency-Key": string;
             };
-            header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequestDto"];
+            };
+        };
         responses: {
-            /** @description 导出角色 Excel */
-            200: {
+            /** @description 角色导出任务已创建 */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                    "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
                 };
             };
         };
@@ -7912,35 +7990,13 @@ export interface operations {
             };
         };
     };
-    get_system_users_export: {
-        parameters: {
-            query?: {
-                username?: string;
-                phone?: string;
-                status?: string;
-                dept_id?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 导出用户 Excel */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
-                };
-            };
-        };
-    };
     post_system_users_exports: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description 幂等键 */
+                "Idempotency-Key": string;
+            };
             path?: never;
             cookie?: never;
         };

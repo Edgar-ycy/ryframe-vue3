@@ -7,7 +7,7 @@ import { useUserManagement } from './useUserManagement'
 const mocks = vi.hoisted(() => ({
   confirmAction: vi.fn(),
   deleteUser: vi.fn(),
-  downloadBlob: vi.fn(),
+  exportAndDownload: vi.fn(),
   exportUser: vi.fn(),
   getDeptTree: vi.fn(),
   listRoleNoPage: vi.fn(),
@@ -45,10 +45,10 @@ vi.mock('@/api/modules/dept', () => ({
   getDeptTree: mocks.getDeptTree,
 }))
 
-vi.mock('@/hooks/useDownload', () => ({
-  useDownload: () => ({
-    downloading: { value: false },
-    downloadBlob: mocks.downloadBlob,
+vi.mock('@/hooks/useAsyncExport', () => ({
+  useAsyncExport: () => ({
+    exporting: { value: false },
+    exportAndDownload: mocks.exportAndDownload,
   }),
 }))
 

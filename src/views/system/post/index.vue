@@ -96,7 +96,7 @@ import {
   exportPost,
   type PostRecord,
 } from '@/api/modules/post'
-import { useDownload } from '@/hooks/useDownload'
+import { useAsyncExport } from '@/hooks/useAsyncExport'
 import type { Id } from '@/shared/http/types'
 import { useUserStore } from '@/stores/user'
 import { invalidateTenantResource } from '@/shared/query/client'
@@ -116,10 +116,10 @@ const postsQuery = useTenantQuery(
 const loading = computed(() => postsQuery.isFetching.value)
 const tableData = computed<PostRecord[]>(() => postsQuery.data.value?.data?.items ?? [])
 const total = computed(() => postsQuery.data.value?.data?.total ?? 0)
-const { downloading: exportLoading, downloadBlob } = useDownload()
+const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
 
 function handleExport() {
-  return downloadBlob(() => exportPost(queryParams.value), {
+  return exportAndDownload(() => exportPost(queryParams.value), {
     filename: t('system.post.exportFilename'),
   })
 }

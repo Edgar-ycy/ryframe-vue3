@@ -249,31 +249,31 @@ const moduleNames = (await readdir(moduleDirectory)).filter(name => name.endsWit
 const fullRecordOperations = {
   'config.ts': [
     ['listConfigNoPage', 'get_system_configs_all'],
-    ['exportConfig', 'get_system_configs_export'],
+    ['exportConfig', 'post_system_configs_exports'],
   ],
   'dept.ts': [['listDeptNoPage', 'get_system_depts_all']],
   'dict.ts': [
     ['listDictTypeNoPage', 'get_system_dict_types_all'],
-    ['exportDictType', 'get_system_dict_types_export'],
+    ['exportDictType', 'post_system_dict_types_exports'],
   ],
   'menu.ts': [['listMenuNoPage', 'get_system_menus_all']],
   'monitor.ts': [
     ['listOperLogNoPage', 'get_system_operlogs_all'],
-    ['exportOperLog', 'get_system_operlogs_export'],
+    ['exportOperLog', 'post_system_operlogs_exports'],
     ['listLoginLogNoPage', 'get_system_loginlogs_all'],
-    ['exportLoginLog', 'get_system_loginlogs_export'],
+    ['exportLoginLog', 'post_system_loginlogs_exports'],
     ['listOnlineUserNoPage', 'get_system_online_all'],
   ],
   'notice.ts': [['listNoticeNoPage', 'get_system_notices_all']],
   'post.ts': [
     ['listPostNoPage', 'get_system_posts_all'],
-    ['exportPost', 'get_system_posts_export'],
+    ['exportPost', 'post_system_posts_exports'],
   ],
   'role.ts': [
     ['listRoleNoPage', 'get_system_roles_all'],
-    ['exportRole', 'get_system_roles_export'],
+    ['exportRole', 'post_system_roles_exports'],
   ],
-  'user.ts': [['exportUser', 'get_system_users_export']],
+  'user.ts': [['exportUser', 'post_system_users_exports']],
 }
 
 for (const name of moduleNames) {
@@ -292,7 +292,8 @@ for (const name of moduleNames) {
     errors.push(`${relative}: query parameters must use OperationQuery`)
   }
   for (const [functionName, operationId] of fullRecordOperations[name] ?? []) {
-    if (!source.includes(`OperationQuery<'${operationId}'>`)) {
+    if (!source.includes(`OperationQuery<'${operationId}'>`)
+      && !source.includes(`OperationJsonBody<'${operationId}'>`)) {
       errors.push(`${relative}: ${functionName} must use ${operationId}`)
     }
     const functionStart = source.indexOf(`export function ${functionName}`)

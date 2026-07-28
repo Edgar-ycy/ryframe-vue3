@@ -84,7 +84,7 @@ import {
   type ConfigRecord,
 } from '@/api/modules/config'
 import { useSettingsStore } from '@/stores/settings'
-import { useDownload } from '@/hooks/useDownload'
+import { useAsyncExport } from '@/hooks/useAsyncExport'
 import type { Id } from '@/shared/http/types'
 
 const { t } = useI18n()
@@ -94,10 +94,10 @@ const loading = ref(false)
 const tableData = ref<ConfigRecord[]>([])
 const total = ref(0)
 const queryParams = ref({ page: 1, page_size: 10, name: '', key: '' })
-const { downloading: exportLoading, downloadBlob } = useDownload()
+const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
 
 function handleExport() {
-  return downloadBlob(() => exportConfig(queryParams.value), {
+  return exportAndDownload(() => exportConfig(queryParams.value), {
     filename: t('system.config.exportFilename'),
   })
 }

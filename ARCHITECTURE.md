@@ -129,19 +129,21 @@ GET /system/menus/current
 
 ### P2：功能聚合和构建体积
 
-- 当一个功能经常同时修改 View、API、Store、Hook 时，再迁移到 `features/<name>`；不要一次性搬目录制造 churn。
+- 当一个功能经常同时修改 View、API、Store、Hook 时，再迁移到 `features/<name>`；不要一次性搬目录制造无谓变动。
 - 当前生产构建中的 Element Plus chunk 约 1.12 MB（未压缩）；基于真实首屏指标决定按需加载，不通过提高 chunk 警告阈值掩盖问题。
 - 页面级样式优先局部化，共享 token 和布局规则留在全局样式，避免复制大段 SCSS。
 
 ## 6. 二次开发书写规范
 
+自维护的源码、配置和工作流中的说明性注释统一使用中文；工具指令、标识符、API 字段、代码块示例和生成文件除外。
+
 ### 新增 API
 
 1. 先在后端更新 Handler/DTO/`ToSchema`，导出并提交 `openapi/openapi.json`。
-2. 在前端执行 `RYFRAME_OPENAPI_SOURCE=<后端快照路径> pnpm api:sync`。
+2. 在前端执行 `RYFRAME_BACKEND_REPOSITORY=<owner/repository> RYFRAME_BACKEND_COMMIT=<完整 40 位 SHA> RYFRAME_OPENAPI_SOURCE=<后端快照路径> pnpm api:sync`，同步脚本会提交不可变的 `openapi/source.json`。
 3. 在 `api/modules/<resource>.ts` 使用 `ApiSchema`、`OperationQuery`、`OperationJsonBody` 或 `OperationData`，只添加语义化请求函数；禁止复制生成字段。
 4. 分页列表、`/all` 和导出分别绑定自己的 operation；全量请求统一调用 `stripPagination`，不得发送 `page/page_size`。
-5. 路径与 operation 完全一致，不增加兼容 fallback；Blob、文本和 FormData 继续使用专用客户端入口。
+5. 路径与 operation 完全一致，不增加兼容回退；Blob、文本和 FormData 继续使用专用客户端入口。
 6. API 模块不处理 ElMessage、Router 或 Store，生成文件不得手工修改。
 
 ### 新增页面
@@ -171,8 +173,8 @@ pnpm check
 `pnpm check` 依次执行：
 
 ```text
-check:sources -> check:architecture -> api:check -> lint -> lint:styles
--> typecheck -> test:coverage -> build -> test:e2e
+check:sources -> check:workflows -> check:dependencies -> check:architecture -> api:check
+-> lint -> lint:styles -> typecheck -> test:coverage -> build -> check:bundle -> test:e2e
 ```
 
 核心路由与权限模块覆盖率阈值为：语句/行/函数 80%，分支 70%。该阈值只代表当前纳入单测的架构核心，不代表全部 UI 覆盖率。

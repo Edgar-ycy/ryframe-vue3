@@ -2,16 +2,16 @@
   <el-card shadow="never" class="department-tree">
     <template #header>
       <div class="card-header">
-        <span>组织架构</span>
+        <span>{{ t('system.user.organization') }}</span>
       </div>
     </template>
 
     <div v-if="loading" v-loading="loading" class="department-tree__loading" />
-    <el-empty v-else-if="nodes.length === 0" description="暂无部门数据" :image-size="80" />
+    <el-empty v-else-if="nodes.length === 0" :description="t('system.user.noDepartments')" :image-size="80" />
     <div v-else class="department-tree__content">
       <el-input
         v-model="filterText"
-        placeholder="搜索部门"
+        :placeholder="t('system.user.searchDepartment')"
         :prefix-icon="Search"
         clearable
         size="small"
@@ -46,9 +46,12 @@
 
 <script setup lang="ts">
 import { Folder, FolderOpened, Search } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
 import type { TreeInstance } from 'element-plus'
+
+const { t } = useI18n()
 
 interface DepartmentOption {
   id: Id
@@ -69,7 +72,7 @@ const emit = defineEmits<{
 const treeRef = ref<TreeInstance>()
 const filterText = ref('')
 const displayNodes = computed<DepartmentOption[]>(() => [
-  { id: '', name: '全部', children: props.nodes },
+  { id: '', name: t('system.user.allDepartments'), children: props.nodes },
 ])
 
 watch(filterText, value => treeRef.value?.filter(value))

@@ -2,15 +2,15 @@
   <div class="page-container">
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline>
-        <el-form-item label="表名称">
-          <el-input v-model="queryParams.table_name" placeholder="请输入表名称" clearable @keyup.enter="handleSearch" />
+        <el-form-item :label="t('tools.generator.tableName')">
+          <el-input v-model="queryParams.table_name" :placeholder="t('tools.generator.tableNamePlaceholder')" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="表描述">
-          <el-input v-model="queryParams.table_comment" placeholder="请输入表描述" clearable @keyup.enter="handleSearch" />
+        <el-form-item :label="t('tools.generator.tableDescription')">
+          <el-input v-model="queryParams.table_comment" :placeholder="t('tools.generator.tableDescriptionPlaceholder')" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
-          <el-button v-perm="'tools:gen:list'" type="primary" icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button v-perm="'tools:gen:list'" icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'tools:gen:list'" type="primary" icon="Search" @click="handleSearch">{{ t('tools.generator.search') }}</el-button>
+          <el-button v-perm="'tools:gen:list'" icon="Refresh" @click="handleReset">{{ t('tools.generator.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -18,19 +18,19 @@
     <el-card shadow="never" style="margin-top:12px">
       <template #header>
         <div class="card-header">
-          <span>代码生成</span>
+          <span>{{ t('tools.generator.title') }}</span>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="table_name" label="表名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="comment" label="表描述" min-width="200" show-overflow-tooltip />
-        <el-table-column label="字段数" width="100" align="center">
+        <el-table-column prop="table_name" :label="t('tools.generator.tableName')" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="comment" :label="t('tools.generator.tableDescription')" min-width="200" show-overflow-tooltip />
+        <el-table-column :label="t('tools.generator.columnCount')" width="100" align="center">
           <template #default="{ row }">{{ row.columns.length }}</template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" align="center">
+        <el-table-column :label="t('tools.generator.operation')" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'tools:gen:list'" type="primary" link icon="View" @click="handlePreview(row)">预览</el-button>
-            <el-button v-perm="'tools:gen:add'" type="success" link icon="FolderAdd" @click="handleGen(row)">生成</el-button>
+            <el-button v-perm="'tools:gen:list'" type="primary" link icon="View" @click="handlePreview(row)">{{ t('tools.generator.preview') }}</el-button>
+            <el-button v-perm="'tools:gen:add'" type="success" link icon="FolderAdd" @click="handleGen(row)">{{ t('tools.generator.generate') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -44,7 +44,7 @@
     </el-card>
 
     <!-- 预览弹窗 -->
-    <el-dialog v-model="previewVisible" title="代码预览" width="800px" top="5vh">
+    <el-dialog v-model="previewVisible" :title="t('tools.generator.previewTitle')" width="800px" top="5vh">
       <el-tabs v-model="previewTab" type="card">
         <el-tab-pane v-for="file in previewFiles" :key="file.name" :label="file.name" :name="file.name">
           <el-input
@@ -57,13 +57,13 @@
         </el-tab-pane>
       </el-tabs>
       <template #footer>
-        <el-button @click="previewVisible = false">关闭</el-button>
+        <el-button @click="previewVisible = false">{{ t('tools.generator.close') }}</el-button>
       </template>
     </el-dialog>
 
     <el-dialog
       v-model="generateVisible"
-      title="生成代码"
+      :title="t('tools.generator.generateTitle')"
       width="min(520px, calc(100vw - 32px))"
       :close-on-click-modal="!generating"
       :close-on-press-escape="!generating"
@@ -77,14 +77,14 @@
         label-width="110px"
         @submit.prevent
       >
-        <el-form-item label="数据表">
+        <el-form-item :label="t('tools.generator.dataTable')">
           <el-input :model-value="selectedTable?.table_name || ''" disabled />
         </el-form-item>
-        <el-form-item label="服务端输出目录" prop="output_dir">
+        <el-form-item :label="t('tools.generator.serverOutputDirectory')" prop="output_dir">
           <el-input
             v-model="generateForm.output_dir"
             prefix-icon="FolderOpened"
-            placeholder="请输入绝对路径"
+            :placeholder="t('tools.generator.outputDirectoryPlaceholder')"
             clearable
             autofocus
             @keyup.enter="submitGeneration"
@@ -92,7 +92,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button :disabled="generating" @click="generateVisible = false">取消</el-button>
+        <el-button :disabled="generating" @click="generateVisible = false">{{ t('tools.generator.cancel') }}</el-button>
         <el-button
           v-perm="'tools:gen:add'"
           type="primary"
@@ -100,7 +100,7 @@
           :loading="generating"
           @click="submitGeneration"
         >
-          生成
+          {{ t('tools.generator.generate') }}
         </el-button>
       </template>
     </el-dialog>
@@ -108,9 +108,11 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { generateCode, listTable, previewCode, type TableInfo } from '@/api/modules/tools'
 import { buildGenerateRequest, isAbsoluteOutputPath } from './generationForm'
 
+const { t } = useI18n()
 const loading = ref(false)
 const tableData = ref<TableInfo[]>([])
 const total = ref(0)
@@ -123,8 +125,8 @@ async function fetchData() {
   loading.value = true
   try {
     const res = await listTable(queryParams.value)
-    tableData.value = res.rows || []
-    total.value = res.total || 0
+    tableData.value = res.data?.items || []
+    total.value = res.data?.total || 0
   } finally { loading.value = false }
 }
 
@@ -145,7 +147,7 @@ async function handlePreview(row: TableInfo) {
     }))
     previewTab.value = previewFiles.value[0]?.name || ''
     previewVisible.value = true
-  } catch { /* error handled */ }
+  } catch { /* 错误已由统一处理 */ }
 }
 
 // ----- 生成代码 -----
@@ -154,21 +156,21 @@ const generateFormRef = ref<FormInstance>()
 const generating = ref(false)
 const selectedTable = ref<TableInfo | null>(null)
 const generateForm = reactive({ output_dir: '' })
-const generateRules: FormRules = {
+const generateRules = computed<FormRules>(() => ({
   output_dir: [
-    { required: true, whitespace: true, message: '请输入服务端输出目录', trigger: 'blur' },
+    { required: true, whitespace: true, message: t('tools.generator.outputDirectoryRequired'), trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (isAbsoluteOutputPath(String(value || ''))) {
           callback()
         } else {
-          callback(new Error('请输入后端服务所在机器的绝对路径'))
+          callback(new Error(t('tools.generator.backendOutputPathRequired')))
         }
       },
       trigger: ['blur', 'change'],
     },
   ],
-}
+}))
 
 function handleGen(row: TableInfo) {
   selectedTable.value = row
@@ -191,11 +193,11 @@ async function submitGeneration() {
   try {
     const request = buildGenerateRequest(selectedTable.value.table_name, generateForm.output_dir)
     const res = await generateCode(request)
-    if (!res.data) throw new Error('代码生成响应缺少数据')
+    if (!res.data) throw new Error(t('tools.generator.responseMissing'))
     const { written, skipped } = res.data
     const message = skipped.length > 0
-      ? `已写入 ${written.length} 个文件，跳过 ${skipped.length} 个已存在文件`
-      : `已写入 ${written.length} 个文件`
+      ? t('tools.generator.generateSuccessWithSkipped', { written: written.length, skipped: skipped.length })
+      : t('tools.generator.generateSuccess', { written: written.length })
     generateVisible.value = false
     ElMessage.success(message)
   } catch {

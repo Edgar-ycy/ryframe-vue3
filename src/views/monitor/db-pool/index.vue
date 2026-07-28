@@ -5,10 +5,10 @@
         <el-card shadow="never" class="metric-card">
           <div class="metric-header">
             <el-icon><Connection /></el-icon>
-            <span>连接状态</span>
+            <span>{{ t('monitor.dbPool.connectionStatus') }}</span>
           </div>
           <el-tag :type="poolInfo?.status === 'connected' ? 'success' : 'danger'" size="large">
-            {{ poolInfo?.status === 'connected' ? '已连接' : '未连接' }}
+            {{ poolInfo?.status === 'connected' ? t('monitor.dbPool.connected') : t('monitor.dbPool.disconnected') }}
           </el-tag>
         </el-card>
       </el-col>
@@ -17,7 +17,7 @@
         <el-card shadow="never" class="metric-card">
           <div class="metric-header">
             <el-icon><DataLine /></el-icon>
-            <span>活跃连接数</span>
+            <span>{{ t('monitor.dbPool.activeConnections') }}</span>
           </div>
           <div class="metric-value">{{ poolInfo?.active_connections ?? '-' }}</div>
         </el-card>
@@ -27,7 +27,7 @@
         <el-card shadow="never" class="metric-card">
           <div class="metric-header">
             <el-icon><Clock /></el-icon>
-            <span>检查时间</span>
+            <span>{{ t('monitor.dbPool.checkTime') }}</span>
           </div>
           <div class="metric-time">{{ formatTime(poolInfo?.timestamp) }}</div>
         </el-card>
@@ -37,21 +37,21 @@
     <el-card shadow="never" class="section-card">
       <template #header>
         <div class="card-header">
-          <span>数据库连接池</span>
-          <el-button v-perm="'monitor:db-pool:list'" :loading="loading" icon="Refresh" @click="fetchData">刷新</el-button>
+          <span>{{ t('monitor.dbPool.title') }}</span>
+          <el-button v-perm="'monitor:db-pool:list'" :loading="loading" icon="Refresh" @click="fetchData">{{ t('monitor.dbPool.refresh') }}</el-button>
         </div>
       </template>
 
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="当前状态">
+        <el-descriptions-item :label="t('monitor.dbPool.currentStatus')">
           <el-tag :type="poolInfo?.status === 'connected' ? 'success' : 'danger'">
-            {{ poolInfo?.status || '-' }}
+            {{ poolStatusText }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="活跃连接数">
-          {{ poolInfo?.active_connections ?? '当前数据库驱动不支持查询' }}
+        <el-descriptions-item :label="t('monitor.dbPool.activeConnections')">
+          {{ poolInfo?.active_connections ?? t('monitor.dbPool.unsupportedMetric') }}
         </el-descriptions-item>
-        <el-descriptions-item label="最后检查时间">
+        <el-descriptions-item :label="t('monitor.dbPool.lastCheckedAt')">
           {{ formatTime(poolInfo?.timestamp) }}
         </el-descriptions-item>
       </el-descriptions>
@@ -61,10 +61,18 @@
 
 <script setup lang="ts">
 import { Clock, Connection, DataLine } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import { getDbPool, type DbPoolInfo } from '@/api/modules/monitor'
 
+const { t } = useI18n()
 const loading = ref(false)
 const poolInfo = ref<DbPoolInfo | null>(null)
+const poolStatusText = computed(() => {
+  if (!poolInfo.value?.status) return '-'
+  return poolInfo.value.status === 'connected'
+    ? t('monitor.dbPool.connected')
+    : t('monitor.dbPool.disconnected')
+})
 
 function formatTime(value?: string) {
   if (!value) return '-'

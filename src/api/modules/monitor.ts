@@ -1,6 +1,6 @@
 import request, { requestBlob, requestText } from '@/shared/http/client'
 import type { ApiSchema, OperationData, OperationQuery } from '@/api/contract'
-import { stripPagination } from '@/shared/http/types'
+import { stripPagination, type PageResponse } from '@/shared/http/types'
 
 // ========== 服务器监控 (/monitor) ==========
 
@@ -51,7 +51,7 @@ export type OperLogRecord = ApiSchema<'OperLogVo'>
 
 /** 操作日志分页 */
 export function listOperLog(params: OperLogQuery) {
-  return request<OperLogRecord[]>({ url: '/system/operlogs', method: 'get', params })
+  return request<PageResponse<OperLogRecord>>({ url: '/system/operlogs', method: 'get', params })
 }
 
 /** 操作日志不分页 */
@@ -77,7 +77,7 @@ export type LoginLogRecord = ApiSchema<'LoginInfoVo'>
 
 /** 登录日志分页 */
 export function listLoginLog(params: LoginLogQuery) {
-  return request<LoginLogRecord[]>({ url: '/system/loginlogs', method: 'get', params })
+  return request<PageResponse<LoginLogRecord>>({ url: '/system/loginlogs', method: 'get', params })
 }
 
 /** 登录日志不分页 */
@@ -102,7 +102,7 @@ export type OnlineUserRecord = ApiSchema<'OnlineUserVo'>
 
 /** 在线用户列表 */
 export function listOnlineUser(params: OnlineUserQuery) {
-  return request<OnlineUserRecord[]>({ url: '/system/online', method: 'get', params })
+  return request<PageResponse<OnlineUserRecord>>({ url: '/system/online', method: 'get', params })
 }
 
 /** 在线用户不分页 */

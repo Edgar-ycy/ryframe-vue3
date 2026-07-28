@@ -1,15 +1,15 @@
 <template>
   <el-button
     :icon="resolveElementIcon(selectedIcon, 'Plus')"
-    :aria-label="selectedIcon ? `更换图标，当前为 ${selectedIcon}` : '选择图标'"
+    :aria-label="selectedIcon ? t('shell.icon.changeCurrent', { icon: selectedIcon }) : t('shell.icon.select')"
     @click="openDialog"
   >
-    {{ selectedIcon ? '' : '选择图标' }}
+    {{ selectedIcon ? '' : t('shell.icon.select') }}
   </el-button>
-  <el-dialog v-model="dialogVisible" title="图标选择器" width="600px" append-to-body>
-    <el-input v-model="search" placeholder="搜索图标" clearable style="margin-bottom:12px" />
+  <el-dialog v-model="dialogVisible" :title="t('shell.icon.dialogTitle')" width="600px" append-to-body>
+    <el-input v-model="search" :placeholder="t('shell.icon.search')" clearable style="margin-bottom:12px" />
     <el-tabs v-model="activeTab">
-      <el-tab-pane label="Element Plus" name="ep">
+      <el-tab-pane :label="t('shell.icon.elementPlus')" name="ep">
         <div class="icon-grid">
           <button
             v-for="icon in filteredIcons"
@@ -17,7 +17,7 @@
             type="button"
             class="icon-item"
             :class="{ active: pendingIcon === icon }"
-            :aria-label="`选择 ${icon} 图标`"
+            :aria-label="t('shell.icon.selectItem', { icon })"
             :aria-pressed="pendingIcon === icon"
             @click="selectIcon(icon)"
           >
@@ -28,13 +28,14 @@
       </el-tab-pane>
     </el-tabs>
     <template #footer>
-      <el-button @click="closeDialog">取消</el-button>
-      <el-button type="primary" @click="confirmSelection">确定</el-button>
+      <el-button @click="closeDialog">{{ t('shell.icon.cancel') }}</el-button>
+      <el-button type="primary" @click="confirmSelection">{{ t('shell.icon.confirm') }}</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { elementIcons, resolveElementIcon } from '@/shared/ui/icons'
 import { useIconSelection } from './iconSelection'
 
@@ -46,6 +47,7 @@ const emit = defineEmits<{
   'update:modelValue': [val: string]
 }>()
 
+const { t } = useI18n()
 const search = ref('')
 const activeTab = ref('ep')
 const {
@@ -61,7 +63,7 @@ const {
   value => emit('update:modelValue', value),
 )
 
-// Element Plus 图标列表
+// Element Plus 图标清单
 const epIcons = Object.keys(elementIcons)
 
 const filteredIcons = computed(() => {

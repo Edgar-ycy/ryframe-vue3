@@ -7,6 +7,28 @@ test('removes reset secrets from the address bar and still submits them', async 
     const request = route.request()
     const url = new URL(request.url())
 
+    if (request.method() === 'GET' && url.pathname === '/api/v1/auth/csrf') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({
+          code: 200,
+          msg: 'ok',
+          data: { csrf_token: 'csrf-reset', expires_in: 300 },
+        }),
+      })
+      return
+    }
+
+    if (request.method() === 'POST' && url.pathname === '/api/v1/auth/refresh') {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({ code: 401, msg: 'anonymous session' }),
+      })
+      return
+    }
+
     if (
       request.method() === 'POST'
       && url.pathname === '/api/v1/auth/password-reset/complete'

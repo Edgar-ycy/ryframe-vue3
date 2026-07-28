@@ -26,11 +26,22 @@ function adapter(overrides?: Partial<HttpSessionAdapter>): HttpSessionAdapter {
   }
 }
 
+function envelope<T>(data?: T, code = 200, message = 'ok', errorKey: string | null = null) {
+  return {
+    code,
+    message,
+    data,
+    request_id: '0198f7e8-0000-7000-8000-000000000001',
+    error_key: errorKey,
+    details: null,
+  }
+}
+
 function okAdapter(capture: (config: InternalAxiosRequestConfig) => void): AxiosAdapter {
   return async (config: InternalAxiosRequestConfig) => {
     capture(config)
     return {
-      data: { code: 200, msg: 'ok', data: { accepted: true } },
+      data: envelope({ accepted: true }),
       status: 200,
       statusText: 'OK',
       headers: new AxiosHeaders(),
@@ -54,6 +65,7 @@ describe('HTTP client session boundary', () => {
     expect(captured?.withCredentials).toBe(true)
     expect(captured?.headers?.Authorization).toBe('Bearer memory-access-token')
     expect(captured?.headers?.['X-Tenant-Id']).toBe('tenant-a')
+    expect(captured?.headers?.get('Accept-Language')).toBeTruthy()
   })
 
   it('keeps raw cookie requests credentialed without attaching bearer or tenant headers', async () => {
@@ -71,6 +83,7 @@ describe('HTTP client session boundary', () => {
     expect(captured?.withCredentials).toBe(true)
     expect(captured?.headers?.Authorization).toBeUndefined()
     expect(captured?.headers?.['X-Tenant-Id']).toBeUndefined()
+    expect(captured?.headers?.get('Accept-Language')).toBeTruthy()
   })
 
   it('preserves explicit auth and tenant headers and supports unauthenticated requests', async () => {
@@ -98,6 +111,21 @@ describe('HTTP client session boundary', () => {
     expect(captured[0]?.headers['X-Tenant-Id']).toBe('tenant-explicit')
     expect(captured[1]?.headers.Authorization).toBeUndefined()
     expect(captured[1]?.headers['X-Tenant-Id']).toBeUndefined()
+    expect(captured[0]?.headers.get('Accept-Language')).toBeTruthy()
+    expect(captured[1]?.headers.get('Accept-Language')).toBeTruthy()
+  })
+
+  it('preserves an explicit Accept-Language header', async () => {
+    configureHttpSession(adapter())
+    let captured: InternalAxiosRequestConfig | undefined
+
+    await request({
+      url: '/localized',
+      headers: { 'Accept-Language': 'en-US' },
+      adapter: okAdapter(config => { captured = config }),
+    })
+
+    expect(captured?.headers.get('Accept-Language')).toBe('en-US')
   })
 
   it('normalizes raw refresh conflicts and preserves Retry-After', async () => {
@@ -107,7 +135,7 @@ describe('HTTP client session boundary', () => {
       headers: new AxiosHeaders(),
     }
     const response = {
-      data: { code: 409, msg: 'refresh already in progress' },
+      data: envelope(undefined, 409, 'refresh already in progress', 'conflict'),
       status: 409,
       statusText: 'Conflict',
       headers: new AxiosHeaders({ 'retry-after': '2' }),
@@ -139,7 +167,7 @@ describe('HTTP client session boundary', () => {
             config,
             undefined,
             {
-              data: { code: 401, msg: 'expired' },
+              data: envelope(undefined, 401, 'expired', 'authentication'),
               status: 401,
               statusText: 'Unauthorized',
               headers: new AxiosHeaders(),
@@ -149,7 +177,7 @@ describe('HTTP client session boundary', () => {
         }
         expect(config.headers.Authorization).toBe('Bearer new-token')
         return {
-          data: { code: 200, msg: 'ok', data: { accepted: true } },
+          data: envelope({ accepted: true }),
           status: 200,
           statusText: 'OK',
           headers: new AxiosHeaders(),
@@ -178,7 +206,7 @@ describe('HTTP client session boundary', () => {
           calls += 1
           if (calls === 1) {
             throw new AxiosError('unauthorized', 'ERR_BAD_RESPONSE', config, undefined, {
-              data: { code: 401, msg: 'expired' },
+              data: envelope(undefined, 401, 'expired', 'authentication'),
               status: 401,
               statusText: 'Unauthorized',
               headers: new AxiosHeaders(),
@@ -186,7 +214,7 @@ describe('HTTP client session boundary', () => {
             })
           }
           return {
-            data: { code: 200, msg: 'ok', data: { accepted: true } },
+            data: envelope({ accepted: true }),
             status: 200,
             statusText: 'OK',
             headers: new AxiosHeaders(),
@@ -220,7 +248,7 @@ describe('HTTP client session boundary', () => {
       headers: new AxiosHeaders(),
     }
     const unauthorized = new AxiosError('unauthorized', 'ERR_BAD_RESPONSE', config, undefined, {
-      data: { code: 401, msg: 'expired' },
+      data: envelope(undefined, 401, 'expired', 'authentication'),
       status: 401,
       statusText: 'Unauthorized',
       headers: new AxiosHeaders(),
@@ -251,7 +279,7 @@ describe('HTTP client session boundary', () => {
         retryAfterRefresh: input.retryAfterRefresh,
       }
       const error = new AxiosError('rejected', 'ERR_BAD_RESPONSE', config, undefined, {
-        data: { code: input.status, msg: 'rejected' },
+        data: envelope(undefined, input.status, 'rejected', input.status === 401 ? 'authentication' : 'authorization'),
         status: input.status,
         statusText: 'Rejected',
         headers: new AxiosHeaders(),
@@ -278,14 +306,14 @@ describe('HTTP client session boundary', () => {
       adapter: async (config) => {
         calls += 1
         throw new AxiosError('unauthorized', 'ERR_BAD_RESPONSE', config, undefined, {
-          data: { code: 401, msg: calls === 1 ? 'expired' : 'session revoked' },
+          data: envelope(undefined, 401, calls === 1 ? 'expired' : 'session revoked', 'authentication'),
           status: 401,
           statusText: 'Unauthorized',
           headers: new AxiosHeaders(),
           config,
         })
       },
-    })).rejects.toMatchObject({ status: 401, message: 'session revoked' })
+    })).rejects.toMatchObject({ status: 401, message: '认证失败' })
 
     expect(calls).toBe(2)
     expect(refreshAccessToken).toHaveBeenCalledOnce()
@@ -305,7 +333,7 @@ describe('HTTP client session boundary', () => {
       skipAuthRefresh: true,
     }
     const unauthorized = new AxiosError('unauthorized', 'ERR_BAD_RESPONSE', config, undefined, {
-      data: { code: 401, msg: 'invalid credentials' },
+      data: envelope(undefined, 401, 'invalid credentials', 'authentication'),
       status: 401,
       statusText: 'Unauthorized',
       headers: new AxiosHeaders(),
@@ -313,7 +341,7 @@ describe('HTTP client session boundary', () => {
     })
 
     await expect(request({ ...config, adapter: async () => Promise.reject(unauthorized) }))
-      .rejects.toMatchObject({ status: 401, message: 'invalid credentials' })
+      .rejects.toMatchObject({ status: 401, message: '认证失败' })
     expect(refreshAccessToken).not.toHaveBeenCalled()
     expect(handleRefreshFailure).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()
@@ -357,7 +385,7 @@ describe('HTTP client session boundary', () => {
 
     await expect(request({ url: '/invalid', adapter: response({ hello: 'world' }) }))
       .rejects.toBeInstanceOf(HttpError)
-    await expect(request({ url: '/failed', adapter: response({ code: 500, msg: 'failed' }) }))
+    await expect(request({ url: '/failed', adapter: response(envelope(undefined, 500, 'failed', 'internal')) }))
       .rejects.toMatchObject({ code: 500 })
     expect(reportError).toHaveBeenCalledTimes(2)
   })
@@ -375,7 +403,7 @@ describe('HTTP client session boundary', () => {
 
     await expect(rawRequest({ url: '/invalid', adapter: response(null) }))
       .rejects.toBeInstanceOf(HttpError)
-    await expect(rawRequest({ url: '/failed', adapter: response({ code: 400, msg: '' }) }))
+    await expect(rawRequest({ url: '/failed', adapter: response(envelope(undefined, 400, '', 'validation')) }))
       .rejects.toMatchObject({ code: 400 })
     expect(reportError).not.toHaveBeenCalled()
   })
@@ -397,7 +425,7 @@ describe('HTTP client session boundary', () => {
       return rawRequest({ ...config, adapter: async () => Promise.reject(error) })
     }
 
-    await expect(rejectWith(new Blob([JSON.stringify({ msg: 'json blob' })])))
+    await expect(rejectWith(new Blob([JSON.stringify(envelope(undefined, 400, 'json blob'))])))
       .rejects.toMatchObject({ message: 'json blob' })
     await expect(rejectWith(new Blob(['plain text'])))
       .rejects.toMatchObject({ message: 'plain text' })

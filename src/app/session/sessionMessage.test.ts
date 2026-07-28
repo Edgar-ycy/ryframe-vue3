@@ -40,6 +40,14 @@ describe('session message validation', () => {
         phone: '',
       },
     },
+    {
+      type: 'authenticated',
+      source: 'tab-a',
+      operationId,
+      startedAt: 1,
+      accessToken: 'access-token',
+      userInfo: { ...userInfo, preferred_locale: 'en-US' },
+    },
     { type: 'refresh-failed', source: 'tab-a', operationId, startedAt: 1 },
     { type: 'refresh-failed', source: 'tab-a', operationId, startedAt: 1, status: 503 },
     { type: 'logout', source: 'tab-a', at: 1 },
@@ -86,6 +94,14 @@ describe('session message validation', () => {
       startedAt: 1,
       accessToken: 'forged-token',
       userInfo: { ...userInfo, elevated: true },
+    },
+    {
+      type: 'authenticated',
+      source: 'tab-a',
+      operationId,
+      startedAt: 1,
+      accessToken: 'forged-token',
+      userInfo: { ...userInfo, preferred_locale: 'fr-FR' },
     },
   ])('rejects a malformed or schema-smuggling message', (message) => {
     expect(isSessionMessage(message)).toBe(false)

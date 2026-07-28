@@ -1,6 +1,6 @@
 import request, { requestBlob } from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id } from '@/shared/http/types'
+import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
 const BASE = '/system/posts'
 
@@ -11,7 +11,7 @@ export type PostCreateInput = OperationJsonBody<'post_system_posts'>
 export type PostUpdateInput = OperationJsonBody<'put_system_posts_by_id'>
 export type PostRecord = ApiSchema<'PostVo'>
 
-export function listPost(params: PostQuery)  { return request<PostRecord[]>({ url: BASE, method: 'get', params }) }
+export function listPost(params: PostQuery)  { return request<PageResponse<PostRecord>>({ url: BASE, method: 'get', params }) }
 export function listPostNoPage(params?: PostAllQuery) {
   return request<PostRecord[]>({
     url: `${BASE}/all`, method: 'get', params: stripPagination(params),

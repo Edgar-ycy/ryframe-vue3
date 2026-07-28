@@ -15,17 +15,22 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   getProfile,
   type ProfileInfo,
   type ProfileUpdateParams,
 } from '@/api/modules/auth'
+import { normalizeLocale } from '@/i18n'
+import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import ProfileAvatar from './components/ProfileAvatar.vue'
 import ProfileDetailsForm from './components/ProfileDetailsForm.vue'
 import ProfilePasswordForm from './components/ProfilePasswordForm.vue'
 
 const userStore = useUserStore()
+const settingsStore = useSettingsStore()
+const { t } = useI18n()
 const loading = ref(false)
 
 function initialProfile(): ProfileInfo {
@@ -41,6 +46,7 @@ function initialProfile(): ProfileInfo {
     permissions: userStore.permissions,
     roles: userStore.roles,
     status: '',
+    preferred_locale: userStore.preferredLocale,
   }
 }
 
@@ -53,13 +59,18 @@ function applyProfile(nextProfile: ProfileInfo): void {
   userStore.email = nextProfile.email ?? ''
   userStore.phone = nextProfile.phone ?? ''
   userStore.avatar = nextProfile.avatar ?? ''
+  const preferredLocale = normalizeLocale(nextProfile.preferred_locale)
+  if (preferredLocale) {
+    userStore.setPreferredLocale(preferredLocale)
+    settingsStore.setLocale(preferredLocale)
+  }
 }
 
 async function loadProfile(): Promise<void> {
   loading.value = true
   try {
     const response = await getProfile()
-    if (!response.data) throw new Error('个人信息响应缺少数据')
+    if (!response.data) throw new Error(t('profile.responseMissing'))
     applyProfile(response.data)
   }
   finally {
@@ -85,7 +96,7 @@ function handleAvatarUpdated(avatarUrl: string): void {
 }
 
 onMounted(() => {
-  void Promise.allSettled([loadProfile()])
+  void loadProfile()
 })
 </script>
 
@@ -98,8 +109,8 @@ onMounted(() => {
 }
 
 .profile-side {
-  min-width: 0;
   display: grid;
+  min-width: 0;
   gap: 12px;
 }
 

@@ -1,12 +1,19 @@
 <template>
   <div class="navbar">
-    <div class="hamburger" @click="appStore.toggleSidebar()">
+    <el-button
+      text
+      circle
+      class="hamburger"
+      :aria-label="t('navbar.toggleSidebar')"
+      :title="t('navbar.toggleSidebar')"
+      @click="appStore.toggleSidebar()"
+    >
       <el-icon><Fold v-if="!appStore.sidebarCollapsed" /><Expand v-else /></el-icon>
-    </div>
+    </el-button>
 
     <el-breadcrumb class="breadcrumb" separator="/">
       <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.path" :to="item.path">
-        {{ item.meta?.title }}
+        {{ translateNavigationTitle(item.meta?.title) }}
       </el-breadcrumb-item>
     </el-breadcrumb>
 
@@ -14,20 +21,36 @@
       <el-tag effect="plain" type="info">
         {{ userStore.tenantName || userStore.tenantId }} · {{ userStore.tenantId }}
       </el-tag>
-      <el-icon class="navbar-action" :size="24" @click="toggleFullscreen">
-        <FullScreen />
-      </el-icon>
+      <el-button
+        text
+        circle
+        class="navbar-action navbar-fullscreen-action"
+        :aria-label="t('navbar.toggleFullscreen')"
+        :title="t('navbar.toggleFullscreen')"
+        @click="toggleFullscreen"
+      >
+        <el-icon :size="24"><FullScreen /></el-icon>
+      </el-button>
       <el-switch
         v-model="isDark"
         inline-prompt
         class="theme-switch"
+        :aria-label="t('settings.theme')"
       >
         <template #active-icon><el-icon><Moon /></el-icon></template>
         <template #inactive-icon><el-icon><Sunny /></el-icon></template>
       </el-switch>
-      <el-icon class="navbar-action" :size="24" @click="settingsVisible = true">
-        <Setting />
-      </el-icon>
+      <MessageCenter />
+      <el-button
+        text
+        circle
+        class="navbar-action"
+        :aria-label="t('navbar.openSettings')"
+        :title="t('navbar.openSettings')"
+        @click="settingsVisible = true"
+      >
+        <el-icon :size="24"><Setting /></el-icon>
+      </el-button>
       <el-dropdown @command="handleCommand">
         <span class="user-info">
           <el-avatar :size="32" :src="avatarSrc">
@@ -38,8 +61,8 @@
         </span>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-            <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+            <el-dropdown-item command="profile">{{ t('navbar.profile') }}</el-dropdown-item>
+            <el-dropdown-item command="logout" divided>{{ t('navbar.logout') }}</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -50,27 +73,30 @@
 
 <script setup lang="ts">
 import { ArrowDown, Expand, Fold, FullScreen, Moon, Setting, Sunny, UserFilled } from '@element-plus/icons-vue'
-import Settings from '../Settings/index.vue'
+import { useI18n } from 'vue-i18n'
+import { logoutSession } from '@/app/session/sessionCoordinator'
+import { translateNavigationTitle } from '@/i18n'
+import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 import { useAppStore } from '@/stores/app'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
-import { logoutSession } from '@/app/session/sessionCoordinator'
-import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
+import MessageCenter from '../MessageCenter/index.vue'
+import Settings from '../Settings/index.vue'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const { t } = useI18n()
 const { imageSrc: avatarSrc } = useAuthenticatedImage(() => userStore.avatar)
 
 const settingsVisible = ref(false)
-
 const breadcrumbs = computed(() => route.matched.filter(item => item.meta?.title))
 
 const isDark = computed({
   get: () => settingsStore.theme === 'dark',
-  set: (val: boolean) => settingsStore.setTheme(val ? 'dark' : 'light'),
+  set: (value: boolean) => settingsStore.setTheme(value ? 'dark' : 'light'),
 })
 
 async function toggleFullscreen(): Promise<void> {
@@ -83,16 +109,17 @@ async function toggleFullscreen(): Promise<void> {
     }
   }
   catch {
-    ElMessage.warning('当前浏览器无法切换全屏模式')
+    ElMessage.warning(t('navbar.fullscreenUnavailable'))
   }
 }
 
-const handleCommand = async (command: string) => {
+async function handleCommand(command: string): Promise<void> {
   switch (command) {
     case 'logout':
       try {
-        await ElMessageBox.confirm('确定要退出登录吗？', '提示', { type: 'warning' })
-      } catch {
+        await ElMessageBox.confirm(t('navbar.logoutConfirm'), t('navbar.prompt'), { type: 'warning' })
+      }
+      catch {
         return
       }
       await logoutSession()

@@ -38,8 +38,8 @@ describe('API module request adapters', () => {
           await value(argument, argument, argument, argument)
         }
         catch {
-          // Endpoint-specific validation is covered by focused tests. This
-          // contract smoke test verifies every adapter reaches shared HTTP.
+          // 各端点特有的校验由聚焦测试覆盖。本契约冒烟测试验证每个适配器
+          // 都会经由共享 HTTP 客户端。
         }
       }
     }

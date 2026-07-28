@@ -33,6 +33,7 @@ const userInfoKeys = new Set([
   'nickname',
   'perms',
   'phone',
+  'preferred_locale',
   'roles',
   'tenant_id',
   'tenant_name',
@@ -85,6 +86,10 @@ function isOptionalString(value: unknown): value is string | null | undefined {
   return value === undefined || value === null || typeof value === 'string'
 }
 
+function isOptionalLocale(value: unknown): boolean {
+  return value === undefined || value === null || value === 'zh-CN' || value === 'en-US'
+}
+
 function isUserInfo(value: unknown): value is UserInfo {
   if (!isRecord(value)) return false
   const keys = Reflect.ownKeys(value)
@@ -112,6 +117,7 @@ function isUserInfo(value: unknown): value is UserInfo {
     && isStringArray(value.perms)
     && isOptionalString(value.avatar)
     && isOptionalString(value.dept_name)
+    && isOptionalLocale(value.preferred_locale)
 }
 
 export function isSessionMessage(value: unknown): value is SessionMessage {

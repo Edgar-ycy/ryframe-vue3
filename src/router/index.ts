@@ -45,7 +45,7 @@ async function fetchMenuAndGenerateRoutes(
   options?: { skipAuthRefresh?: boolean },
 ): Promise<RouteRecordRaw[]> {
   const menuRes = await getUserMenus(options)
-  const menuTree = menuRes.data ?? menuRes.rows ?? []
+  const menuTree = menuRes.data ?? []
   const userStore = useUserStore()
   return permissionStore.generateRoutes(menuTree, userStore.permissions, userStore.roles)
 }

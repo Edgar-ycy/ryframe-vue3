@@ -30,6 +30,6 @@ export type OperationData<Name extends keyof operations> =
     : never
 
 export type OperationRows<Name extends keyof operations> =
-  OperationJsonResponse<Name> extends { rows: infer Rows }
-    ? Rows
+  OperationData<Name> extends { items: infer Items }
+    ? Items
     : never

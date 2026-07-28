@@ -1,31 +1,31 @@
 <template>
-  <el-dialog v-model="visible" :title="isEdit ? '编辑用户' : '新增用户'" width="580px" @closed="resetForm">
+  <el-dialog v-model="visible" :title="isEdit ? t('system.user.editTitle') : t('system.user.addTitle')" width="580px" @closed="resetForm">
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item label="用户名" prop="username">
-        <el-input v-model="form.username" :disabled="isEdit" placeholder="请输入用户名" maxlength="50" />
+      <el-form-item :label="t('system.user.username')" prop="username">
+        <el-input v-model="form.username" :disabled="isEdit" :placeholder="t('system.user.enterUsername')" maxlength="50" />
       </el-form-item>
-      <el-form-item label="昵称" prop="nickname">
-        <el-input v-model="form.nickname" placeholder="请输入昵称" maxlength="50" />
+      <el-form-item :label="t('system.user.nickname')" prop="nickname">
+        <el-input v-model="form.nickname" :placeholder="t('system.user.enterNickname')" maxlength="50" />
       </el-form-item>
-      <el-form-item label="邮箱" prop="email">
-        <el-input v-model="form.email" placeholder="请输入邮箱" />
+      <el-form-item :label="t('system.user.email')" prop="email">
+        <el-input v-model="form.email" :placeholder="t('system.user.enterEmail')" />
       </el-form-item>
-      <el-form-item label="手机号">
-        <el-input v-model="form.phone" placeholder="请输入手机号" />
+      <el-form-item :label="t('system.user.phone')">
+        <el-input v-model="form.phone" :placeholder="t('system.user.enterPhone')" />
       </el-form-item>
-      <el-form-item label="部门">
+      <el-form-item :label="t('system.user.department')">
         <el-tree-select
           v-model="form.dept_id"
           :data="deptTree"
           :props="{ label: 'name', value: 'id', children: 'children' }"
-          placeholder="选择部门"
+          :placeholder="t('system.user.selectDepartment')"
           clearable
           check-strictly
           style="width:100%"
         />
       </el-form-item>
-      <el-form-item v-if="!isEdit" label="角色">
-        <el-select v-model="form.role_ids" multiple placeholder="请选择角色" style="width:100%">
+      <el-form-item v-if="!isEdit" :label="t('system.user.role')">
+        <el-select v-model="form.role_ids" multiple :placeholder="t('system.user.selectRole')" style="width:100%">
           <el-option
             v-for="role in assignableRoles"
             :key="role.id"
@@ -37,24 +37,27 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
         v-perm="isEdit ? 'system:user:edit' : 'system:user:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
       >
-        确定
+        {{ t('system.common.confirm') }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { createUser, getUser, updateUser, type UserRecord } from '@/api/modules/user'
 import type { RoleRecord } from '@/api/modules/role'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
+
+const { t } = useI18n()
 
 interface UserFormState {
   username: string
@@ -104,11 +107,11 @@ function initialForm(): UserFormState {
 }
 
 const form = ref<UserFormState>(initialForm())
-const rules: FormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  email: [{ type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }],
-}
+const rules = computed<FormRules>(() => ({
+  username: [{ required: true, message: t('system.user.enterUsername'), trigger: 'blur' }],
+  nickname: [{ required: true, message: t('system.user.enterNickname'), trigger: 'blur' }],
+  email: [{ type: 'email', message: t('system.user.invalidEmail'), trigger: 'blur' }],
+}))
 
 function resetForm() {
   form.value = initialForm()
@@ -117,7 +120,7 @@ function resetForm() {
 
 async function loadUser(user: UserRecord) {
   const response = await getUser(user.id)
-  if (!response.data) throw new Error('用户详情响应缺少数据')
+  if (!response.data) throw new Error(t('system.user.detailMissing'))
 
   const detail = response.data
   form.value = {
@@ -150,7 +153,7 @@ async function submit() {
   const valid = await formRef.value?.validateField(fields).catch(() => false)
   if (valid === false) return
   if (hasForbiddenRoleSelection()) {
-    ElMessage.warning('禁止分配超级管理员角色')
+    ElMessage.warning(t('system.user.superRoleForbidden'))
     return
   }
 
@@ -164,7 +167,7 @@ async function submit() {
         phone: form.value.phone || undefined,
         dept_id: form.value.dept_id,
       })
-      ElMessage.success('更新成功')
+      ElMessage.success(t('system.common.updateSuccess'))
     } else {
       const response = await createUser({
         username: form.value.username,
@@ -174,8 +177,8 @@ async function submit() {
         dept_id: form.value.dept_id,
         role_ids: form.value.role_ids,
       })
-      if (!response.data) throw new Error('创建用户响应缺少数据')
-      ElMessage.success('用户已创建，状态为待激活')
+      if (!response.data) throw new Error(t('system.user.createResponseMissing'))
+      ElMessage.success(t('system.user.createdPending'))
     }
 
     visible.value = false

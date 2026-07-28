@@ -1,6 +1,6 @@
 import request from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id } from '@/shared/http/types'
+import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
 const BASE = '/system/depts'
 
@@ -14,7 +14,7 @@ export type DeptRecord = ApiSchema<'DeptVo'>
 /** 部门树 */
 export function getDeptTree()             { return request<DeptNode[]>({ url: `${BASE}/tree`, method: 'get' }) }
 /** 部门列表（分页） */
-export function listDept(params?: DeptQuery) { return request<DeptRecord[]>({ url: BASE, method: 'get', params }) }
+export function listDept(params?: DeptQuery) { return request<PageResponse<DeptRecord>>({ url: BASE, method: 'get', params }) }
 /** 部门列表（不分页） */
 export function listDeptNoPage(params?: DeptAllQuery) {
   return request<DeptRecord[]>({

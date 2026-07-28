@@ -172,9 +172,15 @@ if (document.info?.title !== 'RyFrame API') {
 const paths = Object.entries(document.paths ?? {})
 const operationIds = new Set()
 const bodylessWriteAllowlist = new Set([
+  // 这些操作的语义完全由路径、身份或请求头决定，后端不接收 JSON 请求体。
   'post_auth_logout',
   'post_auth_refresh',
+  'post_auth_ws_ticket',
+  'post_monitor_jobs_by_id_retry',
   'post_system_perms_sync',
+  'post_system_notices_by_id_publish_message',
+  'put_system_messages_by_id_read',
+  'put_system_messages_read_all',
 ])
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete'])
 let operationCount = 0

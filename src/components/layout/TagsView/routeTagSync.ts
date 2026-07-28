@@ -14,7 +14,7 @@ function addRouteTag(route: TagRoute, addView: (view: TagView) => void): void {
   })
 }
 
-/** Register tag synchronization and return the router-provided cleanup callback. */
+/** 注册标签同步，并返回路由器提供的清理回调。 */
 export function installRouteTagSync(
   router: Pick<Router, 'afterEach'>,
   currentRoute: TagRoute,

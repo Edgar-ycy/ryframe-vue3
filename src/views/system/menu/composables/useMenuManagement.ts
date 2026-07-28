@@ -8,6 +8,7 @@ import {
 } from '@/api/modules/menu'
 import { getPermissionTree } from '@/api/modules/permission'
 import { usePermission } from '@/hooks/usePermission'
+import { translate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
 import { confirmAction } from '@/utils/confirmAction'
 import { flattenPermissionOptions, type PermissionOption } from '../menuTree'
@@ -39,7 +40,11 @@ export function useMenuManagement() {
   }
 
   function menuTypeLabel(type: MenuType): string {
-    return ({ M: '目录', C: '菜单', F: '按钮' })[type]
+    return translate(({
+      M: 'system.menu.directory',
+      C: 'system.menu.menu',
+      F: 'system.menu.button',
+    } as const)[type])
   }
 
   function menuTypeTag(type: MenuType): '' | 'success' | 'warning' {
@@ -68,10 +73,14 @@ export function useMenuManagement() {
 
   async function handleChangeStatus(menu: MenuTreeNode, status: string): Promise<void> {
     const previousStatus = status === '1' ? '0' : '1'
-    const action = status === '1' ? '启用' : '停用'
-    const confirmed = await confirmAction(`确认要${action}菜单"${menu.name}"吗？`, '提示', {
-      type: 'warning',
-    })
+    const action = translate(
+      status === '1' ? 'system.common.enable' : 'system.common.disable',
+    )
+    const confirmed = await confirmAction(
+      translate('system.menu.statusChangeConfirm', { action, name: menu.name }),
+      translate('system.common.prompt'),
+      { type: 'warning' },
+    )
     if (!confirmed) {
       menu.status = previousStatus
       return
@@ -79,7 +88,7 @@ export function useMenuManagement() {
 
     try {
       await updateMenu(menu.id, toUpdateInput(menu, status))
-      ElMessage.success(`${action}成功`)
+      ElMessage.success(translate('system.common.actionSuccess', { action }))
       await fetchData()
     }
     catch (error) {
@@ -102,16 +111,19 @@ export function useMenuManagement() {
 
   async function handleDelete(menu: MenuTreeNode): Promise<void> {
     const confirmed = await confirmAction(
-      `确认删除菜单"${menu.name}"吗？存在子菜单时需先处理子菜单。`,
-      '警告',
-      { type: 'warning', confirmButtonText: '确认删除' },
+      translate('system.menu.deleteConfirm', { name: menu.name }),
+      translate('system.common.warning'),
+      {
+        type: 'warning',
+        confirmButtonText: translate('system.common.confirmDelete'),
+      },
     )
     if (!confirmed) return
 
     deletingId.value = menu.id
     try {
       await deleteMenu(menu.id)
-      ElMessage.success('删除成功')
+      ElMessage.success(translate('system.common.deleteSuccess'))
       await fetchData()
     }
     finally {

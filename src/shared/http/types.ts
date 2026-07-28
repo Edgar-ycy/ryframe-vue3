@@ -2,10 +2,11 @@ export type Id = string
 
 export interface ApiResponse<T = unknown> {
   code: number
-  msg: string
+  message: string
   data?: T
-  rows?: T extends readonly (infer Item)[] ? Item[] : T[]
-  total?: number
+  request_id: string
+  error_key?: string | null
+  details?: unknown
 }
 
 export interface PageQuery {
@@ -22,6 +23,10 @@ export function stripPagination<T extends object>(query?: T) {
 }
 
 export interface PageResponse<T> {
-  rows: T[]
+  items: T[]
+  page: number
+  page_size: number
   total: number
+  total_pages: number
+  max_page_size: number
 }

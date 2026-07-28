@@ -15,6 +15,14 @@ function normalizeBuildCommit(value: string | undefined): string {
   return commit
 }
 
+function normalizeDevServerPort(value: string | undefined): number {
+  const port = Number(value?.trim() || '5173')
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('VITE_APP_DEV_PORT must be an integer between 1 and 65535')
+  }
+  return port
+}
+
 function buildIdentityPlugin(frontendCommit: string): Plugin {
   return {
     name: 'ryframe-build-identity',
@@ -34,6 +42,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
   const isE2e = process.env.RYFRAME_E2E === '1'
   const frontendCommit = normalizeBuildCommit(env.VITE_APP_BUILD_COMMIT)
+  const devServerPort = normalizeDevServerPort(env.VITE_APP_DEV_PORT)
 
   return {
     plugins: [
@@ -90,12 +99,13 @@ export default defineConfig(({ mode }) => {
       : undefined,
 
     server: {
-      port: 80,
-      host: '0.0.0.0',
+      port: devServerPort,
+      host: env.VITE_APP_DEV_HOST || '127.0.0.1',
       proxy: {
         '/api': {
           target: proxyTarget,
           changeOrigin: true,
+          ws: true,
         },
       },
     },

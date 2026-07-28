@@ -2,12 +2,12 @@
   <div class="reset-page">
     <section class="reset-panel">
       <div class="reset-brand">RyFrame</div>
-      <h1>重置密码</h1>
+      <h1>{{ t('account.resetPassword') }}</h1>
 
       <el-alert
         v-if="missingParams"
         type="error"
-        title="重置链接无效或已失效"
+        :title="t('account.invalidResetLink')"
         :closable="false"
         show-icon
       />
@@ -24,7 +24,7 @@
           <el-input
             v-model="form.newPassword"
             type="password"
-            placeholder="至少 8 位，含大小写字母、数字和符号"
+            :placeholder="t('account.passwordHint', { min: PASSWORD_POLICY.min_length })"
             prefix-icon="Lock"
             show-password
             :maxlength="PASSWORD_POLICY.max_length"
@@ -34,7 +34,7 @@
           <el-input
             v-model="form.confirmPassword"
             type="password"
-            placeholder="确认新密码"
+            :placeholder="t('account.confirmNewPassword')"
             prefix-icon="Lock"
             show-password
             :maxlength="PASSWORD_POLICY.max_length"
@@ -49,30 +49,31 @@
             class="submit-button"
             @click="handleSubmit"
           >
-            提交
+            {{ t('account.submit') }}
           </el-button>
         </el-form-item>
       </el-form>
 
       <el-button link icon="ArrowLeft" class="login-link" @click="goLogin">
-        返回登录
+        {{ t('account.backToSignIn') }}
       </el-button>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { completePasswordReset } from '@/api/modules/auth'
 import type { FormItemRule } from 'element-plus'
 import {
   PASSWORD_POLICY,
-  newPasswordValidationMessage,
 } from '@/shared/security/passwordPolicy'
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { consumeResetPasswordFragment } from './resetCredentials'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 
@@ -95,27 +96,27 @@ const form = ref({
 
 const validateConfirm = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
   if (value !== form.value.newPassword) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error(t('account.passwordMismatch')))
     return
   }
   callback()
 }
 
 const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) => {
-  const message = newPasswordValidationMessage(String(value ?? ''))
+  const message = passwordValidationMessage(String(value ?? ''))
   callback(message ? new Error(message) : undefined)
 }
 
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { required: true, message: t('account.enterNewPassword'), trigger: 'blur' },
     { validator: validateNewPassword, trigger: 'blur' },
   ],
   confirmPassword: [
-    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    { required: true, message: t('account.enterConfirmPassword'), trigger: 'blur' },
     { validator: validateConfirm, trigger: 'blur' },
   ],
-}
+}))
 
 async function handleSubmit() {
   if (missingParams.value) return
@@ -130,7 +131,7 @@ async function handleSubmit() {
       token,
       new_password: form.value.newPassword,
     })
-    ElMessage.success('密码已重置')
+    ElMessage.success(t('account.passwordResetSuccess'))
     await router.replace('/login')
   } finally {
     loading.value = false
@@ -139,6 +140,29 @@ async function handleSubmit() {
 
 function goLogin() {
   router.replace('/login')
+}
+
+function passwordValidationMessage(password: string): string | undefined {
+  if (password.length < PASSWORD_POLICY.min_length) {
+    return t('account.passwordTooShort', { min: PASSWORD_POLICY.min_length })
+  }
+  if (password.length > PASSWORD_POLICY.max_length) {
+    return t('account.passwordTooLong', { max: PASSWORD_POLICY.max_length })
+  }
+  if (!/^[!-~]+$/.test(password)) return t('account.passwordVisibleAscii')
+  if (PASSWORD_POLICY.required_classes.includes('uppercase') && !/[A-Z]/.test(password)) {
+    return t('account.passwordNeedsUppercase')
+  }
+  if (PASSWORD_POLICY.required_classes.includes('lowercase') && !/[a-z]/.test(password)) {
+    return t('account.passwordNeedsLowercase')
+  }
+  if (PASSWORD_POLICY.required_classes.includes('digit') && !/[0-9]/.test(password)) {
+    return t('account.passwordNeedsDigit')
+  }
+  if (PASSWORD_POLICY.required_classes.includes('special') && !/[^A-Za-z0-9]/.test(password)) {
+    return t('account.passwordNeedsSpecial')
+  }
+  return undefined
 }
 </script>
 

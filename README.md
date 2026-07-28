@@ -56,7 +56,7 @@ ryframe-vue3/
 
 ### 环境要求
 
-- **Node.js** ^22.18.0 或 >= 24.11.0（与 Babel 8 的运行时要求一致）
+- **Node.js** 24.11.0（默认版本，见 `.node-version`）；CI 额外验证 22.18.0 兼容性
 - **pnpm** 10.28.2（以 `packageManager` 字段为准，推荐通过 Corepack 使用）
 
 ### 安装依赖
@@ -72,7 +72,7 @@ pnpm exec playwright install chromium
 pnpm dev
 ```
 
-开发服务器默认运行在 `http://localhost:80`，支持热模块替换（HMR）。
+开发服务器默认仅监听 `http://127.0.0.1:5173`，支持热模块替换（HMR）。可通过 `VITE_APP_DEV_HOST` 和 `VITE_APP_DEV_PORT` 覆盖。
 
 ### 构建生产版本
 
@@ -82,7 +82,7 @@ pnpm build
 
 构建产物输出至 `dist/` 目录。
 
-用于 RC 或 stable 公网观察的产物必须嵌入当前完整提交 SHA：
+用于候选版或稳定版公网观察的产物必须嵌入当前完整提交 SHA：
 
 ```bash
 test -z "$(git status --porcelain)"
@@ -104,11 +104,13 @@ pnpm check
 后端接口变更后，从后端仓库快照生成前端类型：
 
 ```powershell
+$env:RYFRAME_BACKEND_REPOSITORY='Edgar-ycy/ryframe'
+$env:RYFRAME_BACKEND_COMMIT='<后端完整 40 位提交 SHA>'
 $env:RYFRAME_OPENAPI_SOURCE='..\openapi\openapi.json'
 pnpm api:sync
 ```
 
-CI 会从后端主分支同步契约，重新生成 `src/api/generated/schema.ts` 和 `src/shared/security/passwordPolicy.generated.json` 并检查 Git diff。API 模块通过 `src/api/contract.ts` 引用生成类型，不手工复制 DTO 字段；新密码表单统一使用生成策略，不复制长度或正则。
+`pnpm api:check` 只验证仓库内已提交的快照、来源元数据和生成类型，不访问网络。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。API 模块通过 `src/api/contract.ts` 引用生成类型，不手工复制 DTO 字段；新密码表单统一使用生成策略，不复制长度或正则。
 
 ### 预览构建结果
 
@@ -124,8 +126,10 @@ pnpm preview
 |------|------|------|
 | `VITE_APP_TITLE` | 应用标题（显示在浏览器标签页） | `RyFrame 管理后台` |
 | `VITE_APP_BASE_API` | API 基础地址；生产必须使用 API 子域的绝对 HTTPS 地址 | 开发 `/api/v1`，生产 `https://api.example.com/api/v1` |
-| `VITE_APP_BUILD_COMMIT` | RC/stable 构建对应的完整 40 位 Git 提交 SHA | `0123456789abcdef0123456789abcdef01234567` |
+| `VITE_APP_BUILD_COMMIT` | 候选版/稳定版构建对应的完整 40 位 Git 提交 SHA | `0123456789abcdef0123456789abcdef01234567` |
 | `VITE_APP_PROXY_TARGET` | 开发服务器代理的后端地址 | `http://localhost:8080` |
+| `VITE_APP_DEV_HOST` | 开发服务器监听地址 | 默认 `127.0.0.1` |
+| `VITE_APP_DEV_PORT` | 开发服务器监听端口 | 默认 `5173` |
 
 开发环境使用 `.env.development`；生产部署从已提交的 `.env.production.example` 复制为被忽略的 `.env.production`，再填写实际 API 子域。
 
@@ -137,6 +141,8 @@ pnpm preview
 const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
 
 server: {
+  host: env.VITE_APP_DEV_HOST || '127.0.0.1',
+  port: Number(env.VITE_APP_DEV_PORT || '5173'),
   proxy: {
     '/api': {
       target: proxyTarget,

@@ -1,0 +1,104 @@
+import { access, readdir, readFile } from 'node:fs/promises'
+import path from 'node:path'
+import process from 'node:process'
+import { parseDocument } from 'yaml'
+
+const root = process.cwd()
+const workflowsDirectory = path.join(root, '.github', 'workflows')
+const actionsDirectory = path.join(root, '.github', 'actions')
+const errors = []
+
+async function readDirectory(directory) {
+  try {
+    return await readdir(directory, { withFileTypes: true })
+  }
+  catch (error) {
+    if (error?.code === 'ENOENT') return []
+    throw error
+  }
+}
+
+async function collectYamlFiles(directory, predicate = () => true) {
+  const files = []
+  for (const entry of await readDirectory(directory)) {
+    const absolute = path.join(directory, entry.name)
+    if (entry.isDirectory()) files.push(...await collectYamlFiles(absolute, predicate))
+    else if (entry.isFile() && predicate(entry.name)) files.push(absolute)
+  }
+  return files
+}
+
+async function fileExists(absolute) {
+  try {
+    await access(absolute)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+function collectLocalUses(value, uses = []) {
+  if (Array.isArray(value)) {
+    for (const child of value) collectLocalUses(child, uses)
+  }
+  else if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) {
+      if (key === 'uses' && typeof child === 'string' && child.startsWith('./')) uses.push(child)
+      else collectLocalUses(child, uses)
+    }
+  }
+  return uses
+}
+
+function relative(absolute) {
+  return path.relative(root, absolute).split(path.sep).join('/')
+}
+
+const workflowFiles = await collectYamlFiles(workflowsDirectory, name => /\.ya?ml$/iu.test(name))
+const actionFiles = await collectYamlFiles(actionsDirectory, name => /^action\.ya?ml$/iu.test(name))
+
+for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
+  const source = await readFile(absolute)
+  const name = relative(absolute)
+
+  if (source.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))) {
+    errors.push(`${name}: must not contain a UTF-8 BOM`)
+  }
+  if (source.includes(0x0d)) errors.push(`${name}: must use LF line endings`)
+  if (source.length > 0 && source.at(-1) !== 0x0a) {
+    errors.push(`${name}: must end with a single LF`)
+  }
+
+  const text = source.toString('utf8')
+  const document = parseDocument(text, { prettyErrors: true, strict: true, uniqueKeys: true })
+  for (const error of document.errors) errors.push(`${name}: ${error.message}`)
+  if (document.errors.length > 0) continue
+
+  for (const localUse of collectLocalUses(document.toJS())) {
+    if (localUse.includes('${{')) {
+      errors.push(`${name}: local uses reference must be static (${localUse})`)
+      continue
+    }
+    const target = path.resolve(root, localUse)
+    if (!target.startsWith(`${root}${path.sep}`)) {
+      errors.push(`${name}: local uses reference escapes repository (${localUse})`)
+      continue
+    }
+    const candidates = /\.ya?ml$/iu.test(target)
+      ? [target]
+      : [path.join(target, 'action.yml'), path.join(target, 'action.yaml')]
+    if (!await Promise.all(candidates.map(fileExists)).then(results => results.some(Boolean))) {
+      errors.push(`${name}: local uses reference is missing (${localUse})`)
+    }
+  }
+}
+
+if (errors.length > 0) {
+  console.error('Workflow check failed:')
+  for (const error of errors) console.error(`  - ${error}`)
+  process.exitCode = 1
+}
+else {
+  console.log(`Workflow check passed (${workflowFiles.length} workflows, ${actionFiles.length} action manifests)`)
+}

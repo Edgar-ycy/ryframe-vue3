@@ -7,10 +7,13 @@ const root = process.cwd()
 const errors = []
 const requiredFiles = [
   '.env.production.example',
+  '.node-version',
   'openapi/openapi.json',
+  'openapi/source.json',
   'playwright.config.ts',
   'pnpm-workspace.yaml',
   'scripts/check-api-contract.mjs',
+  'scripts/check-workflows.mjs',
   'scripts/sync-api-contract.mjs',
   'src/api/contract.ts',
   'src/api/generated/schema.ts',
@@ -56,16 +59,38 @@ const syncSource = await readFile(path.join(root, 'scripts/sync-api-contract.mjs
 for (const fragment of [
   'passwordPolicy.generated.json',
   "document['x-ryframe-password-policy']",
+  'RYFRAME_BACKEND_REPOSITORY',
+  'RYFRAME_BACKEND_COMMIT',
+  '--verify-local',
+  '--verify-upstream',
+  'sourceUrl(metadata)',
 ]) {
   if (!syncSource.includes(fragment)) {
     errors.push(`scripts/sync-api-contract.mjs: password policy generation is missing ${fragment}`)
   }
+}
+if (syncSource.includes('raw.githubusercontent.com/Edgar-ycy/ryframe/main')) {
+  errors.push('scripts/sync-api-contract.mjs: a floating backend main source is forbidden')
+}
+
+const contractSource = JSON.parse(await readFile(path.join(root, 'openapi/source.json'), 'utf8'))
+if (contractSource.schema_version !== 1
+  || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(contractSource.backend_repository ?? '')
+  || !/^[0-9a-f]{40}$/i.test(contractSource.backend_commit ?? '')
+  || contractSource.openapi_path !== 'openapi/openapi.json'
+  || !String(contractSource.openapi_version ?? '').startsWith('3.')
+  || !/^[0-9a-f]{64}$/i.test(contractSource.sha256 ?? '')) {
+  errors.push('openapi/source.json: must record a valid immutable backend contract source')
 }
 
 const packageDocument = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 const requiredNodeRange = '^22.18.0 || >=24.11.0'
 if (packageDocument.engines?.node !== requiredNodeRange) {
   errors.push(`package.json: engines.node must be ${requiredNodeRange}`)
+}
+const defaultNodeVersion = (await readFile(path.join(root, '.node-version'), 'utf8')).trim()
+if (defaultNodeVersion !== '24.11.0') {
+  errors.push('.node-version: default Node.js must be 24.11.0')
 }
 if (packageDocument.scripts?.['test:e2e'] !== 'playwright test') {
   errors.push('package.json: test:e2e must run the Playwright suite')
@@ -75,6 +100,19 @@ if (!packageDocument.scripts?.check?.includes('pnpm test:e2e')) {
 }
 if (!packageDocument.scripts?.check?.includes('pnpm check:dependencies')) {
   errors.push('package.json: the full check command must include the prerelease dependency gate')
+}
+if (packageDocument.scripts?.['check:workflows'] !== 'node scripts/check-workflows.mjs') {
+  errors.push('package.json: check:workflows must validate GitHub workflow files')
+}
+if (!packageDocument.scripts?.check?.includes('pnpm check:workflows')) {
+  errors.push('package.json: the full check command must include the workflow gate')
+}
+if (!packageDocument.scripts?.['api:check']?.includes('--verify-local')
+  || packageDocument.scripts?.['api:check']?.includes('api:sync')) {
+  errors.push('package.json: api:check must verify the committed local contract without syncing')
+}
+if (!packageDocument.scripts?.['api:check:upstream']?.includes('--verify-upstream')) {
+  errors.push('package.json: api:check:upstream must verify the immutable upstream source')
 }
 
 const workspaceConfig = parseYaml(
@@ -103,11 +141,33 @@ for (const [dependency, expected] of Object.entries({
 
 const workflowSource = await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')
 for (const fragment of [
+  'permissions:\n  contents: read',
+  'node-version-file: .node-version',
+  'node-version: 22.18.0',
+  'pnpm check:workflows',
+  'go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12',
+  'actionlint" -color',
+  'pnpm api:check',
+  'pnpm api:check:upstream',
   'playwright install --with-deps chromium',
   'pnpm test:e2e',
 ]) {
   if (!workflowSource.includes(fragment)) {
     errors.push(`.github/workflows/ci.yml: browser CI gate is missing ${fragment}`)
+  }
+}
+if (workflowSource.includes('raw.githubusercontent.com/Edgar-ycy/ryframe/main')) {
+  errors.push('.github/workflows/ci.yml: floating backend main contract source is forbidden')
+}
+
+const viteSource = await readFile(path.join(root, 'vite.config.ts'), 'utf8')
+for (const fragment of [
+  "env.VITE_APP_DEV_HOST || '127.0.0.1'",
+  "env.VITE_APP_DEV_PORT",
+  "|| '5173'",
+]) {
+  if (!viteSource.includes(fragment)) {
+    errors.push(`vite.config.ts: missing safe local development server default (${fragment})`)
   }
 }
 

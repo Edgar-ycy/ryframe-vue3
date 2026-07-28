@@ -1,21 +1,21 @@
 <template>
-  <el-dialog v-model="visible" title="设置数据权限" width="560px" @closed="reset">
+  <el-dialog v-model="visible" :title="t('system.role.setDataScopeTitle')" width="560px" @closed="reset">
     <el-form v-loading="loading" label-width="110px">
-      <el-form-item label="数据范围" required>
+      <el-form-item :label="t('system.role.dataScope')" required>
         <el-select v-model="dataScope" style="width:100%">
-          <el-option label="全部数据权限" value="1" />
-          <el-option label="自定义数据权限" value="2" />
-          <el-option label="本部门数据权限" value="3" />
-          <el-option label="本部门及以下" value="4" />
-          <el-option label="仅本人数据" value="5" />
+          <el-option :label="t('system.role.allData')" value="1" />
+          <el-option :label="t('system.role.customData')" value="2" />
+          <el-option :label="t('system.role.currentDepartmentData')" value="3" />
+          <el-option :label="t('system.role.currentAndBelowData')" value="4" />
+          <el-option :label="t('system.role.selfData')" value="5" />
         </el-select>
       </el-form-item>
-      <el-form-item v-if="dataScope === '2'" label="自定义部门" required>
+      <el-form-item v-if="dataScope === '2'" :label="t('system.role.customDepartment')" required>
         <el-tree-select
           v-model="deptIds"
           :data="deptTree"
           :props="{ label: 'name', value: 'id', children: 'children' }"
-          placeholder="请选择部门"
+          :placeholder="t('system.role.selectDepartment')"
           multiple
           check-strictly
           show-checkbox
@@ -24,15 +24,16 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button v-perm="'system:role:edit'" type="primary" :loading="submitting" @click="submit">
-        确定
+        {{ t('system.common.confirm') }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   getRole,
   replaceRoleDataScope,
@@ -41,6 +42,8 @@ import {
 } from '@/api/modules/role'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -71,7 +74,7 @@ async function loadDataScope(role: RoleRecord): Promise<void> {
   loading.value = true
   try {
     const response = await getRole(role.id)
-    if (!response.data) throw new Error('角色详情响应缺少数据')
+    if (!response.data) throw new Error(t('system.role.detailMissing'))
     dataScope.value = response.data.data_scope
     deptIds.value = response.data.dept_ids ?? []
   }
@@ -94,7 +97,7 @@ watch(
 async function submit(): Promise<void> {
   if (!props.role) return
   if (dataScope.value === '2' && deptIds.value.length === 0) {
-    ElMessage.warning('自定义数据权限至少选择一个部门')
+    ElMessage.warning(t('system.role.customDepartmentRequired'))
     return
   }
 
@@ -104,7 +107,7 @@ async function submit(): Promise<void> {
       data_scope: dataScope.value,
       dept_ids: dataScope.value === '2' ? deptIds.value : [],
     })
-    ElMessage.success('数据权限更新成功')
+    ElMessage.success(t('system.role.dataScopeUpdated'))
     visible.value = false
     emit('saved')
   }

@@ -1,5 +1,6 @@
 import request, { requestBlob } from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
+import type { PageResponse } from '@/shared/http/types'
 
 const BASE = '/tools/gen'
 
@@ -13,7 +14,7 @@ export type WriteReport = ApiSchema<'WriteReport'>
 
 /** 查询数据库表列表 */
 export function listTable(params: GenQuery) {
-  return request<TableInfo[]>({ url: `${BASE}/tables`, method: 'get', params })
+  return request<PageResponse<TableInfo>>({ url: `${BASE}/tables`, method: 'get', params })
 }
 
 /** 预览代码 */
@@ -26,7 +27,7 @@ export function generateCode(data: GenerateRequest) {
   return request<WriteReport>({ url: `${BASE}/generate`, method: 'post', data })
 }
 
-/** 下载生成代码（打包 zip） */
+/** 下载生成代码（打包为压缩包） */
 export function downloadCode(data: GenerateOptions) {
   return requestBlob({ url: `${BASE}/download`, method: 'post', data })
 }

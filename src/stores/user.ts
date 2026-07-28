@@ -3,6 +3,9 @@ import { getUserInfo, login as loginApi, type UserInfo } from '@/api/modules/aut
 import { ensureCsrfToken, publishAuthenticatedSession } from '@/app/session/sessionCoordinator'
 import type { Id } from '@/shared/http/types'
 import { getTenantId, setTenantId } from '@/utils/auth'
+import { clearServerState } from '@/shared/query/client'
+import { normalizeLocale, translate, type AppLocale } from '@/i18n'
+import { useSettingsStore } from '@/stores/settings'
 
 export type SessionStatus = 'initializing' | 'authenticated' | 'anonymous' | 'unavailable'
 
@@ -17,6 +20,7 @@ interface UserState {
   avatar: string
   email: string
   phone: string
+  preferredLocale?: AppLocale
   roles: string[]
   permissions: string[]
 }
@@ -33,6 +37,7 @@ export const useUserStore = defineStore('user', {
     avatar: '',
     email: '',
     phone: '',
+    preferredLocale: undefined,
     roles: [],
     permissions: [],
   }),
@@ -58,13 +63,14 @@ export const useUserStore = defineStore('user', {
         csrfToken,
       )
       const authData = res.data
-      if (!authData) throw new Error('登录响应缺少认证数据')
+      if (!authData) throw new Error(translate('shell.session.loginResponseMissingAuth'))
       const userInfo = authData.user_info
 
       if (!authData.access_token || !userInfo?.tenant_id) {
-        throw new Error('登录响应缺少租户信息')
+        throw new Error(translate('shell.session.loginResponseMissingTenant'))
       }
 
+      clearServerState()
       this.token = authData.access_token
       this.sessionStatus = 'authenticated'
       this.tenantId = userInfo.tenant_id
@@ -77,6 +83,9 @@ export const useUserStore = defineStore('user', {
       this.email = userInfo.email || ''
       this.phone = userInfo.phone || ''
       this.avatar = userInfo.avatar || ''
+      const preferredLocale = getPreferredLocale(userInfo)
+      this.preferredLocale = preferredLocale
+      if (preferredLocale) useSettingsStore().setLocale(preferredLocale)
       this.roles = userInfo.roles || []
       this.permissions = userInfo.perms || []
       publishAuthenticatedSession(authData.access_token, userInfo)
@@ -85,12 +94,15 @@ export const useUserStore = defineStore('user', {
 
     async getUserInfo() {
       const res = await getUserInfo()
-      if (!res.data) throw new Error('用户信息响应缺少数据')
+      if (!res.data) throw new Error(translate('shell.session.userInfoResponseMissing'))
       this.applyUserInfo(res.data)
       return res
     },
 
     applyUserInfo(userInfo: UserInfo) {
+      if (this.userId !== userInfo.id || this.tenantId !== userInfo.tenant_id) {
+        clearServerState()
+      }
       this.tenantId = userInfo.tenant_id
       this.tenantName = userInfo.tenant_name || userInfo.tenant_id
       setTenantId(userInfo.tenant_id)
@@ -100,8 +112,15 @@ export const useUserStore = defineStore('user', {
       this.email = userInfo.email || ''
       this.phone = userInfo.phone || ''
       this.avatar = userInfo.avatar || ''
+      const preferredLocale = getPreferredLocale(userInfo)
+      this.preferredLocale = preferredLocale
+      if (preferredLocale) useSettingsStore().setLocale(preferredLocale)
       this.roles = userInfo.roles || []
       this.permissions = userInfo.perms || []
+    },
+
+    setPreferredLocale(locale: AppLocale | undefined) {
+      this.preferredLocale = locale
     },
 
     resetState() {
@@ -115,8 +134,13 @@ export const useUserStore = defineStore('user', {
       this.avatar = ''
       this.email = ''
       this.phone = ''
+      this.preferredLocale = undefined
       this.roles = []
       this.permissions = []
     },
   },
 })
+
+function getPreferredLocale(userInfo: UserInfo): AppLocale | undefined {
+  return normalizeLocale((userInfo as UserInfo & { preferred_locale?: unknown }).preferred_locale)
+}

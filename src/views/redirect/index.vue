@@ -1,13 +1,16 @@
 <template>
   <div class="redirect-container">
     <el-icon class="loading-icon" :size="32"><Loading /></el-icon>
-    <p>正在跳转...</p>
+    <p>{{ t('account.redirecting') }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 onMounted(() => {
   const { params, query } = route

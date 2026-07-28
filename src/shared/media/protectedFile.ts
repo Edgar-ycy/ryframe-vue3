@@ -6,7 +6,7 @@ export interface ProtectedFileLocation {
 const protectedDownloadPath = '/common/file/download'
 const fallbackOrigin = 'http://ryframe.local'
 
-/** Parse the stable download locator returned for objects in private buckets. */
+/** 解析私有存储桶对象返回的稳定下载定位地址。 */
 export function parseProtectedFileUrl(value: string | null | undefined): ProtectedFileLocation | null {
   const candidate = value?.trim()
   if (!candidate) return null

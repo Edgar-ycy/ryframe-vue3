@@ -1,6 +1,6 @@
 import request, { requestBlob } from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id } from '@/shared/http/types'
+import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
 const BASE = '/system/roles'
 
@@ -21,7 +21,7 @@ export type ReplaceRoleDataScopeInput = {
   dept_ids: Id[]
 }
 
-export function listRole(params: RoleQuery)    { return request<RoleRecord[]>({ url: BASE, method: 'get', params }) }
+export function listRole(params: RoleQuery)    { return request<PageResponse<RoleRecord>>({ url: BASE, method: 'get', params }) }
 export function listRoleNoPage(params?: RoleAllQuery) {
   return request<RoleRecord[]>({
     url: `${BASE}/all`, method: 'get', params: stripPagination(params),

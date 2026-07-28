@@ -55,7 +55,7 @@ import {
   View,
 } from '@element-plus/icons-vue'
 
-/** Curated icon surface used by routes, menus and the icon picker. */
+/** 供路由、菜单和图标选择器使用的精选图标集合。 */
 export const elementIcons = {
   ArrowDown,
   ArrowLeft,
@@ -115,7 +115,7 @@ export const elementIcons = {
 
 export type ElementIconName = keyof typeof elementIcons
 
-/** Resolve database-driven icon names without rendering an empty component. */
+/** 解析由数据库驱动的图标名称，避免渲染空组件。 */
 export function resolveElementIcon(
   name: string | null | undefined,
   fallback: ElementIconName = 'Grid',

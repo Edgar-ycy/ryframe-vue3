@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="分配权限" width="550px" @closed="reset">
+  <el-dialog v-model="visible" :title="t('system.role.assignPermissionTitle')" width="550px" @closed="reset">
     <el-tree
       ref="treeRef"
       v-loading="loading"
@@ -14,16 +14,16 @@
         <div class="permission-node">
           <span>{{ data.name }}</span>
           <el-tag v-if="data.perm_type" :type="data.perm_type === 'api' ? 'info' : 'success'" size="small">
-            {{ data.perm_type === 'api' ? 'API' : '菜单' }}
+            {{ data.perm_type === 'api' ? t('system.common.api') : t('system.common.menu') }}
           </el-tag>
           <span v-if="data.code" class="permission-node__code">{{ data.code }}</span>
         </div>
       </template>
     </el-tree>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button v-perm="'system:role:edit'" type="primary" :loading="submitting" @click="submit">
-        确定
+        {{ t('system.common.confirm') }}
       </el-button>
     </template>
   </el-dialog>
@@ -32,9 +32,12 @@
 <script setup lang="ts">
 import { nextTick } from 'vue'
 import type { TreeInstance } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { replaceRolePermissions, type RoleRecord } from '@/api/modules/role'
 import { getRolePermissions, type PermissionTreeNode } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -96,7 +99,7 @@ async function submit(): Promise<void> {
   submitting.value = true
   try {
     await replaceRolePermissions(props.role.id, checkedKeys.value)
-    ElMessage.success('权限分配成功')
+    ElMessage.success(t('system.role.permissionAssigned'))
     visible.value = false
   }
   finally {

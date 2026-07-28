@@ -96,6 +96,37 @@ function authResponse(accessToken: string) {
 }
 
 async function installApiMocks(page: Page): Promise<ApiMockState> {
+  await page.context().addInitScript(() => {
+    class E2eMessageSocket {
+      readyState = 0
+      onopen: ((event: Event) => void) | null = null
+      onclose: ((event: CloseEvent) => void) | null = null
+      onerror: ((event: Event) => void) | null = null
+      onmessage: ((event: MessageEvent) => void) | null = null
+
+      constructor() {
+        setTimeout(() => {
+          this.readyState = 1
+          this.onopen?.(new Event('open'))
+        }, 0)
+      }
+
+      send(): void {}
+
+      close(): void {
+        if (this.readyState === 3) return
+        this.readyState = 3
+        this.onclose?.(new CloseEvent('close'))
+      }
+    }
+
+    Object.defineProperty(window, 'WebSocket', {
+      configurable: true,
+      writable: true,
+      value: E2eMessageSocket,
+    })
+  })
+
   const unexpectedRequests: string[] = []
   const generationRequests: unknown[] = []
   const avatarDownloads: ApiMockState['avatarDownloads'] = []
@@ -188,6 +219,14 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         })
         return
       }
+      case `POST ${apiBasePath}/auth/ws-ticket`:
+        if (!await requireAccess(route, 'auth/ws-ticket')) return
+        await json(route, {
+          code: 200,
+          msg: 'ok',
+          data: { ticket: 'e2e-message-ticket', expires_in: 30 },
+        })
+        return
       case `POST ${apiBasePath}/auth/refresh`: {
         refreshRequests += 1
         const headers = request.headers()

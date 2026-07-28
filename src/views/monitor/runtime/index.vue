@@ -3,7 +3,7 @@
     <div class="page-actions">
       <el-button v-perm="'monitor:runtime:list'" :loading="loading" @click="fetchRuntime">
         <el-icon><Refresh /></el-icon>
-        刷新
+        {{ t('monitor.runtime.refresh') }}
       </el-button>
     </div>
 
@@ -12,14 +12,14 @@
         <el-card shadow="never" class="metric-card">
           <div class="metric-header">
             <el-icon><Coin /></el-icon>
-            <span>数据库</span>
+            <span>{{ t('monitor.runtime.database') }}</span>
           </div>
           <div class="metric-value">{{ runtime?.database.driver?.toUpperCase() || '-' }}</div>
           <div class="metric-footer">
             <el-tag :type="databaseTagType" size="small">{{ databaseStatusText }}</el-tag>
             <span>
-              {{ runtime?.database.replica_count ?? 0 }} 个只读副本 ·
-              {{ runtime?.database.source_count ?? 0 }} 个业务数据源
+              {{ t('monitor.runtime.replicaCount', { count: runtime?.database.replica_count ?? 0 }) }} ·
+              {{ t('monitor.runtime.sourceCount', { count: runtime?.database.source_count ?? 0 }) }}
             </span>
           </div>
         </el-card>
@@ -29,7 +29,7 @@
         <el-card shadow="never" class="metric-card">
           <div class="metric-header">
             <el-icon><Connection /></el-icon>
-            <span>Redis</span>
+            <span>{{ t('monitor.runtime.redis') }}</span>
           </div>
           <el-tag :type="redisTagType" size="large">{{ redisStatusText }}</el-tag>
         </el-card>
@@ -39,13 +39,13 @@
         <el-card shadow="never" class="metric-card">
           <div class="metric-header">
             <el-icon><FolderOpened /></el-icon>
-            <span>对象存储</span>
+            <span>{{ t('monitor.runtime.objectStorage') }}</span>
           </div>
           <div class="metric-value">{{ runtime?.object_storage.backend?.toUpperCase() || '-' }}</div>
           <div class="metric-footer">
             <el-tag :type="storageTagType" size="small">{{ storageStatusText }}</el-tag>
             <span class="metric-endpoint" :title="runtime?.object_storage.endpoint || ''">
-              {{ runtime?.object_storage.endpoint || '本地文件系统' }}
+              {{ runtime?.object_storage.endpoint || t('monitor.runtime.localFileSystem') }}
             </span>
           </div>
         </el-card>
@@ -55,25 +55,25 @@
         <el-card shadow="never" class="metric-card">
           <div class="metric-header">
             <el-icon><Switch /></el-icon>
-            <span>上传熔断器</span>
+            <span>{{ t('monitor.runtime.uploadCircuitBreaker') }}</span>
           </div>
-          <el-tag :type="circuitTagType" size="large">{{ runtime?.upload_circuit_breaker.state || '-' }}</el-tag>
+          <el-tag :type="circuitTagType" size="large">{{ circuitStatusText }}</el-tag>
         </el-card>
       </el-col>
     </el-row>
 
     <section class="topology-section">
       <div class="section-header">
-        <h2>数据库拓扑</h2>
+        <h2>{{ t('monitor.runtime.databaseTopology') }}</h2>
         <el-tag effect="plain">{{ readPolicyText }}</el-tag>
       </div>
       <el-table :data="databaseNodes" border>
-        <el-table-column prop="name" label="节点" min-width="180" />
-        <el-table-column prop="role" label="角色" width="120" />
-        <el-table-column label="状态" width="120">
+        <el-table-column prop="name" :label="t('monitor.runtime.node')" min-width="180" />
+        <el-table-column prop="role" :label="t('monitor.runtime.role')" width="120" />
+        <el-table-column :label="t('monitor.runtime.status')" width="120">
           <template #default="{ row }">
             <el-tag :type="row.connected ? 'success' : 'danger'">
-              {{ row.connected ? '已连接' : '未连接' }}
+              {{ row.connected ? t('monitor.runtime.connected') : t('monitor.runtime.disconnected') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -84,14 +84,16 @@
 
 <script setup lang="ts">
 import { Coin, Connection, FolderOpened, Refresh, Switch } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import { getRuntimeStatus, type RuntimeStatus } from '@/api/modules/monitor'
 
+const { t } = useI18n()
 const loading = ref(false)
 const runtime = ref<RuntimeStatus | null>(null)
 
 interface DatabaseNodeRow {
   name: string
-  role: '主库' | '只读副本' | '业务数据源'
+  role: string
   connected: boolean
 }
 
@@ -100,31 +102,35 @@ const databaseNodes = computed<DatabaseNodeRow[]>(() => {
   return [
     {
       name: 'primary',
-      role: '主库',
+      role: t('monitor.runtime.primary'),
       connected: runtime.value.database.primary_connected,
     },
     ...runtime.value.database.replicas.map(replica => ({
       name: replica.name,
-      role: '只读副本' as const,
+      role: t('monitor.runtime.readReplica'),
       connected: replica.connected,
     })),
     ...runtime.value.database.sources.map(source => ({
       name: source.name,
-      role: '业务数据源' as const,
+      role: t('monitor.runtime.businessDataSource'),
       connected: source.connected,
     })),
   ]
 })
 
 const databaseTagType = computed(() => runtime.value?.database.connected ? 'success' : 'danger')
-const databaseStatusText = computed(() => runtime.value?.database.connected ? '拓扑正常' : '拓扑异常')
+const databaseStatusText = computed(() => runtime.value?.database.connected
+  ? t('monitor.runtime.topologyHealthy')
+  : t('monitor.runtime.topologyUnhealthy'))
 
 const storageTagType = computed(() => runtime.value?.object_storage.connected ? 'success' : 'danger')
-const storageStatusText = computed(() => runtime.value?.object_storage.connected ? '已连接' : '未连接')
+const storageStatusText = computed(() => runtime.value?.object_storage.connected
+  ? t('monitor.runtime.connected')
+  : t('monitor.runtime.disconnected'))
 
 const readPolicyText = computed(() => {
-  if (runtime.value?.database.read_policy === 'round_robin') return '只读副本轮询'
-  return '主库读取'
+  if (runtime.value?.database.read_policy === 'round_robin') return t('monitor.runtime.readReplicaRoundRobin')
+  return t('monitor.runtime.primaryRead')
 })
 
 const circuitTagType = computed(() => {
@@ -135,14 +141,22 @@ const circuitTagType = computed(() => {
   return 'info'
 })
 
+const circuitStatusText = computed(() => {
+  const state = runtime.value?.upload_circuit_breaker.state
+  if (state === 'Closed') return t('monitor.runtime.circuitClosed')
+  if (state === 'HalfOpen') return t('monitor.runtime.circuitHalfOpen')
+  if (state === 'Open') return t('monitor.runtime.circuitOpen')
+  return state || '-'
+})
+
 const redisTagType = computed(() => {
   if (!runtime.value?.redis.configured) return 'info'
   return runtime.value.redis.connected ? 'success' : 'danger'
 })
 
 const redisStatusText = computed(() => {
-  if (!runtime.value?.redis.configured) return '未配置'
-  return runtime.value.redis.connected ? '已连接' : '未连接'
+  if (!runtime.value?.redis.configured) return t('monitor.runtime.unconfigured')
+  return runtime.value.redis.connected ? t('monitor.runtime.connected') : t('monitor.runtime.disconnected')
 })
 
 async function fetchRuntime() {

@@ -9,7 +9,7 @@ import {
 import { downloadFile } from '@/api/modules/common'
 import { parseProtectedFileUrl } from '@/shared/media/protectedFile'
 
-/** Resolve private object locators through the authenticated HTTP client. */
+/** 通过已鉴权的 HTTP 客户端解析私有对象定位地址。 */
 export function useAuthenticatedImage(source: MaybeRefOrGetter<string | null | undefined>) {
   const imageSrc = ref('')
   const loading = ref(false)

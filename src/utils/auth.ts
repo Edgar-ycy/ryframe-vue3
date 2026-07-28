@@ -7,8 +7,8 @@ function storage(): Storage | undefined {
 }
 
 /**
- * v0.5 no longer persists credentials in browser storage. Keep this migration
- * idempotent so users upgrading from v0.4 do not retain stale bearer tokens.
+ * v0.5 不再将凭据持久化到浏览器存储。此迁移必须保持幂等，
+ * 以免从 v0.4 升级的用户保留过期的 Bearer 令牌。
  */
 export function clearLegacyAuthStorage(): void {
   const local = storage()

@@ -1,25 +1,25 @@
 <template>
   <el-card shadow="never">
     <template #header>
-      <span>基本信息</span>
+      <span>{{ t('profile.basicInformation') }}</span>
     </template>
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" class="profile-form">
-      <el-form-item label="用户名">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="profile-form">
+      <el-form-item :label="t('profile.username')">
         <el-input :model-value="username" disabled />
       </el-form-item>
-      <el-form-item label="昵称" prop="nickname">
-        <el-input v-model="form.nickname" maxlength="64" placeholder="请输入昵称" />
+      <el-form-item :label="t('profile.nickname')" prop="nickname">
+        <el-input v-model="form.nickname" maxlength="64" :placeholder="t('profile.enterNickname')" />
       </el-form-item>
-      <el-form-item label="邮箱" prop="email">
-        <el-input v-model="form.email" placeholder="请输入邮箱" />
+      <el-form-item :label="t('profile.email')" prop="email">
+        <el-input v-model="form.email" :placeholder="t('profile.enterEmail')" />
       </el-form-item>
-      <el-form-item label="手机号" prop="phone">
-        <el-input v-model="form.phone" maxlength="11" placeholder="请输入手机号" />
+      <el-form-item :label="t('profile.phone')" prop="phone">
+        <el-input v-model="form.phone" maxlength="11" :placeholder="t('profile.enterPhone')" />
       </el-form-item>
-      <el-form-item label="部门">
+      <el-form-item :label="t('profile.department')">
         <el-input :model-value="profile.dept_name || '-'" disabled />
       </el-form-item>
-      <el-form-item label="角色">
+      <el-form-item :label="t('profile.roles')">
         <div v-if="profile.roles?.length" class="role-tags">
           <el-tag v-for="role in profile.roles" :key="role" size="small" type="success">
             {{ role }}
@@ -27,17 +27,18 @@
         </div>
         <span v-else>-</span>
       </el-form-item>
-      <el-form-item label="创建时间">
+      <el-form-item :label="t('profile.createdAt')">
         <el-input :model-value="profile.created_at || '-'" disabled />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :loading="submitting" @click="submit">保存</el-button>
+        <el-button type="primary" :loading="submitting" @click="submit">{{ t('common.save') }}</el-button>
       </el-form-item>
     </el-form>
   </el-card>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   updateProfile,
   type ProfileInfo,
@@ -56,11 +57,12 @@ const emit = defineEmits<{
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 const form = ref({ nickname: '', email: '', phone: '' })
-const rules: FormRules = {
-  nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  email: [{ type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }],
-  phone: [{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }],
-}
+const { t } = useI18n()
+const rules = computed<FormRules>(() => ({
+  nickname: [{ required: true, message: t('profile.enterNicknameValidation'), trigger: 'blur' }],
+  email: [{ type: 'email', message: t('profile.emailValidation'), trigger: 'blur' }],
+  phone: [{ pattern: /^1[3-9]\d{9}$/, message: t('profile.phoneValidation'), trigger: 'blur' }],
+}))
 
 watch(
   () => props.profile,
@@ -87,7 +89,7 @@ async function submit(): Promise<void> {
   submitting.value = true
   try {
     await updateProfile(payload)
-    ElMessage.success('保存成功')
+    ElMessage.success(t('profile.saveSuccess'))
     emit('saved', payload)
   }
   finally {

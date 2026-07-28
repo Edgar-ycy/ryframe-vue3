@@ -1,5 +1,6 @@
 import type { Router } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { translate } from '@/i18n'
 import {
   getCsrfChallenge,
   logout as logoutApi,
@@ -11,6 +12,7 @@ import { useTagsViewStore } from '@/stores/tagsView'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
+import { clearServerState } from '@/shared/query/client'
 import {
   isSessionMessage,
   type SessionMessage,
@@ -185,7 +187,7 @@ function handleSessionMessage(message: SessionMessage): void {
   if (message.type === 'refresh-failed') {
     if (!matchesCurrentRemoteRefresh(message)) return
     remoteRefreshOperation!.pending = false
-    const error = new HttpError('其他标签页刷新会话失败', message.status)
+    const error = new HttpError(translate('shell.session.otherTabRefreshFailed'), message.status)
     settleRemoteRefreshWaiters(message.operationId, waiter => waiter.reject(error))
     return
   }
@@ -205,8 +207,7 @@ function postMessage(message: SessionOutboundMessage): void {
     channel?.postMessage({ ...message, source: sourceId })
   }
   catch {
-    // Cross-tab coordination is an optimization; it must never invalidate a
-    // locally successful login or refresh.
+    // 跨标签页协调只是优化，绝不能使本地已成功完成的登录或刷新失效。
   }
 }
 
@@ -219,7 +220,7 @@ export async function ensureCsrfToken(force = false): Promise<string> {
       .then((response) => {
         const challenge = response.data
         if (!challenge?.csrf_token || !challenge.expires_in) {
-          throw new HttpError('CSRF challenge 响应无效', 503)
+          throw new HttpError(translate('shell.session.csrfChallengeInvalid'), 503)
         }
         csrfToken = challenge.csrf_token
         csrfExpiresAt = Date.now() + challenge.expires_in * 1_000
@@ -267,7 +268,9 @@ export function initializeSession(): Promise<void> {
     const pending = refreshAccessToken()
       .then(() => undefined)
       .catch(async (error: unknown) => {
-        const httpError = error instanceof HttpError ? error : new HttpError('会话初始化失败', undefined, undefined, error)
+        const httpError = error instanceof HttpError
+          ? error
+          : new HttpError(translate('shell.session.initializationFailed'), undefined, undefined, error)
         if (httpError.status === 503) {
           useUserStore().sessionStatus = 'unavailable'
           return
@@ -297,14 +300,14 @@ function scheduleRemoteRefreshWaiter(
     ) {
       remoteRefreshOperation.pending = false
     }
-    waiter.reject(new HttpError('等待其他标签页刷新超时', 409))
+    waiter.reject(new HttpError(translate('shell.session.remoteRefreshTimeout'), 409))
   }, Math.max(remaining, 0))
 }
 
 async function waitForRemoteRefresh(operation: RemoteRefreshOperation): Promise<string> {
   if (!operation.pending || operation.expiresAt <= Date.now()) {
     operation.pending = false
-    throw new HttpError('远端刷新等待已结束', 409)
+    throw new HttpError(translate('shell.session.remoteRefreshFinished'), 409)
   }
   return new Promise<string>((resolve, reject) => {
     const waiter: RemoteRefreshWaiter = {
@@ -318,7 +321,7 @@ async function waitForRemoteRefresh(operation: RemoteRefreshOperation): Promise<
 }
 
 export async function refreshAccessToken(): Promise<string> {
-  if (sessionTerminating) throw new HttpError('会话正在退出', 401)
+  if (sessionTerminating) throw new HttpError(translate('shell.session.terminating'), 401)
   const callerEpoch = sessionEpoch
   const remoteOperation = remoteRefreshOperation
   if (
@@ -395,7 +398,9 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
   const response = await refreshTokenApi(challenge)
   assertSessionEpoch(refreshEpoch)
   const auth = response.data
-  if (!auth?.access_token || !auth.user_info) throw new HttpError('刷新会话响应无效', 401)
+  if (!auth?.access_token || !auth.user_info) {
+    throw new HttpError(translate('shell.session.refreshResponseInvalid'), 401)
+  }
   applyAuthenticatedSession(auth.access_token, auth.user_info)
   try {
     await refreshRoutesAfterAuthentication(true)
@@ -438,43 +443,44 @@ function userStoreToInfo(user: ReturnType<typeof useUserStore>): UserInfo {
     phone: user.phone,
     roles: [...user.roles],
     perms: [...user.permissions],
-  }
+    ...(user.preferredLocale ? { preferred_locale: user.preferredLocale } : {}),
+  } as UserInfo
 }
 
 async function handleRefreshFailure(error: HttpError): Promise<void> {
   if (error.status === 503) {
     useUserStore().sessionStatus = 'unavailable'
-    ElMessage.error('认证服务暂不可用，请稍后重试')
+    ElMessage.error(translate('shell.session.authUnavailable'))
     return
   }
   if (error.status === 401 || error.status === 403) {
-    ElMessage.error('登录已过期，请重新登录')
+    ElMessage.error(translate('shell.session.expired'))
     await terminateSession()
   }
 }
 
 function reportError(error: HttpError): void {
   if (error.status === 401) {
-    ElMessage.error(error.message || '登录已失效，请重新登录')
+    ElMessage.error(error.message || translate('shell.session.invalid'))
     return
   }
   if (error.status === 403) {
-    ElMessage.error('没有操作权限')
+    ElMessage.error(translate('shell.session.forbidden'))
     return
   }
   if (error.status === 404) {
-    ElMessage.error(error.message || '请求的资源不存在')
+    ElMessage.error(error.message || translate('shell.session.notFound'))
     return
   }
   if (error.status === 503) {
-    ElMessage.error('服务暂不可用，请稍后重试')
+    ElMessage.error(translate('shell.session.serviceUnavailable'))
     return
   }
   if (error.status && error.status >= 500) {
-    ElMessage.error('服务器内部错误')
+    ElMessage.error(translate('shell.session.serverError'))
     return
   }
-  ElMessage.error(error.message || '请求失败')
+  ElMessage.error(error.message || translate('shell.session.requestFailed'))
 }
 
 export async function clearSession(): Promise<void> {
@@ -482,6 +488,7 @@ export async function clearSession(): Promise<void> {
     invalidateSessionOperations()
     clearPromise = Promise.resolve()
       .then(() => {
+        clearServerState()
         useUserStore().resetState()
         usePermissionStore().resetRoutes()
         useTagsViewStore().closeAllViews()
@@ -522,7 +529,7 @@ export async function logoutSession(): Promise<void> {
     await logoutApi(challenge, accessToken)
   }
   catch {
-    ElMessage.warning('本地会话已清除，但服务器会话撤销失败，请稍后重试')
+    ElMessage.warning(translate('shell.session.logoutFailed'))
   }
   finally {
     await terminateSession()
@@ -552,7 +559,7 @@ function createOperationId(startedAt: number): string {
 
 function assertSessionEpoch(expected: number): void {
   if (expected !== sessionEpoch || sessionTerminating) {
-    throw new HttpError('会话操作已取消', 401)
+    throw new HttpError(translate('shell.session.operationCancelled'), 401)
   }
 }
 
@@ -563,7 +570,7 @@ function invalidateSessionOperations(): void {
   latestSessionOperationId = undefined
   latestSessionOperationIsLocal = true
   remoteRefreshOperation = undefined
-  const error = new HttpError('会话操作已取消', 401)
+  const error = new HttpError(translate('shell.session.operationCancelled'), 401)
   for (const waiter of remoteRefreshWaiters) {
     if (waiter.timeoutId !== undefined) clearTimeout(waiter.timeoutId)
     waiter.reject(error)

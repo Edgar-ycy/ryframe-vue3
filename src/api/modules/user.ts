@@ -1,6 +1,6 @@
 import request, { requestBlob } from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id } from '@/shared/http/types'
+import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
 const BASE = '/system/users'
 
@@ -31,7 +31,7 @@ export type UserImportResult = ApiSchema<'UserImportResult'>
 
 /** 分页查询用户列表 */
 export function listUser(params: UserQuery) {
-  return request<UserRecord[]>({ url: BASE, method: 'get', params })
+  return request<PageResponse<UserRecord>>({ url: BASE, method: 'get', params })
 }
 
 /** 查询用户详情 */

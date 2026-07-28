@@ -1,6 +1,6 @@
 import request from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id } from '@/shared/http/types'
+import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
 export type MenuType = ApiSchema<'MenuType'>
 export type MenuTreeNode = Omit<ApiSchema<'MenuTreeNode'>, 'children' | 'menu_type'> & {
@@ -21,7 +21,7 @@ export function getMenuTree() {
 }
 
 export function listMenu(params?: MenuQuery) {
-  return request<MenuRecord[]>({ url: BASE, method: 'get', params })
+  return request<PageResponse<MenuRecord>>({ url: BASE, method: 'get', params })
 }
 
 export function listMenuNoPage(params?: MenuAllQuery) {

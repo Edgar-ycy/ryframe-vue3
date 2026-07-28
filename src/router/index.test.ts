@@ -136,10 +136,10 @@ describe('router entry point', () => {
     expect(harness.routeNames).toEqual(new Set(['Users', 'Roles']))
   })
 
-  it('falls back to row-based and empty menu responses', async () => {
-    const rows = [{ id: 'menu-from-rows', children: [] }]
+  it('handles paged and empty menu responses', async () => {
+    const items = [{ id: 'menu-from-page', children: [] }]
     harness.getUserMenus
-      .mockResolvedValueOnce({ rows })
+      .mockResolvedValueOnce({ data: items })
       .mockResolvedValueOnce({})
     harness.permissionStore.generateRoutes
       .mockReturnValueOnce([])
@@ -151,7 +151,7 @@ describe('router entry point', () => {
 
     expect(harness.permissionStore.generateRoutes).toHaveBeenNthCalledWith(
       1,
-      rows,
+      items,
       ['system:user:list'],
       ['operator'],
     )

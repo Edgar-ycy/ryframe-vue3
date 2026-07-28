@@ -1,0 +1,7 @@
+# 默认代码所有者；跨仓契约变更还需要在后端仓库完成对应审查。
+* @Edgar-ycy
+
+/src/shared/security/ @Edgar-ycy
+/src/shared/http/ @Edgar-ycy
+/openapi/ @Edgar-ycy
+/.github/ @Edgar-ycy

@@ -13,13 +13,14 @@ import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { useDownload } from '@/hooks/useDownload'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
+import { translate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
 import { confirmAction } from '@/utils/confirmAction'
 
-const USER_STATUS_LABELS: Record<UserStatus, string> = {
-  0: '停用',
-  1: '正常',
-  pending_activation: '待激活',
+const USER_STATUS_KEYS: Record<UserStatus, string> = {
+  0: 'system.common.disabled',
+  1: 'system.common.normal',
+  pending_activation: 'system.user.pendingActivation',
 }
 
 export function useUserManagement() {
@@ -49,8 +50,8 @@ export function useUserManagement() {
     loading.value = true
     try {
       const response = await listUser(queryParams.value)
-      tableData.value = response.rows ?? []
-      total.value = response.total ?? 0
+      tableData.value = response.data?.items ?? []
+      total.value = response.data?.total ?? 0
     }
     finally {
       loading.value = false
@@ -97,7 +98,10 @@ export function useUserManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return downloadBlob(() => exportUser(queryParams.value), { filename: '用户数据.xlsx' })
+    return downloadBlob(
+      () => exportUser(queryParams.value),
+      { filename: translate('system.user.exportFilename') },
+    )
   }
 
   function isManageableStatus(status: UserStatus): status is UserManageableStatus {
@@ -105,7 +109,7 @@ export function useUserManagement() {
   }
 
   function userStatusLabel(status: UserStatus): string {
-    return USER_STATUS_LABELS[status]
+    return translate(USER_STATUS_KEYS[status])
   }
 
   function userStatusTag(status: UserStatus): 'danger' | 'success' | 'warning' {
@@ -119,8 +123,12 @@ export function useUserManagement() {
     status: UserManageableStatus,
   ): Promise<void> {
     const previousStatus = status === '1' ? '0' : '1'
-    const action = status === '1' ? '启用' : '停用'
-    const confirmed = await confirmAction(`确认要${action}"${row.username}"吗？`, '提示', {
+    const actionKey = status === '1' ? 'system.common.enable' : 'system.common.disable'
+    const action = translate(actionKey)
+    const confirmed = await confirmAction(translate('system.user.statusChangeConfirm', {
+      action,
+      name: row.username,
+    }), translate('system.common.prompt'), {
       type: 'warning',
     })
     if (!confirmed) {
@@ -130,7 +138,7 @@ export function useUserManagement() {
 
     try {
       await updateUserStatus(row.id, status)
-      ElMessage.success(`${action}成功`)
+      ElMessage.success(translate('system.user.actionSuccess', { action }))
     }
     catch (error) {
       row.status = previousStatus
@@ -154,16 +162,18 @@ export function useUserManagement() {
   }
 
   async function handleDelete(user: UserRecord): Promise<void> {
-    const confirmed = await confirmAction(`确认删除用户"${user.username}"吗？`, '警告', {
+    const confirmed = await confirmAction(translate('system.user.deleteConfirm', {
+      name: user.username,
+    }), translate('system.common.warning'), {
       type: 'warning',
-      confirmButtonText: '确认删除',
+      confirmButtonText: translate('system.common.confirmDelete'),
     })
     if (!confirmed) return
 
     deletingId.value = user.id
     try {
       await deleteUser(user.id)
-      ElMessage.success('删除成功')
+      ElMessage.success(translate('system.common.deleteSuccess'))
       await fetchData()
     }
     finally {

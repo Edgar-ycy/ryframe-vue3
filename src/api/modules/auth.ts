@@ -1,4 +1,5 @@
 import request, { rawRequest } from '@/shared/http/client'
+import type { AppLocale } from '@/i18n'
 import type {
   ApiSchema,
   OperationData,
@@ -6,13 +7,21 @@ import type {
   OperationQuery,
 } from '@/api/contract'
 
-export type UserInfo = ApiSchema<'UserInfo'>
-export type LoginResult = OperationData<'post_auth_login'>
+export type UserInfo = ApiSchema<'UserInfo'> & {
+  preferred_locale?: AppLocale | null
+}
+export type LoginResult = Omit<OperationData<'post_auth_login'>, 'user_info'> & {
+  user_info: UserInfo
+}
 export type LoginParams = OperationJsonBody<'post_auth_login'>
 export type CsrfChallenge = OperationData<'get_auth_csrf'>
 export type CompletePasswordResetParams = OperationJsonBody<'post_auth_password_reset_complete'>
-export type ProfileInfo = ApiSchema<'UserProfileResponse'>
-export type ProfileUpdateParams = OperationJsonBody<'put_auth_profile'>
+export type ProfileInfo = ApiSchema<'UserProfileResponse'> & {
+  preferred_locale?: AppLocale | null
+}
+export type ProfileUpdateParams = OperationJsonBody<'put_auth_profile'> & {
+  preferred_locale?: AppLocale | null
+}
 export type PasswordChangeParams = OperationJsonBody<'put_auth_profile_password'>
 
 /** 登录 */

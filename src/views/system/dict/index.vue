@@ -5,7 +5,7 @@
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
-              <span>字典类型</span>
+              <span>{{ t('system.dict.typeTitle') }}</span>
               <div>
                 <el-button
                   v-perm="'system:dict:export'"
@@ -14,7 +14,7 @@
                   :loading="exportLoading"
                   @click="handleExport"
                 >
-                  导出
+                  {{ t('system.common.export') }}
                 </el-button>
                 <el-button
                   v-perm="'system:dict:add'"
@@ -23,7 +23,7 @@
                   icon="Plus"
                   @click="handleAddType"
                 >
-                  新增
+                  {{ t('system.common.add') }}
                 </el-button>
               </div>
             </div>
@@ -37,16 +37,16 @@
             highlight-current-row
             @row-click="handleTypeClick"
           >
-            <el-table-column prop="name" label="字典名称" min-width="110" show-overflow-tooltip />
-            <el-table-column prop="code" label="字典编码" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" align="center">
+            <el-table-column prop="name" :label="t('system.dict.name')" min-width="110" show-overflow-tooltip />
+            <el-table-column prop="code" :label="t('system.dict.code')" show-overflow-tooltip />
+            <el-table-column prop="status" :label="t('system.common.status')" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
-                  {{ row.status === '1' ? '正常' : '停用' }}
+                  {{ row.status === '1' ? t('system.common.normal') : t('system.common.disabled') }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" fixed="right" align="center">
+            <el-table-column :label="t('system.common.actions')" fixed="right" align="center">
               <template #default="{ row }">
                 <el-button
                   v-perm="'system:dict:edit'"
@@ -56,7 +56,7 @@
                   size="small"
                   @click.stop="handleEditType(row)"
                 >
-                  编辑
+                  {{ t('system.common.edit') }}
                 </el-button>
                 <el-button
                   v-perm="'system:dict:remove'"
@@ -66,7 +66,7 @@
                   size="small"
                   @click.stop="handleDeleteType(row)"
                 >
-                  删除
+                  {{ t('system.common.delete') }}
                 </el-button>
               </template>
             </el-table-column>
@@ -89,7 +89,11 @@
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
-              <span>字典数据{{ currentType ? ` — ${currentType.name}` : '' }}</span>
+              <span>
+                {{ currentType
+                  ? t('system.dict.dataTitleWithName', { name: currentType.name })
+                  : t('system.dict.dataTitle') }}
+              </span>
               <el-button
                 v-if="currentType"
                 v-perm="'system:dict:add'"
@@ -98,22 +102,22 @@
                 icon="Plus"
                 @click="handleAddData"
               >
-                新增
+                {{ t('system.common.add') }}
               </el-button>
             </div>
           </template>
           <el-table v-loading="dataLoading" :data="dataList" border stripe>
-            <el-table-column prop="label" label="字典标签" min-width="120" show-overflow-tooltip />
-            <el-table-column prop="value" label="字典键值" />
-            <el-table-column prop="sort" label="排序" align="center" />
-            <el-table-column prop="status" label="状态" align="center">
+            <el-table-column prop="label" :label="t('system.dict.label')" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="value" :label="t('system.dict.value')" />
+            <el-table-column prop="sort" :label="t('system.common.sort')" align="center" />
+            <el-table-column prop="status" :label="t('system.common.status')" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
-                  {{ row.status === '1' ? '正常' : '停用' }}
+                  {{ row.status === '1' ? t('system.common.normal') : t('system.common.disabled') }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" align="center">
+            <el-table-column :label="t('system.common.actions')" align="center">
               <template #default="{ row }">
                 <el-button
                   v-perm="'system:dict:edit'"
@@ -123,7 +127,7 @@
                   size="small"
                   @click="handleEditData(row)"
                 >
-                  编辑
+                  {{ t('system.common.edit') }}
                 </el-button>
                 <el-button
                   v-perm="'system:dict:remove'"
@@ -133,12 +137,12 @@
                   size="small"
                   @click="handleDeleteData(row)"
                 >
-                  删除
+                  {{ t('system.common.delete') }}
                 </el-button>
               </template>
             </el-table-column>
           </el-table>
-          <el-empty v-if="!currentType" description="请在左侧选择字典类型" />
+          <el-empty v-if="!currentType" :description="t('system.dict.selectType')" />
         </el-card>
       </div>
     </div>
@@ -158,9 +162,12 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import DictDataDialog from './components/DictDataDialog.vue'
 import DictTypeDialog from './components/DictTypeDialog.vue'
 import { useDictManagement } from './composables/useDictManagement'
+
+const { t } = useI18n()
 
 const {
   currentType,

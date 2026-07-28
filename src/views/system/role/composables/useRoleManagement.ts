@@ -9,6 +9,7 @@ import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permission'
 import { useDownload } from '@/hooks/useDownload'
 import { usePermission } from '@/hooks/usePermission'
+import { translate } from '@/i18n'
 import { confirmAction } from '@/utils/confirmAction'
 
 export function useRoleManagement() {
@@ -39,8 +40,8 @@ export function useRoleManagement() {
     loading.value = true
     try {
       const response = await listRole(queryParams.value)
-      tableData.value = response.rows ?? []
-      total.value = response.total ?? 0
+      tableData.value = response.data?.items ?? []
+      total.value = response.data?.total ?? 0
     }
     finally {
       loading.value = false
@@ -74,7 +75,9 @@ export function useRoleManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return downloadBlob(() => exportRole(queryParams.value), { filename: '角色数据.xlsx' })
+    return downloadBlob(() => exportRole(queryParams.value), {
+      filename: translate('system.role.exportFilename'),
+    })
   }
 
   function isProtectedRole(role: RoleRecord): boolean {
@@ -83,7 +86,7 @@ export function useRoleManagement() {
 
   function guardRole(role: RoleRecord): boolean {
     if (!isProtectedRole(role)) return true
-    ElMessage.warning('禁止操作超级管理员角色')
+    ElMessage.warning(translate('system.role.superRoleForbidden'))
     return false
   }
 
@@ -112,14 +115,18 @@ export function useRoleManagement() {
 
   async function handleDelete(role: RoleRecord): Promise<void> {
     if (!guardRole(role)) return
-    const confirmed = await confirmAction(`确认删除角色"${role.name}"吗？`, '警告', {
+    const confirmed = await confirmAction(
+      translate('system.role.deleteConfirm', { name: role.name }),
+      translate('system.common.warning'),
+      {
       type: 'warning',
-      confirmButtonText: '确认删除',
-    })
+        confirmButtonText: translate('system.common.confirmDelete'),
+      },
+    )
     if (!confirmed) return
 
     await deleteRole(role.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(translate('system.common.deleteSuccess'))
     await fetchData()
   }
 

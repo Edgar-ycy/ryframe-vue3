@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { translate } from '@/i18n'
 
 interface DownloadOptions {
   /** 下载后自动生成的文件名 */
@@ -9,7 +10,7 @@ interface DownloadOptions {
 }
 
 /**
- * 文件下载 Hook
+ * 文件下载钩子
  * 
  * @example
  * const { downloading, progress, downloadBlob, downloadUrl } = useDownload()
@@ -19,7 +20,7 @@ export function useDownload() {
   const downloading = ref(false)
   const progress = ref(0)
 
-  /** 下载 Blob */
+  /** 下载二进制数据 */
   async function downloadBlob(
     fetchFn: () => Promise<Blob>,
     options: DownloadOptions = {},
@@ -28,18 +29,18 @@ export function useDownload() {
     progress.value = 0
     try {
       const blob = await fetchFn()
-      downloadBlobDirect(blob, options.filename || 'download')
+      downloadBlobDirect(blob, options.filename || translate('shell.download.defaultFilename'))
       progress.value = 100
-      ElMessage.success('下载成功')
+      ElMessage.success(translate('shell.download.success'))
     } catch {
-      ElMessage.error('下载失败')
+      ElMessage.error(translate('shell.download.failed'))
     } finally {
       downloading.value = false
     }
   }
 
-  /** 通过 URL 下载 */
-  function downloadUrl(url: string, filename = 'download') {
+  /** 通过链接下载 */
+  function downloadUrl(url: string, filename = translate('shell.download.defaultFilename')) {
     const a = document.createElement('a')
     a.href = url
     a.download = filename
@@ -57,7 +58,7 @@ export function useDownload() {
   }
 }
 
-/** 纯函数：将 Blob 触发浏览器下载 */
+/** 纯函数：触发浏览器下载二进制数据 */
 export function downloadBlobDirect(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

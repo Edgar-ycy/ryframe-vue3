@@ -5,6 +5,7 @@ import {
   type PermissionSyncReport,
   type PermissionTreeNode,
 } from '@/api/modules/permission'
+import { translate } from '@/i18n'
 import { refreshAccessibleRoutes } from '@/router'
 import type { Id } from '@/shared/http/types'
 import { confirmAction } from '@/utils/confirmAction'
@@ -20,11 +21,15 @@ export function usePermissionManagement() {
 
   const syncReportTitle = computed(() => {
     if (!syncReport.value) return ''
-    return syncReport.value.created > 0 ? '权限同步完成' : '权限同步完成，未发现新增项'
+    return translate(
+      syncReport.value.created > 0
+        ? 'system.permission.syncDone'
+        : 'system.permission.syncNoNew',
+    )
   })
   const parentTree = computed<PermissionTreeNode[]>(() => [{
     id: '0',
-    name: '根权限',
+    name: translate('system.permission.root'),
     code: '',
     perm_type: 'menu',
     sort: 0,
@@ -56,14 +61,18 @@ export function usePermissionManagement() {
   }
 
   async function handleDelete(permission: PermissionTreeNode): Promise<void> {
-    const confirmed = await confirmAction(`确认删除权限"${permission.name}"吗？`, '警告', {
-      type: 'warning',
-      confirmButtonText: '确认删除',
-    })
+    const confirmed = await confirmAction(
+      translate('system.permission.deleteConfirm', { name: permission.name }),
+      translate('system.common.warning'),
+      {
+        type: 'warning',
+        confirmButtonText: translate('system.common.confirmDelete'),
+      },
+    )
     if (!confirmed) return
 
     await deletePermission(permission.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(translate('system.common.deleteSuccess'))
     await fetchData()
     await refreshAccessibleRoutes()
   }
@@ -72,9 +81,11 @@ export function usePermissionManagement() {
     syncLoading.value = true
     try {
       const response = await syncApiPermissions()
-      if (!response.data) throw new Error('权限同步响应缺少数据')
+      if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
       syncReport.value = response.data
-      ElMessage.success(`同步成功，新增 ${response.data.created} 条`)
+      ElMessage.success(
+        translate('system.permission.syncSuccess', { count: response.data.created }),
+      )
       await fetchData()
       await refreshAccessibleRoutes()
     }

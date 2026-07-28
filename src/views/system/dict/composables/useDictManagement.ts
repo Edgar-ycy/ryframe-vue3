@@ -9,6 +9,7 @@ import {
   type DictTypeRecord,
 } from '@/api/modules/dict'
 import { useDownload } from '@/hooks/useDownload'
+import { translate } from '@/i18n'
 import { confirmAction } from '@/utils/confirmAction'
 
 export function useDictManagement() {
@@ -43,8 +44,8 @@ export function useDictManagement() {
       const response = await listDictType(typePage.value)
       if (requestSequence !== typeRequestSequence) return
 
-      typeList.value = response.rows ?? []
-      typeTotal.value = response.total ?? 0
+      typeList.value = response.data?.items ?? []
+      typeTotal.value = response.data?.total ?? 0
       if (currentType.value) {
         const selected = typeList.value.find(item => item.id === currentType.value?.id)
         if (selected) currentType.value = selected
@@ -71,7 +72,9 @@ export function useDictManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return downloadBlob(() => exportDictType(), { filename: '字典类型.xlsx' })
+    return downloadBlob(() => exportDictType(), {
+      filename: translate('system.dict.exportFilename'),
+    })
   }
 
   async function handleTypeClick(dictType: DictTypeRecord): Promise<void> {
@@ -94,14 +97,18 @@ export function useDictManagement() {
   }
 
   async function handleDeleteType(dictType: DictTypeRecord): Promise<void> {
-    const confirmed = await confirmAction(`确认删除字典类型"${dictType.name}"吗？`, '警告', {
-      type: 'warning',
-      confirmButtonText: '确认删除',
-    })
+    const confirmed = await confirmAction(
+      translate('system.dict.deleteTypeConfirm', { name: dictType.name }),
+      translate('system.common.warning'),
+      {
+        type: 'warning',
+        confirmButtonText: translate('system.common.confirmDelete'),
+      },
+    )
     if (!confirmed) return
 
     await deleteDictType(dictType.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(translate('system.common.deleteSuccess'))
     if (currentType.value?.id === dictType.id) clearCurrentType()
     if (typeList.value.length === 1 && (typePage.value.page ?? 1) > 1) {
       typePage.value.page = (typePage.value.page ?? 1) - 1
@@ -125,14 +132,18 @@ export function useDictManagement() {
   }
 
   async function handleDeleteData(dictData: DictDataRecord): Promise<void> {
-    const confirmed = await confirmAction(`确认删除字典数据"${dictData.label}"吗？`, '警告', {
-      type: 'warning',
-      confirmButtonText: '确认删除',
-    })
+    const confirmed = await confirmAction(
+      translate('system.dict.deleteDataConfirm', { name: dictData.label }),
+      translate('system.common.warning'),
+      {
+        type: 'warning',
+        confirmButtonText: translate('system.common.confirmDelete'),
+      },
+    )
     if (!confirmed) return
 
     await deleteDictData(dictData.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(translate('system.common.deleteSuccess'))
     if (currentType.value) await fetchDataList(currentType.value.code)
   }
 

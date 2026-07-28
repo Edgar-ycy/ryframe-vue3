@@ -2,58 +2,72 @@
   <div class="drawer-settings">
     <el-drawer
       v-model="visible"
-      title="系统布局配置"
+      :title="t('settings.title')"
       :size="300"
       direction="rtl"
       append-to-body
     >
       <div class="drawer-body">
-        <!-- 主题模式 -->
         <div class="setting-section">
-          <div class="setting-label">主题模式</div>
-          <el-radio-group :model-value="settingsStore.theme" @change="(val: string) => settingsStore.setTheme(val as 'light' | 'dark')">
-            <el-radio-button value="light">浅色</el-radio-button>
-            <el-radio-button value="dark">深色</el-radio-button>
+          <div class="setting-label">{{ t('settings.locale') }}</div>
+          <el-radio-group
+            :model-value="settingsStore.locale"
+            @change="(value: string) => void handleLocaleChange(value)"
+          >
+            <el-radio-button value="zh-CN">{{ t('shell.locale.zhCn') }}</el-radio-button>
+            <el-radio-button value="en-US">{{ t('shell.locale.enUs') }}</el-radio-button>
           </el-radio-group>
         </div>
 
-        <!-- 主题色 -->
+        <div class="setting-section">
+          <div class="setting-label">{{ t('settings.theme') }}</div>
+          <el-radio-group
+            :model-value="settingsStore.theme"
+            @change="(value: string) => settingsStore.setTheme(value as Theme)"
+          >
+            <el-radio-button value="light">{{ t('settings.light') }}</el-radio-button>
+            <el-radio-button value="dark">{{ t('settings.dark') }}</el-radio-button>
+          </el-radio-group>
+        </div>
+
         <div class="setting-section">
           <ThemePicker
             :model-value="settingsStore.themeColor"
+            :label="t('settings.themeColor')"
             @update:model-value="settingsStore.setThemeColor"
           />
         </div>
 
-        <!-- 组件尺寸 -->
         <div class="setting-section">
-          <div class="setting-label">组件尺寸</div>
-          <el-radio-group :model-value="settingsStore.componentSize" @change="(val: string) => settingsStore.setComponentSize(val as ComponentSize)">
-            <el-radio-button value="large">大</el-radio-button>
-            <el-radio-button value="default">默认</el-radio-button>
-            <el-radio-button value="small">小</el-radio-button>
+          <div class="setting-label">{{ t('settings.componentSize') }}</div>
+          <el-radio-group
+            :model-value="settingsStore.componentSize"
+            @change="(value: string) => settingsStore.setComponentSize(value as ComponentSize)"
+          >
+            <el-radio-button value="large">{{ t('settings.large') }}</el-radio-button>
+            <el-radio-button value="default">{{ t('settings.default') }}</el-radio-button>
+            <el-radio-button value="small">{{ t('settings.small') }}</el-radio-button>
           </el-radio-group>
         </div>
 
         <el-divider />
 
-        <!-- 布局选项 -->
         <div class="setting-section">
-          <div class="setting-label">标签页</div>
+          <div class="setting-label">{{ t('settings.tagsView') }}</div>
           <el-switch :model-value="settingsStore.tagsView" @change="settingsStore.toggleTagsView()" />
-          <span class="setting-hint">开启后访问过的页面将以标签形式显示</span>
+          <span class="setting-hint">{{ t('settings.tagsViewHint') }}</span>
         </div>
 
         <div class="setting-section">
-          <div class="setting-label">侧边栏 Logo</div>
+          <div class="setting-label">{{ t('settings.sidebarLogo') }}</div>
           <el-switch :model-value="settingsStore.sidebarLogo" @change="settingsStore.toggleSidebarLogo()" />
-          <span class="setting-hint">开启后侧边栏顶部显示 Logo</span>
+          <span class="setting-hint">{{ t('settings.sidebarLogoHint') }}</span>
         </div>
 
         <el-divider />
 
-        <el-button type="primary" style="width:100%" @click="settingsStore.resetSettings()">
-          恢复默认设置
+        <el-button type="primary" style="width: 100%" @click="settingsStore.resetSettings()">
+          {{ t('settings.restore') }}
         </el-button>
       </div>
     </el-drawer>
@@ -61,13 +75,54 @@
 </template>
 
 <script setup lang="ts">
-import ThemePicker from './ThemePicker.vue'
+import { useI18n } from 'vue-i18n'
+import { updateProfile } from '@/api/modules/auth'
+import { normalizeLocale } from '@/i18n'
+import { useMessageStore } from '@/stores/message'
 import { useSettingsStore } from '@/stores/settings'
+import { useUserStore } from '@/stores/user'
+import ThemePicker from './ThemePicker.vue'
 
 type ComponentSize = 'large' | 'default' | 'small'
+type Theme = 'light' | 'dark'
 
 const visible = defineModel<boolean>({ default: false })
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
+const messageStore = useMessageStore()
+const { t } = useI18n()
+let localeChangeQueue: Promise<void> = Promise.resolve()
+
+async function handleLocaleChange(value: string): Promise<void> {
+  const locale = normalizeLocale(value)
+  if (!locale || locale === settingsStore.locale) return
+
+  settingsStore.setLocale(locale)
+  const pending = localeChangeQueue.catch(() => undefined).then(async () => {
+    if (settingsStore.locale !== locale) return
+
+    if (userStore.sessionStatus === 'authenticated' && userStore.nickname) {
+      try {
+        await updateProfile({
+          nickname: userStore.nickname,
+          email: userStore.email || undefined,
+          phone: userStore.phone || undefined,
+          preferred_locale: locale,
+        })
+        userStore.setPreferredLocale(locale)
+      }
+      catch {
+        ElMessage.warning(t('settings.localeSaveFailed'))
+      }
+    }
+
+    if (settingsStore.locale !== locale || userStore.sessionStatus !== 'authenticated') return
+    messageStore.reset()
+    await messageStore.syncSession().catch(() => undefined)
+  })
+  localeChangeQueue = pending
+  await pending
+}
 </script>
 
 <style scoped>
@@ -82,15 +137,15 @@ const settingsStore = useSettingsStore()
 }
 
 .setting-label {
-  font-size: 14px;
-  color: var(--el-text-color-regular);
   min-width: 70px;
+  color: var(--el-text-color-regular);
+  font-size: 14px;
 }
 
 .setting-hint {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
   width: 100%;
   margin-top: 4px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 </style>

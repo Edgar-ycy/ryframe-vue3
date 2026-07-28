@@ -1,62 +1,63 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isEdit ? '编辑权限' : '新增权限'"
+    :title="isEdit ? t('system.permission.editTitle') : t('system.permission.addTitle')"
     width="520px"
     @closed="resetForm"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-      <el-form-item label="上级权限">
+      <el-form-item :label="t('system.permission.parent')">
         <el-tree-select
           v-model="form.parent_id"
           :data="parentTree"
           :props="{ label: 'name', value: 'id', children: 'children' }"
-          placeholder="请选择上级权限"
+          :placeholder="t('system.permission.selectParent')"
           clearable
           check-strictly
           style="width:100%"
         />
       </el-form-item>
-      <el-form-item label="权限名称" prop="name">
-        <el-input v-model="form.name" maxlength="50" placeholder="请输入权限名称" />
+      <el-form-item :label="t('system.permission.name')" prop="name">
+        <el-input v-model="form.name" maxlength="50" :placeholder="t('system.permission.enterName')" />
       </el-form-item>
-      <el-form-item label="权限编码" prop="code">
-        <el-input v-model="form.code" maxlength="100" placeholder="例如 system:user:list" />
+      <el-form-item :label="t('system.permission.code')" prop="code">
+        <el-input v-model="form.code" maxlength="100" :placeholder="t('system.permission.codeExample')" />
       </el-form-item>
-      <el-form-item label="权限类型" prop="perm_type">
+      <el-form-item :label="t('system.permission.type')" prop="perm_type">
         <el-radio-group v-model="form.perm_type">
-          <el-radio value="api">API</el-radio>
-          <el-radio value="menu">菜单</el-radio>
+          <el-radio value="api">{{ t('system.common.api') }}</el-radio>
+          <el-radio value="menu">{{ t('system.common.menu') }}</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="图标">
-        <el-input v-model="form.icon" maxlength="50" placeholder="可选" />
+      <el-form-item :label="t('system.permission.icon')">
+        <el-input v-model="form.icon" maxlength="50" :placeholder="t('system.permission.optional')" />
       </el-form-item>
-      <el-form-item label="排序">
+      <el-form-item :label="t('system.common.sort')">
         <el-input-number v-model="form.sort" :min="0" :max="9999" />
       </el-form-item>
-      <el-form-item label="状态">
+      <el-form-item :label="t('system.common.status')">
         <el-radio-group v-model="form.status">
-          <el-radio value="1">正常</el-radio>
-          <el-radio value="0">停用</el-radio>
+          <el-radio value="1">{{ t('system.common.normal') }}</el-radio>
+          <el-radio value="0">{{ t('system.common.disabled') }}</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
         v-perm="isEdit ? 'system:perm:edit' : 'system:perm:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
       >
-        确定
+        {{ t('system.common.confirm') }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   createPermission,
   updatePermission,
@@ -64,6 +65,8 @@ import {
   type PermissionTreeNode,
 } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -98,11 +101,15 @@ function initialForm(): PermissionForm {
 }
 
 const form = ref<PermissionForm>(initialForm())
-const rules: FormRules = {
-  name: [{ required: true, message: '请输入权限名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入权限编码', trigger: 'blur' }],
-  perm_type: [{ required: true, message: '请选择权限类型', trigger: 'change' }],
-}
+const rules = computed<FormRules>(() => ({
+  name: [{ required: true, message: t('system.permission.enterName'), trigger: 'blur' }],
+  code: [{ required: true, message: t('system.permission.enterCode'), trigger: 'blur' }],
+  perm_type: [{
+    required: true,
+    message: t('system.permission.selectType'),
+    trigger: 'change',
+  }],
+}))
 
 function resetForm(): void {
   form.value = initialForm()
@@ -146,11 +153,11 @@ async function submit(): Promise<void> {
   try {
     if (props.permission) {
       await updatePermission(props.permission.id, payload)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('system.common.updateSuccess'))
     }
     else {
       await createPermission(payload)
-      ElMessage.success('新增成功')
+      ElMessage.success(t('system.common.addSuccess'))
     }
     visible.value = false
     emit('saved')

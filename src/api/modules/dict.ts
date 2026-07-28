@@ -1,6 +1,6 @@
 import request, { requestBlob } from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id } from '@/shared/http/types'
+import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
 // ========== 字典类型 ==========
 
@@ -15,7 +15,7 @@ export type DictTypeRecord = ApiSchema<'DictTypeVo'>
 
 /** 字典类型分页列表 */
 export function listDictType(params: DictTypeQuery) {
-  return request<DictTypeRecord[]>({ url: DICT_TYPE_BASE, method: 'get', params })
+  return request<PageResponse<DictTypeRecord>>({ url: DICT_TYPE_BASE, method: 'get', params })
 }
 
 /** 字典类型不分页列表 */

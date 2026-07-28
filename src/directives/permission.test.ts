@@ -3,6 +3,7 @@ import {
   createRenderer,
   defineComponent,
   h,
+  nextTick,
   resolveDirective,
   withDirectives,
 } from 'vue'
@@ -21,6 +22,9 @@ interface HostNode {
   parentNode: HostNode | null
   children: HostNode[]
   text?: string
+  hidden?: boolean
+  inert?: boolean
+  disabled?: boolean
   removeChild(child: HostNode): HostNode
 }
 
@@ -102,17 +106,25 @@ function mountPermissionButton(
   app.use(directives)
   app.mount(container)
 
-  return { app, container }
+  return { app, container, user }
 }
 
 describe('permission directive', () => {
-  it('removes a mounted action when the current user lacks its permission', () => {
-    const { app, container } = mountPermissionButton(
+  it('hides a mounted action when the current user lacks its permission and restores it after refresh', async () => {
+    const { app, container, user } = mountPermissionButton(
       'system:user:delete',
       ['system:user:list'],
     )
 
-    expect(container.children).toHaveLength(0)
+    expect(container.children.map(node => node.type)).toEqual(['button'])
+    expect(container.children[0]?.hidden).toBe(true)
+    expect(container.children[0]?.inert).toBe(true)
+
+    user.permissions = ['system:user:delete']
+    await nextTick()
+
+    expect(container.children[0]?.hidden).toBe(false)
+    expect(container.children[0]?.inert).toBe(false)
     app.unmount()
   })
 

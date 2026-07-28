@@ -10,7 +10,7 @@ export interface IconSelection {
   selectIcon(icon: string): void
 }
 
-/** Keep the picker controlled by its v-model while isolating pending dialog edits. */
+/** 在隔离对话框待提交编辑的同时，仍由其 v-model 控制图标选择器。 */
 export function useIconSelection(
   getModelValue: () => string | undefined,
   updateModelValue: (value: string) => void,

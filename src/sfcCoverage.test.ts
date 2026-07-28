@@ -1,5 +1,6 @@
 /* eslint-disable vue/one-component-per-file */
 import { createPinia } from 'pinia'
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import {
   createSSRApp,
   defineComponent,
@@ -11,6 +12,7 @@ import {
 import { renderToString } from 'vue/server-renderer'
 import { routeLocationKey, routerKey } from 'vue-router'
 import { describe, expect, it, vi } from 'vitest'
+import { i18n } from '@/i18n'
 
 const http = vi.hoisted(() => {
   const response = {
@@ -83,6 +85,12 @@ const router = {
   listening: true,
 } as never
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+  },
+})
+
 const EmptyComponent = defineComponent({ render: () => h('span') })
 const modules = import.meta.glob<{ default: Component }>('./**/*.vue', { eager: true })
 const sources = import.meta.glob<string>('./**/*.vue', {
@@ -118,8 +126,8 @@ const PassthroughComponent = defineComponent({
             if (result instanceof Promise) void result.catch(() => undefined)
           }
           catch {
-            // A generic event cannot satisfy every browser-only handler. Reaching
-            // the handler is still useful; dedicated tests assert its behavior.
+            // 通用事件无法满足每个仅限浏览器的处理器。能够触达处理器依然有价值，
+            // 其行为由专门测试断言。
           }
         }
       }
@@ -198,6 +206,8 @@ describe('handwritten Vue SFC smoke coverage', () => {
     for (const [path, module] of Object.entries(modules)) {
       const app = createSSRApp(module.default, rootProps)
       app.use(createPinia())
+      app.use(i18n)
+      app.use(VueQueryPlugin, { queryClient })
       app.provide(routerKey, router)
       app.provide(routeLocationKey, route as never)
       app.component('RouterLink', EmptyComponent)

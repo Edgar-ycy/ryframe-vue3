@@ -13,7 +13,7 @@
       <el-card shadow="never" class="search-card">
         <div class="search-card__header">
           <span class="search-card__title">
-            用户列表
+            {{ t('system.user.list') }}
             <template v-if="selectedDeptName">
               <el-icon class="search-card__separator"><ArrowRight /></el-icon>
               <el-tag size="small" closable @close="clearDeptFilter">
@@ -23,31 +23,31 @@
           </span>
         </div>
         <el-form :model="queryParams" inline>
-          <el-form-item label="用户名">
+          <el-form-item :label="t('system.user.username')">
             <el-input
               v-model="queryParams.username"
-              placeholder="请输入用户名"
+              :placeholder="t('system.user.enterUsername')"
               clearable
               @keyup.enter="handleSearch"
             />
           </el-form-item>
-          <el-form-item label="手机号">
+          <el-form-item :label="t('system.user.phone')">
             <el-input
               v-model="queryParams.phone"
-              placeholder="请输入手机号"
+              :placeholder="t('system.user.enterPhone')"
               clearable
               @keyup.enter="handleSearch"
             />
           </el-form-item>
-          <el-form-item label="状态">
+          <el-form-item :label="t('system.common.status')">
             <el-select
               v-model="queryParams.status"
-              placeholder="用户状态"
+              :placeholder="t('system.user.statusPlaceholder')"
               clearable
               style="width: 120px"
             >
-              <el-option label="正常" value="1" />
-              <el-option label="停用" value="0" />
+              <el-option :label="t('system.common.normal')" value="1" />
+              <el-option :label="t('system.common.disabled')" value="0" />
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -57,10 +57,10 @@
               icon="Search"
               @click="handleSearch"
             >
-              搜索
+              {{ t('system.common.search') }}
             </el-button>
             <el-button v-perm="'system:user:list'" icon="Refresh" @click="handleReset">
-              重置
+              {{ t('system.common.reset') }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -69,7 +69,7 @@
       <el-card shadow="never" class="table-card">
         <template #header>
           <div class="card-header">
-            <span>用户列表</span>
+            <span>{{ t('system.user.list') }}</span>
             <div>
               <el-button
                 v-perm="'system:user:export'"
@@ -77,7 +77,7 @@
                 :loading="exportLoading"
                 @click="handleExport"
               >
-                导出
+                {{ t('system.common.export') }}
               </el-button>
               <el-button
                 v-perm="'system:user:add'"
@@ -85,20 +85,20 @@
                 icon="Plus"
                 @click="handleAdd"
               >
-                新增
+                {{ t('system.common.add') }}
               </el-button>
             </div>
           </div>
         </template>
 
         <el-table v-loading="loading" :data="tableData" border stripe>
-          <el-table-column prop="id" label="ID" width="70" align="center" />
-          <el-table-column prop="username" label="用户名" show-overflow-tooltip />
-          <el-table-column prop="nickname" label="昵称" show-overflow-tooltip />
-          <el-table-column prop="email" label="邮箱" show-overflow-tooltip />
-          <el-table-column prop="phone" label="手机号" show-overflow-tooltip />
-          <el-table-column prop="dept_name" label="部门" show-overflow-tooltip />
-          <el-table-column prop="status" label="状态" align="center">
+          <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
+          <el-table-column prop="username" :label="t('system.user.username')" show-overflow-tooltip />
+          <el-table-column prop="nickname" :label="t('system.user.nickname')" show-overflow-tooltip />
+          <el-table-column prop="email" :label="t('system.user.email')" show-overflow-tooltip />
+          <el-table-column prop="phone" :label="t('system.user.phone')" show-overflow-tooltip />
+          <el-table-column prop="dept_name" :label="t('system.user.department')" show-overflow-tooltip />
+          <el-table-column prop="status" :label="t('system.common.status')" align="center">
             <template #default="{ row }">
               <el-switch
                 v-if="hasPermission('system:user:edit') && isManageableStatus(row.status)"
@@ -112,8 +112,8 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="created_at" label="创建时间" />
-          <el-table-column label="操作" min-width="330" fixed="right" align="center">
+          <el-table-column prop="created_at" :label="t('system.common.createdAt')" />
+          <el-table-column :label="t('system.common.actions')" min-width="330" fixed="right" align="center">
             <template #default="{ row }">
               <el-button
                 v-perm="'system:user:edit'"
@@ -122,7 +122,7 @@
                 icon="Edit"
                 @click="handleEdit(row)"
               >
-                编辑
+                {{ t('system.common.edit') }}
               </el-button>
               <el-button
                 v-perm="'system:user:edit'"
@@ -131,7 +131,7 @@
                 icon="UserFilled"
                 @click="handleAssignRoles(row)"
               >
-                分配角色
+                {{ t('system.user.assignRoles') }}
               </el-button>
               <el-button
                 v-perm="'system:user:edit'"
@@ -140,7 +140,7 @@
                 icon="Key"
                 @click="handleResetPassword(row)"
               >
-                发起重置
+                {{ t('system.user.initiateReset') }}
               </el-button>
               <el-button
                 v-perm="'system:user:remove'"
@@ -150,12 +150,12 @@
                 :loading="deletingId === row.id"
                 @click="handleDelete(row)"
               >
-                删除
+                {{ t('system.common.delete') }}
               </el-button>
             </template>
           </el-table-column>
           <template #empty>
-            <el-empty description="暂无用户数据" :image-size="100" />
+            <el-empty :description="t('system.user.noData')" :image-size="100" />
           </template>
         </el-table>
 
@@ -194,6 +194,7 @@
 
 <script setup lang="ts">
 import { ArrowRight } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import type { UserManageableStatus } from '@/api/modules/user'
 import DepartmentTree from './components/DepartmentTree.vue'
 import PasswordResetDialog from './components/PasswordResetDialog.vue'
@@ -201,6 +202,7 @@ import UserFormDialog from './components/UserFormDialog.vue'
 import UserRoleDialog from './components/UserRoleDialog.vue'
 import { useUserManagement } from './composables/useUserManagement'
 
+const { t } = useI18n()
 const {
   clearDeptFilter,
   deletingId,

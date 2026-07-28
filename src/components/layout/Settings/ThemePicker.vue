@@ -1,26 +1,33 @@
 <template>
   <div class="theme-picker">
-    <div class="theme-picker-label">{{ label }}</div>
+    <div v-if="props.label" class="theme-picker-label">{{ props.label }}</div>
     <el-color-picker
-      :model-value="modelValue"
-      :predefine="presetColors"
+      :model-value="props.modelValue"
+      :predefine="props.presetColors"
+      :aria-label="pickerLabel"
       show-alpha
-      @update:model-value="(val: string) => $emit('update:modelValue', val)"
+      @update:model-value="(value: string) => emit('update:modelValue', value)"
     />
     <div class="theme-presets">
-      <div
-        v-for="c in presetColors"
-        :key="c"
+      <button
+        v-for="color in props.presetColors"
+        :key="color"
+        type="button"
         class="preset-item"
-        :style="{ backgroundColor: c }"
-        :class="{ active: modelValue === c }"
-        @click="$emit('update:modelValue', c)"
+        :style="{ backgroundColor: color }"
+        :class="{ active: props.modelValue === color }"
+        :aria-label="t('settings.selectThemeColor', { color })"
+        :aria-pressed="props.modelValue === color"
+        :title="t('settings.selectThemeColor', { color })"
+        @click="selectPreset(color)"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 interface Props {
   modelValue?: string
   /** 标签文字 */
@@ -29,26 +36,33 @@ interface Props {
   presetColors?: string[]
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   modelValue: '#6366F1',
-  label: '主题色',
+  label: '',
   presetColors: () => [
-    '#6366F1', // Indigo（默认）
-    '#8B5CF6', // Violet
-    '#EC4899', // Pink
-    '#F43F5E', // Rose
-    '#F97316', // Orange
-    '#EAB308', // Yellow
-    '#22C55E', // Green
-    '#06B6D4', // Cyan
-    '#3B82F6', // Blue
-    '#1E293B', // Slate
+    '#6366F1', // 靛蓝（默认）
+    '#8B5CF6', // 紫罗兰
+    '#EC4899', // 粉色
+    '#F43F5E', // 玫瑰红
+    '#F97316', // 橙色
+    '#EAB308', // 黄色
+    '#22C55E', // 绿色
+    '#06B6D4', // 青色
+    '#3B82F6', // 蓝色
+    '#1E293B', // 石板灰
   ],
 })
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [val: string]
 }>()
+
+const { t } = useI18n()
+const pickerLabel = computed(() => props.label || t('settings.themeColor'))
+
+function selectPreset(color: string): void {
+  emit('update:modelValue', color)
+}
 </script>
 
 <style scoped>
@@ -73,6 +87,8 @@ defineEmits<{
 .preset-item {
   width: 20px;
   height: 20px;
+  padding: 0;
+  appearance: none;
   border-radius: 4px;
   cursor: pointer;
   border: 2px solid transparent;
@@ -83,5 +99,10 @@ defineEmits<{
 .preset-item.active {
   border-color: #333;
   transform: scale(1.15);
+}
+
+.preset-item:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 2px;
 }
 </style>

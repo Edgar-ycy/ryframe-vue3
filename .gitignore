@@ -1,4 +1,4 @@
-# Logs
+# 日志
 logs
 *.log
 npm-debug.log*
@@ -16,11 +16,11 @@ playwright-report
 test-results
 *.local
 
-# Environment variables (except base .env)
+# 环境变量（不含基础 .env）
 .env.development
 .env.production
 
-# Editor directories and files
+# 编辑器目录和文件
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -33,6 +33,6 @@ test-results
 
 docs
 
-# Auto-generated (auto-imports.d.ts 需提交到 VCS，否则 CI 类型检查失败)
+# 自动生成文件（auto-imports.d.ts 需提交到版本控制系统，否则 CI 类型检查失败）
 src/components.d.ts
 .qoder

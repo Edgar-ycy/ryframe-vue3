@@ -1,40 +1,43 @@
 <template>
-  <el-dialog v-model="visible" title="发起密码重置" width="420px" @closed="reset">
+  <el-dialog v-model="visible" :title="t('system.user.passwordResetTitle')" width="420px" @closed="reset">
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item label="原因" prop="reason">
+      <el-form-item :label="t('system.user.reason')" prop="reason">
         <el-input
           v-model="form.reason"
           type="textarea"
           :rows="4"
           maxlength="512"
           show-word-limit
-          placeholder="请输入发起密码重置的原因"
+          :placeholder="t('system.user.enterResetReason')"
         />
       </el-form-item>
     </el-form>
     <el-alert
       v-if="resetLink"
       type="success"
-      title="重置链接已生成"
+      :title="t('system.user.resetLinkGenerated')"
       :closable="false"
       show-icon
       class="reset-link-alert"
     />
     <el-input v-if="resetLink" :model-value="resetLink" readonly class="reset-link-input">
       <template #append>
-        <el-button v-perm="'system:user:edit'" icon="DocumentCopy" @click="copyResetLink">复制</el-button>
+        <el-button v-perm="'system:user:edit'" icon="DocumentCopy" @click="copyResetLink">{{ t('system.user.copy') }}</el-button>
       </template>
     </el-input>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
-      <el-button v-perm="'system:user:edit'" type="primary" :loading="submitting" @click="submit">发起</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
+      <el-button v-perm="'system:user:edit'" type="primary" :loading="submitting" @click="submit">{{ t('system.user.initiate') }}</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { requestPasswordReset, type PasswordResetRequestResult } from '@/api/modules/user'
 import type { Id } from '@/shared/http/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -57,9 +60,9 @@ const resetLink = computed(() => {
   const url = result.value?.reset_url
   return url ? new URL(url, window.location.origin).toString() : ''
 })
-const rules: FormRules = {
-  reason: [{ required: true, message: '请输入重置原因', trigger: 'blur' }],
-}
+const rules = computed<FormRules>(() => ({
+  reason: [{ required: true, message: t('system.user.resetReasonRequired'), trigger: 'blur' }],
+}))
 
 function reset() {
   form.value.reason = ''
@@ -83,9 +86,9 @@ async function submit() {
     const response = await requestPasswordReset(props.userId, {
       reason: form.value.reason.trim(),
     })
-    if (!response.data) throw new Error('密码重置响应缺少数据')
+    if (!response.data) throw new Error(t('system.user.resetResponseMissing'))
     result.value = response.data
-    ElMessage.success('密码重置请求已发起')
+    ElMessage.success(t('system.user.resetRequested'))
   } finally {
     submitting.value = false
   }
@@ -94,7 +97,7 @@ async function submit() {
 async function copyResetLink() {
   if (!resetLink.value) return
   await navigator.clipboard.writeText(resetLink.value)
-  ElMessage.success('重置链接已复制')
+  ElMessage.success(t('system.user.resetLinkCopied'))
 }
 </script>
 

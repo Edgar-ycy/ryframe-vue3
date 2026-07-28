@@ -15,13 +15,10 @@
         @select="handleMenuSelect"
       >
         <template v-for="menu in permissionStore.menus" :key="menu.path">
-          <el-sub-menu
-            v-if="isSubMenu(menu)"
-            :index="menu.path"
-          >
+          <el-sub-menu v-if="isSubMenu(menu)" :index="menu.path">
             <template #title>
               <el-icon v-if="menu.meta?.icon"><component :is="resolveElementIcon(menu.meta.icon)" /></el-icon>
-              <span>{{ menu.meta?.title }}</span>
+              <span>{{ translateNavigationTitle(menu.meta?.title) }}</span>
             </template>
             <el-menu-item
               v-for="child in visibleChildren(menu)"
@@ -29,23 +26,20 @@
               :index="resolvePath(menu.path, child.path)"
             >
               <el-icon v-if="child.meta?.icon"><component :is="resolveElementIcon(child.meta.icon)" /></el-icon>
-              <template #title>{{ child.meta?.title }}</template>
+              <template #title>{{ translateNavigationTitle(child.meta?.title) }}</template>
             </el-menu-item>
           </el-sub-menu>
 
-          <el-menu-item
-            v-else
-            :index="leafPath(menu)"
-          >
+          <el-menu-item v-else :index="leafPath(menu)">
             <el-icon v-if="leafMeta(menu).icon">
               <component :is="resolveElementIcon(leafMeta(menu).icon)" />
             </el-icon>
-            <template #title>{{ leafMeta(menu).title }}</template>
+            <template #title>{{ translateNavigationTitle(leafMeta(menu).title) }}</template>
           </el-menu-item>
         </template>
         <el-menu-item v-if="canManageTenants" index="/platform/tenants">
           <el-icon><OfficeBuilding /></el-icon>
-          <template #title>租户管理</template>
+          <template #title>{{ t('navigation.tenant') }}</template>
         </el-menu-item>
       </el-menu>
     </el-scrollbar>
@@ -54,8 +48,10 @@
 
 <script setup lang="ts">
 import { OfficeBuilding } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import type { RouteMeta, RouteRecordRaw } from 'vue-router'
 import { usePermission } from '@/hooks/usePermission'
+import { translateNavigationTitle } from '@/i18n'
 import { resolveElementIcon } from '@/shared/ui/icons'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
@@ -69,6 +65,7 @@ const permissionStore = usePermissionStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const { hasAllPermissions, isAdmin } = usePermission()
+const { t } = useI18n()
 
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
@@ -77,15 +74,13 @@ const canManageTenants = computed(() =>
 
 const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')
 
-function handleMenuSelect(indexPath: string) {
-  router.push(indexPath)
-  if (appStore.isMobile) {
-    appStore.closeSidebar()
-  }
+function handleMenuSelect(indexPath: string): void {
+  void router.push(indexPath)
+  if (appStore.isMobile) appStore.closeSidebar()
 }
 
 function visibleChildren(menu: RouteRecordRaw): RouteRecordRaw[] {
-  return (menu.children || []).filter(c => !c.meta?.hidden)
+  return (menu.children || []).filter(child => !child.meta?.hidden)
 }
 
 function isSubMenu(menu: RouteRecordRaw): boolean {
@@ -96,17 +91,13 @@ function isSubMenu(menu: RouteRecordRaw): boolean {
 
 function leafPath(menu: RouteRecordRaw): string {
   const visible = visibleChildren(menu)
-  if (visible.length === 1) {
-    return resolvePath(menu.path, visible[0].path)
-  }
+  if (visible.length === 1) return resolvePath(menu.path, visible[0].path)
   return menu.path
 }
 
 function leafMeta(menu: RouteRecordRaw): RouteMeta {
   const visible = visibleChildren(menu)
-  if (visible.length === 1) {
-    return visible[0].meta || {}
-  }
+  if (visible.length === 1) return visible[0].meta || {}
   return menu.meta || {}
 }
 

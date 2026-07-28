@@ -1,5 +1,11 @@
 import { defineStore } from 'pinia'
 import { getConfigByKey } from '@/api/modules/config'
+import {
+  getApplicationLocale,
+  normalizeLocale,
+  setApplicationLocale,
+  type AppLocale,
+} from '@/i18n'
 
 type ComponentSize = 'large' | 'default' | 'small'
 
@@ -15,8 +21,17 @@ interface SettingsState {
   theme: 'light' | 'dark'
   themeColor: string
   componentSize: ComponentSize
+  locale: AppLocale
   tagsView: boolean
   sidebarLogo: boolean
+}
+
+interface ParsedThemeColor {
+  red: number
+  green: number
+  blue: number
+  alpha: number
+  css: string
 }
 
 const STORAGE_KEY = 'ryframe_settings'
@@ -25,6 +40,7 @@ const defaults: SettingsState = {
   theme: 'light',
   themeColor: '#6366F1',
   componentSize: 'default',
+  locale: getApplicationLocale(),
   tagsView: true,
   sidebarLogo: true,
 }
@@ -32,9 +48,18 @@ const defaults: SettingsState = {
 function loadSettings(): SettingsState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...defaults, ...JSON.parse(raw) }
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<SettingsState>
+      const settings: SettingsState = {
+        ...defaults,
+        ...parsed,
+        locale: normalizeLocale(parsed.locale) ?? getApplicationLocale(),
+      }
+      const color = parseThemeColor(settings.themeColor)
+      return { ...settings, themeColor: color?.css ?? defaults.themeColor }
+    }
   } catch {
-    // ignore
+    // 忽略读取失败，使用默认设置。
   }
   return { ...defaults }
 }
@@ -43,13 +68,66 @@ function saveSettings(state: SettingsState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
 }
 
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ]
+function toByte(value: number): number | undefined {
+  if (!Number.isFinite(value) || value < 0 || value > 255) return undefined
+  return Math.round(value)
+}
+
+function parseRgbChannel(value: string): number | undefined {
+  const normalized = value.trim()
+  const raw = normalized.endsWith('%')
+    ? Number.parseFloat(normalized.slice(0, -1)) * 2.55
+    : Number.parseFloat(normalized)
+  return toByte(raw)
+}
+
+function parseAlpha(value: string | undefined): number | undefined {
+  if (value === undefined) return 1
+  const normalized = value.trim()
+  const raw = normalized.endsWith('%')
+    ? Number.parseFloat(normalized.slice(0, -1)) / 100
+    : Number.parseFloat(normalized)
+  return Number.isFinite(raw) && raw >= 0 && raw <= 1 ? raw : undefined
+}
+
+function colorCss(red: number, green: number, blue: number, alpha: number): string {
+  if (alpha === 1) {
+    return `#${[red, green, blue].map(value => value.toString(16).padStart(2, '0')).join('')}`
+  }
+  return `rgba(${red}, ${green}, ${blue}, ${Number(alpha.toFixed(3))})`
+}
+
+/**
+ * 启用透明度时，Element Plus 可能输出 #RRGGBBAA 或 rgba()。在推导 HSL 变体前
+ * 同时转换这两种形式，以避免无效或透明输入产生 NaN CSS 变量。
+ */
+export function parseThemeColor(value: string | null | undefined): ParsedThemeColor | undefined {
+  if (!value) return undefined
+  const source = value.trim()
+  const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(source)?.[1]
+  if (hex) {
+    const expanded = hex.length <= 4
+      ? [...hex].map(part => `${part}${part}`).join('')
+      : hex
+    const red = Number.parseInt(expanded.slice(0, 2), 16)
+    const green = Number.parseInt(expanded.slice(2, 4), 16)
+    const blue = Number.parseInt(expanded.slice(4, 6), 16)
+    const alpha = expanded.length === 8
+      ? Number.parseInt(expanded.slice(6, 8), 16) / 255
+      : 1
+    return { red, green, blue, alpha, css: colorCss(red, green, blue, alpha) }
+  }
+
+  const match = /^rgba?\((.*)\)$/i.exec(source)
+  if (!match) return undefined
+  const parts = match[1].split(',')
+  if (parts.length !== 3 && parts.length !== 4) return undefined
+  const red = parseRgbChannel(parts[0] ?? '')
+  const green = parseRgbChannel(parts[1] ?? '')
+  const blue = parseRgbChannel(parts[2] ?? '')
+  const alpha = parseAlpha(parts[3])
+  if (red === undefined || green === undefined || blue === undefined || alpha === undefined) return undefined
+  return { red, green, blue, alpha, css: colorCss(red, green, blue, alpha) }
 }
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
@@ -108,11 +186,12 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 function applyThemeColor(color: string) {
-  const [r, g, b] = hexToRgb(color)
+  const parsed = parseThemeColor(color) ?? parseThemeColor(defaults.themeColor)!
+  const { red: r, green: g, blue: b, css } = parsed
   const [h, s, l] = rgbToHsl(r, g, b)
 
-  document.documentElement.style.setProperty('--el-color-primary', color)
-  document.documentElement.style.setProperty('--color-primary', color)
+  document.documentElement.style.setProperty('--el-color-primary', css)
+  document.documentElement.style.setProperty('--color-primary', css)
   document.documentElement.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`)
 
   for (let i = 3; i <= 9; i++) {
@@ -155,14 +234,22 @@ export const useSettingsStore = defineStore('settings', {
     },
 
     setThemeColor(color: string) {
-      this.themeColor = color
-      applyThemeColor(color)
+      const parsed = parseThemeColor(color)
+      if (!parsed) return
+      this.themeColor = parsed.css
+      applyThemeColor(parsed.css)
       saveSettings(this.$state)
     },
 
     setComponentSize(size: ComponentSize) {
       this.componentSize = size
       applyComponentSize(size)
+      saveSettings(this.$state)
+    },
+
+    setLocale(locale: AppLocale) {
+      this.locale = locale
+      setApplicationLocale(locale)
       saveSettings(this.$state)
     },
 
@@ -181,6 +268,7 @@ export const useSettingsStore = defineStore('settings', {
       applyTheme(this.theme)
       applyThemeColor(this.themeColor)
       applyComponentSize(this.componentSize)
+      setApplicationLocale(this.locale)
       saveSettings(this.$state)
     },
 
@@ -188,6 +276,7 @@ export const useSettingsStore = defineStore('settings', {
       applyTheme(this.theme)
       applyThemeColor(this.themeColor)
       applyComponentSize(this.componentSize)
+      setApplicationLocale(this.locale)
     },
 
     async syncFromServer() {
@@ -205,7 +294,7 @@ export const useSettingsStore = defineStore('settings', {
           }
         }
       } catch {
-        // ignore
+        // 忽略服务端配置同步失败。
       }
 
       try {
@@ -220,7 +309,7 @@ export const useSettingsStore = defineStore('settings', {
           }
         }
       } catch {
-        // ignore
+        // 忽略服务端配置同步失败。
       }
 
       if (changed) {

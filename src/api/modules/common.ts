@@ -25,7 +25,7 @@ export function uploadImage(data: FormData) {
   })
 }
 
-/** 头像上传（固定 avatar bucket） */
+/** 头像上传（固定头像存储桶） */
 export function uploadAvatar(data: FormData) {
   return request<UploadResult[]>({
     url: `${BASE}/upload/avatar`,

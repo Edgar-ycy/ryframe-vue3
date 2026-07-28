@@ -70,9 +70,24 @@ importers:
     'the raw-text fallback must not be relied on for escaped YAML',
   )
   assert.deepEqual(
-    findPrereleaseVersionsInPnpmLock(source),
-    ['3.0.0-dev.3', '3.0.0-0', '3.0.0-0'],
+    findPrereleaseVersionsInPnpmLock(source).sort(),
+    ['3.0.0-dev.3', '3.0.0-0', '3.0.0-0'].sort(),
   )
+})
+
+test('does not treat peer dependency ranges as locked prerelease packages', () => {
+  const source = `
+packages:
+  stable-package@1.2.3:
+    peerDependencies:
+      preview-peer: ^3.0.0-0
+snapshots:
+  stable-package@1.2.3:
+    peerDependencies:
+      preview-peer: ^3.0.0-0
+`
+
+  assert.deepEqual(findPrereleaseVersionsInPnpmLock(source), [])
 })
 
 test('rejects prerelease workspace overrides without flagging stable overrides', () => {

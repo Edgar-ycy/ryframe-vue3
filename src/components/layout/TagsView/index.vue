@@ -2,23 +2,31 @@
   <div class="tags-view-container">
     <div class="tags-view-wrapper">
       <div class="tags-view-scroll">
-        <span
+        <div
           v-for="view in tagsViewStore.visitedViews"
           :key="view.path"
           class="tags-view-item"
           :class="{ active: isActive(view) }"
-          @click="goToView(view)"
         >
-          {{ view.title || view.name }}
-          <el-icon
+          <button
+            type="button"
+            class="tags-view-item__link"
+            :aria-current="isActive(view) ? 'page' : undefined"
+            @click="goToView(view)"
+          >
+            {{ tagTitle(view) }}
+          </button>
+          <button
             v-if="!view.affix"
-            :size="10"
+            type="button"
             class="el-icon-close"
+            :aria-label="t('shell.tags.close', { title: tagTitle(view) })"
+            :title="t('shell.tags.close', { title: tagTitle(view) })"
             @click.stop="closeView(view)"
           >
-            <Close />
-          </el-icon>
-        </span>
+            <el-icon :size="10"><Close /></el-icon>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -28,11 +36,14 @@
 import { useTagsViewStore } from '@/stores/tagsView'
 import type { TagView } from '@/stores/tagsView'
 import { Close } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { translateNavigationTitle } from '@/i18n'
 import { installRouteTagSync } from './routeTagSync'
 
 const route = useRoute()
 const router = useRouter()
 const tagsViewStore = useTagsViewStore()
+const { t } = useI18n()
 
 const removeRouteTagSync = installRouteTagSync(
   router,
@@ -44,6 +55,10 @@ onUnmounted(removeRouteTagSync)
 
 function isActive(view: TagView) {
   return view.path === route.path
+}
+
+function tagTitle(view: TagView): string {
+  return translateNavigationTitle(view.title) || view.name || view.path
 }
 
 function goToView(view: TagView) {

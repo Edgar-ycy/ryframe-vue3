@@ -6,6 +6,7 @@ import axios, {
 } from 'axios'
 import type { ApiResponse } from './types'
 import { runtimeConfig } from '@/shared/config/runtimeConfig'
+import { getApplicationLocale, translate } from '@/i18n'
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -66,12 +67,53 @@ function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig): v
   config.headers.delete('content-type')
 }
 
+const errorKeyTranslation: Record<string, string> = {
+  validation: 'shell.http.errors.validation',
+  authentication: 'shell.http.errors.authentication',
+  authorization: 'shell.http.errors.authorization',
+  not_found: 'shell.http.errors.notFound',
+  conflict: 'shell.http.errors.conflict',
+  payload_too_large: 'shell.http.errors.payloadTooLarge',
+  rate_limited: 'shell.http.errors.rateLimited',
+  service_unavailable: 'shell.http.errors.serviceUnavailable',
+  internal: 'shell.http.errors.internal',
+}
+
+function isApiEnvelope(value: unknown): value is ApiResponse {
+  return typeof value === 'object'
+    && value !== null
+    && 'code' in value
+    && typeof value.code === 'number'
+    && 'message' in value
+    && typeof value.message === 'string'
+    && 'request_id' in value
+    && typeof value.request_id === 'string'
+}
+
+function translatedErrorMessage(envelope: ApiResponse, fallback: string): string {
+  const key = envelope.error_key ? errorKeyTranslation[envelope.error_key] : undefined
+  return key ? translate(key) : envelope.message || fallback
+}
+
+function applyAcceptLanguage(config: InternalAxiosRequestConfig): void {
+  if (!config.headers.get('Accept-Language')) {
+    config.headers.set('Accept-Language', getApplicationLocale())
+  }
+}
+
 transport.interceptors.request.use((config) => {
+  applyAcceptLanguage(config)
   const token = sessionAdapter?.getAccessToken()
   if (token && !config.headers.Authorization) config.headers.Authorization = `Bearer ${token}`
   if (!config.skipTenantHeader && !config.headers['X-Tenant-Id']) {
     config.headers['X-Tenant-Id'] = sessionAdapter?.getTenantId()
   }
+  removeJsonContentTypeForFormData(config)
+  return config
+})
+
+rawTransport.interceptors.request.use((config) => {
+  applyAcceptLanguage(config)
   removeJsonContentTypeForFormData(config)
   return config
 })
@@ -90,10 +132,9 @@ async function responseMessage(data: unknown, fallback: string): Promise<string>
   if (
     typeof data === 'object'
     && data !== null
-    && 'msg' in data
-    && typeof data.msg === 'string'
+    && isApiEnvelope(data)
   ) {
-    return data.msg
+    return translatedErrorMessage(data, fallback)
   }
   return fallback
 }
@@ -103,14 +144,19 @@ async function toHttpError(error: unknown): Promise<HttpError> {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status
     return new HttpError(
-      await responseMessage(error.response?.data, error.message || '请求失败'),
+      await responseMessage(error.response?.data, error.message || translate('shell.http.requestFailed')),
       status,
       undefined,
       error,
       parseRetryAfter(error.response?.headers['retry-after']),
     )
   }
-  return new HttpError(error instanceof Error ? error.message : '请求失败', undefined, undefined, error)
+  return new HttpError(
+    error instanceof Error ? error.message : translate('shell.http.requestFailed'),
+    undefined,
+    undefined,
+    error,
+  )
 }
 
 function parseRetryAfter(value: unknown): number | undefined {
@@ -119,7 +165,7 @@ function parseRetryAfter(value: unknown): number | undefined {
 }
 
 async function refreshSession(): Promise<string> {
-  if (!sessionAdapter) throw new HttpError('HTTP 会话尚未初始化', 401)
+  if (!sessionAdapter) throw new HttpError(translate('shell.http.sessionNotInitialized'), 401)
   if (!refreshPromise) {
     refreshPromise = sessionAdapter
       .refreshAccessToken()
@@ -171,13 +217,17 @@ transport.interceptors.response.use(
 
 function parseEnvelope<T>(response: AxiosResponse<ApiResponse<T>>, report: boolean): ApiResponse<T> {
   const envelope = response.data
-  if (!envelope || typeof envelope.code !== 'number' || typeof envelope.msg !== 'string') {
-    const error = new HttpError('服务端返回了无效的响应格式', response.status)
+  if (!isApiEnvelope(envelope)) {
+    const error = new HttpError(translate('shell.http.invalidResponse'), response.status)
     if (report) sessionAdapter?.reportError(error)
     throw error
   }
   if (envelope.code !== 200) {
-    const error = new HttpError(envelope.msg || '请求失败', response.status, envelope.code)
+    const error = new HttpError(
+      translatedErrorMessage(envelope, translate('shell.http.requestFailed')),
+      response.status,
+      envelope.code,
+    )
     if (report) sessionAdapter?.reportError(error)
     throw error
   }

@@ -15,11 +15,10 @@ interface BrowserHistory {
 }
 
 /**
- * Capture one-time reset credentials before removing them from the visible URL.
+ * 在从可见 URL 中移除一次性重置凭据前先行获取它们。
  *
- * Reset credentials are intentionally accepted only from the fragment because
- * fragments are not sent to the server in HTTP requests. Query parameters are
- * discarded to prevent legacy links from keeping secrets in browser history.
+ * 重置凭据被刻意限定为只从片段中接收，因为 HTTP 请求不会将片段发送给服务端。
+ * 查询参数会被丢弃，以避免旧链接在浏览器历史记录中保留敏感信息。
  */
 export function consumeResetPasswordFragment(
   location: BrowserLocation,

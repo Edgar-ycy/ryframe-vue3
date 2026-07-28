@@ -2,33 +2,33 @@
   <div class="page-container">
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline>
-        <el-form-item label="用户名">
-          <el-input v-model="queryParams.username" placeholder="请输入用户名" clearable />
+        <el-form-item :label="t('monitor.online.username')">
+          <el-input v-model="queryParams.username" :placeholder="t('monitor.online.usernamePlaceholder')" clearable />
         </el-form-item>
-        <el-form-item label="IP地址">
-          <el-input v-model="queryParams.ipaddr" placeholder="请输入IP地址" clearable />
+        <el-form-item :label="t('monitor.online.ipAddress')">
+          <el-input v-model="queryParams.ipaddr" :placeholder="t('monitor.online.ipAddressPlaceholder')" clearable />
         </el-form-item>
         <el-form-item>
-          <el-button v-perm="'monitor:online:list'" type="primary" icon="Search" @click="fetchData">搜索</el-button>
-          <el-button v-perm="'monitor:online:list'" icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button v-perm="'monitor:online:list'" type="primary" icon="Search" @click="fetchData">{{ t('monitor.online.search') }}</el-button>
+          <el-button v-perm="'monitor:online:list'" icon="Refresh" @click="handleReset">{{ t('monitor.online.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
     <el-card shadow="never" style="margin-top:12px">
-      <template #header><span>在线用户（{{ tableData.length }} 人）</span></template>
+      <template #header><span>{{ t('monitor.online.title', { count: tableData.length }) }}</span></template>
       <el-table v-loading="loading" :data="tableData" border stripe>
-        <el-table-column prop="sid" label="会话编号" show-overflow-tooltip />
-        <el-table-column prop="username" label="用户名" />
-        <el-table-column prop="dept_name" label="部门" show-overflow-tooltip />
-        <el-table-column prop="ipaddr" label="IP地址" />
-        <el-table-column prop="login_location" label="登录地点" show-overflow-tooltip />
-        <el-table-column prop="browser" label="浏览器" show-overflow-tooltip />
-        <el-table-column prop="os" label="操作系统" show-overflow-tooltip />
-        <el-table-column prop="login_time" label="登录时间" min-width="180" />
-        <el-table-column label="操作" fixed="right" align="center">
+        <el-table-column prop="sid" :label="t('monitor.online.sessionId')" show-overflow-tooltip />
+        <el-table-column prop="username" :label="t('monitor.online.username')" />
+        <el-table-column prop="dept_name" :label="t('monitor.online.department')" show-overflow-tooltip />
+        <el-table-column prop="ipaddr" :label="t('monitor.online.ipAddress')" />
+        <el-table-column prop="login_location" :label="t('monitor.online.loginLocation')" show-overflow-tooltip />
+        <el-table-column prop="browser" :label="t('monitor.online.browser')" show-overflow-tooltip />
+        <el-table-column prop="os" :label="t('monitor.online.operatingSystem')" show-overflow-tooltip />
+        <el-table-column prop="login_time" :label="t('monitor.online.loginTime')" min-width="180" />
+        <el-table-column :label="t('monitor.online.operation')" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'monitor:online:force-logout'" type="danger" link icon="SwitchButton" @click="handleForceLogout(row)">强退</el-button>
+            <el-button v-perm="'monitor:online:force-logout'" type="danger" link icon="SwitchButton" @click="handleForceLogout(row)">{{ t('monitor.online.forceLogout') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -37,8 +37,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { listOnlineUser, forceLogout, type OnlineUserRecord } from '@/api/modules/monitor'
 
+const { t } = useI18n()
 const loading = ref(false)
 const tableData = ref<OnlineUserRecord[]>([])
 const queryParams = ref({ username: '', ipaddr: '' })
@@ -47,7 +49,7 @@ async function fetchData() {
   loading.value = true
   try {
     const res = await listOnlineUser(queryParams.value)
-    tableData.value = res.rows || []
+    tableData.value = res.data?.items || []
   } finally { loading.value = false }
 }
 
@@ -58,11 +60,15 @@ function handleReset() {
 
 async function handleForceLogout(row: OnlineUserRecord) {
   try {
-    await ElMessageBox.confirm(`确认强制下线用户"${row.username}"吗？`, '警告', { type: 'warning' })
+    await ElMessageBox.confirm(
+      t('monitor.online.forceLogoutConfirm', { username: row.username }),
+      t('monitor.online.warning'),
+      { type: 'warning' },
+    )
     await forceLogout(row.sid)
-    ElMessage.success('已强制下线')
+    ElMessage.success(t('monitor.online.forceLogoutSuccess'))
     await fetchData()
-  } catch { /* cancelled */ }
+  } catch { /* 用户取消 */ }
 }
 
 onMounted(() => fetchData())

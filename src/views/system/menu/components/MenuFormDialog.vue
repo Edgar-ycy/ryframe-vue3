@@ -1,36 +1,41 @@
 <template>
-  <el-dialog v-model="visible" :title="isEdit ? '编辑菜单' : '新增菜单'" width="600px" @closed="resetForm">
+  <el-dialog
+    v-model="visible"
+    :title="isEdit ? t('system.menu.editTitle') : t('system.menu.addTitle')"
+    width="600px"
+    @closed="resetForm"
+  >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item label="上级菜单">
+      <el-form-item :label="t('system.menu.parent')">
         <el-tree-select
           v-model="form.parent_id"
           :data="parentOptions"
           :props="{ label: 'name', value: 'id', children: 'children' }"
-          placeholder="根菜单（不选则为顶级）"
+          :placeholder="t('system.menu.rootPlaceholder')"
           clearable
           check-strictly
           style="width:100%"
         />
       </el-form-item>
-      <el-form-item label="菜单名称" prop="name">
-        <el-input v-model="form.name" placeholder="请输入菜单名称" maxlength="50" />
+      <el-form-item :label="t('system.menu.name')" prop="name">
+        <el-input v-model="form.name" :placeholder="t('system.menu.enterName')" maxlength="50" />
       </el-form-item>
-      <el-form-item label="菜单类型" prop="menu_type">
+      <el-form-item :label="t('system.menu.type')" prop="menu_type">
         <el-radio-group v-model="form.menu_type" @change="handleMenuTypeChange">
-          <el-radio value="M">目录</el-radio>
-          <el-radio value="C">菜单</el-radio>
-          <el-radio value="F">按钮</el-radio>
+          <el-radio value="M">{{ t('system.menu.directory') }}</el-radio>
+          <el-radio value="C">{{ t('system.menu.menu') }}</el-radio>
+          <el-radio value="F">{{ t('system.menu.button') }}</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="菜单图标">
+      <el-form-item :label="t('system.menu.icon')">
         <IconSelect v-model="form.icon" />
       </el-form-item>
-      <el-form-item v-if="form.menu_type !== 'M'" label="关联权限" prop="perm_id">
+      <el-form-item v-if="form.menu_type !== 'M'" :label="t('system.menu.linkedPermission')" prop="perm_id">
         <el-select
           v-model="form.perm_id"
           filterable
           clearable
-          placeholder="请选择权限"
+          :placeholder="t('system.menu.selectPermission')"
           style="width:100%"
           @change="handlePermissionChange"
         >
@@ -42,37 +47,38 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="排序">
+      <el-form-item :label="t('system.common.sort')">
         <el-input-number v-model="form.sort" :min="0" :max="999" />
       </el-form-item>
-      <el-form-item v-if="form.menu_type !== 'F'" label="可见">
+      <el-form-item v-if="form.menu_type !== 'F'" :label="t('system.menu.visible')">
         <el-radio-group v-model="form.visible">
-          <el-radio :value="true">显示</el-radio>
-          <el-radio :value="false">隐藏</el-radio>
+          <el-radio :value="true">{{ t('system.menu.display') }}</el-radio>
+          <el-radio :value="false">{{ t('system.menu.hidden') }}</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item v-if="isEdit" label="状态">
+      <el-form-item v-if="isEdit" :label="t('system.common.status')">
         <el-radio-group v-model="form.status">
-          <el-radio value="1">正常</el-radio>
-          <el-radio value="0">停用</el-radio>
+          <el-radio value="1">{{ t('system.common.normal') }}</el-radio>
+          <el-radio value="0">{{ t('system.common.disabled') }}</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
         v-perm="isEdit ? 'system:menu:edit' : 'system:menu:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
       >
-        确定
+        {{ t('system.common.confirm') }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   createMenu,
   updateMenu,
@@ -84,6 +90,8 @@ import IconSelect from '@/components/common/IconSelect.vue'
 import { getRouteKeyByPermissionCode } from '@/router/pageRegistry'
 import type { Id } from '@/shared/http/types'
 import { excludeMenuSubtree, type PermissionOption } from '../menuTree'
+
+const { t } = useI18n()
 
 interface MenuFormState {
   parent_id?: Id
@@ -134,13 +142,13 @@ function initialForm(): MenuFormState {
 
 const form = ref<MenuFormState>(initialForm())
 const rules = computed<FormRules>(() => ({
-  name: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
+  name: [{ required: true, message: t('system.menu.enterName'), trigger: 'blur' }],
   ...(form.value.menu_type === 'M'
     ? {}
     : {
         perm_id: [{
           required: true,
-          message: '菜单需关联查询权限，按钮必须关联操作权限',
+          message: t('system.menu.permissionRequired'),
           trigger: 'change',
         }],
       }),
@@ -207,7 +215,7 @@ async function submit(): Promise<void> {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
   if (form.value.menu_type === 'C' && !form.value.route_key) {
-    ElMessage.error('所选权限没有对应的前端页面，请选择该页面的查询权限')
+    ElMessage.error(t('system.menu.pageMissing'))
     return
   }
 
@@ -226,11 +234,11 @@ async function submit(): Promise<void> {
   try {
     if (props.menu) {
       await updateMenu(props.menu.id, { ...payload, status: form.value.status })
-      ElMessage.success('更新成功')
+      ElMessage.success(t('system.common.updateSuccess'))
     }
     else {
       await createMenu(payload)
-      ElMessage.success('新增成功')
+      ElMessage.success(t('system.common.addSuccess'))
     }
     visible.value = false
     emit('saved')

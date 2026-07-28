@@ -1,4 +1,4 @@
-/* ====== Global Styles ====== */
+/* ====== 全局样式 ====== */
 @use './variables';
 @use './mixins';
 @use './transition';
@@ -36,7 +36,7 @@ a:hover {
   color: var(--color-primary-light);
 }
 
-/* ====== App Layout ====== */
+/* ====== 应用布局 ====== */
 .app-wrapper {
   position: relative;
   height: 100%;
@@ -58,7 +58,7 @@ a:hover {
   display: none;
 }
 
-/* ====== Sidebar — 深色现代风格 ====== */
+/* ====== 侧边栏 — 深色现代风格 ====== */
 .sidebar-container {
   position: fixed;
   top: 0;
@@ -129,7 +129,7 @@ a:hover {
   }
 }
 
-/* ====== Navbar — 简洁顶栏 ====== */
+/* ====== 顶部导航栏 — 简洁顶栏 ====== */
 .navbar {
   height: var(--navbar-height);
   background: var(--bg-color);
@@ -154,6 +154,11 @@ a:hover {
     &:hover {
       background: var(--border-color-light);
       color: var(--color-primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
     }
   }
 
@@ -180,6 +185,11 @@ a:hover {
         background: var(--border-color-light);
         color: var(--color-primary);
       }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
     }
 
     .user-info {
@@ -198,7 +208,7 @@ a:hover {
   }
 }
 
-/* ====== TagsView — 圆角标签 ====== */
+/* ====== 标签页 — 圆角标签 ====== */
 .tags-view-container {
   height: var(--tags-view-height);
   background: var(--bg-color);
@@ -227,7 +237,7 @@ a:hover {
     align-items: center;
     height: 26px;
     line-height: 26px;
-    padding: 0 12px;
+    padding: 0;
     font-size: 12px;
     border-radius: 6px;
     cursor: pointer;
@@ -248,8 +258,29 @@ a:hover {
       font-weight: 500;
     }
 
+    .tags-view-item__link,
     .el-icon-close {
-      margin-left: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      border: 0;
+      color: inherit;
+      font: inherit;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .tags-view-item__link {
+      min-width: 0;
+      padding: 0 12px;
+      white-space: nowrap;
+    }
+
+    .el-icon-close {
+      width: 20px;
+      margin-left: -8px;
+      margin-right: 4px;
       border-radius: 50%;
       padding: 2px;
       transition: all 0.2s;
@@ -258,10 +289,16 @@ a:hover {
         background: rgb(0 0 0 / 10%);
       }
     }
+
+    .tags-view-item__link:focus-visible,
+    .el-icon-close:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: -2px;
+    }
   }
 }
 
-/* ====== AppMain ====== */
+/* ====== 主内容区 ====== */
 .app-main {
   min-height: calc(100vh - var(--navbar-height) - var(--tags-view-height));
   padding: 20px;
@@ -272,7 +309,7 @@ a:hover {
   min-height: calc(100vh - var(--navbar-height));
 }
 
-/* ====== Page Container ====== */
+/* ====== 页面容器 ====== */
 .page-container {
   background: var(--bg-color);
   padding: 24px;
@@ -287,7 +324,7 @@ a:hover {
   }
 }
 
-/* ====== Search Bar ====== */
+/* ====== 搜索栏 ====== */
 .search-bar {
   display: flex;
   flex-wrap: wrap;
@@ -303,7 +340,7 @@ a:hover {
   }
 }
 
-/* ====== Table Toolbar ====== */
+/* ====== 表格工具栏 ====== */
 .table-toolbar {
   display: flex;
   justify-content: space-between;
@@ -311,7 +348,7 @@ a:hover {
   margin-bottom: 16px;
 }
 
-/* ====== Card Header ====== */
+/* ====== 卡片头部 ====== */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -319,14 +356,14 @@ a:hover {
   gap: 8px;
 }
 
-/* ====== Search Card ====== */
+/* ====== 搜索卡片 ====== */
 .search-card {
   .el-form-item {
     margin-bottom: 0;
   }
 }
 
-/* ====== Error Pages ====== */
+/* ====== 错误页面 ====== */
 .error-page {
   height: 100vh;
   display: flex;
@@ -348,7 +385,7 @@ a:hover {
   }
 }
 
-/* ====== Element Plus Overrides ====== */
+/* ====== Element Plus 覆盖样式 ====== */
 .el-card {
   border-radius: var(--border-radius-lg) !important;
   border: 1px solid var(--border-color-base) !important;
@@ -423,7 +460,7 @@ a:hover {
   border-radius: 8px;
 }
 
-/* ====== Mobile Layout ====== */
+/* ====== 移动端布局 ====== */
 @media (width <= 1024px) {
   html,
   body,
@@ -639,7 +676,7 @@ a:hover {
       gap: 4px;
     }
 
-    .navbar-action:first-child {
+    .navbar-fullscreen-action {
       display: none;
     }
   }
@@ -649,7 +686,7 @@ a:hover {
   }
 }
 
-/* ====== Dark Mode ====== */
+/* ====== 深色模式 ====== */
 html.dark {
   --bg-color: #111827;
   --bg-color-page: #0F172A;
@@ -679,7 +716,7 @@ html.dark {
   --el-fill-color-blank: #111827;
   --el-mask-color: rgb(0 0 0 / 60%);
 
-  /* Button */
+  /* 按钮 */
   --el-button-bg-color: #1E293B;
   --el-button-border-color: #334155;
   --el-button-text-color: #CBD5E1;
@@ -690,7 +727,7 @@ html.dark {
   --el-button-disabled-border-color: #334155;
   --el-button-disabled-text-color: #64748B;
 
-  /* Form */
+  /* 表单 */
   --el-form-label-color: #CBD5E1;
   --el-input-bg-color: #1E293B;
   --el-input-border-color: #334155;
@@ -699,21 +736,21 @@ html.dark {
   --el-input-placeholder-color: #64748B;
   --el-input-text-color: #CBD5E1;
 
-  /* Menu */
+  /* 菜单 */
   --el-menu-bg-color: #111827;
   --el-menu-text-color: #CBD5E1;
   --el-menu-hover-bg-color: rgb(99 102 241 / 10%);
   --el-menu-active-color: #818CF8;
   --el-menu-border-color: transparent;
 
-  /* Popover / Dropdown / Select */
+  /* 弹出框 / 下拉菜单 / 选择器 */
   --el-popover-bg-color: #1E293B;
   --el-popover-border-color: #334155;
   --el-dropdown-menuItem-hover-fill: var(--border-color-light);
   --el-dropdown-menuItem-hover-color: var(--color-primary);
   --el-select-option-hover-bg: #334155;
 
-  /* Tag */
+  /* 标签 */
   --el-tag-bg-color: #1E293B;
   --el-tag-border-color: #334155;
   --el-tag-text-color: #CBD5E1;

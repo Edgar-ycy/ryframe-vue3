@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { TENANT_ID_VALIDATION_MESSAGE } from '@/shared/security/tenantId'
+import { translate } from '@/i18n'
 import {
   createTenantIdFormRules,
   tenantIdFormValidationError,
@@ -17,14 +17,18 @@ describe('tenant identifier form rules', () => {
     const second = createTenantIdFormRules()
 
     expect(first).not.toBe(second)
-    expect(first[0]).toMatchObject({ required: true, trigger: 'blur' })
+    expect(first[0]).toMatchObject({
+      required: true,
+      message: translate('shell.tenant.idRequired'),
+      trigger: 'blur',
+    })
     expect(first[1]?.validator).toBeTypeOf('function')
   })
 
-  it('passes valid identifiers and returns the shared error for invalid ones', async () => {
+  it('passes valid identifiers and returns the localized error for invalid ones', async () => {
     expect(tenantIdFormValidationError('tenant-a')).toBeUndefined()
     expect(tenantIdFormValidationError('tenant_*')?.message)
-      .toBe(TENANT_ID_VALIDATION_MESSAGE)
+      .toBe(translate('shell.tenant.idInvalid'))
 
     const validator = createTenantIdFormRules()[1]?.validator as RuleValidator
     const validCallback = vi.fn()
@@ -34,6 +38,6 @@ describe('tenant identifier form rules', () => {
     await validator({}, 'tenant_*', invalidCallback)
 
     expect(validCallback).toHaveBeenCalledWith(undefined)
-    expect(invalidCallback.mock.calls[0]?.[0]?.message).toBe(TENANT_ID_VALIDATION_MESSAGE)
+    expect(invalidCallback.mock.calls[0]?.[0]?.message).toBe(translate('shell.tenant.idInvalid'))
   })
 })

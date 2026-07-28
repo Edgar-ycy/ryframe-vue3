@@ -95,9 +95,9 @@ beforeEach(() => {
   mocks.mountedCallbacks.length = 0
   mocks.confirmAction.mockResolvedValue(true)
   mocks.deleteUser.mockResolvedValue(undefined)
-  mocks.getDeptTree.mockResolvedValue({ code: 200, msg: 'ok', data: [] })
-  mocks.listRoleNoPage.mockResolvedValue({ code: 200, msg: 'ok', data: [] })
-  mocks.listUser.mockResolvedValue({ code: 200, msg: 'ok', rows: [], total: 0 })
+  mocks.getDeptTree.mockResolvedValue({ code: 200, message: 'ok', data: [], request_id: 'test' })
+  mocks.listRoleNoPage.mockResolvedValue({ code: 200, message: 'ok', data: [], request_id: 'test' })
+  mocks.listUser.mockResolvedValue({ code: 200, message: 'ok', data: { items: [], total: 0 }, request_id: 'test' })
   mocks.updateUserStatus.mockResolvedValue(undefined)
 })
 
@@ -121,7 +121,7 @@ describe('useUserManagement', () => {
       status: '1',
       created_at: '2026-07-22T00:00:00Z',
     }
-    const users = deferred<{ rows: UserRecord[], total: number }>()
+    const users = deferred<{ data: { items: UserRecord[], total: number } }>()
     const departments = deferred<{ data: DeptNode[] }>()
     const roles = deferred<{ data: RoleRecord[] }>()
     mocks.listUser.mockReturnValueOnce(users.promise)
@@ -136,7 +136,7 @@ describe('useUserManagement', () => {
     expect(management.deptTreeLoading.value).toBe(true)
     expect(mocks.listUser).toHaveBeenCalledWith({ page: 1, page_size: 10 })
 
-    users.resolve({ rows: [user], total: 1 })
+    users.resolve({ data: { items: [user], total: 1 } })
     departments.resolve({ data: [department] })
     roles.resolve({ data: [role] })
 
@@ -229,7 +229,7 @@ describe('useUserManagement', () => {
     const management = useUserManagement()
     const user = createUser()
     const deletion = deferred<void>()
-    const refresh = deferred<{ rows: UserRecord[], total: number }>()
+    const refresh = deferred<{ data: { items: UserRecord[], total: number } }>()
     const remainingUser = createUser({ id: 'user-2', username: 'bob' })
     mocks.deleteUser.mockReturnValueOnce(deletion.promise)
     mocks.listUser.mockReturnValueOnce(refresh.promise)
@@ -243,7 +243,7 @@ describe('useUserManagement', () => {
     expect(management.deletingId.value).toBe('user-1')
     expect(management.loading.value).toBe(true)
 
-    refresh.resolve({ rows: [remainingUser], total: 1 })
+    refresh.resolve({ data: { items: [remainingUser], total: 1 } })
     await operation
     expect(management.deletingId.value).toBeNull()
     expect(management.loading.value).toBe(false)

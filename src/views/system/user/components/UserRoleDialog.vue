@@ -1,14 +1,14 @@
 <template>
-  <el-dialog v-model="visible" title="分配用户角色" width="520px" @closed="reset">
+  <el-dialog v-model="visible" :title="t('system.user.roleDialogTitle')" width="520px" @closed="reset">
     <el-form v-loading="loading" label-width="80px">
-      <el-form-item label="用户">
+      <el-form-item :label="t('system.user.userLabel')">
         <el-input :model-value="user?.nickname ?? ''" disabled />
       </el-form-item>
-      <el-form-item label="角色">
+      <el-form-item :label="t('system.user.role')">
         <el-select
           v-model="selectedRoleIds"
           multiple
-          placeholder="请选择角色"
+          :placeholder="t('system.user.selectRole')"
           :disabled="selfAssignmentLocked"
           style="width: 100%"
         >
@@ -23,7 +23,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
         v-perm="'system:user:edit'"
         type="primary"
@@ -31,13 +31,14 @@
         :disabled="loading || selfAssignmentLocked"
         @click="submit"
       >
-        确定
+        {{ t('system.common.confirm') }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   getUser,
   replaceUserRoles,
@@ -45,6 +46,8 @@ import {
 } from '@/api/modules/user'
 import type { RoleRecord } from '@/api/modules/role'
 import type { Id } from '@/shared/http/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -87,7 +90,7 @@ watch(
     loading.value = true
     try {
       const response = await getUser(props.user.id)
-      if (!response.data) throw new Error('用户详情响应缺少数据')
+      if (!response.data) throw new Error(t('system.user.detailMissing'))
       selectedRoleIds.value = response.data.roles.map(role => role.id)
     }
     finally {
@@ -101,7 +104,7 @@ async function submit(): Promise<void> {
   submitting.value = true
   try {
     await replaceUserRoles(props.user.id, selectedRoleIds.value)
-    ElMessage.success('角色分配成功')
+    ElMessage.success(t('system.user.roleAssigned'))
     visible.value = false
     emit('saved')
   }

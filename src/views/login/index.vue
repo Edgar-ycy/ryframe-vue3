@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h2 class="login-title">RyFrame 管理后台</h2>
+      <h2 class="login-title">{{ t('account.appTitle') }}</h2>
       <el-form
         ref="loginFormRef"
         :model="loginForm"
@@ -12,7 +12,7 @@
         <el-form-item prop="tenant_id">
           <el-input
             v-model="loginForm.tenant_id"
-            placeholder="租户标识"
+            :placeholder="t('account.tenantId')"
             prefix-icon="OfficeBuilding"
             autocomplete="organization"
           />
@@ -20,7 +20,7 @@
         <el-form-item prop="username">
           <el-input
             v-model="loginForm.username"
-            placeholder="用户名"
+            :placeholder="t('account.username')"
             prefix-icon="User"
           />
         </el-form-item>
@@ -28,7 +28,7 @@
           <el-input
             v-model="loginForm.password"
             type="password"
-            placeholder="密码"
+            :placeholder="t('account.password')"
             prefix-icon="Lock"
             show-password
           />
@@ -37,22 +37,28 @@
           <div style="display:flex;gap:8px">
             <el-input
               v-model="loginForm.captcha_code"
-              placeholder="验证码"
+              :placeholder="t('account.captcha')"
               prefix-icon="Picture"
               maxlength="4"
               style="flex:1"
             />
-            <div style="width:120px;height:40px;cursor:pointer;flex-shrink:0" @click="refreshCaptcha">
+            <button
+              type="button"
+              class="captcha-refresh"
+              :aria-label="t('account.refreshCaptcha')"
+              :title="t('account.refreshCaptcha')"
+              @click="refreshCaptcha"
+            >
               <img
                 v-if="captchaImage"
                 :src="captchaImage"
-                alt="验证码"
+                :alt="t('account.captcha')"
                 style="width:100%;height:100%;border-radius:4px"
               >
-              <div v-else class="captcha-placeholder">
-                加载中...
-              </div>
-            </div>
+              <span v-else class="captcha-placeholder">
+                {{ t('account.captchaLoading') }}
+              </span>
+            </button>
           </div>
         </el-form-item>
         <el-form-item>
@@ -62,7 +68,7 @@
             style="width: 100%"
             @click="handleLogin"
           >
-            登录
+            {{ t('account.signIn') }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -71,27 +77,37 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
+import { isValidTenantId } from '@/shared/security/tenantId'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
-import { createTenantIdFormRules } from '@/utils/tenantIdFormRules'
 import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
 const loginForm = ref(createInitialLoginForm(getTenantId(), import.meta.env.DEV))
 
-const loginRules: FormRules = {
-  tenant_id: createTenantIdFormRules(),
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-  captcha_code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
-}
+const loginRules = computed<FormRules>(() => ({
+  tenant_id: [
+    { required: true, message: t('account.enterTenantId'), trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        callback(isValidTenantId(String(value ?? '')) ? undefined : new Error(t('account.tenantIdInvalid')))
+      },
+      trigger: 'blur',
+    },
+  ],
+  username: [{ required: true, message: t('account.enterUsername'), trigger: 'blur' }],
+  password: [{ required: true, message: t('account.enterPassword'), trigger: 'blur' }],
+  captcha_code: [{ required: true, message: t('account.enterCaptcha'), trigger: 'blur' }],
+}))
 
 const captchaEnabled = ref(false)
 const captchaImage = ref('')
@@ -109,7 +125,7 @@ async function loadCaptchaConfig() {
 async function refreshCaptcha() {
   try {
     const res = await getCaptcha()
-    if (!res.data) throw new Error('验证码响应缺少数据')
+    if (!res.data) throw new Error(t('account.captchaResponseMissing'))
     const data = res.data
     captchaId.value = data.captcha_id
     captchaImage.value = data.image_base64
@@ -132,7 +148,7 @@ const handleLogin = async () => {
       captchaEnabled.value ? captchaId.value : undefined,
       captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )
-    ElMessage.success('登录成功')
+    ElMessage.success(t('account.signInSuccess'))
     await router.replace(resolveLoginRedirect(route.query.redirect))
   } catch {
     if (captchaEnabled.value) {
@@ -186,6 +202,22 @@ onMounted(async () => {
   color: var(--color-text-secondary);
   font-size: 12px;
   border-radius: 4px;
+}
+
+.captcha-refresh {
+  width: 120px;
+  height: 40px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.captcha-refresh:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 2px;
 }
 
 @media (width <= 480px) {

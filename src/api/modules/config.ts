@@ -1,6 +1,6 @@
 import request, { requestBlob } from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id } from '@/shared/http/types'
+import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
 
 const BASE = '/system/configs'
 
@@ -11,7 +11,7 @@ export type ConfigCreateInput = OperationJsonBody<'post_system_configs'>
 export type ConfigUpdateInput = OperationJsonBody<'put_system_configs_by_id'>
 export type ConfigRecord = ApiSchema<'ConfigVo'>
 
-export function listConfig(params: ConfigQuery) { return request<ConfigRecord[]>({ url: BASE, method: 'get', params }) }
+export function listConfig(params: ConfigQuery) { return request<PageResponse<ConfigRecord>>({ url: BASE, method: 'get', params }) }
 export function listConfigNoPage(params?: ConfigAllQuery) {
   return request<ConfigRecord[]>({
     url: `${BASE}/all`, method: 'get', params: stripPagination(params),
@@ -22,7 +22,7 @@ export function exportConfig(params?: ConfigExportQuery) {
 }
 export function getConfig(id: Id)      { return request<ConfigRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
 
-/** 按 Key 查询参数值 */
+/** 按键查询参数值 */
 export function getConfigByKey(key: string) {
   return request<string>({ url: `${BASE}/key/${key}`, method: 'get' })
 }

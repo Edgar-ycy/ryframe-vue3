@@ -4,11 +4,11 @@ export type RouteComponentModule = { default: Component }
 export type RouteComponentLoader = () => Promise<RouteComponentModule>
 
 /**
- * Give a lazy route page the exact name used by its route record.
+ * 为懒加载路由页面指定与其路由记录完全一致的名称。
  *
- * KeepAlive's `include` option matches a component's name, not the route name.
- * Page files in this project are generally named `index.vue`, so a stable named
- * wrapper is required for the tag cache to select the intended page.
+ * KeepAlive 的 `include` 选项匹配的是组件名称，而不是路由名称。
+ * 本项目的页面文件通常名为 `index.vue`，因此标签缓存需要稳定的具名包装组件
+ * 才能选中目标页面。
  */
 export function withRouteComponentName(
   name: string,

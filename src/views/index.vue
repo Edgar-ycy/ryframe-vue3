@@ -2,29 +2,29 @@
   <main class="workspace">
     <header class="workspace-header">
       <div>
-        <p class="workspace-label">工作台</p>
-        <h1>你好，{{ displayName }}</h1>
-        <p class="workspace-subtitle">当前登录信息与可访问功能均来自本次会话。</p>
+        <p class="workspace-label">{{ t('dashboard.workspace') }}</p>
+        <h1>{{ t('dashboard.greeting', { name: displayName }) }}</h1>
+        <p class="workspace-subtitle">{{ t('dashboard.subtitle') }}</p>
       </div>
-      <el-tag type="success" effect="plain">已登录</el-tag>
+      <el-tag type="success" effect="plain">{{ t('dashboard.signedIn') }}</el-tag>
     </header>
 
-    <section class="account-summary" aria-label="账号概览">
+    <section class="account-summary" :aria-label="t('dashboard.accountOverview')">
       <dl>
         <div>
-          <dt>账号</dt>
+          <dt>{{ t('dashboard.account') }}</dt>
           <dd>{{ userStore.username || '-' }}</dd>
         </div>
         <div>
-          <dt>当前租户</dt>
+          <dt>{{ t('dashboard.currentTenant') }}</dt>
           <dd>{{ tenantLabel }}</dd>
         </div>
         <div>
-          <dt>角色</dt>
+          <dt>{{ t('dashboard.role') }}</dt>
           <dd>{{ roleLabel }}</dd>
         </div>
         <div>
-          <dt>可访问功能</dt>
+          <dt>{{ t('dashboard.accessibleFeatures') }}</dt>
           <dd>{{ allLinks.length }}</dd>
         </div>
       </dl>
@@ -33,8 +33,8 @@
     <section class="quick-section">
       <div class="section-heading">
         <div>
-          <h2>快捷入口</h2>
-          <p>入口根据当前角色和权限自动更新。</p>
+          <h2>{{ t('dashboard.quickAccess') }}</h2>
+          <p>{{ t('dashboard.quickAccessHint') }}</p>
         </div>
       </div>
 
@@ -51,18 +51,20 @@
               <component :is="resolveElementIcon(link.icon)" />
             </el-icon>
           </span>
-          <span class="quick-title">{{ link.title }}</span>
+          <span class="quick-title">{{ translateNavigationTitle(link.title) }}</span>
           <el-icon class="quick-arrow"><ArrowRight /></el-icon>
         </button>
       </div>
-      <el-empty v-else description="当前账号没有可访问的业务功能" />
+      <el-empty v-else :description="t('dashboard.noFeatures')" />
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ArrowRight } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import { usePermission } from '@/hooks/usePermission'
+import { translateNavigationTitle } from '@/i18n'
 import { resolveElementIcon } from '@/shared/ui/icons'
 import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
@@ -75,10 +77,11 @@ const router = useRouter()
 const permissionStore = usePermissionStore()
 const userStore = useUserStore()
 const { hasAllPermissions, isAdmin } = usePermission()
+const { t } = useI18n()
 
-const displayName = computed(() => userStore.nickname || userStore.username || '用户')
+const displayName = computed(() => userStore.nickname || userStore.username || t('dashboard.defaultUser'))
 const tenantLabel = computed(() => userStore.tenantName || userStore.tenantId || '-')
-const roleLabel = computed(() => userStore.roles.length ? userStore.roles.join('、') : '-')
+const roleLabel = computed(() => userStore.roles.length ? userStore.roles.join(', ') : '-')
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
   && (isAdmin() || hasAllPermissions('tenant:manage', 'tenant:list')),
@@ -87,7 +90,7 @@ const canManageTenants = computed(() =>
 const allLinks = computed<DashboardLink[]>(() => {
   const links = collectDashboardLinks(permissionStore.menus, Number.MAX_SAFE_INTEGER)
   if (canManageTenants.value) {
-    links.push({ title: '租户管理', path: '/platform/tenants', icon: 'OfficeBuilding' })
+    links.push({ title: t('account.tenantManagement'), path: '/platform/tenants', icon: 'OfficeBuilding' })
   }
   return links
 })

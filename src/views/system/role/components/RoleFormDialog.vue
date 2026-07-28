@@ -1,43 +1,51 @@
 <template>
-  <el-dialog v-model="visible" :title="isEdit ? '编辑角色' : '新增角色'" width="500px" @closed="resetForm">
+  <el-dialog
+    v-model="visible"
+    :title="isEdit ? t('system.role.editTitle') : t('system.role.addTitle')"
+    width="500px"
+    @closed="resetForm"
+  >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item label="角色名称" prop="name">
-        <el-input v-model="form.name" placeholder="请输入角色名称" maxlength="50" />
+      <el-form-item :label="t('system.role.name')" prop="name">
+        <el-input v-model="form.name" :placeholder="t('system.role.enterName')" maxlength="50" />
       </el-form-item>
-      <el-form-item label="角色编码" prop="code">
-        <el-input v-model="form.code" :disabled="isEdit" placeholder="请输入角色编码" maxlength="50" />
+      <el-form-item :label="t('system.role.code')" prop="code">
+        <el-input v-model="form.code" :disabled="isEdit" :placeholder="t('system.role.enterCode')" maxlength="50" />
       </el-form-item>
-      <el-form-item label="排序">
+      <el-form-item :label="t('system.common.sort')">
         <el-input-number v-model="form.sort" :min="0" :max="999" />
       </el-form-item>
-      <el-form-item v-if="isEdit" label="状态">
+      <el-form-item v-if="isEdit" :label="t('system.common.status')">
         <el-radio-group v-model="form.status">
-          <el-radio value="1">正常</el-radio>
-          <el-radio value="0">停用</el-radio>
+          <el-radio value="1">{{ t('system.common.normal') }}</el-radio>
+          <el-radio value="0">{{ t('system.common.disabled') }}</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
         v-perm="isEdit ? 'system:role:edit' : 'system:role:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
       >
-        确定
+        {{ t('system.common.confirm') }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   createRole,
   getRole,
   updateRole,
   type RoleRecord,
 } from '@/api/modules/role'
+
+const { t } = useI18n()
 
 interface RoleFormState {
   name: string
@@ -69,10 +77,10 @@ function initialForm(): RoleFormState {
 }
 
 const form = ref<RoleFormState>(initialForm())
-const rules: FormRules = {
-  name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入角色编码', trigger: 'blur' }],
-}
+const rules = computed<FormRules>(() => ({
+  name: [{ required: true, message: t('system.role.enterName'), trigger: 'blur' }],
+  code: [{ required: true, message: t('system.role.enterCode'), trigger: 'blur' }],
+}))
 
 function resetForm(): void {
   form.value = initialForm()
@@ -81,7 +89,7 @@ function resetForm(): void {
 
 async function loadRole(role: RoleRecord): Promise<void> {
   const response = await getRole(role.id)
-  if (!response.data) throw new Error('角色详情响应缺少数据')
+  if (!response.data) throw new Error(t('system.role.detailMissing'))
   form.value = {
     name: response.data.name,
     code: response.data.code,
@@ -115,7 +123,7 @@ async function submit(): Promise<void> {
         sort: form.value.sort,
         status: form.value.status,
       })
-      ElMessage.success('更新成功')
+      ElMessage.success(t('system.common.updateSuccess'))
     }
     else {
       await createRole({
@@ -123,7 +131,7 @@ async function submit(): Promise<void> {
         code: form.value.code,
         sort: form.value.sort,
       })
-      ElMessage.success('新增成功')
+      ElMessage.success(t('system.common.addSuccess'))
     }
     visible.value = false
     emit('saved')

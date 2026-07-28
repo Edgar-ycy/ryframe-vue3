@@ -1,9 +1,8 @@
 import { parse as parseYaml } from 'yaml'
 
 /**
- * Match every SemVer-style prerelease suffix instead of maintaining a list of
- * labels. Numeric identifiers and ecosystem-specific labels such as `next`,
- * `dev`, and `experimental` are prereleases too.
+ * 匹配所有 SemVer 风格的预发布后缀，避免维护标签清单。数字标识符以及
+ * 生态系统特有的 `next`、`dev`、`experimental` 等标签也属于预发布版本。
  */
 export const prereleaseVersion = /(?<![0-9A-Za-z\\])v?(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?![0-9A-Za-z\\])/giu
 
@@ -30,7 +29,39 @@ export function findPrereleaseVersionsInPackageJson(source) {
 }
 
 export function findPrereleaseVersionsInPnpmLock(source) {
-  return findPrereleaseVersionsInValue(parseYaml(source, { maxAliasCount: 100 }))
+  const lock = parseYaml(source, { maxAliasCount: 100 })
+  const findings = []
+
+  findings.push(...findPrereleaseVersionsInValue(lock.overrides))
+
+  for (const importer of Object.values(lock.importers ?? {})) {
+    for (const section of [
+      importer.dependencies,
+      importer.devDependencies,
+      importer.optionalDependencies,
+    ]) {
+      for (const dependency of Object.values(section ?? {})) {
+        if (typeof dependency === 'string') {
+          findings.push(...findPrereleaseVersions(dependency))
+          continue
+        }
+        if (!dependency || typeof dependency !== 'object') continue
+        findings.push(...findPrereleaseVersions(dependency.specifier ?? ''))
+        findings.push(...findPrereleaseVersions(dependency.version ?? ''))
+      }
+    }
+  }
+
+  // packages 和 snapshots 的键表示锁定后的实际解析版本；值中的 peerDependency
+  // 范围只是兼容性声明，不能视为项目安装了预发布依赖。
+  for (const key of [
+    ...Object.keys(lock.packages ?? {}),
+    ...Object.keys(lock.snapshots ?? {}),
+  ]) {
+    findings.push(...findPrereleaseVersions(key))
+  }
+
+  return findings
 }
 
 export function findPrereleaseVersionsInPnpmWorkspace(source) {
@@ -60,7 +91,7 @@ function findCiDependencyReferences(value, seen = new WeakSet()) {
   return findings
 }
 
-/** Inspect dependency-bearing fields in a parsed workflow or action manifest. */
+/** 检查已解析工作流或 Action 清单中携带依赖的字段。 */
 export function findPrereleaseVersionsInCiYaml(source) {
   return findCiDependencyReferences(parseYaml(source, { maxAliasCount: 100 }))
 }

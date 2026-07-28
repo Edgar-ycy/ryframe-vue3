@@ -4,7 +4,7 @@ export function isConfirmationCancellation(error: unknown): boolean {
   return error === 'cancel' || error === 'close'
 }
 
-/** Show a confirmation dialog while preserving non-cancellation failures. */
+/** 显示确认对话框；非用户取消引发的异常仍继续抛出。 */
 export async function confirmAction(
   message: ElMessageBoxOptions['message'],
   title: string,

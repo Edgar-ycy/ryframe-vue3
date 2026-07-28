@@ -3,63 +3,68 @@
     <el-card>
       <template #header>
         <div class="header">
-          <span>租户管理</span>
-          <el-button v-perm="'tenant:add'" type="primary" @click="openCreate">创建租户</el-button>
+          <span>{{ t('account.tenantManagement') }}</span>
+          <el-button v-perm="'tenant:add'" type="primary" @click="openCreate">{{ t('account.createTenant') }}</el-button>
         </div>
       </template>
 
       <el-table v-loading="loading" :data="tenants">
-        <el-table-column prop="tenant_id" label="租户标识" />
-        <el-table-column prop="name" label="名称" />
-        <el-table-column prop="domain" label="域名" />
-        <el-table-column prop="expire_at" label="有效期" />
-        <el-table-column label="配额" min-width="260">
+        <el-table-column prop="tenant_id" :label="t('account.tenantId')" />
+        <el-table-column prop="name" :label="t('account.tenantName')" />
+        <el-table-column prop="domain" :label="t('account.domain')" />
+        <el-table-column prop="expire_at" :label="t('account.expiry')" />
+        <el-table-column :label="t('account.quota')" min-width="260">
           <template #default="{ row }">
-            用户 {{ row.max_users }} / 角色 {{ row.max_roles }} / 存储 {{ row.max_storage_mb }}MB / {{ row.max_requests_per_min }} RPM
+            {{ t('account.tenantQuota', {
+              users: row.max_users,
+              roles: row.max_roles,
+              storage: row.max_storage_mb,
+              requests: row.max_requests_per_min,
+            }) }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column :label="t('account.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'">
-              {{ row.status === '1' ? '启用' : '停用' }}
+              {{ row.status === '1' ? t('account.enabled') : t('account.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180">
+        <el-table-column :label="t('account.actions')" width="180">
           <template #default="{ row }">
-            <el-button v-perm="'tenant:edit'" link @click="openEdit(row)">编辑</el-button>
+            <el-button v-perm="'tenant:edit'" link @click="openEdit(row)">{{ t('account.editTenant') }}</el-button>
             <el-button v-perm="'tenant:status'" link :disabled="row.tenant_id === 'system'" @click="toggle(row)">
-              {{ row.status === '1' ? '停用' : '启用' }}
+              {{ row.status === '1' ? t('account.disabled') : t('account.enabled') }}
             </el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <el-dialog v-model="visible" :title="editingTenantId ? '编辑租户' : '创建租户'" width="520px">
+    <el-dialog v-model="visible" :title="editingTenantId ? t('account.editTenant') : t('account.createTenant')" width="520px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="租户标识" prop="tenant_id">
+        <el-form-item :label="t('account.tenantId')" prop="tenant_id">
           <el-input v-model="form.tenant_id" :disabled="!!editingTenantId" />
         </el-form-item>
-        <el-form-item label="名称" prop="name">
+        <el-form-item :label="t('account.tenantName')" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item v-if="!editingTenantId" label="管理员账号" prop="admin_username">
+        <el-form-item v-if="!editingTenantId" :label="t('account.adminUsername')" prop="admin_username">
           <el-input v-model="form.admin_username" />
         </el-form-item>
-        <el-form-item v-if="!editingTenantId" label="初始密码" prop="admin_password">
+        <el-form-item v-if="!editingTenantId" :label="t('account.initialPassword')" prop="admin_password">
           <el-input
             v-model="form.admin_password"
             type="password"
             :maxlength="PASSWORD_POLICY.max_length"
-            placeholder="至少 8 位，含大小写字母、数字和符号"
+            :placeholder="t('account.passwordHint', { min: PASSWORD_POLICY.min_length })"
             show-password
           />
         </el-form-item>
-        <el-form-item label="域名">
+        <el-form-item :label="t('account.domain')">
           <el-input v-model="form.domain" />
         </el-form-item>
-        <el-form-item label="有效期">
+        <el-form-item :label="t('account.expiry')">
           <el-date-picker
             v-model="form.expire_at"
             type="datetime"
@@ -67,23 +72,23 @@
             clearable
           />
         </el-form-item>
-        <el-form-item label="最大用户数">
+        <el-form-item :label="t('account.maxUsers')">
           <el-input-number v-model="form.max_users" :min="1" />
         </el-form-item>
-        <el-form-item label="最大角色数">
+        <el-form-item :label="t('account.maxRoles')">
           <el-input-number v-model="form.max_roles" :min="2" />
         </el-form-item>
-        <el-form-item label="存储配额(MB)">
+        <el-form-item :label="t('account.storageQuota')">
           <el-input-number v-model="form.max_storage_mb" :min="1" />
         </el-form-item>
-        <el-form-item label="每分钟请求数">
+        <el-form-item :label="t('account.requestsPerMinute')">
           <el-input-number v-model="form.max_requests_per_min" :min="1" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="visible = false">取消</el-button>
-        <el-button v-if="editingTenantId" v-perm="'tenant:edit'" type="primary" @click="submit">保存</el-button>
-        <el-button v-else v-perm="'tenant:add'" type="primary" @click="submit">创建</el-button>
+        <el-button @click="visible = false">{{ t('account.cancel') }}</el-button>
+        <el-button v-if="editingTenantId" v-perm="'tenant:edit'" type="primary" @click="submit">{{ t('account.save') }}</el-button>
+        <el-button v-else v-perm="'tenant:add'" type="primary" @click="submit">{{ t('account.createTenant') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -91,6 +96,7 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import {
   createTenant,
   listTenants,
@@ -101,9 +107,10 @@ import {
 } from '@/api/modules/tenant'
 import {
   PASSWORD_POLICY,
-  newPasswordValidationMessage,
 } from '@/shared/security/passwordPolicy'
-import { createTenantIdFormRules } from '@/utils/tenantIdFormRules'
+import { isValidTenantId } from '@/shared/security/tenantId'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const visible = ref(false)
@@ -125,19 +132,27 @@ const form = reactive<CreateTenantPayload>({
 })
 
 const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) => {
-  const message = newPasswordValidationMessage(String(value ?? ''))
+  const message = passwordValidationMessage(String(value ?? ''))
   callback(message ? new Error(message) : undefined)
 }
 
-const rules: FormRules = {
-  tenant_id: createTenantIdFormRules(),
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-  admin_username: [{ required: true, message: '请输入管理员账号', trigger: 'blur' }],
+const rules = computed<FormRules>(() => ({
+  tenant_id: [
+    { required: true, message: t('account.enterTenantId'), trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        callback(isValidTenantId(String(value ?? '')) ? undefined : new Error(t('account.tenantIdInvalid')))
+      },
+      trigger: 'blur',
+    },
+  ],
+  name: [{ required: true, message: t('account.enterTenantName'), trigger: 'blur' }],
+  admin_username: [{ required: true, message: t('account.enterAdminUsername'), trigger: 'blur' }],
   admin_password: [
-    { required: true, message: '请输入初始密码', trigger: 'blur' },
+    { required: true, message: t('account.enterInitialPassword'), trigger: 'blur' },
     { validator: validateNewPassword, trigger: 'blur' },
   ],
-}
+}))
 
 async function load() {
   loading.value = true
@@ -210,21 +225,44 @@ async function submit() {
   }
 
   visible.value = false
-  ElMessage.success(editingTenantId.value ? '租户已更新' : '租户已创建')
+  ElMessage.success(editingTenantId.value ? t('account.tenantUpdated') : t('account.tenantCreated'))
   await load()
 }
 
 async function toggle(row: Tenant) {
   if (row.tenant_id === 'system') {
-    ElMessage.warning('system 租户不能停用')
+    ElMessage.warning(t('account.systemTenantCannotDisable'))
     return
   }
   await updateTenantStatus(row.tenant_id, row.status === '1' ? '0' : '1')
-  ElMessage.success('状态已更新')
+  ElMessage.success(t('account.tenantStatusUpdated'))
   await load()
 }
 
 onMounted(load)
+
+function passwordValidationMessage(password: string): string | undefined {
+  if (password.length < PASSWORD_POLICY.min_length) {
+    return t('account.passwordTooShort', { min: PASSWORD_POLICY.min_length })
+  }
+  if (password.length > PASSWORD_POLICY.max_length) {
+    return t('account.passwordTooLong', { max: PASSWORD_POLICY.max_length })
+  }
+  if (!/^[!-~]+$/.test(password)) return t('account.passwordVisibleAscii')
+  if (PASSWORD_POLICY.required_classes.includes('uppercase') && !/[A-Z]/.test(password)) {
+    return t('account.passwordNeedsUppercase')
+  }
+  if (PASSWORD_POLICY.required_classes.includes('lowercase') && !/[a-z]/.test(password)) {
+    return t('account.passwordNeedsLowercase')
+  }
+  if (PASSWORD_POLICY.required_classes.includes('digit') && !/[0-9]/.test(password)) {
+    return t('account.passwordNeedsDigit')
+  }
+  if (PASSWORD_POLICY.required_classes.includes('special') && !/[^A-Za-z0-9]/.test(password)) {
+    return t('account.passwordNeedsSpecial')
+  }
+  return undefined
+}
 </script>
 
 <style scoped>

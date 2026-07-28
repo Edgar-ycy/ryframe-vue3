@@ -1,7 +1,7 @@
 <template>
   <el-card shadow="never">
     <template #header>
-      <span>头像</span>
+      <span>{{ t('account.avatar') }}</span>
     </template>
     <div v-loading="uploading" class="avatar-panel">
       <el-upload
@@ -21,7 +21,7 @@
           <el-icon :size="20">
             <Camera />
           </el-icon>
-          <span>更换头像</span>
+          <span>{{ t('account.changeAvatar') }}</span>
         </div>
       </el-upload>
     </div>
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { Camera, UserFilled } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { updateAvatar } from '@/api/modules/auth'
 import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 
@@ -43,17 +44,18 @@ const emit = defineEmits<{
 }>()
 
 const uploading = ref(false)
+const { t } = useI18n()
 const { imageSrc } = useAuthenticatedImage(() => props.src)
 const acceptedTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 const maxAvatarBytes = 5 * 1024 * 1024
 
 function beforeUpload(file: File): boolean {
   if (!acceptedTypes.has(file.type)) {
-    ElMessage.error('头像仅支持 PNG / JPEG / GIF / WebP 格式')
+    ElMessage.error(t('account.avatarUnsupportedType'))
     return false
   }
   if (file.size > maxAvatarBytes) {
-    ElMessage.error('头像文件大小不能超过 5 MiB')
+    ElMessage.error(t('account.avatarTooLarge'))
     return false
   }
   return true
@@ -66,9 +68,9 @@ async function upload(options: UploadRequestOptions): Promise<void> {
     formData.append('file', options.file)
     const response = await updateAvatar(formData)
     const avatarUrl = response.data?.avatar_url
-    if (!avatarUrl) throw new Error('头像更新响应缺少数据')
+    if (!avatarUrl) throw new Error(t('account.avatarResponseMissing'))
     emit('updated', avatarUrl)
-    ElMessage.success('头像更新成功')
+    ElMessage.success(t('account.avatarUpdated'))
   }
   finally {
     uploading.value = false

@@ -3,30 +3,30 @@
     <el-row :gutter="16">
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover">
-          <template #header><span><el-icon><Cpu /></el-icon> CPU</span></template>
+          <template #header><span><el-icon><Cpu /></el-icon> {{ t('monitor.server.cpu') }}</span></template>
           <div class="gauge-wrapper">
             <el-progress type="dashboard" :percentage="Math.round(info?.cpu_usage ?? 0)" :color="cpuColor" />
           </div>
-          <div class="info-row"><span>核心数</span><span>{{ info?.cpu_cores ?? '--' }}</span></div>
+          <div class="info-row"><span>{{ t('monitor.server.coreCount') }}</span><span>{{ info?.cpu_cores ?? '--' }}</span></div>
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover">
-          <template #header><span><el-icon><Monitor /></el-icon> 内存</span></template>
+          <template #header><span><el-icon><Monitor /></el-icon> {{ t('monitor.server.memory') }}</span></template>
           <div class="gauge-wrapper">
             <el-progress type="dashboard" :percentage="Math.round(info?.memory_usage ?? 0)" :color="memColor" />
           </div>
-          <div class="info-row"><span>已用 / 总</span><span>{{ (info?.used_memory ?? 0).toFixed(1) }} / {{ (info?.total_memory ?? 0).toFixed(1) }} GB</span></div>
+          <div class="info-row"><span>{{ t('monitor.server.usedTotal') }}</span><span>{{ (info?.used_memory ?? 0).toFixed(1) }} / {{ (info?.total_memory ?? 0).toFixed(1) }} {{ t('monitor.server.gigabytes') }}</span></div>
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="24" :lg="8">
         <el-card shadow="hover">
-          <template #header><span><el-icon><Odometer /></el-icon> 系统信息</span></template>
+          <template #header><span><el-icon><Odometer /></el-icon> {{ t('monitor.server.systemInformation') }}</span></template>
           <div class="sys-info">
-            <div class="info-row"><span>操作系统</span><span>{{ info?.os ?? '--' }}</span></div>
-            <div class="info-row"><span>主机名</span><span>{{ info?.hostname ?? '--' }}</span></div>
-            <div class="info-row"><span>进程ID</span><span>{{ info?.pid ?? '--' }}</span></div>
-            <div class="info-row"><span>运行时长</span><span>{{ uptimeStr }}</span></div>
+            <div class="info-row"><span>{{ t('monitor.server.operatingSystem') }}</span><span>{{ info?.os ?? '--' }}</span></div>
+            <div class="info-row"><span>{{ t('monitor.server.hostname') }}</span><span>{{ info?.hostname ?? '--' }}</span></div>
+            <div class="info-row"><span>{{ t('monitor.server.processId') }}</span><span>{{ info?.pid ?? '--' }}</span></div>
+            <div class="info-row"><span>{{ t('monitor.server.uptime') }}</span><span>{{ uptimeStr }}</span></div>
           </div>
         </el-card>
       </el-col>
@@ -37,7 +37,9 @@
 <script setup lang="ts">
 import { getServerInfo, type ServerInfo } from '@/api/modules/monitor'
 import { Cpu, Monitor, Odometer } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const info = ref<ServerInfo | null>(null)
 
 const cpuColor = computed(() => {
@@ -59,7 +61,7 @@ const uptimeStr = computed(() => {
   const d = Math.floor(s / 86400)
   const h = Math.floor((s % 86400) / 3600)
   const m = Math.floor((s % 3600) / 60)
-  return `${d}天 ${h}时 ${m}分`
+  return t('monitor.server.uptimeValue', { days: d, hours: h, minutes: m })
 })
 
 onMounted(async () => {

@@ -51,6 +51,19 @@ function collectLocalUses(value, uses = []) {
   return uses
 }
 
+function collectRemoteUses(value, uses = []) {
+  if (Array.isArray(value)) {
+    for (const child of value) collectRemoteUses(child, uses)
+  }
+  else if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) {
+      if (key === 'uses' && typeof child === 'string' && !child.startsWith('./')) uses.push(child)
+      else collectRemoteUses(child, uses)
+    }
+  }
+  return uses
+}
+
 function relative(absolute) {
   return path.relative(root, absolute).split(path.sep).join('/')
 }
@@ -90,6 +103,24 @@ for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
       : [path.join(target, 'action.yml'), path.join(target, 'action.yaml')]
     if (!await Promise.all(candidates.map(fileExists)).then(results => results.some(Boolean))) {
       errors.push(`${name}: local uses reference is missing (${localUse})`)
+    }
+  }
+
+  for (const remoteUse of collectRemoteUses(document.toJS())) {
+    const separator = remoteUse.lastIndexOf('@')
+    if (separator < 1) {
+      errors.push(`${name}: remote uses reference must include an immutable revision (${remoteUse})`)
+      continue
+    }
+    const action = remoteUse.slice(0, separator)
+    const revision = remoteUse.slice(separator + 1)
+    if (action.startsWith('docker://')) {
+      if (!/^sha256:[0-9a-f]{64}$/iu.test(revision)) {
+        errors.push(`${name}: container action must use a sha256 digest (${remoteUse})`)
+      }
+    }
+    else if (!/^[0-9a-f]{7,40}$/iu.test(revision)) {
+      errors.push(`${name}: remote action must use a commit SHA (${remoteUse})`)
     }
   }
 }

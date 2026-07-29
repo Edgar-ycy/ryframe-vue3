@@ -167,10 +167,14 @@ describe('withRouteComponentName', () => {
     const namedRoutes = constantRoutes.flatMap(route => [route, ...(route.children ?? [])])
       .filter(route => route.name && route.component)
 
-    for (const route of namedRoutes) {
+    const components = await Promise.all(namedRoutes.map((route) => {
       const load = route.component as unknown as () => Promise<Component>
-      const component = await load()
+      return load()
+    }))
+
+    namedRoutes.forEach((route, index) => {
+      const component = components[index]
       expect(componentName(component), String(route.path)).toBe(String(route.name))
-    }
+    })
   })
 })

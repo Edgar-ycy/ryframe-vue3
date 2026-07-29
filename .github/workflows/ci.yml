@@ -64,8 +64,16 @@ jobs:
       - name: Check committed API contract snapshot
         run: pnpm api:check
 
+      - name: Verify the exact pinned upstream contract
+        run: pnpm api:check:upstream
+
       - name: TypeScript type check
         run: pnpm typecheck
+
+      - name: Run ESLint and Stylelint
+        run: |
+          pnpm lint
+          pnpm lint:styles
 
       - name: Production build
         run: pnpm build
@@ -75,6 +83,7 @@ jobs:
 
   contract-upstream:
     name: Pinned API Contract Compatibility
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -135,6 +144,7 @@ jobs:
 
   lint:
     name: Lint
+    if: ${{ false }}
     runs-on: ubuntu-latest
     needs: check
     steps:

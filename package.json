@@ -13,7 +13,7 @@
     "lint:styles": "stylelint \"src/**/*.{css,scss,vue}\" --max-warnings=0",
     "check:sources": "node scripts/check-source-hygiene.mjs",
     "check:workflows": "node scripts/check-workflows.mjs",
-    "check:dependencies": "node --test scripts/prerelease-dependency-policy.test.mjs && node scripts/check-prerelease-dependencies.mjs",
+    "check:dependencies": "node --test --test-isolation=none scripts/prerelease-dependency-policy.test.mjs && node scripts/check-prerelease-dependencies.mjs",
     "check:architecture": "node scripts/check-architecture.mjs",
     "check:contract": "node scripts/check-api-contract.mjs",
     "api:generate": "openapi-typescript openapi/openapi.json -o src/api/generated/schema.ts && node scripts/localize-generated-header.mjs src/api/generated/schema.ts",

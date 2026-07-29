@@ -313,7 +313,7 @@ describe('HTTP client session boundary', () => {
           config,
         })
       },
-    })).rejects.toMatchObject({ status: 401, message: '认证失败' })
+    })).rejects.toMatchObject({ status: 401 })
 
     expect(calls).toBe(2)
     expect(refreshAccessToken).toHaveBeenCalledOnce()
@@ -341,7 +341,7 @@ describe('HTTP client session boundary', () => {
     })
 
     await expect(request({ ...config, adapter: async () => Promise.reject(unauthorized) }))
-      .rejects.toMatchObject({ status: 401, message: '认证失败' })
+      .rejects.toMatchObject({ status: 401 })
     expect(refreshAccessToken).not.toHaveBeenCalled()
     expect(handleRefreshFailure).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()

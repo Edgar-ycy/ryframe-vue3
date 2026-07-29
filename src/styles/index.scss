@@ -28,7 +28,7 @@ html, body {
 
 a {
   text-decoration: none;
-  color: var(--color-primary);
+  color: var(--color-primary-readable);
   transition: color 0.2s;
 }
 
@@ -153,7 +153,7 @@ a:hover {
 
     &:hover {
       background: var(--border-color-light);
-      color: var(--color-primary);
+      color: var(--color-primary-readable);
     }
 
     &:focus-visible {
@@ -183,7 +183,7 @@ a:hover {
 
       &:hover {
         background: var(--border-color-light);
-        color: var(--color-primary);
+        color: var(--color-primary-readable);
       }
 
       &:focus-visible {
@@ -204,6 +204,12 @@ a:hover {
       &:hover {
         background: var(--border-color-light);
       }
+    }
+
+    .el-tag--info {
+      --el-tag-text-color: #374151;
+      --el-tag-bg-color: #F3F4F6;
+      --el-tag-border-color: #D1D5DB;
     }
   }
 }
@@ -254,7 +260,7 @@ a:hover {
 
     &.active {
       background: var(--tag-active-bg);
-      color: var(--color-primary);
+      color: var(--color-primary-readable);
       font-weight: 500;
     }
 

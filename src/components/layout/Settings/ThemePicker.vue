@@ -37,10 +37,10 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  modelValue: '#6366F1',
+  modelValue: '#4F46E5',
   label: '',
   presetColors: () => [
-    '#6366F1', // 靛蓝（默认）
+    '#4F46E5', // 靛蓝（默认）
     '#8B5CF6', // 紫罗兰
     '#EC4899', // 粉色
     '#F43F5E', // 玫瑰红

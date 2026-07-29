@@ -119,9 +119,15 @@ function openLink(path: string): void {
   border-bottom: 1px solid var(--border-color-base);
 }
 
+.workspace-header :deep(.el-tag--success) {
+  --el-tag-text-color: #166534;
+  --el-tag-bg-color: #F0FDF4;
+  --el-tag-border-color: #86EFAC;
+}
+
 .workspace-label {
   margin: 0 0 6px;
-  color: var(--color-primary);
+  color: var(--color-primary-readable);
   font-size: 13px;
   font-weight: 700;
 }

@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page, type Route } from '@playwright/test'
 
 const apiBasePath = '/api/v1'
@@ -1103,6 +1104,23 @@ test('runtime topology exposes RustFS without mobile overflow', async ({ page })
     nodeRows: document.querySelectorAll('.topology-section .el-table__row').length,
   }))
   expect(layout).toEqual({ horizontalOverflow: false, nodeRows: 1 })
+  expect(unexpectedRequests).toEqual([])
+  expect(runtimeIssues).toEqual([])
+})
+
+test('authenticated dashboard meets WCAG 2.0 A and AA axe rules', async ({ page }) => {
+  const { unexpectedRequests } = await installApiMocks(page)
+  const runtimeIssues = collectRuntimeIssues(page)
+
+  await login(page)
+  await page.goto('/index')
+  await expect(page.getByText('测试用户', { exact: true })).toBeVisible()
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa'])
+    .analyze()
+
+  expect(results.violations).toEqual([])
   expect(unexpectedRequests).toEqual([])
   expect(runtimeIssues).toEqual([])
 })

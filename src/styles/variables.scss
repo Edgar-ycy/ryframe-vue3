@@ -1,16 +1,17 @@
 /* ====== CSS 变量 ====== */
 :root {
   /* 主色调 — 靛蓝紫 */
-  --color-primary: #6366F1;
-  --color-primary-light: #818CF8;
-  --color-primary-dark: #4F46E5;
+  --color-primary: #4F46E5;
+  --color-primary-light: #6366F1;
+  --color-primary-dark: #3730A3;
+  --color-primary-readable: #3730A3;
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
   --color-info: #6B7280;
   --color-text-primary: #1F2937;
   --color-text-regular: #4B5563;
-  --color-text-secondary: #9CA3AF;
+  --color-text-secondary: #4B5563;
   --color-text-placeholder: #D1D5DB;
   --border-color-base: #E5E7EB;
   --border-color-light: #F3F4F6;

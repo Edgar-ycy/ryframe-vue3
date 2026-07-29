@@ -38,7 +38,7 @@ const STORAGE_KEY = 'ryframe_settings'
 
 const defaults: SettingsState = {
   theme: 'light',
-  themeColor: '#6366F1',
+  themeColor: '#4F46E5',
   componentSize: 'default',
   locale: getApplicationLocale(),
   tagsView: true,
@@ -185,6 +185,47 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
+function relativeLuminance(red: number, green: number, blue: number): number {
+  const channel = (value: number) => {
+    const normalized = value / 255
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
+}
+
+function contrastRatio(foreground: ParsedThemeColor, background: [number, number, number]): number {
+  const foregroundLuminance = relativeLuminance(foreground.red, foreground.green, foreground.blue)
+  const backgroundLuminance = relativeLuminance(...background)
+  return (Math.max(foregroundLuminance, backgroundLuminance) + 0.05)
+    / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+}
+
+function findReadableThemeColor(hue: number, saturation: number, lightness: number, red: number, green: number, blue: number): string {
+  const pageBackground: [number, number, number] = [243, 244, 246]
+  const activeTagBackground: [number, number, number] = [
+    Math.round(pageBackground[0] * 0.9 + red * 0.1),
+    Math.round(pageBackground[1] * 0.9 + green * 0.1),
+    Math.round(pageBackground[2] * 0.9 + blue * 0.1),
+  ]
+
+  for (let candidateLightness = Math.min(lightness, 50); candidateLightness >= 0; candidateLightness -= 1) {
+    const candidate = parseThemeColor(hslToHex(hue, saturation, candidateLightness))!
+    if (contrastRatio(candidate, pageBackground) >= 4.5 && contrastRatio(candidate, activeTagBackground) >= 4.5) {
+      return candidate.css
+    }
+  }
+
+  return '#111827'
+}
+
+export function resolveReadableThemeColor(value: string): string {
+  const parsed = parseThemeColor(value) ?? parseThemeColor(defaults.themeColor)!
+  const [hue, saturation, lightness] = rgbToHsl(parsed.red, parsed.green, parsed.blue)
+  return findReadableThemeColor(hue, saturation, lightness, parsed.red, parsed.green, parsed.blue)
+}
+
 function applyThemeColor(color: string) {
   const parsed = parseThemeColor(color) ?? parseThemeColor(defaults.themeColor)!
   const { red: r, green: g, blue: b, css } = parsed
@@ -192,6 +233,7 @@ function applyThemeColor(color: string) {
 
   document.documentElement.style.setProperty('--el-color-primary', css)
   document.documentElement.style.setProperty('--color-primary', css)
+  document.documentElement.style.setProperty('--color-primary-readable', resolveReadableThemeColor(css))
   document.documentElement.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`)
 
   for (let i = 3; i <= 9; i++) {

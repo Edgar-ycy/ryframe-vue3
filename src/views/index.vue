@@ -6,7 +6,7 @@
         <h1>{{ t('dashboard.greeting', { name: displayName }) }}</h1>
         <p class="workspace-subtitle">{{ t('dashboard.subtitle') }}</p>
       </div>
-      <el-tag type="success" effect="plain">{{ t('dashboard.signedIn') }}</el-tag>
+      <el-tag class="session-tag" type="success" effect="plain">{{ t('dashboard.signedIn') }}</el-tag>
     </header>
 
     <section class="account-summary" :aria-label="t('dashboard.accountOverview')">
@@ -119,10 +119,17 @@ function openLink(path: string): void {
   border-bottom: 1px solid var(--border-color-base);
 }
 
-.workspace-header :deep(.el-tag--success) {
-  --el-tag-text-color: #166534;
-  --el-tag-bg-color: #F0FDF4;
-  --el-tag-border-color: #86EFAC;
+.workspace-header :deep(.session-tag.el-tag--success) {
+  color: #166534;
+  background-color: #f0fdf4;
+  border-color: #86efac;
+  transition: none;
+}
+
+:global(html.dark) .workspace-header :deep(.session-tag.el-tag--success) {
+  color: #bbf7d0;
+  background-color: #14532d;
+  border-color: #16a34a;
 }
 
 .workspace-label {

@@ -18,7 +18,7 @@
     </el-breadcrumb>
 
     <div class="navbar-right">
-      <el-tag effect="plain" type="info">
+      <el-tag class="tenant-tag" effect="plain" type="info">
         {{ userStore.tenantName || userStore.tenantId }} · {{ userStore.tenantId }}
       </el-tag>
       <el-button
@@ -132,6 +132,19 @@ async function handleCommand(command: string): Promise<void> {
 </script>
 
 <style scoped>
+.tenant-tag.el-tag--info {
+  color: #374151;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  transition: none;
+}
+
+:global(html.dark) .tenant-tag.el-tag--info {
+  color: #cbd5e1;
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
 .theme-switch {
   --el-switch-on-color: #409eff;
 }

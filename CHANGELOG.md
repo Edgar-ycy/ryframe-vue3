@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [v0.5.1] - 2026-08-02
+
+### Changed
+
+- GitHub Actions 统一升级到兼容 Node.js 24 的版本，消除托管运行器上的 Node.js 20 弃用警告。
+- 合并重复的前端源码、类型、测试和构建检查，单次安装依赖后顺序复用工作区，减少重复运行和 CI 排队时间。
+- 同步后端 v0.5.1 OpenAPI 契约并重新生成 TypeScript API 类型与密码策略。
+
+### Fixed
+
+- 关闭 `setup-node` 与当前 pnpm 布局不兼容的自动缓存，避免 CI 在缓存初始化阶段失败。
+- 清理重复作业并统一 Action 运行时，恢复前端主分支的完整绿色门禁。
+
+### Validation
+
+- 前端门禁覆盖契约、源码卫生、工作流、依赖策略、架构、ESLint、Stylelint、类型检查、覆盖率、生产构建、体积预算和 Playwright E2E。
+- 固定记录后端完整提交 SHA 与 OpenAPI SHA-256，确保 v0.5.1 前端可追溯到唯一后端契约。
+
 ## [v0.5.0] - 2026-07-18
 
 ### Added

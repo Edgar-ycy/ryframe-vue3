@@ -1,23 +1,74 @@
-import { QueryClient, type QueryKey } from '@tanstack/vue-query'
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  type QueryKey,
+} from '@tanstack/vue-query'
 import { HttpError } from '@/shared/http/client'
 
 const SERVER_STATE_PREFIX = 'server-state'
+export type ServerStateErrorMode = 'global' | 'silent'
+export interface ServerStateMeta extends Record<string, unknown> {
+  errorMode?: ServerStateErrorMode
+}
+type ServerStateErrorReporter = (error: HttpError) => void
+
+declare module '@tanstack/vue-query' {
+  interface Register {
+    queryMeta: ServerStateMeta
+    mutationMeta: ServerStateMeta
+  }
+}
+
+let errorReporter: ServerStateErrorReporter | undefined
+
+/** 配置 Query/Mutation Cache 唯一的全局错误出口。 */
+export function configureServerStateErrorReporter(
+  reporter: ServerStateErrorReporter | undefined,
+): void {
+  errorReporter = reporter
+}
+
+function errorMode(meta: ServerStateMeta | undefined): ServerStateErrorMode {
+  return meta?.errorMode ?? 'global'
+}
+
+function reportServerStateError(error: unknown, meta: ServerStateMeta | undefined): void {
+  if (errorMode(meta) === 'silent') return
+  const normalized = error instanceof HttpError
+    ? error
+    : new HttpError(
+        error instanceof Error ? error.message : '服务端状态请求失败',
+        { kind: 'unknown', cause: error },
+      )
+  if (normalized.kind !== 'cancelled') errorReporter?.(normalized)
+}
 
 function shouldRetry(failureCount: number, error: unknown): boolean {
-  // 请求错误已由 HTTP 边界层上报。后台重试校验或鉴权失败只会产生重复提示。
-  if (error instanceof HttpError && error.status !== undefined && error.status < 500) {
-    return false
+  if (error instanceof HttpError) {
+    // 主动取消不是失败，不应重新发起已失效的请求。
+    if (error.kind === 'cancelled') return false
+    if (error.status !== undefined && error.status < 500) return false
   }
-  return failureCount < 1
+  return failureCount < 2
 }
 
 export const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => reportServerStateError(error, query.meta),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _onMutateResult, mutation) => {
+      reportServerStateError(error, mutation.meta)
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,
+      gcTime: 5 * 60_000,
       retry: shouldRetry,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
+      refetchOnReconnect: true,
       refetchOnMount: false,
     },
     mutations: {

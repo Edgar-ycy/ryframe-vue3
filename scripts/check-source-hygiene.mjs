@@ -2,11 +2,12 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
+import { collectComments } from './source-hygiene-comments.mjs'
+
 const root = process.cwd()
 const excludedDirectories = new Set([
   '.git',
   '.idea',
-  '.pnpm-store',
   'coverage',
   'dist',
   'node_modules',
@@ -47,6 +48,16 @@ const commentPolicyExcludedNames = new Set([
 ])
 const mojibakeMarkers = ['\uFFFD', '\u951B', '\u9286', '\u922B']
 const legacyApiTerms = ['pageSize', 'pageNum', 'searchValue', 'requestId']
+const legacyApiTermAllowlist = new Map([
+  [
+    'requestId',
+    new Set([
+      // HTTP 内部使用驼峰属性承载服务端 request_id，不属于公开 API 兼容字段。
+      'src/shared/http/client.ts',
+      'src/shared/http/client.test.ts',
+    ]),
+  ],
+])
 const legacyActionPaths = ['assign-perm', 'assign-dept', 'update-data-scope', 'assign-role']
 const legacyBootstrapCredentials = ['admin123']
 const decoder = new TextDecoder('utf-8', { fatal: true })
@@ -75,88 +86,9 @@ function isCommentPolicyTarget(relative) {
   return !commentPolicyExcludedPrefixes.some(prefix => relative.startsWith(prefix))
 }
 
-function skipQuotedString(text, start, quote) {
-  let cursor = start + 1
-
-  while (cursor < text.length) {
-    if (text[cursor] === '\\') {
-      cursor += 2
-      continue
-    }
-    if (text[cursor] === quote) return cursor + 1
-    cursor += 1
-  }
-
-  return cursor
-}
-
-function lineNumberAt(text, offset) {
-  return text.slice(0, offset).split('\n').length
-}
-
-function collectComments(text, extension) {
-  const comments = []
-  const isYaml = extension === '.yaml' || extension === '.yml'
-  let cursor = 0
-
-  while (cursor < text.length) {
-    const current = text[cursor]
-    const next = text[cursor + 1]
-
-    if (current === '\'' || current === '"' || current === '`') {
-      cursor = skipQuotedString(text, cursor, current)
-      continue
-    }
-
-    if (current === '/' && next === '/' && text[cursor - 1] !== '\\') {
-      const end = text.indexOf('\n', cursor + 2)
-      comments.push({
-        body: text.slice(cursor + 2, end === -1 ? text.length : end),
-        line: lineNumberAt(text, cursor),
-      })
-      cursor = end === -1 ? text.length : end + 1
-      continue
-    }
-
-    if (current === '/' && next === '*') {
-      const end = text.indexOf('*/', cursor + 2)
-      comments.push({
-        body: text.slice(cursor + 2, end === -1 ? text.length : end),
-        line: lineNumberAt(text, cursor),
-      })
-      cursor = end === -1 ? text.length : end + 2
-      continue
-    }
-
-    if (text.startsWith('<!--', cursor)) {
-      const end = text.indexOf('-->', cursor + 4)
-      comments.push({
-        body: text.slice(cursor + 4, end === -1 ? text.length : end),
-        line: lineNumberAt(text, cursor),
-      })
-      cursor = end === -1 ? text.length : end + 3
-      continue
-    }
-
-    if (isYaml && current === '#' && (cursor === 0 || /\s/u.test(text[cursor - 1]))) {
-      const end = text.indexOf('\n', cursor + 1)
-      comments.push({
-        body: text.slice(cursor + 1, end === -1 ? text.length : end),
-        line: lineNumberAt(text, cursor),
-      })
-      cursor = end === -1 ? text.length : end + 1
-      continue
-    }
-
-    cursor += 1
-  }
-
-  return comments
-}
-
 function isRequiredCommentDirective(line) {
   return /^=+$/u.test(line)
-    || /^(?:\/?\s*<reference\b|@(?:type|ts-(?:ignore|nocheck|expect-error)|vite-ignore)\b|(?:eslint|prettier|stylelint|biome|noinspection|istanbul|c8|v8|vitest|coverage)(?:[-:\s]|$)|SPDX-License-Identifier:|Copyright\b)/iu.test(line)
+    || /^(?:\/?\s*<reference\b|@(?:type|ts-(?:ignore|nocheck|expect-error)|vite-ignore|vitest-environment)\b|(?:eslint|prettier|stylelint|biome|noinspection|istanbul|c8|v8|vitest|coverage)(?:[-:\s]|$)|SPDX-License-Identifier:|Copyright\b)/iu.test(line)
 }
 
 function checkCommentLanguage(relative, text) {
@@ -234,7 +166,10 @@ for (const file of files) {
   }
   if (relative.startsWith('src/')) {
     for (const term of legacyApiTerms) {
-      if (text.includes(term)) errors.push(`${relative}: contains legacy API term ${term}`)
+      const allowed = legacyApiTermAllowlist.get(term)?.has(relative) === true
+      if (!allowed && text.includes(term)) {
+        errors.push(`${relative}: contains legacy API term ${term}`)
+      }
     }
     for (const route of legacyActionPaths) {
       if (text.includes(route)) errors.push(`${relative}: contains legacy action path ${route}`)

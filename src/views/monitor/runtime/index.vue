@@ -86,10 +86,23 @@
 import { Coin, Connection, FolderOpened, Refresh, Switch } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { getRuntimeStatus, type RuntimeStatus } from '@/api/modules/monitor'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
-const loading = ref(false)
-const runtime = ref<RuntimeStatus | null>(null)
+const userStore = useUserStore()
+const runtimeQuery = useTenantQuery<RuntimeStatus | null>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated',
+  'monitor-runtime',
+  () => ({ scope: 'status' }),
+  async signal => {
+    const response = await getRuntimeStatus(signal)
+    return response.data ?? null
+  },
+)
+const loading = computed(() => runtimeQuery.isFetching.value)
+const runtime = computed(() => runtimeQuery.data.value ?? null)
 
 interface DatabaseNodeRow {
   name: string
@@ -159,17 +172,9 @@ const redisStatusText = computed(() => {
   return runtime.value.redis.connected ? t('monitor.runtime.connected') : t('monitor.runtime.disconnected')
 })
 
-async function fetchRuntime() {
-  loading.value = true
-  try {
-    const res = await getRuntimeStatus()
-    runtime.value = res.data || null
-  } finally {
-    loading.value = false
-  }
+async function fetchRuntime(): Promise<void> {
+  await runtimeQuery.refetch({ throwOnError: true })
 }
-
-onMounted(fetchRuntime)
 </script>
 
 <style scoped>

@@ -1,5 +1,5 @@
 <template>
-  <div class="page-container">
+  <div v-loading="loading" class="page-container">
     <el-row :gutter="16">
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover">
@@ -38,9 +38,23 @@
 import { getServerInfo, type ServerInfo } from '@/api/modules/monitor'
 import { Cpu, Monitor, Odometer } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
-const info = ref<ServerInfo | null>(null)
+const userStore = useUserStore()
+const serverQuery = useTenantQuery<ServerInfo | null>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated',
+  'monitor-server',
+  () => ({ scope: 'overview' }),
+  async signal => {
+    const response = await getServerInfo(signal)
+    return response.data ?? null
+  },
+)
+const loading = computed(() => serverQuery.isFetching.value)
+const info = computed(() => serverQuery.data.value ?? null)
 
 const cpuColor = computed(() => {
   const v = info.value?.cpu_usage ?? 0
@@ -64,10 +78,6 @@ const uptimeStr = computed(() => {
   return t('monitor.server.uptimeValue', { days: d, hours: h, minutes: m })
 })
 
-onMounted(async () => {
-  const serverResult = await getServerInfo()
-  info.value = serverResult.data ?? null
-})
 </script>
 
 <style scoped>

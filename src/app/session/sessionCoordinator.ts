@@ -12,7 +12,10 @@ import { useTagsViewStore } from '@/stores/tagsView'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
-import { clearServerState } from '@/shared/query/client'
+import {
+  clearServerState,
+  configureServerStateErrorReporter,
+} from '@/shared/query/client'
 import {
   isSessionMessage,
   type SessionMessage,
@@ -84,8 +87,8 @@ export function installSessionCoordinator(sessionRuntime: SessionRuntime): void 
     getTenantId,
     refreshAccessToken,
     handleRefreshFailure,
-    reportError,
   })
+  configureServerStateErrorReporter(reportError)
 }
 
 function installBroadcastChannel(): void {
@@ -187,7 +190,10 @@ function handleSessionMessage(message: SessionMessage): void {
   if (message.type === 'refresh-failed') {
     if (!matchesCurrentRemoteRefresh(message)) return
     remoteRefreshOperation!.pending = false
-    const error = new HttpError(translate('shell.session.otherTabRefreshFailed'), message.status)
+    const error = new HttpError(translate('shell.session.otherTabRefreshFailed'), {
+      status: message.status,
+      kind: 'http',
+    })
     settleRemoteRefreshWaiters(message.operationId, waiter => waiter.reject(error))
     return
   }
@@ -220,7 +226,10 @@ export async function ensureCsrfToken(force = false): Promise<string> {
       .then((response) => {
         const challenge = response.data
         if (!challenge?.csrf_token || !challenge.expires_in) {
-          throw new HttpError(translate('shell.session.csrfChallengeInvalid'), 503)
+          throw new HttpError(translate('shell.session.csrfChallengeInvalid'), {
+            status: 503,
+            kind: 'invalid_response',
+          })
         }
         csrfToken = challenge.csrf_token
         csrfExpiresAt = Date.now() + challenge.expires_in * 1_000
@@ -270,12 +279,17 @@ export function initializeSession(): Promise<void> {
       .catch(async (error: unknown) => {
         const httpError = error instanceof HttpError
           ? error
-          : new HttpError(translate('shell.session.initializationFailed'), undefined, undefined, error)
-        if (httpError.status === 503) {
-          useUserStore().sessionStatus = 'unavailable'
-          return
+          : new HttpError(translate('shell.session.initializationFailed'), {
+              kind: 'unknown',
+              cause: error,
+            })
+        if (httpError.status === 401 || httpError.status === 403) {
+          await clearSession()
         }
-        await clearSession()
+        else {
+          // 除服务端明确拒绝会话外，临时依赖或传输故障都保留内存凭据以便恢复。
+          useUserStore().sessionStatus = 'unavailable'
+        }
       })
       .finally(() => {
         if (initializationPromise === pending) initializationPromise = undefined
@@ -300,14 +314,20 @@ function scheduleRemoteRefreshWaiter(
     ) {
       remoteRefreshOperation.pending = false
     }
-    waiter.reject(new HttpError(translate('shell.session.remoteRefreshTimeout'), 409))
+    waiter.reject(new HttpError(translate('shell.session.remoteRefreshTimeout'), {
+      status: 409,
+      kind: 'timeout',
+    }))
   }, Math.max(remaining, 0))
 }
 
 async function waitForRemoteRefresh(operation: RemoteRefreshOperation): Promise<string> {
   if (!operation.pending || operation.expiresAt <= Date.now()) {
     operation.pending = false
-    throw new HttpError(translate('shell.session.remoteRefreshFinished'), 409)
+    throw new HttpError(translate('shell.session.remoteRefreshFinished'), {
+      status: 409,
+      kind: 'http',
+    })
   }
   return new Promise<string>((resolve, reject) => {
     const waiter: RemoteRefreshWaiter = {
@@ -321,7 +341,12 @@ async function waitForRemoteRefresh(operation: RemoteRefreshOperation): Promise<
 }
 
 export async function refreshAccessToken(): Promise<string> {
-  if (sessionTerminating) throw new HttpError(translate('shell.session.terminating'), 401)
+  if (sessionTerminating) {
+    throw new HttpError(translate('shell.session.terminating'), {
+      status: 401,
+      kind: 'cancelled',
+    })
+  }
   const callerEpoch = sessionEpoch
   const remoteOperation = remoteRefreshOperation
   if (
@@ -399,7 +424,10 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
   assertSessionEpoch(refreshEpoch)
   const auth = response.data
   if (!auth?.access_token || !auth.user_info) {
-    throw new HttpError(translate('shell.session.refreshResponseInvalid'), 401)
+    throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
+      status: 401,
+      kind: 'invalid_response',
+    })
   }
   applyAuthenticatedSession(auth.access_token, auth.user_info)
   try {
@@ -448,15 +476,15 @@ function userStoreToInfo(user: ReturnType<typeof useUserStore>): UserInfo {
 }
 
 async function handleRefreshFailure(error: HttpError): Promise<void> {
-  if (error.status === 503) {
-    useUserStore().sessionStatus = 'unavailable'
-    ElMessage.error(translate('shell.session.authUnavailable'))
-    return
-  }
   if (error.status === 401 || error.status === 403) {
     ElMessage.error(translate('shell.session.expired'))
     await terminateSession()
+    return
   }
+
+  // 网络、超时、服务端错误及其他非鉴权故障均允许原会话稍后恢复。
+  useUserStore().sessionStatus = 'unavailable'
+  ElMessage.error(translate('shell.session.authUnavailable'))
 }
 
 function reportError(error: HttpError): void {
@@ -559,7 +587,10 @@ function createOperationId(startedAt: number): string {
 
 function assertSessionEpoch(expected: number): void {
   if (expected !== sessionEpoch || sessionTerminating) {
-    throw new HttpError(translate('shell.session.operationCancelled'), 401)
+    throw new HttpError(translate('shell.session.operationCancelled'), {
+      status: 401,
+      kind: 'cancelled',
+    })
   }
 }
 
@@ -570,7 +601,10 @@ function invalidateSessionOperations(): void {
   latestSessionOperationId = undefined
   latestSessionOperationIsLocal = true
   remoteRefreshOperation = undefined
-  const error = new HttpError(translate('shell.session.operationCancelled'), 401)
+  const error = new HttpError(translate('shell.session.operationCancelled'), {
+    status: 401,
+    kind: 'cancelled',
+  })
   for (const waiter of remoteRefreshWaiters) {
     if (waiter.timeoutId !== undefined) clearTimeout(waiter.timeoutId)
     waiter.reject(error)

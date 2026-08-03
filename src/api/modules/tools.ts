@@ -13,13 +13,23 @@ export type GeneratedFile = ApiSchema<'GeneratedFile'>
 export type WriteReport = ApiSchema<'WriteReport'>
 
 /** 查询数据库表列表 */
-export function listTable(params: GenQuery) {
-  return request<PageResponse<TableInfo>>({ url: `${BASE}/tables`, method: 'get', params })
+export function listTable(params: GenQuery, signal?: AbortSignal) {
+  return request<PageResponse<TableInfo>>({
+    url: `${BASE}/tables`,
+    method: 'get',
+    params,
+    signal,
+  })
 }
 
 /** 预览代码 */
-export function previewCode(data: GenerateOptions) {
-  return request<GeneratedFile[]>({ url: `${BASE}/preview`, method: 'post', data })
+export function previewCode(data: GenerateOptions, signal?: AbortSignal) {
+  return request<GeneratedFile[]>({
+    url: `${BASE}/preview`,
+    method: 'post',
+    data,
+    signal,
+  })
 }
 
 /** 将生成代码写入指定的外部目录 */

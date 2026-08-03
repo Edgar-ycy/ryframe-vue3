@@ -21,16 +21,46 @@ declare module 'axios' {
   }
 }
 
+export type HttpErrorKind =
+  | 'http'
+  | 'network'
+  | 'timeout'
+  | 'cancelled'
+  | 'invalid_response'
+  | 'unknown'
+
+export interface HttpErrorOptions {
+  status?: number
+  code?: number
+  errorKey?: string
+  details?: unknown
+  requestId?: string
+  kind?: HttpErrorKind
+  cause?: unknown
+  retryAfterSeconds?: number
+}
+
 export class HttpError extends Error {
-  constructor(
-    message: string,
-    public readonly status?: number,
-    public readonly code?: number,
-    public readonly cause?: unknown,
-    public readonly retryAfterSeconds?: number,
-  ) {
+  readonly status?: number
+  readonly code?: number
+  readonly errorKey?: string
+  readonly details?: unknown
+  readonly requestId?: string
+  readonly kind: HttpErrorKind
+  readonly cause?: unknown
+  readonly retryAfterSeconds?: number
+
+  constructor(message: string, options: HttpErrorOptions = {}) {
     super(message)
     this.name = 'HttpError'
+    this.status = options.status
+    this.code = options.code
+    this.errorKey = options.errorKey
+    this.details = options.details
+    this.requestId = options.requestId
+    this.kind = options.kind ?? (options.status === undefined ? 'unknown' : 'http')
+    this.cause = options.cause
+    this.retryAfterSeconds = options.retryAfterSeconds
   }
 }
 
@@ -39,7 +69,6 @@ export interface HttpSessionAdapter {
   getTenantId(): string
   refreshAccessToken(): Promise<string>
   handleRefreshFailure(error: HttpError): Promise<void>
-  reportError(error: HttpError): void
 }
 
 let sessionAdapter: HttpSessionAdapter | undefined
@@ -118,44 +147,59 @@ rawTransport.interceptors.request.use((config) => {
   return config
 })
 
-async function responseMessage(data: unknown, fallback: string): Promise<string> {
+interface ErrorPayload {
+  message: string
+  envelope?: ApiResponse
+}
+
+async function responseErrorPayload(data: unknown, fallback: string): Promise<ErrorPayload> {
   if (data instanceof Blob) {
     const text = await data.text()
-    if (!text) return fallback
+    if (!text) return { message: fallback }
     try {
-      return responseMessage(JSON.parse(text), fallback)
+      return responseErrorPayload(JSON.parse(text), fallback)
     }
     catch {
-      return text
+      return { message: text }
     }
   }
-  if (
-    typeof data === 'object'
-    && data !== null
-    && isApiEnvelope(data)
-  ) {
-    return translatedErrorMessage(data, fallback)
+  if (isApiEnvelope(data)) {
+    return { message: translatedErrorMessage(data, fallback), envelope: data }
   }
-  return fallback
+  return { message: typeof data === 'string' && data ? data : fallback }
+}
+
+function axiosErrorKind(error: AxiosError, status: number | undefined): HttpErrorKind {
+  if (axios.isCancel(error) || error.code === 'ERR_CANCELED') return 'cancelled'
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return 'timeout'
+  return status === undefined ? 'network' : 'http'
 }
 
 async function toHttpError(error: unknown): Promise<HttpError> {
   if (error instanceof HttpError) return error
   if (axios.isAxiosError(error)) {
     const status = error.response?.status
+    const payload = await responseErrorPayload(
+      error.response?.data,
+      error.message || translate('shell.http.requestFailed'),
+    )
     return new HttpError(
-      await responseMessage(error.response?.data, error.message || translate('shell.http.requestFailed')),
-      status,
-      undefined,
-      error,
-      parseRetryAfter(error.response?.headers['retry-after']),
+      payload.message,
+      {
+        status,
+        code: payload.envelope?.code,
+        errorKey: payload.envelope?.error_key ?? undefined,
+        details: payload.envelope?.details,
+        requestId: payload.envelope?.request_id,
+        kind: axiosErrorKind(error, status),
+        cause: error,
+        retryAfterSeconds: parseRetryAfter(error.response?.headers['retry-after']),
+      },
     )
   }
   return new HttpError(
     error instanceof Error ? error.message : translate('shell.http.requestFailed'),
-    undefined,
-    undefined,
-    error,
+    { kind: 'unknown', cause: error },
   )
 }
 
@@ -165,7 +209,12 @@ function parseRetryAfter(value: unknown): number | undefined {
 }
 
 async function refreshSession(): Promise<string> {
-  if (!sessionAdapter) throw new HttpError(translate('shell.http.sessionNotInitialized'), 401)
+  if (!sessionAdapter) {
+    throw new HttpError(translate('shell.http.sessionNotInitialized'), {
+      status: 401,
+      kind: 'http',
+    })
+  }
   if (!refreshPromise) {
     refreshPromise = sessionAdapter
       .refreshAccessToken()
@@ -210,25 +259,31 @@ transport.interceptors.response.use(
     if (status === 401 && !config?.skipAuthRefresh && !sessionAdapter?.getAccessToken()) {
       return Promise.reject(httpError)
     }
-    sessionAdapter?.reportError(httpError)
     return Promise.reject(httpError)
   },
 )
 
-function parseEnvelope<T>(response: AxiosResponse<ApiResponse<T>>, report: boolean): ApiResponse<T> {
+function parseEnvelope<T>(response: AxiosResponse<ApiResponse<T>>): ApiResponse<T> {
   const envelope = response.data
   if (!isApiEnvelope(envelope)) {
-    const error = new HttpError(translate('shell.http.invalidResponse'), response.status)
-    if (report) sessionAdapter?.reportError(error)
+    const error = new HttpError(translate('shell.http.invalidResponse'), {
+      status: response.status,
+      kind: 'invalid_response',
+    })
     throw error
   }
   if (envelope.code !== 200) {
     const error = new HttpError(
       translatedErrorMessage(envelope, translate('shell.http.requestFailed')),
-      response.status,
-      envelope.code,
+      {
+        status: response.status,
+        code: envelope.code,
+        errorKey: envelope.error_key ?? undefined,
+        details: envelope.details,
+        requestId: envelope.request_id,
+        kind: 'http',
+      },
     )
-    if (report) sessionAdapter?.reportError(error)
     throw error
   }
   return envelope
@@ -238,7 +293,7 @@ export async function request<T = unknown>(
   config: AxiosRequestConfig,
 ): Promise<ApiResponse<T>> {
   const response = await transport.request<ApiResponse<T>>(config)
-  return parseEnvelope(response, true)
+  return parseEnvelope(response)
 }
 
 export async function rawRequest<T>(
@@ -246,7 +301,7 @@ export async function rawRequest<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const response = await rawTransport.request<ApiResponse<T>>(config)
-    return parseEnvelope(response, false)
+    return parseEnvelope(response)
   }
   catch (error) {
     throw await toHttpError(error)

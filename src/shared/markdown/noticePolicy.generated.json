@@ -1,0 +1,7 @@
+{
+  "content_markdown": {
+    "max_utf8_bytes": 60000,
+    "min_utf8_bytes": 1
+  },
+  "version": 1
+}

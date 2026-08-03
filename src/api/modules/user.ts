@@ -11,6 +11,7 @@ export type UserStatus = UserManageableStatus | 'pending_activation'
 export type UserQuery = Omit<OperationQuery<'get_system_users'>, 'status'> & {
   status?: UserStatus
 }
+export type UserOptionQuery = OperationQuery<'get_system_users_options'>
 type UserExportQuery = Omit<UserQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_users_exports'>
 export type UserCreateInput = OperationJsonBody<'post_system_users'> & {
   role_ids: Id[]
@@ -31,13 +32,18 @@ export type PasswordResetRequestResult = ApiSchema<'PasswordResetRequestResponse
 export type UserImportResult = ApiSchema<'UserImportResult'>
 
 /** 分页查询用户列表 */
-export function listUser(params: UserQuery) {
-  return request<PageResponse<UserRecord>>({ url: BASE, method: 'get', params })
+export function listUser(params: UserQuery, signal?: AbortSignal) {
+  return request<PageResponse<UserRecord>>({ url: BASE, method: 'get', params, signal })
+}
+
+/** 查询当前数据范围内的用户候选项 */
+export function listUserOptions(params?: UserOptionQuery, signal?: AbortSignal) {
+  return request<ApiSchema<'OptionList'>>({ url: `${BASE}/options`, method: 'get', params, signal })
 }
 
 /** 查询用户详情 */
-export function getUser(id: Id) {
-  return request<UserDetail>({ url: `${BASE}/${id}`, method: 'get' })
+export function getUser(id: Id, signal?: AbortSignal) {
+  return request<UserDetail>({ url: `${BASE}/${id}`, method: 'get', signal })
 }
 
 /** 创建用户 */
@@ -88,8 +94,8 @@ export function batchDeleteUser(ids: Id[]) {
 }
 
 /** 导出用户 */
-export function exportUser(params?: UserExportQuery) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params))
+export function exportUser(params?: UserExportQuery, signal?: AbortSignal) {
+  return requestExportJob(`${BASE}/exports`, stripPagination(params), signal)
 }
 
 /** 下载导入模板 */

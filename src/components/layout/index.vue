@@ -2,9 +2,11 @@
   <div class="app-wrapper" :class="{ 'sidebar-collapse': appStore.sidebarCollapsed, 'no-tagsview': !settingsStore.tagsView, 'is-mobile': appStore.isMobile }">
     <!-- 侧边栏 -->
     <Sidebar />
-    <div
+    <button
       v-if="appStore.isMobile && !appStore.sidebarCollapsed"
+      type="button"
       class="mobile-sidebar-mask"
+      :aria-label="t('shell.layout.closeMobileNavigation')"
       @click="appStore.closeSidebar()"
     />
     <!-- 右侧主体 -->
@@ -20,6 +22,8 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useShellSettingsQuery } from '@/app/settings/shellSettingsQuery'
 import { useAppStore } from '@/stores/app'
 import { useSettingsStore } from '@/stores/settings'
 import Sidebar from './Sidebar/index.vue'
@@ -29,14 +33,14 @@ import AppMain from './AppMain/index.vue'
 
 const appStore = useAppStore()
 const settingsStore = useSettingsStore()
+const { t } = useI18n()
+useShellSettingsQuery()
 
 // 初始化时应用持久化设置到 DOM
 settingsStore.initSettings()
 
-// 从后端同步皮肤/主题配置（覆盖 localStorage 的默认值）
 onMounted(() => {
   appStore.initResponsive()
-  settingsStore.syncFromServer()
 })
 
 onUnmounted(() => {

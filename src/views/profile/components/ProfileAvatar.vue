@@ -32,8 +32,8 @@
 import { Camera, UserFilled } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { updateAvatar } from '@/api/modules/auth'
 import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
+import { useProfileAvatarMutation } from '../useProfileMutations'
 
 const props = defineProps<{
   src: string
@@ -43,9 +43,11 @@ const emit = defineEmits<{
   updated: [avatarUrl: string]
 }>()
 
-const uploading = ref(false)
 const { t } = useI18n()
 const { imageSrc } = useAuthenticatedImage(() => props.src)
+const { uploadAvatar, uploading } = useProfileAvatarMutation(t, avatarUrl => {
+  emit('updated', avatarUrl)
+})
 const acceptedTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 const maxAvatarBytes = 5 * 1024 * 1024
 
@@ -62,19 +64,10 @@ function beforeUpload(file: File): boolean {
 }
 
 async function upload(options: UploadRequestOptions): Promise<void> {
-  uploading.value = true
-  try {
-    const formData = new FormData()
-    formData.append('file', options.file)
-    const response = await updateAvatar(formData)
-    const avatarUrl = response.data?.avatar_url
-    if (!avatarUrl) throw new Error(t('account.avatarResponseMissing'))
-    emit('updated', avatarUrl)
-    ElMessage.success(t('account.avatarUpdated'))
-  }
-  finally {
-    uploading.value = false
-  }
+  if (uploading.value) return
+  const formData = new FormData()
+  formData.append('file', options.file)
+  await uploadAvatar(formData)
 }
 </script>
 

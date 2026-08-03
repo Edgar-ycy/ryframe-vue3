@@ -5,7 +5,7 @@
     width="500px"
     @closed="resetForm"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+    <el-form ref="formRef" v-loading="detailLoading" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="t('system.role.name')" prop="name">
         <el-input v-model="form.name" :placeholder="t('system.role.enterName')" maxlength="50" />
       </el-form-item>
@@ -42,8 +42,14 @@ import {
   createRole,
   getRole,
   updateRole,
+  type RoleCreateInput,
   type RoleRecord,
+  type RoleUpdateInput,
 } from '@/api/modules/role'
+import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 
@@ -53,6 +59,10 @@ interface RoleFormState {
   sort: number
   status: string
 }
+
+type SaveRoleCommand =
+  | { kind: 'create', data: RoleCreateInput }
+  | { kind: 'update', id: Id, data: RoleUpdateInput }
 
 const props = defineProps<{
   modelValue: boolean
@@ -69,8 +79,40 @@ const visible = computed({
   set: value => emit('update:modelValue', value),
 })
 const isEdit = computed(() => props.role !== null)
+const userStore = useUserStore()
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
+const detailQuery = useTenantQuery<RoleRecord>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
+  'roles',
+  () => ({ scope: 'detail', id: props.role?.id ?? null }),
+  async signal => {
+    const role = props.role
+    if (!role) throw new Error(t('system.role.detailMissing'))
+    const response = await getRole(role.id, signal)
+    if (!response.data) throw new Error(t('system.role.detailMissing'))
+    return response.data
+  },
+)
+const saveMutation = useTenantMutation<void, SaveRoleCommand>(
+  () => userStore.tenantId,
+  'roles',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'update') await updateRole(command.id, command.data)
+      else await createRole(command.data)
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(
+        command.kind === 'update'
+          ? 'system.common.updateSuccess'
+          : 'system.common.addSuccess',
+      ))
+    },
+  },
+)
+const detailLoading = computed(() => detailQuery.isFetching.value)
+const submitting = saveMutation.pending
 
 function initialForm(): RoleFormState {
   return { name: '', code: '', sort: 0, status: '1' }
@@ -87,14 +129,12 @@ function resetForm(): void {
   formRef.value?.clearValidate()
 }
 
-async function loadRole(role: RoleRecord): Promise<void> {
-  const response = await getRole(role.id)
-  if (!response.data) throw new Error(t('system.role.detailMissing'))
+function populateForm(role: RoleRecord): void {
   form.value = {
-    name: response.data.name,
-    code: response.data.code,
-    sort: response.data.sort,
-    status: response.data.status,
+    name: role.name,
+    code: role.code,
+    sort: role.sort,
+    status: role.status,
   }
 }
 
@@ -103,41 +143,42 @@ watch(
   (open) => {
     if (!open) return
     resetForm()
-    if (props.role) {
-      void loadRole(props.role).catch(() => {
-        visible.value = false
-      })
-    }
+    if (detailQuery.data.value) populateForm(detailQuery.data.value)
+  },
+)
+watch(
+  () => detailQuery.data.value,
+  role => {
+    if (visible.value && role) populateForm(role)
   },
 )
 
 async function submit(): Promise<void> {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
-  submitting.value = true
-  try {
-    if (props.role) {
-      await updateRole(props.role.id, {
-        name: form.value.name,
-        sort: form.value.sort,
-        status: form.value.status,
-      })
-      ElMessage.success(t('system.common.updateSuccess'))
-    }
-    else {
-      await createRole({
-        name: form.value.name,
-        code: form.value.code,
-        sort: form.value.sort,
-      })
-      ElMessage.success(t('system.common.addSuccess'))
-    }
-    visible.value = false
-    emit('saved')
-  }
-  finally {
-    submitting.value = false
-  }
+  const command: SaveRoleCommand = props.role
+    ? {
+        kind: 'update',
+        id: props.role.id,
+        data: {
+          name: form.value.name,
+          sort: form.value.sort,
+          status: form.value.status,
+        },
+      }
+    : {
+        kind: 'create',
+        data: {
+          name: form.value.name,
+          code: form.value.code,
+          sort: form.value.sort,
+        },
+      }
+
+  await saveMutation.mutateAsync(command)
+  visible.value = false
+  emit('saved')
 }
 </script>

@@ -13,25 +13,27 @@ import {
   listMessages,
   markAllMessagesRead,
   markMessageRead,
-} from './messageApi'
+} from '@/api/modules/messages'
 
-describe('消息中心 API 适配器', () => {
+describe('消息中心 API 模块', () => {
   beforeEach(() => {
     request.mockReset()
-    request.mockResolvedValue({ code: 200, msg: 'ok' })
+    request.mockResolvedValue({ code: 200, message: 'ok', data: null, request_id: 'test' })
   })
 
   it('使用当前 API 版本下的收件箱和确认路径', async () => {
-    await listMessages({ cursor: '42', limit: 20, unread_only: true })
+    const signal = new AbortController().signal
+    await listMessages({ cursor: '42', limit: 20, unread_only: true }, signal)
     await acknowledgeMessages(['42', '43'])
     await markMessageRead('42/43')
     await markAllMessagesRead()
-    await getUnreadMessageCount()
+    await getUnreadMessageCount(signal)
 
     expect(request).toHaveBeenNthCalledWith(1, {
       url: '/system/messages',
       method: 'get',
       params: { cursor: '42', limit: 20, unread_only: true },
+      signal,
     })
     expect(request).toHaveBeenNthCalledWith(2, {
       url: '/system/messages/ack',
@@ -49,6 +51,7 @@ describe('消息中心 API 适配器', () => {
     expect(request).toHaveBeenNthCalledWith(5, {
       url: '/system/messages/unread-count',
       method: 'get',
+      signal,
     })
   })
 

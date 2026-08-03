@@ -1,7 +1,7 @@
 <template>
   <el-badge
     :value="badgeValue"
-    :hidden="messageStore.unreadCount === 0"
+    :hidden="unreadCount === 0"
     :max="99"
     class="message-center-trigger"
   >
@@ -28,8 +28,8 @@
         {{ connectionLabel }}
       </span>
       <div class="message-center__toolbar-actions">
-        <el-button text :loading="messageStore.loading" @click="refresh">{{ t('common.refresh') }}</el-button>
-        <el-button text :disabled="messageStore.unreadCount === 0" @click="markAllRead">
+        <el-button text :loading="loading" @click="refresh">{{ t('common.refresh') }}</el-button>
+        <el-button text :disabled="unreadCount === 0 || mutating" @click="markAllRead">
           {{ t('messageCenter.markAllRead') }}
         </el-button>
       </div>
@@ -37,16 +37,16 @@
 
     <div class="message-center__batch-actions">
       <span>{{ t('messageCenter.selected', { count: selectedIds.length }) }}</span>
-      <el-button type="primary" link :disabled="selectedIds.length === 0" @click="acknowledgeSelected">
+      <el-button type="primary" link :disabled="selectedIds.length === 0 || mutating" @click="acknowledgeSelected">
         {{ t('messageCenter.acknowledge') }}
       </el-button>
     </div>
 
-    <div v-loading="messageStore.loading" class="message-center__body">
-      <el-empty v-if="messageStore.messages.length === 0" :description="t('messageCenter.empty')" />
+    <div v-loading="loading" class="message-center__body">
+      <el-empty v-if="messages.length === 0" :description="t('messageCenter.empty')" />
       <el-scrollbar v-else class="message-center__scrollbar">
         <article
-          v-for="message in messageStore.messages"
+          v-for="message in messages"
           :key="message.id"
           class="message-item"
           :class="{ 'message-item--unread': !message.read_at }"
@@ -68,10 +68,10 @@
               <time :datetime="message.published_at">{{ formatTime(message.published_at) }}</time>
               <div class="message-item__actions">
                 <el-tag v-if="message.acked_at" size="small" type="success">{{ t('messageCenter.acknowledged') }}</el-tag>
-                <el-button v-else link type="primary" @click="acknowledgeMessage(message.id)">
+                <el-button v-else link type="primary" :disabled="mutating" @click="acknowledgeMessage(message.id)">
                   {{ t('messageCenter.acknowledge') }}
                 </el-button>
-                <el-button v-if="!message.read_at" link type="primary" @click="markRead(message)">
+                <el-button v-if="!message.read_at" link type="primary" :disabled="mutating" @click="markRead(message)">
                   {{ t('messageCenter.markRead') }}
                 </el-button>
               </div>
@@ -86,16 +86,23 @@
 <script setup lang="ts">
 import { Bell } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import type { MessageRecord } from '@/api/modules/messages'
+import type { MessageInboxQuery, MessageRecord } from '@/api/modules/messages'
+import { useMessageCenterQueries } from '@/app/messages/messageQueries'
 import { formatLocalizedDate } from '@/i18n'
 import { useMessageStore } from '@/stores/message'
 
 const messageStore = useMessageStore()
+const inboxQuery = {
+  limit: 100,
+  unread_only: false,
+} satisfies MessageInboxQuery
+const messageCenter = useMessageCenterQueries(inboxQuery)
+const { messages, unreadCount, loading, mutating } = messageCenter
 const visible = ref(false)
 const selectedIds = ref<string[]>([])
 const { t } = useI18n()
 
-const badgeValue = computed(() => messageStore.unreadCount > 99 ? '99+' : messageStore.unreadCount)
+const badgeValue = computed(() => unreadCount.value > 99 ? '99+' : unreadCount.value)
 const connectionLabel = computed(() => ({
   connecting: t('messageCenter.connecting'),
   connected: t('messageCenter.connected'),
@@ -104,7 +111,7 @@ const connectionLabel = computed(() => ({
 })[messageStore.connectionStatus])
 
 watch(
-  () => messageStore.messages.map(message => message.id),
+  () => messages.value.map(message => message.id),
   (ids) => {
     selectedIds.value = selectedIds.value.filter(id => ids.includes(id))
   },
@@ -137,7 +144,7 @@ function handleDrawerOpen(): void {
 
 async function refresh(): Promise<void> {
   try {
-    await messageStore.refresh()
+    await messageCenter.refresh()
   }
   catch {
     ElMessage.warning(t('messageCenter.refreshFailed'))
@@ -146,7 +153,7 @@ async function refresh(): Promise<void> {
 
 async function acknowledgeSelected(): Promise<void> {
   try {
-    await messageStore.acknowledge(selectedIds.value)
+    await messageCenter.acknowledge(selectedIds.value)
     selectedIds.value = []
   }
   catch {
@@ -156,7 +163,7 @@ async function acknowledgeSelected(): Promise<void> {
 
 async function acknowledgeMessage(id: string): Promise<void> {
   try {
-    await messageStore.acknowledge([id])
+    await messageCenter.acknowledge([id])
   }
   catch {
     ElMessage.error(t('messageCenter.acknowledgeFailed'))
@@ -165,7 +172,7 @@ async function acknowledgeMessage(id: string): Promise<void> {
 
 async function markRead(message: MessageRecord): Promise<void> {
   try {
-    await messageStore.markRead(message.id)
+    await messageCenter.markRead(message.id)
   }
   catch {
     ElMessage.error(t('messageCenter.markReadFailed'))
@@ -174,7 +181,7 @@ async function markRead(message: MessageRecord): Promise<void> {
 
 async function markAllRead(): Promise<void> {
   try {
-    await messageStore.markAllRead()
+    await messageCenter.markAllRead()
   }
   catch {
     ElMessage.error(t('messageCenter.markAllReadFailed'))

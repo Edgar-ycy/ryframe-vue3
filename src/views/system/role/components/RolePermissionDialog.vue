@@ -36,6 +36,9 @@ import { useI18n } from 'vue-i18n'
 import { replaceRolePermissions, type RoleRecord } from '@/api/modules/role'
 import { getRolePermissions, type PermissionTreeNode } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 
@@ -47,6 +50,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
+  saved: []
 }>()
 
 const visible = computed({
@@ -55,25 +59,43 @@ const visible = computed({
 })
 const treeRef = ref<TreeInstance>()
 const checkedKeys = ref<Id[]>([])
-const loading = ref(false)
-const submitting = ref(false)
+const userStore = useUserStore()
+const assignmentsQuery = useTenantQuery<Id[]>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
+  'roles',
+  () => ({ scope: 'permissions', id: props.role?.id ?? null }),
+  async signal => {
+    const role = props.role
+    if (!role) return []
+    const response = await getRolePermissions(role.id, signal)
+    return response.data ?? []
+  },
+)
+const assignmentMutation = useTenantMutation<void, { roleId: Id, permissionIds: Id[] }>(
+  () => userStore.tenantId,
+  'roles',
+  {
+    mutationFn: async variables => {
+      await replaceRolePermissions(variables.roleId, variables.permissionIds)
+    },
+    onSuccess: () => {
+      ElMessage.success(t('system.role.permissionAssigned'))
+    },
+  },
+)
+const loading = computed(() => assignmentsQuery.isFetching.value)
+const submitting = assignmentMutation.pending
 
 function reset(): void {
   checkedKeys.value = []
   treeRef.value?.setCheckedKeys([])
 }
 
-async function loadAssignments(role: RoleRecord): Promise<void> {
-  loading.value = true
-  try {
-    const response = await getRolePermissions(role.id)
-    checkedKeys.value = response.data ?? []
-    await nextTick()
-    treeRef.value?.setCheckedKeys(checkedKeys.value)
-  }
-  finally {
-    loading.value = false
-  }
+async function populateAssignments(ids: Id[]): Promise<void> {
+  checkedKeys.value = [...ids]
+  await nextTick()
+  treeRef.value?.setCheckedKeys(checkedKeys.value)
 }
 
 watch(
@@ -81,9 +103,13 @@ watch(
   (open) => {
     if (!open || !props.role) return
     reset()
-    void loadAssignments(props.role).catch(() => {
-      visible.value = false
-    })
+    if (assignmentsQuery.data.value) void populateAssignments(assignmentsQuery.data.value)
+  },
+)
+watch(
+  () => assignmentsQuery.data.value,
+  ids => {
+    if (visible.value && ids) void populateAssignments(ids)
   },
 )
 
@@ -95,16 +121,13 @@ function handleCheck(
 }
 
 async function submit(): Promise<void> {
-  if (!props.role) return
-  submitting.value = true
-  try {
-    await replaceRolePermissions(props.role.id, checkedKeys.value)
-    ElMessage.success(t('system.role.permissionAssigned'))
-    visible.value = false
-  }
-  finally {
-    submitting.value = false
-  }
+  if (!props.role || submitting.value) return
+  await assignmentMutation.mutateAsync({
+    roleId: props.role.id,
+    permissionIds: [...checkedKeys.value],
+  })
+  visible.value = false
+  emit('saved')
 }
 </script>
 

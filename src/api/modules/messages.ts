@@ -15,14 +15,14 @@ export type AcknowledgeMessagesInput = OperationJsonBody<'post_system_messages_a
 export type WebSocketTicket = OperationData<'post_auth_ws_ticket'>
 
 /** 获取当前用户的消息收件箱。 */
-export function listMessages(params: MessageInboxQuery) {
-  return request<MessageInboxPage>({ url: BASE, method: 'get', params })
+export function listMessages(params: MessageInboxQuery, signal: AbortSignal) {
+  return request<MessageInboxPage>({ url: BASE, method: 'get', params, signal })
 }
 
 /** 获取服务端权威的未读消息数量。 */
-export function getUnreadMessageCount() {
+export function getUnreadMessageCount(signal: AbortSignal) {
   return request<OperationData<'get_system_messages_unread_count'>>({
-    url: `${BASE}/unread-count`, method: 'get',
+    url: `${BASE}/unread-count`, method: 'get', signal,
   })
 }
 

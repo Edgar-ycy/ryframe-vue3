@@ -82,8 +82,8 @@ describe('menu route builder', () => {
     expect(routes.map(route => route.name)).toEqual(['menu_10', 'menu_11'])
   })
 
-  it('normalizes legacy visibility, status, inferred type, icons, and reserved paths', () => {
-    const legacyPage = {
+  it('rejects nodes that do not satisfy the current menu contract', () => {
+    const malformedPage = {
       ...node({
         id: '20',
         route_key: 'system.user',
@@ -93,22 +93,8 @@ describe('menu route builder', () => {
       status: '',
       visible: '0',
     } as unknown as MenuTreeNode
-    const nullablePage = {
-      ...node({ id: '21', route_key: 'system.role' }),
-      status: null,
-      visible: null,
-    } as unknown as MenuTreeNode
 
-    const routes = buildRoutesFromMenuTree([
-      legacyPage,
-      nullablePage,
-      node({ id: '22', route_key: 'home' }),
-    ])
-
-    expect(routes).toHaveLength(2)
-    expect(routes[0].path).toBe('/system/user')
-    expect(routes[0].meta).toMatchObject({ hidden: true, icon: 'UserRound' })
-    expect(routes[1].meta?.hidden).toBe(false)
+    expect(buildRoutesFromMenuTree([malformedPage])).toEqual([])
   })
 
   it('names every dynamic page component after its generated route record', async () => {

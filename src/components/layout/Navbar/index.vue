@@ -80,6 +80,7 @@ import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 import { useAppStore } from '@/stores/app'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
+import { confirmAction } from '@/utils/confirmAction'
 import MessageCenter from '../MessageCenter/index.vue'
 import Settings from '../Settings/index.vue'
 
@@ -116,12 +117,11 @@ async function toggleFullscreen(): Promise<void> {
 async function handleCommand(command: string): Promise<void> {
   switch (command) {
     case 'logout':
-      try {
-        await ElMessageBox.confirm(t('navbar.logoutConfirm'), t('navbar.prompt'), { type: 'warning' })
-      }
-      catch {
-        return
-      }
+      if (!await confirmAction(
+        t('navbar.logoutConfirm'),
+        t('navbar.prompt'),
+        { type: 'warning' },
+      )) return
       await logoutSession()
       break
     case 'profile':

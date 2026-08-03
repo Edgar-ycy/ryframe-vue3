@@ -5,7 +5,6 @@
       :model-value="props.modelValue"
       :predefine="props.presetColors"
       :aria-label="pickerLabel"
-      show-alpha
       @update:model-value="(value: string) => emit('update:modelValue', value)"
     />
     <div class="theme-presets">

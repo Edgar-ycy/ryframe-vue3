@@ -45,7 +45,16 @@
         <el-table-column :label="t('system.common.actions')" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-perm="'system:post:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">{{ t('system.common.edit') }}</el-button>
-            <el-button v-perm="'system:post:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">{{ t('system.common.delete') }}</el-button>
+            <el-button
+              v-perm="'system:post:remove'"
+              type="danger"
+              link
+              icon="Delete"
+              :loading="deletingId === row.id"
+              @click="handleDelete(row)"
+            >
+              {{ t('system.common.delete') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -58,7 +67,7 @@
       />
     </el-card>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="480px" @close="resetForm">
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="480px" @close="resetDialog">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item :label="t('system.post.name')" prop="name">
           <el-input v-model="form.name" :placeholder="t('system.post.enterName')" />
@@ -88,58 +97,74 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import {
-  listPost,
-  getPost,
   createPost,
-  updatePost,
   deletePost,
   exportPost,
+  getPost,
+  listPost,
+  updatePost,
+  type PostCreateInput,
+  type PostQuery,
   type PostRecord,
+  type PostUpdateInput,
 } from '@/api/modules/post'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
-import type { Id } from '@/shared/http/types'
-import { useUserStore } from '@/stores/user'
-import { invalidateTenantResource } from '@/shared/query/client'
+import type { Id, PageResponse } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
+import { confirmAction } from '@/utils/confirmAction'
 
 const { t } = useI18n()
 
-const queryParams = ref({ page: 1, page_size: 10, name: '', code: '', status: '' })
+const queryParams = ref<PostQuery>({ page: 1, page_size: 10, name: '', code: '', status: '' })
+const activeQueryParams = ref<PostQuery>({ ...queryParams.value })
 const userStore = useUserStore()
-const postsQuery = useTenantQuery(
+const authenticated = () => userStore.sessionStatus === 'authenticated'
+const postsQuery = useTenantQuery<PageResponse<PostRecord>>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  authenticated,
   'posts',
-  () => ({ ...queryParams.value }),
-  () => listPost({ ...queryParams.value }),
+  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+  async signal => {
+    const response = await listPost({ ...activeQueryParams.value }, signal)
+    return response.data ?? {
+      items: [],
+      page: activeQueryParams.value.page ?? 1,
+      page_size: activeQueryParams.value.page_size ?? 10,
+      total: 0,
+      total_pages: 0,
+      max_page_size: activeQueryParams.value.page_size ?? 10,
+    }
+  },
 )
 const loading = computed(() => postsQuery.isFetching.value)
-const tableData = computed<PostRecord[]>(() => postsQuery.data.value?.data?.items ?? [])
-const total = computed(() => postsQuery.data.value?.data?.total ?? 0)
-const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
+const tableData = computed(() => postsQuery.data.value?.items ?? [])
+const total = computed(() => postsQuery.data.value?.total ?? 0)
+const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
 
 function handleExport() {
-  return exportAndDownload(() => exportPost(queryParams.value), {
+  return exportAndDownload(signal => exportPost(activeQueryParams.value, signal), {
     filename: t('system.post.exportFilename'),
   })
 }
 
 async function fetchData() {
-  await postsQuery.refetch()
+  const nextParams = { ...queryParams.value }
+  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
+    activeQueryParams.value = nextParams
+    return
+  }
+  await postsQuery.refetch({ throwOnError: true })
 }
 
-async function refreshPosts() {
-  await invalidateTenantResource(userStore.tenantId, 'posts')
-  await fetchData()
-}
-
-function handleSearch() { queryParams.value.page = 1; fetchData() }
+function handleSearch() { queryParams.value.page = 1; void fetchData() }
 function handleReset() { queryParams.value.name = ''; queryParams.value.code = ''; queryParams.value.status = ''; handleSearch() }
 
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
-const submitLoading = ref(false)
 const currentEditId = ref<Id | null>(null)
+const editingPost = ref<PostRecord | null>(null)
 const form = ref({ name: '', code: '', sort: 0, status: '1' })
 const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: t('system.post.enterName'), trigger: 'blur' }],
@@ -148,54 +173,123 @@ const rules = computed<FormRules>(() => ({
 
 function resetForm() { form.value.name = ''; form.value.code = ''; form.value.sort = 0; form.value.status = '1'; formRef.value?.clearValidate() }
 
+function resetDialog() {
+  resetForm()
+  currentEditId.value = null
+  editingPost.value = null
+}
+
+const detailQuery = useTenantQuery<PostRecord>(
+  () => userStore.tenantId,
+  () => authenticated() && editingPost.value !== null,
+  'posts',
+  () => ({ scope: 'detail', id: editingPost.value?.id ?? null }),
+  async signal => {
+    const target = editingPost.value
+    if (!target) throw new Error(t('system.post.detailMissing'))
+    const response = await getPost(target.id, signal)
+    if (!response.data) throw new Error(t('system.post.detailMissing'))
+    return response.data
+  },
+)
+
+type SavePostCommand =
+  | { kind: 'create'; data: PostCreateInput }
+  | { kind: 'update'; id: Id; data: PostUpdateInput }
+
+const saveMutation = useTenantMutation<void, SavePostCommand>(
+  () => userStore.tenantId,
+  'posts',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'create') {
+        await createPost(command.data)
+      } else {
+        await updatePost(command.id, command.data)
+      }
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(command.kind === 'create'
+        ? 'system.common.addSuccess'
+        : 'system.common.updateSuccess'))
+    },
+  },
+)
+const submitLoading = saveMutation.pending
+
+const deleteMutation = useTenantMutation<void, PostRecord>(
+  () => userStore.tenantId,
+  'posts',
+  {
+    mutationFn: async post => {
+      await deletePost(post.id)
+    },
+    onSuccess: () => {
+      ElMessage.success(t('system.common.deleteSuccess'))
+    },
+  },
+)
+const deletingId = computed<Id | null>(() => (
+  deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
+))
+
 function handleAdd() {
   currentEditId.value = null
+  editingPost.value = null
   dialog.value.title = t('system.post.addTitle'); dialog.value.isEdit = false
   resetForm(); dialog.value.visible = true
 }
 
 async function handleEdit(row: PostRecord) {
+  if (saveMutation.pending.value) return
   currentEditId.value = row.id
+  editingPost.value = row
   dialog.value.title = t('system.post.editTitle'); dialog.value.isEdit = true
   resetForm()
-  const res = await getPost(row.id)
-  if (!res.data) throw new Error(t('system.post.detailMissing'))
-  const d = res.data
+  await nextTick()
+  const result = await detailQuery.refetch({ throwOnError: true })
+  const d = result.data
+  if (!d) throw new Error(t('system.post.detailMissing'))
   form.value.name = d.name; form.value.code = d.code
   form.value.sort = d.sort ?? 0; form.value.status = d.status
   dialog.value.visible = true
 }
 
 async function handleSubmit() {
+  if (saveMutation.pending.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
-  submitLoading.value = true
-  try {
-    if (dialog.value.isEdit) {
-      await updatePost(currentEditId.value!, {
+  if (dialog.value.isEdit) {
+    await saveMutation.mutateAsync({
+      kind: 'update',
+      id: currentEditId.value!,
+      data: {
         name: form.value.name,
         sort: form.value.sort,
         status: form.value.status,
-      })
-      ElMessage.success(t('system.common.updateSuccess'))
-    } else {
-      await createPost({ name: form.value.name, code: form.value.code, sort: form.value.sort })
-      ElMessage.success(t('system.common.addSuccess'))
-    }
-    dialog.value.visible = false; await refreshPosts()
-  } finally { submitLoading.value = false }
+      },
+    })
+  } else {
+    await saveMutation.mutateAsync({
+      kind: 'create',
+      data: { name: form.value.name, code: form.value.code, sort: form.value.sort },
+    })
+  }
+  dialog.value.visible = false
+  await postsQuery.refetch({ throwOnError: true })
 }
 
 async function handleDelete(row: PostRecord) {
-  try {
-    await ElMessageBox.confirm(
-      t('system.post.deleteConfirm', { name: row.name }),
-      t('system.common.warning'),
-      { type: 'warning' },
-    )
-    await deletePost(row.id)
-    ElMessage.success(t('system.common.deleteSuccess')); await refreshPosts()
-  } catch { /* 用户取消 */ }
+  if (deleteMutation.pending.value) return
+  const confirmed = await confirmAction(
+    t('system.post.deleteConfirm', { name: row.name }),
+    t('system.common.warning'),
+    { type: 'warning' },
+  )
+  if (!confirmed) return
+
+  await deleteMutation.mutateAsync(row)
+  await postsQuery.refetch({ throwOnError: true })
 }
 
 </script>

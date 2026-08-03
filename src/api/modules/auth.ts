@@ -121,10 +121,11 @@ export function getCaptchaConfig() {
 // ========== 个人中心 ==========
 
 /** 获取个人信息 */
-export function getProfile() {
+export function getProfile(signal?: AbortSignal) {
   return request<ProfileInfo>({
     url: '/auth/profile',
     method: 'get',
+    signal,
   })
 }
 

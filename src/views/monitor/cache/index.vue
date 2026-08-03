@@ -95,12 +95,38 @@ import {
   getCacheInfo,
   type CacheInfo,
 } from '@/api/modules/monitor'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
-const loading = ref(false)
-const commandLoading = ref(false)
-const cacheInfo = ref<CacheInfo | null>(null)
-const commandStats = ref<Record<string, string>>({})
+const userStore = useUserStore()
+
+interface CacheSnapshot {
+  commands: Record<string, string>
+  info: CacheInfo | null
+}
+
+const cacheQuery = useTenantQuery<CacheSnapshot>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated',
+  'monitor-cache',
+  () => ({ scope: 'overview' }),
+  async signal => {
+    const [infoResponse, commandsResponse] = await Promise.all([
+      getCacheInfo(signal),
+      getCacheCommands(signal),
+    ])
+    return {
+      commands: commandsResponse.data ?? {},
+      info: infoResponse.data ?? null,
+    }
+  },
+)
+
+const loading = computed(() => cacheQuery.isFetching.value)
+const commandLoading = loading
+const cacheInfo = computed(() => cacheQuery.data.value?.info ?? null)
+const commandStats = computed(() => cacheQuery.data.value?.commands ?? {})
 
 const keyRows = computed(() => {
   const keys = cacheInfo.value?.keys
@@ -125,24 +151,9 @@ function formatRatio(value?: number | null) {
   return value.toFixed(2)
 }
 
-async function fetchData() {
-  loading.value = true
-  commandLoading.value = true
-  try {
-    const [infoRes, commandsRes] = await Promise.all([
-      getCacheInfo(),
-      getCacheCommands(),
-    ])
-    cacheInfo.value = infoRes.data || null
-    const data = commandsRes.data
-    commandStats.value = data && !data.error ? data : {}
-  } finally {
-    loading.value = false
-    commandLoading.value = false
-  }
+async function fetchData(): Promise<void> {
+  await cacheQuery.refetch({ throwOnError: true })
 }
-
-onMounted(fetchData)
 </script>
 
 <style scoped>

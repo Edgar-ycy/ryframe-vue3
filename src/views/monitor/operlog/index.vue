@@ -98,49 +98,94 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { listOperLog, exportOperLog, type OperLogRecord } from '@/api/modules/monitor'
+import {
+  exportOperLog,
+  listOperLog,
+  type OperLogQuery,
+  type OperLogRecord,
+} from '@/api/modules/monitor'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
+import type { PageResponse } from '@/shared/http/types'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
-const loading = ref(false)
-const tableData = ref<OperLogRecord[]>([])
-const total = ref(0)
 const dateRange = ref<[string, string] | []>([])
-const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
+const userStore = useUserStore()
+const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
 
-const queryParams = ref({
+const queryParams = ref<OperLogQuery>({
   page: 1, page_size: 10, oper_name: '', status: '', begin_time: '', end_time: '',
 })
+const activeQueryParams = ref<OperLogQuery>({ ...queryParams.value })
+
+const operationLogsQuery = useTenantQuery<PageResponse<OperLogRecord>>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated',
+  'monitor-operation-logs',
+  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+  async signal => {
+    const response = await listOperLog({ ...activeQueryParams.value }, signal)
+    return response.data ?? {
+      items: [],
+      page: activeQueryParams.value.page ?? 1,
+      page_size: activeQueryParams.value.page_size ?? 10,
+      total: 0,
+      total_pages: 0,
+      max_page_size: activeQueryParams.value.page_size ?? 10,
+    }
+  },
+)
+
+const loading = computed(() => operationLogsQuery.isFetching.value)
+const tableData = computed(() => operationLogsQuery.data.value?.items ?? [])
+const total = computed(() => operationLogsQuery.data.value?.total ?? 0)
 
 function handleExport() {
-  return exportAndDownload(() => exportOperLog(queryParams.value), { filename: t('monitor.operationLog.exportFilename') })
+  return exportAndDownload(
+    signal => exportOperLog({
+      name: activeQueryParams.value.oper_name,
+      status: activeQueryParams.value.status,
+      begin_time: activeQueryParams.value.begin_time,
+      end_time: activeQueryParams.value.end_time,
+    }, signal),
+    { filename: t('monitor.operationLog.exportFilename') },
+  )
 }
 
-async function fetchData() {
-  loading.value = true
-  try {
-    queryParams.value.begin_time = dateRange.value?.[0] || ''
-    queryParams.value.end_time = dateRange.value?.[1] || ''
-    const res = await listOperLog(queryParams.value)
-    tableData.value = res.data?.items || []
-    total.value = res.data?.total || 0
-  } finally { loading.value = false }
+async function fetchData(): Promise<void> {
+  queryParams.value.begin_time = dateRange.value[0] ?? ''
+  queryParams.value.end_time = dateRange.value[1] ?? ''
+  const nextParams = { ...queryParams.value }
+  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
+    activeQueryParams.value = nextParams
+    return
+  }
+  await operationLogsQuery.refetch({ throwOnError: true })
 }
 
-function handleSearch() { queryParams.value.page = 1; fetchData() }
-function handleReset() {
-  queryParams.value.oper_name = ''; queryParams.value.status = ''; queryParams.value.begin_time = ''; queryParams.value.end_time = ''
+function handleSearch(): void {
+  queryParams.value.page = 1
+  void fetchData()
+}
+
+function handleReset(): void {
+  queryParams.value = {
+    page: 1,
+    page_size: queryParams.value.page_size,
+    oper_name: '',
+    status: '',
+    begin_time: '',
+    end_time: '',
+  }
   dateRange.value = []
-  handleSearch()
+  void fetchData()
 }
 
-// ----- 详情 -----
 const detailVisible = ref(false)
 const detailRow = ref<Partial<OperLogRecord>>({})
-function handleDetail(row: OperLogRecord) {
+function handleDetail(row: OperLogRecord): void {
   detailRow.value = row
   detailVisible.value = true
 }
-
-onMounted(() => fetchData())
 </script>

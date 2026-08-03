@@ -6,26 +6,24 @@ import { stripPagination, type Id, type PageResponse } from '@/shared/http/types
 const BASE = '/system/configs'
 
 export type ConfigQuery = OperationQuery<'get_system_configs'>
-type ConfigAllQuery = OperationQuery<'get_system_configs_all'>
 type ConfigExportQuery = Omit<ConfigQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_configs_exports'>
 export type ConfigCreateInput = OperationJsonBody<'post_system_configs'>
 export type ConfigUpdateInput = OperationJsonBody<'put_system_configs_by_id'>
 export type ConfigRecord = ApiSchema<'ConfigVo'>
 
-export function listConfig(params: ConfigQuery) { return request<PageResponse<ConfigRecord>>({ url: BASE, method: 'get', params }) }
-export function listConfigNoPage(params?: ConfigAllQuery) {
-  return request<ConfigRecord[]>({
-    url: `${BASE}/all`, method: 'get', params: stripPagination(params),
-  })
+export function listConfig(params: ConfigQuery, signal?: AbortSignal) {
+  return request<PageResponse<ConfigRecord>>({ url: BASE, method: 'get', params, signal })
 }
-export function exportConfig(params?: ConfigExportQuery) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params))
+export function exportConfig(params?: ConfigExportQuery, signal?: AbortSignal) {
+  return requestExportJob(`${BASE}/exports`, stripPagination(params), signal)
 }
-export function getConfig(id: Id)      { return request<ConfigRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
+export function getConfig(id: Id, signal?: AbortSignal) {
+  return request<ConfigRecord>({ url: `${BASE}/${id}`, method: 'get', signal })
+}
 
 /** 按键查询参数值 */
-export function getConfigByKey(key: string) {
-  return request<string>({ url: `${BASE}/key/${key}`, method: 'get' })
+export function getConfigByKey(key: string, signal?: AbortSignal) {
+  return request<string>({ url: `${BASE}/key/${key}`, method: 'get', signal })
 }
 
 export function createConfig(data: ConfigCreateInput) { return request<ConfigRecord>({ url: BASE, method: 'post', data }) }

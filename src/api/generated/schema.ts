@@ -2448,7 +2448,7 @@ export interface components {
              */
             code: number;
             data?: {
-                content: string;
+                content_markdown: string;
                 /** Format: date-time */
                 created_at: string;
                 created_by?: string | null;
@@ -3193,7 +3193,7 @@ export interface components {
              */
             code: number;
             data?: {
-                content: string;
+                content_markdown: string;
                 /** Format: date-time */
                 created_at: string;
                 created_by?: string | null;
@@ -3736,7 +3736,8 @@ export interface components {
             visible?: boolean | null;
         };
         CreateNoticeDto: {
-            content: string;
+            /** @description 公告 Markdown 原文，长度为 1 到 60,000 个 UTF-8 字节。 */
+            content_markdown: string;
             notice_type?: string | null;
             title: string;
         };
@@ -4009,7 +4010,7 @@ export interface components {
             topic: string;
         };
         NoticeVo: {
-            content: string;
+            content_markdown: string;
             /** Format: date-time */
             created_at: string;
             created_by?: string | null;
@@ -4235,7 +4236,7 @@ export interface components {
         /** @description 分页接口的业务数据。 */
         PageData_NoticeVo: {
             items: {
-                content: string;
+                content_markdown: string;
                 /** Format: date-time */
                 created_at: string;
                 created_by?: string | null;
@@ -4705,7 +4706,8 @@ export interface components {
             visible?: boolean | null;
         };
         UpdateNoticeDto: {
-            content: string;
+            /** @description 公告 Markdown 原文，长度为 1 到 60,000 个 UTF-8 字节。 */
+            content_markdown: string;
             notice_type?: string | null;
             status: string;
             title: string;

@@ -10,76 +10,123 @@ import {
 } from '@/api/modules/dict'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { translate } from '@/i18n'
+import type { Id, PageResponse } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
 export function useDictManagement() {
-  const typeLoading = ref(false)
-  const typeList = ref<DictTypeRecord[]>([])
-  const typeTotal = ref(0)
   const typePage = ref<DictTypeQuery>({ page: 1, page_size: 10 })
   const currentType = ref<DictTypeRecord | null>(null)
   const typeDialogVisible = ref(false)
   const editingType = ref<DictTypeRecord | null>(null)
-
-  const dataLoading = ref(false)
-  const dataList = ref<DictDataRecord[]>([])
   const dataDialogVisible = ref(false)
   const editingData = ref<DictDataRecord | null>(null)
 
-  const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
-  let typeRequestSequence = 0
-  let dataRequestSequence = 0
+  const userStore = useUserStore()
+  const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+  const authenticated = () => userStore.sessionStatus === 'authenticated'
+
+  const typesQuery = useTenantQuery<PageResponse<DictTypeRecord>>(
+    () => userStore.tenantId,
+    authenticated,
+    'dict-types',
+    () => ({ scope: 'list', filters: { ...typePage.value } }),
+    async signal => {
+      const response = await listDictType({ ...typePage.value }, signal)
+      return response.data ?? {
+        items: [],
+        page: typePage.value.page ?? 1,
+        page_size: typePage.value.page_size ?? 10,
+        total: 0,
+        total_pages: 0,
+        max_page_size: typePage.value.page_size ?? 10,
+      }
+    },
+  )
+  const dataQuery = useTenantQuery<DictDataRecord[]>(
+    () => userStore.tenantId,
+    () => authenticated() && currentType.value !== null,
+    'dict-data',
+    () => ({ scope: 'list', typeCode: currentType.value?.code ?? null }),
+    async signal => {
+      const typeCode = currentType.value?.code
+      if (!typeCode) return []
+      const response = await listDictData({ type_code: typeCode }, signal)
+      return response.data ?? []
+    },
+  )
+
+  const typeList = computed(() => typesQuery.data.value?.items ?? [])
+  const typeTotal = computed(() => typesQuery.data.value?.total ?? 0)
+  const typeLoading = computed(() => typesQuery.isFetching.value)
+  const dataList = computed(() => dataQuery.data.value ?? [])
+  const dataLoading = computed(() => dataQuery.isFetching.value)
+
+  watch(typeList, items => {
+    if (!currentType.value) return
+    currentType.value = items.find(item => item.id === currentType.value?.id) ?? null
+  })
+
+  const deleteTypeMutation = useTenantMutation<void, DictTypeRecord>(
+    () => userStore.tenantId,
+    'dict-types',
+    {
+      mutationFn: async dictType => {
+        await deleteDictType(dictType.id)
+      },
+      onSuccess: () => {
+        ElMessage.success(translate('system.common.deleteSuccess'))
+      },
+    },
+  )
+  const deleteDataMutation = useTenantMutation<void, DictDataRecord>(
+    () => userStore.tenantId,
+    'dict-data',
+    {
+      mutationFn: async dictData => {
+        await deleteDictData(dictData.id)
+      },
+      onSuccess: () => {
+        ElMessage.success(translate('system.common.deleteSuccess'))
+      },
+    },
+  )
+  const deletingTypeId = computed<Id | null>(() => (
+    deleteTypeMutation.pending.value
+      ? deleteTypeMutation.variables.value?.id ?? null
+      : null
+  ))
+  const deletingDataId = computed<Id | null>(() => (
+    deleteDataMutation.pending.value
+      ? deleteDataMutation.variables.value?.id ?? null
+      : null
+  ))
 
   function clearCurrentType(): void {
-    dataRequestSequence += 1
     currentType.value = null
-    dataList.value = []
-    dataLoading.value = false
   }
 
   async function fetchTypeList(): Promise<void> {
-    const requestSequence = ++typeRequestSequence
-    typeLoading.value = true
-    try {
-      const response = await listDictType(typePage.value)
-      if (requestSequence !== typeRequestSequence) return
-
-      typeList.value = response.data?.items ?? []
-      typeTotal.value = response.data?.total ?? 0
-      if (currentType.value) {
-        const selected = typeList.value.find(item => item.id === currentType.value?.id)
-        if (selected) currentType.value = selected
-        else clearCurrentType()
-      }
-    }
-    finally {
-      if (requestSequence === typeRequestSequence) typeLoading.value = false
-    }
+    await typesQuery.refetch({ throwOnError: true })
   }
 
-  async function fetchDataList(typeCode: string): Promise<void> {
-    const requestSequence = ++dataRequestSequence
-    dataLoading.value = true
-    try {
-      const response = await listDictData({ type_code: typeCode })
-      if (requestSequence === dataRequestSequence) {
-        dataList.value = response.data ?? []
-      }
-    }
-    finally {
-      if (requestSequence === dataRequestSequence) dataLoading.value = false
-    }
+  async function fetchDataList(): Promise<void> {
+    if (!currentType.value) return
+    await dataQuery.refetch({ throwOnError: true })
   }
 
   function handleExport(): Promise<void> {
-    return exportAndDownload(() => exportDictType(), {
+    return exportAndDownload(signal => exportDictType(typePage.value, signal), {
       filename: translate('system.dict.exportFilename'),
     })
   }
 
   async function handleTypeClick(dictType: DictTypeRecord): Promise<void> {
+    const unchanged = currentType.value?.id === dictType.id
     currentType.value = dictType
-    await fetchDataList(dictType.code)
+    if (unchanged) await fetchDataList()
   }
 
   function handleAddType(): void {
@@ -97,6 +144,7 @@ export function useDictManagement() {
   }
 
   async function handleDeleteType(dictType: DictTypeRecord): Promise<void> {
+    if (deleteTypeMutation.pending.value) return
     const confirmed = await confirmAction(
       translate('system.dict.deleteTypeConfirm', { name: dictType.name }),
       translate('system.common.warning'),
@@ -107,8 +155,7 @@ export function useDictManagement() {
     )
     if (!confirmed) return
 
-    await deleteDictType(dictType.id)
-    ElMessage.success(translate('system.common.deleteSuccess'))
+    await deleteTypeMutation.mutateAsync(dictType)
     if (currentType.value?.id === dictType.id) clearCurrentType()
     if (typeList.value.length === 1 && (typePage.value.page ?? 1) > 1) {
       typePage.value.page = (typePage.value.page ?? 1) - 1
@@ -128,10 +175,11 @@ export function useDictManagement() {
   }
 
   async function handleDataSaved(): Promise<void> {
-    if (currentType.value) await fetchDataList(currentType.value.code)
+    await fetchDataList()
   }
 
   async function handleDeleteData(dictData: DictDataRecord): Promise<void> {
+    if (deleteDataMutation.pending.value) return
     const confirmed = await confirmAction(
       translate('system.dict.deleteDataConfirm', { name: dictData.label }),
       translate('system.common.warning'),
@@ -142,18 +190,17 @@ export function useDictManagement() {
     )
     if (!confirmed) return
 
-    await deleteDictData(dictData.id)
-    ElMessage.success(translate('system.common.deleteSuccess'))
-    if (currentType.value) await fetchDataList(currentType.value.code)
+    await deleteDataMutation.mutateAsync(dictData)
+    await fetchDataList()
   }
-
-  onMounted(fetchTypeList)
 
   return {
     currentType,
     dataDialogVisible,
     dataList,
     dataLoading,
+    deletingDataId,
+    deletingTypeId,
     editingData,
     editingType,
     exportLoading,

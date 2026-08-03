@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  clearLegacyAuthStorage,
   getTenantId,
   removeTenantId,
   setTenantId,
@@ -27,18 +26,6 @@ describe('browser auth storage', () => {
 
   afterEach(() => vi.unstubAllGlobals())
 
-  it('removes legacy access and refresh tokens while preserving tenant selection', () => {
-    localStorage.setItem('ryframe_token', 'access')
-    localStorage.setItem('ryframe_refresh_token', 'refresh')
-    localStorage.setItem('ryframe_tenant_id', 'tenant-a')
-
-    clearLegacyAuthStorage()
-
-    expect(localStorage.getItem('ryframe_token')).toBeNull()
-    expect(localStorage.getItem('ryframe_refresh_token')).toBeNull()
-    expect(getTenantId()).toBe('tenant-a')
-  })
-
   it('persists only the selected tenant and falls back to system', () => {
     expect(getTenantId()).toBe('system')
     setTenantId('tenant-b')
@@ -53,7 +40,6 @@ describe('browser auth storage', () => {
   it('is safe during server-side execution without window storage', () => {
     vi.unstubAllGlobals()
 
-    expect(() => clearLegacyAuthStorage()).not.toThrow()
     expect(getTenantId()).toBe('system')
     expect(() => setTenantId('tenant-a')).not.toThrow()
     expect(() => removeTenantId()).not.toThrow()

@@ -1,6 +1,6 @@
 # RyFrame Vue3
 
-现代化企业级后台管理系统前端，基于 Vue 3 + TypeScript + Element Plus 构建。前端与 Rust 后端分别使用独立 Git 仓库、CI 和发布流程，通过 HTTP API 契约协作。
+现代化企业级后台管理系统前端，基于 Vue 3 + TypeScript + Element Plus 构建。前端与 Rust 后端分别使用独立 Git 仓库和 CI，通过 HTTP API 契约协作；两仓维护同名稳定标签，项目级源码 Release 由后端统一发布。
 
 ## 技术栈
 
@@ -11,6 +11,7 @@
 | 构建工具 | Vite | ^8.0 |
 | UI 组件库 | Element Plus | ^2.14 |
 | 状态管理 | Pinia | ^3.0 |
+| 服务端状态 | TanStack Vue Query | ^5.101 |
 | 路由 | Vue Router | ^5.1 |
 | HTTP 请求 | Axios | ^1.17 |
 | CSS 预处理 | Sass | ^1.101 |
@@ -22,6 +23,7 @@
 - **系统监控**: 在线用户、服务监控、操作日志、登录日志
 - **系统工具**: 代码生成
 - **个人中心**: 个人信息编辑、密码修改、头像更新
+- **消息中心**: 按租户和用户隔离的持久收件箱、未读计数、实时投递与补拉
 - **权限控制**: 按钮级权限指令、角色权限、后端菜单驱动的动态路由
 
 ## 项目结构
@@ -31,12 +33,13 @@ ryframe-vue3/
 ├── openapi/openapi.json   # 后端 OpenAPI 契约快照
 ├── src/
 │   ├── app/session/        # Token 刷新、退出和会话协调
+│   ├── app/messages/       # 消息查询、mutation 与 WebSocket 传输
 │   ├── shared/             # 运行时配置、HTTP 基础层和生成式安全策略
 │   ├── api/contract.ts     # 生成契约的稳定类型入口
 │   ├── api/generated/      # OpenAPI 生成类型，禁止手工修改
 │   ├── api/modules/        # 业务 API 请求函数和语义类型
 │   ├── router/             # 守卫、动态路由、页面白名单和常量路由
-│   ├── stores/             # Pinia 跨页面状态
+│   ├── stores/             # Pinia 客户端跨页面状态与连接状态
 │   ├── components/         # 布局和可复用组件
 │   ├── directives/         # 权限和交互指令
 │   ├── hooks/              # 组合式逻辑
@@ -82,14 +85,14 @@ pnpm build
 
 构建产物输出至 `dist/` 目录。
 
-用于候选版或稳定版公网观察的产物必须嵌入当前完整提交 SHA：
+部署环境从稳定标签源码构建时，应嵌入当前完整提交 SHA：
 
 ```bash
 test -z "$(git status --porcelain)"
 VITE_APP_BUILD_COMMIT="$(git rev-parse HEAD)" pnpm build
 ```
 
-该构建会在 `dist/build-identity.json` 中记录提交身份，供发布观察流程确认线上产物确实来自目标标签。
+该构建会在 `dist/build-identity.json` 中记录提交身份，供部署验收确认线上产物确实来自目标标签。GitHub 稳定 Release 不上传 `dist`，只保留平台自动生成的源码 ZIP/TAR。
 
 ### 完整工程检查
 
@@ -97,11 +100,15 @@ VITE_APP_BUILD_COMMIT="$(git rev-parse HEAD)" pnpm build
 pnpm check
 ```
 
-该命令依次执行源码卫生、架构边界、OpenAPI 快照、菜单 `route_key` 集合、密码策略、生成类型、ESLint、Stylelint、Vue TSC、覆盖率测试、生产构建和 Playwright 浏览器冒烟测试；任何警告都会使检查失败。
+该命令依次执行源码卫生、工作流、依赖策略、架构边界、本地 OpenAPI 来源与生成物、菜单 `route_key` 集合、密码和公告策略、ESLint、Stylelint、Vue TSC、覆盖率测试、生产构建、体积预算和 Playwright 浏览器冒烟测试；任何警告都会使检查失败。
+
+覆盖率全局门禁为语句、行和函数 70%、分支 60%；会话、认证、HTTP、用户状态、权限和消息关键模块执行 90%/80% 的独立门禁。日常 push、pull request 和手动触发使用单个 Node 24 主质量作业，每周定时任务仅使用 Node 22.18 验证安装、类型、单元测试和生产构建兼容性。
+
+前端仓库不创建 Release 或 Nightly，也不发布构建产物、镜像、SBOM 或签名。前端只推送与后端一致的稳定 annotated tag，由后端联合门禁创建纯源码项目 Release。
 
 ### 同步 API 契约
 
-后端接口变更后，从后端仓库快照生成前端类型：
+后端接口变更后，应先提交最终后端契约并取得真实的 40 位提交 SHA，再从该提交对应的后端仓库快照生成前端类型：
 
 ```powershell
 $env:RYFRAME_BACKEND_REPOSITORY='Edgar-ycy/ryframe'
@@ -110,7 +117,7 @@ $env:RYFRAME_OPENAPI_SOURCE='..\openapi\openapi.json'
 pnpm api:sync
 ```
 
-`pnpm api:check` 只验证仓库内已提交的快照、来源元数据和生成类型，不访问网络。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。API 模块通过 `src/api/contract.ts` 引用生成类型，不手工复制 DTO 字段；新密码表单统一使用生成策略，不复制长度或正则。
+`pnpm api:check` 只验证仓库内已提交的快照、来源元数据和生成类型，不访问网络。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。不得用尚未提交的后端工作区生成快照后继续记录旧提交 SHA。API 模块通过 `src/api/contract.ts` 引用生成类型，不手工复制 DTO 字段；密码和公告策略同样从 OpenAPI 生成，不复制限制常量或正则。
 
 ### 预览构建结果
 
@@ -125,13 +132,13 @@ pnpm preview
 | 变量 | 说明 | 示例 |
 |------|------|------|
 | `VITE_APP_TITLE` | 应用标题（显示在浏览器标签页） | `RyFrame 管理后台` |
-| `VITE_APP_BASE_API` | API 基础地址；生产必须使用 API 子域的绝对 HTTPS 地址 | 开发 `/api/v1`，生产 `https://api.example.com/api/v1` |
-| `VITE_APP_BUILD_COMMIT` | 候选版/稳定版构建对应的完整 40 位 Git 提交 SHA | `0123456789abcdef0123456789abcdef01234567` |
+| `VITE_APP_API_ORIGIN` | 可选 API origin；生产跨域部署必须使用 API 子域的绝对 HTTPS origin，不能包含路径 | `https://api.example.com` |
+| `VITE_APP_BUILD_COMMIT` | 部署构建对应的完整 40 位 Git 提交 SHA | `0123456789abcdef0123456789abcdef01234567` |
 | `VITE_APP_PROXY_TARGET` | 开发服务器代理的后端地址 | `http://localhost:8080` |
 | `VITE_APP_DEV_HOST` | 开发服务器监听地址 | 默认 `127.0.0.1` |
 | `VITE_APP_DEV_PORT` | 开发服务器监听端口 | 默认 `5173` |
 
-开发环境使用 `.env.development`；生产部署从已提交的 `.env.production.example` 复制为被忽略的 `.env.production`，再填写实际 API 子域。
+API 版本前缀不再由环境变量维护，而是由后端 OpenAPI 的 `x-ryframe-api-prefix` 生成。开发环境未配置 `VITE_APP_API_ORIGIN` 时使用当前页面 origin 并经过 Vite 代理；生产部署从已提交的 `.env.production.example` 复制为被忽略的 `.env.production`，再填写实际 API 子域 origin。
 
 ### API 代理
 
@@ -197,13 +204,15 @@ import { usePermission } from '@/hooks/usePermission'
 ```json
 {
   "code": 200,
-  "msg": "操作成功",
-  "data": { ... }
+  "message": "操作成功",
+  "data": {},
+  "request_id": "019c1234-5678-7abc-8def-0123456789ab",
+  "error_key": null,
+  "details": null
 }
 ```
 
-分页接口额外包含 `rows` 和 `total` 字段。
-`/all` 与导出接口只发送业务筛选字段；API 模块会通过 `stripPagination` 移除 `page` 和 `page_size`。
+分页接口的数据区包含 `items`、`page`、`page_size` 和 `total` 等字段。角色选择使用后端受限的 `/options` 候选接口，支持远程前缀搜索和请求取消；导出接口只发送业务筛选字段。
 
 ## 文档
 

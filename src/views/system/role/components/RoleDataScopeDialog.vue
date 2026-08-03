@@ -42,6 +42,9 @@ import {
 } from '@/api/modules/role'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 
@@ -62,25 +65,49 @@ const visible = computed({
 })
 const dataScope = ref<RoleDataScope>('1')
 const deptIds = ref<Id[]>([])
-const loading = ref(false)
-const submitting = ref(false)
+const userStore = useUserStore()
+const detailQuery = useTenantQuery<RoleRecord>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
+  'roles',
+  () => ({ scope: 'detail', id: props.role?.id ?? null }),
+  async signal => {
+    const role = props.role
+    if (!role) throw new Error(t('system.role.detailMissing'))
+    const response = await getRole(role.id, signal)
+    if (!response.data) throw new Error(t('system.role.detailMissing'))
+    return response.data
+  },
+)
+const dataScopeMutation = useTenantMutation<
+  void,
+  { roleId: Id, dataScope: RoleDataScope, deptIds: Id[] }
+>(
+  () => userStore.tenantId,
+  'roles',
+  {
+    mutationFn: async variables => {
+      await replaceRoleDataScope(variables.roleId, {
+        data_scope: variables.dataScope,
+        dept_ids: variables.deptIds,
+      })
+    },
+    onSuccess: () => {
+      ElMessage.success(t('system.role.dataScopeUpdated'))
+    },
+  },
+)
+const loading = computed(() => detailQuery.isFetching.value)
+const submitting = dataScopeMutation.pending
 
 function reset(): void {
   dataScope.value = '1'
   deptIds.value = []
 }
 
-async function loadDataScope(role: RoleRecord): Promise<void> {
-  loading.value = true
-  try {
-    const response = await getRole(role.id)
-    if (!response.data) throw new Error(t('system.role.detailMissing'))
-    dataScope.value = response.data.data_scope
-    deptIds.value = response.data.dept_ids ?? []
-  }
-  finally {
-    loading.value = false
-  }
+function populateDataScope(role: RoleRecord): void {
+  dataScope.value = role.data_scope
+  deptIds.value = role.dept_ids ?? []
 }
 
 watch(
@@ -88,31 +115,29 @@ watch(
   (open) => {
     if (!open || !props.role) return
     reset()
-    void loadDataScope(props.role).catch(() => {
-      visible.value = false
-    })
+    if (detailQuery.data.value) populateDataScope(detailQuery.data.value)
+  },
+)
+watch(
+  () => detailQuery.data.value,
+  role => {
+    if (visible.value && role) populateDataScope(role)
   },
 )
 
 async function submit(): Promise<void> {
-  if (!props.role) return
+  if (!props.role || submitting.value) return
   if (dataScope.value === '2' && deptIds.value.length === 0) {
     ElMessage.warning(t('system.role.customDepartmentRequired'))
     return
   }
 
-  submitting.value = true
-  try {
-    await replaceRoleDataScope(props.role.id, {
-      data_scope: dataScope.value,
-      dept_ids: dataScope.value === '2' ? deptIds.value : [],
-    })
-    ElMessage.success(t('system.role.dataScopeUpdated'))
-    visible.value = false
-    emit('saved')
-  }
-  finally {
-    submitting.value = false
-  }
+  await dataScopeMutation.mutateAsync({
+    roleId: props.role.id,
+    dataScope: dataScope.value,
+    deptIds: dataScope.value === '2' ? [...deptIds.value] : [],
+  })
+  visible.value = false
+  emit('saved')
 }
 </script>

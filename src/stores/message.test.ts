@@ -1,25 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import type { MessageRecord } from '@/api/modules/messages'
+import type { MessageSocketOptions } from '@/app/messages/messageSocket'
 
 const api = vi.hoisted(() => ({
-  acknowledgeMessages: vi.fn(),
   getMessageWebSocketTicket: vi.fn(),
-  getUnreadMessageCount: vi.fn(),
-  listMessages: vi.fn(),
-  markAllMessagesRead: vi.fn(),
-  markMessageRead: vi.fn(),
+}))
+const queryCache = vi.hoisted(() => ({
+  cancelMessageState: vi.fn(),
+  executeMessageAcknowledgement: vi.fn(),
+  receiveMessageDelivery: vi.fn(),
+  synchronizeMessageState: vi.fn(),
 }))
 const socketHarness = vi.hoisted(() => ({
-  instances: [] as Array<{ start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }>,
+  instances: [] as Array<{
+    options: MessageSocketOptions
+    start: ReturnType<typeof vi.fn>
+    stop: ReturnType<typeof vi.fn>
+  }>,
 }))
 
 vi.mock('@/api/modules/messages', () => api)
+vi.mock('@/app/messages/messageQueries', () => queryCache)
 vi.mock('@/app/messages/messageSocket', () => ({
   MessageSocket: class {
     readonly start = vi.fn()
     readonly stop = vi.fn()
 
-    constructor() {
+    constructor(readonly options: MessageSocketOptions) {
       socketHarness.instances.push(this)
     }
   },
@@ -28,7 +36,7 @@ vi.mock('@/app/messages/messageSocket', () => ({
 import { useMessageStore } from './message'
 import { useUserStore } from './user'
 
-const message = {
+const message: MessageRecord = {
   id: '42',
   topic: 'system.notice',
   title: '维护通知',
@@ -39,135 +47,147 @@ const message = {
   read_at: null,
 }
 
-async function authenticateMessageStore() {
+function authenticate(): void {
   const user = useUserStore()
   user.token = 'access-token'
   user.sessionStatus = 'authenticated'
   user.tenantId = 'tenant-a'
   user.userId = '7'
-  const store = useMessageStore()
-  await store.syncSession()
-  return store
 }
 
 async function flushPromises(): Promise<void> {
   for (let index = 0; index < 8; index += 1) await Promise.resolve()
 }
 
-describe('消息中心状态', () => {
+describe('消息中心连接状态', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     setActivePinia(createPinia())
     vi.clearAllMocks()
     socketHarness.instances = []
-    api.listMessages.mockResolvedValue({ code: 200, msg: 'ok', data: { records: [message] } })
-    api.getUnreadMessageCount.mockResolvedValue({ code: 200, msg: 'ok', data: 1 })
-    api.getMessageWebSocketTicket.mockResolvedValue({ code: 200, msg: 'ok', data: { ticket: 'ticket', expires_in: 60 } })
-    api.acknowledgeMessages.mockResolvedValue({ code: 200, msg: 'ok', data: 1 })
-    api.markMessageRead.mockResolvedValue({ code: 200, msg: 'ok' })
-    api.markAllMessagesRead.mockResolvedValue({ code: 200, msg: 'ok', data: 1 })
+    api.getMessageWebSocketTicket.mockResolvedValue({
+      code: 200,
+      message: 'ok',
+      data: { ticket: 'ticket', expires_in: 60 },
+      request_id: 'test',
+    })
+    queryCache.synchronizeMessageState.mockResolvedValue({ records: [message], next_cursor: null })
+    queryCache.executeMessageAcknowledgement.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
     useMessageStore().unbindSession()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
   })
 
-  it('按消息 ID 合并投递，并把确认合并为批量请求', async () => {
-    const store = await authenticateMessageStore()
-    store.receive(message)
-    store.receive({ ...message, title: '更新后的维护通知' })
-
-    expect(store.messages).toHaveLength(1)
-    expect(store.messages[0]?.title).toBe('更新后的维护通知')
-    expect(store.unreadCount).toBe(1)
-
-    await vi.advanceTimersByTimeAsync(500)
-    expect(api.acknowledgeMessages).toHaveBeenCalledWith(['42'])
-    expect(store.messages[0]?.acked_at).toBeTruthy()
-  })
-
-  it('仅在服务端成功后同步已读状态和未读数量', async () => {
-    const store = await authenticateMessageStore()
-    store.receive(message)
-    await store.markRead('42')
-
-    expect(api.markMessageRead).toHaveBeenCalledWith('42')
-    expect(store.messages[0]?.read_at).toBeTruthy()
-    expect(store.unreadCount).toBe(0)
-
-    store.receive({ ...message, id: '43', title: '第二条消息' })
-    await store.markAllRead()
-    expect(api.markAllMessagesRead).toHaveBeenCalledTimes(1)
-    expect(store.unreadCount).toBe(0)
-  })
-
-  it('登录后启动补拉和实时通道，退出后安全关闭资源', async () => {
-    const user = useUserStore()
-    const store = await authenticateMessageStore()
+  it('Pinia 只保存连接状态，投递直接写入 QueryClient 边界', () => {
+    authenticate()
+    const store = useMessageStore()
     store.bindSession()
 
-    expect(api.listMessages).toHaveBeenCalledWith({ limit: 100, unread_only: false })
-    expect(api.getUnreadMessageCount).toHaveBeenCalledTimes(1)
+    expect('messages' in store).toBe(false)
+    expect('unreadCount' in store).toBe(false)
+    expect('loading' in store).toBe(false)
     expect(socketHarness.instances).toHaveLength(1)
-    expect(socketHarness.instances[0]?.start).toHaveBeenCalledTimes(1)
+
+    socketHarness.instances[0]?.options.onDelivery(message)
+    expect(queryCache.receiveMessageDelivery).toHaveBeenCalledWith('tenant-a', '7', message)
+  })
+
+  it('身份切换时关闭旧连接并建立新连接，退出后释放资源', async () => {
+    authenticate()
+    const user = useUserStore()
+    const store = useMessageStore()
+    store.bindSession()
 
     user.tenantId = 'tenant-b'
     await flushPromises()
+    expect(queryCache.cancelMessageState).toHaveBeenCalledWith(
+      expect.anything(),
+      'tenant-a',
+      '7',
+    )
     expect(socketHarness.instances[0]?.stop).toHaveBeenCalledTimes(1)
     expect(socketHarness.instances).toHaveLength(2)
     expect(socketHarness.instances[1]?.start).toHaveBeenCalledTimes(1)
 
     user.resetState()
     await flushPromises()
-    expect(socketHarness.instances[0]?.stop).toHaveBeenCalled()
-    expect(store.messages).toEqual([])
+    expect(socketHarness.instances[1]?.stop).toHaveBeenCalledTimes(1)
     expect(store.connectionStatus).toBe('disconnected')
   })
 
-  it('静默刷新访问令牌时保留当前消息会话和连接', async () => {
+  it('刷新访问令牌不重建连接，显式重启会申请新连接', async () => {
+    authenticate()
     const user = useUserStore()
-    const store = await authenticateMessageStore()
+    const store = useMessageStore()
     store.bindSession()
 
     user.token = 'refreshed-access-token'
     await flushPromises()
-
     expect(socketHarness.instances).toHaveLength(1)
     expect(socketHarness.instances[0]?.stop).not.toHaveBeenCalled()
+
+    store.restartConnection()
+    expect(socketHarness.instances[0]?.stop).toHaveBeenCalledTimes(1)
+    expect(socketHarness.instances).toHaveLength(2)
   })
 
-  it('确认消息失败后按退避时间自动重试', async () => {
-    api.acknowledgeMessages
-      .mockRejectedValueOnce(new Error('temporary failure'))
-      .mockResolvedValueOnce({ code: 200, msg: 'ok', data: 1 })
-    const store = await authenticateMessageStore()
-    store.receive(message)
+  it('协议错误只更新轻量连接状态并可被清除', () => {
+    authenticate()
+    const store = useMessageStore()
+    store.bindSession()
+
+    socketHarness.instances[0]?.options.onProtocolError?.({
+      code: 'invalid_frame',
+      message: '消息帧无效',
+    })
+    expect(store.socketError).toBe('消息帧无效')
+    store.clearSocketError()
+    expect(store.socketError).toBeUndefined()
+  })
+
+  it('每次连接成功和每 60 秒补拉，并批量确认未确认消息', async () => {
+    vi.stubGlobal('window', {})
+    authenticate()
+    const store = useMessageStore()
+    store.bindSession()
+
+    socketHarness.instances[0]?.options.onStateChange?.('connected')
+    await flushPromises()
+    expect(queryCache.synchronizeMessageState).toHaveBeenCalledTimes(1)
 
     await vi.advanceTimersByTimeAsync(500)
-    expect(api.acknowledgeMessages).toHaveBeenCalledTimes(1)
+    expect(queryCache.executeMessageAcknowledgement).toHaveBeenCalledWith(
+      expect.anything(),
+      'tenant-a',
+      '7',
+      ['42'],
+    )
 
-    await vi.advanceTimersByTimeAsync(1_000)
-    expect(api.acknowledgeMessages).toHaveBeenCalledTimes(2)
-    expect(store.messages[0]?.acked_at).toBeTruthy()
+    socketHarness.instances[0]?.options.onStateChange?.('retrying')
+    socketHarness.instances[0]?.options.onStateChange?.('connected')
+    await flushPromises()
+    expect(queryCache.synchronizeMessageState).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(59_500)
+    await flushPromises()
+    expect(queryCache.synchronizeMessageState).toHaveBeenCalledTimes(3)
   })
 
-  it('受影响行数不一致时以收件箱刷新结果为准', async () => {
-    const store = await authenticateMessageStore()
-    api.acknowledgeMessages.mockResolvedValueOnce({ code: 200, msg: 'ok', data: 0 })
+  it('WebSocket 投递确认失败后按指数退避重试', async () => {
+    queryCache.executeMessageAcknowledgement
+      .mockRejectedValueOnce(new Error('temporary failure'))
+      .mockResolvedValueOnce(undefined)
+    authenticate()
+    const store = useMessageStore()
+    store.bindSession()
+    socketHarness.instances[0]?.options.onDelivery(message)
 
-    await store.acknowledge(['42'])
-
-    expect(api.acknowledgeMessages).toHaveBeenCalledWith(['42'])
-    expect(api.listMessages).toHaveBeenCalledTimes(2)
-    expect(store.messages[0]?.acked_at).toBeNull()
-
-    api.markAllMessagesRead.mockResolvedValueOnce({ code: 200, msg: 'ok', data: 0 })
-    await store.markAllRead()
-
-    expect(api.markAllMessagesRead).toHaveBeenCalledTimes(1)
-    expect(api.listMessages).toHaveBeenCalledTimes(3)
-    expect(store.messages[0]?.read_at).toBeNull()
-    expect(store.unreadCount).toBe(1)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(queryCache.executeMessageAcknowledgement).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(queryCache.executeMessageAcknowledgement).toHaveBeenCalledTimes(2)
   })
 })

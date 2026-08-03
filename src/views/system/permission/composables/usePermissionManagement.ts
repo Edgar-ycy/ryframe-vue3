@@ -8,17 +8,65 @@ import {
 import { translate } from '@/i18n'
 import { refreshAccessibleRoutes } from '@/router'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
 export function usePermissionManagement() {
-  const loading = ref(false)
-  const syncLoading = ref(false)
-  const tableData = ref<PermissionTreeNode[]>([])
   const syncReport = ref<PermissionSyncReport | null>(null)
   const dialogVisible = ref(false)
   const editingPermission = ref<PermissionTreeNode | null>(null)
   const parentPermissionId = ref<Id>()
+  const userStore = useUserStore()
 
+  const permissionsQuery = useTenantQuery<PermissionTreeNode[]>(
+    () => userStore.tenantId,
+    () => userStore.sessionStatus === 'authenticated',
+    'permissions',
+    () => ({ scope: 'tree' }),
+    async signal => {
+      const response = await getPermissionTree(undefined, signal)
+      return response.data ?? []
+    },
+  )
+  const tableData = computed(() => permissionsQuery.data.value ?? [])
+  const loading = computed(() => permissionsQuery.isFetching.value)
+
+  const deleteMutation = useTenantMutation<void, PermissionTreeNode>(
+    () => userStore.tenantId,
+    'permissions',
+    {
+      mutationFn: async permission => {
+        await deletePermission(permission.id)
+      },
+      onSuccess: () => {
+        ElMessage.success(translate('system.common.deleteSuccess'))
+      },
+    },
+  )
+  const syncMutation = useTenantMutation<PermissionSyncReport, void>(
+    () => userStore.tenantId,
+    'permissions',
+    {
+      mutationFn: async () => {
+        const response = await syncApiPermissions()
+        if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
+        return response.data
+      },
+      onSuccess: report => {
+        syncReport.value = report
+        ElMessage.success(
+          translate('system.permission.syncSuccess', { count: report.created }),
+        )
+      },
+    },
+  )
+
+  const deletingId = computed<Id | null>(() => (
+    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
+  ))
+  const syncLoading = syncMutation.pending
   const syncReportTitle = computed(() => {
     if (!syncReport.value) return ''
     return translate(
@@ -38,14 +86,7 @@ export function usePermissionManagement() {
   }])
 
   async function fetchData(): Promise<void> {
-    loading.value = true
-    try {
-      const response = await getPermissionTree()
-      tableData.value = response.data ?? []
-    }
-    finally {
-      loading.value = false
-    }
+    await permissionsQuery.refetch({ throwOnError: true })
   }
 
   function handleAdd(parentId?: Id): void {
@@ -61,6 +102,7 @@ export function usePermissionManagement() {
   }
 
   async function handleDelete(permission: PermissionTreeNode): Promise<void> {
+    if (deleteMutation.pending.value) return
     const confirmed = await confirmAction(
       translate('system.permission.deleteConfirm', { name: permission.name }),
       translate('system.common.warning'),
@@ -71,39 +113,31 @@ export function usePermissionManagement() {
     )
     if (!confirmed) return
 
-    await deletePermission(permission.id)
-    ElMessage.success(translate('system.common.deleteSuccess'))
-    await fetchData()
-    await refreshAccessibleRoutes()
+    await deleteMutation.mutateAsync(permission)
+    await Promise.all([
+      fetchData(),
+      refreshAccessibleRoutes(),
+    ])
   }
 
   async function handleSync(): Promise<void> {
-    syncLoading.value = true
-    try {
-      const response = await syncApiPermissions()
-      if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
-      syncReport.value = response.data
-      ElMessage.success(
-        translate('system.permission.syncSuccess', { count: response.data.created }),
-      )
-      await fetchData()
-      await refreshAccessibleRoutes()
-    }
-    finally {
-      syncLoading.value = false
-    }
+    if (syncMutation.pending.value) return
+    await syncMutation.mutateAsync()
+    await Promise.all([
+      fetchData(),
+      refreshAccessibleRoutes(),
+    ])
   }
 
   async function handleSaved(): Promise<void> {
-    await fetchData()
-    await refreshAccessibleRoutes()
+    await Promise.all([
+      fetchData(),
+      refreshAccessibleRoutes(),
+    ])
   }
 
-  onMounted(() => {
-    void fetchData()
-  })
-
   return {
+    deletingId,
     dialogVisible,
     editingPermission,
     fetchData,

@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="visible" :title="isEdit ? t('system.user.editTitle') : t('system.user.addTitle')" width="580px" @closed="resetForm">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+    <el-form ref="formRef" v-loading="detailLoading" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="t('system.user.username')" prop="username">
         <el-input v-model="form.username" :disabled="isEdit" :placeholder="t('system.user.enterUsername')" maxlength="50" />
       </el-form-item>
@@ -25,13 +25,22 @@
         />
       </el-form-item>
       <el-form-item v-if="!isEdit" :label="t('system.user.role')">
-        <el-select v-model="form.role_ids" multiple :placeholder="t('system.user.selectRole')" style="width:100%">
+        <el-select
+          v-model="form.role_ids"
+          multiple
+          filterable
+          remote
+          :remote-method="remoteRoleSearch"
+          :loading="roleOptionsLoading"
+          :placeholder="t('system.user.selectRole')"
+          style="width:100%"
+        >
           <el-option
-            v-for="role in assignableRoles"
-            :key="role.id"
-            :label="role.name"
-            :value="role.id"
-            :disabled="role.status !== '1'"
+            v-for="role in roleOptions"
+            :key="role.value"
+            :label="role.label"
+            :value="role.value"
+            :disabled="role.disabled"
           />
         </el-select>
       </el-form-item>
@@ -52,10 +61,22 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { createUser, getUser, updateUser, type UserRecord } from '@/api/modules/user'
-import type { RoleRecord } from '@/api/modules/role'
+import {
+  createUser,
+  getUser,
+  updateUser,
+  type UserCreateInput,
+  type UserDetail,
+  type UserRecord,
+  type UserUpdateInput,
+} from '@/api/modules/user'
+import type { SelectOption } from '@/api/modules/option'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
+import { useRoleOptions } from '../composables/useRoleOptions'
 
 const { t } = useI18n()
 
@@ -68,12 +89,14 @@ interface UserFormState {
   role_ids: Id[]
 }
 
+type SaveUserCommand =
+  | { kind: 'create', data: UserCreateInput }
+  | { kind: 'update', id: Id, data: UserUpdateInput }
+
 const props = defineProps<{
   modelValue: boolean
   user: UserRecord | null
   deptTree: DeptNode[]
-  roles: RoleRecord[]
-  isAdmin: boolean
 }>()
 
 const emit = defineEmits<{
@@ -86,14 +109,56 @@ const visible = computed({
   set: value => emit('update:modelValue', value),
 })
 const isEdit = computed(() => props.user !== null)
-const assignableRoles = computed(() =>
-  props.isAdmin
-    ? props.roles
-    : props.roles.filter(role => role.is_super !== 1 && role.code !== 'admin'),
-)
+const userStore = useUserStore()
+const selectedRoleOptions = ref<SelectOption[]>([])
+const {
+  loading: roleOptionsLoading,
+  options: roleOptions,
+  remoteMethod: remoteRoleSearch,
+  resetSearch: resetRoleSearch,
+} = useRoleOptions(() => visible.value && !isEdit.value, selectedRoleOptions)
 
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
+const detailQuery = useTenantQuery<UserDetail>(
+  () => userStore.tenantId,
+  () => (
+    userStore.sessionStatus === 'authenticated'
+    && visible.value
+    && props.user !== null
+  ),
+  'users',
+  () => ({ scope: 'detail', id: props.user?.id ?? null }),
+  async signal => {
+    const user = props.user
+    if (!user) throw new Error(t('system.user.detailMissing'))
+    const response = await getUser(user.id, signal)
+    if (!response.data) throw new Error(t('system.user.detailMissing'))
+    return response.data
+  },
+)
+const detailLoading = computed(() => detailQuery.isFetching.value)
+const saveMutation = useTenantMutation<void, SaveUserCommand>(
+  () => userStore.tenantId,
+  'users',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'update') {
+        await updateUser(command.id, command.data)
+        return
+      }
+      const response = await createUser(command.data)
+      if (!response.data) throw new Error(t('system.user.createResponseMissing'))
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(
+        command.kind === 'update'
+          ? 'system.common.updateSuccess'
+          : 'system.user.createdPending',
+      ))
+    },
+  },
+)
+const submitting = saveMutation.pending
 
 function initialForm(): UserFormState {
   return {
@@ -115,14 +180,26 @@ const rules = computed<FormRules>(() => ({
 
 function resetForm() {
   form.value = initialForm()
+  selectedRoleOptions.value = []
+  resetRoleSearch()
   formRef.value?.clearValidate()
 }
 
-async function loadUser(user: UserRecord) {
-  const response = await getUser(user.id)
-  if (!response.data) throw new Error(t('system.user.detailMissing'))
+watch(
+  () => form.value.role_ids,
+  (roleIds) => {
+    const known = new Map(
+      [...selectedRoleOptions.value, ...roleOptions.value]
+        .map(option => [option.value, option]),
+    )
+    selectedRoleOptions.value = roleIds
+      .map(roleId => known.get(roleId))
+      .filter((option): option is SelectOption => option !== undefined)
+  },
+  { deep: true },
+)
 
-  const detail = response.data
+function populateForm(detail: UserDetail): void {
   form.value = {
     username: detail.username,
     nickname: detail.nickname,
@@ -135,56 +212,50 @@ async function loadUser(user: UserRecord) {
 
 watch(
   () => props.modelValue,
-  async open => {
+  open => {
     if (!open) return
     resetForm()
-    if (props.user) await loadUser(props.user)
+    if (detailQuery.data.value) populateForm(detailQuery.data.value)
+  },
+)
+watch(
+  () => detailQuery.data.value,
+  detail => {
+    if (visible.value && detail) populateForm(detail)
   },
 )
 
-function hasForbiddenRoleSelection() {
-  if (props.isAdmin) return false
-  const adminRole = props.roles.find(role => role.is_super === 1 || role.code === 'admin')
-  return adminRole ? form.value.role_ids.includes(adminRole.id) : false
-}
-
 async function submit() {
+  if (submitting.value) return
   const fields = isEdit.value ? ['nickname'] : ['username', 'nickname']
   const valid = await formRef.value?.validateField(fields).catch(() => false)
   if (valid === false) return
-  if (hasForbiddenRoleSelection()) {
-    ElMessage.warning(t('system.user.superRoleForbidden'))
-    return
-  }
-
-  submitting.value = true
-  try {
-    const editingUser = props.user
-    if (editingUser) {
-      await updateUser(editingUser.id, {
+  const editingUser = props.user
+  const command: SaveUserCommand = editingUser
+    ? {
+        kind: 'update',
+        id: editingUser.id,
+        data: {
         nickname: form.value.nickname,
         email: form.value.email || undefined,
         phone: form.value.phone || undefined,
         dept_id: form.value.dept_id,
-      })
-      ElMessage.success(t('system.common.updateSuccess'))
-    } else {
-      const response = await createUser({
-        username: form.value.username,
-        nickname: form.value.nickname,
-        email: form.value.email || undefined,
-        phone: form.value.phone || undefined,
-        dept_id: form.value.dept_id,
-        role_ids: form.value.role_ids,
-      })
-      if (!response.data) throw new Error(t('system.user.createResponseMissing'))
-      ElMessage.success(t('system.user.createdPending'))
-    }
+        },
+      }
+    : {
+        kind: 'create',
+        data: {
+          username: form.value.username,
+          nickname: form.value.nickname,
+          email: form.value.email || undefined,
+          phone: form.value.phone || undefined,
+          dept_id: form.value.dept_id,
+          role_ids: form.value.role_ids,
+        },
+      }
 
-    visible.value = false
-    emit('saved')
-  } finally {
-    submitting.value = false
-  }
+  await saveMutation.mutateAsync(command)
+  visible.value = false
+  emit('saved')
 }
 </script>

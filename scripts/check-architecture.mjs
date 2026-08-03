@@ -2,6 +2,18 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { parse as parseYaml } from 'yaml'
+import {
+  discoverCriticalCoverageFiles,
+  validateCoverageFilesExist,
+  validateCoverageScope,
+} from './coverage-contract.mjs'
+import {
+  serverStateApiImportExemptions,
+  serverStateContracts,
+  serverStateInventoryRoots,
+  validateServerStateInventory,
+  validateServerStateSource,
+} from './server-state-contracts.mjs'
 
 const root = process.cwd()
 const errors = []
@@ -12,14 +24,23 @@ const requiredFiles = [
   'openapi/source.json',
   'playwright.config.ts',
   'pnpm-workspace.yaml',
+  'scripts/api-prefix-contract.mjs',
+  'scripts/api-prefix-contract.test.mjs',
   'scripts/check-api-contract.mjs',
   'scripts/check-workflows.mjs',
+  'scripts/coverage-contract.mjs',
+  'scripts/coverage-contract.test.mjs',
+  'scripts/coverage-scope.json',
   'scripts/sync-api-contract.mjs',
   'src/api/contract.ts',
   'src/api/generated/schema.ts',
   'src/router/pageRegistry.ts',
+  'src/shared/config/apiEndpoint.ts',
+  'src/shared/config/apiPrefix.generated.json',
   'src/shared/security/passwordPolicy.generated.json',
   'src/shared/security/passwordPolicy.ts',
+  'src/shared/markdown/noticePolicy.generated.json',
+  'src/shared/markdown/noticePolicy.ts',
   'src/views/login/loginState.ts',
   'tests/e2e/app.smoke.spec.ts',
 ]
@@ -33,10 +54,45 @@ for (const relative of requiredFiles) {
   }
 }
 
+for (const relative of [
+  'src/app/messages/messageApi.ts',
+  'src/app/messages/messageApi.test.ts',
+]) {
+  try {
+    await readFile(path.join(root, relative))
+    errors.push(`${relative}: removed message API compatibility path must not return`)
+  }
+  catch {
+    // 文件不存在即符合唯一模块入口约束。
+  }
+}
+
 const productionEnvironment = await readFile(path.join(root, '.env.production.example'), 'utf8')
-const productionApi = productionEnvironment.match(/^VITE_APP_BASE_API=(.+)$/m)?.[1]?.trim()
-if (!productionApi || !/^https:\/\/[^/]+\/api\/v1$/.test(productionApi)) {
-  errors.push('.env.production.example: VITE_APP_BASE_API must be an absolute HTTPS /api/v1 URL')
+const productionApiOrigin = productionEnvironment.match(/^VITE_APP_API_ORIGIN=(.+)$/m)?.[1]?.trim()
+if (!productionApiOrigin || !/^https:\/\/[^/]+$/.test(productionApiOrigin)) {
+  errors.push('.env.production.example: VITE_APP_API_ORIGIN must be an absolute HTTPS origin')
+}
+if (productionEnvironment.includes('VITE_APP_BASE_API')) {
+  errors.push('.env.production.example: removed VITE_APP_BASE_API must not return')
+}
+for (const relative of ['.env', 'src/env.d.ts', 'src/shared/config/runtimeConfig.ts']) {
+  const source = await readFile(path.join(root, relative), 'utf8')
+  if (source.includes('VITE_APP_BASE_API')) {
+    errors.push(`${relative}: removed VITE_APP_BASE_API must not return`)
+  }
+}
+const runtimeConfigSource = await readFile(
+  path.join(root, 'src/shared/config/runtimeConfig.ts'),
+  'utf8',
+)
+for (const fragment of [
+  'VITE_APP_API_ORIGIN',
+  'apiPrefix.generated.json',
+  'buildApiBaseUrl(apiOrigin, apiPrefix)',
+]) {
+  if (!runtimeConfigSource.includes(fragment)) {
+    errors.push(`src/shared/config/runtimeConfig.ts: API contract wiring is missing ${fragment}`)
+  }
 }
 
 const contractCheckSource = await readFile(
@@ -46,9 +102,14 @@ const contractCheckSource = await readFile(
 for (const fragment of [
   "document['x-ryframe-menu-routes']",
   "document['x-ryframe-password-policy']",
+  "document['x-ryframe-notice-policy']",
+  "document['x-ryframe-api-prefix']",
+  'apiPrefixContractViolation(apiPrefixExtension)',
   "declaration.name.text === 'menuPageRegistry'",
   'menuPageRegistry is missing backend route_key',
   'generated password policy is not synchronized with OpenAPI',
+  'generated notice policy is not synchronized with OpenAPI',
+  'generated API prefix is not synchronized with OpenAPI',
 ]) {
   if (!contractCheckSource.includes(fragment)) {
     errors.push(`scripts/check-api-contract.mjs: route contract gate is missing ${fragment}`)
@@ -59,6 +120,11 @@ const syncSource = await readFile(path.join(root, 'scripts/sync-api-contract.mjs
 for (const fragment of [
   'passwordPolicy.generated.json',
   "document['x-ryframe-password-policy']",
+  'noticePolicy.generated.json',
+  "document['x-ryframe-notice-policy']",
+  'apiPrefix.generated.json',
+  "document['x-ryframe-api-prefix']",
+  'requireApiPrefixContract(apiPrefix, label)',
   'RYFRAME_BACKEND_REPOSITORY',
   'RYFRAME_BACKEND_COMMIT',
   '--verify-local',
@@ -122,12 +188,14 @@ if (packageDocument.pnpm !== undefined) {
   errors.push('package.json: pnpm settings must live in pnpm-workspace.yaml')
 }
 for (const [setting, expected] of Object.entries({
-  storeDir: '.pnpm-store',
   engineStrict: true,
 })) {
   if (workspaceConfig?.[setting] !== expected) {
     errors.push(`pnpm-workspace.yaml: ${setting} must be ${JSON.stringify(expected)}`)
   }
+}
+if (workspaceConfig?.storeDir !== undefined) {
+  errors.push('pnpm-workspace.yaml: storeDir must not override the pnpm global store')
 }
 for (const [dependency, expected] of Object.entries({
   'fast-uri': '3.1.4',
@@ -144,11 +212,13 @@ for (const fragment of [
   'permissions:\n  contents: read',
   'node-version-file: .node-version',
   'node-version: 22.18.0',
+  "github.event_name != 'schedule'",
+  "github.event_name == 'schedule'",
   'pnpm check:workflows',
-  'go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12',
-  'actionlint" -color',
-  'pnpm api:check',
+  'docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9',
   'pnpm api:check:upstream',
+  'pnpm test:coverage',
+  'pnpm build',
   'playwright install --with-deps chromium',
   'pnpm test:e2e',
 ]) {
@@ -158,6 +228,17 @@ for (const fragment of [
 }
 if (workflowSource.includes('raw.githubusercontent.com/Edgar-ycy/ryframe/main')) {
   errors.push('.github/workflows/ci.yml: floating backend main contract source is forbidden')
+}
+if (workflowSource.includes('.pnpm-store')) {
+  errors.push('.github/workflows/ci.yml: repository-local pnpm store must not return')
+}
+for (const removedJob of ['\n  test:\n', '\n  e2e:\n']) {
+  if (workflowSource.includes(removedJob)) {
+    errors.push(`.github/workflows/ci.yml: duplicate frontend job returned (${removedJob.trim()})`)
+  }
+}
+if ((workflowSource.match(/pnpm api:check:upstream/g)?.length ?? 0) !== 1) {
+  errors.push('.github/workflows/ci.yml: the local and upstream API contract must be checked once')
 }
 
 const viteSource = await readFile(path.join(root, 'vite.config.ts'), 'utf8')
@@ -171,106 +252,105 @@ for (const fragment of [
   }
 }
 
-const releaseWorkflowSource = await readFile(
-  path.join(root, '.github/workflows/release.yml'),
-  'utf8',
+const frontendWorkflowFiles = (await readdir(path.join(root, '.github/workflows')))
+  .filter(name => /\.ya?ml$/iu.test(name))
+  .sort()
+for (const workflowName of frontendWorkflowFiles) {
+  const source = await readFile(path.join(root, '.github/workflows', workflowName), 'utf8')
+  if (workflowName !== 'ci.yml') {
+    errors.push(`.github/workflows/${workflowName}: frontend must not publish independently`)
+  }
+  for (const forbidden of [
+    'softprops/action-gh-release',
+    'prerelease: true',
+    'refs/tags/nightly',
+    'tag_name: nightly',
+    'git tag ',
+    'git push -f',
+  ]) {
+    if (source.includes(forbidden)) {
+      errors.push(`.github/workflows/${workflowName}: stable-only release policy forbids ${forbidden}`)
+    }
+  }
+}
+
+const serverStateSources = new Map()
+for (const [relative, requiredFragments] of serverStateContracts) {
+  try {
+    const source = await readFile(path.join(root, relative), 'utf8')
+    serverStateSources.set(relative, source)
+    errors.push(...validateServerStateSource(relative, source, requiredFragments))
+  }
+  catch {
+    errors.push(`${relative}: server-state contract source is missing`)
+  }
+}
+
+for (const inventoryRoot of serverStateInventoryRoots) {
+  const inventoryDirectory = path.join(root, inventoryRoot)
+  for (const relative of await sourceFilesUnder(inventoryDirectory)) {
+    if (/\.(?:test|spec)\.[cm]?[jt]sx?$/iu.test(relative)) continue
+    const normalized = path.relative(root, relative).replaceAll(path.sep, '/')
+    if (!serverStateSources.has(normalized)) {
+      serverStateSources.set(normalized, await readFile(relative, 'utf8'))
+    }
+  }
+}
+errors.push(...validateServerStateInventory(
+  serverStateSources,
+  serverStateContracts,
+  serverStateApiImportExemptions,
+))
+
+let coverageManifest = {}
+try {
+  coverageManifest = JSON.parse(
+    await readFile(path.join(root, 'scripts/coverage-scope.json'), 'utf8'),
+  )
+}
+catch {
+  errors.push('scripts/coverage-scope.json: coverage manifest must be valid JSON')
+}
+const criticalCoverageFiles = await discoverCriticalCoverageFiles(
+  root,
+  [...serverStateContracts.keys()],
 )
-for (const required of [
-  'workflow_run:',
-  'workflows: [ CI ]',
-  "github.event.workflow_run.conclusion == 'success'",
-  "github.event.workflow_run.event == 'push'",
-  "github.event.workflow_run.head_branch == 'main'",
-  'ref: ${{ github.event.workflow_run.head_sha }}',
-  'CHANGELOG.md',
-  'nightly-release-notes.md',
-  "grep -Eq '^- [^[:space:]].*' nightly-release-notes.md",
-  'git tag -a -f --cleanup=verbatim -F nightly-release-notes.md nightly',
-  'git cat-file -t refs/tags/nightly',
-  'body_path: nightly-release-notes.md',
-  'release.get("body") != expected',
-  'release.get("assets") != []',
-  'published Nightly body does not exactly match CHANGELOG notes',
-  'published Nightly must not contain custom assets',
-  'gh api --paginate',
-  'prerelease:',
-  'make_latest:',
+errors.push(...validateCoverageScope(coverageManifest, criticalCoverageFiles))
+errors.push(...await validateCoverageFilesExist(root, coverageManifest.files ?? []))
+
+const vitestConfigSource = await readFile(path.join(root, 'vitest.config.ts'), 'utf8')
+for (const fragment of [
+  "from './scripts/coverage-scope.json'",
+  "pool: 'threads'",
+  'include: coverageScope.files',
 ]) {
-  if (!releaseWorkflowSource.includes(required)) {
-    errors.push(`.github/workflows/release.yml: required Nightly source-release gate is missing (${required})`)
+  if (!vitestConfigSource.includes(fragment)) {
+    errors.push(`vitest.config.ts: coverage contract wiring is missing ${fragment}`)
   }
 }
-const strictReleaseShellBlocks = releaseWorkflowSource.match(/set -euo pipefail/g)?.length ?? 0
-const multilineReleaseShellBlocks = releaseWorkflowSource.match(/\brun: \|/g)?.length ?? 0
-if (strictReleaseShellBlocks !== multilineReleaseShellBlocks) {
-  errors.push('.github/workflows/release.yml: every multiline release shell block must enable strict mode')
-}
-const paginatedAssetSweeps = releaseWorkflowSource.match(/gh api --paginate/g)?.length ?? 0
-if (paginatedAssetSweeps < 1) {
-  errors.push('.github/workflows/release.yml: Nightly must purge paginated assets')
-}
-const changelogBodyPaths = releaseWorkflowSource.match(/body_path: nightly-release-notes\.md/g)?.length ?? 0
-if (changelogBodyPaths !== 1) {
-  errors.push('.github/workflows/release.yml: Nightly must use exactly one Changelog-derived body_path')
-}
-const nightlyTagCommands = releaseWorkflowSource.match(/^\s*git tag /gm)?.length ?? 0
-if (nightlyTagCommands !== 1) {
-  errors.push('.github/workflows/release.yml: Nightly must be created by exactly one annotated tag command')
-}
-for (const forbidden of [
-  "tags: [ 'V*', 'v*' ]",
-  "tags: [ 'v*.*.*' ]",
-  'Create Stable Release',
-  'source-release:',
-  'make_latest: true',
-  'actions/setup-node',
-  'setup-pnpm',
-  'actions/cache',
-  'pnpm install --frozen-lockfile',
-  'pnpm run build',
-  'Package dist',
-  'nightly-dist',
-  'upload-artifact',
-  'git archive',
-  'ghcr.io/',
-  'docker/build-push-action',
-  'git tag -f nightly',
-  'body: |',
-  'generate_release_notes:',
-  'files:',
-]) {
-  if (releaseWorkflowSource.includes(forbidden)) {
-    errors.push(`.github/workflows/release.yml: forbidden release behavior found (${forbidden})`)
-  }
+
+const asyncExportSource = await readFile(path.join(root, 'src/hooks/useAsyncExport.ts'), 'utf8')
+if (asyncExportSource.includes('ElMessage.error')) {
+  errors.push('src/hooks/useAsyncExport.ts: export errors must use the global mutation error path')
 }
 
 const moduleDirectory = path.join(root, 'src/api/modules')
 const moduleNames = (await readdir(moduleDirectory)).filter(name => name.endsWith('.ts')).sort()
-const fullRecordOperations = {
+const exportOperations = {
   'config.ts': [
-    ['listConfigNoPage', 'get_system_configs_all'],
     ['exportConfig', 'post_system_configs_exports'],
   ],
-  'dept.ts': [['listDeptNoPage', 'get_system_depts_all']],
   'dict.ts': [
-    ['listDictTypeNoPage', 'get_system_dict_types_all'],
     ['exportDictType', 'post_system_dict_types_exports'],
   ],
-  'menu.ts': [['listMenuNoPage', 'get_system_menus_all']],
   'monitor.ts': [
-    ['listOperLogNoPage', 'get_system_operlogs_all'],
     ['exportOperLog', 'post_system_operlogs_exports'],
-    ['listLoginLogNoPage', 'get_system_loginlogs_all'],
     ['exportLoginLog', 'post_system_loginlogs_exports'],
-    ['listOnlineUserNoPage', 'get_system_online_all'],
   ],
-  'notice.ts': [['listNoticeNoPage', 'get_system_notices_all']],
   'post.ts': [
-    ['listPostNoPage', 'get_system_posts_all'],
     ['exportPost', 'post_system_posts_exports'],
   ],
   'role.ts': [
-    ['listRoleNoPage', 'get_system_roles_all'],
     ['exportRole', 'post_system_roles_exports'],
   ],
   'user.ts': [['exportUser', 'post_system_users_exports']],
@@ -291,7 +371,7 @@ for (const name of moduleNames) {
   if (/\bPageQuery\b/.test(source)) {
     errors.push(`${relative}: query parameters must use OperationQuery`)
   }
-  for (const [functionName, operationId] of fullRecordOperations[name] ?? []) {
+  for (const [functionName, operationId] of exportOperations[name] ?? []) {
     if (!source.includes(`OperationQuery<'${operationId}'>`)
       && !source.includes(`OperationJsonBody<'${operationId}'>`)) {
       errors.push(`${relative}: ${functionName} must use ${operationId}`)
@@ -313,4 +393,15 @@ if (errors.length > 0) {
 }
 else {
   console.log(`Architecture check passed (${moduleNames.length} API modules)`)
+}
+
+async function sourceFilesUnder(directory) {
+  const entries = await readdir(directory, { withFileTypes: true })
+  const files = []
+  for (const entry of entries) {
+    const absolute = path.join(directory, entry.name)
+    if (entry.isDirectory()) files.push(...await sourceFilesUnder(absolute))
+    else if (/\.(?:ts|vue)$/iu.test(entry.name)) files.push(absolute)
+  }
+  return files
 }

@@ -8,7 +8,7 @@ const BASE = '/system/roles'
 export type RoleDataScope = '1' | '2' | '3' | '4' | '5'
 
 export type RoleQuery = OperationQuery<'get_system_roles'>
-type RoleAllQuery = OperationQuery<'get_system_roles_all'>
+export type RoleOptionQuery = OperationQuery<'get_system_roles_options'>
 type RoleExportQuery = Omit<RoleQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_roles_exports'>
 export type RoleCreateInput = Omit<OperationJsonBody<'post_system_roles'>, 'data_scope'> & {
   data_scope?: RoleDataScope
@@ -22,16 +22,18 @@ export type ReplaceRoleDataScopeInput = {
   dept_ids: Id[]
 }
 
-export function listRole(params: RoleQuery)    { return request<PageResponse<RoleRecord>>({ url: BASE, method: 'get', params }) }
-export function listRoleNoPage(params?: RoleAllQuery) {
-  return request<RoleRecord[]>({
-    url: `${BASE}/all`, method: 'get', params: stripPagination(params),
-  })
+export function listRole(params: RoleQuery, signal?: AbortSignal) {
+  return request<PageResponse<RoleRecord>>({ url: BASE, method: 'get', params, signal })
 }
-export function exportRole(params?: RoleExportQuery) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params))
+export function listRoleOptions(params?: RoleOptionQuery, signal?: AbortSignal) {
+  return request<ApiSchema<'OptionList'>>({ url: `${BASE}/options`, method: 'get', params, signal })
 }
-export function getRole(id: Id)           { return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'get' }) }
+export function exportRole(params?: RoleExportQuery, signal?: AbortSignal) {
+  return requestExportJob(`${BASE}/exports`, stripPagination(params), signal)
+}
+export function getRole(id: Id, signal?: AbortSignal) {
+  return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'get', signal })
+}
 export function createRole(data: RoleCreateInput)    { return request<RoleRecord>({ url: BASE, method: 'post', data }) }
 export function updateRole(id: Id, data: RoleUpdateInput) { return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'put', data }) }
 export function deleteRole(id: Id)        { return request<void>({ url: `${BASE}/${id}`, method: 'delete' }) }

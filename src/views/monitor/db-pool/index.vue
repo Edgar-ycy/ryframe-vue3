@@ -63,10 +63,23 @@
 import { Clock, Connection, DataLine } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { getDbPool, type DbPoolInfo } from '@/api/modules/monitor'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
-const loading = ref(false)
-const poolInfo = ref<DbPoolInfo | null>(null)
+const userStore = useUserStore()
+const poolQuery = useTenantQuery<DbPoolInfo | null>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated',
+  'monitor-db-pool',
+  () => ({ scope: 'status' }),
+  async signal => {
+    const response = await getDbPool(signal)
+    return response.data ?? null
+  },
+)
+const loading = computed(() => poolQuery.isFetching.value)
+const poolInfo = computed(() => poolQuery.data.value ?? null)
 const poolStatusText = computed(() => {
   if (!poolInfo.value?.status) return '-'
   return poolInfo.value.status === 'connected'
@@ -81,17 +94,9 @@ function formatTime(value?: string) {
   return date.toLocaleString()
 }
 
-async function fetchData() {
-  loading.value = true
-  try {
-    const res = await getDbPool()
-    poolInfo.value = res.data || null
-  } finally {
-    loading.value = false
-  }
+async function fetchData(): Promise<void> {
+  await poolQuery.refetch({ throwOnError: true })
 }
-
-onMounted(fetchData)
 </script>
 
 <style scoped>

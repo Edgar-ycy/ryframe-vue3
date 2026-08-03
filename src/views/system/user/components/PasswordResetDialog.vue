@@ -34,8 +34,14 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { requestPasswordReset, type PasswordResetRequestResult } from '@/api/modules/user'
+import {
+  requestPasswordReset,
+  type PasswordResetRequestInput,
+  type PasswordResetRequestResult,
+} from '@/api/modules/user'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 
@@ -54,8 +60,27 @@ const visible = computed({
 })
 const formRef = ref<FormInstance>()
 const form = ref({ reason: '' })
-const submitting = ref(false)
 const result = ref<PasswordResetRequestResult | null>(null)
+const userStore = useUserStore()
+const resetMutation = useTenantMutation<
+  PasswordResetRequestResult,
+  { userId: Id, data: PasswordResetRequestInput }
+>(
+  () => userStore.tenantId,
+  'users',
+  {
+    mutationFn: async variables => {
+      const response = await requestPasswordReset(variables.userId, variables.data)
+      if (!response.data) throw new Error(t('system.user.resetResponseMissing'))
+      return response.data
+    },
+    onSuccess: data => {
+      result.value = data
+      ElMessage.success(t('system.user.resetRequested'))
+    },
+  },
+)
+const submitting = resetMutation.pending
 const resetLink = computed(() => {
   const url = result.value?.reset_url
   return url ? new URL(url, window.location.origin).toString() : ''
@@ -78,20 +103,16 @@ watch(
 )
 
 async function submit() {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid || !props.userId) return
 
-  submitting.value = true
-  try {
-    const response = await requestPasswordReset(props.userId, {
+  await resetMutation.mutateAsync({
+    userId: props.userId,
+    data: {
       reason: form.value.reason.trim(),
-    })
-    if (!response.data) throw new Error(t('system.user.resetResponseMissing'))
-    result.value = response.data
-    ElMessage.success(t('system.user.resetRequested'))
-  } finally {
-    submitting.value = false
-  }
+    },
+  })
 }
 
 async function copyResetLink() {

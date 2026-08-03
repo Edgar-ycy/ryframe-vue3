@@ -41,8 +41,13 @@ import { useI18n } from 'vue-i18n'
 import {
   createDictData,
   updateDictData,
+  type DictDataCreateInput,
   type DictDataRecord,
+  type DictDataUpdateInput,
 } from '@/api/modules/dict'
+import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 
@@ -52,6 +57,10 @@ interface DictDataFormState {
   sort: number
   status: string
 }
+
+type SaveDictDataCommand =
+  | { kind: 'create', data: DictDataCreateInput }
+  | { kind: 'update', id: Id, data: DictDataUpdateInput }
 
 const props = defineProps<{
   modelValue: boolean
@@ -70,7 +79,25 @@ const visible = computed({
 })
 const isEdit = computed(() => props.dictData !== null)
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
+const userStore = useUserStore()
+const saveMutation = useTenantMutation<void, SaveDictDataCommand>(
+  () => userStore.tenantId,
+  'dict-data',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'update') await updateDictData(command.id, command.data)
+      else await createDictData(command.data)
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(
+        command.kind === 'update'
+          ? 'system.common.updateSuccess'
+          : 'system.common.addSuccess',
+      ))
+    },
+  },
+)
+const submitting = saveMutation.pending
 
 function initialForm(): DictDataFormState {
   return { label: '', value: '', sort: 0, status: '1' }
@@ -104,35 +131,33 @@ watch(
 )
 
 async function submit(): Promise<void> {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
+  if (!props.dictData && !props.typeCode) throw new Error(t('system.dict.typeRequired'))
 
-  submitting.value = true
-  try {
-    if (props.dictData) {
-      await updateDictData(props.dictData.id, {
-        label: form.value.label,
-        value: form.value.value,
-        sort: form.value.sort,
-        status: form.value.status,
-      })
-      ElMessage.success(t('system.common.updateSuccess'))
-    }
-    else {
-      if (!props.typeCode) throw new Error(t('system.dict.typeRequired'))
-      await createDictData({
-        type_code: props.typeCode,
-        label: form.value.label,
-        value: form.value.value,
-        sort: form.value.sort,
-      })
-      ElMessage.success(t('system.common.addSuccess'))
-    }
-    visible.value = false
-    emit('saved')
-  }
-  finally {
-    submitting.value = false
-  }
+  const command: SaveDictDataCommand = props.dictData
+    ? {
+        kind: 'update',
+        id: props.dictData.id,
+        data: {
+          label: form.value.label,
+          value: form.value.value,
+          sort: form.value.sort,
+          status: form.value.status,
+        },
+      }
+    : {
+        kind: 'create',
+        data: {
+          type_code: props.typeCode!,
+          label: form.value.label,
+          value: form.value.value,
+          sort: form.value.sort,
+        },
+      }
+  await saveMutation.mutateAsync(command)
+  visible.value = false
+  emit('saved')
 }
 </script>

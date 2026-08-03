@@ -33,7 +33,13 @@
         <el-table-column :label="t('account.actions')" width="180">
           <template #default="{ row }">
             <el-button v-perm="'tenant:edit'" link @click="openEdit(row)">{{ t('account.editTenant') }}</el-button>
-            <el-button v-perm="'tenant:status'" link :disabled="row.tenant_id === 'system'" @click="toggle(row)">
+            <el-button
+              v-perm="'tenant:status'"
+              link
+              :disabled="row.tenant_id === 'system'"
+              :loading="togglingTenantId === row.tenant_id"
+              @click="toggle(row)"
+            >
               {{ row.status === '1' ? t('account.disabled') : t('account.enabled') }}
             </el-button>
           </template>
@@ -87,8 +93,8 @@
       </el-form>
       <template #footer>
         <el-button @click="visible = false">{{ t('account.cancel') }}</el-button>
-        <el-button v-if="editingTenantId" v-perm="'tenant:edit'" type="primary" @click="submit">{{ t('account.save') }}</el-button>
-        <el-button v-else v-perm="'tenant:add'" type="primary" @click="submit">{{ t('account.createTenant') }}</el-button>
+        <el-button v-if="editingTenantId" v-perm="'tenant:edit'" type="primary" :loading="submitLoading" @click="submit">{{ t('account.save') }}</el-button>
+        <el-button v-else v-perm="'tenant:add'" type="primary" :loading="submitLoading" @click="submit">{{ t('account.createTenant') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -104,19 +110,36 @@ import {
   updateTenantStatus,
   type CreateTenantPayload,
   type Tenant,
+  type TenantStatus,
+  type UpdateTenantPayload,
 } from '@/api/modules/tenant'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import {
   PASSWORD_POLICY,
 } from '@/shared/security/passwordPolicy'
 import { isValidTenantId } from '@/shared/security/tenantId'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
+const userStore = useUserStore()
+const authenticated = () => userStore.sessionStatus === 'authenticated'
 
-const loading = ref(false)
 const visible = ref(false)
 const editingTenantId = ref<string | null>(null)
-const tenants = ref<Tenant[]>([])
 const formRef = ref<FormInstance>()
+const tenantsQuery = useTenantQuery<Tenant[]>(
+  () => userStore.tenantId,
+  authenticated,
+  'tenants',
+  () => ({ scope: 'platform-list' }),
+  async signal => {
+    const response = await listTenants(signal)
+    return response.data ?? []
+  },
+)
+const tenants = computed(() => tenantsQuery.data.value ?? [])
+const loading = computed(() => tenantsQuery.isFetching.value)
 
 const form = reactive<CreateTenantPayload>({
   tenant_id: '',
@@ -154,15 +177,46 @@ const rules = computed<FormRules>(() => ({
   ],
 }))
 
-async function load() {
-  loading.value = true
-  try {
-    const result = await listTenants()
-    tenants.value = result.data ?? []
-  } finally {
-    loading.value = false
-  }
-}
+type SaveTenantCommand =
+  | { kind: 'create'; data: CreateTenantPayload }
+  | { kind: 'update'; tenantId: string; data: UpdateTenantPayload }
+
+const saveMutation = useTenantMutation<void, SaveTenantCommand>(
+  () => userStore.tenantId,
+  'tenants',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'create') {
+        await createTenant(command.data)
+      } else {
+        await updateTenant(command.tenantId, command.data)
+      }
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(command.kind === 'create'
+        ? 'account.tenantCreated'
+        : 'account.tenantUpdated'))
+    },
+  },
+)
+const submitLoading = saveMutation.pending
+
+type ToggleTenantCommand = { tenantId: string; status: TenantStatus }
+const statusMutation = useTenantMutation<void, ToggleTenantCommand>(
+  () => userStore.tenantId,
+  'tenants',
+  {
+    mutationFn: async command => {
+      await updateTenantStatus(command.tenantId, command.status)
+    },
+    onSuccess: () => {
+      ElMessage.success(t('account.tenantStatusUpdated'))
+    },
+  },
+)
+const togglingTenantId = computed(() => (
+  statusMutation.pending.value ? statusMutation.variables.value?.tenantId ?? null : null
+))
 
 function resetForm() {
   Object.assign(form, {
@@ -203,43 +257,51 @@ function openEdit(row: Tenant) {
 }
 
 async function submit() {
+  if (saveMutation.pending.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
   if (editingTenantId.value) {
-    await updateTenant(editingTenantId.value, {
-      name: form.name,
-      domain: form.domain || undefined,
-      expire_at: form.expire_at || undefined,
-      max_users: form.max_users || 1,
-      max_roles: form.max_roles || 2,
-      max_storage_mb: form.max_storage_mb || 1,
-      max_requests_per_min: form.max_requests_per_min || 1,
+    await saveMutation.mutateAsync({
+      kind: 'update',
+      tenantId: editingTenantId.value,
+      data: {
+        name: form.name,
+        domain: form.domain || undefined,
+        expire_at: form.expire_at || undefined,
+        max_users: form.max_users || 1,
+        max_roles: form.max_roles || 2,
+        max_storage_mb: form.max_storage_mb || 1,
+        max_requests_per_min: form.max_requests_per_min || 1,
+      },
     })
   } else {
-    await createTenant({
-      ...form,
-      domain: form.domain || undefined,
-      expire_at: form.expire_at || undefined,
+    await saveMutation.mutateAsync({
+      kind: 'create',
+      data: {
+        ...form,
+        domain: form.domain || undefined,
+        expire_at: form.expire_at || undefined,
+      },
     })
   }
 
   visible.value = false
-  ElMessage.success(editingTenantId.value ? t('account.tenantUpdated') : t('account.tenantCreated'))
-  await load()
+  await tenantsQuery.refetch({ throwOnError: true })
 }
 
 async function toggle(row: Tenant) {
+  if (statusMutation.pending.value) return
   if (row.tenant_id === 'system') {
     ElMessage.warning(t('account.systemTenantCannotDisable'))
     return
   }
-  await updateTenantStatus(row.tenant_id, row.status === '1' ? '0' : '1')
-  ElMessage.success(t('account.tenantStatusUpdated'))
-  await load()
+  await statusMutation.mutateAsync({
+    tenantId: row.tenant_id,
+    status: row.status === '1' ? '0' : '1',
+  })
+  await tenantsQuery.refetch({ throwOnError: true })
 }
-
-onMounted(load)
 
 function passwordValidationMessage(password: string): string | undefined {
   if (password.length < PASSWORD_POLICY.min_length) {

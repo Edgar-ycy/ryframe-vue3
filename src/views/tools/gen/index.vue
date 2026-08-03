@@ -29,8 +29,26 @@
         </el-table-column>
         <el-table-column :label="t('tools.generator.operation')" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'tools:gen:list'" type="primary" link icon="View" @click="handlePreview(row)">{{ t('tools.generator.preview') }}</el-button>
-            <el-button v-perm="'tools:gen:add'" type="success" link icon="FolderAdd" @click="handleGen(row)">{{ t('tools.generator.generate') }}</el-button>
+            <el-button
+              v-perm="'tools:gen:list'"
+              type="primary"
+              link
+              icon="View"
+              :loading="previewingTable === row.table_name"
+              @click="handlePreview(row)"
+            >
+              {{ t('tools.generator.preview') }}
+            </el-button>
+            <el-button
+              v-perm="'tools:gen:add'"
+              type="success"
+              link
+              icon="FolderAdd"
+              :disabled="generating"
+              @click="handleGen(row)"
+            >
+              {{ t('tools.generator.generate') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -44,7 +62,13 @@
     </el-card>
 
     <!-- 预览弹窗 -->
-    <el-dialog v-model="previewVisible" :title="t('tools.generator.previewTitle')" width="800px" top="5vh">
+    <el-dialog
+      v-model="previewVisible"
+      v-loading="previewLoading"
+      :title="t('tools.generator.previewTitle')"
+      width="800px"
+      top="5vh"
+    >
       <el-tabs v-model="previewTab" type="card">
         <el-tab-pane v-for="file in previewFiles" :key="file.name" :label="file.name" :name="file.name">
           <el-input
@@ -71,7 +95,7 @@
       @closed="resetGenerateForm"
     >
       <el-form
-        ref="generateFormRef"
+        :ref="setGenerateFormRef"
         :model="generateForm"
         :rules="generateRules"
         label-width="110px"
@@ -109,103 +133,31 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { generateCode, listTable, previewCode, type TableInfo } from '@/api/modules/tools'
-import { buildGenerateRequest, isAbsoluteOutputPath } from './generationForm'
+import { useGeneratorManagement } from './useGeneratorManagement'
 
 const { t } = useI18n()
-const loading = ref(false)
-const tableData = ref<TableInfo[]>([])
-const total = ref(0)
-
-const queryParams = ref({
-  page: 1, page_size: 10, table_name: '', table_comment: '',
-})
-
-async function fetchData() {
-  loading.value = true
-  try {
-    const res = await listTable(queryParams.value)
-    tableData.value = res.data?.items || []
-    total.value = res.data?.total || 0
-  } finally { loading.value = false }
-}
-
-function handleSearch() { queryParams.value.page = 1; fetchData() }
-function handleReset() { queryParams.value.table_name = ''; queryParams.value.table_comment = ''; handleSearch() }
-
-// ----- 预览 -----
-const previewVisible = ref(false)
-const previewTab = ref('')
-const previewFiles = ref<{ name: string; content: string }[]>([])
-
-async function handlePreview(row: TableInfo) {
-  try {
-    const res = await previewCode({ tables: [row.table_name] })
-    previewFiles.value = (res.data || []).map(file => ({
-      name: file.path,
-      content: file.content,
-    }))
-    previewTab.value = previewFiles.value[0]?.name || ''
-    previewVisible.value = true
-  } catch { /* 错误已由统一处理 */ }
-}
-
-// ----- 生成代码 -----
-const generateVisible = ref(false)
-const generateFormRef = ref<FormInstance>()
-const generating = ref(false)
-const selectedTable = ref<TableInfo | null>(null)
-const generateForm = reactive({ output_dir: '' })
-const generateRules = computed<FormRules>(() => ({
-  output_dir: [
-    { required: true, whitespace: true, message: t('tools.generator.outputDirectoryRequired'), trigger: 'blur' },
-    {
-      validator: (_rule, value, callback) => {
-        if (isAbsoluteOutputPath(String(value || ''))) {
-          callback()
-        } else {
-          callback(new Error(t('tools.generator.backendOutputPathRequired')))
-        }
-      },
-      trigger: ['blur', 'change'],
-    },
-  ],
-}))
-
-function handleGen(row: TableInfo) {
-  selectedTable.value = row
-  generateForm.output_dir = ''
-  generateVisible.value = true
-  nextTick(() => generateFormRef.value?.clearValidate())
-}
-
-function resetGenerateForm() {
-  selectedTable.value = null
-  generateForm.output_dir = ''
-  generateFormRef.value?.clearValidate()
-}
-
-async function submitGeneration() {
-  const valid = await generateFormRef.value?.validate().catch(() => false)
-  if (!valid || !selectedTable.value) return
-
-  generating.value = true
-  try {
-    const request = buildGenerateRequest(selectedTable.value.table_name, generateForm.output_dir)
-    const res = await generateCode(request)
-    if (!res.data) throw new Error(t('tools.generator.responseMissing'))
-    const { written, skipped } = res.data
-    const message = skipped.length > 0
-      ? t('tools.generator.generateSuccessWithSkipped', { written: written.length, skipped: skipped.length })
-      : t('tools.generator.generateSuccess', { written: written.length })
-    generateVisible.value = false
-    ElMessage.success(message)
-  } catch {
-    // 请求错误由 HTTP 层统一展示。
-  } finally {
-    generating.value = false
-  }
-}
-
-onMounted(() => fetchData())
+const {
+  fetchData,
+  generateForm,
+  generateRules,
+  generateVisible,
+  generating,
+  handleGen,
+  handlePreview,
+  handleReset,
+  handleSearch,
+  loading,
+  previewFiles,
+  previewLoading,
+  previewTab,
+  previewVisible,
+  previewingTable,
+  queryParams,
+  resetGenerateForm,
+  selectedTable,
+  setGenerateFormRef,
+  submitGeneration,
+  tableData,
+  total,
+} = useGeneratorManagement(t)
 </script>

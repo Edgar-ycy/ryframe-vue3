@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { getConfigByKey } from '@/api/modules/config'
 import {
   getApplicationLocale,
   normalizeLocale,
@@ -26,15 +25,20 @@ interface SettingsState {
   sidebarLogo: boolean
 }
 
+export interface ShellServerSettings {
+  sideTheme?: string
+  skinName?: string
+}
+
 interface ParsedThemeColor {
   red: number
   green: number
   blue: number
-  alpha: number
   css: string
 }
 
 const STORAGE_KEY = 'ryframe_settings'
+const SETTINGS_SCHEMA_VERSION = 1
 
 const defaults: SettingsState = {
   theme: 'light',
@@ -49,14 +53,39 @@ function loadSettings(): SettingsState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<SettingsState>
-      const settings: SettingsState = {
-        ...defaults,
-        ...parsed,
-        locale: normalizeLocale(parsed.locale) ?? getApplicationLocale(),
+      const parsed = JSON.parse(raw) as unknown
+      if (
+        typeof parsed !== 'object'
+        || parsed === null
+        || !('schema_version' in parsed)
+        || parsed.schema_version !== SETTINGS_SCHEMA_VERSION
+        || !('settings' in parsed)
+        || typeof parsed.settings !== 'object'
+        || parsed.settings === null
+      ) return { ...defaults }
+
+      const value = parsed.settings as Partial<Record<keyof SettingsState, unknown>>
+      const theme = value.theme === 'light' || value.theme === 'dark'
+        ? value.theme
+        : defaults.theme
+      const themeColor = typeof value.themeColor === 'string'
+        ? parseThemeColor(value.themeColor)?.css ?? defaults.themeColor
+        : defaults.themeColor
+      const componentSize = ['large', 'default', 'small'].includes(String(value.componentSize))
+        ? value.componentSize as ComponentSize
+        : defaults.componentSize
+      const locale = typeof value.locale === 'string'
+        ? normalizeLocale(value.locale) ?? getApplicationLocale()
+        : getApplicationLocale()
+
+      return {
+        theme,
+        themeColor,
+        componentSize,
+        locale,
+        tagsView: typeof value.tagsView === 'boolean' ? value.tagsView : defaults.tagsView,
+        sidebarLogo: typeof value.sidebarLogo === 'boolean' ? value.sidebarLogo : defaults.sidebarLogo,
       }
-      const color = parseThemeColor(settings.themeColor)
-      return { ...settings, themeColor: color?.css ?? defaults.themeColor }
     }
   } catch {
     // 忽略读取失败，使用默认设置。
@@ -65,69 +94,24 @@ function loadSettings(): SettingsState {
 }
 
 function saveSettings(state: SettingsState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    schema_version: SETTINGS_SCHEMA_VERSION,
+    settings: state,
+  }))
 }
 
-function toByte(value: number): number | undefined {
-  if (!Number.isFinite(value) || value < 0 || value > 255) return undefined
-  return Math.round(value)
-}
-
-function parseRgbChannel(value: string): number | undefined {
-  const normalized = value.trim()
-  const raw = normalized.endsWith('%')
-    ? Number.parseFloat(normalized.slice(0, -1)) * 2.55
-    : Number.parseFloat(normalized)
-  return toByte(raw)
-}
-
-function parseAlpha(value: string | undefined): number | undefined {
-  if (value === undefined) return 1
-  const normalized = value.trim()
-  const raw = normalized.endsWith('%')
-    ? Number.parseFloat(normalized.slice(0, -1)) / 100
-    : Number.parseFloat(normalized)
-  return Number.isFinite(raw) && raw >= 0 && raw <= 1 ? raw : undefined
-}
-
-function colorCss(red: number, green: number, blue: number, alpha: number): string {
-  if (alpha === 1) {
-    return `#${[red, green, blue].map(value => value.toString(16).padStart(2, '0')).join('')}`
-  }
-  return `rgba(${red}, ${green}, ${blue}, ${Number(alpha.toFixed(3))})`
-}
-
-/**
- * 启用透明度时，Element Plus 可能输出 #RRGGBBAA 或 rgba()。在推导 HSL 变体前
- * 同时转换这两种形式，以避免无效或透明输入产生 NaN CSS 变量。
- */
+/** 只接受并规范化不含透明度的 `#RRGGBB` 主题色。 */
 export function parseThemeColor(value: string | null | undefined): ParsedThemeColor | undefined {
   if (!value) return undefined
-  const source = value.trim()
-  const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(source)?.[1]
-  if (hex) {
-    const expanded = hex.length <= 4
-      ? [...hex].map(part => `${part}${part}`).join('')
-      : hex
-    const red = Number.parseInt(expanded.slice(0, 2), 16)
-    const green = Number.parseInt(expanded.slice(2, 4), 16)
-    const blue = Number.parseInt(expanded.slice(4, 6), 16)
-    const alpha = expanded.length === 8
-      ? Number.parseInt(expanded.slice(6, 8), 16) / 255
-      : 1
-    return { red, green, blue, alpha, css: colorCss(red, green, blue, alpha) }
-  }
-
-  const match = /^rgba?\((.*)\)$/i.exec(source)
+  const match = /^#([0-9a-f]{6})$/i.exec(value.trim())
   if (!match) return undefined
-  const parts = match[1].split(',')
-  if (parts.length !== 3 && parts.length !== 4) return undefined
-  const red = parseRgbChannel(parts[0] ?? '')
-  const green = parseRgbChannel(parts[1] ?? '')
-  const blue = parseRgbChannel(parts[2] ?? '')
-  const alpha = parseAlpha(parts[3])
-  if (red === undefined || green === undefined || blue === undefined || alpha === undefined) return undefined
-  return { red, green, blue, alpha, css: colorCss(red, green, blue, alpha) }
+  const hex = match[1].toUpperCase()
+  return {
+    red: Number.parseInt(hex.slice(0, 2), 16),
+    green: Number.parseInt(hex.slice(2, 4), 16),
+    blue: Number.parseInt(hex.slice(4, 6), 16),
+    css: `#${hex}`,
+  }
 }
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
@@ -321,42 +305,28 @@ export const useSettingsStore = defineStore('settings', {
       setApplicationLocale(this.locale)
     },
 
-    async syncFromServer() {
+    applyServerSettings(settings: ShellServerSettings) {
       let changed = false
 
-      try {
-        const res = await getConfigByKey('sys.index.sideTheme')
-        const sideTheme = res.data
-        if (sideTheme) {
-          const theme = sideTheme === 'theme-dark' ? 'dark' : 'light'
-          if (theme !== this.theme) {
-            this.theme = theme
-            applyTheme(theme)
-            changed = true
-          }
+      if (settings.sideTheme) {
+        const theme = settings.sideTheme === 'theme-dark' ? 'dark' : 'light'
+        if (theme !== this.theme) {
+          this.theme = theme
+          applyTheme(theme)
+          changed = true
         }
-      } catch {
-        // 忽略服务端配置同步失败。
       }
 
-      try {
-        const res = await getConfigByKey('sys.index.skinName')
-        const skinName = res.data
-        if (skinName && SKIN_COLOR_MAP[skinName]) {
-          const color = SKIN_COLOR_MAP[skinName]
-          if (color !== this.themeColor) {
-            this.themeColor = color
-            applyThemeColor(color)
-            changed = true
-          }
+      if (settings.skinName && SKIN_COLOR_MAP[settings.skinName]) {
+        const color = SKIN_COLOR_MAP[settings.skinName]
+        if (color !== this.themeColor) {
+          this.themeColor = color
+          applyThemeColor(color)
+          changed = true
         }
-      } catch {
-        // 忽略服务端配置同步失败。
       }
 
-      if (changed) {
-        saveSettings(this.$state)
-      }
+      if (changed) saveSettings(this.$state)
     },
   },
 })

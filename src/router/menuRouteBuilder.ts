@@ -1,5 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import type { MenuTreeNode } from '@/api/modules/menu'
+import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
 import { LAYOUT } from '@/router/layout'
 import { constantRoutes } from '@/router/routes/constant'
 import { getMenuPage } from '@/router/pageRegistry'
@@ -63,19 +63,15 @@ function getConstantMenus(): RouteRecordRaw[] {
 }
 
 function isNodeVisible(node: MenuTreeNode): boolean {
-  if (node.visible === undefined || node.visible === null) return true
-  if (typeof node.visible === 'boolean') return node.visible
-  return node.visible !== 0 && node.visible !== '0'
+  return node.visible
 }
 
 function isNodeEnabled(node: MenuTreeNode): boolean {
-  if (node.status === undefined || node.status === null || node.status === '') return true
-  return String(node.status) === '1'
+  return node.status === '1'
 }
 
-function getMenuType(node: MenuTreeNode): string {
-  if (node.menu_type) return node.menu_type
-  return node.children?.length ? 'M' : 'C'
+function getMenuType(node: MenuTreeNode): MenuType {
+  return node.menu_type
 }
 
 function iconPascalCase(icon: string): string {

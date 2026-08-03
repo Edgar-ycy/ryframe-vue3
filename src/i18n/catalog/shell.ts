@@ -65,6 +65,9 @@ export const shellMessages = {
       navbar: {
         tenantSeparator: '租户',
       },
+      layout: {
+        closeMobileNavigation: '关闭移动端导航',
+      },
       tags: {
         close: '关闭标签 {title}',
       },
@@ -135,6 +138,9 @@ export const shellMessages = {
       },
       navbar: {
         tenantSeparator: 'Tenant',
+      },
+      layout: {
+        closeMobileNavigation: 'Close mobile navigation',
       },
       tags: {
         close: 'Close tab {title}',

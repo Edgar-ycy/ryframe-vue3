@@ -113,7 +113,7 @@ describe('createNavigationGuard', () => {
   it('handles initialization failures according to HTTP status', async () => {
     const unauthorized = harness({ token: 'token' })
     unauthorized.dependencies.refreshAccessibleRoutes = vi.fn(async () => {
-      throw new HttpError('expired', 401)
+      throw new HttpError('expired', { status: 401 })
     })
     unauthorized.guard = createNavigationGuard(unauthorized.dependencies)
     await expect(unauthorized.guard({ path: '/users', fullPath: '/users' })).resolves.toEqual({
@@ -124,7 +124,7 @@ describe('createNavigationGuard', () => {
 
     const forbidden = harness({ token: 'token' })
     forbidden.dependencies.refreshAccessibleRoutes = vi.fn(async () => {
-      throw new HttpError('forbidden', 403)
+      throw new HttpError('forbidden', { status: 403 })
     })
     forbidden.guard = createNavigationGuard(forbidden.dependencies)
     await expect(forbidden.guard({ path: '/users' })).resolves.toEqual({

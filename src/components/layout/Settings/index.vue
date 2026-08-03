@@ -12,6 +12,7 @@
           <div class="setting-label">{{ t('settings.locale') }}</div>
           <el-radio-group
             :model-value="settingsStore.locale"
+            :disabled="localeSaving"
             @change="(value: string) => void handleLocaleChange(value)"
           >
             <el-radio-button value="zh-CN">{{ t('shell.locale.zhCn') }}</el-radio-button>
@@ -77,7 +78,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { updateProfile } from '@/api/modules/auth'
-import { normalizeLocale } from '@/i18n'
+import { normalizeLocale, type AppLocale } from '@/i18n'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useMessageStore } from '@/stores/message'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
@@ -91,37 +93,36 @@ const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const messageStore = useMessageStore()
 const { t } = useI18n()
-let localeChangeQueue: Promise<void> = Promise.resolve()
+const localeMutation = useTenantMutation<void, AppLocale>(
+  () => userStore.tenantId,
+  'profile',
+  {
+    mutationFn: async locale => {
+      await updateProfile({
+        nickname: userStore.nickname,
+        email: userStore.email || undefined,
+        phone: userStore.phone || undefined,
+        preferred_locale: locale,
+      })
+    },
+    onSuccess: (_data, locale) => {
+      userStore.setPreferredLocale(locale)
+    },
+  },
+)
+const localeSaving = localeMutation.pending
 
 async function handleLocaleChange(value: string): Promise<void> {
   const locale = normalizeLocale(value)
-  if (!locale || locale === settingsStore.locale) return
+  if (!locale || locale === settingsStore.locale || localeMutation.pending.value) return
 
   settingsStore.setLocale(locale)
-  const pending = localeChangeQueue.catch(() => undefined).then(async () => {
-    if (settingsStore.locale !== locale) return
+  if (userStore.sessionStatus !== 'authenticated' || !userStore.nickname) return
 
-    if (userStore.sessionStatus === 'authenticated' && userStore.nickname) {
-      try {
-        await updateProfile({
-          nickname: userStore.nickname,
-          email: userStore.email || undefined,
-          phone: userStore.phone || undefined,
-          preferred_locale: locale,
-        })
-        userStore.setPreferredLocale(locale)
-      }
-      catch {
-        ElMessage.warning(t('settings.localeSaveFailed'))
-      }
-    }
-
-    if (settingsStore.locale !== locale || userStore.sessionStatus !== 'authenticated') return
-    messageStore.reset()
-    await messageStore.syncSession().catch(() => undefined)
-  })
-  localeChangeQueue = pending
-  await pending
+  await localeMutation.mutateAsync(locale)
+  if (settingsStore.locale === locale && userStore.sessionStatus === 'authenticated') {
+    messageStore.restartConnection()
+  }
 }
 </script>
 

@@ -6,8 +6,15 @@ const queryHarness = vi.hoisted(() => ({
 }))
 
 vi.mock('@tanstack/vue-query', () => ({
-  QueryClient: class QueryClient {},
   useQuery: queryHarness.useQuery,
+}))
+vi.mock('./client', () => ({
+  tenantQueryKey: (tenantId: string | undefined, resource: string, params?: unknown) => [
+    'server-state',
+    tenantId || 'anonymous',
+    resource,
+    params ?? null,
+  ],
 }))
 
 import { useTenantQuery } from './useTenantQuery'
@@ -15,6 +22,7 @@ import { useTenantQuery } from './useTenantQuery'
 interface CapturedQueryOptions {
   queryKey: { value: unknown }
   enabled: { value: boolean }
+  queryFn: (context: { signal: AbortSignal }) => Promise<unknown>
 }
 
 function capturedOptions(): CapturedQueryOptions {
@@ -49,5 +57,15 @@ describe('租户查询封装', () => {
 
     expect(options.queryKey.value).toEqual(['server-state', 'tenant-b', 'notices', { page: 1 }])
     expect(options.enabled.value).toBe(false)
+  })
+
+  it('把 TanStack Query 的取消信号传给请求函数', async () => {
+    const request = vi.fn(async (_signal: AbortSignal) => 'ok')
+    useTenantQuery('tenant-a', true, 'roles', () => ({ limit: 50 }), request)
+
+    const controller = new AbortController()
+    await capturedOptions().queryFn({ signal: controller.signal })
+
+    expect(request).toHaveBeenCalledWith(controller.signal)
   })
 })

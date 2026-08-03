@@ -91,58 +91,94 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { listLoginLog, exportLoginLog, type LoginLogRecord } from '@/api/modules/monitor'
+import {
+  exportLoginLog,
+  listLoginLog,
+  type LoginLogQuery,
+  type LoginLogRecord,
+} from '@/api/modules/monitor'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
+import type { PageResponse } from '@/shared/http/types'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
-const loading = ref(false)
-const tableData = ref<LoginLogRecord[]>([])
-const total = ref(0)
 const dateRange = ref<[string, string] | []>([])
-const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
+const userStore = useUserStore()
+const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
 
-const queryParams = ref({
+const queryParams = ref<LoginLogQuery>({
   page: 1, page_size: 10, user_name: '', status: '', begin_time: '', end_time: '',
 })
+const activeQueryParams = ref<LoginLogQuery>({ ...queryParams.value })
+
+const loginLogsQuery = useTenantQuery<PageResponse<LoginLogRecord>>(
+  () => userStore.tenantId,
+  () => userStore.sessionStatus === 'authenticated',
+  'monitor-login-logs',
+  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+  async signal => {
+    const response = await listLoginLog({ ...activeQueryParams.value }, signal)
+    return response.data ?? {
+      items: [],
+      page: activeQueryParams.value.page ?? 1,
+      page_size: activeQueryParams.value.page_size ?? 10,
+      total: 0,
+      total_pages: 0,
+      max_page_size: activeQueryParams.value.page_size ?? 10,
+    }
+  },
+)
+
+const loading = computed(() => loginLogsQuery.isFetching.value)
+const tableData = computed(() => loginLogsQuery.data.value?.items ?? [])
+const total = computed(() => loginLogsQuery.data.value?.total ?? 0)
 
 function handleExport() {
-  return exportAndDownload(() => exportLoginLog(queryParams.value), { filename: t('monitor.loginLog.exportFilename') })
+  return exportAndDownload(
+    signal => exportLoginLog({
+      name: activeQueryParams.value.user_name,
+      status: activeQueryParams.value.status,
+      begin_time: activeQueryParams.value.begin_time,
+      end_time: activeQueryParams.value.end_time,
+    }, signal),
+    { filename: t('monitor.loginLog.exportFilename') },
+  )
 }
 
-async function fetchData() {
-  loading.value = true
-  try {
-    queryParams.value.begin_time = dateRange.value?.[0] || ''
-    queryParams.value.end_time = dateRange.value?.[1] || ''
-    const res = await listLoginLog(queryParams.value)
-    tableData.value = res.data?.items || []
-    total.value = res.data?.total || 0
-  } finally {
-    loading.value = false
+async function fetchData(): Promise<void> {
+  queryParams.value.begin_time = dateRange.value[0] ?? ''
+  queryParams.value.end_time = dateRange.value[1] ?? ''
+  const nextParams = { ...queryParams.value }
+  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
+    activeQueryParams.value = nextParams
+    return
   }
+  await loginLogsQuery.refetch({ throwOnError: true })
 }
 
-function handleSearch() {
+function handleSearch(): void {
   queryParams.value.page = 1
-  fetchData()
+  void fetchData()
 }
 
-function handleReset() {
-  queryParams.value.user_name = ''
-  queryParams.value.status = ''
-  queryParams.value.begin_time = ''
-  queryParams.value.end_time = ''
+function handleReset(): void {
+  queryParams.value = {
+    page: 1,
+    page_size: queryParams.value.page_size,
+    user_name: '',
+    status: '',
+    begin_time: '',
+    end_time: '',
+  }
   dateRange.value = []
-  handleSearch()
+  void fetchData()
 }
 
-// ----- 详情 -----
 const detailVisible = ref(false)
 const detailRow = ref<Partial<LoginLogRecord>>({})
-function handleDetail(row: LoginLogRecord) {
+function handleDetail(row: LoginLogRecord): void {
   detailRow.value = row
   detailVisible.value = true
 }
-
-onMounted(() => fetchData())
 </script>

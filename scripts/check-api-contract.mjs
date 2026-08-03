@@ -3,15 +3,45 @@ import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
 import ts from 'typescript'
 
+import { apiPrefixContractViolation } from './api-prefix-contract.mjs'
+
 const contractPath = new URL('../openapi/openapi.json', import.meta.url)
 const pageRegistryPath = new URL('../src/router/pageRegistry.ts', import.meta.url)
 const passwordPolicyPath = new URL(
   '../src/shared/security/passwordPolicy.generated.json',
   import.meta.url,
 )
+const noticePolicyPath = new URL(
+  '../src/shared/markdown/noticePolicy.generated.json',
+  import.meta.url,
+)
+const apiPrefixPath = new URL(
+  '../src/shared/config/apiPrefix.generated.json',
+  import.meta.url,
+)
 const document = JSON.parse(await readFile(contractPath, 'utf8'))
 const generatedPasswordPolicy = JSON.parse(await readFile(passwordPolicyPath, 'utf8'))
+const generatedNoticePolicy = JSON.parse(await readFile(noticePolicyPath, 'utf8'))
+const generatedApiPrefix = JSON.parse(await readFile(apiPrefixPath, 'utf8'))
 const errors = []
+
+const contractDescription = document.info?.description ?? ''
+for (const required of [
+  'message',
+  'request_id',
+  'error_key',
+  'details',
+  'items/page/page_size/total/total_pages/max_page_size',
+]) {
+  if (!contractDescription.includes(required)) {
+    errors.push(`OpenAPI description does not document current response field: ${required}`)
+  }
+}
+for (const removed of ['"msg":', '"rows":']) {
+  if (contractDescription.includes(removed)) {
+    errors.push(`OpenAPI description still documents removed response field: ${removed}`)
+  }
+}
 
 function propertyName(property) {
   if (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) {
@@ -162,6 +192,35 @@ for (const [schemaName, fieldName] of [
   }
 }
 
+const expectedNoticePolicy = {
+  version: 1,
+  content_markdown: {
+    min_utf8_bytes: 1,
+    max_utf8_bytes: 60_000,
+  },
+}
+const noticePolicyExtension = document['x-ryframe-notice-policy']
+if (!isDeepStrictEqual(noticePolicyExtension, expectedNoticePolicy)) {
+  errors.push('OpenAPI notice policy does not match the canonical Markdown byte policy')
+}
+if (!isDeepStrictEqual(generatedNoticePolicy, noticePolicyExtension)) {
+  errors.push('generated notice policy is not synchronized with OpenAPI')
+}
+for (const schemaName of ['CreateNoticeDto', 'UpdateNoticeDto']) {
+  const properties = document.components?.schemas?.[schemaName]?.properties
+  const field = properties?.content_markdown
+  if (properties?.content !== undefined
+    || field?.minLength !== expectedNoticePolicy.content_markdown.min_utf8_bytes
+    || field?.maxLength !== expectedNoticePolicy.content_markdown.max_utf8_bytes) {
+    errors.push(`${schemaName}.content_markdown: schema does not expose the notice policy`)
+  }
+}
+const noticeResponseProperties = document.components?.schemas?.NoticeVo?.properties
+if (noticeResponseProperties?.content !== undefined
+  || noticeResponseProperties?.content_markdown?.type !== 'string') {
+  errors.push('NoticeVo must expose content_markdown and must not expose legacy content')
+}
+
 if (!String(document.openapi).startsWith('3.')) {
   errors.push(`unsupported OpenAPI version: ${document.openapi ?? '<missing>'}`)
 }
@@ -170,6 +229,21 @@ if (document.info?.title !== 'RyFrame API') {
 }
 
 const paths = Object.entries(document.paths ?? {})
+const apiPrefixExtension = document['x-ryframe-api-prefix']
+if (apiPrefixContractViolation(apiPrefixExtension)) {
+  errors.push('OpenAPI is missing the canonical API prefix contract')
+}
+else {
+  if (!isDeepStrictEqual(generatedApiPrefix, apiPrefixExtension)) {
+    errors.push('generated API prefix is not synchronized with OpenAPI')
+  }
+  for (const [path] of paths) {
+    if (!path.startsWith(`${apiPrefixExtension.value}/`)
+      && !['/livez', '/readyz'].includes(path)) {
+      errors.push(`${path}: path does not use the canonical API prefix`)
+    }
+  }
+}
 const operationIds = new Set()
 const bodylessWriteAllowlist = new Set([
   // 这些操作的语义完全由路径、身份或请求头决定，后端不接收 JSON 请求体。
@@ -216,11 +290,6 @@ for (const [path, pathItem] of paths) {
 
     const parameters = [...(pathItem.parameters ?? []), ...(operation.parameters ?? [])]
     if (parameters.some(parameter => parameter.in === 'query')) queryOperationCount += 1
-    if (/(\/all|\/export)$/.test(path)
-      && parameters.some(parameter => parameter.in === 'query'
-        && ['page', 'page_size'].includes(parameter.name))) {
-      errors.push(`${operationId}: full-record operation must not expose pagination parameters`)
-    }
   }
 }
 

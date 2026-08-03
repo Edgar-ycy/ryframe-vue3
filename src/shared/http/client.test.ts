@@ -21,7 +21,6 @@ function adapter(overrides?: Partial<HttpSessionAdapter>): HttpSessionAdapter {
     getTenantId: () => 'tenant-a',
     refreshAccessToken: vi.fn(async () => 'refreshed-token'),
     handleRefreshFailure: vi.fn(async () => undefined),
-    reportError: vi.fn(),
     ...overrides,
   }
 }
@@ -146,7 +145,15 @@ describe('HTTP client session boundary', () => {
     await expect(rawRequest({
       ...config,
       adapter: async () => Promise.reject(error),
-    })).rejects.toMatchObject({ status: 409, retryAfterSeconds: 2 } satisfies Partial<HttpError>)
+    })).rejects.toMatchObject({
+      status: 409,
+      code: 409,
+      errorKey: 'conflict',
+      details: null,
+      requestId: '0198f7e8-0000-7000-8000-000000000001',
+      kind: 'http',
+      retryAfterSeconds: 2,
+    } satisfies Partial<HttpError>)
     expect(axios.isAxiosError(error)).toBe(true)
   })
 
@@ -263,8 +270,7 @@ describe('HTTP client session boundary', () => {
   it('does not refresh opt-out, already retried, or non-401 failures', async () => {
     const refreshAccessToken = vi.fn(async () => 'unused')
     const handleRefreshFailure = vi.fn(async () => undefined)
-    const reportError = vi.fn()
-    configureHttpSession(adapter({ refreshAccessToken, handleRefreshFailure, reportError }))
+    configureHttpSession(adapter({ refreshAccessToken, handleRefreshFailure }))
 
     for (const input of [
       { status: 401, skipAuthRefresh: true },
@@ -291,14 +297,12 @@ describe('HTTP client session boundary', () => {
 
     expect(refreshAccessToken).not.toHaveBeenCalled()
     expect(handleRefreshFailure).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledTimes(2)
   })
 
   it('terminates the session when a request is still 401 after one successful refresh', async () => {
     const refreshAccessToken = vi.fn(async () => 'new-token')
     const handleRefreshFailure = vi.fn(async () => undefined)
-    const reportError = vi.fn()
-    configureHttpSession(adapter({ refreshAccessToken, handleRefreshFailure, reportError }))
+    configureHttpSession(adapter({ refreshAccessToken, handleRefreshFailure }))
     let calls = 0
 
     await expect(request({
@@ -318,14 +322,12 @@ describe('HTTP client session boundary', () => {
     expect(calls).toBe(2)
     expect(refreshAccessToken).toHaveBeenCalledOnce()
     expect(handleRefreshFailure).toHaveBeenCalledOnce()
-    expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('reports login 401 without terminating an existing session', async () => {
+  it('returns login 401 without terminating an existing session', async () => {
     const refreshAccessToken = vi.fn(async () => 'unused')
     const handleRefreshFailure = vi.fn(async () => undefined)
-    const reportError = vi.fn()
-    configureHttpSession(adapter({ refreshAccessToken, handleRefreshFailure, reportError }))
+    configureHttpSession(adapter({ refreshAccessToken, handleRefreshFailure }))
     const config: InternalAxiosRequestConfig = {
       url: '/auth/login',
       method: 'post',
@@ -344,7 +346,6 @@ describe('HTTP client session boundary', () => {
       .rejects.toMatchObject({ status: 401 })
     expect(refreshAccessToken).not.toHaveBeenCalled()
     expect(handleRefreshFailure).not.toHaveBeenCalled()
-    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('removes JSON content type for multipart requests', async () => {
@@ -372,9 +373,8 @@ describe('HTTP client session boundary', () => {
     expect(captured?.headers.get('Content-Type')).toBe('application/json')
   })
 
-  it('reports malformed and unsuccessful API envelopes', async () => {
-    const reportError = vi.fn()
-    configureHttpSession(adapter({ reportError }))
+  it('normalizes malformed and unsuccessful API envelopes', async () => {
+    configureHttpSession(adapter())
     const response = (data: unknown): AxiosAdapter => async config => ({
       data,
       status: 200,
@@ -384,15 +384,13 @@ describe('HTTP client session boundary', () => {
     })
 
     await expect(request({ url: '/invalid', adapter: response({ hello: 'world' }) }))
-      .rejects.toBeInstanceOf(HttpError)
+      .rejects.toMatchObject({ kind: 'invalid_response' })
     await expect(request({ url: '/failed', adapter: response(envelope(undefined, 500, 'failed', 'internal')) }))
       .rejects.toMatchObject({ code: 500 })
-    expect(reportError).toHaveBeenCalledTimes(2)
   })
 
-  it('does not report raw envelope failures through the global UI reporter', async () => {
-    const reportError = vi.fn()
-    configureHttpSession(adapter({ reportError }))
+  it('normalizes raw envelope failures without presentation concerns', async () => {
+    configureHttpSession(adapter())
     const response = (data: unknown): AxiosAdapter => async config => ({
       data,
       status: 200,
@@ -405,7 +403,6 @@ describe('HTTP client session boundary', () => {
       .rejects.toBeInstanceOf(HttpError)
     await expect(rawRequest({ url: '/failed', adapter: response(envelope(undefined, 400, '', 'validation')) }))
       .rejects.toMatchObject({ code: 400 })
-    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('extracts errors from JSON, text, and empty Blob responses', async () => {
@@ -445,11 +442,30 @@ describe('HTTP client session boundary', () => {
       url: '/primitive',
       adapter: async () => Promise.reject('broken'),
     })).rejects.toMatchObject({ message: expect.any(String) })
-    const existing = new HttpError('existing', 418)
+    const existing = new HttpError('existing', { status: 418 })
     await expect(rawRequest({
       url: '/http-error',
       adapter: async () => Promise.reject(existing),
     })).rejects.toBe(existing)
+  })
+
+  it('classifies network, timeout and cancelled transport failures', async () => {
+    configureHttpSession(adapter())
+    const config: InternalAxiosRequestConfig = {
+      url: '/transport-error',
+      headers: new AxiosHeaders(),
+    }
+    const reject = (error: unknown) => rawRequest({
+      ...config,
+      adapter: async () => Promise.reject(error),
+    })
+
+    await expect(reject(new AxiosError('offline', 'ERR_NETWORK', config)))
+      .rejects.toMatchObject({ kind: 'network', status: undefined })
+    await expect(reject(new AxiosError('timed out', 'ECONNABORTED', config)))
+      .rejects.toMatchObject({ kind: 'timeout', status: undefined })
+    await expect(reject(new axios.CanceledError('cancelled', config)))
+      .rejects.toMatchObject({ kind: 'cancelled', status: undefined })
   })
 
   it('returns raw blob and text payloads for download helpers', async () => {

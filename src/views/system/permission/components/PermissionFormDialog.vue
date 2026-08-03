@@ -65,6 +65,8 @@ import {
   type PermissionTreeNode,
 } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 
@@ -86,7 +88,28 @@ const visible = computed({
 })
 const isEdit = computed(() => props.permission !== null)
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
+const userStore = useUserStore()
+const saveMutation = useTenantMutation<
+  void,
+  { id?: Id, payload: PermissionForm }
+>(
+  () => userStore.tenantId,
+  'permissions',
+  {
+    mutationFn: async variables => {
+      if (variables.id === undefined) await createPermission(variables.payload)
+      else await updatePermission(variables.id, variables.payload)
+    },
+    onSuccess: (_data, variables) => {
+      ElMessage.success(t(
+        variables.id === undefined
+          ? 'system.common.addSuccess'
+          : 'system.common.updateSuccess',
+      ))
+    },
+  },
+)
+const submitting = saveMutation.pending
 
 function initialForm(): PermissionForm {
   return {
@@ -142,6 +165,7 @@ watch(
 )
 
 async function submit(): Promise<void> {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
   const payload: PermissionForm = {
@@ -149,21 +173,8 @@ async function submit(): Promise<void> {
     parent_id: form.value.parent_id === '0' ? null : form.value.parent_id,
   }
 
-  submitting.value = true
-  try {
-    if (props.permission) {
-      await updatePermission(props.permission.id, payload)
-      ElMessage.success(t('system.common.updateSuccess'))
-    }
-    else {
-      await createPermission(payload)
-      ElMessage.success(t('system.common.addSuccess'))
-    }
-    visible.value = false
-    emit('saved')
-  }
-  finally {
-    submitting.value = false
-  }
+  await saveMutation.mutateAsync({ id: props.permission?.id, payload })
+  visible.value = false
+  emit('saved')
 }
 </script>

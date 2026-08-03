@@ -115,6 +115,7 @@
               type="danger"
               link
               icon="Delete"
+              :loading="deletingId === row.id"
               @click="handleDelete(row)"
             >
               {{ t('system.common.delete') }}
@@ -147,6 +148,7 @@
       v-model="permissionDialogVisible"
       :role="permissionRole"
       :permission-tree="permissionTree"
+      @saved="fetchData"
     />
     <RoleDataScopeDialog
       v-model="dataScopeDialogVisible"
@@ -169,6 +171,7 @@ const { t } = useI18n()
 const {
   dataScopeDialogVisible,
   dataScopeRole,
+  deletingId,
   deptTree,
   editingRole,
   exportLoading,

@@ -19,18 +19,23 @@ export type PermissionRecord = Omit<ApiSchema<'PermissionVo'>, 'perm_type'> & {
 export type PermissionForm = OperationJsonBody<'post_system_perms'>
 export type PermissionSyncReport = ApiSchema<'PermissionSyncReport'>
 
-export function getPermissionTree(params?: OperationQuery<'get_system_perms_tree'>) {
+export function getPermissionTree(
+  params?: OperationQuery<'get_system_perms_tree'>,
+  signal?: AbortSignal,
+) {
   return request<PermissionTreeNode[]>({
     url: `${BASE}/tree`,
     method: 'get',
     params,
+    signal,
   })
 }
 
-export function getPermission(id: Id) {
+export function getPermission(id: Id, signal?: AbortSignal) {
   return request<PermissionRecord>({
     url: `${BASE}/${id}`,
     method: 'get',
+    signal,
   })
 }
 
@@ -65,9 +70,10 @@ export function syncApiPermissions() {
   })
 }
 
-export function getRolePermissions(roleId: Id) {
+export function getRolePermissions(roleId: Id, signal?: AbortSignal) {
   return request<string[]>({
     url: `${ROLE_BASE}/${roleId}/permissions`,
     method: 'get',
+    signal,
   })
 }

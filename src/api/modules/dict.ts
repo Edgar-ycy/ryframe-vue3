@@ -8,27 +8,24 @@ import { stripPagination, type Id, type PageResponse } from '@/shared/http/types
 const DICT_TYPE_BASE = '/system/dict/types'
 
 export type DictTypeQuery = OperationQuery<'get_system_dict_types'>
-type DictTypeAllQuery = OperationQuery<'get_system_dict_types_all'>
 type DictTypeExportQuery = Omit<DictTypeQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_dict_types_exports'>
 export type DictTypeCreateInput = OperationJsonBody<'post_system_dict_types'>
 export type DictTypeUpdateInput = OperationJsonBody<'put_system_dict_types_by_id'>
 export type DictTypeRecord = ApiSchema<'DictTypeVo'>
 
 /** 字典类型分页列表 */
-export function listDictType(params: DictTypeQuery) {
-  return request<PageResponse<DictTypeRecord>>({ url: DICT_TYPE_BASE, method: 'get', params })
-}
-
-/** 字典类型不分页列表 */
-export function listDictTypeNoPage(params?: DictTypeAllQuery) {
-  return request<DictTypeRecord[]>({
-    url: `${DICT_TYPE_BASE}/all`, method: 'get', params: stripPagination(params),
+export function listDictType(params: DictTypeQuery, signal?: AbortSignal) {
+  return request<PageResponse<DictTypeRecord>>({
+    url: DICT_TYPE_BASE,
+    method: 'get',
+    params,
+    signal,
   })
 }
 
 /** 导出字典类型 */
-export function exportDictType(params?: DictTypeExportQuery) {
-  return requestExportJob(`${DICT_TYPE_BASE}/exports`, stripPagination(params))
+export function exportDictType(params?: DictTypeExportQuery, signal?: AbortSignal) {
+  return requestExportJob(`${DICT_TYPE_BASE}/exports`, stripPagination(params), signal)
 }
 
 /** 创建字典类型 */
@@ -56,8 +53,8 @@ export type DictDataUpdateInput = OperationJsonBody<'put_system_dict_data_by_id'
 export type DictDataRecord = ApiSchema<'DictDataVo'>
 
 /** 字典数据列表(按type_code查询) */
-export function listDictData(params: DictDataQuery) {
-  return request<DictDataRecord[]>({ url: DICT_DATA_BASE, method: 'get', params })
+export function listDictData(params: DictDataQuery, signal?: AbortSignal) {
+  return request<DictDataRecord[]>({ url: DICT_DATA_BASE, method: 'get', params, signal })
 }
 
 /** 创建字典数据 */

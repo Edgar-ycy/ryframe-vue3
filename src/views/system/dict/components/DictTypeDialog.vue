@@ -43,8 +43,13 @@ import { useI18n } from 'vue-i18n'
 import {
   createDictType,
   updateDictType,
+  type DictTypeCreateInput,
   type DictTypeRecord,
+  type DictTypeUpdateInput,
 } from '@/api/modules/dict'
+import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 
@@ -53,6 +58,10 @@ interface DictTypeFormState {
   code: string
   status: string
 }
+
+type SaveDictTypeCommand =
+  | { kind: 'create', data: DictTypeCreateInput }
+  | { kind: 'update', id: Id, data: DictTypeUpdateInput }
 
 const props = defineProps<{
   modelValue: boolean
@@ -70,7 +79,25 @@ const visible = computed({
 })
 const isEdit = computed(() => props.dictType !== null)
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
+const userStore = useUserStore()
+const saveMutation = useTenantMutation<void, SaveDictTypeCommand>(
+  () => userStore.tenantId,
+  'dict-types',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'update') await updateDictType(command.id, command.data)
+      else await createDictType(command.data)
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(
+        command.kind === 'update'
+          ? 'system.common.updateSuccess'
+          : 'system.common.addSuccess',
+      ))
+    },
+  },
+)
+const submitting = saveMutation.pending
 
 function initialForm(): DictTypeFormState {
   return { name: '', code: '', status: '1' }
@@ -103,30 +130,22 @@ watch(
 )
 
 async function submit(): Promise<void> {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
-  submitting.value = true
-  try {
-    if (props.dictType) {
-      await updateDictType(props.dictType.id, {
-        name: form.value.name,
-        status: form.value.status,
-      })
-      ElMessage.success(t('system.common.updateSuccess'))
-    }
-    else {
-      await createDictType({
-        name: form.value.name,
-        code: form.value.code,
-      })
-      ElMessage.success(t('system.common.addSuccess'))
-    }
-    visible.value = false
-    emit('saved')
-  }
-  finally {
-    submitting.value = false
-  }
+  const command: SaveDictTypeCommand = props.dictType
+    ? {
+        kind: 'update',
+        id: props.dictType.id,
+        data: { name: form.value.name, status: form.value.status },
+      }
+    : {
+        kind: 'create',
+        data: { name: form.value.name, code: form.value.code },
+      }
+  await saveMutation.mutateAsync(command)
+  visible.value = false
+  emit('saved')
 }
 </script>

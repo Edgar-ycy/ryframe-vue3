@@ -1720,7 +1720,7 @@
           },
           "data": {
             "properties": {
-              "content": {
+              "content_markdown": {
                 "type": "string"
               },
               "created_at": {
@@ -1753,7 +1753,7 @@
             "required": [
               "id",
               "title",
-              "content",
+              "content_markdown",
               "status",
               "created_at"
             ],
@@ -3850,7 +3850,7 @@
           "data": {
             "items": {
               "properties": {
-                "content": {
+                "content_markdown": {
                   "type": "string"
                 },
                 "created_at": {
@@ -3883,7 +3883,7 @@
               "required": [
                 "id",
                 "title",
-                "content",
+                "content_markdown",
                 "status",
                 "created_at"
               ],
@@ -5456,7 +5456,10 @@
       "CreateNoticeDto": {
         "additionalProperties": false,
         "properties": {
-          "content": {
+          "content_markdown": {
+            "description": "公告 Markdown 原文，长度为 1 到 60,000 个 UTF-8 字节。",
+            "maxLength": 60000,
+            "minLength": 1,
             "type": "string"
           },
           "notice_type": {
@@ -5471,7 +5474,7 @@
         },
         "required": [
           "title",
-          "content"
+          "content_markdown"
         ],
         "type": "object"
       },
@@ -6511,7 +6514,7 @@
       },
       "NoticeVo": {
         "properties": {
-          "content": {
+          "content_markdown": {
             "type": "string"
           },
           "created_at": {
@@ -6544,7 +6547,7 @@
         "required": [
           "id",
           "title",
-          "content",
+          "content_markdown",
           "status",
           "created_at"
         ],
@@ -7305,7 +7308,7 @@
           "items": {
             "items": {
               "properties": {
-                "content": {
+                "content_markdown": {
                   "type": "string"
                 },
                 "created_at": {
@@ -7338,7 +7341,7 @@
               "required": [
                 "id",
                 "title",
-                "content",
+                "content_markdown",
                 "status",
                 "created_at"
               ],
@@ -8909,7 +8912,10 @@
       "UpdateNoticeDto": {
         "additionalProperties": false,
         "properties": {
-          "content": {
+          "content_markdown": {
+            "description": "公告 Markdown 原文，长度为 1 到 60,000 个 UTF-8 字节。",
+            "maxLength": 60000,
+            "minLength": 1,
             "type": "string"
           },
           "notice_type": {
@@ -8927,7 +8933,7 @@
         },
         "required": [
           "title",
-          "content",
+          "content_markdown",
           "status"
         ],
         "type": "object"
@@ -9570,7 +9576,7 @@
       "email": "edgar@example.com",
       "name": "edgar_ye"
     },
-    "description": "RyFrame —— 基于 Rust + Axum 的现代化企业级后端框架。\n\n## 认证\n所有受保护接口需在请求头携带 `Authorization: Bearer <access_token>`。\n登录接口在 JSON 中返回短期 `access_token`，长期 refresh token 只通过 HttpOnly Cookie 下发。\n\n## 响应格式\n```json\n{ \"code\": 200, \"msg\": \"操作成功\", \"data\": { ... } }\n```\n分页接口返回 `{ \"code\": 200, \"msg\": \"查询成功\", \"rows\": [...], \"total\": 100 }`。\n\n## 菜单类型\n菜单管理使用 `menu_type` 字段区分节点类型：\n- `M`（目录）：侧边栏一级分组，无实际页面\n- `C`（菜单）：可点击的页面路由\n- `F`（按钮）：页面内的操作按钮，显示与授权由独立权限码控制\n",
+    "description": "RyFrame —— 基于 Rust + Axum 的现代化企业级后端框架。\n\n## 认证\n所有受保护接口需在请求头携带 `Authorization: Bearer <access_token>`。\n登录接口在 JSON 中返回短期 `access_token`，长期 refresh token 只通过 HttpOnly Cookie 下发。\n\n## 响应格式\n```json\n{\n  \"code\": 200,\n  \"message\": \"操作成功\",\n  \"data\": { ... },\n  \"request_id\": \"01K...\",\n  \"error_key\": null,\n  \"details\": null\n}\n```\n分页数据统一位于 `data`，字段为 `items/page/page_size/total/total_pages/max_page_size`；\n不再使用旧 `msg`、顶层 `rows` 或顶层 `total`。\n\n## 菜单类型\n菜单管理使用 `menu_type` 字段区分节点类型：\n- `M`（目录）：侧边栏一级分组，无实际页面\n- `C`（菜单）：可点击的页面路由\n- `F`（按钮）：页面内的操作按钮，显示与授权由独立权限码控制\n",
     "license": {
       "name": "MIT"
     },
@@ -15372,6 +15378,13 @@
         "route_key": "tools.gen"
       }
     ],
+    "version": 1
+  },
+  "x-ryframe-notice-policy": {
+    "content_markdown": {
+      "max_utf8_bytes": 60000,
+      "min_utf8_bytes": 1
+    },
     "version": 1
   },
   "x-ryframe-password-policy": {

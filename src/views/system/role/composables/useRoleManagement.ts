@@ -10,14 +10,13 @@ import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permis
 import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
+import type { Id, PageResponse } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
 export function useRoleManagement() {
-  const loading = ref(false)
-  const tableData = ref<RoleRecord[]>([])
-  const total = ref(0)
-  const deptTree = ref<DeptNode[]>([])
-  const permissionTree = ref<PermissionTreeNode[]>([])
   const queryParams = ref<RoleQuery>({
     page: 1,
     page_size: 10,
@@ -25,6 +24,7 @@ export function useRoleManagement() {
     code: '',
     status: '',
   })
+  const activeQueryParams = ref<RoleQuery>({ ...queryParams.value })
 
   const roleDialogVisible = ref(false)
   const editingRole = ref<RoleRecord | null>(null)
@@ -34,28 +34,77 @@ export function useRoleManagement() {
   const dataScopeRole = ref<RoleRecord | null>(null)
 
   const { isAdmin } = usePermission()
-  const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
+  const userStore = useUserStore()
+  const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+  const authenticated = () => userStore.sessionStatus === 'authenticated'
+
+  const rolesQuery = useTenantQuery<PageResponse<RoleRecord>>(
+    () => userStore.tenantId,
+    authenticated,
+    'roles',
+    () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+    async signal => {
+      const response = await listRole({ ...activeQueryParams.value }, signal)
+      return response.data ?? {
+        items: [],
+        page: activeQueryParams.value.page ?? 1,
+        page_size: activeQueryParams.value.page_size ?? 10,
+        total: 0,
+        total_pages: 0,
+        max_page_size: activeQueryParams.value.page_size ?? 10,
+      }
+    },
+  )
+  const departmentsQuery = useTenantQuery<DeptNode[]>(
+    () => userStore.tenantId,
+    authenticated,
+    'departments',
+    () => ({ scope: 'tree' }),
+    async signal => {
+      const response = await getDeptTree(signal)
+      return response.data ?? []
+    },
+  )
+  const permissionsQuery = useTenantQuery<PermissionTreeNode[]>(
+    () => userStore.tenantId,
+    authenticated,
+    'permissions',
+    () => ({ scope: 'tree' }),
+    async signal => {
+      const response = await getPermissionTree(undefined, signal)
+      return response.data ?? []
+    },
+  )
+
+  const tableData = computed(() => rolesQuery.data.value?.items ?? [])
+  const total = computed(() => rolesQuery.data.value?.total ?? 0)
+  const loading = computed(() => rolesQuery.isFetching.value)
+  const deptTree = computed(() => departmentsQuery.data.value ?? [])
+  const permissionTree = computed(() => permissionsQuery.data.value ?? [])
+
+  const deleteMutation = useTenantMutation<void, RoleRecord>(
+    () => userStore.tenantId,
+    'roles',
+    {
+      mutationFn: async role => {
+        await deleteRole(role.id)
+      },
+      onSuccess: () => {
+        ElMessage.success(translate('system.common.deleteSuccess'))
+      },
+    },
+  )
+  const deletingId = computed<Id | null>(() => (
+    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
+  ))
 
   async function fetchData(): Promise<void> {
-    loading.value = true
-    try {
-      const response = await listRole(queryParams.value)
-      tableData.value = response.data?.items ?? []
-      total.value = response.data?.total ?? 0
+    const nextParams = { ...queryParams.value }
+    if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
+      activeQueryParams.value = nextParams
+      return
     }
-    finally {
-      loading.value = false
-    }
-  }
-
-  async function loadDeptTree(): Promise<void> {
-    const response = await getDeptTree()
-    deptTree.value = response.data ?? []
-  }
-
-  async function loadPermissionTree(): Promise<void> {
-    const response = await getPermissionTree()
-    permissionTree.value = response.data ?? []
+    await rolesQuery.refetch({ throwOnError: true })
   }
 
   function handleSearch(): void {
@@ -75,7 +124,7 @@ export function useRoleManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return exportAndDownload(() => exportRole(queryParams.value), {
+    return exportAndDownload(signal => exportRole(activeQueryParams.value, signal), {
       filename: translate('system.role.exportFilename'),
     })
   }
@@ -114,29 +163,25 @@ export function useRoleManagement() {
   }
 
   async function handleDelete(role: RoleRecord): Promise<void> {
-    if (!guardRole(role)) return
+    if (deleteMutation.pending.value || !guardRole(role)) return
     const confirmed = await confirmAction(
       translate('system.role.deleteConfirm', { name: role.name }),
       translate('system.common.warning'),
       {
-      type: 'warning',
+        type: 'warning',
         confirmButtonText: translate('system.common.confirmDelete'),
       },
     )
     if (!confirmed) return
 
-    await deleteRole(role.id)
-    ElMessage.success(translate('system.common.deleteSuccess'))
-    await fetchData()
+    await deleteMutation.mutateAsync(role)
+    await rolesQuery.refetch({ throwOnError: true })
   }
-
-  onMounted(() => {
-    void Promise.allSettled([fetchData(), loadDeptTree(), loadPermissionTree()])
-  })
 
   return {
     dataScopeDialogVisible,
     dataScopeRole,
+    deletingId,
     deptTree,
     editingRole,
     exportLoading,

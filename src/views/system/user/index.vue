@@ -105,6 +105,8 @@
                 v-model="row.status"
                 active-value="1"
                 inactive-value="0"
+                :loading="statusUpdatingId === row.id"
+                :disabled="statusUpdatingId !== null"
                 @change="(value: UserManageableStatus) => handleChangeStatus(row, value)"
               />
               <el-tag v-else :type="userStatusTag(row.status)" size="small">
@@ -176,17 +178,14 @@
       v-model="userDialogVisible"
       :user="editingUser"
       :dept-tree="deptTree"
-      :roles="roleList"
-      :is-admin="isAdmin()"
       @saved="fetchData"
     />
     <UserRoleDialog
       v-model="roleDialogVisible"
       :user="roleEditingUser"
-      :roles="roleList"
-      :is-admin="isAdmin()"
       :current-user-id="userStore.userId"
       :current-user-is-super="userStore.isSuper"
+      @saved="fetchData"
     />
     <PasswordResetDialog v-model="passwordDialogVisible" :user-id="passwordResetUserId" />
   </div>
@@ -222,17 +221,16 @@ const {
   handleResetPassword,
   handleSearch,
   hasPermission,
-  isAdmin,
   isManageableStatus,
   loading,
   passwordDialogVisible,
   passwordResetUserId,
   queryParams,
-  roleList,
   roleDialogVisible,
   roleEditingUser,
   selectedDeptId,
   selectedDeptName,
+  statusUpdatingId,
   tableData,
   total,
   userStatusLabel,

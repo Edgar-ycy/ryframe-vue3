@@ -8,7 +8,6 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
-      '.pnpm-store/**',
       'playwright-report/**',
       'test-results/**',
       'src/auto-imports.d.ts',

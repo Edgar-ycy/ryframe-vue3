@@ -108,6 +108,7 @@
               type="danger"
               link
               icon="Delete"
+              :loading="deletingId === row.id"
               @click="handleDelete(row)"
             >
               {{ t('system.common.delete') }}
@@ -138,6 +139,7 @@ import { usePermissionManagement } from './composables/usePermissionManagement'
 const { t } = useI18n()
 
 const {
+  deletingId,
   dialogVisible,
   editingPermission,
   fetchData,

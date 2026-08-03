@@ -1,6 +1,6 @@
 import request from '@/shared/http/client'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
+import type { Id, PageResponse } from '@/shared/http/types'
 
 export type MenuType = ApiSchema<'MenuType'>
 export type MenuTreeNode = Omit<ApiSchema<'MenuTreeNode'>, 'children' | 'menu_type'> & {
@@ -12,26 +12,19 @@ export type MenuRecord = ApiSchema<'MenuVo'>
 const BASE = '/system/menus'
 
 export type MenuQuery = OperationQuery<'get_system_menus'>
-type MenuAllQuery = OperationQuery<'get_system_menus_all'>
 export type MenuCreateInput = OperationJsonBody<'post_system_menus'>
 export type MenuUpdateInput = OperationJsonBody<'put_system_menus_by_id'>
 
-export function getMenuTree() {
-  return request<MenuTreeNode[]>({ url: `${BASE}/tree`, method: 'get' })
+export function getMenuTree(signal?: AbortSignal) {
+  return request<MenuTreeNode[]>({ url: `${BASE}/tree`, method: 'get', signal })
 }
 
-export function listMenu(params?: MenuQuery) {
-  return request<PageResponse<MenuRecord>>({ url: BASE, method: 'get', params })
+export function listMenu(params?: MenuQuery, signal?: AbortSignal) {
+  return request<PageResponse<MenuRecord>>({ url: BASE, method: 'get', params, signal })
 }
 
-export function listMenuNoPage(params?: MenuAllQuery) {
-  return request<MenuRecord[]>({
-    url: `${BASE}/all`, method: 'get', params: stripPagination(params),
-  })
-}
-
-export function getMenu(id: Id) {
-  return request<MenuRecord>({ url: `${BASE}/${id}`, method: 'get' })
+export function getMenu(id: Id, signal?: AbortSignal) {
+  return request<MenuRecord>({ url: `${BASE}/${id}`, method: 'get', signal })
 }
 
 export function createMenu(data: MenuCreateInput) {

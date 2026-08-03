@@ -43,16 +43,15 @@
 <script setup lang="ts">
 import type { FormItemRule } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { changePassword } from '@/api/modules/auth'
-import { terminateSession } from '@/app/session/sessionCoordinator'
 import {
   PASSWORD_POLICY,
 } from '@/shared/security/passwordPolicy'
+import { useProfilePasswordMutation } from '../useProfileMutations'
 
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
 const form = ref({ old_password: '', new_password: '', confirm_password: '' })
 const { t } = useI18n()
+const { savePassword, submitting } = useProfilePasswordMutation(t, resetPasswordForm)
 
 const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) => {
   const password = String(value ?? '')
@@ -81,24 +80,19 @@ const rules = computed<FormRules>(() => ({
 }))
 
 async function submit(): Promise<void> {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
-  submitting.value = true
-  try {
-    await changePassword({
-      old_password: form.value.old_password,
-      new_password: form.value.new_password,
-    })
-    ElMessage.success(t('account.passwordChangedSignInAgain'))
-    form.value = { old_password: '', new_password: '', confirm_password: '' }
-    formRef.value?.resetFields()
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    await terminateSession()
-  }
-  finally {
-    submitting.value = false
-  }
+  await savePassword({
+    old_password: form.value.old_password,
+    new_password: form.value.new_password,
+  })
+}
+
+function resetPasswordForm(): void {
+  form.value = { old_password: '', new_password: '', confirm_password: '' }
+  formRef.value?.resetFields()
 }
 
 function passwordValidationMessage(password: string): string | undefined {

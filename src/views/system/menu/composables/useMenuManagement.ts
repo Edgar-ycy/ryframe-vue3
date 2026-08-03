@@ -6,37 +6,98 @@ import {
   type MenuType,
   type MenuUpdateInput,
 } from '@/api/modules/menu'
-import { getPermissionTree } from '@/api/modules/permission'
+import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permission'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
-import { flattenPermissionOptions, type PermissionOption } from '../menuTree'
+import { flattenPermissionOptions } from '../menuTree'
+
+interface StatusCommand {
+  action: string
+  menu: MenuTreeNode
+  previousStatus: string
+  status: string
+}
 
 export function useMenuManagement() {
-  const loading = ref(false)
-  const tableData = ref<MenuTreeNode[]>([])
-  const permissionOptions = ref<PermissionOption[]>([])
-  const deletingId = ref<Id | null>(null)
   const dialogVisible = ref(false)
   const editingMenu = ref<MenuTreeNode | null>(null)
   const parentMenuId = ref<Id>()
   const { hasPermission } = usePermission()
+  const userStore = useUserStore()
+  const authenticated = () => userStore.sessionStatus === 'authenticated'
+
+  const menusQuery = useTenantQuery<MenuTreeNode[]>(
+    () => userStore.tenantId,
+    authenticated,
+    'menus',
+    () => ({ scope: 'tree' }),
+    async signal => {
+      const response = await getMenuTree(signal)
+      return response.data ?? []
+    },
+  )
+  const permissionsQuery = useTenantQuery<PermissionTreeNode[]>(
+    () => userStore.tenantId,
+    authenticated,
+    'permissions',
+    () => ({ scope: 'tree' }),
+    async signal => {
+      const response = await getPermissionTree(undefined, signal)
+      return response.data ?? []
+    },
+  )
+  const tableData = computed(() => menusQuery.data.value ?? [])
+  const permissionOptions = computed(() => flattenPermissionOptions(
+    permissionsQuery.data.value ?? [],
+  ))
+  const loading = computed(() => menusQuery.isFetching.value)
+
+  const statusMutation = useTenantMutation<void, StatusCommand>(
+    () => userStore.tenantId,
+    'menus',
+    {
+      mutationFn: async variables => {
+        await updateMenu(
+          variables.menu.id,
+          toUpdateInput(variables.menu, variables.status),
+        )
+      },
+      onError: (_error, variables) => {
+        variables.menu.status = variables.previousStatus
+      },
+      onSuccess: (_data, variables) => {
+        ElMessage.success(translate('system.common.actionSuccess', {
+          action: variables.action,
+        }))
+      },
+    },
+  )
+  const deleteMutation = useTenantMutation<void, MenuTreeNode>(
+    () => userStore.tenantId,
+    'menus',
+    {
+      mutationFn: async menu => {
+        await deleteMenu(menu.id)
+      },
+      onSuccess: () => {
+        ElMessage.success(translate('system.common.deleteSuccess'))
+      },
+    },
+  )
+  const deletingId = computed<Id | null>(() => (
+    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
+  ))
+  const statusUpdatingId = computed<Id | null>(() => (
+    statusMutation.pending.value ? statusMutation.variables.value?.menu.id ?? null : null
+  ))
 
   async function fetchData(): Promise<void> {
-    loading.value = true
-    try {
-      const response = await getMenuTree()
-      tableData.value = response.data ?? []
-    }
-    finally {
-      loading.value = false
-    }
-  }
-
-  async function loadPermissionOptions(): Promise<void> {
-    const response = await getPermissionTree()
-    permissionOptions.value = flattenPermissionOptions(response.data ?? [])
+    await menusQuery.refetch({ throwOnError: true })
   }
 
   function menuTypeLabel(type: MenuType): string {
@@ -73,6 +134,10 @@ export function useMenuManagement() {
 
   async function handleChangeStatus(menu: MenuTreeNode, status: string): Promise<void> {
     const previousStatus = status === '1' ? '0' : '1'
+    if (statusMutation.pending.value) {
+      menu.status = previousStatus
+      return
+    }
     const action = translate(
       status === '1' ? 'system.common.enable' : 'system.common.disable',
     )
@@ -86,15 +151,8 @@ export function useMenuManagement() {
       return
     }
 
-    try {
-      await updateMenu(menu.id, toUpdateInput(menu, status))
-      ElMessage.success(translate('system.common.actionSuccess', { action }))
-      await fetchData()
-    }
-    catch (error) {
-      menu.status = previousStatus
-      throw error
-    }
+    await statusMutation.mutateAsync({ action, menu, previousStatus, status })
+    await menusQuery.refetch({ throwOnError: true })
   }
 
   function handleAdd(parentId?: Id): void {
@@ -110,6 +168,7 @@ export function useMenuManagement() {
   }
 
   async function handleDelete(menu: MenuTreeNode): Promise<void> {
+    if (deleteMutation.pending.value) return
     const confirmed = await confirmAction(
       translate('system.menu.deleteConfirm', { name: menu.name }),
       translate('system.common.warning'),
@@ -120,20 +179,9 @@ export function useMenuManagement() {
     )
     if (!confirmed) return
 
-    deletingId.value = menu.id
-    try {
-      await deleteMenu(menu.id)
-      ElMessage.success(translate('system.common.deleteSuccess'))
-      await fetchData()
-    }
-    finally {
-      deletingId.value = null
-    }
+    await deleteMutation.mutateAsync(menu)
+    await menusQuery.refetch({ throwOnError: true })
   }
-
-  onMounted(() => {
-    void Promise.allSettled([fetchData(), loadPermissionOptions()])
-  })
 
   return {
     deletingId,
@@ -151,6 +199,7 @@ export function useMenuManagement() {
     parentMenuId,
     permissionLabel,
     permissionOptions,
+    statusUpdatingId,
     tableData,
   }
 }

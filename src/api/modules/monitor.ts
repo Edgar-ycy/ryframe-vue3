@@ -10,106 +10,105 @@ export type CacheInfo = ApiSchema<'CacheInfo'>
 export type DbPoolInfo = ApiSchema<'DbPoolInfo'>
 export type RuntimeStatus = ApiSchema<'RuntimeStatus'>
 
-/** 服务器信息 */
-export function getServerInfo() {
-  return request<ServerInfo>({ url: '/monitor/server', method: 'get' })
+/** 获取服务器信息。 */
+export function getServerInfo(signal?: AbortSignal) {
+  return request<ServerInfo>({ url: '/monitor/server', method: 'get', signal })
 }
 
-/** 缓存统计 */
-export function getCacheInfo() {
-  return request<CacheInfo>({ url: '/monitor/cache', method: 'get' })
+/** 获取缓存统计。 */
+export function getCacheInfo(signal?: AbortSignal) {
+  return request<CacheInfo>({ url: '/monitor/cache', method: 'get', signal })
 }
 
-/** Redis 命令统计 */
-export function getCacheCommands() {
+/** 获取 Redis 命令统计。 */
+export function getCacheCommands(signal?: AbortSignal) {
   return request<OperationData<'get_monitor_cache_commands'>>({
     url: '/monitor/cache/commands',
     method: 'get',
+    signal,
   })
 }
 
-/** 数据库连接池 */
-export function getDbPool() {
-  return request<DbPoolInfo>({ url: '/monitor/db-pool', method: 'get' })
+/** 获取数据库连接池状态。 */
+export function getDbPool(signal?: AbortSignal) {
+  return request<DbPoolInfo>({ url: '/monitor/db-pool', method: 'get', signal })
 }
 
-/** 主应用运行时组件状态 */
-export function getRuntimeStatus() {
-  return request<RuntimeStatus>({ url: '/monitor/runtime', method: 'get' })
+/** 获取主应用运行时组件状态。 */
+export function getRuntimeStatus(signal?: AbortSignal) {
+  return request<RuntimeStatus>({ url: '/monitor/runtime', method: 'get', signal })
 }
 
-/** Prometheus 指标文本 */
-export function getMetrics() {
-  return requestText({ url: '/monitor/metrics', method: 'get' })
+/** 获取 Prometheus 指标文本。 */
+export function getMetrics(signal?: AbortSignal) {
+  return requestText({ url: '/monitor/metrics', method: 'get', signal })
 }
 
 // ========== 操作日志 (/system/operlogs) ==========
 
 export type OperLogQuery = OperationQuery<'get_system_operlogs'>
-type OperLogAllQuery = OperationQuery<'get_system_operlogs_all'>
-type OperLogExportQuery = Omit<OperLogQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_operlogs_exports'>
 export type OperLogRecord = ApiSchema<'OperLogVo'>
 
-/** 操作日志分页 */
-export function listOperLog(params: OperLogQuery) {
-  return request<PageResponse<OperLogRecord>>({ url: '/system/operlogs', method: 'get', params })
+type LogExportFilters = {
+  name?: string
+  status?: string
+  begin_time?: string
+  end_time?: string
 }
+type OperLogExportQuery = LogExportFilters & OperationJsonBody<'post_system_operlogs_exports'>
 
-/** 操作日志不分页 */
-export function listOperLogNoPage(params?: OperLogAllQuery) {
-  return request<OperLogRecord[]>({
-    url: '/system/operlogs/all', method: 'get', params: stripPagination(params),
+/** 分页获取操作日志。 */
+export function listOperLog(params: OperLogQuery, signal?: AbortSignal) {
+  return request<PageResponse<OperLogRecord>>({
+    url: '/system/operlogs',
+    method: 'get',
+    params,
+    signal,
   })
 }
 
-/** 导出操作日志 */
-export function exportOperLog(params?: OperLogExportQuery) {
-  return requestExportJob('/system/operlogs/exports', stripPagination(params))
+/** 导出操作日志。 */
+export function exportOperLog(params?: OperLogExportQuery, signal?: AbortSignal) {
+  return requestExportJob('/system/operlogs/exports', stripPagination(params), signal)
 }
 
 // ========== 登录日志 (/system/loginlogs) ==========
 
 export type LoginLogQuery = OperationQuery<'get_system_loginlogs'>
-type LoginLogAllQuery = OperationQuery<'get_system_loginlogs_all'>
-type LoginLogExportQuery = Omit<LoginLogQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_loginlogs_exports'>
+type LoginLogExportQuery = LogExportFilters & OperationJsonBody<'post_system_loginlogs_exports'>
 export type LoginLogRecord = ApiSchema<'LoginInfoVo'>
 
-/** 登录日志分页 */
-export function listLoginLog(params: LoginLogQuery) {
-  return request<PageResponse<LoginLogRecord>>({ url: '/system/loginlogs', method: 'get', params })
-}
-
-/** 登录日志不分页 */
-export function listLoginLogNoPage(params?: LoginLogAllQuery) {
-  return request<LoginLogRecord[]>({
-    url: '/system/loginlogs/all', method: 'get', params: stripPagination(params),
+/** 分页获取登录日志。 */
+export function listLoginLog(params: LoginLogQuery, signal?: AbortSignal) {
+  return request<PageResponse<LoginLogRecord>>({
+    url: '/system/loginlogs',
+    method: 'get',
+    params,
+    signal,
   })
 }
 
-/** 导出登录日志 */
-export function exportLoginLog(params?: LoginLogExportQuery) {
-  return requestExportJob('/system/loginlogs/exports', stripPagination(params))
+/** 导出登录日志。 */
+export function exportLoginLog(params?: LoginLogExportQuery, signal?: AbortSignal) {
+  return requestExportJob('/system/loginlogs/exports', stripPagination(params), signal)
 }
 
 // ========== 在线用户 (/system/online) ==========
 
 export type OnlineUserQuery = OperationQuery<'get_system_online'>
-type OnlineUserAllQuery = OperationQuery<'get_system_online_all'>
 export type OnlineUserRecord = ApiSchema<'OnlineUserVo'>
 
-/** 在线用户列表 */
-export function listOnlineUser(params: OnlineUserQuery) {
-  return request<PageResponse<OnlineUserRecord>>({ url: '/system/online', method: 'get', params })
-}
-
-/** 在线用户不分页 */
-export function listOnlineUserNoPage(params?: OnlineUserAllQuery) {
-  return request<OnlineUserRecord[]>({
-    url: '/system/online/all', method: 'get', params: stripPagination(params),
+/** 分页获取在线用户。 */
+export function listOnlineUser(params: OnlineUserQuery, signal?: AbortSignal) {
+  return request<PageResponse<OnlineUserRecord>>({
+    url: '/system/online',
+    method: 'get',
+    params,
+    signal,
   })
 }
 
-/** 强制下线 */
+/** 强制指定会话下线。 */
 export function forceLogout(sid: string) {
   return request({ url: `/system/online/${encodeURIComponent(sid)}`, method: 'delete' })
 }

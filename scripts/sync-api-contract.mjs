@@ -3,6 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
+import { requireApiPrefixContract } from './api-prefix-contract.mjs'
+
 const mode = process.argv[2] ?? 'sync'
 const allowedModes = new Set(['sync', '--verify-local', '--verify-upstream'])
 if (!allowedModes.has(mode) || process.argv.length > 3) {
@@ -13,6 +15,12 @@ const metadataPath = path.resolve('openapi/source.json')
 const outputPath = path.resolve('openapi/openapi.json')
 const passwordPolicyPath = path.resolve(
   'src/shared/security/passwordPolicy.generated.json',
+)
+const noticePolicyPath = path.resolve(
+  'src/shared/markdown/noticePolicy.generated.json',
+)
+const apiPrefixPath = path.resolve(
+  'src/shared/config/apiPrefix.generated.json',
 )
 const defaultOpenApiPath = 'openapi/openapi.json'
 const sha256Pattern = /^[0-9a-f]{64}$/i
@@ -119,6 +127,19 @@ function validateContract(document, label) {
     || !Array.isArray(passwordPolicy.required_classes)) {
     throw new Error(`${label} is missing a supported RyFrame password policy`)
   }
+
+  const noticePolicy = document['x-ryframe-notice-policy']
+  if (!noticePolicy
+    || noticePolicy.version !== 1
+    || !Number.isInteger(noticePolicy.content_markdown?.min_utf8_bytes)
+    || !Number.isInteger(noticePolicy.content_markdown?.max_utf8_bytes)
+    || noticePolicy.content_markdown.min_utf8_bytes < 1
+    || noticePolicy.content_markdown.max_utf8_bytes < noticePolicy.content_markdown.min_utf8_bytes) {
+    throw new Error(`${label} is missing a supported RyFrame notice policy`)
+  }
+
+  const apiPrefix = document['x-ryframe-api-prefix']
+  requireApiPrefixContract(apiPrefix, label)
 }
 
 async function readSource(value) {
@@ -190,6 +211,8 @@ async function sync() {
   const document = parseContract(await readSource(source), source)
   const serializedDocument = canonicalJson(document)
   const passwordPolicy = document['x-ryframe-password-policy']
+  const noticePolicy = document['x-ryframe-notice-policy']
+  const apiPrefix = document['x-ryframe-api-prefix']
   const sourceMetadata = {
     ...metadata,
     openapi_version: document.openapi,
@@ -198,8 +221,12 @@ async function sync() {
 
   await mkdir(path.dirname(outputPath), { recursive: true })
   await mkdir(path.dirname(passwordPolicyPath), { recursive: true })
+  await mkdir(path.dirname(noticePolicyPath), { recursive: true })
+  await mkdir(path.dirname(apiPrefixPath), { recursive: true })
   await writeFile(outputPath, serializedDocument, 'utf8')
   await writeFile(passwordPolicyPath, canonicalJson(passwordPolicy), 'utf8')
+  await writeFile(noticePolicyPath, canonicalJson(noticePolicy), 'utf8')
+  await writeFile(apiPrefixPath, canonicalJson(apiPrefix), 'utf8')
   await writeFile(metadataPath, canonicalJson(sourceMetadata), 'utf8')
   console.log(
     `Synced RyFrame OpenAPI contract from ${sourceMetadata.backend_repository}`

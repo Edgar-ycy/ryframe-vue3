@@ -53,6 +53,8 @@
               v-model="row.status"
               active-value="1"
               inactive-value="0"
+              :loading="statusUpdatingId === row.id"
+              :disabled="statusUpdatingId !== null"
               @change="(value: string) => handleChangeStatus(row, value)"
             />
             <el-tag v-else :type="row.status === '1' ? 'success' : 'danger'" size="small">
@@ -133,6 +135,7 @@ const {
   parentMenuId,
   permissionLabel,
   permissionOptions,
+  statusUpdatingId,
   tableData,
 } = useMenuManagement()
 </script>

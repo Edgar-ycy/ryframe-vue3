@@ -64,6 +64,7 @@
                   link
                   icon="Delete"
                   size="small"
+                  :loading="deletingTypeId === row.id"
                   @click.stop="handleDeleteType(row)"
                 >
                   {{ t('system.common.delete') }}
@@ -80,7 +81,6 @@
             size="small"
             background
             class="dict-pagination"
-            @change="fetchTypeList"
           />
         </el-card>
       </div>
@@ -135,6 +135,7 @@
                   link
                   icon="Delete"
                   size="small"
+                  :loading="deletingDataId === row.id"
                   @click="handleDeleteData(row)"
                 >
                   {{ t('system.common.delete') }}
@@ -174,10 +175,11 @@ const {
   dataDialogVisible,
   dataList,
   dataLoading,
+  deletingDataId,
+  deletingTypeId,
   editingData,
   editingType,
   exportLoading,
-  fetchTypeList,
   handleAddData,
   handleAddType,
   handleDataSaved,

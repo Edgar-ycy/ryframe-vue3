@@ -1,9 +1,9 @@
 # RyFrame Vue3 架构与演进指南
 
-> 最后核对：2026-07-17
+> 最后核对：2026-08-03
 > 适用范围：独立前端仓库 `ryframe-vue3`
 
-前端与 Rust 后端分别维护 Git、版本、CI 和发布产物，只通过 `/api/v1`、OpenAPI、认证/租户头和稳定 `route_key` 协作。
+前端与 Rust 后端分别维护 Git、版本和 CI，只通过 `/api/v1`、OpenAPI、认证/租户头和稳定 `route_key` 协作。前端只维护与后端同名的稳定标签，项目级源码 Release 由后端仓库统一发布。
 
 ## 1. 当前目录
 
@@ -12,6 +12,7 @@ openapi/openapi.json             # 后端发布契约的仓库快照
 scripts/                         # 源码、架构和 API 契约门禁
 src/
 ├── app/session/                 # 刷新、退出和全局会话协调
+├── app/messages/                # 消息 Query、mutation 与 WebSocket 传输
 ├── shared/
 │   ├── config/                  # 启动时校验的只读运行时配置
 │   ├── http/                    # 纯 Axios 客户端、协议类型和结构化错误
@@ -27,7 +28,7 @@ src/
 │   ├── menuRouteBuilder.ts      # 菜单转换纯函数
 │   ├── pageRegistry.ts          # route_key 到本地页面的安全白名单
 │   └── routes/                  # 常量路由
-├── stores/                      # 跨页面响应式状态
+├── stores/                      # 客户端跨页面状态与连接状态
 ├── components/                  # 布局和可复用组件
 ├── hooks/                       # 可复用组合式逻辑
 ├── directives/                  # 权限和交互指令
@@ -56,7 +57,8 @@ flowchart LR
 | `shared/http` | Axios、请求头、响应包络、单飞刷新和 `HttpError` | 导入 Store、Router、Element Plus 或业务 API |
 | `api/modules` | 语义化请求函数和生成契约别名 | 手写 DTO 字段表、弹消息、跳转、修改 Store |
 | `app/session` | Token 生命周期、刷新后主体/路由重载、退出清理 | 页面展示逻辑 |
-| Store | 保存跨页面状态和派生状态 | 操纵 Axios 拦截器、复制纯转换算法 |
+| QueryClient | 保存按租户、用户和查询参数隔离的服务端状态 | 保存 Token 或客户端偏好 |
+| Store | 保存客户端跨页面状态、连接状态和派生状态 | 复制 QueryClient 中的服务端数据、操纵 Axios 拦截器 |
 | View | 页面编排和交互 | 直接读写 Token 存储、拼后端基础 URL |
 
 ESLint 对 `shared` 和 `api/modules` 的禁止依赖进行编译期检查。
@@ -82,7 +84,14 @@ ESLint 对 `shared` 和 `api/modules` 的禁止依赖进行编译期检查。
 - 刷新使用独立 `rawRequest`，不会递归触发响应拦截器。
 - `Id` 统一为 `string`，禁止转换为 JavaScript `number`。
 
-### 3.3 动态路由
+### 3.3 消息中心
+
+- 收件箱页、未读数、加载和刷新状态只保存在 TanStack Query；查询键固定包含租户、用户、过滤条件和游标。
+- WebSocket 投递直接按消息 ID 合并到 QueryClient，连接成功、重连成功及连接存续期间每 60 秒通过 REST 补拉。
+- 确认送达、单条已读和全部已读统一走 mutation；送达确认按 100 条分批并在失败后有界退避。
+- `stores/message.ts` 只保存连接状态和不可观察的传输运行时，不得复制消息列表或未读数。
+
+### 3.4 动态路由
 
 ```text
 GET /system/menus/current
@@ -100,11 +109,11 @@ GET /system/menus/current
 1. HTTP 客户端与认证 API、Store、Router、UI 的循环依赖已消除。
 2. Token 刷新、退出和动态路由重载已归一到 `SessionCoordinator`。
 3. 菜单转换、导航守卫和动态路由注册已提取为可注入、可单测模块。
-4. 运行时环境变量集中到 `shared/config/runtimeConfig.ts` 并在启动时校验。
+4. 运行时环境变量集中到 `shared/config/runtimeConfig.ts` 并在启动时校验；部署只配置 API origin，版本前缀由后端 OpenAPI 生成且不保留旧环境变量回退。
 5. JSON、Blob 和文本响应分别建模，不再混用 Axios 原始响应。
 6. 业务源码已无显式 `any`，TypeScript `strict`、未使用符号检查全部开启。
 7. 所有 Snowflake ID 在前端契约中统一为字符串。
-8. 旧 API 路径已删除，前端调用使用复数资源、根分页路径和 `/all`。
+8. 旧 API 路径和无上限列表已删除；表格使用复数资源根分页路径，下拉候选使用受限的 `/options?q&limit`。
 9. ESLint、Stylelint、Vue TSC、Vitest/V8、源码卫生和生产构建已进入 CI，警告按失败处理。
 10. 用户资料、角色分配、密码重置和部门树已从用户管理页拆为独立组件，查询、提交和状态动作归入 `useUserManagement`。
 11. 查询参数统一为 `page`/`page_size`，密码重置链接统一为 `request_id`，源码门禁禁止旧 camelCase API 字段回流。
@@ -113,9 +122,9 @@ GET /system/menus/current
 14. 角色、菜单和权限页面已拆出领域 composable 与表单对话框；菜单树转换提取为纯函数并有单元测试。
 15. 用户创建会一次提交资料与角色；后续资料、角色和状态使用独立资源请求，每次对话框提交只对应一次后端原子写操作。
 16. 有限状态和权限类型改为联合类型；统一 `confirmAction` 只吞掉明确取消，状态切换失败会恢复 UI 并继续传播真实请求错误。
-17. 后端 OpenAPI 快照、前端同步脚本和 `openapi-typescript` 已形成确定性生成链路；14 个 API 模块全部通过 `contract.ts` 使用生成查询、请求体和响应模型。
-18. API 契约门禁覆盖操作 ID、成功响应、写请求体、34 个查询操作和字符串 ID，并禁止 API 模块重新导出手写 DTO interface。
-19. `/all` 与导出函数绑定各自的 `operationId` 查询类型，并在 API 边界通过 `stripPagination` 移除分页键；架构检查禁止全量请求重新发送 `page/page_size`。
+17. 后端 OpenAPI 快照、前端同步脚本和 `openapi-typescript` 已形成确定性生成链路；全部 API 模块通过 `contract.ts` 使用生成查询、请求体和响应模型。
+18. API 契约门禁覆盖操作 ID、成功响应、写请求体、查询操作和字符串 ID，并禁止 API 模块重新导出手写 DTO interface。
+19. 分页、受限候选和导出分别绑定自己的 `operationId`；导出函数在 API 边界通过 `stripPagination` 只发送业务筛选字段，架构检查禁止无上限列表和旧 `NoPage` 类型回流。
 20. 后端通过 OpenAPI 导出 21 个默认菜单 `route_key` 及 `M/C` 类型；契约检查使用 TypeScript AST 对 `menuPageRegistry` 做精确集合检查，并验证页面必须有组件、目录不得绑定组件。
 21. 后端通过 OpenAPI 导出统一新密码策略；同步脚本生成 `passwordPolicy.generated.json`，个人中心、重置页和租户页共用一个验证器，CI 校验扩展、schema 和生成文件精确一致。
 22. 字典管理已拆为类型/数据对话框与领域 composable，个人中心已拆为资料、头像和密码组件；首页改为只展示真实会话信息和权限派生快捷入口。
@@ -142,7 +151,7 @@ GET /system/menus/current
 1. 先在后端更新 Handler/DTO/`ToSchema`，导出并提交 `openapi/openapi.json`。
 2. 在前端执行 `RYFRAME_BACKEND_REPOSITORY=<owner/repository> RYFRAME_BACKEND_COMMIT=<完整 40 位 SHA> RYFRAME_OPENAPI_SOURCE=<后端快照路径> pnpm api:sync`，同步脚本会提交不可变的 `openapi/source.json`。
 3. 在 `api/modules/<resource>.ts` 使用 `ApiSchema`、`OperationQuery`、`OperationJsonBody` 或 `OperationData`，只添加语义化请求函数；禁止复制生成字段。
-4. 分页列表、`/all` 和导出分别绑定自己的 operation；全量请求统一调用 `stripPagination`，不得发送 `page/page_size`。
+4. 分页列表发送经过生成类型约束的 `page/page_size`；选择器使用受限的 `/options?q&limit`；导出只发送业务筛选字段并通过 `stripPagination` 移除分页键，不新增无上限列表接口。
 5. 路径与 operation 完全一致，不增加兼容回退；Blob、文本和 FormData 继续使用专用客户端入口。
 6. API 模块不处理 ElMessage、Router 或 Store，生成文件不得手工修改。
 
@@ -163,7 +172,7 @@ GET /system/menus/current
 
 ## 7. CI 门禁
 
-本地和 CI 使用同一入口：
+本地完整门禁使用统一入口：
 
 ```bash
 pnpm install --frozen-lockfile
@@ -177,15 +186,21 @@ check:sources -> check:workflows -> check:dependencies -> check:architecture -> 
 -> lint -> lint:styles -> typecheck -> test:coverage -> build -> check:bundle -> test:e2e
 ```
 
-核心路由与权限模块覆盖率阈值为：语句/行/函数 80%，分支 70%。该阈值只代表当前纳入单测的架构核心，不代表全部 UI 覆盖率。
+全局覆盖率阈值为语句、行和函数 70%，分支 60%。会话协调、认证 API、HTTP 客户端、用户状态、权限判断以及消息查询和 WebSocket 等关键模块单独执行语句、行和函数 90%、分支 80% 的阈值。
 
-最近一次完整结果为：语句 91.62%、分支 86.05%、函数 97.87%、行 97.48%。
+日常 push、pull request 和手动触发只运行一个 Node 24 主质量作业，依赖安装、上游契约校验、类型、Lint、覆盖率、生产构建、体积和 Playwright 依次复用同一工作区。每周定时任务只运行 Node 22.18 的安装、类型检查、单元测试和生产构建兼容验证，不与日常主门禁重复执行。
 
-## 8. 完成标准
+## 8. 稳定版本职责
+
+- 前端仓库不再包含独立 Release 或 Nightly 工作流，只维护与后端一致的稳定 annotated tag。
+- 后端是唯一联合发布主控；稳定 Release 只保留 GitHub 自动生成的源码 ZIP/TAR，不上传前端 `dist`、镜像、SBOM、签名或其他自定义附件。
+- 部署环境必须从同名稳定标签源码独立构建前端，并保存实际部署提交的构建身份。
+
+## 9. 完成标准
 
 - OpenAPI 快照、生成类型、字符串 ID、`route_key` 集合和密码策略由 CI 自动校验。
 - 登录、刷新恢复、动态菜单、权限拒绝、退出和关键响应式布局有浏览器冒烟测试。
 - 高复杂度页面按真实用例拆分，异步流程可独立测试。
 - HTTP、Session、Store、Router 和 View 依赖保持单向。
-- 独立仓库可在没有后端源码的环境安装、检查、构建和发布。
+- 独立仓库可在没有后端源码的环境安装、检查、构建并创建稳定标签；项目 Release 统一由后端仓库发布。
 - `pnpm check` 全程零错误、零警告。

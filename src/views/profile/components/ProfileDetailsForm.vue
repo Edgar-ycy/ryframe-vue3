@@ -40,10 +40,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import {
-  updateProfile,
   type ProfileInfo,
   type ProfileUpdateParams,
 } from '@/api/modules/auth'
+import { useProfileDetailsMutation } from '../useProfileMutations'
 
 const props = defineProps<{
   profile: ProfileInfo
@@ -55,9 +55,11 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
 const form = ref({ nickname: '', email: '', phone: '' })
 const { t } = useI18n()
+const { saveProfile, submitting } = useProfileDetailsMutation(t, profile => {
+  emit('saved', profile)
+})
 const rules = computed<FormRules>(() => ({
   nickname: [{ required: true, message: t('profile.enterNicknameValidation'), trigger: 'blur' }],
   email: [{ type: 'email', message: t('profile.emailValidation'), trigger: 'blur' }],
@@ -78,6 +80,7 @@ watch(
 )
 
 async function submit(): Promise<void> {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
@@ -86,15 +89,7 @@ async function submit(): Promise<void> {
     email: form.value.email || undefined,
     phone: form.value.phone || undefined,
   }
-  submitting.value = true
-  try {
-    await updateProfile(payload)
-    ElMessage.success(t('profile.saveSuccess'))
-    emit('saved', payload)
-  }
-  finally {
-    submitting.value = false
-  }
+  await saveProfile(payload)
 }
 </script>
 

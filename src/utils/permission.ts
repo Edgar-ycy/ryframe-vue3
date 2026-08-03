@@ -14,7 +14,8 @@ function wildcardToRegExp(pattern: string): RegExp {
 
 export function matchPermission(owned: string, required: string): boolean {
   if (!owned || !required) return false
-  if (owned === '*' || owned === '*:*:*' || owned === required) return true
+  if (owned === '*') return false
+  if (owned === '*:*:*' || owned === required) return true
   if (!owned.includes('*')) return false
   return wildcardToRegExp(owned).test(required)
 }

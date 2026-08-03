@@ -17,16 +17,29 @@ const messageMocks = vi.hoisted(() => ({
 }))
 
 const httpMocks = vi.hoisted(() => {
+  interface TestHttpErrorOptions {
+    status?: number
+    code?: number
+    kind?: 'http' | 'network' | 'timeout' | 'cancelled' | 'invalid_response' | 'unknown'
+    cause?: unknown
+    retryAfterSeconds?: number
+  }
+
   class TestHttpError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number,
-      public readonly code?: number,
-      public readonly cause?: unknown,
-      public readonly retryAfterSeconds?: number,
-    ) {
+    readonly status?: number
+    readonly code?: number
+    readonly kind: TestHttpErrorOptions['kind']
+    readonly cause?: unknown
+    readonly retryAfterSeconds?: number
+
+    constructor(message: string, options: TestHttpErrorOptions = {}) {
       super(message)
       this.name = 'HttpError'
+      this.status = options.status
+      this.code = options.code
+      this.kind = options.kind ?? (options.status === undefined ? 'unknown' : 'http')
+      this.cause = options.cause
+      this.retryAfterSeconds = options.retryAfterSeconds
     }
   }
 
@@ -36,9 +49,15 @@ const httpMocks = vi.hoisted(() => {
   }
 })
 
+const queryMocks = vi.hoisted(() => ({
+  clearServerState: vi.fn(),
+  configureServerStateErrorReporter: vi.fn(),
+}))
+
 vi.mock('element-plus', () => ({ ElMessage: messageMocks }))
 vi.mock('@/api/modules/auth', () => authMocks)
 vi.mock('@/shared/http/client', () => httpMocks)
+vi.mock('@/shared/query/client', () => queryMocks)
 
 const userInfo = {
   id: '1001',
@@ -138,6 +157,7 @@ describe('session coordinator', () => {
     expect(useUserStore().token).toBe('memory-token')
     expect(useUserStore().sessionStatus).toBe('authenticated')
     expect(httpMocks.configureHttpSession).toHaveBeenCalledOnce()
+    expect(queryMocks.configureServerStateErrorReporter).toHaveBeenCalledOnce()
   })
 
   it('single-flights concurrent CSRF and refresh requests', async () => {
@@ -262,7 +282,10 @@ describe('session coordinator', () => {
   it('retries a 409 exactly once with Retry-After and a fresh challenge', async () => {
     vi.useFakeTimers()
     authMocks.refreshToken
-      .mockRejectedValueOnce(new httpMocks.HttpError('in progress', 409, undefined, undefined, 2))
+      .mockRejectedValueOnce(new httpMocks.HttpError('in progress', {
+        status: 409,
+        retryAfterSeconds: 2,
+      }))
       .mockResolvedValueOnce({
         code: 200,
         msg: 'ok',
@@ -286,7 +309,7 @@ describe('session coordinator', () => {
     vi.useFakeTimers()
     installBrowser()
     authMocks.refreshToken.mockRejectedValueOnce(
-      new httpMocks.HttpError('in progress', 409, undefined, undefined, 1),
+      new httpMocks.HttpError('in progress', { status: 409, retryAfterSeconds: 1 }),
     )
     const session = await import('./sessionCoordinator')
     const { useUserStore } = await import('@/stores/user')
@@ -721,8 +744,8 @@ describe('session coordinator', () => {
     expect(authMocks.refreshToken).toHaveBeenCalledOnce()
   })
 
-  it('marks a 503 unavailable but clears anonymous state for all other initialization failures', async () => {
-    authMocks.refreshToken.mockRejectedValueOnce(new httpMocks.HttpError('redis unavailable', 503))
+  it('preserves credentials for temporary initialization failures and clears only explicit rejection', async () => {
+    authMocks.refreshToken.mockRejectedValueOnce(new httpMocks.HttpError('redis unavailable', { status: 503 }))
     let session = await import('./sessionCoordinator')
     let user = (await import('@/stores/user')).useUserStore()
     await session.initializeSession()
@@ -733,13 +756,25 @@ describe('session coordinator', () => {
     authMocks.refreshToken.mockRejectedValueOnce(new Error('network failure'))
     session = await import('./sessionCoordinator')
     user = (await import('@/stores/user')).useUserStore()
+    user.token = 'preserved-token'
+    await session.initializeSession()
+    expect(user.sessionStatus).toBe('unavailable')
+    expect(user.token).toBe('preserved-token')
+
+    vi.resetModules()
+    setActivePinia(createPinia())
+    authMocks.refreshToken.mockRejectedValueOnce(new httpMocks.HttpError('forbidden', { status: 403 }))
+    session = await import('./sessionCoordinator')
+    user = (await import('@/stores/user')).useUserStore()
+    user.token = 'rejected-token'
     await session.initializeSession()
     expect(user.sessionStatus).toBe('anonymous')
+    expect(user.token).toBe('')
   })
 
   it('retries session initialization after a temporary 503', async () => {
     authMocks.refreshToken
-      .mockRejectedValueOnce(new httpMocks.HttpError('redis unavailable', 503))
+      .mockRejectedValueOnce(new httpMocks.HttpError('redis unavailable', { status: 503 }))
       .mockResolvedValueOnce({
         code: 200,
         msg: 'ok',
@@ -764,7 +799,7 @@ describe('session coordinator', () => {
     const { useUserStore } = await import('@/stores/user')
     const appRuntime = runtime()
     appRuntime.refreshAccessibleRoutes.mockRejectedValueOnce(
-      new httpMocks.HttpError('menu session expired', 401),
+      new httpMocks.HttpError('menu session expired', { status: 401 }),
     )
     session.installSessionCoordinator(appRuntime)
 
@@ -775,22 +810,28 @@ describe('session coordinator', () => {
     expect(useUserStore().sessionStatus).toBe('anonymous')
   })
 
-  it('exposes refresh failure and error reporting policy through the HTTP adapter', async () => {
+  it('exposes refresh degradation through HTTP and global reporting through Query caches', async () => {
     const session = await import('./sessionCoordinator')
     const { useUserStore } = await import('@/stores/user')
     const appRuntime = runtime('/private')
     session.installSessionCoordinator(appRuntime)
     const adapter = httpMocks.configureHttpSession.mock.calls[0]![0]
+    const reporter = queryMocks.configureServerStateErrorReporter.mock.calls[0]![0]
 
-    await adapter.handleRefreshFailure(new httpMocks.HttpError('unavailable', 503))
+    useUserStore().token = 'preserved-token'
+    await adapter.handleRefreshFailure(new httpMocks.HttpError('timed out', { kind: 'timeout' }))
     expect(useUserStore().sessionStatus).toBe('unavailable')
-    await adapter.handleRefreshFailure(new httpMocks.HttpError('expired', 401))
+    expect(useUserStore().token).toBe('preserved-token')
+    await adapter.handleRefreshFailure(new httpMocks.HttpError('server failed', { status: 500 }))
+    expect(useUserStore().sessionStatus).toBe('unavailable')
+    expect(useUserStore().token).toBe('preserved-token')
+    await adapter.handleRefreshFailure(new httpMocks.HttpError('expired', { status: 401 }))
     expect(appRuntime.router.replace).toHaveBeenCalledWith('/login')
 
     for (const status of [401, 403, 404, 503, 500, undefined]) {
-      adapter.reportError(new httpMocks.HttpError('reported', status))
+      reporter(new httpMocks.HttpError('reported', { status }))
     }
-    expect(messageMocks.error).toHaveBeenCalledTimes(8)
+    expect(messageMocks.error).toHaveBeenCalledTimes(9)
   })
 
   it('rejects malformed refresh responses and broadcasts refresh failures without leaking tokens', async () => {

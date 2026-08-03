@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "43 3 * * 3"
   workflow_dispatch:
 
 concurrency:
@@ -21,105 +23,9 @@ env:
 
 jobs:
   check:
-    name: Type Check & Build
+    name: Frontend Quality Gate (Node 24)
+    if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-
-      - name: Setup default Node.js
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
-        with:
-          node-version-file: .node-version
-          package-manager-cache: false
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: Restore pnpm store
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
-        with:
-          path: .pnpm-store
-          key: ${{ runner.os }}-node-24.11.0-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-node-24.11.0-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check source encoding and structure
-        run: pnpm check:sources
-
-      - name: Check GitHub workflow syntax and references
-        run: pnpm check:workflows
-
-      - name: Lint GitHub Actions workflows
-        run: |
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-          "$(go env GOPATH)/bin/actionlint" -color
-
-      - name: Reject prerelease dependencies
-        run: pnpm check:dependencies
-
-      - name: Check architecture boundaries
-        run: pnpm check:architecture
-
-      - name: Check committed API contract snapshot
-        run: pnpm api:check
-
-      - name: Verify the exact pinned upstream contract
-        run: pnpm api:check:upstream
-
-      - name: TypeScript type check
-        run: pnpm typecheck
-
-      - name: Run ESLint and Stylelint
-        run: |
-          pnpm lint
-          pnpm lint:styles
-
-      - name: Production build
-        run: pnpm build
-
-      - name: Enforce bundle budget
-        run: pnpm check:bundle
-
-  node-22-compatibility:
-    name: Node 22.18 Compatibility
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-
-      - name: Setup Node.js 22.18
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
-        with:
-          node-version: 22.18.0
-          package-manager-cache: false
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: Restore pnpm store
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
-        with:
-          path: .pnpm-store
-          key: ${{ runner.os }}-node-22.18.0-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-node-22.18.0-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: TypeScript type check
-        run: pnpm typecheck
-
-      - name: Run tests
-        run: pnpm test
-
-      - name: Production build
-        run: pnpm build
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: check
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
@@ -134,18 +40,49 @@ jobs:
       - name: Install pnpm
         uses: ./.github/actions/setup-pnpm
 
-      - name: Restore pnpm store
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
-        with:
-          path: .pnpm-store
-          key: ${{ runner.os }}-node-24.11.0-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-node-24.11.0-pnpm-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
+      - name: Check source encoding and structure
+        run: pnpm check:sources
+
+      - name: Check GitHub workflow syntax and references
+        run: pnpm check:workflows
+
+      - name: Lint GitHub Actions workflows
+        uses: docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9
+
+      - name: Reject prerelease dependencies
+        run: pnpm check:dependencies
+
+      - name: Check architecture boundaries
+        run: pnpm check:architecture
+
+      - name: Check local and exact upstream API contract
+        run: pnpm api:check:upstream
+
+      - name: TypeScript type check
+        run: pnpm typecheck
+
+      - name: Run ESLint and Stylelint
+        run: |
+          pnpm lint
+          pnpm lint:styles
+
+      - name: Run unit tests with coverage
         run: pnpm test:coverage
+
+      - name: Production build
+        run: pnpm build
+
+      - name: Enforce bundle budget
+        run: pnpm check:bundle
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run browser smoke tests against the production build
+        run: pnpm test:e2e
 
       - name: Upload coverage
         if: env.CODECOV_TOKEN != ''
@@ -155,38 +92,6 @@ jobs:
           fail_ci_if_error: true
           token: ${{ env.CODECOV_TOKEN }}
 
-  e2e:
-    name: Browser Smoke
-    runs-on: ubuntu-latest
-    needs: check
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-
-      - name: Setup default Node.js
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
-        with:
-          node-version-file: .node-version
-          package-manager-cache: false
-
-      - name: Install pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: Restore pnpm store
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
-        with:
-          path: .pnpm-store
-          key: ${{ runner.os }}-node-24.11.0-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-node-24.11.0-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run browser smoke tests
-        run: pnpm test:e2e
-
       - name: Upload browser diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -194,3 +99,31 @@ jobs:
           name: browser-smoke-diagnostics
           path: test-results
           if-no-files-found: ignore
+
+  node-22-compatibility:
+    name: Node 22.18 Compatibility
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Setup Node.js 22.18
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 22.18.0
+          package-manager-cache: false
+
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript type check
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build

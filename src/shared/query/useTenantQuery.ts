@@ -12,11 +12,11 @@ export function useTenantQuery<T>(
   isAuthenticated: MaybeRefOrGetter<boolean>,
   resource: string,
   params: () => unknown,
-  queryFn: () => Promise<T>,
+  queryFn: (signal: AbortSignal) => Promise<T>,
 ) {
   return useQuery<T, HttpError>({
     queryKey: computed(() => tenantQueryKey(toValue(tenantId), resource, params())),
-    queryFn,
+    queryFn: ({ signal }) => queryFn(signal),
     enabled: computed(() => toValue(isAuthenticated)),
   })
 }

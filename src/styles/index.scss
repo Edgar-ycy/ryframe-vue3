@@ -56,6 +56,8 @@ a:hover {
 
 .mobile-sidebar-mask {
   display: none;
+  padding: 0;
+  border: 0;
 }
 
 /* ====== 侧边栏 — 深色现代风格 ====== */
@@ -514,6 +516,12 @@ a:hover {
     z-index: 1000;
     display: block;
     background: rgb(15 23 42 / 42%);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--el-color-primary);
+      outline-offset: -3px;
+    }
   }
 
   .navbar {

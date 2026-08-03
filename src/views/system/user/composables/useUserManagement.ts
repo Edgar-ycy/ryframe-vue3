@@ -8,13 +8,14 @@ import {
   type UserRecord,
   type UserStatus,
 } from '@/api/modules/user'
-import { listRoleNoPage, type RoleRecord } from '@/api/modules/role'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
 import { translate } from '@/i18n'
-import type { Id } from '@/shared/http/types'
+import type { Id, PageResponse } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { confirmAction } from '@/utils/confirmAction'
 
 const USER_STATUS_KEYS: Record<UserStatus, string> = {
@@ -23,16 +24,18 @@ const USER_STATUS_KEYS: Record<UserStatus, string> = {
   pending_activation: 'system.user.pendingActivation',
 }
 
+interface StatusCommand {
+  action: string
+  previousStatus: UserManageableStatus
+  row: UserRecord
+  status: UserManageableStatus
+}
+
 export function useUserManagement() {
-  const loading = ref(false)
-  const tableData = ref<UserRecord[]>([])
-  const total = ref(0)
-  const roleList = ref<RoleRecord[]>([])
-  const deptTree = ref<DeptNode[]>([])
-  const deptTreeLoading = ref(false)
   const selectedDeptId = ref<Id>()
   const selectedDeptName = ref('')
   const queryParams = ref<UserQuery>({ page: 1, page_size: 10 })
+  const activeQueryParams = ref<UserQuery>({ ...queryParams.value })
 
   const userDialogVisible = ref(false)
   const editingUser = ref<UserRecord | null>(null)
@@ -40,38 +43,88 @@ export function useUserManagement() {
   const passwordResetUserId = ref<Id | null>(null)
   const roleDialogVisible = ref(false)
   const roleEditingUser = ref<UserRecord | null>(null)
-  const deletingId = ref<Id | null>(null)
 
-  const { isAdmin, hasPermission } = usePermission()
-  const { exporting: exportLoading, exportAndDownload } = useAsyncExport()
+  const { hasPermission } = usePermission()
   const userStore = useUserStore()
+  const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+  const authenticated = () => userStore.sessionStatus === 'authenticated'
+
+  const usersQuery = useTenantQuery<PageResponse<UserRecord>>(
+    () => userStore.tenantId,
+    authenticated,
+    'users',
+    () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+    async signal => {
+      const response = await listUser({ ...activeQueryParams.value }, signal)
+      return response.data ?? {
+        items: [],
+        page: activeQueryParams.value.page ?? 1,
+        page_size: activeQueryParams.value.page_size ?? 10,
+        total: 0,
+        total_pages: 0,
+        max_page_size: activeQueryParams.value.page_size ?? 10,
+      }
+    },
+  )
+  const departmentsQuery = useTenantQuery<DeptNode[]>(
+    () => userStore.tenantId,
+    authenticated,
+    'departments',
+    () => ({ scope: 'tree' }),
+    async signal => {
+      const response = await getDeptTree(signal)
+      return response.data ?? []
+    },
+  )
+
+  const tableData = computed(() => usersQuery.data.value?.items ?? [])
+  const total = computed(() => usersQuery.data.value?.total ?? 0)
+  const loading = computed(() => usersQuery.isFetching.value)
+  const deptTree = computed(() => departmentsQuery.data.value ?? [])
+  const deptTreeLoading = computed(() => departmentsQuery.isFetching.value)
+
+  const statusMutation = useTenantMutation<void, StatusCommand>(
+    () => userStore.tenantId,
+    'users',
+    {
+      mutationFn: async ({ row, status }) => {
+        await updateUserStatus(row.id, status)
+      },
+      onError: (_error, variables) => {
+        variables.row.status = variables.previousStatus
+      },
+      onSuccess: (_data, variables) => {
+        ElMessage.success(translate('system.user.actionSuccess', { action: variables.action }))
+      },
+    },
+  )
+  const deleteMutation = useTenantMutation<void, UserRecord>(
+    () => userStore.tenantId,
+    'users',
+    {
+      mutationFn: async user => {
+        await deleteUser(user.id)
+      },
+      onSuccess: () => {
+        ElMessage.success(translate('system.common.deleteSuccess'))
+      },
+    },
+  )
+
+  const deletingId = computed<Id | null>(() => (
+    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
+  ))
+  const statusUpdatingId = computed<Id | null>(() => (
+    statusMutation.pending.value ? statusMutation.variables.value?.row.id ?? null : null
+  ))
 
   async function fetchData(): Promise<void> {
-    loading.value = true
-    try {
-      const response = await listUser(queryParams.value)
-      tableData.value = response.data?.items ?? []
-      total.value = response.data?.total ?? 0
+    const nextParams = { ...queryParams.value }
+    if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
+      activeQueryParams.value = nextParams
+      return
     }
-    finally {
-      loading.value = false
-    }
-  }
-
-  async function loadDeptTree(): Promise<void> {
-    deptTreeLoading.value = true
-    try {
-      const response = await getDeptTree()
-      deptTree.value = response.data ?? []
-    }
-    finally {
-      deptTreeLoading.value = false
-    }
-  }
-
-  async function loadRoleList(): Promise<void> {
-    const response = await listRoleNoPage()
-    roleList.value = response.data ?? []
+    await usersQuery.refetch({ throwOnError: true })
   }
 
   function handleSearch(): void {
@@ -99,7 +152,7 @@ export function useUserManagement() {
 
   function handleExport(): Promise<void> {
     return exportAndDownload(
-      () => exportUser(queryParams.value),
+      signal => exportUser(activeQueryParams.value, signal),
       { filename: translate('system.user.exportFilename') },
     )
   }
@@ -123,6 +176,11 @@ export function useUserManagement() {
     status: UserManageableStatus,
   ): Promise<void> {
     const previousStatus = status === '1' ? '0' : '1'
+    if (statusMutation.pending.value) {
+      row.status = previousStatus
+      return
+    }
+
     const actionKey = status === '1' ? 'system.common.enable' : 'system.common.disable'
     const action = translate(actionKey)
     const confirmed = await confirmAction(translate('system.user.statusChangeConfirm', {
@@ -136,14 +194,8 @@ export function useUserManagement() {
       return
     }
 
-    try {
-      await updateUserStatus(row.id, status)
-      ElMessage.success(translate('system.user.actionSuccess', { action }))
-    }
-    catch (error) {
-      row.status = previousStatus
-      throw error
-    }
+    await statusMutation.mutateAsync({ action, previousStatus, row, status })
+    await usersQuery.refetch({ throwOnError: true })
   }
 
   function handleAdd(): void {
@@ -162,6 +214,7 @@ export function useUserManagement() {
   }
 
   async function handleDelete(user: UserRecord): Promise<void> {
+    if (deleteMutation.pending.value) return
     const confirmed = await confirmAction(translate('system.user.deleteConfirm', {
       name: user.username,
     }), translate('system.common.warning'), {
@@ -170,25 +223,14 @@ export function useUserManagement() {
     })
     if (!confirmed) return
 
-    deletingId.value = user.id
-    try {
-      await deleteUser(user.id)
-      ElMessage.success(translate('system.common.deleteSuccess'))
-      await fetchData()
-    }
-    finally {
-      deletingId.value = null
-    }
+    await deleteMutation.mutateAsync(user)
+    await usersQuery.refetch({ throwOnError: true })
   }
 
   function handleResetPassword(user: UserRecord): void {
     passwordResetUserId.value = user.id
     passwordDialogVisible.value = true
   }
-
-  onMounted(() => {
-    void Promise.allSettled([fetchData(), loadDeptTree(), loadRoleList()])
-  })
 
   return {
     clearDeptFilter,
@@ -209,17 +251,16 @@ export function useUserManagement() {
     handleResetPassword,
     handleSearch,
     hasPermission,
-    isAdmin,
     isManageableStatus,
     loading,
     passwordDialogVisible,
     passwordResetUserId,
     queryParams,
-    roleList,
     roleDialogVisible,
     roleEditingUser,
     selectedDeptId,
     selectedDeptName,
+    statusUpdatingId,
     tableData,
     total,
     userStatusLabel,

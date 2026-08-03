@@ -35,7 +35,7 @@
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
         <el-table-column prop="title" :label="t('system.notice.shortTitle')" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="content" :label="t('system.common.content')" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="content_markdown" :label="t('system.common.content')" min-width="200" show-overflow-tooltip />
         <el-table-column :label="t('system.common.type')" align="center">
           <template #default="{ row }">
             <el-tag :type="row.notice_type === 'notice' ? 'primary' : 'warning'" size="small">
@@ -68,7 +68,16 @@
               {{ t('system.notice.publishToMessageCenter') }}
             </el-button>
             <el-button v-perm="'system:notice:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">{{ t('system.common.edit') }}</el-button>
-            <el-button v-perm="'system:notice:remove'" type="danger" link icon="Delete" @click="handleDelete(row)">{{ t('system.common.delete') }}</el-button>
+            <el-button
+              v-perm="'system:notice:remove'"
+              type="danger"
+              link
+              icon="Delete"
+              :loading="deletingId === row.id"
+              @click="handleDelete(row)"
+            >
+              {{ t('system.common.delete') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -81,7 +90,7 @@
       />
     </el-card>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="600px" @close="resetForm">
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="600px" @close="resetDialog">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item :label="t('system.notice.title')" prop="title">
           <el-input v-model="form.title" :placeholder="t('system.notice.enterNoticeTitle')" />
@@ -92,17 +101,17 @@
             <el-option :label="t('system.notice.announcement')" value="announcement" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('system.common.content')" prop="content">
+        <el-form-item :label="t('system.common.content')" prop="content_markdown">
           <div class="markdown-editor">
             <el-input
-              v-model="form.content"
+              v-model="form.content_markdown"
               class="markdown-editor__input"
               type="textarea"
               :rows="10"
               :placeholder="t('system.notice.markdownPlaceholder')"
             />
             <section class="markdown-editor__preview" :aria-label="t('system.notice.markdownPreview')">
-              <p v-if="!form.content" class="markdown-editor__empty">
+              <p v-if="!form.content_markdown" class="markdown-editor__empty">
                 {{ t('system.notice.previewEmpty') }}
               </p>
               <!-- 仅允许绑定由 renderMarkdown 禁用原始 HTML 并经 DOMPurify 清洗后的受限内容。 -->
@@ -131,131 +140,235 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import {
-  listNotice,
-  getNotice,
   createNotice,
-  updateNotice,
   deleteNotice,
+  getNotice,
+  listNotice,
   publishNoticeToMessageCenter,
+  updateNotice,
+  type NoticeCreateInput,
+  type NoticeQuery,
   type NoticeRecord,
+  type NoticeUpdateInput,
 } from '@/api/modules/notice'
-import type { Id } from '@/shared/http/types'
-import { useUserStore } from '@/stores/user'
-import { invalidateTenantResource } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { renderMarkdown } from '@/shared/markdown/render'
+import {
+  NOTICE_POLICY,
+  validateNoticeMarkdown,
+} from '@/shared/markdown/noticePolicy'
+import type { Id, PageResponse } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
+import { confirmAction } from '@/utils/confirmAction'
+import type { FormItemRule } from 'element-plus'
 
-const queryParams = ref({ page: 1, page_size: 10, title: '', notice_type: '', status: '' })
+const queryParams = ref<NoticeQuery>({ page: 1, page_size: 10, title: '', notice_type: '', status: '' })
+const activeQueryParams = ref<NoticeQuery>({ ...queryParams.value })
 const { t } = useI18n()
 const userStore = useUserStore()
-const noticesQuery = useTenantQuery(
+const authenticated = () => userStore.sessionStatus === 'authenticated'
+const noticesQuery = useTenantQuery<PageResponse<NoticeRecord>>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  authenticated,
   'notices',
-  () => ({ ...queryParams.value }),
-  () => listNotice({ ...queryParams.value }),
+  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+  async signal => {
+    const response = await listNotice({ ...activeQueryParams.value }, signal)
+    return response.data ?? {
+      items: [],
+      page: activeQueryParams.value.page ?? 1,
+      page_size: activeQueryParams.value.page_size ?? 10,
+      total: 0,
+      total_pages: 0,
+      max_page_size: activeQueryParams.value.page_size ?? 10,
+    }
+  },
 )
 const loading = computed(() => noticesQuery.isFetching.value)
-const tableData = computed<NoticeRecord[]>(() => noticesQuery.data.value?.data?.items ?? [])
-const total = computed(() => noticesQuery.data.value?.data?.total ?? 0)
+const tableData = computed(() => noticesQuery.data.value?.items ?? [])
+const total = computed(() => noticesQuery.data.value?.total ?? 0)
 
 async function fetchData() {
-  await noticesQuery.refetch()
+  const nextParams = { ...queryParams.value }
+  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
+    activeQueryParams.value = nextParams
+    return
+  }
+  await noticesQuery.refetch({ throwOnError: true })
 }
 
-async function refreshNotices() {
-  await invalidateTenantResource(userStore.tenantId, 'notices')
-  await fetchData()
-}
-
-function handleSearch() { queryParams.value.page = 1; fetchData() }
+function handleSearch() { queryParams.value.page = 1; void fetchData() }
 function handleReset() { queryParams.value.title = ''; queryParams.value.notice_type = ''; queryParams.value.status = ''; handleSearch() }
 
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
-const submitLoading = ref(false)
 const currentEditId = ref<Id | null>(null)
-const publishingId = ref<Id | null>(null)
-const form = ref({ title: '', notice_type: 'notice', content: '', status: '1' })
-const renderedContent = computed(() => renderMarkdown(form.value.content))
+const editingNotice = ref<NoticeRecord | null>(null)
+const form = ref({ title: '', notice_type: 'notice', content_markdown: '', status: '1' })
+const renderedContent = computed(() => renderMarkdown(form.value.content_markdown))
+const validateMarkdown: FormItemRule['validator'] = (_rule, value, callback) => {
+  const result = validateNoticeMarkdown(typeof value === 'string' ? value : '')
+  if (result === 'required') {
+    callback(new Error(t('system.notice.enterContent')))
+  } else if (result === 'too_long') {
+    callback(new Error(t('system.notice.contentTooLong', {
+      max: NOTICE_POLICY.content_markdown.max_utf8_bytes,
+    })))
+  } else {
+    callback()
+  }
+}
 const rules = computed<FormRules>(() => ({
   title: [{ required: true, message: t('system.notice.enterTitle'), trigger: 'blur' }],
-  content: [{ required: true, message: t('system.notice.enterContent'), trigger: 'blur' }],
+  content_markdown: [{ validator: validateMarkdown, trigger: 'blur' }],
 }))
 
-function resetForm() { form.value.title = ''; form.value.notice_type = 'notice'; form.value.content = ''; form.value.status = '1'; formRef.value?.clearValidate() }
+function resetForm() { form.value.title = ''; form.value.notice_type = 'notice'; form.value.content_markdown = ''; form.value.status = '1'; formRef.value?.clearValidate() }
+
+function resetDialog() {
+  resetForm()
+  currentEditId.value = null
+  editingNotice.value = null
+}
+
+const detailQuery = useTenantQuery<NoticeRecord>(
+  () => userStore.tenantId,
+  () => authenticated() && editingNotice.value !== null,
+  'notices',
+  () => ({ scope: 'detail', id: editingNotice.value?.id ?? null }),
+  async signal => {
+    const target = editingNotice.value
+    if (!target) throw new Error(t('system.notice.detailMissing'))
+    const response = await getNotice(target.id, signal)
+    if (!response.data) throw new Error(t('system.notice.detailMissing'))
+    return response.data
+  },
+)
+
+type SaveNoticeCommand =
+  | { kind: 'create'; data: NoticeCreateInput }
+  | { kind: 'update'; id: Id; data: NoticeUpdateInput }
+
+const saveMutation = useTenantMutation<void, SaveNoticeCommand>(
+  () => userStore.tenantId,
+  'notices',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'create') {
+        await createNotice(command.data)
+      } else {
+        await updateNotice(command.id, command.data)
+      }
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(command.kind === 'create'
+        ? 'system.common.addSuccess'
+        : 'system.common.updateSuccess'))
+    },
+  },
+)
+const submitLoading = saveMutation.pending
+
+const publishMutation = useTenantMutation<void, NoticeRecord>(
+  () => userStore.tenantId,
+  'messages',
+  {
+    mutationFn: async notice => {
+      await publishNoticeToMessageCenter(notice.id)
+    },
+    onSuccess: () => {
+      ElMessage.success(t('system.notice.publishMessageSuccess'))
+    },
+  },
+)
+const publishingId = computed<Id | null>(() => (
+  publishMutation.pending.value ? publishMutation.variables.value?.id ?? null : null
+))
+
+const deleteMutation = useTenantMutation<void, NoticeRecord>(
+  () => userStore.tenantId,
+  'notices',
+  {
+    mutationFn: async notice => {
+      await deleteNotice(notice.id)
+    },
+    onSuccess: () => {
+      ElMessage.success(t('system.common.deleteSuccess'))
+    },
+  },
+)
+const deletingId = computed<Id | null>(() => (
+  deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
+))
 
 function handleAdd() {
   currentEditId.value = null
+  editingNotice.value = null
   dialog.value.title = t('system.notice.addTitle'); dialog.value.isEdit = false
   resetForm(); dialog.value.visible = true
 }
 
 async function handleEdit(row: NoticeRecord) {
+  if (saveMutation.pending.value) return
   currentEditId.value = row.id
+  editingNotice.value = row
   dialog.value.title = t('system.notice.editTitle'); dialog.value.isEdit = true
   resetForm()
-  const res = await getNotice(row.id)
-  if (!res.data) throw new Error(t('system.notice.detailMissing'))
-  const d = res.data
+  await nextTick()
+  const result = await detailQuery.refetch({ throwOnError: true })
+  const d = result.data
+  if (!d) throw new Error(t('system.notice.detailMissing'))
   form.value.title = d.title; form.value.notice_type = d.notice_type || 'notice'
-  form.value.content = d.content; form.value.status = d.status
+  form.value.content_markdown = d.content_markdown; form.value.status = d.status
   dialog.value.visible = true
 }
 
 async function handleSubmit() {
+  if (saveMutation.pending.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
-  submitLoading.value = true
-  try {
-    const data = {
-      title: form.value.title,
-      content: form.value.content,
-      notice_type: form.value.notice_type,
-    }
-    if (dialog.value.isEdit) {
-      await updateNotice(currentEditId.value!, { ...data, status: form.value.status })
-      ElMessage.success(t('system.common.updateSuccess'))
-    } else {
-      await createNotice(data)
-      ElMessage.success(t('system.common.addSuccess'))
-    }
-    dialog.value.visible = false; await refreshNotices()
-  } finally { submitLoading.value = false }
+  const data = {
+    title: form.value.title,
+    content_markdown: form.value.content_markdown,
+    notice_type: form.value.notice_type,
+  }
+  if (dialog.value.isEdit) {
+    await saveMutation.mutateAsync({
+      kind: 'update',
+      id: currentEditId.value!,
+      data: { ...data, status: form.value.status },
+    })
+  } else {
+    await saveMutation.mutateAsync({ kind: 'create', data })
+  }
+  dialog.value.visible = false
+  await noticesQuery.refetch({ throwOnError: true })
 }
 
 async function handlePublishMessage(row: NoticeRecord) {
-  try {
-    await ElMessageBox.confirm(
-      t('system.notice.publishMessageConfirm', { title: row.title }),
-      t('system.common.prompt'),
-      { type: 'warning' },
-    )
-  } catch {
-    return
-  }
+  if (publishMutation.pending.value) return
+  const confirmed = await confirmAction(
+    t('system.notice.publishMessageConfirm', { title: row.title }),
+    t('system.common.prompt'),
+    { type: 'warning' },
+  )
+  if (!confirmed) return
 
-  publishingId.value = row.id
-  try {
-    await publishNoticeToMessageCenter(row.id)
-    ElMessage.success(t('system.notice.publishMessageSuccess'))
-  } catch {
-    ElMessage.error(t('system.notice.publishMessageFailed'))
-  } finally {
-    publishingId.value = null
-  }
+  await publishMutation.mutateAsync(row)
 }
 
 async function handleDelete(row: NoticeRecord) {
-  try {
-    await ElMessageBox.confirm(
-      t('system.notice.deleteConfirm', { name: row.title }),
-      t('system.common.warning'),
-      { type: 'warning' },
-    )
-    await deleteNotice(row.id)
-    ElMessage.success(t('system.common.deleteSuccess')); await refreshNotices()
-  } catch { /* 用户取消 */ }
+  if (deleteMutation.pending.value) return
+  const confirmed = await confirmAction(
+    t('system.notice.deleteConfirm', { name: row.title }),
+    t('system.common.warning'),
+    { type: 'warning' },
+  )
+  if (!confirmed) return
+
+  await deleteMutation.mutateAsync(row)
+  await noticesQuery.refetch({ throwOnError: true })
 }
 
 </script>

@@ -85,10 +85,13 @@ import {
   type MenuCreateInput,
   type MenuTreeNode,
   type MenuType,
+  type MenuUpdateInput,
 } from '@/api/modules/menu'
 import IconSelect from '@/components/common/IconSelect.vue'
 import { getRouteKeyByPermissionCode } from '@/router/pageRegistry'
 import type { Id } from '@/shared/http/types'
+import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useUserStore } from '@/stores/user'
 import { excludeMenuSubtree, type PermissionOption } from '../menuTree'
 
 const { t } = useI18n()
@@ -104,6 +107,10 @@ interface MenuFormState {
   visible: boolean
   status: string
 }
+
+type SaveMenuCommand =
+  | { kind: 'create', data: MenuCreateInput }
+  | { kind: 'update', id: Id, data: MenuUpdateInput }
 
 const props = defineProps<{
   modelValue: boolean
@@ -124,7 +131,25 @@ const visible = computed({
 })
 const isEdit = computed(() => props.menu !== null)
 const formRef = ref<FormInstance>()
-const submitting = ref(false)
+const userStore = useUserStore()
+const saveMutation = useTenantMutation<void, SaveMenuCommand>(
+  () => userStore.tenantId,
+  'menus',
+  {
+    mutationFn: async command => {
+      if (command.kind === 'update') await updateMenu(command.id, command.data)
+      else await createMenu(command.data)
+    },
+    onSuccess: (_data, command) => {
+      ElMessage.success(t(
+        command.kind === 'update'
+          ? 'system.common.updateSuccess'
+          : 'system.common.addSuccess',
+      ))
+    },
+  },
+)
+const submitting = saveMutation.pending
 
 function initialForm(): MenuFormState {
   return {
@@ -212,6 +237,7 @@ watch(
 )
 
 async function submit(): Promise<void> {
+  if (submitting.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
   if (form.value.menu_type === 'C' && !form.value.route_key) {
@@ -230,21 +256,15 @@ async function submit(): Promise<void> {
     visible: form.value.visible,
   }
 
-  submitting.value = true
-  try {
-    if (props.menu) {
-      await updateMenu(props.menu.id, { ...payload, status: form.value.status })
-      ElMessage.success(t('system.common.updateSuccess'))
-    }
-    else {
-      await createMenu(payload)
-      ElMessage.success(t('system.common.addSuccess'))
-    }
-    visible.value = false
-    emit('saved')
-  }
-  finally {
-    submitting.value = false
-  }
+  const command: SaveMenuCommand = props.menu
+    ? {
+        kind: 'update',
+        id: props.menu.id,
+        data: { ...payload, status: form.value.status },
+      }
+    : { kind: 'create', data: payload }
+  await saveMutation.mutateAsync(command)
+  visible.value = false
+  emit('saved')
 }
 </script>

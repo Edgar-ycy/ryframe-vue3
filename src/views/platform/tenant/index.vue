@@ -119,6 +119,7 @@ import {
   PASSWORD_POLICY,
 } from '@/shared/security/passwordPolicy'
 import { isValidTenantId } from '@/shared/security/tenantId'
+import { requireOperationData } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -135,7 +136,7 @@ const tenantsQuery = useTenantQuery<Tenant[]>(
   () => ({ scope: 'platform-list' }),
   async signal => {
     const response = await listTenants(signal)
-    return response.data ?? []
+    return requireOperationData(response)
   },
 )
 const tenants = computed(() => tenantsQuery.data.value ?? [])

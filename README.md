@@ -113,11 +113,11 @@ pnpm check
 ```powershell
 $env:RYFRAME_BACKEND_REPOSITORY='Edgar-ycy/ryframe'
 $env:RYFRAME_BACKEND_COMMIT='<后端完整 40 位提交 SHA>'
-$env:RYFRAME_OPENAPI_SOURCE='..\openapi\openapi.json'
+$env:RYFRAME_BACKEND_WORKTREE='..'
 pnpm api:sync
 ```
 
-`pnpm api:check` 只验证仓库内已提交的快照、来源元数据和生成类型，不访问网络。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。不得用尚未提交的后端工作区生成快照后继续记录旧提交 SHA。API 模块通过 `src/api/contract.ts` 引用生成类型，不手工复制 DTO 字段；密码和公告策略同样从 OpenAPI 生成，不复制限制常量或正则。
+设置 `RYFRAME_BACKEND_WORKTREE` 后，同步脚本只会通过 `git -C <后端仓库> show <提交>:<契约路径>` 读取精确 Git 对象，不读取后端工作区文件；不设置时则读取完整提交对应的 GitHub Raw 地址。`pnpm api:check` 会在系统临时目录重新生成派生文件并只读比较仓库内容，不访问网络，也不会先覆盖受管文件。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。API 模块通过 `src/api/contract.ts` 引用生成类型，逐步改用 operationId 请求门面，不手工复制 DTO、URL 或 HTTP 方法；密码、公告策略和编译期权限码同样从 OpenAPI 生成，不复制限制常量、正则或权限字符串联合类型。
 
 ### 预览构建结果
 
@@ -190,7 +190,7 @@ import { usePermission } from '@/hooks/usePermission'
 ### 密码策略
 
 - 个人修改、密码重置和租户管理员初始密码共用后端 OpenAPI 发布的策略
-- 同步脚本生成只读策略配置，页面只调用统一验证器
+- 契约派生生成器生成只读策略配置，页面只调用统一验证器
 - 密码修改成功后清理旧会话并返回登录页
 
 ## 与后端对接

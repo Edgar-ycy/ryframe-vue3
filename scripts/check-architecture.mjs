@@ -26,14 +26,22 @@ const requiredFiles = [
   'pnpm-workspace.yaml',
   'scripts/api-prefix-contract.mjs',
   'scripts/api-prefix-contract.test.mjs',
+  'scripts/api-artifacts.mjs',
+  'scripts/api-artifacts.test.mjs',
+  'scripts/permission-catalog-contract.mjs',
+  'scripts/permission-catalog-contract.test.mjs',
   'scripts/check-api-contract.mjs',
   'scripts/check-workflows.mjs',
   'scripts/coverage-contract.mjs',
   'scripts/coverage-contract.test.mjs',
   'scripts/coverage-scope.json',
+  'scripts/generate-api-artifacts.mjs',
   'scripts/sync-api-contract.mjs',
   'src/api/contract.ts',
+  'src/api/generated/operations.ts',
+  'src/api/generated/permissions.ts',
   'src/api/generated/schema.ts',
+  'src/api/operationRequest.ts',
   'src/router/pageRegistry.ts',
   'src/shared/config/apiEndpoint.ts',
   'src/shared/config/apiPrefix.generated.json',
@@ -104,6 +112,8 @@ for (const fragment of [
   "document['x-ryframe-password-policy']",
   "document['x-ryframe-notice-policy']",
   "document['x-ryframe-api-prefix']",
+  "document['x-ryframe-permission-catalog']",
+  'requirePermissionCatalog(',
   'apiPrefixContractViolation(apiPrefixExtension)',
   "declaration.name.text === 'menuPageRegistry'",
   'menuPageRegistry is missing backend route_key',
@@ -218,25 +228,89 @@ for (const operationId of c1StringPathIdOperationIds) {
 
 const syncSource = await readFile(path.join(root, 'scripts/sync-api-contract.mjs'), 'utf8')
 for (const fragment of [
-  'passwordPolicy.generated.json',
-  "document['x-ryframe-password-policy']",
-  'noticePolicy.generated.json',
-  "document['x-ryframe-notice-policy']",
-  'apiPrefix.generated.json',
-  "document['x-ryframe-api-prefix']",
   'requireApiPrefixContract(apiPrefix, label)',
+  "requirePermissionCatalog(document['x-ryframe-permission-catalog'], label)",
   'RYFRAME_BACKEND_REPOSITORY',
   'RYFRAME_BACKEND_COMMIT',
+  'RYFRAME_BACKEND_WORKTREE',
+  "['-C', worktree, 'show', objectName]",
+  'readPinnedSource(metadata)',
   '--verify-local',
   '--verify-upstream',
   'sourceUrl(metadata)',
 ]) {
   if (!syncSource.includes(fragment)) {
-    errors.push(`scripts/sync-api-contract.mjs: password policy generation is missing ${fragment}`)
+    errors.push(`scripts/sync-api-contract.mjs: immutable contract source guard is missing ${fragment}`)
   }
 }
 if (syncSource.includes('raw.githubusercontent.com/Edgar-ycy/ryframe/main')) {
   errors.push('scripts/sync-api-contract.mjs: a floating backend main source is forbidden')
+}
+if (syncSource.includes('RYFRAME_OPENAPI_SOURCE')) {
+  errors.push('scripts/sync-api-contract.mjs: dirty working-tree source override must not return')
+}
+
+const artifactGeneratorSource = await readFile(
+  path.join(root, 'scripts/generate-api-artifacts.mjs'),
+  'utf8',
+)
+for (const fragment of [
+  "mkdtemp(path.join(tmpdir(), 'ryframe-api-artifacts-'))",
+  'writeArtifacts(temporaryRoot, artifacts)',
+  'committed.equals(generated)',
+  'await rm(temporaryRoot, { recursive: true, force: true })',
+]) {
+  if (!artifactGeneratorSource.includes(fragment)) {
+    errors.push(`scripts/generate-api-artifacts.mjs: read-only artifact check is missing ${fragment}`)
+  }
+}
+
+const apiArtifactSource = await readFile(path.join(root, 'scripts/api-artifacts.mjs'), 'utf8')
+for (const fragment of [
+  'src/api/generated/permissions.ts',
+  "document?.['x-ryframe-permission-catalog']",
+  'export type PermissionCode',
+  'export function isPermissionCode',
+]) {
+  if (!apiArtifactSource.includes(fragment)) {
+    errors.push(`scripts/api-artifacts.mjs: permission catalog generation is missing ${fragment}`)
+  }
+}
+
+const permissionHookSource = await readFile(path.join(root, 'src/hooks/usePermission.ts'), 'utf8')
+for (const fragment of [
+  "import type { PermissionCode } from '@/api/generated/permissions'",
+  '(perm: PermissionCode)',
+  '(...perms: PermissionCode[])',
+]) {
+  if (!permissionHookSource.includes(fragment)) {
+    errors.push(`src/hooks/usePermission.ts: compiled permission type guard is missing ${fragment}`)
+  }
+}
+
+const globalDirectiveSource = await readFile(
+  path.join(root, 'src/types/global-directives.d.ts'),
+  'utf8',
+)
+if (!globalDirectiveSource.includes('Directive<HTMLElement, PermissionValue>')) {
+  errors.push('src/types/global-directives.d.ts: v-perm must use the generated permission union')
+}
+
+const operationRequestSource = await readFile(
+  path.join(root, 'src/api/operationRequest.ts'),
+  'utf8',
+)
+for (const fragment of [
+  'operationManifest[operationId]',
+  'OperationJsonBody',
+  'OperationJsonResponse',
+  'OperationPath',
+  'OperationQuery',
+  'encodeURIComponent(String(value))',
+]) {
+  if (!operationRequestSource.includes(fragment)) {
+    errors.push(`src/api/operationRequest.ts: typed operation facade is missing ${fragment}`)
+  }
 }
 
 const contractSource = JSON.parse(await readFile(path.join(root, 'openapi/source.json'), 'utf8'))
@@ -273,8 +347,12 @@ if (packageDocument.scripts?.['check:workflows'] !== 'node scripts/check-workflo
 if (!packageDocument.scripts?.check?.includes('pnpm check:workflows')) {
   errors.push('package.json: the full check command must include the workflow gate')
 }
-if (!packageDocument.scripts?.['api:check']?.includes('--verify-local')
-  || packageDocument.scripts?.['api:check']?.includes('api:sync')) {
+const apiCheckCommand = packageDocument.scripts?.['api:check'] ?? ''
+if (!apiCheckCommand.includes('--verify-local')
+  || !apiCheckCommand.includes('generate-api-artifacts.mjs --check')
+  || apiCheckCommand.includes('api:sync')
+  || apiCheckCommand.includes('api:generate')
+  || apiCheckCommand.includes('git diff')) {
   errors.push('package.json: api:check must verify the committed local contract without syncing')
 }
 if (!packageDocument.scripts?.['api:check:upstream']?.includes('--verify-upstream')) {
@@ -455,6 +533,22 @@ const exportOperations = {
   ],
   'user.ts': [['exportUser', 'post_system_users_exports']],
 }
+const typedOperationModules = new Map([
+  ['notice.ts', [
+    'get_system_notices',
+    'get_system_notices_by_id',
+    'post_system_notices',
+    'put_system_notices_by_id',
+    'delete_system_notices_by_id',
+    'post_system_notices_by_id_publish_message',
+  ]],
+  ['tenant.ts', [
+    'get_platform_tenants',
+    'post_platform_tenants',
+    'put_platform_tenants_by_tenant_id',
+    'put_platform_tenants_by_tenant_id_status',
+  ]],
+])
 
 for (const name of moduleNames) {
   const relative = `src/api/modules/${name}`
@@ -470,6 +564,21 @@ for (const name of moduleNames) {
   }
   if (/\bPageQuery\b/.test(source)) {
     errors.push(`${relative}: query parameters must use OperationQuery`)
+  }
+  const typedOperations = typedOperationModules.get(name)
+  if (typedOperations) {
+    if (!source.includes("from '@/api/operationRequest'")) {
+      errors.push(`${relative}: migrated API module must use the operationId request facade`)
+    }
+    if (source.includes("from '@/shared/http/client'")
+      || /\b(?:method|url)\s*:/u.test(source)) {
+      errors.push(`${relative}: migrated API module must not handwrite HTTP methods or URLs`)
+    }
+    for (const operationId of typedOperations) {
+      if (!source.includes(`requestOperation('${operationId}'`)) {
+        errors.push(`${relative}: migrated API module is missing operationId ${operationId}`)
+      }
+    }
   }
   for (const [functionName, operationId] of exportOperations[name] ?? []) {
     if (!source.includes(`OperationQuery<'${operationId}'>`)

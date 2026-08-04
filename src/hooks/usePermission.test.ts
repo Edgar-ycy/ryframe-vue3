@@ -32,7 +32,7 @@ describe('usePermission', () => {
     const permission = usePermission()
 
     expect(permission.isAdmin()).toBe(true)
-    expect(permission.hasPermission('system:any:action')).toBe(true)
-    expect(permission.hasAllPermissions('system:a:list', 'system:b:list')).toBe(true)
+    expect(permission.hasPermission('tenant:status')).toBe(true)
+    expect(permission.hasAllPermissions('system:user:remove', 'system:role:remove')).toBe(true)
   })
 })

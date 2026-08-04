@@ -24,6 +24,7 @@ const coverageAdditionalFiles = [
   'src/api/modules/messages.ts',
   'src/api/modules/monitor.ts',
   'src/api/modules/tools.ts',
+  'src/api/operationRequest.ts',
   'src/components/common/iconSelection.ts',
   'src/components/layout/TagsView/routeTagSync.ts',
   'src/main.ts',

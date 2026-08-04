@@ -76,7 +76,7 @@ import {
 const router = useRouter()
 const permissionStore = usePermissionStore()
 const userStore = useUserStore()
-const { hasAllPermissions, isAdmin } = usePermission()
+const { hasPermission, isAdmin } = usePermission()
 const { t } = useI18n()
 
 const displayName = computed(() => userStore.nickname || userStore.username || t('dashboard.defaultUser'))
@@ -84,7 +84,7 @@ const tenantLabel = computed(() => userStore.tenantName || userStore.tenantId ||
 const roleLabel = computed(() => userStore.roles.length ? userStore.roles.join(', ') : '-')
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
-  && (isAdmin() || hasAllPermissions('tenant:manage', 'tenant:list')),
+  && (isAdmin() || hasPermission('tenant:list')),
 )
 
 const allLinks = computed<DashboardLink[]>(() => {

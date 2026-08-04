@@ -296,6 +296,17 @@ export async function request<T = unknown>(
   return parseEnvelope(response)
 }
 
+export function requireOperationData<T>(response: ApiResponse<T>): T {
+  if (response.data === undefined) {
+    throw new HttpError(translate('shell.http.invalidResponse'), {
+      code: response.code,
+      requestId: response.request_id,
+      kind: 'invalid_response',
+    })
+  }
+  return response.data
+}
+
 export async function rawRequest<T>(
   config: AxiosRequestConfig,
 ): Promise<ApiResponse<T>> {

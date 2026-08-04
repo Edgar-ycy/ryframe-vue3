@@ -6,6 +6,7 @@
     "src/api/modules/messages.ts",
     "src/api/modules/monitor.ts",
     "src/api/modules/tools.ts",
+    "src/api/operationRequest.ts",
     "src/app/messages/messageQueries.ts",
     "src/app/messages/messageSocket.ts",
     "src/app/session/sessionCoordinator.ts",

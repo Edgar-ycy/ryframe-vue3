@@ -112,7 +112,7 @@ function mountPermissionButton(
 describe('permission directive', () => {
   it('hides a mounted action when the current user lacks its permission and restores it after refresh', async () => {
     const { app, container, user } = mountPermissionButton(
-      'system:user:delete',
+      'system:user:remove',
       ['system:user:list'],
     )
 
@@ -120,7 +120,7 @@ describe('permission directive', () => {
     expect(container.children[0]?.hidden).toBe(true)
     expect(container.children[0]?.inert).toBe(true)
 
-    user.permissions = ['system:user:delete']
+    user.permissions = ['system:user:remove']
     await nextTick()
 
     expect(container.children[0]?.hidden).toBe(false)
@@ -130,13 +130,13 @@ describe('permission directive', () => {
 
   it('keeps mounted actions for matching wildcard permissions and admin roles', () => {
     const wildcard = mountPermissionButton(
-      ['system:user:update', 'system:user:delete'],
+      ['system:user:edit', 'system:user:remove'],
       ['system:user:*'],
     )
     expect(wildcard.container.children.map(node => node.type)).toEqual(['button'])
     wildcard.app.unmount()
 
-    const admin = mountPermissionButton('system:tenant:delete', [], ['admin'])
+    const admin = mountPermissionButton('tenant:status', [], ['admin'])
     expect(admin.container.children.map(node => node.type)).toEqual(['button'])
     admin.app.unmount()
   })

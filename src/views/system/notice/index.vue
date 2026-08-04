@@ -157,6 +157,7 @@ import {
   validateNoticeMarkdown,
 } from '@/shared/markdown/noticePolicy'
 import type { Id, PageResponse } from '@/shared/http/types'
+import { requireOperationData } from '@/shared/http/client'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -175,14 +176,7 @@ const noticesQuery = useTenantQuery<PageResponse<NoticeRecord>>(
   () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
   async signal => {
     const response = await listNotice({ ...activeQueryParams.value }, signal)
-    return response.data ?? {
-      items: [],
-      page: activeQueryParams.value.page ?? 1,
-      page_size: activeQueryParams.value.page_size ?? 10,
-      total: 0,
-      total_pages: 0,
-      max_page_size: activeQueryParams.value.page_size ?? 10,
-    }
+    return requireOperationData(response)
   },
 )
 const loading = computed(() => noticesQuery.isFetching.value)
@@ -241,8 +235,7 @@ const detailQuery = useTenantQuery<NoticeRecord>(
     const target = editingNotice.value
     if (!target) throw new Error(t('system.notice.detailMissing'))
     const response = await getNotice(target.id, signal)
-    if (!response.data) throw new Error(t('system.notice.detailMissing'))
-    return response.data
+    return requireOperationData(response)
   },
 )
 

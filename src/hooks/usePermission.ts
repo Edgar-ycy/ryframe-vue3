@@ -1,4 +1,5 @@
 import { useUserStore } from '@/stores/user'
+import type { PermissionCode } from '@/api/generated/permissions'
 import {
   hasAllPermissions as checkAllPermissions,
   hasPermission as checkPermission,
@@ -12,13 +13,13 @@ export function usePermission() {
       || checkPermission(userStore.permissions, '*:*:*', userStore.roles)
   }
 
-  const hasPermission = (perm: string): boolean =>
+  const hasPermission = (perm: PermissionCode): boolean =>
     checkPermission(userStore.permissions, perm, userStore.roles)
 
-  const hasAnyPermission = (...perms: string[]): boolean =>
+  const hasAnyPermission = (...perms: PermissionCode[]): boolean =>
     checkPermission(userStore.permissions, perms, userStore.roles)
 
-  const hasAllPermissions = (...perms: string[]): boolean =>
+  const hasAllPermissions = (...perms: PermissionCode[]): boolean =>
     checkAllPermissions(userStore.permissions, perms, userStore.roles)
 
   const hasRole = (role: string): boolean => userStore.roles.includes(role)

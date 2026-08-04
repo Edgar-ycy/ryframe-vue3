@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto'
+import { execFile } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { promisify } from 'node:util'
 
 import { requireApiPrefixContract } from './api-prefix-contract.mjs'
+import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 
 const mode = process.argv[2] ?? 'sync'
 const allowedModes = new Set(['sync', '--verify-local', '--verify-upstream'])
@@ -13,20 +16,12 @@ if (!allowedModes.has(mode) || process.argv.length > 3) {
 
 const metadataPath = path.resolve('openapi/source.json')
 const outputPath = path.resolve('openapi/openapi.json')
-const passwordPolicyPath = path.resolve(
-  'src/shared/security/passwordPolicy.generated.json',
-)
-const noticePolicyPath = path.resolve(
-  'src/shared/markdown/noticePolicy.generated.json',
-)
-const apiPrefixPath = path.resolve(
-  'src/shared/config/apiPrefix.generated.json',
-)
 const defaultOpenApiPath = 'openapi/openapi.json'
 const sha256Pattern = /^[0-9a-f]{64}$/i
 const commitPattern = /^[0-9a-f]{40}$/i
 const repositoryPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
 const decoder = new TextDecoder('utf-8', { fatal: true })
+const execFileAsync = promisify(execFile)
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
@@ -140,16 +135,36 @@ function validateContract(document, label) {
 
   const apiPrefix = document['x-ryframe-api-prefix']
   requireApiPrefixContract(apiPrefix, label)
+  requirePermissionCatalog(document['x-ryframe-permission-catalog'], label)
 }
 
-async function readSource(value) {
-  if (!/^https?:\/\//i.test(value)) return readFile(path.resolve(value))
-
+async function readRemoteSource(value) {
   const response = await fetch(value, { redirect: 'error' })
   if (!response.ok) {
     throw new Error(`failed to fetch OpenAPI contract: ${response.status} ${response.statusText}`)
   }
   return Buffer.from(await response.arrayBuffer())
+}
+
+async function readPinnedSource(metadata) {
+  const backendWorktree = process.env.RYFRAME_BACKEND_WORKTREE?.trim()
+  if (!backendWorktree) return readRemoteSource(sourceUrl(metadata))
+
+  const worktree = path.resolve(backendWorktree)
+  const objectName = `${metadata.backend_commit}:${metadata.openapi_path}`
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      ['-C', worktree, 'show', objectName],
+      { encoding: 'buffer', maxBuffer: 16 * 1024 * 1024 },
+    )
+    return Buffer.from(stdout)
+  }
+  catch (error) {
+    throw new Error(
+      `无法从后端 Git 对象 ${objectName} 读取 OpenAPI；请确认 RYFRAME_BACKEND_WORKTREE 和提交 SHA 正确：${error.message}`,
+    )
+  }
 }
 
 async function readMetadata() {
@@ -202,17 +217,11 @@ async function sync() {
     )
   }
 
-  const pinnedSource = sourceUrl(metadata)
-  const configuredSource = process.env.RYFRAME_OPENAPI_SOURCE?.trim()
-  if (configuredSource && /^https?:\/\//i.test(configuredSource) && configuredSource !== pinnedSource) {
-    throw new Error('RYFRAME_OPENAPI_SOURCE must equal the exact pinned raw GitHub URL when it is remote')
-  }
-  const source = configuredSource || pinnedSource
-  const document = parseContract(await readSource(source), source)
+  const source = process.env.RYFRAME_BACKEND_WORKTREE?.trim()
+    ? `${path.resolve(process.env.RYFRAME_BACKEND_WORKTREE)} Git object ${metadata.backend_commit}:${metadata.openapi_path}`
+    : sourceUrl(metadata)
+  const document = parseContract(await readPinnedSource(metadata), source)
   const serializedDocument = canonicalJson(document)
-  const passwordPolicy = document['x-ryframe-password-policy']
-  const noticePolicy = document['x-ryframe-notice-policy']
-  const apiPrefix = document['x-ryframe-api-prefix']
   const sourceMetadata = {
     ...metadata,
     openapi_version: document.openapi,
@@ -220,13 +229,7 @@ async function sync() {
   }
 
   await mkdir(path.dirname(outputPath), { recursive: true })
-  await mkdir(path.dirname(passwordPolicyPath), { recursive: true })
-  await mkdir(path.dirname(noticePolicyPath), { recursive: true })
-  await mkdir(path.dirname(apiPrefixPath), { recursive: true })
   await writeFile(outputPath, serializedDocument, 'utf8')
-  await writeFile(passwordPolicyPath, canonicalJson(passwordPolicy), 'utf8')
-  await writeFile(noticePolicyPath, canonicalJson(noticePolicy), 'utf8')
-  await writeFile(apiPrefixPath, canonicalJson(apiPrefix), 'utf8')
   await writeFile(metadataPath, canonicalJson(sourceMetadata), 'utf8')
   console.log(
     `Synced RyFrame OpenAPI contract from ${sourceMetadata.backend_repository}`
@@ -237,7 +240,10 @@ async function sync() {
 async function verifyUpstream() {
   const metadata = await readMetadata()
   const local = await verifyLocal(metadata)
-  const upstream = parseContract(await readSource(sourceUrl(metadata)), sourceUrl(metadata))
+  const upstream = parseContract(
+    await readRemoteSource(sourceUrl(metadata)),
+    sourceUrl(metadata),
+  )
   const upstreamBytes = Buffer.from(canonicalJson(upstream), 'utf8')
 
   if (!upstreamBytes.equals(local.bytes)) {

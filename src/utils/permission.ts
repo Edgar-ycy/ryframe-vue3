@@ -1,4 +1,7 @@
-export type PermissionValue = string | string[]
+import type { PermissionCode } from '@/api/generated/permissions'
+
+export type PermissionValue = PermissionCode | readonly PermissionCode[]
+type RuntimePermissionValue = string | readonly string[]
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
@@ -22,7 +25,7 @@ export function matchPermission(owned: string, required: string): boolean {
 
 export function hasPermission(
   permissions: readonly string[],
-  required: PermissionValue,
+  required: RuntimePermissionValue,
   roles: readonly string[] = [],
 ): boolean {
   if (!required || required.length === 0) return true

@@ -1,5 +1,5 @@
 /**
- * 此文件由 openapi-typescript 自动生成。
+ * 此文件由 OpenAPI 契约自动生成。
  * 请勿直接修改此文件。
  */
 

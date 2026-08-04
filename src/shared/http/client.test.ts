@@ -11,6 +11,7 @@ import {
   rawRequest,
   request,
   requestBlob,
+  requireOperationData,
   requestText,
   type HttpSessionAdapter,
 } from './client'
@@ -387,6 +388,22 @@ describe('HTTP client session boundary', () => {
       .rejects.toMatchObject({ kind: 'invalid_response' })
     await expect(request({ url: '/failed', adapter: response(envelope(undefined, 500, 'failed', 'internal')) }))
       .rejects.toMatchObject({ code: 500 })
+  })
+
+  it('requires data for operation responses without rejecting explicit null', () => {
+    expect(requireOperationData(envelope({ accepted: true }))).toEqual({ accepted: true })
+    expect(requireOperationData(envelope(null))).toBeNull()
+    expect(() => requireOperationData(envelope(undefined))).toThrowError(HttpError)
+    try {
+      requireOperationData(envelope(undefined))
+    }
+    catch (error) {
+      expect(error).toMatchObject({
+        code: 200,
+        kind: 'invalid_response',
+        requestId: '0198f7e8-0000-7000-8000-000000000001',
+      })
+    }
   })
 
   it('normalizes raw envelope failures without presentation concerns', async () => {

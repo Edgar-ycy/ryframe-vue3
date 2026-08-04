@@ -10,6 +10,11 @@ export type OperationQuery<Name extends keyof operations> =
     ? Exclude<Query, undefined>
     : never
 
+export type OperationPath<Name extends keyof operations> =
+  ApiOperation<Name> extends { parameters: { path?: infer Path } }
+    ? Exclude<Path, undefined>
+    : never
+
 export type OperationJsonBody<Name extends keyof operations> =
   ApiOperation<Name> extends {
     requestBody: { content: { 'application/json': infer Body } }

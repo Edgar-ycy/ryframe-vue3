@@ -64,12 +64,12 @@ const appStore = useAppStore()
 const permissionStore = usePermissionStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
-const { hasAllPermissions, isAdmin } = usePermission()
+const { hasPermission, isAdmin } = usePermission()
 const { t } = useI18n()
 
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
-  && (isAdmin() || hasAllPermissions('tenant:manage', 'tenant:list')),
+  && (isAdmin() || hasPermission('tenant:list')),
 )
 
 const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')

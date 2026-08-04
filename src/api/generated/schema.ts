@@ -4193,6 +4193,8 @@ export interface components {
         };
         RuntimeDatabaseReplicaStatus: {
             connected: boolean;
+            consecutive_failures: number;
+            consecutive_successes: number;
             name: string;
         };
         RuntimeDatabaseSourceStatus: {

@@ -64,22 +64,23 @@
     <!-- 预览弹窗 -->
     <el-dialog
       v-model="previewVisible"
-      v-loading="previewLoading"
       :title="t('tools.generator.previewTitle')"
       width="800px"
       top="5vh"
     >
-      <el-tabs v-model="previewTab" type="card">
-        <el-tab-pane v-for="file in previewFiles" :key="file.name" :label="file.name" :name="file.name">
-          <el-input
-            :model-value="file.content"
-            type="textarea"
-            :rows="20"
-            readonly
-            style="font-family:monospace;font-size:12px"
-          />
-        </el-tab-pane>
-      </el-tabs>
+      <div v-loading="previewLoading">
+        <el-tabs v-model="previewTab" type="card">
+          <el-tab-pane v-for="file in previewFiles" :key="file.name" :label="file.name" :name="file.name">
+            <el-input
+              :model-value="file.content"
+              type="textarea"
+              :rows="20"
+              readonly
+              style="font-family:monospace;font-size:12px"
+            />
+          </el-tab-pane>
+        </el-tabs>
+      </div>
       <template #footer>
         <el-button @click="previewVisible = false">{{ t('tools.generator.close') }}</el-button>
       </template>

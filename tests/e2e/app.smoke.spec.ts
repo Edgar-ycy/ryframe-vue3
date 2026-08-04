@@ -1,7 +1,13 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page, type Route } from '@playwright/test'
+import type { ApiSchema } from '../../src/api/contract'
 
 const apiBasePath = '/api/v1'
+const mockRequestId = '019c2f5d-7a8b-7c9d-8e0f-123456789abc'
+
+type MockEnvelope<Data = unknown> = Omit<ApiSchema<'ApiResponse_RuntimeStatus'>, 'data'> & {
+  data?: Data
+}
 
 interface ApiMockState {
   unexpectedRequests: string[]
@@ -56,35 +62,18 @@ function protectedAvatarUrl(filename: string): string {
   return `${apiBasePath}/common/file/download?bucket=avatar&path=system/2026/07/17/${filename}`
 }
 
-function json(
+function json<Data>(
   route: Route,
-  body: unknown,
+  body: MockEnvelope<Data>,
   status = 200,
   headers?: Record<string, string>,
 ): Promise<void> {
-  const normalizedBody = normalizeEnvelope(body)
   return route.fulfill({
     status,
     contentType: 'application/json; charset=utf-8',
-    body: JSON.stringify(normalizedBody),
+    body: JSON.stringify(body),
     headers,
   })
-}
-
-/** 将历史 Mock 响应转换为当前统一响应字段，确保浏览器侧始终校验真实契约。 */
-function normalizeEnvelope(body: unknown): unknown {
-  if (typeof body !== 'object' || body === null || !('code' in body)) {
-    return body
-  }
-  const normalized = { ...(body as Record<string, unknown>) }
-  if (typeof normalized.msg === 'string' && typeof normalized.message !== 'string') {
-    normalized.message = normalized.msg
-  }
-  delete normalized.msg
-  if (typeof normalized.request_id !== 'string') {
-    normalized.request_id = 'e2e-request-id'
-  }
-  return normalized
 }
 
 function parseCookies(cookieHeader: string | undefined): Map<string, string> {
@@ -104,7 +93,8 @@ function createGate(): RefreshGate {
 function authResponse(accessToken: string) {
   return {
     code: 200,
-    msg: 'ok',
+    message: 'ok',
+    request_id: mockRequestId,
     data: {
       access_token: accessToken,
       expires_in: 3600,
@@ -194,7 +184,11 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
   const requireAccess = async (route: Route, label: string) => {
     if (hasValidAccess(route.request().headers())) return true
     protectedUnauthorizedRequests.push(route.request().headers()['x-e2e-probe'] ?? label)
-    await json(route, { code: 401, msg: 'access token expired' }, 401)
+    await json(route, {
+      code: 401,
+      message: 'access token expired',
+      request_id: mockRequestId,
+    }, 401)
     return false
   }
 
@@ -209,14 +203,24 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         const csrfToken = `csrf-${csrfCounter}`
         await json(
           route,
-          { code: 200, msg: 'ok', data: { csrf_token: csrfToken, expires_in: 300 } },
+          {
+            code: 200,
+            message: 'ok',
+            request_id: mockRequestId,
+            data: { csrf_token: csrfToken, expires_in: 300 },
+          },
           200,
           { 'set-cookie': `ryframe_csrf=${csrfToken}; Path=/api/v1/auth; SameSite=Lax` },
         )
         return
       }
       case `GET ${apiBasePath}/auth/captcha/config`:
-        await json(route, { code: 200, msg: 'ok', data: { captcha_enabled: false } })
+        await json(route, {
+          code: 200,
+          message: 'ok',
+          request_id: mockRequestId,
+          data: { captcha_enabled: false },
+        })
         return
       case `POST ${apiBasePath}/auth/login`: {
         const body = request.postDataJSON() as Record<string, unknown>
@@ -225,7 +229,11 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
           && body.username === 'operator'
           && body.password === 'Strong@123'
         if (!valid) {
-          await json(route, { code: 401, msg: 'invalid test credentials' }, 401)
+          await json(route, {
+            code: 401,
+            message: 'invalid test credentials',
+            request_id: mockRequestId,
+          }, 401)
           return
         }
         refreshSessionActive = true
@@ -241,7 +249,8 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         if (!await requireAccess(route, 'auth/ws-ticket')) return
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: { ticket: 'e2e-message-ticket', expires_in: 30 },
         })
         return
@@ -256,7 +265,7 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         }
         refreshAttempts.push(attempt)
         const respond = async (
-          body: unknown,
+          body: MockEnvelope,
           status: number,
           responseHeaders?: Record<string, string>,
         ) => {
@@ -264,40 +273,64 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
           await json(route, body, status, responseHeaders)
         }
         if (refreshUnavailable) {
-          await respond({ code: 503, msg: 'redis unavailable' }, 503)
+          await respond({
+            code: 503,
+            message: 'redis unavailable',
+            request_id: mockRequestId,
+          }, 503)
           return
         }
         if (!refreshSessionActive || !currentRefreshJti || !hasValidCsrf(headers)) {
           refreshSessionActive = false
           currentRefreshJti = null
-          await respond({ code: 401, msg: 'no refresh session' }, 401, {
+          await respond({
+            code: 401,
+            message: 'no refresh session',
+            request_id: mockRequestId,
+          }, 401, {
             'set-cookie': deleteRefreshCookie,
           })
           return
         }
         if (queuedRefreshConflicts > 0) {
           queuedRefreshConflicts -= 1
-          await respond({ code: 409, msg: 'refresh already in progress' }, 409, {
+          await respond({
+            code: 409,
+            message: 'refresh already in progress',
+            request_id: mockRequestId,
+          }, 409, {
             'retry-after': '0',
           })
           return
         }
         if (cookieJti !== currentRefreshJti) {
           if (cookieJti && recentlyRotatedRefreshJtis.has(cookieJti)) {
-            await respond({ code: 409, msg: 'refresh already in progress' }, 409, {
+            await respond({
+              code: 409,
+              message: 'refresh already in progress',
+              request_id: mockRequestId,
+            }, 409, {
               'retry-after': '0',
             })
             return
           }
           refreshSessionActive = false
           currentRefreshJti = null
-          await respond({ code: 401, msg: 'refresh replay detected' }, 401, {
+          await respond({
+            code: 401,
+            message: 'refresh replay detected',
+            request_id: mockRequestId,
+          }, 401, {
             'set-cookie': deleteRefreshCookie,
           })
           return
         }
         if (refreshInFlightJti === cookieJti) {
-          await respond({ code: 409, msg: 'refresh already in progress' }, 409, {
+          await respond({
+            code: 409,
+            message: 'refresh already in progress',
+            request_id: mockRequestId,
+          }, 409, {
             'retry-after': '0',
           })
           return
@@ -311,7 +344,11 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
             if (refreshGate === gate) refreshGate = undefined
           }
           if (!refreshSessionActive || currentRefreshJti !== cookieJti) {
-            await respond({ code: 401, msg: 'refresh session revoked' }, 401, {
+            await respond({
+              code: 401,
+              message: 'refresh session revoked',
+              request_id: mockRequestId,
+            }, 401, {
               'set-cookie': deleteRefreshCookie,
             })
             return
@@ -331,12 +368,20 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
       case `POST ${apiBasePath}/auth/logout`:
         logoutRequests += 1
         if (!hasValidCsrf(request.headers())) {
-          await json(route, { code: 403, msg: 'invalid csrf challenge' }, 403)
+          await json(route, {
+            code: 403,
+            message: 'invalid csrf challenge',
+            request_id: mockRequestId,
+          }, 403)
           return
         }
         refreshSessionActive = false
         currentRefreshJti = null
-        await json(route, { code: 200, msg: 'ok' }, 200, {
+        await json(route, {
+          code: 200,
+          message: 'ok',
+          request_id: mockRequestId,
+        }, 200, {
           'set-cookie': deleteRefreshCookie,
         })
         return
@@ -344,7 +389,8 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         if (!await requireAccess(route, 'auth/me')) return
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: {
             id: '1001',
             tenant_id: 'system',
@@ -364,7 +410,8 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         if (!await requireAccess(route, 'auth/profile')) return
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: {
             user_id: '1001',
             username: 'operator',
@@ -380,11 +427,30 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
           },
         })
         return
+      case `GET ${apiBasePath}/system/messages`:
+        if (!await requireAccess(route, 'system/messages')) return
+        await json(route, {
+          code: 200,
+          message: 'ok',
+          request_id: mockRequestId,
+          data: { records: [], next_cursor: null },
+        })
+        return
+      case `GET ${apiBasePath}/system/messages/unread-count`:
+        if (!await requireAccess(route, 'system/messages/unread-count')) return
+        await json(route, {
+          code: 200,
+          message: 'ok',
+          request_id: mockRequestId,
+          data: 0,
+        })
+        return
       case `PUT ${apiBasePath}/auth/profile/avatar`:
         avatarUrl = protectedAvatarUrl('new-avatar.png')
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: { avatar_url: avatarUrl },
         })
         return
@@ -397,7 +463,11 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
           tenantId: headers['x-tenant-id'],
         })
         if (!hasValidAccess(headers)) {
-          await json(route, { code: 401, msg: 'missing authentication' }, 401)
+          await json(route, {
+            code: 401,
+            message: 'missing authentication',
+            request_id: mockRequestId,
+          }, 401)
           return
         }
         await route.fulfill({ status: 200, contentType: 'image/png', body: avatarPng })
@@ -407,7 +477,8 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         if (!await requireAccess(route, 'system/menus/current')) return
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: [
             {
               id: '2000',
@@ -487,12 +558,15 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
       case `GET ${apiBasePath}/monitor/runtime`:
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: {
             database: {
               connected: true,
               driver: 'mysql',
               primary_connected: true,
+              read_fallback_total: 0,
+              read_selections: [],
               replica_count: 0,
               replicas: [],
               source_count: 0,
@@ -506,13 +580,14 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
               endpoint: 'http://127.0.0.1:9000',
             },
             upload_circuit_breaker: { state: 'Closed' },
-          },
+          } satisfies ApiSchema<'RuntimeStatus'>,
         })
         return
       case `GET ${apiBasePath}/system/dict/types`:
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: {
             items: [{ id: '3001', name: '登录状态', code: 'sys_common_status', status: '1' }],
             page: 1,
@@ -526,7 +601,8 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
       case `GET ${apiBasePath}/system/dict/data`:
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: [
             {
               id: '4001',
@@ -540,15 +616,26 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         })
         return
       case `GET ${apiBasePath}/system/configs/key/sys.index.sideTheme`:
-        await json(route, { code: 200, msg: 'ok', data: 'theme-light' })
+        await json(route, {
+          code: 200,
+          message: 'ok',
+          request_id: mockRequestId,
+          data: 'theme-light',
+        })
         return
       case `GET ${apiBasePath}/system/configs/key/sys.index.skinName`:
-        await json(route, { code: 200, msg: 'ok', data: 'blue' })
+        await json(route, {
+          code: 200,
+          message: 'ok',
+          request_id: mockRequestId,
+          data: 'blue',
+        })
         return
       case `GET ${apiBasePath}/tools/gen/tables`:
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: {
             items: [{ table_name: 'sys_device', comment: '设备', columns: [{ name: 'id' }] }],
             page: 1,
@@ -563,13 +650,18 @@ async function installApiMocks(page: Page): Promise<ApiMockState> {
         generationRequests.push(request.postDataJSON())
         await json(route, {
           code: 200,
-          msg: 'ok',
+          message: 'ok',
+          request_id: mockRequestId,
           data: { written: ['src/entities/device.rs'], skipped: [] },
         })
         return
       default:
         unexpectedRequests.push(key)
-        await json(route, { code: 500, msg: `unexpected request: ${key}` }, 500)
+        await json(route, {
+          code: 500,
+          message: `unexpected request: ${key}`,
+          request_id: mockRequestId,
+        }, 500)
     }
   })
 

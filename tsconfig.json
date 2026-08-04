@@ -28,7 +28,7 @@
     "src/**/*.d.ts",
     "src/**/*.vue",
     "tests/**/*.ts",
-    "playwright.config.ts",
+    "playwright*.config.ts",
     "vite.config.ts"
   ],
   "exclude": ["node_modules", "dist"]

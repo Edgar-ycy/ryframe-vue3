@@ -72,8 +72,10 @@ jobs:
       - name: Run unit tests with coverage
         run: pnpm test:coverage
 
-      - name: Production build
-        run: pnpm build
+      - name: Build production bundle for same-origin smoke tests
+        run: pnpm build:e2e:production
+        env:
+          VITE_APP_BUILD_COMMIT: ${{ github.sha }}
 
       - name: Enforce bundle budget
         run: pnpm check:bundle
@@ -81,8 +83,11 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run browser smoke tests against the production build
+      - name: Run development-server browser E2E tests
         run: pnpm test:e2e
+
+      - name: Run same-origin smoke test against dist
+        run: pnpm test:e2e:production
 
       - name: Upload coverage
         if: env.CODECOV_TOKEN != ''
@@ -92,7 +97,7 @@ jobs:
           fail_ci_if_error: true
           token: ${{ env.CODECOV_TOKEN }}
 
-      - name: Upload browser diagnostics on failure
+      - name: Upload browser E2E diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:

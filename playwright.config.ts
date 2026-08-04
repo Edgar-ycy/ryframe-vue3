@@ -22,12 +22,13 @@ export default defineConfig({
     launchOptions: executablePath ? { executablePath } : undefined,
   },
   webServer: {
-    command: isCi
-      ? 'pnpm preview --host 127.0.0.1 --port 4173'
-      : 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173',
-    env: { RYFRAME_E2E: '1' },
+    command: 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173',
+    env: {
+      RYFRAME_E2E: '1',
+      VITE_APP_API_ORIGIN: 'http://127.0.0.1:4173',
+    },
     url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !isCi,
+    reuseExistingServer: false,
     timeout: 120_000,
     stdout: 'pipe',
     stderr: 'pipe',

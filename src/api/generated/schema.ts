@@ -613,23 +613,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/configs/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 参数配置列表不分页查询（返回全部数据） */
-        get: operations["get_system_configs_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/configs/cache": {
         parameters: {
             query?: never;
@@ -715,23 +698,6 @@ export interface paths {
         put?: never;
         /** 创建部门 */
         post: operations["post_system_depts"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/depts/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 部门列表不分页查询（返回全部数据） */
-        get: operations["get_system_depts_all"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -847,23 +813,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/dict/types/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 字典类型不分页查询 */
-        get: operations["get_system_dict_types_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/dict/types/exports": {
         parameters: {
             query?: never;
@@ -916,23 +865,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/loginlogs/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 登录日志不分页查询（返回全部数据） */
-        get: operations["get_system_loginlogs_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/loginlogs/exports": {
         parameters: {
             query?: never;
@@ -962,23 +894,6 @@ export interface paths {
         put?: never;
         /** 创建菜单 */
         post: operations["post_system_menus"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/menus/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 菜单列表不分页查询（返回全部数据） */
-        get: operations["get_system_menus_all"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1142,23 +1057,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/notices/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 通知公告列表不分页查询（返回全部数据） */
-        get: operations["get_system_notices_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/notices/{id}": {
         parameters: {
             query?: never;
@@ -1215,26 +1113,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/online/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取在线用户列表
-         *     获取在线用户列表
-         */
-        get: operations["get_system_online_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/online/{sid}": {
         parameters: {
             query?: never;
@@ -1264,23 +1142,6 @@ export interface paths {
         };
         /** 操作日志列表 */
         get: operations["get_system_operlogs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/operlogs/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 操作日志不分页查询（返回全部数据） */
-        get: operations["get_system_operlogs_all"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1388,23 +1249,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/posts/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 岗位列表不分页查询（返回全部数据） */
-        get: operations["get_system_posts_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/posts/exports": {
         parameters: {
             query?: never;
@@ -1459,23 +1303,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/roles/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 角色列表不分页查询（返回全部数据） */
-        get: operations["get_system_roles_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/roles/batch/{ids}": {
         parameters: {
             query?: never;
@@ -1504,6 +1331,23 @@ export interface paths {
         put?: never;
         /** 创建角色异步导出任务。 */
         post: operations["post_system_roles_exports"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/roles/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前操作者可以分配的角色选项。 */
+        get: operations["get_system_roles_options"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1580,22 +1424,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/system/users/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_system_users_all"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/system/users/batch/{ids}": {
         parameters: {
             query?: never;
@@ -1653,6 +1481,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_system_users_import_template"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/users/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前操作者数据范围内的用户选项。 */
+        get: operations["get_system_users_options"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1785,6 +1630,23 @@ export interface paths {
         };
         /** 列出数据库表 */
         get: operations["get_tools_gen_tables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 返回 API 版本与主要入口。 */
+        get: operations["get_version"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1980,6 +1842,30 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_ApiVersionInfo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description API 版本与构建信息。 */
+            data?: {
+                api_prefix: string;
+                endpoints: components["schemas"]["ApiVersionEndpoints"];
+                name: string;
+                source_commit: string;
+                version: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_AvatarResponse: {
             /**
              * Format: int32
@@ -2024,7 +1910,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
-            /** @description 当前租户的后台任务队列统计。 */
+            /** @description 后台任务队列统计。 */
             data?: {
                 /** Format: int64 */
                 dead: number;
@@ -2055,11 +1941,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
-            /**
-             * @description 面向管理端的后台任务安全视图。
-             *
-             *     任务载荷可能包含业务敏感字段，因此监控列表不会返回 `payload`。
-             */
+            /** @description 后台任务的公开视图，不包含内部载荷。 */
             data?: {
                 /** Format: int32 */
                 attempts: number;
@@ -2188,10 +2070,10 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 参数配置响应。 */
             data?: {
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 key: string;
                 name: string;
@@ -2256,11 +2138,11 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 部门响应。 */
             data?: {
                 ancestors: string;
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 name: string;
                 parent_id?: string | null;
@@ -2285,9 +2167,9 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 字典数据响应。 */
             data?: {
                 css_class?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 label: string;
                 /** Format: int32 */
@@ -2312,11 +2194,11 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 字典类型响应。 */
             data?: {
                 code: string;
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 name: string;
                 remark?: string | null;
@@ -2338,7 +2220,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
-            /** @description 面向 API 的导出任务安全视图，不暴露内部后台任务载荷。 */
+            /** @description 导出任务响应。 */
             data?: {
                 /** Format: date-time */
                 completed_at?: string | null;
@@ -2394,6 +2276,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 菜单响应。 */
             data?: {
                 /** Format: date-time */
                 created_at: string;
@@ -2447,16 +2330,37 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 通知公告响应。 */
             data?: {
                 content_markdown: string;
                 /** Format: date-time */
                 created_at: string;
                 created_by?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 notice_type?: string | null;
                 status: string;
                 title: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_OptionList: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 有界选择器响应。 */
+            data?: {
+                has_more: boolean;
+                items: components["schemas"]["OptionItem"][];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -2495,6 +2399,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 权限同步结果。 */
             data?: {
                 created: number;
                 existing: number;
@@ -2517,6 +2422,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 权限详情响应。 */
             data?: {
                 code: string;
                 /** Format: date-time */
@@ -2546,11 +2452,11 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 岗位响应。 */
             data?: {
                 code: string;
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 name: string;
                 remark?: string | null;
@@ -2596,14 +2502,13 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 角色响应。 */
             data?: {
                 code: string;
                 /** Format: date-time */
                 created_at: string;
                 data_scope: string;
-                /** @description 自定义数据权限的部门ID列表（仅查询详情时填充） */
                 dept_ids?: string[] | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 /** Format: int32 */
                 is_super: number;
@@ -2723,6 +2628,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 租户响应。 */
             data?: {
                 domain?: string | null;
                 /** Format: date-time */
@@ -2755,6 +2661,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 用户详情响应。 */
             data?: components["schemas"]["UserVo"] & {
                 roles: components["schemas"]["RoleBriefVo"][];
             };
@@ -2795,12 +2702,11 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
-            /** @description 用户信息 */
+            /** @description 当前登录用户的公开信息。 */
             data?: {
                 avatar?: string | null;
                 dept_name?: string | null;
                 email: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 nickname: string;
                 perms: string[];
@@ -2827,7 +2733,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
-            /** @description 用户个人信息响应 */
+            /** @description 用户个人信息响应。 */
             data?: {
                 avatar?: string | null;
                 created_at: string;
@@ -2843,7 +2749,6 @@ export interface components {
                 remark?: string | null;
                 roles: string[];
                 status: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 user_id: string;
                 username: string;
             };
@@ -2863,6 +2768,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 用户响应。 */
             data?: {
                 avatar?: string | null;
                 /** Format: date-time */
@@ -2877,32 +2783,6 @@ export interface components {
                 status: string;
                 username: string;
             };
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_ConfigVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                /** Format: date-time */
-                created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                key: string;
-                name: string;
-                remark?: string | null;
-                value: string;
-            }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
             /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
@@ -2938,35 +2818,6 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_DeptVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                ancestors: string;
-                /** Format: date-time */
-                created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                name: string;
-                parent_id?: string | null;
-                remark?: string | null;
-                /** Format: int32 */
-                sort: number;
-                status: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_DictDataVo: {
             /**
              * Format: int32
@@ -2975,7 +2826,6 @@ export interface components {
             code: number;
             data?: {
                 css_class?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 label: string;
                 /** Format: int32 */
@@ -3004,32 +2854,6 @@ export interface components {
                 css_class?: string | null;
                 label: string;
                 value: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_DictTypeVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                code: string;
-                /** Format: date-time */
-                created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                name: string;
-                remark?: string | null;
-                status: string;
             }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -3095,34 +2919,6 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_LoginInfoVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                browser?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                ipaddr: string;
-                login_location?: string | null;
-                login_time: string;
-                msg?: string | null;
-                os?: string | null;
-                status: string;
-                user_name: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_MenuTreeNode: {
             /**
              * Format: int32
@@ -3154,128 +2950,6 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_MenuVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                /** Format: date-time */
-                created_at: string;
-                icon?: string | null;
-                id: string;
-                menu_type: string;
-                name: string;
-                parent_id?: string | null;
-                perm_id?: string | null;
-                remark?: string | null;
-                route_key?: string | null;
-                /** Format: int32 */
-                sort: number;
-                status: string;
-                visible: boolean;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_NoticeVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                content_markdown: string;
-                /** Format: date-time */
-                created_at: string;
-                created_by?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                notice_type?: string | null;
-                status: string;
-                title: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_OnlineUserVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                browser?: string | null;
-                dept_name?: string | null;
-                ipaddr: string;
-                last_access_time: string;
-                login_location?: string | null;
-                login_time: string;
-                os?: string | null;
-                /** @description 稳定的刷新令牌族会话标识，而非访问令牌 JTI。 */
-                sid: string;
-                username: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_OperLogVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                business_type: string;
-                /** Format: int64 */
-                cost_time: number;
-                error_msg?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                json_result?: string | null;
-                method: string;
-                oper_ip: string;
-                oper_location?: string | null;
-                oper_name: string;
-                oper_param?: string | null;
-                oper_time: string;
-                oper_url: string;
-                request_method: string;
-                status: string;
-                title: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_PermissionTreeNode: {
             /**
              * Format: int32
@@ -3286,72 +2960,10 @@ export interface components {
                 children: components["schemas"]["PermissionTreeNode"][];
                 code: string;
                 icon?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 name: string;
                 parent_id?: string | null;
                 perm_type: string;
-                /** Format: int32 */
-                sort: number;
-                status: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_PostVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                code: string;
-                /** Format: date-time */
-                created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                name: string;
-                remark?: string | null;
-                /** Format: int32 */
-                sort: number;
-                status: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_RoleVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                code: string;
-                /** Format: date-time */
-                created_at: string;
-                data_scope: string;
-                /** @description 自定义数据权限的部门ID列表（仅查询详情时填充） */
-                dept_ids?: string[] | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
-                id: string;
-                /** Format: int32 */
-                is_super: number;
-                name: string;
-                remark?: string | null;
                 /** Format: int32 */
                 sort: number;
                 status: string;
@@ -3423,38 +3035,9 @@ export interface components {
             code: number;
             data?: {
                 file_id: string;
-                file_info: components["schemas"]["UploadFileInfo"];
+                file_name: string;
+                file_path: string;
                 file_url: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_UserVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                avatar?: string | null;
-                /** Format: date-time */
-                created_at: string;
-                dept_id?: string | null;
-                dept_name?: string | null;
-                email: string;
-                id: string;
-                nickname: string;
-                phone: string;
-                remark?: string | null;
-                status: string;
-                username: string;
             }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -3494,6 +3077,7 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
+            /** @description 代码生成写入报告。 */
             data?: {
                 skipped: string[];
                 written: string[];
@@ -3525,6 +3109,24 @@ export interface components {
             /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
             request_id: string;
         };
+        /** @description API 主要入口。 */
+        ApiVersionEndpoints: {
+            auth: string;
+            common: string;
+            monitor: string;
+            openapi: string;
+            swagger: string;
+            system: string;
+            tools: string;
+        };
+        /** @description API 版本与构建信息。 */
+        ApiVersionInfo: {
+            api_prefix: string;
+            endpoints: components["schemas"]["ApiVersionEndpoints"];
+            name: string;
+            source_commit: string;
+            version: string;
+        };
         AvatarResponse: {
             avatar_url: string;
         };
@@ -3545,7 +3147,7 @@ export interface components {
             /** @description 按状态精确过滤：pending、running、succeeded 或 dead。 */
             status?: string | null;
         };
-        /** @description 当前租户的后台任务队列统计。 */
+        /** @description 后台任务队列统计。 */
         BackgroundJobQueueStats: {
             /** Format: int64 */
             dead: number;
@@ -3560,11 +3162,7 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
-        /**
-         * @description 面向管理端的后台任务安全视图。
-         *
-         *     任务载荷可能包含业务敏感字段，因此监控列表不会返回 `payload`。
-         */
+        /** @description 后台任务的公开视图，不包含内部载荷。 */
         BackgroundJobVo: {
             /** Format: int32 */
             attempts: number;
@@ -3670,6 +3268,7 @@ export interface components {
             new_password: string;
             old_password: string;
         };
+        /** @description 数据库列结构响应。 */
         ColumnInfo: {
             comment?: string | null;
             data_type: string;
@@ -3686,10 +3285,10 @@ export interface components {
             tenant_id: string;
             token: string;
         };
+        /** @description 参数配置响应。 */
         ConfigVo: {
             /** Format: date-time */
             created_at: string;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             key: string;
             name: string;
@@ -3801,6 +3400,7 @@ export interface components {
             status: string;
             timestamp: string;
         };
+        /** @description 部门树节点。 */
         DeptTreeNode: {
             children: components["schemas"]["DeptTreeNode"][];
             id: string;
@@ -3810,11 +3410,11 @@ export interface components {
             sort: number;
             status: string;
         };
+        /** @description 部门响应。 */
         DeptVo: {
             ancestors: string;
             /** Format: date-time */
             created_at: string;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             name: string;
             parent_id?: string | null;
@@ -3823,9 +3423,9 @@ export interface components {
             sort: number;
             status: string;
         };
+        /** @description 字典数据响应。 */
         DictDataVo: {
             css_class?: string | null;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             label: string;
             /** Format: int32 */
@@ -3839,17 +3439,17 @@ export interface components {
             label: string;
             value: string;
         };
+        /** @description 字典类型响应。 */
         DictTypeVo: {
             code: string;
             /** Format: date-time */
             created_at: string;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             name: string;
             remark?: string | null;
             status: string;
         };
-        /** @description 面向 API 的导出任务安全视图，不暴露内部后台任务载荷。 */
+        /** @description 导出任务响应。 */
         ExportJobVo: {
             /** Format: date-time */
             completed_at?: string | null;
@@ -3898,7 +3498,7 @@ export interface components {
             /** @description 后端服务所在机器上的代码输出根目录。 */
             output_dir: string;
         };
-        /** @description 生成的文件 */
+        /** @description 代码生成预览文件。 */
         GeneratedFile: {
             content: string;
             path: string;
@@ -3906,10 +3506,9 @@ export interface components {
         LivenessResponse: {
             status: string;
         };
-        /** @description 登录日志视图对象 */
+        /** @description 登录日志响应。 */
         LoginInfoVo: {
             browser?: string | null;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             ipaddr: string;
             login_location?: string | null;
@@ -3947,6 +3546,7 @@ export interface components {
             expires_in: number;
             user_info: components["schemas"]["UserInfo"];
         };
+        /** @description 菜单树节点。 */
         MenuTreeNode: {
             children: components["schemas"]["MenuTreeNode"][];
             icon?: string | null;
@@ -3962,8 +3562,12 @@ export interface components {
             status: string;
             visible: boolean;
         };
-        /** @enum {string} */
+        /**
+         * @description 菜单类型。
+         * @enum {string}
+         */
         MenuType: "M" | "C" | "F";
+        /** @description 菜单响应。 */
         MenuVo: {
             /** Format: date-time */
             created_at: string;
@@ -4009,18 +3613,18 @@ export interface components {
             title: string;
             topic: string;
         };
+        /** @description 通知公告响应。 */
         NoticeVo: {
             content_markdown: string;
             /** Format: date-time */
             created_at: string;
             created_by?: string | null;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             notice_type?: string | null;
             status: string;
             title: string;
         };
-        /** @description 在线用户信息（DTO） */
+        /** @description 在线用户响应。 */
         OnlineUserVo: {
             browser?: string | null;
             dept_name?: string | null;
@@ -4029,7 +3633,6 @@ export interface components {
             login_location?: string | null;
             login_time: string;
             os?: string | null;
-            /** @description 稳定的刷新令牌族会话标识，而非访问令牌 JTI。 */
             sid: string;
             username: string;
         };
@@ -4050,13 +3653,12 @@ export interface components {
             page_size?: number | null;
             status?: string | null;
         };
-        /** @description 操作日志视图对象 */
+        /** @description 操作日志响应。 */
         OperLogVo: {
             business_type: string;
             /** Format: int64 */
             cost_time: number;
             error_msg?: string | null;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             json_result?: string | null;
             method: string;
@@ -4069,6 +3671,18 @@ export interface components {
             request_method: string;
             status: string;
             title: string;
+        };
+        /** @description 选择器候选项。 */
+        OptionItem: {
+            description?: string | null;
+            disabled: boolean;
+            label: string;
+            value: string;
+        };
+        /** @description 有界选择器响应。 */
+        OptionList: {
+            has_more: boolean;
+            items: components["schemas"]["OptionItem"][];
         };
         /** @description 分页接口的业务数据。 */
         PageData_BackgroundJobVo: {
@@ -4112,7 +3726,6 @@ export interface components {
             items: {
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 key: string;
                 name: string;
@@ -4136,7 +3749,6 @@ export interface components {
                 ancestors: string;
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 name: string;
                 parent_id?: string | null;
@@ -4162,7 +3774,6 @@ export interface components {
                 code: string;
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 name: string;
                 remark?: string | null;
@@ -4183,7 +3794,6 @@ export interface components {
         PageData_LoginInfoVo: {
             items: {
                 browser?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 ipaddr: string;
                 login_location?: string | null;
@@ -4240,7 +3850,6 @@ export interface components {
                 /** Format: date-time */
                 created_at: string;
                 created_by?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 notice_type?: string | null;
                 status: string;
@@ -4267,7 +3876,6 @@ export interface components {
                 login_location?: string | null;
                 login_time: string;
                 os?: string | null;
-                /** @description 稳定的刷新令牌族会话标识，而非访问令牌 JTI。 */
                 sid: string;
                 username: string;
             }[];
@@ -4289,7 +3897,6 @@ export interface components {
                 /** Format: int64 */
                 cost_time: number;
                 error_msg?: string | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 json_result?: string | null;
                 method: string;
@@ -4320,7 +3927,6 @@ export interface components {
                 code: string;
                 /** Format: date-time */
                 created_at: string;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 name: string;
                 remark?: string | null;
@@ -4346,9 +3952,7 @@ export interface components {
                 /** Format: date-time */
                 created_at: string;
                 data_scope: string;
-                /** @description 自定义数据权限的部门ID列表（仅查询详情时填充） */
                 dept_ids?: string[] | null;
-                /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
                 id: string;
                 /** Format: int32 */
                 is_super: number;
@@ -4422,17 +4026,18 @@ export interface components {
             request_id: string;
             reset_url: string;
         };
+        /** @description 权限同步结果。 */
         PermissionSyncReport: {
             created: number;
             existing: number;
             missing: string[];
             scanned: number;
         };
+        /** @description 权限树节点。 */
         PermissionTreeNode: {
             children: components["schemas"]["PermissionTreeNode"][];
             code: string;
             icon?: string | null;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             name: string;
             parent_id?: string | null;
@@ -4441,8 +4046,12 @@ export interface components {
             sort: number;
             status: string;
         };
-        /** @enum {string} */
+        /**
+         * @description 权限类型。
+         * @enum {string}
+         */
         PermissionType: "api" | "menu";
+        /** @description 权限详情响应。 */
         PermissionVo: {
             code: string;
             /** Format: date-time */
@@ -4456,11 +4065,11 @@ export interface components {
             sort: number;
             status: string;
         };
+        /** @description 岗位响应。 */
         PostVo: {
             code: string;
             /** Format: date-time */
             created_at: string;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             name: string;
             remark?: string | null;
@@ -4549,6 +4158,7 @@ export interface components {
         ReplaceUserRolesDto: {
             role_ids?: string[];
         };
+        /** @description 用户关联的简要角色信息。 */
         RoleBriefVo: {
             code: string;
             id: string;
@@ -4556,14 +4166,13 @@ export interface components {
             is_super: number;
             name: string;
         };
+        /** @description 角色响应。 */
         RoleVo: {
             code: string;
             /** Format: date-time */
             created_at: string;
             data_scope: string;
-            /** @description 自定义数据权限的部门ID列表（仅查询详情时填充） */
             dept_ids?: string[] | null;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             /** Format: int32 */
             is_super: number;
@@ -4575,6 +4184,12 @@ export interface components {
         };
         RuntimeCircuitBreakerStatus: {
             state: string;
+        };
+        RuntimeDatabaseReadSelection: {
+            /** Format: int64 */
+            count: number;
+            reason: string;
+            target: string;
         };
         RuntimeDatabaseReplicaStatus: {
             connected: boolean;
@@ -4588,7 +4203,10 @@ export interface components {
             connected: boolean;
             driver: string;
             primary_connected: boolean;
+            /** Format: int64 */
+            read_fallback_total: number;
             read_policy: string;
+            read_selections: components["schemas"]["RuntimeDatabaseReadSelection"][];
             replica_count: number;
             replicas: components["schemas"]["RuntimeDatabaseReplicaStatus"][];
             source_count: number;
@@ -4648,11 +4266,13 @@ export interface components {
              */
             used_memory: number;
         };
+        /** @description 数据库表结构响应。 */
         TableInfo: {
             columns: components["schemas"]["ColumnInfo"][];
             comment?: string | null;
             table_name: string;
         };
+        /** @description 租户响应。 */
         TenantVo: {
             domain?: string | null;
             /** Format: date-time */
@@ -4768,30 +4388,14 @@ export interface components {
         UpdateUserStatusDto: {
             status: string;
         };
-        /** @description 上传文件信息 */
-        UploadFileInfo: {
-            /** @description 文件 MIME 类型 */
-            content_type: string;
-            /** @description 文件路径（相对路径） */
-            file_path: string;
-            /**
-             * Format: int64
-             * @description 文件大小（字节）
-             */
-            file_size: number;
-            /** @description 原始文件名 */
-            original_name: string;
-            /** @description 存储文件名（UUID + 扩展名） */
-            storage_name: string;
-            /** @description 上传时间 */
-            upload_time: string;
-        };
-        /** @description 文件上传响应 */
+        /** @description 文件上传响应。 */
         UploadResponse: {
             file_id: string;
-            file_info: components["schemas"]["UploadFileInfo"];
+            file_name: string;
+            file_path: string;
             file_url: string;
         };
+        /** @description 用户详情响应。 */
         UserDetailVo: components["schemas"]["UserVo"] & {
             roles: components["schemas"]["RoleBriefVo"][];
         };
@@ -4808,12 +4412,11 @@ export interface components {
             fail_count: number;
             success_count: number;
         };
-        /** @description 用户信息 */
+        /** @description 当前登录用户的公开信息。 */
         UserInfo: {
             avatar?: string | null;
             dept_name?: string | null;
             email: string;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             id: string;
             nickname: string;
             perms: string[];
@@ -4824,7 +4427,7 @@ export interface components {
             tenant_name: string;
             username: string;
         };
-        /** @description 用户个人信息响应 */
+        /** @description 用户个人信息响应。 */
         UserProfileResponse: {
             avatar?: string | null;
             created_at: string;
@@ -4840,10 +4443,10 @@ export interface components {
             remark?: string | null;
             roles: string[];
             status: string;
-            /** @description id 使用 String 避免 Snowflake 64 位 ID 超出 JS Number.MAX_SAFE_INTEGER */
             user_id: string;
             username: string;
         };
+        /** @description 用户响应。 */
         UserVo: {
             avatar?: string | null;
             /** Format: date-time */
@@ -4864,6 +4467,7 @@ export interface components {
             expires_in: number;
             ticket: string;
         };
+        /** @description 代码生成写入报告。 */
         WriteReport: {
             skipped: string[];
             written: string[];
@@ -5960,29 +5564,6 @@ export interface operations {
             };
         };
     };
-    get_system_configs_all: {
-        parameters: {
-            query?: {
-                name?: string;
-                key?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 配置列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_ConfigVo"];
-                };
-            };
-        };
-    };
     delete_system_configs_cache: {
         parameters: {
             query?: never;
@@ -6172,29 +5753,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_DeptVo"];
-                };
-            };
-        };
-    };
-    get_system_depts_all: {
-        parameters: {
-            query?: {
-                name?: string;
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 部门列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_DeptVo"];
                 };
             };
         };
@@ -6460,30 +6018,6 @@ export interface operations {
             };
         };
     };
-    get_system_dict_types_all: {
-        parameters: {
-            query?: {
-                name?: string;
-                code?: string;
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 字典类型列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_DictTypeVo"];
-                };
-            };
-        };
-    };
     post_system_dict_types_exports: {
         parameters: {
             query?: never;
@@ -6591,31 +6125,6 @@ export interface operations {
             };
         };
     };
-    get_system_loginlogs_all: {
-        parameters: {
-            query?: {
-                user_name?: string;
-                status?: string;
-                begin_time?: string;
-                end_time?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 全部登录日志 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_LoginInfoVo"];
-                };
-            };
-        };
-    };
     post_system_loginlogs_exports: {
         parameters: {
             query?: never;
@@ -6693,29 +6202,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_MenuVo"];
-                };
-            };
-        };
-    };
-    get_system_menus_all: {
-        parameters: {
-            query?: {
-                name?: string;
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 菜单列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_MenuVo"];
                 };
             };
         };
@@ -7019,30 +6505,6 @@ export interface operations {
             };
         };
     };
-    get_system_notices_all: {
-        parameters: {
-            query?: {
-                title?: string;
-                notice_type?: string;
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 公告列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_NoticeVo"];
-                };
-            };
-        };
-    };
     get_system_notices_by_id: {
         parameters: {
             query?: never;
@@ -7165,29 +6627,6 @@ export interface operations {
             };
         };
     };
-    get_system_online_all: {
-        parameters: {
-            query?: {
-                username?: string;
-                ipaddr?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 在线用户列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_OnlineUserVo"];
-                };
-            };
-        };
-    };
     delete_system_online_by_sid: {
         parameters: {
             query?: never;
@@ -7253,31 +6692,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiPageResponse_OperLogVo"];
-                };
-            };
-        };
-    };
-    get_system_operlogs_all: {
-        parameters: {
-            query?: {
-                oper_name?: string;
-                status?: string;
-                begin_time?: string;
-                end_time?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 全部操作日志 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_OperLogVo"];
                 };
             };
         };
@@ -7500,30 +6914,6 @@ export interface operations {
             };
         };
     };
-    get_system_posts_all: {
-        parameters: {
-            query?: {
-                name?: string;
-                code?: string;
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 岗位列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_PostVo"];
-                };
-            };
-        };
-    };
     post_system_posts_exports: {
         parameters: {
             query?: never;
@@ -7676,30 +7066,6 @@ export interface operations {
             };
         };
     };
-    get_system_roles_all: {
-        parameters: {
-            query?: {
-                name?: string;
-                code?: string;
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 角色列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_RoleVo"];
-                };
-            };
-        };
-    };
     delete_system_roles_batch_by_ids: {
         parameters: {
             query?: never;
@@ -7745,6 +7111,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
+                };
+            };
+        };
+    };
+    get_system_roles_options: {
+        parameters: {
+            query?: {
+                /** @description 按名称或稳定编码做前缀搜索；首尾空白会被移除。 */
+                q?: string;
+                /** @description 返回上限；省略时使用服务端默认分页大小。 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 角色选项 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_OptionList"];
                 };
             };
         };
@@ -7949,26 +7340,6 @@ export interface operations {
             };
         };
     };
-    get_system_users_all: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 用户列表 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_UserVo"];
-                };
-            };
-        };
-    };
     delete_system_users_batch_by_ids: {
         parameters: {
             query?: never;
@@ -8059,6 +7430,31 @@ export interface operations {
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                };
+            };
+        };
+    };
+    get_system_users_options: {
+        parameters: {
+            query?: {
+                /** @description 按名称或稳定编码做前缀搜索；首尾空白会被移除。 */
+                q?: string;
+                /** @description 返回上限；省略时使用服务端默认分页大小。 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 用户选项 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_OptionList"];
                 };
             };
         };
@@ -8316,6 +7712,26 @@ export interface operations {
             };
         };
     };
+    get_version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API 版本与构建信息 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ApiVersionInfo"];
+                };
+            };
+        };
+    };
     get_livez: {
         parameters: {
             query?: never;
@@ -8345,7 +7761,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 必要依赖可用 */
+            /** @description 后台依赖快照有效且必要依赖可用 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -8354,7 +7770,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadinessResponse"];
                 };
             };
-            /** @description 必要依赖不可用 */
+            /** @description 后台依赖快照过期或必要依赖不可用 */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -23,10 +23,12 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:production": "playwright test --config=playwright.production.config.ts",
     "typecheck": "vue-tsc --noEmit",
     "build": "vite build",
+    "build:e2e:production": "vite build --mode production-smoke",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
-    "check": "pnpm check:sources && pnpm check:workflows && pnpm check:dependencies && pnpm check:architecture && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm check:bundle && pnpm test:e2e",
+    "check": "pnpm check:sources && pnpm check:workflows && pnpm check:dependencies && pnpm check:architecture && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:coverage && pnpm build:e2e:production && pnpm check:bundle && pnpm test:e2e && pnpm test:e2e:production",
     "preview": "vite preview"
   },
   "dependencies": {

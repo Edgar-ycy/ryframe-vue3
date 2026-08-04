@@ -116,6 +116,106 @@ for (const fragment of [
   }
 }
 
+const c1ContractGuardFragments = [
+  'const c1PaginatedOperationIds = new Set([',
+  'const c1OptionOperationContracts = new Map([',
+  'const c1RemovedUnboundedListPaths = new Set([',
+  'const c1StringPathIdOperationIds = new Set([',
+  'c1PaginatedOperationIds.size !== 13',
+  'c1RemovedUnboundedListPaths.size !== 11',
+  'c1OptionOperationContracts.size !== 2',
+  'c1StringPathIdOperationIds.size !== 35',
+  "['page', { type: 'integer', minimum: 1, maximum: undefined }]",
+  "['page_size', { type: 'integer', minimum: 1, maximum: undefined }]",
+  "['q', { type: 'string', minLength: undefined, maxLength: 64 }]",
+  "['limit', { type: 'integer', minimum: 1, maximum: undefined }]",
+  'validateC1QueryContracts()',
+  'validateIdentityParameters()',
+  'paths.length < 97',
+  'operationCount < 128',
+  'Object.keys(schemas).length < 188',
+  'pagination operation is missing from the C1 manifest',
+  'options operation is missing from the C1 manifest',
+  'id and *_id parameters must use string transport',
+  '*_ids parameters must use an array of string items',
+]
+for (const fragment of c1ContractGuardFragments) {
+  if (!contractCheckSource.includes(fragment)) {
+    errors.push(`scripts/check-api-contract.mjs: C1 contract gate is missing ${fragment}`)
+  }
+}
+
+const c1RemovedListPaths = [
+  '/api/v1/system/configs/all',
+  '/api/v1/system/depts/all',
+  '/api/v1/system/dict/types/all',
+  '/api/v1/system/loginlogs/all',
+  '/api/v1/system/menus/all',
+  '/api/v1/system/notices/all',
+  '/api/v1/system/online/all',
+  '/api/v1/system/operlogs/all',
+  '/api/v1/system/posts/all',
+  '/api/v1/system/roles/all',
+  '/api/v1/system/users/all',
+]
+for (const removedPath of c1RemovedListPaths) {
+  if (!contractCheckSource.includes(`'${removedPath}'`)) {
+    errors.push(`scripts/check-api-contract.mjs: removed C1 path guard is missing ${removedPath}`)
+  }
+}
+
+for (const operationId of [
+  'get_system_roles_options',
+  'get_system_users_options',
+]) {
+  if (!contractCheckSource.includes(`'${operationId}'`)) {
+    errors.push(`scripts/check-api-contract.mjs: C1 options guard is missing ${operationId}`)
+  }
+}
+
+const c1StringPathIdOperationIds = [
+  'delete_system_configs_by_id',
+  'delete_system_depts_by_id',
+  'delete_system_dict_data_by_id',
+  'delete_system_dict_types_by_id',
+  'delete_system_menus_by_id',
+  'delete_system_notices_by_id',
+  'delete_system_perms_by_id',
+  'delete_system_posts_by_id',
+  'delete_system_roles_by_id',
+  'delete_system_users_by_id',
+  'get_system_configs_by_id',
+  'get_system_depts_by_id',
+  'get_system_menus_by_id',
+  'get_system_notices_by_id',
+  'get_system_perms_by_id',
+  'get_system_posts_by_id',
+  'get_system_roles_by_id',
+  'get_system_roles_by_id_permissions',
+  'get_system_users_by_id',
+  'post_system_notices_by_id_publish_message',
+  'post_system_users_by_id_password_reset_requests',
+  'put_system_configs_by_id',
+  'put_system_depts_by_id',
+  'put_system_dict_data_by_id',
+  'put_system_dict_types_by_id',
+  'put_system_menus_by_id',
+  'put_system_notices_by_id',
+  'put_system_perms_by_id',
+  'put_system_posts_by_id',
+  'put_system_roles_by_id',
+  'put_system_roles_by_id_data_scope',
+  'put_system_roles_by_id_permissions',
+  'put_system_users_by_id',
+  'put_system_users_by_id_roles',
+  'put_system_users_by_id_status',
+]
+for (const operationId of c1StringPathIdOperationIds) {
+  if (!contractCheckSource.includes(`'${operationId}'`)) {
+    errors.push(`scripts/check-api-contract.mjs: string path ID guard is missing ${operationId}`)
+  }
+}
+
 const syncSource = await readFile(path.join(root, 'scripts/sync-api-contract.mjs'), 'utf8')
 for (const fragment of [
   'passwordPolicy.generated.json',

@@ -257,8 +257,111 @@ const bodylessWriteAllowlist = new Set([
   'put_system_messages_read_all',
 ])
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete'])
+const requiredQueryOperationIds = new Set([
+  'get_auth_captcha_generate',
+  'get_auth_captcha_image',
+  'get_common_file_download',
+  'get_monitor_jobs',
+  'get_system_configs',
+  'get_system_depts',
+  'get_system_dict_data',
+  'get_system_dict_types',
+  'get_system_loginlogs',
+  'get_system_menus',
+  'get_system_messages',
+  'get_system_notices',
+  'get_system_online',
+  'get_system_operlogs',
+  'get_system_perms_tree',
+  'get_system_posts',
+  'get_system_roles',
+  'get_system_roles_options',
+  'get_system_users',
+  'get_system_users_options',
+  'get_tools_gen_tables',
+])
+const c1PaginatedOperationIds = new Set([
+  'get_monitor_jobs',
+  'get_system_configs',
+  'get_system_depts',
+  'get_system_dict_types',
+  'get_system_loginlogs',
+  'get_system_menus',
+  'get_system_notices',
+  'get_system_online',
+  'get_system_operlogs',
+  'get_system_posts',
+  'get_system_roles',
+  'get_system_users',
+  'get_tools_gen_tables',
+])
+const c1OptionOperationContracts = new Map([
+  ['get_system_roles_options', '/api/v1/system/roles/options'],
+  ['get_system_users_options', '/api/v1/system/users/options'],
+])
+const c1RemovedUnboundedListPaths = new Set([
+  '/api/v1/system/configs/all',
+  '/api/v1/system/depts/all',
+  '/api/v1/system/dict/types/all',
+  '/api/v1/system/loginlogs/all',
+  '/api/v1/system/menus/all',
+  '/api/v1/system/notices/all',
+  '/api/v1/system/online/all',
+  '/api/v1/system/operlogs/all',
+  '/api/v1/system/posts/all',
+  '/api/v1/system/roles/all',
+  '/api/v1/system/users/all',
+])
+const c1StringPathIdOperationIds = new Set([
+  'delete_system_configs_by_id',
+  'delete_system_depts_by_id',
+  'delete_system_dict_data_by_id',
+  'delete_system_dict_types_by_id',
+  'delete_system_menus_by_id',
+  'delete_system_notices_by_id',
+  'delete_system_perms_by_id',
+  'delete_system_posts_by_id',
+  'delete_system_roles_by_id',
+  'delete_system_users_by_id',
+  'get_system_configs_by_id',
+  'get_system_depts_by_id',
+  'get_system_menus_by_id',
+  'get_system_notices_by_id',
+  'get_system_perms_by_id',
+  'get_system_posts_by_id',
+  'get_system_roles_by_id',
+  'get_system_roles_by_id_permissions',
+  'get_system_users_by_id',
+  'post_system_notices_by_id_publish_message',
+  'post_system_users_by_id_password_reset_requests',
+  'put_system_configs_by_id',
+  'put_system_depts_by_id',
+  'put_system_dict_data_by_id',
+  'put_system_dict_types_by_id',
+  'put_system_menus_by_id',
+  'put_system_notices_by_id',
+  'put_system_perms_by_id',
+  'put_system_posts_by_id',
+  'put_system_roles_by_id',
+  'put_system_roles_by_id_data_scope',
+  'put_system_roles_by_id_permissions',
+  'put_system_users_by_id',
+  'put_system_users_by_id_roles',
+  'put_system_users_by_id_status',
+])
+// 参数必须出现在契约中，但调用方可以省略，由运行时分页配置补全默认值。
+// page_size 与 limit 的静态 maximum 必须留空，避免伪造可被 TOML 改写的运行时上限。
+const c1PaginationParameterContracts = new Map([
+  ['page', { type: 'integer', minimum: 1, maximum: undefined }],
+  ['page_size', { type: 'integer', minimum: 1, maximum: undefined }],
+])
+const c1OptionParameterContracts = new Map([
+  ['q', { type: 'string', minLength: undefined, maxLength: 64 }],
+  ['limit', { type: 'integer', minimum: 1, maximum: undefined }],
+])
 let operationCount = 0
-let queryOperationCount = 0
+const queryOperationIds = new Set()
+const operationsById = new Map()
 
 for (const [path, pathItem] of paths) {
   for (const [method, operation] of Object.entries(pathItem)) {
@@ -289,9 +392,227 @@ for (const [path, pathItem] of paths) {
     }
 
     const parameters = [...(pathItem.parameters ?? []), ...(operation.parameters ?? [])]
-    if (parameters.some(parameter => parameter.in === 'query')) queryOperationCount += 1
+    if (operationId && parameters.some(parameter => parameter.in === 'query')) {
+      queryOperationIds.add(operationId)
+    }
+    if (operationId && !operationsById.has(operationId)) {
+      operationsById.set(operationId, { method, operation, parameters, path })
+    }
   }
 }
+
+function resolveLocalReference(value, location) {
+  const reference = value?.$ref
+  if (!reference) return value
+  if (!reference.startsWith('#/')) {
+    errors.push(`${location}: only local OpenAPI references are supported`)
+    return undefined
+  }
+
+  let resolved = document
+  for (const token of reference.slice(2).split('/')) {
+    const key = token.replaceAll('~1', '/').replaceAll('~0', '~')
+    resolved = resolved?.[key]
+  }
+  if (!resolved) errors.push(`${location}: unresolved OpenAPI reference ${reference}`)
+  return resolved
+}
+
+const queryParametersByOperationId = new Map()
+
+function queryParametersFor(operationId, entry) {
+  if (queryParametersByOperationId.has(operationId)) {
+    return queryParametersByOperationId.get(operationId)
+  }
+
+  const parameters = new Map()
+  for (const [index, rawParameter] of entry.parameters.entries()) {
+    const parameter = resolveLocalReference(
+      rawParameter,
+      `${operationId}.parameters[${index}]`,
+    )
+    if (parameter?.in !== 'query') continue
+    if (typeof parameter.name !== 'string' || parameter.name.length === 0) {
+      errors.push(`${operationId}.parameters[${index}]: query parameter is missing a name`)
+      continue
+    }
+    if (parameters.has(parameter.name)) {
+      errors.push(`${operationId}: duplicate query parameter ${parameter.name}`)
+      continue
+    }
+    parameters.set(parameter.name, parameter)
+  }
+  queryParametersByOperationId.set(operationId, parameters)
+  return parameters
+}
+
+function displayContractValue(value) {
+  return value === undefined ? '<absent>' : JSON.stringify(value)
+}
+
+function validateC1QueryParameter(operationId, parameters, parameterName, expectedSchema) {
+  const parameter = parameters.get(parameterName)
+  if (!parameter) {
+    errors.push(`${operationId}: required C1 query parameter ${parameterName} is missing`)
+    return
+  }
+  if (parameter.required !== false) {
+    errors.push(`${operationId}.${parameterName}: parameter must remain optional with runtime defaults`)
+  }
+
+  const schema = resolveLocalReference(
+    parameter.schema,
+    `${operationId}.${parameterName}.schema`,
+  )
+  if (!schema || typeof schema !== 'object') {
+    errors.push(`${operationId}.${parameterName}: query parameter schema is missing`)
+    return
+  }
+  for (const [keyword, expected] of Object.entries(expectedSchema)) {
+    if (schema[keyword] !== expected) {
+      errors.push(
+        `${operationId}.${parameterName}: expected ${keyword}=`
+        + `${displayContractValue(expected)}, found ${displayContractValue(schema[keyword])}`,
+      )
+    }
+  }
+}
+
+function validateC1QueryContracts() {
+  if (c1PaginatedOperationIds.size !== 13) {
+    errors.push(`C1 pagination manifest must contain 13 operationIds, found ${c1PaginatedOperationIds.size}`)
+  }
+  if (c1OptionOperationContracts.size !== 2) {
+    errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)
+  }
+
+  for (const operationId of c1PaginatedOperationIds) {
+    const entry = operationsById.get(operationId)
+    if (!entry) {
+      errors.push(`${operationId}: required C1 pagination operation is missing`)
+      continue
+    }
+    const parameters = queryParametersFor(operationId, entry)
+    for (const [parameterName, expectedSchema] of c1PaginationParameterContracts) {
+      validateC1QueryParameter(operationId, parameters, parameterName, expectedSchema)
+    }
+  }
+
+  for (const [operationId, expectedPath] of c1OptionOperationContracts) {
+    const entry = operationsById.get(operationId)
+    if (!entry) {
+      errors.push(`${operationId}: required C1 options operation is missing`)
+      continue
+    }
+    if (entry.method !== 'get' || entry.path !== expectedPath) {
+      errors.push(`${operationId}: options operation must remain GET ${expectedPath}`)
+    }
+    const parameters = queryParametersFor(operationId, entry)
+    if (!isDeepStrictEqual([...parameters.keys()].sort(), ['limit', 'q'])) {
+      errors.push(`${operationId}: options query parameters must be exactly q and limit`)
+    }
+    for (const [parameterName, expectedSchema] of c1OptionParameterContracts) {
+      validateC1QueryParameter(operationId, parameters, parameterName, expectedSchema)
+    }
+  }
+
+  // 新增分页或 options 操作不能绕过按 operationId 维护的精确清单。
+  for (const [operationId, entry] of operationsById) {
+    const parameters = queryParametersFor(operationId, entry)
+    const hasPaginationParameter = parameters.has('page') || parameters.has('page_size')
+    if (hasPaginationParameter && !c1PaginatedOperationIds.has(operationId)) {
+      errors.push(`${operationId}: pagination operation is missing from the C1 manifest`)
+    }
+    if (entry.path.endsWith('/options') && !c1OptionOperationContracts.has(operationId)) {
+      errors.push(`${operationId}: options operation is missing from the C1 manifest`)
+    }
+  }
+}
+
+// C1 已删除无上限列表，并只为受控候选项保留 `/options`；不允许旧路径回流。
+if (c1RemovedUnboundedListPaths.size !== 11) {
+  errors.push(`C1 removed path manifest must contain 11 entries, found ${c1RemovedUnboundedListPaths.size}`)
+}
+for (const path of c1RemovedUnboundedListPaths) {
+  if (document.paths?.[path]) errors.push(`${path}: removed unbounded list path returned`)
+}
+for (const operationId of requiredQueryOperationIds) {
+  if (!queryOperationIds.has(operationId)) {
+    errors.push(`${operationId}: required bounded query operation is missing`)
+  }
+}
+validateC1QueryContracts()
+
+function validateIdentityParameter(operationId, parameter, location) {
+  const schema = resolveLocalReference(parameter.schema, `${location}.schema`)
+  if (!schema || typeof schema !== 'object') {
+    errors.push(`${location}: identity parameter schema is missing`)
+    return
+  }
+
+  if (parameter.name.endsWith('_ids')) {
+    if (schema.type !== 'array'
+      || schema.items?.type !== 'string'
+      || schema.items?.format === 'int64') {
+      errors.push(`${location}: *_ids parameters must use an array of string items`)
+    }
+  }
+  else if (schema.type !== 'string' || schema.format === 'int64') {
+    errors.push(`${location}: id and *_id parameters must use string transport`)
+  }
+
+  if (parameter.in === 'path' && parameter.required !== true) {
+    errors.push(`${location}: path identity parameter must be required`)
+  }
+  if (parameter.in === 'path' && !operationsById.get(operationId)?.path.includes(`{${parameter.name}}`)) {
+    errors.push(`${location}: path identity parameter has no matching path placeholder`)
+  }
+}
+
+function validateIdentityParameters() {
+  if (c1StringPathIdOperationIds.size !== 35) {
+    errors.push(
+      `C1 string path ID manifest must contain 35 operationIds, `
+      + `found ${c1StringPathIdOperationIds.size}`,
+    )
+  }
+
+  let pathIdentityParameterCount = 0
+  const pathIdentityOperationIds = new Set()
+  for (const [operationId, entry] of operationsById) {
+    for (const [index, rawParameter] of entry.parameters.entries()) {
+      const parameter = resolveLocalReference(
+        rawParameter,
+        `${operationId}.parameters[${index}]`,
+      )
+      if (!parameter
+        || !['path', 'query'].includes(parameter.in)
+        || typeof parameter.name !== 'string'
+        || !/(^id$|_id$|_ids$)/u.test(parameter.name)) {
+        continue
+      }
+      const location = `${operationId}.${parameter.in}.${parameter.name}`
+      validateIdentityParameter(operationId, parameter, location)
+      if (parameter.in === 'path') {
+        pathIdentityParameterCount += 1
+        pathIdentityOperationIds.add(operationId)
+      }
+    }
+  }
+
+  if (pathIdentityParameterCount < 35) {
+    errors.push(
+      `expected at least 35 path identity parameters, found ${pathIdentityParameterCount}`,
+    )
+  }
+  for (const operationId of c1StringPathIdOperationIds) {
+    if (!pathIdentityOperationIds.has(operationId)) {
+      errors.push(`${operationId}: required string path ID guard target is missing`)
+    }
+  }
+}
+
+validateIdentityParameters()
 
 function validateIdFields(schema, location) {
   if (!schema || typeof schema !== 'object') return
@@ -316,15 +637,11 @@ for (const [name, schema] of Object.entries(schemas)) {
   validateIdFields(schema, `components.schemas.${name}`)
 }
 
-if (paths.length < 89) errors.push(`expected at least 89 paths, found ${paths.length}`)
-if (operationCount < 119) errors.push(`expected at least 119 operations, found ${operationCount}`)
-if (Object.keys(schemas).length < 153) {
-  errors.push(`expected at least 153 schemas, found ${Object.keys(schemas).length}`)
+if (paths.length < 97) errors.push(`expected at least 97 paths, found ${paths.length}`)
+if (operationCount < 128) errors.push(`expected at least 128 operations, found ${operationCount}`)
+if (Object.keys(schemas).length < 188) {
+  errors.push(`expected at least 188 schemas, found ${Object.keys(schemas).length}`)
 }
-if (queryOperationCount < 29) {
-  errors.push(`expected at least 29 query operations, found ${queryOperationCount}`)
-}
-
 if (errors.length > 0) {
   console.error('API contract check failed:')
   for (const error of errors) console.error(`  - ${error}`)
@@ -333,6 +650,7 @@ if (errors.length > 0) {
 else {
   console.log(
     `API contract check passed (${paths.length} paths, ${operationCount} operations, `
-    + `${Object.keys(schemas).length} schemas, ${contractRoutes.size} menu routes)`,
+    + `${Object.keys(schemas).length} schemas, ${queryOperationIds.size} query operations, `
+    + `${contractRoutes.size} menu routes)`,
   )
 }

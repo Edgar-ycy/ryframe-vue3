@@ -17,7 +17,13 @@ import {
 
 const root = process.cwd()
 const errors = []
+const maintenanceDocumentFiles = [
+  'README.md',
+  'ARCHITECTURE.md',
+  'SECURITY.md',
+]
 const requiredFiles = [
+  ...maintenanceDocumentFiles,
   '.env.production.example',
   '.node-version',
   'openapi/openapi.json',
@@ -26,6 +32,8 @@ const requiredFiles = [
   'pnpm-workspace.yaml',
   'scripts/api-prefix-contract.mjs',
   'scripts/api-prefix-contract.test.mjs',
+  'scripts/api-version-contract.mjs',
+  'scripts/api-version-contract.test.mjs',
   'scripts/api-artifacts.mjs',
   'scripts/api-artifacts.test.mjs',
   'scripts/permission-catalog-contract.mjs',
@@ -59,6 +67,26 @@ for (const relative of requiredFiles) {
   }
   catch {
     errors.push(`${relative}: required architecture file is missing`)
+  }
+}
+
+const maintenanceDocuments = new Map()
+for (const relative of maintenanceDocumentFiles) {
+  const source = await readFile(path.join(root, relative), 'utf8')
+  maintenanceDocuments.set(relative, source)
+  if (source.includes('RYFRAME_OPENAPI_SOURCE')) {
+    errors.push(`${relative}: removed RYFRAME_OPENAPI_SOURCE must not return`)
+  }
+}
+
+const architectureDocument = maintenanceDocuments.get('ARCHITECTURE.md') ?? ''
+for (const fragment of [
+  'RYFRAME_BACKEND_WORKTREE',
+  'pnpm build:e2e:production',
+  'pnpm test:e2e:production',
+]) {
+  if (!architectureDocument.includes(fragment)) {
+    errors.push(`ARCHITECTURE.md: canonical development flow is missing ${fragment}`)
   }
 }
 
@@ -108,6 +136,8 @@ const contractCheckSource = await readFile(
   'utf8',
 )
 for (const fragment of [
+  "import { apiVersionContractViolation } from './api-version-contract.mjs'",
+  'apiVersionContractViolation(packageDocument, document)',
   "document['x-ryframe-menu-routes']",
   "document['x-ryframe-password-policy']",
   "document['x-ryframe-notice-policy']",
@@ -335,17 +365,37 @@ if (defaultNodeVersion !== '24.15.0') {
 if (packageDocument.scripts?.['test:e2e'] !== 'playwright test') {
   errors.push('package.json: test:e2e must run the Playwright suite')
 }
-if (!packageDocument.scripts?.check?.includes('pnpm test:e2e')) {
-  errors.push('package.json: the full check command must include browser smoke tests')
+if (packageDocument.scripts?.['build:e2e:production'] !== 'vite build --mode production-smoke') {
+  errors.push('package.json: build:e2e:production must build the production smoke artifact')
 }
-if (!packageDocument.scripts?.check?.includes('pnpm check:dependencies')) {
-  errors.push('package.json: the full check command must include the prerelease dependency gate')
+if (packageDocument.scripts?.['test:e2e:production']
+  !== 'playwright test --config=playwright.production.config.ts') {
+  errors.push('package.json: test:e2e:production must test the built production artifact')
 }
 if (packageDocument.scripts?.['check:workflows'] !== 'node scripts/check-workflows.mjs') {
   errors.push('package.json: check:workflows must validate GitHub workflow files')
 }
-if (!packageDocument.scripts?.check?.includes('pnpm check:workflows')) {
-  errors.push('package.json: the full check command must include the workflow gate')
+const canonicalCheckCommand = [
+  'pnpm check:sources',
+  'pnpm check:workflows',
+  'pnpm check:dependencies',
+  'pnpm check:architecture',
+  'pnpm api:check',
+  'pnpm lint',
+  'pnpm lint:styles',
+  'pnpm typecheck',
+  'pnpm test:coverage',
+  'pnpm build:e2e:production',
+  'pnpm check:bundle',
+  'pnpm test:e2e',
+  'pnpm test:e2e:production',
+].join(' && ')
+if (packageDocument.scripts?.check !== canonicalCheckCommand) {
+  errors.push('package.json: check must remain the canonical full quality gate')
+}
+if (!packageDocument.scripts?.['check:contract']
+  ?.includes('scripts/api-version-contract.test.mjs')) {
+  errors.push('package.json: check:contract must run the API version contract tests')
 }
 const apiCheckCommand = packageDocument.scripts?.['api:check'] ?? ''
 if (!apiCheckCommand.includes('--verify-local')
@@ -397,8 +447,10 @@ for (const fragment of [
   'pnpm api:check:upstream',
   'pnpm test:coverage',
   'pnpm build',
+  'pnpm build:e2e:production',
   'playwright install --with-deps chromium',
   'pnpm test:e2e',
+  'pnpm test:e2e:production',
 ]) {
   if (!workflowSource.includes(fragment)) {
     errors.push(`.github/workflows/ci.yml: browser CI gate is missing ${fragment}`)

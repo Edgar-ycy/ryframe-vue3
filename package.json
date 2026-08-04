@@ -15,7 +15,7 @@
     "check:workflows": "node scripts/check-workflows.mjs",
     "check:dependencies": "node --test --test-isolation=none scripts/prerelease-dependency-policy.test.mjs && node scripts/check-prerelease-dependencies.mjs",
     "check:architecture": "node --test --test-isolation=none scripts/server-state-contracts.test.mjs scripts/coverage-contract.test.mjs && node scripts/check-architecture.mjs",
-    "check:contract": "node --test --test-isolation=none scripts/api-prefix-contract.test.mjs scripts/permission-catalog-contract.test.mjs scripts/api-artifacts.test.mjs && node scripts/check-api-contract.mjs",
+    "check:contract": "node --test --test-isolation=none scripts/api-prefix-contract.test.mjs scripts/api-version-contract.test.mjs scripts/permission-catalog-contract.test.mjs scripts/api-artifacts.test.mjs && node scripts/check-api-contract.mjs",
     "api:generate": "node scripts/generate-api-artifacts.mjs --write",
     "api:sync": "node scripts/sync-api-contract.mjs && node scripts/generate-api-artifacts.mjs --write",
     "api:check": "node scripts/sync-api-contract.mjs --verify-local && pnpm check:contract && node scripts/generate-api-artifacts.mjs --check",

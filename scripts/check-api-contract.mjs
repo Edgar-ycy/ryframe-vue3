@@ -4,9 +4,11 @@ import { isDeepStrictEqual } from 'node:util'
 import ts from 'typescript'
 
 import { apiPrefixContractViolation } from './api-prefix-contract.mjs'
+import { apiVersionContractViolation } from './api-version-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 
 const contractPath = new URL('../openapi/openapi.json', import.meta.url)
+const packagePath = new URL('../package.json', import.meta.url)
 const pageRegistryPath = new URL('../src/router/pageRegistry.ts', import.meta.url)
 const passwordPolicyPath = new URL(
   '../src/shared/security/passwordPolicy.generated.json',
@@ -21,10 +23,16 @@ const apiPrefixPath = new URL(
   import.meta.url,
 )
 const document = JSON.parse(await readFile(contractPath, 'utf8'))
+const packageDocument = JSON.parse(await readFile(packagePath, 'utf8'))
 const generatedPasswordPolicy = JSON.parse(await readFile(passwordPolicyPath, 'utf8'))
 const generatedNoticePolicy = JSON.parse(await readFile(noticePolicyPath, 'utf8'))
 const generatedApiPrefix = JSON.parse(await readFile(apiPrefixPath, 'utf8'))
 const errors = []
+
+const apiVersionViolation = apiVersionContractViolation(packageDocument, document)
+if (apiVersionViolation) {
+  errors.push(apiVersionViolation)
+}
 
 try {
   requirePermissionCatalog(document['x-ryframe-permission-catalog'], 'openapi/openapi.json')

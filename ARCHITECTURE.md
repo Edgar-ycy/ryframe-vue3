@@ -1,6 +1,6 @@
 # RyFrame Vue3 架构与演进指南
 
-> 最后核对：2026-08-03
+> 最后核对：2026-08-05
 > 适用范围：独立前端仓库 `ryframe-vue3`
 
 前端与 Rust 后端分别维护 Git、版本和 CI，只通过 `/api/v1`、OpenAPI、认证/租户头和稳定 `route_key` 协作。前端只维护与后端同名的稳定标签，项目级源码 Release 由后端仓库统一发布。
@@ -149,7 +149,7 @@ GET /system/menus/current
 ### 新增 API
 
 1. 先在后端更新 Handler/DTO/`ToSchema`，导出并提交 `openapi/openapi.json`。
-2. 在前端执行 `RYFRAME_BACKEND_REPOSITORY=<owner/repository> RYFRAME_BACKEND_COMMIT=<完整 40 位 SHA> RYFRAME_OPENAPI_SOURCE=<后端快照路径> pnpm api:sync`，同步脚本会提交不可变的 `openapi/source.json`。
+2. 在前端设置 `RYFRAME_BACKEND_REPOSITORY=<owner/repository> RYFRAME_BACKEND_COMMIT=<完整 40 位 SHA> RYFRAME_BACKEND_WORKTREE=<后端仓库路径>` 并执行 `pnpm api:sync`。同步脚本只通过 `git -C <后端仓库路径> show <commit>:openapi/openapi.json` 读取指定提交中的精确 Git 对象，不读取后端工作区当前文件，并更新待提交的 `openapi/source.json`。
 3. 在 `api/modules/<resource>.ts` 使用 `ApiSchema`、`OperationQuery`、`OperationJsonBody` 或 `OperationData`，只添加语义化请求函数；禁止复制生成字段。
 4. 分页列表发送经过生成类型约束的 `page/page_size`；选择器使用受限的 `/options?q&limit`；导出只发送业务筛选字段并通过 `stripPagination` 移除分页键，不新增无上限列表接口。
 5. 路径与 operation 完全一致，不增加兼容回退；Blob、文本和 FormData 继续使用专用客户端入口。
@@ -183,12 +183,15 @@ pnpm check
 
 ```text
 check:sources -> check:workflows -> check:dependencies -> check:architecture -> api:check
--> lint -> lint:styles -> typecheck -> test:coverage -> build -> check:bundle -> test:e2e
+-> lint -> lint:styles -> typecheck -> test:coverage -> build:e2e:production -> check:bundle
+-> test:e2e -> test:e2e:production
 ```
 
 全局覆盖率阈值为语句、行和函数 70%，分支 60%。会话协调、认证 API、HTTP 客户端、用户状态、权限判断以及消息查询和 WebSocket 等关键模块单独执行语句、行和函数 90%、分支 80% 的阈值。
 
-日常 push、pull request 和手动触发只运行一个 Node 24 主质量作业，依赖安装、上游契约校验、类型、Lint、覆盖率、生产构建、体积和 Playwright 依次复用同一工作区。每周定时任务只运行 Node 22.22.2 的安装、类型检查、单元测试和生产构建兼容验证，不与日常主门禁重复执行。
+`pnpm build:e2e:production` 生成 `production-smoke` 模式的真实生产产物；`pnpm test:e2e:production` 使用独立 Playwright 配置通过 `vite preview` 启动已经生成的 `dist` 并执行浏览器验收，不以开发服务器测试代替生产产物测试。
+
+日常 push、pull request 和手动触发只运行一个 Node 24 主质量作业，依赖安装、上游契约校验、类型、Lint、覆盖率、生产构建、体积、开发服务器 E2E 和生产产物 E2E 依次复用同一工作区。每周定时任务只运行 Node 22.22.2 的安装、类型检查、单元测试和生产构建兼容验证，不与日常主门禁重复执行。
 
 ## 8. 稳定版本职责
 

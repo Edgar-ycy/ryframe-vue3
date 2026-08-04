@@ -250,13 +250,13 @@ if (contractSource.schema_version !== 1
 }
 
 const packageDocument = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
-const requiredNodeRange = '^22.18.0 || >=24.11.0'
+const requiredNodeRange = '^22.22.2 || >=24.15.0'
 if (packageDocument.engines?.node !== requiredNodeRange) {
   errors.push(`package.json: engines.node must be ${requiredNodeRange}`)
 }
 const defaultNodeVersion = (await readFile(path.join(root, '.node-version'), 'utf8')).trim()
-if (defaultNodeVersion !== '24.11.0') {
-  errors.push('.node-version: default Node.js must be 24.11.0')
+if (defaultNodeVersion !== '24.15.0') {
+  errors.push('.node-version: default Node.js must be 24.15.0')
 }
 if (packageDocument.scripts?.['test:e2e'] !== 'playwright test') {
   errors.push('package.json: test:e2e must run the Playwright suite')
@@ -311,7 +311,7 @@ const workflowSource = await readFile(path.join(root, '.github/workflows/ci.yml'
 for (const fragment of [
   'permissions:\n  contents: read',
   'node-version-file: .node-version',
-  'node-version: 22.18.0',
+  'node-version: 22.22.2',
   "github.event_name != 'schedule'",
   "github.event_name == 'schedule'",
   'pnpm check:workflows',

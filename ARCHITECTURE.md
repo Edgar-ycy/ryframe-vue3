@@ -188,7 +188,7 @@ check:sources -> check:workflows -> check:dependencies -> check:architecture -> 
 
 全局覆盖率阈值为语句、行和函数 70%，分支 60%。会话协调、认证 API、HTTP 客户端、用户状态、权限判断以及消息查询和 WebSocket 等关键模块单独执行语句、行和函数 90%、分支 80% 的阈值。
 
-日常 push、pull request 和手动触发只运行一个 Node 24 主质量作业，依赖安装、上游契约校验、类型、Lint、覆盖率、生产构建、体积和 Playwright 依次复用同一工作区。每周定时任务只运行 Node 22.18 的安装、类型检查、单元测试和生产构建兼容验证，不与日常主门禁重复执行。
+日常 push、pull request 和手动触发只运行一个 Node 24 主质量作业，依赖安装、上游契约校验、类型、Lint、覆盖率、生产构建、体积和 Playwright 依次复用同一工作区。每周定时任务只运行 Node 22.22.2 的安装、类型检查、单元测试和生产构建兼容验证，不与日常主门禁重复执行。
 
 ## 8. 稳定版本职责
 

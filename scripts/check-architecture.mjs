@@ -3,11 +3,6 @@ import path from 'node:path'
 import process from 'node:process'
 import { parse as parseYaml } from 'yaml'
 import {
-  discoverCriticalCoverageFiles,
-  validateCoverageFilesExist,
-  validateCoverageScope,
-} from './coverage-contract.mjs'
-import {
   serverStateApiImportExemptions,
   serverStateContracts,
   serverStateInventoryRoots,
@@ -28,21 +23,13 @@ const requiredFiles = [
   '.node-version',
   'openapi/openapi.json',
   'openapi/source.json',
-  'playwright.config.ts',
   'pnpm-workspace.yaml',
   'scripts/api-prefix-contract.mjs',
-  'scripts/api-prefix-contract.test.mjs',
   'scripts/api-version-contract.mjs',
-  'scripts/api-version-contract.test.mjs',
   'scripts/api-artifacts.mjs',
-  'scripts/api-artifacts.test.mjs',
   'scripts/permission-catalog-contract.mjs',
-  'scripts/permission-catalog-contract.test.mjs',
   'scripts/check-api-contract.mjs',
   'scripts/check-workflows.mjs',
-  'scripts/coverage-contract.mjs',
-  'scripts/coverage-contract.test.mjs',
-  'scripts/coverage-scope.json',
   'scripts/generate-api-artifacts.mjs',
   'scripts/sync-api-contract.mjs',
   'src/api/contract.ts',
@@ -58,7 +45,6 @@ const requiredFiles = [
   'src/shared/markdown/noticePolicy.generated.json',
   'src/shared/markdown/noticePolicy.ts',
   'src/views/login/loginState.ts',
-  'tests/e2e/app.smoke.spec.ts',
 ]
 
 for (const relative of requiredFiles) {
@@ -67,6 +53,47 @@ for (const relative of requiredFiles) {
   }
   catch {
     errors.push(`${relative}: required architecture file is missing`)
+  }
+}
+
+const forbiddenRemoteTestAssets = [
+  '.env.production-smoke',
+  'playwright.config.ts',
+  'playwright.production.config.ts',
+  'vitest.config.ts',
+  'scripts/coverage-contract.mjs',
+  'scripts/coverage-scope.json',
+]
+for (const relative of forbiddenRemoteTestAssets) {
+    try {
+        await readFile(path.join(root, relative))
+        errors.push(`${relative}: test-only asset must remain local and untracked`)
+  }
+  catch {
+        // 文件不存在即符合远程仓库不保留测试资产的约束。
+    }
+}
+for (const relative of ['tests', 'e2e']) {
+  try {
+    await readdir(path.join(root, relative))
+    errors.push(`${relative}: test directory must remain local and untracked`)
+  }
+  catch {
+    // 目录不存在即符合远程仓库不保留测试资产的约束。
+  }
+}
+for (const relative of await sourceFilesUnder(path.join(root, 'src'))) {
+  const sourceRelative = path.relative(root, relative)
+  if (/(?:^|[\\/])(?:__tests__|src-tests|tests)(?:[\\/]|$)/u.test(sourceRelative)) {
+    errors.push(`${sourceRelative}: test directory must remain outside src`)
+  }
+  if (/\.(?:test|spec)\.[cm]?[jt]sx?$/iu.test(relative)) {
+    errors.push(`${sourceRelative}: test source must remain outside src`)
+  }
+}
+for (const entry of await readdir(path.join(root, 'scripts'), { withFileTypes: true })) {
+  if (entry.isFile() && /\.(?:test|spec)\.[cm]?[jt]sx?$/iu.test(entry.name)) {
+    errors.push(`scripts/${entry.name}: test script must remain local and untracked`)
   }
 }
 
@@ -82,8 +109,6 @@ for (const relative of maintenanceDocumentFiles) {
 const architectureDocument = maintenanceDocuments.get('ARCHITECTURE.md') ?? ''
 for (const fragment of [
   'RYFRAME_BACKEND_WORKTREE',
-  'pnpm build:e2e:production',
-  'pnpm test:e2e:production',
 ]) {
   if (!architectureDocument.includes(fragment)) {
     errors.push(`ARCHITECTURE.md: canonical development flow is missing ${fragment}`)
@@ -92,7 +117,6 @@ for (const fragment of [
 
 for (const relative of [
   'src/app/messages/messageApi.ts',
-  'src/app/messages/messageApi.test.ts',
 ]) {
   try {
     await readFile(path.join(root, relative))
@@ -362,16 +386,6 @@ const defaultNodeVersion = (await readFile(path.join(root, '.node-version'), 'ut
 if (defaultNodeVersion !== '24.15.0') {
   errors.push('.node-version: default Node.js must be 24.15.0')
 }
-if (packageDocument.scripts?.['test:e2e'] !== 'playwright test') {
-  errors.push('package.json: test:e2e must run the Playwright suite')
-}
-if (packageDocument.scripts?.['build:e2e:production'] !== 'vite build --mode production-smoke') {
-  errors.push('package.json: build:e2e:production must build the production smoke artifact')
-}
-if (packageDocument.scripts?.['test:e2e:production']
-  !== 'playwright test --config=playwright.production.config.ts') {
-  errors.push('package.json: test:e2e:production must test the built production artifact')
-}
 if (packageDocument.scripts?.['check:workflows'] !== 'node scripts/check-workflows.mjs') {
   errors.push('package.json: check:workflows must validate GitHub workflow files')
 }
@@ -384,18 +398,14 @@ const canonicalCheckCommand = [
   'pnpm lint',
   'pnpm lint:styles',
   'pnpm typecheck',
-  'pnpm test:coverage',
-  'pnpm build:e2e:production',
+  'pnpm build',
   'pnpm check:bundle',
-  'pnpm test:e2e',
-  'pnpm test:e2e:production',
 ].join(' && ')
 if (packageDocument.scripts?.check !== canonicalCheckCommand) {
   errors.push('package.json: check must remain the canonical full quality gate')
 }
-if (!packageDocument.scripts?.['check:contract']
-  ?.includes('scripts/api-version-contract.test.mjs')) {
-  errors.push('package.json: check:contract must run the API version contract tests')
+if (packageDocument.scripts?.['check:contract'] !== 'node scripts/check-api-contract.mjs') {
+  errors.push('package.json: check:contract must validate the API contract directly')
 }
 const apiCheckCommand = packageDocument.scripts?.['api:check'] ?? ''
 if (!apiCheckCommand.includes('--verify-local')
@@ -445,15 +455,21 @@ for (const fragment of [
   'pnpm check:workflows',
   'docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9',
   'pnpm api:check:upstream',
-  'pnpm test:coverage',
   'pnpm build',
-  'pnpm build:e2e:production',
-  'playwright install --with-deps chromium',
-  'pnpm test:e2e',
-  'pnpm test:e2e:production',
 ]) {
   if (!workflowSource.includes(fragment)) {
-    errors.push(`.github/workflows/ci.yml: browser CI gate is missing ${fragment}`)
+    errors.push(`.github/workflows/ci.yml: frontend CI gate is missing ${fragment}`)
+  }
+}
+for (const forbidden of [
+  'pnpm test',
+  'playwright',
+  'codecov',
+  'coverage/',
+  'test-results',
+]) {
+  if (workflowSource.includes(forbidden)) {
+    errors.push(`.github/workflows/ci.yml: remote test workflow must not contain ${forbidden}`)
   }
 }
 if (workflowSource.includes('raw.githubusercontent.com/Edgar-ycy/ryframe/main')) {
@@ -531,33 +547,6 @@ errors.push(...validateServerStateInventory(
   serverStateContracts,
   serverStateApiImportExemptions,
 ))
-
-let coverageManifest = {}
-try {
-  coverageManifest = JSON.parse(
-    await readFile(path.join(root, 'scripts/coverage-scope.json'), 'utf8'),
-  )
-}
-catch {
-  errors.push('scripts/coverage-scope.json: coverage manifest must be valid JSON')
-}
-const criticalCoverageFiles = await discoverCriticalCoverageFiles(
-  root,
-  [...serverStateContracts.keys()],
-)
-errors.push(...validateCoverageScope(coverageManifest, criticalCoverageFiles))
-errors.push(...await validateCoverageFilesExist(root, coverageManifest.files ?? []))
-
-const vitestConfigSource = await readFile(path.join(root, 'vitest.config.ts'), 'utf8')
-for (const fragment of [
-  "from './scripts/coverage-scope.json'",
-  "pool: 'threads'",
-  'include: coverageScope.files',
-]) {
-  if (!vitestConfigSource.includes(fragment)) {
-    errors.push(`vitest.config.ts: coverage contract wiring is missing ${fragment}`)
-  }
-}
 
 const asyncExportSource = await readFile(path.join(root, 'src/hooks/useAsyncExport.ts'), 'utf8')
 if (asyncExportSource.includes('ElMessage.error')) {

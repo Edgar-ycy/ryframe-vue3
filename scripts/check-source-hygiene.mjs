@@ -8,6 +8,7 @@ const root = process.cwd()
 const excludedDirectories = new Set([
   '.git',
   '.idea',
+  '.local-tests',
   'coverage',
   'dist',
   'node_modules',
@@ -54,13 +55,15 @@ const legacyApiTermAllowlist = new Map([
     new Set([
       // HTTP 内部使用驼峰属性承载服务端 request_id，不属于公开 API 兼容字段。
       'src/shared/http/client.ts',
-      'src/shared/http/client.test.ts',
     ]),
   ],
 ])
 const legacyActionPaths = ['assign-perm', 'assign-dept', 'update-data-scope', 'assign-role']
 const legacyBootstrapCredentials = ['admin123']
 const decoder = new TextDecoder('utf-8', { fatal: true })
+const testRuntimeImportPattern = /from\s+['"](?:vitest|@playwright\/test|@testing-library\/[^'"]+)['"]/u
+const testDslPattern = /(?<![\w$.])(?:describe|it|test|beforeEach|afterEach|beforeAll|afterAll|expect)\s*\(/u
+const testMockPattern = /\b(?:vi|jest)\.(?:fn|mock|spyOn|useFakeTimers)\s*\(/u
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -178,6 +181,15 @@ for (const file of files) {
       if (text.includes(credential)) {
         errors.push(`${relative}: contains legacy bootstrap credential ${credential}`)
       }
+    }
+    if (testRuntimeImportPattern.test(text)) {
+      errors.push(`${relative}: source files must not import a test runtime`)
+    }
+    if (testDslPattern.test(text)) {
+      errors.push(`${relative}: source files must not declare test cases`)
+    }
+    if (testMockPattern.test(text)) {
+      errors.push(`${relative}: source files must not use test mocks`)
     }
   }
 }

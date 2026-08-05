@@ -66,7 +66,6 @@ ryframe-vue3/
 
 ```bash
 pnpm install
-pnpm exec playwright install chromium
 ```
 
 ### 启动开发服务器
@@ -100,9 +99,9 @@ VITE_APP_BUILD_COMMIT="$(git rev-parse HEAD)" pnpm build
 pnpm check
 ```
 
-该命令依次执行源码卫生、工作流、依赖策略、架构边界、本地 OpenAPI 来源与生成物、菜单 `route_key` 集合、密码和公告策略、ESLint、Stylelint、Vue TSC、覆盖率测试、生产构建、体积预算和 Playwright 浏览器冒烟测试；任何警告都会使检查失败。
+该命令依次执行源码卫生、工作流、依赖策略、架构边界、本地 OpenAPI 来源与生成物、菜单 `route_key` 集合、密码和公告策略、ESLint、Stylelint、Vue TSC、生产构建和体积预算；任何警告都会使检查失败。
 
-覆盖率全局门禁为语句、行和函数 70%、分支 60%；会话、认证、HTTP、用户状态、权限和消息关键模块执行 90%/80% 的独立门禁。日常 push、pull request 和手动触发使用单个 Node 24 主质量作业，每周定时任务仅使用 Node 22.22.2 验证安装、类型、单元测试和生产构建兼容性。
+日常 push、pull request 和手动触发使用单个 Node 24 主质量作业；每周定时任务仅使用 Node 22.22.2 验证安装、类型检查和生产构建兼容性。
 
 前端仓库不创建 Release 或 Nightly，也不发布构建产物、镜像、SBOM 或签名。前端只推送与后端一致的稳定 annotated tag，由后端联合门禁创建纯源码项目 Release。
 

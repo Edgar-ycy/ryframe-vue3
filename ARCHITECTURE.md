@@ -23,7 +23,7 @@ src/
 │   └── modules/                 # 按资源组织的语义化请求函数
 ├── router/
 │   ├── index.ts                 # Router 组合根
-│   ├── navigationGuard.ts       # 可注入、可测试的导航守卫
+│   ├── navigationGuard.ts       # 可注入的导航守卫
 │   ├── runtimeRouteRegistry.ts  # 动态路由注册和清理
 │   ├── menuRouteBuilder.ts      # 菜单转换纯函数
 │   ├── pageRegistry.ts          # route_key 到本地页面的安全白名单
@@ -108,18 +108,18 @@ GET /system/menus/current
 
 1. HTTP 客户端与认证 API、Store、Router、UI 的循环依赖已消除。
 2. Token 刷新、退出和动态路由重载已归一到 `SessionCoordinator`。
-3. 菜单转换、导航守卫和动态路由注册已提取为可注入、可单测模块。
+3. 菜单转换、导航守卫和动态路由注册已提取为可注入模块。
 4. 运行时环境变量集中到 `shared/config/runtimeConfig.ts` 并在启动时校验；部署只配置 API origin，版本前缀由后端 OpenAPI 生成且不保留旧环境变量回退。
 5. JSON、Blob 和文本响应分别建模，不再混用 Axios 原始响应。
 6. 业务源码已无显式 `any`，TypeScript `strict`、未使用符号检查全部开启。
 7. 所有 Snowflake ID 在前端契约中统一为字符串。
 8. 旧 API 路径和无上限列表已删除；表格使用复数资源根分页路径，下拉候选使用受限的 `/options?q&limit`。
-9. ESLint、Stylelint、Vue TSC、Vitest/V8、源码卫生和生产构建已进入 CI，警告按失败处理。
+9. ESLint、Stylelint、Vue TSC、源码卫生和生产构建已进入 CI，警告按失败处理。
 10. 用户资料、角色分配、密码重置和部门树已从用户管理页拆为独立组件，查询、提交和状态动作归入 `useUserManagement`。
 11. 查询参数统一为 `page`/`page_size`，密码重置链接统一为 `request_id`，源码门禁禁止旧 camelCase API 字段回流。
 12. 分页基类不再开放任意字段索引，各 API 模块必须显式声明筛选字段，与后端拒绝未知字段的策略一致。
 13. 密码重置完成请求显式携带 `tenant_id`、`request_id` 和一次性 token，前后端不再依赖隐式默认租户。
-14. 角色、菜单和权限页面已拆出领域 composable 与表单对话框；菜单树转换提取为纯函数并有单元测试。
+14. 角色、菜单和权限页面已拆出领域 composable 与表单对话框；菜单树转换提取为纯函数。
 15. 用户创建会一次提交资料与角色；后续资料、角色和状态使用独立资源请求，每次对话框提交只对应一次后端原子写操作。
 16. 有限状态和权限类型改为联合类型；统一 `confirmAction` 只吞掉明确取消，状态切换失败会恢复 UI 并继续传播真实请求错误。
 17. 后端 OpenAPI 快照、精确 Git 对象同步和统一契约派生生成器已形成确定性生成链路；生成器同时产出 `openapi-typescript` 类型与 operationId 方法/路径清单，已迁移模块通过类型请求门面绑定查询、路径、请求体和响应模型。
@@ -130,7 +130,7 @@ GET /system/menus/current
 22. 字典管理已拆为类型/数据对话框与领域 composable，个人中心已拆为资料、头像和密码组件；首页改为只展示真实会话信息和权限派生快捷入口。
 23. 登录初始化和重定向解析已提取为纯函数；初始化凭据仅在开发构建预填，生产构建为空，异常或外部重定向统一回到首页。
 24. 个人中心与字典页使用可折叠 CSS Grid，移动端不再保留固定双栏；分页弃用属性由源码卫生门禁阻止回流，真实浏览器控制台检查无警告。
-25. Playwright 浏览器套件使用严格 API mock 覆盖登录、页面刷新后的主体恢复、动态菜单、权限拒绝、退出和移动端布局；未知请求、页面异常及控制台 warning/error 都会使 CI 失败。
+25. 浏览器交互验收由开发机中的忽略目录管理；远程 CI 不安装浏览器、不执行测试或上传测试诊断。
 26. 服务监控页直接使用 OpenAPI 生成的 `ServerInfo/HealthInfo`，删除旧 `checks` 兼容结构；所有 Element Plus 栅格必须声明响应式断点，源码门禁禁止固定 `:span` 回流。
 27. 运行时监控页直接消费后端主库、命名只读副本、命名业务数据源、轮询策略和对象存储健康契约；`ryframe_device` 与 RustFS 端点不再依赖前端手写或静态推断。
 
@@ -158,7 +158,7 @@ GET /system/menus/current
 ### 新增页面
 
 1. 页面只组合 API、Store、Hook 和展示组件。
-2. 可复用异步流程放 composable，纯转换写普通函数并加 Vitest。
+2. 可复用异步流程放 composable，纯转换写普通函数并保持输入输出边界清晰。
 3. 新菜单页先在 `pageRegistry` 注册稳定 `route_key`。
 4. 按钮使用 `v-perm`，但不能把前端权限判断当作安全校验。
 5. 请求加载、空数据、错误、禁用和重复提交状态必须完整。
@@ -183,15 +183,10 @@ pnpm check
 
 ```text
 check:sources -> check:workflows -> check:dependencies -> check:architecture -> api:check
--> lint -> lint:styles -> typecheck -> test:coverage -> build:e2e:production -> check:bundle
--> test:e2e -> test:e2e:production
+-> lint -> lint:styles -> typecheck -> build -> check:bundle
 ```
 
-全局覆盖率阈值为语句、行和函数 70%，分支 60%。会话协调、认证 API、HTTP 客户端、用户状态、权限判断以及消息查询和 WebSocket 等关键模块单独执行语句、行和函数 90%、分支 80% 的阈值。
-
-`pnpm build:e2e:production` 生成 `production-smoke` 模式的真实生产产物；`pnpm test:e2e:production` 使用独立 Playwright 配置通过 `vite preview` 启动已经生成的 `dist` 并执行浏览器验收，不以开发服务器测试代替生产产物测试。
-
-日常 push、pull request 和手动触发只运行一个 Node 24 主质量作业，依赖安装、上游契约校验、类型、Lint、覆盖率、生产构建、体积、开发服务器 E2E 和生产产物 E2E 依次复用同一工作区。每周定时任务只运行 Node 22.22.2 的安装、类型检查、单元测试和生产构建兼容验证，不与日常主门禁重复执行。
+日常 push、pull request 和手动触发只运行一个 Node 24 主质量作业，依赖安装、上游契约校验、类型、Lint、生产构建和体积检查依次复用同一工作区。每周定时任务只运行 Node 22.22.2 的安装、类型检查和生产构建兼容验证，不与日常主门禁重复执行。
 
 ## 8. 稳定版本职责
 
@@ -202,8 +197,8 @@ check:sources -> check:workflows -> check:dependencies -> check:architecture -> 
 ## 9. 完成标准
 
 - OpenAPI 快照、生成类型、字符串 ID、`route_key` 集合和密码策略由 CI 自动校验。
-- 登录、刷新恢复、动态菜单、权限拒绝、退出和关键响应式布局有浏览器冒烟测试。
-- 高复杂度页面按真实用例拆分，异步流程可独立测试。
+- 登录、刷新恢复、动态菜单、权限拒绝、退出和关键响应式布局保持明确的模块边界。
+- 高复杂度页面按真实用例拆分，异步流程保持独立的输入输出边界。
 - HTTP、Session、Store、Router 和 View 依赖保持单向。
 - 独立仓库可在没有后端源码的环境安装、检查、构建并创建稳定标签；项目 Release 统一由后端仓库发布。
 - `pnpm check` 全程零错误、零警告。

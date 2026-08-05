@@ -40,7 +40,6 @@ function buildIdentityPlugin(frontendCommit: string): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
-  const isE2e = process.env.RYFRAME_E2E === '1'
   const frontendCommit = normalizeBuildCommit(env.VITE_APP_BUILD_COMMIT)
   const devServerPort = normalizeDevServerPort(env.VITE_APP_DEV_PORT)
 
@@ -81,22 +80,6 @@ export default defineConfig(({ mode }) => {
         '@': resolve(__dirname, 'src'),
       },
     },
-
-    optimizeDeps: isE2e
-      ? {
-          noDiscovery: true,
-          include: [
-            '@element-plus/icons-vue',
-            'axios',
-            'element-plus',
-            'element-plus/es',
-            'element-plus/es/components/*/style/css',
-            'pinia',
-            'vue',
-            'vue-router',
-          ],
-        }
-      : undefined,
 
     server: {
       port: devServerPort,

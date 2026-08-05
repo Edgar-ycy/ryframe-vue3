@@ -8,8 +8,6 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
-      'playwright-report/**',
-      'test-results/**',
       'src/auto-imports.d.ts',
       'src/components.d.ts',
     ],

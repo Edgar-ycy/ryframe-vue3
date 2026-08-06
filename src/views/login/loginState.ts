@@ -18,7 +18,16 @@ export function createInitialLoginForm(
 }
 
 export function resolveLoginRedirect(value: unknown): string {
-  if (typeof value !== 'string') return '/'
-  if (!value.startsWith('/') || value.startsWith('//') || value === '/login') return '/'
+  if (typeof value !== 'string') return '/index'
+  if (
+    !value.startsWith('/')
+    || value.startsWith('//')
+    || value.includes('\\')
+    || [...value].some((character) => {
+      const code = character.charCodeAt(0)
+      return code <= 31 || code === 127
+    })
+    || value === '/login'
+  ) return '/index'
   return value
 }

@@ -75,7 +75,8 @@ const canManageTenants = computed(() =>
 const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')
 
 function handleMenuSelect(indexPath: string): void {
-  void router.push(indexPath)
+  const target = router.resolve(indexPath)
+  if (target.path !== route.path) void router.push(target)
   if (appStore.isMobile) appStore.closeSidebar()
 }
 

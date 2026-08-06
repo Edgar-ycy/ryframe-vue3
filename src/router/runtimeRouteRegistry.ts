@@ -2,7 +2,7 @@ import type { RouteRecordName, RouteRecordRaw } from 'vue-router'
 
 export interface RouteRegistryRouter {
   hasRoute(name: RouteRecordName): boolean
-  addRoute(route: RouteRecordRaw): () => void
+  addRoute(parentName: RouteRecordName, route: RouteRecordRaw): () => void
   removeRoute(name: RouteRecordName): void
 }
 
@@ -11,13 +11,13 @@ export class RuntimeRouteRegistry {
 
   constructor(private readonly router: RouteRegistryRouter) {}
 
-  add(routes: RouteRecordRaw[]): void {
+  add(parentName: RouteRecordName, routes: RouteRecordRaw[]): void {
     for (const route of routes) {
       if (!route.name) {
         throw new Error(`动态路由缺少 name: ${route.path}`)
       }
       if (this.router.hasRoute(route.name)) continue
-      this.router.addRoute(route)
+      this.router.addRoute(parentName, route)
       this.names.add(route.name)
     }
   }

@@ -32,7 +32,7 @@ const initialJsGzip = (await Promise.all(initialJs.map(gzipBytes))).reduce((a, b
 const initialCssGzip = (await Promise.all(initialCss.map(gzipBytes))).reduce((a, b) => a + b, 0)
 
 const limits = {
-  initialJsGzip: 350 * 1024,
+  initialJsGzip: 250 * 1024,
   initialCssGzip: 100 * 1024,
   asyncJsRaw: 500 * 1024,
 }

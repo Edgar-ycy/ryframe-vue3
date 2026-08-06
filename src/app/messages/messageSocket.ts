@@ -5,6 +5,7 @@ const SOCKET_CONNECTING = 0
 const SOCKET_OPEN = 1
 const BASE_RECONNECT_DELAY_MS = 500
 const MAX_RECONNECT_DELAY_MS = 30_000
+const MAX_RETRY_AFTER_DELAY_MS = 60_000
 const HEARTBEAT_INTERVAL_MS = 25_000
 
 export type MessageSocketState = 'idle' | 'connecting' | 'connected' | 'retrying' | 'stopped'
@@ -64,6 +65,24 @@ export function reconnectDelay(attempt: number, random = Math.random): number {
   const base = Math.min(BASE_RECONNECT_DELAY_MS * 2 ** exponent, MAX_RECONNECT_DELAY_MS)
   const jitter = 0.8 + random() * 0.4
   return Math.round(base * jitter)
+}
+
+/** 对票据接口的 429/503 等响应遵守 Retry-After，同时保留本地指数退避下限。 */
+export function reconnectDelayForError(
+  attempt: number,
+  error: unknown,
+  random = Math.random,
+): number {
+  const exponential = reconnectDelay(attempt, random)
+  if (typeof error !== 'object' || error === null || !('retryAfterSeconds' in error)) {
+    return exponential
+  }
+  const retryAfterSeconds = Number(error.retryAfterSeconds)
+  if (!Number.isFinite(retryAfterSeconds) || retryAfterSeconds < 0) return exponential
+  return Math.max(
+    exponential,
+    Math.min(retryAfterSeconds * 1_000, MAX_RETRY_AFTER_DELAY_MS),
+  )
 }
 
 /** 解析服务端 v1 消息投递帧。 */
@@ -167,8 +186,8 @@ export class MessageSocket {
         this.scheduleReconnect()
       }
     }
-    catch {
-      if (this.active && generation === this.generation) this.scheduleReconnect()
+    catch (error) {
+      if (this.active && generation === this.generation) this.scheduleReconnect(error)
     }
   }
 
@@ -176,9 +195,9 @@ export class MessageSocket {
     return this.active && this.socket === socket && this.generation === generation
   }
 
-  private scheduleReconnect(): void {
+  private scheduleReconnect(error?: unknown): void {
     if (!this.active || this.reconnectTimer !== undefined) return
-    const delay = reconnectDelay(this.reconnectAttempt, this.options.random)
+    const delay = reconnectDelayForError(this.reconnectAttempt, error, this.options.random)
     this.reconnectAttempt += 1
     this.setState('retrying')
     const schedule = this.options.schedule ?? ((callback, timeout) => setTimeout(callback, timeout))

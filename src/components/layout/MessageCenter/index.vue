@@ -19,12 +19,15 @@
   <el-drawer
     v-model="visible"
     :title="t('messageCenter.title')"
-    size="min(420px, 100vw)"
+    size="min(460px, 100vw)"
     append-to-body
     @open="handleDrawerOpen"
   >
     <div class="message-center__toolbar">
-      <span class="message-center__connection" :class="`message-center__connection--${messageStore.connectionStatus}`">
+      <span
+        class="message-center__connection"
+        :class="`message-center__connection--${messageStore.connectionStatus}`"
+      >
         {{ connectionLabel }}
       </span>
       <div class="message-center__toolbar-actions">
@@ -37,50 +40,107 @@
 
     <div class="message-center__batch-actions">
       <span>{{ t('messageCenter.selected', { count: selectedIds.length }) }}</span>
-      <el-button type="primary" link :disabled="selectedIds.length === 0 || mutating" @click="acknowledgeSelected">
-        {{ t('messageCenter.acknowledge') }}
+      <el-button
+        type="danger"
+        link
+        :disabled="selectedIds.length === 0 || mutating"
+        @click="deleteSelected"
+      >
+        {{ t('messageCenter.deleteSelected') }}
       </el-button>
     </div>
 
     <div v-loading="loading" class="message-center__body">
       <el-empty v-if="messages.length === 0" :description="t('messageCenter.empty')" />
       <el-scrollbar v-else class="message-center__scrollbar">
-        <article
-          v-for="message in messages"
-          :key="message.id"
-          class="message-item"
-          :class="{ 'message-item--unread': !message.read_at }"
-        >
-          <el-checkbox
-            v-model="selectedIds"
-            :value="message.id"
-            :aria-label="t('messageCenter.select', { title: message.title })"
-          />
-          <div class="message-item__content">
-            <div class="message-item__heading">
-              <button class="message-item__title" type="button" @click="markRead(message)">
-                {{ message.title }}
-              </button>
-              <el-tag :type="severityType(message.severity)" size="small">{{ severityLabel(message.severity) }}</el-tag>
-            </div>
-            <p class="message-item__text">{{ message.content }}</p>
-            <div class="message-item__footer">
-              <time :datetime="message.published_at">{{ formatTime(message.published_at) }}</time>
-              <div class="message-item__actions">
-                <el-tag v-if="message.acked_at" size="small" type="success">{{ t('messageCenter.acknowledged') }}</el-tag>
-                <el-button v-else link type="primary" :disabled="mutating" @click="acknowledgeMessage(message.id)">
-                  {{ t('messageCenter.acknowledge') }}
-                </el-button>
-                <el-button v-if="!message.read_at" link type="primary" :disabled="mutating" @click="markRead(message)">
-                  {{ t('messageCenter.markRead') }}
-                </el-button>
+        <el-checkbox-group v-model="selectedIds" class="message-center__selection">
+          <article
+            v-for="message in messages"
+            :key="message.id"
+            class="message-item"
+            :class="{ 'message-item--unread': !message.read_at }"
+          >
+            <el-checkbox
+              :value="message.id"
+              :aria-label="t('messageCenter.select', { title: message.title })"
+            />
+            <div class="message-item__content">
+              <div class="message-item__heading">
+                <button class="message-item__title" type="button" @click="openDetail(message)">
+                  {{ message.title }}
+                </button>
+                <el-tag :type="severityType(message.severity)" size="small">
+                  {{ severityLabel(message.severity) }}
+                </el-tag>
+              </div>
+              <p class="message-item__text">{{ message.content }}</p>
+              <div class="message-item__status">
+                <el-tag :type="message.acked_at ? 'success' : 'info'" size="small" effect="plain">
+                  {{ message.acked_at ? t('messageCenter.delivered') : t('messageCenter.deliveryPending') }}
+                </el-tag>
+                <el-tag :type="message.read_at ? 'success' : 'warning'" size="small" effect="plain">
+                  {{ message.read_at ? t('messageCenter.read') : t('messageCenter.unread') }}
+                </el-tag>
+              </div>
+              <div class="message-item__footer">
+                <time :datetime="message.published_at">{{ formatTime(message.published_at) }}</time>
+                <div class="message-item__actions">
+                  <el-button link type="primary" @click="openDetail(message)">
+                    {{ t('messageCenter.view') }}
+                  </el-button>
+                  <el-button
+                    link
+                    type="danger"
+                    :disabled="mutating"
+                    @click="deleteOne(message)"
+                  >
+                    {{ t('common.delete') }}
+                  </el-button>
+                </div>
               </div>
             </div>
-          </div>
-        </article>
+          </article>
+        </el-checkbox-group>
       </el-scrollbar>
     </div>
   </el-drawer>
+
+  <el-dialog
+    v-model="detailVisible"
+    :title="detailMessage?.title || t('messageCenter.detailTitle')"
+    width="min(720px, calc(100vw - 32px))"
+    append-to-body
+    destroy-on-close
+  >
+    <template v-if="detailMessage">
+      <div class="message-detail__meta">
+        <el-tag :type="severityType(detailMessage.severity)" size="small">
+          {{ severityLabel(detailMessage.severity) }}
+        </el-tag>
+        <el-tag :type="detailMessage.acked_at ? 'success' : 'info'" size="small" effect="plain">
+          {{ detailMessage.acked_at ? t('messageCenter.delivered') : t('messageCenter.deliveryPending') }}
+        </el-tag>
+        <el-tag :type="detailMessage.read_at ? 'success' : 'warning'" size="small" effect="plain">
+          {{ detailMessage.read_at ? t('messageCenter.read') : t('messageCenter.unread') }}
+        </el-tag>
+        <time :datetime="detailMessage.published_at">{{ formatTime(detailMessage.published_at) }}</time>
+      </div>
+      <!-- 内容由禁用原始 HTML 的 markdown-it 渲染，并经过 DOMPurify 清洗。 -->
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div class="message-detail__markdown" v-html="renderedDetail" />
+    </template>
+    <template #footer>
+      <el-button @click="detailVisible = false">{{ t('common.confirm') }}</el-button>
+      <el-button
+        v-if="detailMessage"
+        type="danger"
+        :loading="mutating"
+        @click="deleteOne(detailMessage)"
+      >
+        {{ t('common.delete') }}
+      </el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -89,6 +149,7 @@ import { useI18n } from 'vue-i18n'
 import type { MessageInboxQuery, MessageRecord } from '@/api/modules/messages'
 import { useMessageCenterQueries } from '@/app/messages/messageQueries'
 import { formatLocalizedDate } from '@/i18n'
+import { renderMarkdown } from '@/shared/markdown/render'
 import { useMessageStore } from '@/stores/message'
 
 const messageStore = useMessageStore()
@@ -100,6 +161,8 @@ const messageCenter = useMessageCenterQueries(inboxQuery)
 const { messages, unreadCount, loading, mutating } = messageCenter
 const visible = ref(false)
 const selectedIds = ref<string[]>([])
+const detailVisible = ref(false)
+const detailSeed = ref<MessageRecord>()
 const { t } = useI18n()
 
 const badgeValue = computed(() => unreadCount.value > 99 ? '99+' : unreadCount.value)
@@ -109,12 +172,28 @@ const connectionLabel = computed(() => ({
   retrying: t('messageCenter.retrying'),
   disconnected: t('messageCenter.disconnected'),
 })[messageStore.connectionStatus])
+const detailMessage = computed(() => {
+  const id = detailSeed.value?.id
+  return messages.value.find(message => message.id === id) ?? detailSeed.value
+})
+const renderedDetail = computed(() => renderMarkdown(detailMessage.value?.content ?? ''))
+
+function acknowledgeReceivedMessages(records = messages.value): void {
+  messageStore.queueAcknowledgement(
+    records.filter(message => !message.acked_at).map(message => message.id),
+  )
+}
 
 watch(
-  () => messages.value.map(message => message.id),
-  (ids) => {
+  messages,
+  (records) => {
+    const ids = records.map(message => message.id)
+    messageStore.pruneDeletedMessages(ids)
     selectedIds.value = selectedIds.value.filter(id => ids.includes(id))
+    // 无论来源是首次加载、手动刷新还是补拉，进入收件箱即自动确认送达。
+    acknowledgeReceivedMessages(records)
   },
+  { immediate: true },
 )
 
 watch(
@@ -128,6 +207,8 @@ watch(
 
 onMounted(() => {
   messageStore.bindSession()
+  // 缓存命中早于 mounted 时，此处补一次确认，避免会话尚未绑定导致漏记。
+  acknowledgeReceivedMessages()
 })
 
 onUnmounted(() => {
@@ -142,6 +223,19 @@ function handleDrawerOpen(): void {
   void refresh()
 }
 
+async function openDetail(message: MessageRecord): Promise<void> {
+  detailSeed.value = message
+  detailVisible.value = true
+  await nextTick()
+  if (message.read_at) return
+  try {
+    await messageCenter.markRead(message.id)
+  }
+  catch {
+    ElMessage.error(t('messageCenter.markReadFailed'))
+  }
+}
+
 async function refresh(): Promise<void> {
   try {
     await messageCenter.refresh()
@@ -151,31 +245,50 @@ async function refresh(): Promise<void> {
   }
 }
 
-async function acknowledgeSelected(): Promise<void> {
+async function deleteSelected(): Promise<void> {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
   try {
-    await messageCenter.acknowledge(selectedIds.value)
-    selectedIds.value = []
+    await ElMessageBox.confirm(
+      t('messageCenter.deleteSelectedConfirm', { count: ids.length }),
+      t('messageCenter.deleteConfirmTitle'),
+      { type: 'warning' },
+    )
   }
   catch {
-    ElMessage.error(t('messageCenter.acknowledgeFailed'))
+    return
   }
+  if (await removeMessages(ids)) selectedIds.value = []
 }
 
-async function acknowledgeMessage(id: string): Promise<void> {
+async function deleteOne(message: MessageRecord): Promise<void> {
   try {
-    await messageCenter.acknowledge([id])
+    await ElMessageBox.confirm(
+      t('messageCenter.deleteOneConfirm', { title: message.title }),
+      t('messageCenter.deleteConfirmTitle'),
+      { type: 'warning' },
+    )
   }
   catch {
-    ElMessage.error(t('messageCenter.acknowledgeFailed'))
+    return
   }
+  await removeMessages([message.id])
 }
 
-async function markRead(message: MessageRecord): Promise<void> {
+async function removeMessages(ids: readonly string[]): Promise<boolean> {
   try {
-    await messageCenter.markRead(message.id)
+    await messageCenter.remove(ids)
+    messageStore.markMessagesDeleted(ids)
+    if (detailSeed.value && ids.includes(detailSeed.value.id)) {
+      detailVisible.value = false
+      detailSeed.value = undefined
+    }
+    ElMessage.success(t('messageCenter.deleteSuccess'))
+    return true
   }
   catch {
-    ElMessage.error(t('messageCenter.markReadFailed'))
+    ElMessage.error(t('messageCenter.deleteFailed'))
+    return false
   }
 }
 
@@ -218,7 +331,9 @@ function formatTime(value: string): string {
 .message-center__batch-actions,
 .message-item__heading,
 .message-item__footer,
-.message-item__actions {
+.message-item__actions,
+.message-item__status,
+.message-detail__meta {
   display: flex;
   align-items: center;
 }
@@ -231,9 +346,11 @@ function formatTime(value: string): string {
 }
 
 .message-center__toolbar-actions,
-.message-item__actions {
+.message-item__actions,
+.message-item__status,
+.message-detail__meta {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .message-center__connection {
@@ -265,6 +382,10 @@ function formatTime(value: string): string {
   max-height: calc(100vh - 210px);
 }
 
+.message-center__selection {
+  display: block;
+}
+
 .message-item {
   display: flex;
   gap: 10px;
@@ -290,7 +411,7 @@ function formatTime(value: string): string {
 
 .message-item__title {
   overflow: hidden;
-  max-width: 280px;
+  max-width: 300px;
   border: 0;
   background: transparent;
   color: var(--el-text-color-primary);
@@ -312,10 +433,51 @@ function formatTime(value: string): string {
   -webkit-line-clamp: 3;
 }
 
+.message-item__status {
+  margin-bottom: 6px;
+}
+
 .message-item__footer {
   justify-content: space-between;
   gap: 8px;
   color: var(--el-text-color-secondary);
   font-size: 12px;
+}
+
+.message-detail__meta {
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.message-detail__markdown {
+  overflow-wrap: anywhere;
+  color: var(--el-text-color-primary);
+  line-height: 1.7;
+
+  :deep(pre) {
+    overflow: auto;
+    padding: 12px;
+    border-radius: 6px;
+    background: var(--el-fill-color-light);
+  }
+
+  :deep(img) {
+    max-width: 100%;
+  }
+
+  :deep(table) {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+    border-collapse: collapse;
+  }
+
+  :deep(th),
+  :deep(td) {
+    padding: 6px 10px;
+    border: 1px solid var(--el-border-color);
+  }
 }
 </style>

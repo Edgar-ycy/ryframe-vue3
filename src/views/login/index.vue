@@ -82,6 +82,7 @@ import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
+import { ensureAccessibleRoutes, resolveAccessibleRoute } from '@/router'
 import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
 
 const router = useRouter()
@@ -148,8 +149,10 @@ const handleLogin = async () => {
       captchaEnabled.value ? captchaId.value : undefined,
       captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )
+    await ensureAccessibleRoutes({ skipAuthRefresh: true })
     ElMessage.success(t('account.signInSuccess'))
-    await router.replace(resolveLoginRedirect(route.query.redirect))
+    const redirect = resolveLoginRedirect(route.query.redirect)
+    await router.replace(resolveAccessibleRoute(redirect))
   } catch {
     if (captchaEnabled.value) {
       await refreshCaptcha()

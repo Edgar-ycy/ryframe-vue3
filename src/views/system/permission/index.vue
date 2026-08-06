@@ -60,7 +60,6 @@
         stripe
         row-key="id"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
-        default-expand-all
       >
         <el-table-column prop="name" :label="t('system.permission.name')" min-width="160" show-overflow-tooltip />
         <el-table-column prop="code" :label="t('system.permission.code')" min-width="220" show-overflow-tooltip>

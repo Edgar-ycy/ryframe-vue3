@@ -11,7 +11,9 @@ const SAFE_LINK_PROTOCOLS = new Set(['http', 'https', 'mailto', 'tel'])
 
 /** 仅允许站内相对链接及明确批准的外部协议。 */
 function isSafeLink(value: string): boolean {
-  const scheme = /^([a-z][a-z\d+.-]*):/iu.exec(value.trim())?.[1]?.toLowerCase()
+  const normalized = value.trim()
+  if (normalized.startsWith('//') || normalized.startsWith('\\')) return false
+  const scheme = /^([a-z][a-z\d+.-]*):/iu.exec(normalized)?.[1]?.toLowerCase()
   return scheme === undefined || SAFE_LINK_PROTOCOLS.has(scheme)
 }
 

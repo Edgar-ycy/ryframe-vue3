@@ -1,6 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
 import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
-import { LAYOUT } from '@/router/layout'
 import { constantRoutes } from '@/router/routes/constant'
 import { getMenuPage } from '@/router/pageRegistry'
 import { withRouteComponentName } from '@/router/namedRouteComponent'
@@ -103,7 +102,6 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw {
   return {
     path: directoryPath,
     name: getRouteName(node),
-    component: LAYOUT,
     redirect,
     meta: {
       title: node.name,

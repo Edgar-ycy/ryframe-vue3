@@ -360,6 +360,10 @@ export const operationManifest = {
     "method": "post",
     "path": "/system/messages/ack"
   },
+  "post_system_messages_delete": {
+    "method": "post",
+    "path": "/system/messages/delete"
+  },
   "post_system_notices": {
     "method": "post",
     "path": "/system/notices"

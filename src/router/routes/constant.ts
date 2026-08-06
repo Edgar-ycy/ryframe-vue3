@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { ROOT_LAYOUT_ROUTE_NAME } from '@/router/layout'
 import { withRouteComponentName } from '@/router/namedRouteComponent'
 
 export const constantRoutes: RouteRecordRaw[] = [
@@ -19,6 +20,7 @@ export const constantRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/',
+    name: ROOT_LAYOUT_ROUTE_NAME,
     component: () => import('@/components/layout/index.vue'),
     redirect: '/index',
     children: [

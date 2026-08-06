@@ -25,9 +25,10 @@ export interface NavigationGuardDependencies {
   initializeSession(): Promise<void>
   getUser(): NavigationUser
   getPermissionState(): NavigationPermissionState
-  refreshAccessibleRoutes(): Promise<unknown>
+  ensureAccessibleRoutes(): Promise<unknown>
   clearSession(): Promise<void>
   isKnownRoute(path: string): boolean
+  resolveReplacement(path: string): RouteLocationRaw
 }
 
 const authenticatedErrorPaths = new Set(['/403', '/500'])
@@ -49,22 +50,15 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
         : { path: '/login', query: { redirect: originalPath } }
     }
 
-    if (
-      target.path === '/404'
-      && target.redirectedFrom
-      && dependencies.isKnownRoute(originalPath)
-    ) {
-      return { path: originalPath, replace: true }
-    }
-
-    if (target.path === '/login') return { path: '/' }
+    if (target.path === '/login') return { path: '/index', replace: true }
     if (authenticatedErrorPaths.has(target.path)) return true
 
     if (!dependencies.getPermissionState().isRoutesLoaded) {
       try {
         if (user.permissions.length === 0) await user.getUserInfo()
-        await dependencies.refreshAccessibleRoutes()
-        return { path: originalPath, replace: true }
+        await dependencies.ensureAccessibleRoutes()
+        // 重新解析原始完整地址，避免首次解析已经落入 404 的结果被复用。
+        return dependencies.resolveReplacement(originalPath)
       }
       catch (error) {
         if (error instanceof HttpError && error.status === 401) {
@@ -76,6 +70,14 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
         }
         return { path: '/500', replace: true }
       }
+    }
+
+    if (
+      target.path === '/404'
+      && target.redirectedFrom
+      && dependencies.isKnownRoute(originalPath)
+    ) {
+      return dependencies.resolveReplacement(originalPath)
     }
 
     return canAccessRoute(user, target)

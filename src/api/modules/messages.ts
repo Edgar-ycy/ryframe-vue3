@@ -12,6 +12,7 @@ export type MessageRecord = ApiSchema<'MessageVo'>
 export type MessageInboxQuery = OperationQuery<'get_system_messages'>
 export type MessageInboxPage = ApiSchema<'MessageInboxPage'>
 export type AcknowledgeMessagesInput = OperationJsonBody<'post_system_messages_ack'>
+export type DeleteMessagesInput = OperationJsonBody<'post_system_messages_delete'>
 export type WebSocketTicket = OperationData<'post_auth_ws_ticket'>
 
 /** 获取当前用户的消息收件箱。 */
@@ -30,6 +31,13 @@ export function getUnreadMessageCount(signal: AbortSignal) {
 export function acknowledgeMessages(ids: AcknowledgeMessagesInput['ids']) {
   return request<OperationData<'post_system_messages_ack'>>({
     url: `${BASE}/ack`, method: 'post', data: { ids },
+  })
+}
+
+/** 软删除当前用户收件箱中的消息，不影响其他收件人。 */
+export function deleteMessages(ids: DeleteMessagesInput['ids']) {
+  return request<OperationData<'post_system_messages_delete'>>({
+    url: `${BASE}/delete`, method: 'post', data: { ids },
   })
 }
 

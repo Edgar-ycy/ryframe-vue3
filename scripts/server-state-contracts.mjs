@@ -1,5 +1,5 @@
 export const serverStateContracts = new Map([
-  ['src/app/messages/messageQueries.ts', ['useTenantQuery', 'useMutation']],
+  ['src/app/messages/messageHooks.ts', ['useTenantQuery', 'useMutation']],
   ['src/app/settings/shellSettingsQuery.ts', ['useTenantQuery']],
   ['src/components/layout/Navbar/index.vue', ['confirmAction']],
   ['src/components/layout/index.vue', ['useShellSettingsQuery']],

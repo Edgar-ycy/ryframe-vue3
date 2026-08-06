@@ -988,6 +988,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/messages/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 软删除当前用户收到的消息。 */
+        post: operations["post_system_messages_delete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/messages/read-all": {
         parameters: {
             query?: never;
@@ -2557,41 +2574,40 @@ export interface components {
              */
             code: number;
             data?: {
-                /** @description CPU 核心数 */
+                /** @description CPU 核心数。 */
                 cpu_cores: number;
                 /**
                  * Format: float
-                 * @description CPU 使用率（百分比）
+                 * @description CPU 使用率（百分比）。
                  */
                 cpu_usage: number;
-                /** @description 主机名 */
+                /** @description 主机名。 */
                 hostname: string;
                 /**
                  * Format: float
-                 * @description 内存使用率（百分比）
+                 * @description 内存使用率（百分比）。
                  */
                 memory_usage: number;
-                /** @description 操作系统 */
+                /** @description 操作系统。 */
                 os: string;
                 /**
                  * Format: int32
-                 * @description Rust 不使用 JVM。
-                 *     进程 PID
+                 * @description 进程 PID。
                  */
                 pid: number;
                 /**
                  * Format: double
-                 * @description 总内存（GB）
+                 * @description 总内存（GB）。
                  */
                 total_memory: number;
                 /**
                  * Format: int64
-                 * @description 运行时长（秒）
+                 * @description 系统运行时长（秒）。
                  */
                 uptime: number;
                 /**
                  * Format: double
-                 * @description 已用内存（GB）
+                 * @description 已用内存（GB）。
                  */
                 used_memory: number;
             };
@@ -3399,6 +3415,10 @@ export interface components {
             active_connections?: number | null;
             status: string;
             timestamp: string;
+        };
+        /** @description 批量删除消息请求。 */
+        DeleteMessagesDto: {
+            ids: string[];
         };
         /** @description 部门树节点。 */
         DeptTreeNode: {
@@ -4230,41 +4250,40 @@ export interface components {
             endpoint?: string | null;
         };
         ServerInfo: {
-            /** @description CPU 核心数 */
+            /** @description CPU 核心数。 */
             cpu_cores: number;
             /**
              * Format: float
-             * @description CPU 使用率（百分比）
+             * @description CPU 使用率（百分比）。
              */
             cpu_usage: number;
-            /** @description 主机名 */
+            /** @description 主机名。 */
             hostname: string;
             /**
              * Format: float
-             * @description 内存使用率（百分比）
+             * @description 内存使用率（百分比）。
              */
             memory_usage: number;
-            /** @description 操作系统 */
+            /** @description 操作系统。 */
             os: string;
             /**
              * Format: int32
-             * @description Rust 不使用 JVM。
-             *     进程 PID
+             * @description 进程 PID。
              */
             pid: number;
             /**
              * Format: double
-             * @description 总内存（GB）
+             * @description 总内存（GB）。
              */
             total_memory: number;
             /**
              * Format: int64
-             * @description 运行时长（秒）
+             * @description 系统运行时长（秒）。
              */
             uptime: number;
             /**
              * Format: double
-             * @description 已用内存（GB）
+             * @description 已用内存（GB）。
              */
             used_memory: number;
         };
@@ -4948,9 +4967,11 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Redis 不可用 */
+            /** @description Redis 不可用；显式禁用时返回 Retry-After: 60 */
             503: {
                 headers: {
+                    /** @description 仅 Redis 显式禁用时为 60 秒 */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -6380,6 +6401,30 @@ export interface operations {
         };
         responses: {
             /** @description 确认数量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_u64"];
+                };
+            };
+        };
+    };
+    post_system_messages_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteMessagesDto"];
+            };
+        };
+        responses: {
+            /** @description 实际删除数量 */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -10,127 +10,29 @@ import { removeCachedMessages } from '@/app/messages/messageCache'
 import {
   MessageSocket,
   type MessageSocketProtocolError,
-  type MessageSocketState,
 } from '@/app/messages/messageSocket'
 import { HttpError } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
 import { useUserStore } from './user'
-
-const POLL_INTERVAL_MS = 60_000
-const ACK_DEBOUNCE_MS = 500
-const ACK_RETRY_BASE_DELAY_MS = 1_000
-const ACK_RETRY_MAX_DELAY_MS = 30_000
-const ACK_RETRY_AFTER_MAX_DELAY_MS = 60_000
-const MAX_PENDING_ACKS = 500
-const MAX_DEFERRED_ACKS = 2_000
-const MAX_DELETED_MESSAGE_TOMBSTONES = 2_000
-
-type ConnectionStatus = Exclude<MessageSocketState, 'idle' | 'stopped'> | 'disconnected'
-
-interface MessageConnectionState {
-  connectionStatus: ConnectionStatus
-  socketError?: string
-}
-
-interface MessageIdentity {
-  tenantId: string
-  userId: string
-  sessionKey: string
-}
-
-interface MessageRuntime {
-  sessionKey?: string
-  tenantId?: string
-  userId?: string
-  generation: number
-  socket?: MessageSocket
-  pollTimer?: ReturnType<typeof setInterval>
-  ackTimer?: ReturnType<typeof setTimeout>
-  ackInFlight: boolean
-  ackRetryAttempt: number
-  ackFailureReported: boolean
-  pendingAckIds: Set<string>
-  deferredAckIds: Set<string>
-  deletedMessageIds: Set<string>
-  unsubscribe?: () => void
-}
-
-// Pinia action 内部的 this 可能在原始 Store 与代理 Store 之间切换，运行时资源不能以 this 作为 WeakMap 键。
-// 消息 Store 在单页应用中是单例，因此连接、计时器与队列也由模块级单例统一持有。
-const messageRuntime: MessageRuntime = {
-  generation: 0,
-  ackInFlight: false,
-  ackRetryAttempt: 0,
-  ackFailureReported: false,
-  pendingAckIds: new Set(),
-  deferredAckIds: new Set(),
-  deletedMessageIds: new Set(),
-}
-
-function getRuntime(): MessageRuntime {
-  return messageRuntime
-}
-
-function currentIdentity(): MessageIdentity | undefined {
-  const user = useUserStore()
-  if (
-    user.sessionStatus !== 'authenticated'
-    || !user.token
-    || !user.tenantId
-    || !user.userId
-  ) {
-    return undefined
-  }
-  const userId = String(user.userId)
-  return {
-    tenantId: user.tenantId,
-    userId,
-    sessionKey: [user.tenantId, userId].join('\u0000'),
-  }
-}
-
-function promoteDeferredAcknowledgements(runtime: MessageRuntime): void {
-  while (
-    runtime.pendingAckIds.size < MAX_PENDING_ACKS
-    && runtime.deferredAckIds.size > 0
-  ) {
-    const next = runtime.deferredAckIds.values().next()
-    if (next.done) break
-    runtime.deferredAckIds.delete(next.value)
-    runtime.pendingAckIds.add(next.value)
-  }
-}
-
-function rememberDeletedMessages(runtime: MessageRuntime, ids: readonly string[]): string[] {
-  const unique = [...new Set(ids.filter(Boolean))]
-  for (const id of unique) {
-    if (runtime.deletedMessageIds.has(id)) continue
-    runtime.deletedMessageIds.add(id)
-    if (runtime.deletedMessageIds.size > MAX_DELETED_MESSAGE_TOMBSTONES) {
-      const oldest = runtime.deletedMessageIds.values().next().value
-      if (oldest) runtime.deletedMessageIds.delete(oldest)
-    }
-  }
-  return unique
-}
-
-function shouldRetryAcknowledgement(error: unknown): boolean {
-  if (!(error instanceof HttpError)) return true
-  if (error.kind === 'cancelled') return false
-  if (error.status === undefined) return true
-  return error.status === 429 || error.status >= 500
-}
-
-function acknowledgementRetryDelay(error: unknown, attempt: number): number {
-  const exponential = Math.min(
-    ACK_RETRY_BASE_DELAY_MS * 2 ** attempt,
-    ACK_RETRY_MAX_DELAY_MS,
-  )
-  const retryAfter = error instanceof HttpError && error.retryAfterSeconds !== undefined
-    ? Math.min(error.retryAfterSeconds * 1_000, ACK_RETRY_AFTER_MAX_DELAY_MS)
-    : 0
-  return Math.max(exponential, retryAfter)
-}
+import {
+  ACK_DEBOUNCE_MS,
+  acknowledgementRetryDelay,
+  clearAcknowledgements,
+  enqueueAcknowledgements,
+  promoteDeferredAcknowledgements,
+  scheduleAcknowledgement,
+  shouldRetryAcknowledgement,
+} from './message/acknowledgements'
+import {
+  POLL_INTERVAL_MS,
+  currentIdentity,
+  getRuntime,
+  isCurrentSession,
+  type MessageConnectionState,
+  type MessageIdentity,
+  type MessageRuntime,
+} from './message/runtime'
+import { forgetDeletedAcknowledgements, rememberDeletedMessages } from './message/tombstones'
 
 /** 消息连接 Store 只保存 WebSocket 状态，服务端消息数据统一由 QueryClient 管理。 */
 export const useMessageStore = defineStore('message', {
@@ -247,16 +149,8 @@ export const useMessageStore = defineStore('message', {
         clearInterval(runtime.pollTimer)
         runtime.pollTimer = undefined
       }
-      if (runtime.ackTimer !== undefined) {
-        clearTimeout(runtime.ackTimer)
-        runtime.ackTimer = undefined
-      }
-      runtime.pendingAckIds.clear()
-      runtime.deferredAckIds.clear()
+      clearAcknowledgements(runtime)
       runtime.deletedMessageIds.clear()
-      runtime.ackInFlight = false
-      runtime.ackRetryAttempt = 0
-      runtime.ackFailureReported = false
       runtime.socket?.stop()
       runtime.socket = undefined
     },
@@ -283,16 +177,7 @@ export const useMessageStore = defineStore('message', {
       const runtime = getRuntime()
       const identity = currentIdentity()
       if (!identity || runtime.sessionKey !== identity.sessionKey) return
-      for (const id of new Set(ids.filter(Boolean))) {
-        if (runtime.deletedMessageIds.has(id)) continue
-        if (runtime.pendingAckIds.has(id) || runtime.deferredAckIds.has(id)) continue
-        if (runtime.pendingAckIds.size < MAX_PENDING_ACKS) {
-          runtime.pendingAckIds.add(id)
-        } else if (runtime.deferredAckIds.size < MAX_DEFERRED_ACKS) {
-          // 有界保留溢出确认；超过上限的消息会由下一次收件箱补拉重新进入队列。
-          runtime.deferredAckIds.add(id)
-        }
-      }
+      enqueueAcknowledgements(runtime, ids)
       if (
         runtime.pendingAckIds.size === 0
         || runtime.ackTimer !== undefined
@@ -310,10 +195,7 @@ export const useMessageStore = defineStore('message', {
       if (!identity || runtime.sessionKey !== identity.sessionKey) return
       const deletedIds = rememberDeletedMessages(runtime, ids)
       if (deletedIds.length === 0) return
-      for (const id of deletedIds) {
-        runtime.pendingAckIds.delete(id)
-        runtime.deferredAckIds.delete(id)
-      }
+      forgetDeletedAcknowledgements(runtime, deletedIds)
     },
 
     /** 清除可能被已在途收件箱响应重新写入缓存的删除消息。 */
@@ -337,11 +219,9 @@ export const useMessageStore = defineStore('message', {
       generation: number,
       delay: number,
     ): void {
-      if (runtime.ackTimer !== undefined) return
-      runtime.ackTimer = setTimeout(() => {
-        runtime.ackTimer = undefined
+      scheduleAcknowledgement(runtime, delay, () => {
         void this.flushAcknowledgements(sessionKey, generation)
-      }, delay)
+      })
     },
 
     async flushAcknowledgements(
@@ -411,7 +291,7 @@ export const useMessageStore = defineStore('message', {
     },
 
     isCurrentSession(runtime: MessageRuntime, sessionKey: string, generation: number): boolean {
-      return runtime.sessionKey === sessionKey && runtime.generation === generation
+      return isCurrentSession(runtime, sessionKey, generation)
     },
   },
 })

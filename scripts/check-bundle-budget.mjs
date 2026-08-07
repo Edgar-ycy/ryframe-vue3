@@ -4,6 +4,9 @@ import { gzipSync } from 'node:zlib'
 
 const dist = path.resolve('dist')
 const manifest = JSON.parse(await readFile(path.join(dist, '.vite/manifest.json'), 'utf8'))
+const baseline = JSON.parse(
+  await readFile(path.resolve('scripts/bundle-baseline.json'), 'utf8'),
+)
 const entries = Object.entries(manifest)
 const entryKeys = entries.filter(([, value]) => value.isEntry).map(([key]) => key)
 
@@ -36,12 +39,26 @@ const limits = {
   initialCssGzip: 100 * 1024,
   asyncJsRaw: 500 * 1024,
 }
+const regressionLimits = {
+  initialJsGzip: Math.max(baseline.initialJsGzip * 1.08, baseline.initialJsGzip + 10 * 1024),
+  initialCssGzip: Math.max(baseline.initialCssGzip * 1.08, baseline.initialCssGzip + 10 * 1024),
+}
 const failures = []
 if (initialJsGzip > limits.initialJsGzip) {
   failures.push(`initial gzip JS ${initialJsGzip} > ${limits.initialJsGzip}`)
 }
 if (initialCssGzip > limits.initialCssGzip) {
   failures.push(`initial gzip CSS ${initialCssGzip} > ${limits.initialCssGzip}`)
+}
+if (initialJsGzip > regressionLimits.initialJsGzip) {
+  failures.push(
+    `initial gzip JS ${initialJsGzip} > regression limit ${regressionLimits.initialJsGzip}`,
+  )
+}
+if (initialCssGzip > regressionLimits.initialCssGzip) {
+  failures.push(
+    `initial gzip CSS ${initialCssGzip} > regression limit ${regressionLimits.initialCssGzip}`,
+  )
 }
 
 for (const [, chunk] of entries) {
@@ -50,5 +67,7 @@ for (const [, chunk] of entries) {
   if (bytes > limits.asyncJsRaw) failures.push(`async JS ${chunk.file} ${bytes} > ${limits.asyncJsRaw}`)
 }
 
-console.log(`Bundle budget: initial JS ${initialJsGzip} B gzip, CSS ${initialCssGzip} B gzip`)
+console.log(
+  `Bundle budget: initial JS ${initialJsGzip} B gzip (baseline ${baseline.initialJsGzip} B), CSS ${initialCssGzip} B gzip (baseline ${baseline.initialCssGzip} B)`,
+)
 if (failures.length > 0) throw new Error(`Bundle budget exceeded:\n${failures.join('\n')}`)

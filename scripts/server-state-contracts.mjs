@@ -22,7 +22,7 @@ export const serverStateContracts = new Map([
   ['src/views/system/dict/composables/useDictManagement.ts', ['useTenantQuery', 'useTenantMutation']],
   ['src/views/system/menu/components/MenuFormDialog.vue', ['useTenantMutation']],
   ['src/views/system/menu/composables/useMenuManagement.ts', ['useTenantQuery', 'useTenantMutation']],
-  ['src/views/system/notice/index.vue', ['useTenantQuery', 'useTenantMutation']],
+  ['src/views/system/notice/useNoticeManagement.ts', ['useTenantQuery', 'useTenantMutation']],
   ['src/views/system/permission/components/PermissionFormDialog.vue', ['useTenantMutation']],
   ['src/views/system/permission/composables/usePermissionManagement.ts', ['useTenantQuery', 'useTenantMutation']],
   ['src/views/system/post/index.vue', ['useTenantQuery', 'useTenantMutation']],

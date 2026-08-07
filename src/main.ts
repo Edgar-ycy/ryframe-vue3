@@ -10,6 +10,8 @@ import { elementIcons } from '@/shared/ui/icons'
 import directives from './directives'
 import { queryClient } from '@/shared/query/client'
 import './styles/index.scss'
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
 
 const app = createApp(App)
 

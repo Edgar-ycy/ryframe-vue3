@@ -1,6 +1,5 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -22,14 +21,6 @@ function normalizeDevServerPort(value: string | undefined): number {
     throw new Error('VITE_APP_DEV_PORT must be an integer between 1 and 65535')
   }
   return port
-}
-
-function listElementPlusStyleEntries(): string[] {
-  const componentsDirectory = resolve(__dirname, 'node_modules/element-plus/es/components')
-  return readdirSync(componentsDirectory, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .filter(entry => existsSync(resolve(componentsDirectory, entry.name, 'style/css.mjs')))
-    .map(entry => `element-plus/es/components/${entry.name}/style/css`)
 }
 
 function buildIdentityPlugin(frontendCommit: string): Plugin {
@@ -102,16 +93,12 @@ export default defineConfig(({ mode }) => {
       },
     },
 
-    optimizeDeps: {
-      include: listElementPlusStyleEntries(),
-    },
-
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
       manifest: true,
       sourcemap: false,
-      chunkSizeWarningLimit: 1200,
+      chunkSizeWarningLimit: 500,
       rolldownOptions: {
         output: {
           manualChunks(id: string) {

@@ -5,6 +5,7 @@ overrides:
   js-yaml: 4.3.0
 allowBuilds:
   '@parcel/watcher': true
+  vue-demi: true
 strictPeerDependencies: true
 peerDependencyRules:
   allowedVersions:

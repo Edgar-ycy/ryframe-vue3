@@ -81,6 +81,25 @@ export default defineConfig(({ mode }) => {
       },
     },
 
+    optimizeDeps: {
+      include: [
+        '@element-plus/icons-vue',
+        '@tanstack/vue-query',
+        'axios',
+        'dompurify',
+        'element-plus',
+        'element-plus/es',
+        'element-plus/es/locale/lang/en',
+        'element-plus/es/locale/lang/zh-cn',
+        'markdown-it',
+        'pinia',
+        'vue',
+        'vue-i18n',
+        'vue-router',
+      ],
+      noDiscovery: true,
+    },
+
     server: {
       port: devServerPort,
       host: env.VITE_APP_DEV_HOST || '127.0.0.1',

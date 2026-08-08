@@ -114,9 +114,9 @@ GET /system/menus/current
 6. 业务源码已无显式 `any`，TypeScript `strict`、未使用符号检查全部开启。
 7. 所有 Snowflake ID 在前端契约中统一为字符串。
 8. 旧 API 路径和无上限列表已删除；表格使用复数资源根分页路径，下拉候选使用受限的 `/options?q&limit`。
-9. ESLint、Stylelint、Vue TSC、源码卫生和生产构建已进入 CI，警告按失败处理。
+9. ESLint、Stylelint、Vue TSC、工作流、依赖策略、API 契约和生产构建已进入 CI，警告按失败处理。
 10. 用户资料、角色分配、密码重置和部门树已从用户管理页拆为独立组件，查询、提交和状态动作归入 `useUserManagement`。
-11. 查询参数统一为 `page`/`page_size`，密码重置链接统一为 `request_id`，源码门禁禁止旧 camelCase API 字段回流。
+11. 查询参数统一为 `page`/`page_size`，密码重置链接统一为 `request_id`；API 契约与类型检查共同约束字段命名。
 12. 分页基类不再开放任意字段索引，各 API 模块必须显式声明筛选字段，与后端拒绝未知字段的策略一致。
 13. 密码重置完成请求显式携带 `tenant_id`、`request_id` 和一次性 token，前后端不再依赖隐式默认租户。
 14. 角色、菜单和权限页面已拆出领域 composable 与表单对话框；菜单树转换提取为纯函数。
@@ -129,9 +129,9 @@ GET /system/menus/current
 21. 后端通过 OpenAPI 导出统一新密码策略与编译期权限目录；契约派生生成器生成密码策略和 `PermissionCode` 字面量联合类型，个人中心、重置页、租户页以及 `usePermission`/`v-perm` 共用后端契约，CI 在临时目录生成并校验扩展、schema 和派生文件精确一致。
 22. 字典管理已拆为类型/数据对话框与领域 composable，个人中心已拆为资料、头像和密码组件；首页改为只展示真实会话信息和权限派生快捷入口。
 23. 登录初始化和重定向解析已提取为纯函数；初始化凭据仅在开发构建预填，生产构建为空，异常或外部重定向统一回到首页。
-24. 个人中心与字典页使用可折叠 CSS Grid，移动端不再保留固定双栏；分页弃用属性由源码卫生门禁阻止回流，真实浏览器控制台检查无警告。
+24. 个人中心与字典页使用可折叠 CSS Grid，移动端不再保留固定双栏；真实浏览器控制台检查无警告。
 25. 浏览器交互验收由开发机中的忽略目录管理；远程 CI 不安装浏览器、不执行测试或上传测试诊断。
-26. 服务监控页直接使用 OpenAPI 生成的 `ServerInfo/HealthInfo`，删除旧 `checks` 兼容结构；所有 Element Plus 栅格必须声明响应式断点，源码门禁禁止固定 `:span` 回流。
+26. 服务监控页直接使用 OpenAPI 生成的 `ServerInfo/HealthInfo`，删除旧 `checks` 兼容结构；所有 Element Plus 栅格必须声明响应式断点。
 27. 运行时监控页直接消费后端主库、命名只读副本、命名业务数据源、轮询策略和对象存储健康契约；`ryframe_device` 与 RustFS 端点不再依赖前端手写或静态推断。
 
 ## 5. 仍需修改的地方
@@ -182,7 +182,7 @@ pnpm check
 `pnpm check` 依次执行：
 
 ```text
-check:sources -> check:workflows -> check:dependencies -> check:architecture -> api:check
+check:workflows -> check:dependencies -> api:check
 -> lint -> lint:styles -> typecheck -> build -> check:bundle
 ```
 

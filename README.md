@@ -99,7 +99,7 @@ VITE_APP_BUILD_COMMIT="$(git rev-parse HEAD)" pnpm build
 pnpm check
 ```
 
-该命令依次执行源码卫生、工作流、依赖策略、架构边界、本地 OpenAPI 来源与生成物、菜单 `route_key` 集合、密码和公告策略、ESLint、Stylelint、Vue TSC、生产构建和体积预算；任何警告都会使检查失败。
+该命令依次执行工作流、依赖策略、本地 OpenAPI 来源与生成物、菜单 `route_key` 集合、密码和公告策略、ESLint、Stylelint、Vue TSC、生产构建和体积预算；任何警告都会使检查失败。
 
 日常 push、pull request 和手动触发使用单个 Node 24 主质量作业；每周定时任务仅使用 Node 22.22.2 验证安装、类型检查和生产构建兼容性。
 

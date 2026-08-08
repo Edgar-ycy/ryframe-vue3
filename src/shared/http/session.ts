@@ -4,6 +4,7 @@ import { HttpError, toHttpError } from './errors'
 export interface HttpSessionAdapter {
   getAccessToken(): string | null
   getTenantId(): string
+  observeAuthorizationEpoch(authorizationEpoch: number): void
   refreshAccessToken(): Promise<string>
   handleRefreshFailure(error: HttpError): Promise<void>
 }

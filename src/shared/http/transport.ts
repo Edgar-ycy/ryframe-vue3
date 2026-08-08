@@ -1,5 +1,6 @@
 import axios, {
   type AxiosError,
+  type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios'
 import { getApplicationLocale } from '@/i18n'
@@ -32,6 +33,18 @@ function createTransport() {
 export const transport = createTransport()
 export const rawTransport = createTransport()
 
+function observeResponseAuthorizationEpoch(response: AxiosResponse | undefined): void {
+  const session = getHttpSession()
+  if (!session) return
+  const accessToken = session.getAccessToken()
+  const requestAuthorization = response?.config.headers.get('Authorization')
+  if (!accessToken || requestAuthorization !== `Bearer ${accessToken}`) return
+  const raw = response?.headers['x-authorization-epoch']
+  const authorizationEpoch = typeof raw === 'string' ? Number(raw) : raw
+  if (typeof authorizationEpoch !== 'number' || !Number.isSafeInteger(authorizationEpoch)) return
+  session.observeAuthorizationEpoch(authorizationEpoch)
+}
+
 function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig): void {
   if (!(config.data instanceof FormData)) return
   config.headers.delete('Content-Type')
@@ -63,8 +76,12 @@ rawTransport.interceptors.request.use((config) => {
 })
 
 transport.interceptors.response.use(
-  response => response,
+  (response) => {
+    observeResponseAuthorizationEpoch(response)
+    return response
+  },
   async (error: AxiosError) => {
+    observeResponseAuthorizationEpoch(error.response)
     const config = error.config
     const status = error.response?.status
     const sessionAdapter = getHttpSession()

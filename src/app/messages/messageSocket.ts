@@ -23,6 +23,7 @@ export interface MessageSocketLike {
 export interface MessageSocketOptions {
   requestTicket: () => Promise<string>
   onDelivery: (message: MessageRecord) => void
+  onAuthorizationChanged?: (authorizationEpoch: number) => void
   onProtocolError?: (error: MessageSocketProtocolError) => void
   onStateChange?: (state: MessageSocketState) => void
   createSocket?: (url: string) => MessageSocketLike
@@ -38,6 +39,7 @@ type SocketFrame = {
   type?: unknown
   message?: unknown
   code?: unknown
+  authorization_epoch?: unknown
 }
 
 export interface MessageSocketProtocolError {
@@ -91,6 +93,17 @@ export function parseMessageDelivery(raw: unknown): MessageRecord | undefined {
   const frame = raw as SocketFrame
   if (frame.v !== 1 || frame.type !== 'message') return undefined
   return normalizeMessage(frame.message)
+}
+
+/** 解析服务端授权纪元变化帧；权限明细由认证接口重新读取。 */
+export function parseAuthorizationChanged(raw: unknown): number | undefined {
+  if (!isRecord(raw)) return undefined
+  const frame = raw as SocketFrame
+  if (frame.v !== 1 || frame.type !== 'authorization_changed') return undefined
+  const epoch = frame.authorization_epoch
+  return typeof epoch === 'number' && Number.isSafeInteger(epoch) && epoch > 0
+    ? epoch
+    : undefined
 }
 
 /** 解析服务端返回的协议错误帧，避免忽略可展示的本地化错误信息。 */
@@ -166,8 +179,14 @@ export class MessageSocket {
         const delivery = parseMessageDelivery(frame)
         if (delivery) this.options.onDelivery(delivery)
         else {
-          const protocolError = parseMessageSocketError(frame)
-          if (protocolError) this.options.onProtocolError?.(protocolError)
+          const authorizationEpoch = parseAuthorizationChanged(frame)
+          if (authorizationEpoch !== undefined) {
+            this.options.onAuthorizationChanged?.(authorizationEpoch)
+          }
+          else {
+            const protocolError = parseMessageSocketError(frame)
+            if (protocolError) this.options.onProtocolError?.(protocolError)
+          }
         }
       }
       socket.onerror = () => {

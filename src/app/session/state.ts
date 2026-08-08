@@ -7,6 +7,7 @@ import { useUserStore } from '@/stores/user'
 export interface SessionRuntime {
   router: Router
   ensureAccessibleRoutes(options?: { skipAuthRefresh?: boolean }): Promise<unknown>
+  refreshAccessibleRoutes(options?: { skipAuthRefresh?: boolean }): Promise<unknown>
   resetDynamicRoutes(): void
 }
 

@@ -11,6 +11,11 @@ import { useTagsViewStore } from '@/stores/tagsView'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
 import {
+  observeAuthorizationEpoch,
+  resetAuthorizationObservation,
+  synchronizeAuthorizationUi,
+} from './authorization'
+import {
   broadcastAuthenticated,
   broadcastLogout,
   installSessionChannel,
@@ -39,15 +44,10 @@ export function installSessionCoordinator(sessionRuntime: SessionRuntime): void 
     isTerminating: isSessionTerminating,
     onAuthenticated: (accessToken, userInfo) => {
       const scopeChanged = applyAuthenticatedSession(accessToken, userInfo)
-      if (scopeChanged) resetAuthenticatedRouteScope()
-      void ensureRoutesAfterAuthentication(true)
-        .then(async () => {
-          if (!scopeChanged) return
-          const router = getSessionRuntime()?.router
-          if (router && router.currentRoute.value.path !== '/index') {
-            await router.replace('/index')
-          }
-        })
+      const synchronization = scopeChanged
+        ? synchronizeAuthorizationUi({ skipAuthRefresh: true })
+        : ensureRoutesAfterAuthentication(true)
+      void synchronization
         .catch(async (error: unknown) => {
           if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
             await handleRefreshFailure(error)
@@ -62,17 +62,11 @@ export function installSessionCoordinator(sessionRuntime: SessionRuntime): void 
   configureHttpSession({
     getAccessToken: () => useUserStore().token || null,
     getTenantId,
+    observeAuthorizationEpoch,
     refreshAccessToken,
     handleRefreshFailure,
   })
   configureServerStateErrorReporter(reportError)
-}
-
-/** 跨标签页认证结果改变身份或权限范围时，先清除旧会话绑定的路由、菜单和标签页。 */
-function resetAuthenticatedRouteScope(): void {
-  usePermissionStore().resetRoutes()
-  useTagsViewStore().closeAllViews()
-  getSessionRuntime()?.resetDynamicRoutes()
 }
 
 export function publishAuthenticatedSession(accessToken: string, userInfo: UserInfo): void {
@@ -168,6 +162,7 @@ export function clearSession(): Promise<void> {
     invalidateSessionChannelOperations()
     const pending = Promise.resolve()
       .then(() => {
+        resetAuthorizationObservation()
         clearServerState()
         useUserStore().resetState()
         usePermissionStore().resetRoutes()

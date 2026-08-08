@@ -1,7 +1,11 @@
 import { createApp } from 'vue'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import App from './App.vue'
-import router, { ensureAccessibleRoutes, resetDynamicRoutes } from './router'
+import router, {
+  ensureAccessibleRoutes,
+  refreshAccessibleRoutes,
+  resetDynamicRoutes,
+} from './router'
 import pinia from './stores'
 import { installGlobalErrorHandlers } from '@/app/errorHandler'
 import { installSessionCoordinator } from '@/app/session/sessionCoordinator'
@@ -23,7 +27,12 @@ app.use(pinia)
 app.use(i18n)
 app.use(VueQueryPlugin, { queryClient })
 installGlobalErrorHandlers(app)
-installSessionCoordinator({ router, ensureAccessibleRoutes, resetDynamicRoutes })
+installSessionCoordinator({
+  router,
+  ensureAccessibleRoutes,
+  refreshAccessibleRoutes,
+  resetDynamicRoutes,
+})
 app.use(router)
 app.use(directives)
 

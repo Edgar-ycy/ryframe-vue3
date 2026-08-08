@@ -17,6 +17,7 @@ import {
   getSessionEpoch,
   isSessionTerminating,
 } from './state'
+import { synchronizeAuthorizationUi } from './authorization'
 
 let refreshPromise: Promise<string> | undefined
 
@@ -107,8 +108,9 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
       kind: 'invalid_response',
     })
   }
-  applyAuthenticatedSession(auth.access_token, auth.user_info)
-  await ensureRoutesAfterAuthentication(true)
+  const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.user_info)
+  if (scopeChanged) await synchronizeAuthorizationUi({ skipAuthRefresh: true })
+  else await ensureRoutesAfterAuthentication(true)
   assertSessionEpoch(refreshEpoch)
   invalidateCsrfToken()
   return auth.access_token

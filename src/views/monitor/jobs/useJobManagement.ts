@@ -42,6 +42,17 @@ function parseScheduleId(value: unknown): string | undefined {
   return typeof candidate === 'string' && /^[1-9]\d*$/u.test(candidate) ? candidate : undefined
 }
 
+function normalizeQueryParams(params: BackgroundJobQuery): BackgroundJobQuery {
+  const jobType = params.job_type?.trim()
+  const scheduleId = params.schedule_id?.trim()
+  return {
+    ...params,
+    job_type: jobType || undefined,
+    status: params.status || undefined,
+    schedule_id: scheduleId || undefined,
+  }
+}
+
 function sameParams(left: BackgroundJobQuery, right: BackgroundJobQuery): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
@@ -62,7 +73,7 @@ export function useJobManagement(
     status: '',
     schedule_id: scheduleId,
   })
-  const activeQueryParams = ref<BackgroundJobQuery>({ ...queryParams.value })
+  const activeQueryParams = ref<BackgroundJobQuery>(normalizeQueryParams(queryParams.value))
   const selectedError = ref<BackgroundJobRecord | undefined>()
   const errorDialogVisible = ref(false)
 
@@ -70,10 +81,11 @@ export function useJobManagement(
     () => userStore.tenantId,
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_JOBS_RESOURCE,
-    () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+    () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
     async signal => {
-      const response = await listBackgroundJobs({ ...activeQueryParams.value }, signal)
-      return response.data ?? emptyPage(activeQueryParams.value)
+      const params = normalizeQueryParams(activeQueryParams.value)
+      const response = await listBackgroundJobs(params, signal)
+      return response.data ?? emptyPage(params)
     },
   )
   const statsQuery = useTenantQuery<BackgroundJobStats>(
@@ -128,7 +140,7 @@ export function useJobManagement(
   })
 
   async function fetchData(): Promise<void> {
-    const nextParams = { ...queryParams.value }
+    const nextParams = normalizeQueryParams(queryParams.value)
     syncScheduleId(nextParams.schedule_id ?? undefined)
     if (!sameParams(nextParams, activeQueryParams.value)) {
       activeQueryParams.value = nextParams
@@ -161,7 +173,7 @@ export function useJobManagement(
       page: 1,
       schedule_id: nextScheduleId,
     }
-    activeQueryParams.value = { ...queryParams.value }
+    activeQueryParams.value = normalizeQueryParams(queryParams.value)
   }
 
   function showError(row: BackgroundJobRecord): void {

@@ -13,7 +13,7 @@ import {
   type ScheduleTargetRecord,
   type UpdateScheduleBody,
 } from '@/api/modules/monitor'
-import { requireOperationData } from '@/shared/http/client'
+import { HttpError, requireOperationData } from '@/shared/http/client'
 import type { PageResponse } from '@/shared/http/types'
 import { invalidateTenantResource, queryClient, tenantQueryKey } from '@/shared/query/client'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
@@ -31,6 +31,7 @@ import {
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
 type ScheduleSavePayload = CreateScheduleBody | UpdateScheduleBody
+type RunSchedulePayload = { row: JobScheduleRecord, idempotencyKey: string }
 
 const BUILT_IN_TARGET_LABELS: Record<string, string> = {
   'system.export_result_cleanup': 'monitor.schedules.targetExportResultCleanup',
@@ -49,6 +50,17 @@ function emptyPage(params: ScheduleQuery): PageResponse<JobScheduleRecord> {
   }
 }
 
+function normalizeQueryParams(params: ScheduleQuery): ScheduleQuery {
+  const name = params.name?.trim()
+  const handlerKey = params.handler_key?.trim()
+  return {
+    ...params,
+    name: name || undefined,
+    handler_key: handlerKey || undefined,
+    enabled: typeof params.enabled === 'boolean' ? params.enabled : undefined,
+  }
+}
+
 function isUpdatePayload(payload: ScheduleSavePayload): payload is UpdateScheduleBody {
   return 'version' in payload
 }
@@ -56,6 +68,10 @@ function isUpdatePayload(payload: ScheduleSavePayload): payload is UpdateSchedul
 function createIdempotencyKey(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID()
   return `schedule-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function hasUnknownRunOutcome(error: unknown): boolean {
+  return !(error instanceof HttpError) || error.status === undefined || error.status >= 500
 }
 
 /** 定时任务列表、目标目录和所有写操作的页面状态。 */
@@ -69,21 +85,23 @@ export function useScheduleManagement(t: Translate) {
     handler_key: '',
     enabled: undefined,
   })
-  const activeQueryParams = ref<ScheduleQuery>({ ...queryParams.value })
+  const activeQueryParams = ref<ScheduleQuery>(normalizeQueryParams(queryParams.value))
   const formVisible = ref(false)
   const historyVisible = ref(false)
   const editingSchedule = ref<JobScheduleRecord>()
   const historySchedule = ref<JobScheduleRecord>()
   const editingId = ref<string>()
+  const pendingRunKeys = new Map<string, string>()
 
   const schedulesQuery = useTenantQuery<PageResponse<JobScheduleRecord>>(
     () => userStore.tenantId,
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_SCHEDULES_RESOURCE,
-    () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
+    () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
     async signal => {
-      const response = await listSchedules({ ...activeQueryParams.value }, signal)
-      return response.data ?? emptyPage(activeQueryParams.value)
+      const params = normalizeQueryParams(activeQueryParams.value)
+      const response = await listSchedules(params, signal)
+      return response.data ?? emptyPage(params)
     },
   )
   const targetsQuery = useTenantQuery<ScheduleTargetRecord[]>(
@@ -132,11 +150,11 @@ export function useScheduleManagement(t: Translate) {
       onSuccess: () => ElMessage.success(t('monitor.schedules.deleteSuccess')),
     },
   )
-  const runMutation = useTenantMutation<unknown, JobScheduleRecord>(
+  const runMutation = useTenantMutation<unknown, RunSchedulePayload>(
     () => userStore.tenantId,
     MONITOR_SCHEDULES_RESOURCE,
     {
-      mutationFn: row => runSchedule(row.id, createIdempotencyKey()),
+      mutationFn: ({ row, idempotencyKey }) => runSchedule(row.id, idempotencyKey),
       onSuccess: () => ElMessage.success(t('monitor.schedules.runSuccess')),
     },
   )
@@ -156,7 +174,7 @@ export function useScheduleManagement(t: Translate) {
     removeMutation.pending.value ? removeMutation.variables.value?.id ?? undefined : undefined
   ))
   const runPendingId = computed(() => (
-    runMutation.pending.value ? runMutation.variables.value?.id ?? undefined : undefined
+    runMutation.pending.value ? runMutation.variables.value?.row.id ?? undefined : undefined
   ))
   const hasPendingWrite = computed(() => (
     formSaving.value
@@ -186,7 +204,7 @@ export function useScheduleManagement(t: Translate) {
   })
 
   async function fetchData(): Promise<void> {
-    const nextParams = { ...queryParams.value }
+    const nextParams = normalizeQueryParams(queryParams.value)
     if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
       activeQueryParams.value = nextParams
       return
@@ -241,9 +259,16 @@ export function useScheduleManagement(t: Translate) {
   async function saveSchedule(payload: ScheduleSavePayload): Promise<void> {
     if (formSaving.value) return
     if (isUpdatePayload(payload)) {
-      const scheduleId = editingSchedule.value?.id
-      if (!scheduleId) return
-      await updateMutation.mutateAsync({ id: scheduleId, data: payload })
+      const schedule = editingSchedule.value
+      if (!schedule) return
+      if (payload.enabled !== schedule.enabled) {
+        const message = payload.enabled
+          ? t('monitor.schedules.enableConfirm', { name: schedule.name })
+          : t('monitor.schedules.disableConfirm', { name: schedule.name })
+        const confirmed = await confirmAction(message, t('monitor.schedules.statusConfirmTitle'), { type: 'warning' })
+        if (!confirmed || formSaving.value) return
+      }
+      await updateMutation.mutateAsync({ id: schedule.id, data: payload })
     }
     else {
       await createMutation.mutateAsync(payload)
@@ -271,7 +296,20 @@ export function useScheduleManagement(t: Translate) {
       { type: 'warning' },
     )
     if (!confirmed || hasPendingWrite.value) return
-    await runMutation.mutateAsync(row)
+    const idempotencyKey = pendingRunKeys.get(row.id) ?? createIdempotencyKey()
+    try {
+      await runMutation.mutateAsync({ row, idempotencyKey })
+      pendingRunKeys.delete(row.id)
+    }
+    catch (error) {
+      if (hasUnknownRunOutcome(error)) {
+        pendingRunKeys.set(row.id, idempotencyKey)
+      }
+      else {
+        pendingRunKeys.delete(row.id)
+      }
+      throw error
+    }
     await invalidateRelatedResources()
     await schedulesQuery.refetch({ throwOnError: true })
   }

@@ -108,6 +108,7 @@ import { useUserStore } from '@/stores/user'
 const { t } = useI18n()
 const dateRange = ref<[string, string] | []>([])
 const userStore = useUserStore()
+const pageActive = ref(true)
 const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
 
 const queryParams = ref<LoginLogQuery>({
@@ -117,7 +118,7 @@ const activeQueryParams = ref<LoginLogQuery>({ ...queryParams.value })
 
 const loginLogsQuery = useTenantQuery<PageResponse<LoginLogRecord>>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-login-logs',
   () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
   async signal => {
@@ -188,4 +189,14 @@ function handleDetail(row: LoginLogRecord): void {
 function formatDate(value: string | null | undefined): string {
   return value ? formatLocalizedDate(value) : '—'
 }
+
+onActivated(() => {
+  if (pageActive.value) return
+  pageActive.value = true
+  void loginLogsQuery.refetch()
+})
+
+onDeactivated(() => {
+  pageActive.value = false
+})
 </script>

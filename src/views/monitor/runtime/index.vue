@@ -93,9 +93,10 @@ import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const pageActive = ref(true)
 const runtimeQuery = useTenantQuery<RuntimeStatus | null>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-runtime',
   () => ({ scope: 'status' }),
   async signal => {
@@ -193,4 +194,14 @@ const redisStatusText = computed(() => {
 async function fetchRuntime(): Promise<void> {
   await runtimeQuery.refetch({ throwOnError: true })
 }
+
+onActivated(() => {
+  if (pageActive.value) return
+  pageActive.value = true
+  void runtimeQuery.refetch()
+})
+
+onDeactivated(() => {
+  pageActive.value = false
+})
 </script>

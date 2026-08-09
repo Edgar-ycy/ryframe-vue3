@@ -119,12 +119,12 @@ const rules = computed<FormRules>(() => ({
 }))
 
 async function handleSubmit() {
-  if (missingParams.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
-
+  if (missingParams.value || loading.value) return
   loading.value = true
   try {
+    const valid = await formRef.value?.validate().catch(() => false)
+    if (!valid) return
+
     await completePasswordReset({
       tenant_id: tenantId,
       request_id: resetRequestKey,

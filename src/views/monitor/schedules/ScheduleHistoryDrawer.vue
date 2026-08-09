@@ -103,17 +103,18 @@ const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 const queryParams = ref<ScheduleExecutionQuery>(defaultQuery())
-const activeQueryParams = ref<ScheduleExecutionQuery>({ ...queryParams.value })
+const activeQueryParams = ref<ScheduleExecutionQuery>(normalizeQueryParams(queryParams.value))
 
 const executionsQuery = useTenantQuery<PageResponse<JobScheduleExecutionRecord>>(
   () => userStore.tenantId,
   () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(props.schedule),
   MONITOR_SCHEDULE_EXECUTIONS_RESOURCE,
-  () => ({ scheduleId: props.schedule?.id, filters: { ...activeQueryParams.value } }),
+  () => ({ scheduleId: props.schedule?.id, filters: normalizeQueryParams(activeQueryParams.value) }),
   async signal => {
-    if (!props.schedule) return emptyPage(activeQueryParams.value)
-    const response = await listScheduleExecutions(props.schedule.id, { ...activeQueryParams.value }, signal)
-    return response.data ?? emptyPage(activeQueryParams.value)
+    const params = normalizeQueryParams(activeQueryParams.value)
+    if (!props.schedule) return emptyPage(params)
+    const response = await listScheduleExecutions(props.schedule.id, params, signal)
+    return response.data ?? emptyPage(params)
   },
   { refetchInterval: false },
 )
@@ -122,7 +123,7 @@ watch(
   () => [visible.value, props.schedule?.id],
   () => {
     queryParams.value = defaultQuery()
-    activeQueryParams.value = { ...queryParams.value }
+    activeQueryParams.value = normalizeQueryParams(queryParams.value)
   },
 )
 
@@ -153,8 +154,17 @@ function emptyPage(params: ScheduleExecutionQuery): PageResponse<JobScheduleExec
   }
 }
 
+function normalizeQueryParams(params: ScheduleExecutionQuery): ScheduleExecutionQuery {
+  return {
+    ...params,
+    trigger_kind: params.trigger_kind || undefined,
+    outcome: params.outcome || undefined,
+    background_job_status: params.background_job_status || undefined,
+  }
+}
+
 async function fetchData(): Promise<void> {
-  const nextParams = { ...queryParams.value }
+  const nextParams = normalizeQueryParams(queryParams.value)
   if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
     activeQueryParams.value = nextParams
     return

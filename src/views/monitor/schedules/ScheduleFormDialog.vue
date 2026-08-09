@@ -377,12 +377,18 @@ function targetLabel(target: ScheduleTargetRecord): string {
 }
 
 @media (width <= 640px) {
+  .schedule-form :deep(.el-form-item) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .schedule-form :deep(.el-form-item__label) {
     width: 100% !important;
     justify-content: flex-start;
   }
 
   .schedule-form :deep(.el-form-item__content) {
+    width: 100%;
     margin-left: 0 !important;
   }
 }

@@ -43,9 +43,10 @@ import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const pageActive = ref(true)
 const serverQuery = useTenantQuery<ServerInfo | null>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-server',
   () => ({ scope: 'overview' }),
   async signal => {
@@ -76,6 +77,16 @@ const uptimeStr = computed(() => {
   const h = Math.floor((s % 86400) / 3600)
   const m = Math.floor((s % 3600) / 60)
   return t('monitor.server.uptimeValue', { days: d, hours: h, minutes: m })
+})
+
+onActivated(() => {
+  if (pageActive.value) return
+  pageActive.value = true
+  void serverQuery.refetch()
+})
+
+onDeactivated(() => {
+  pageActive.value = false
 })
 
 </script>

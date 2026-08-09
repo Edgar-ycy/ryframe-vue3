@@ -101,6 +101,7 @@ import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const pageActive = ref(true)
 
 interface CacheSnapshot {
   commands: Record<string, string>
@@ -109,7 +110,7 @@ interface CacheSnapshot {
 
 const cacheQuery = useTenantQuery<CacheSnapshot>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-cache',
   () => ({ scope: 'overview' }),
   async signal => {
@@ -164,4 +165,14 @@ function formatRatio(value?: number | null) {
 async function fetchData(): Promise<void> {
   await cacheQuery.refetch({ throwOnError: true })
 }
+
+onActivated(() => {
+  if (pageActive.value) return
+  pageActive.value = true
+  void cacheQuery.refetch()
+})
+
+onDeactivated(() => {
+  pageActive.value = false
+})
 </script>

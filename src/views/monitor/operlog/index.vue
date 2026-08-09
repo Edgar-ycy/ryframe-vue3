@@ -115,6 +115,7 @@ import { useUserStore } from '@/stores/user'
 const { t } = useI18n()
 const dateRange = ref<[string, string] | []>([])
 const userStore = useUserStore()
+const pageActive = ref(true)
 const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
 
 const queryParams = ref<OperLogQuery>({
@@ -124,7 +125,7 @@ const activeQueryParams = ref<OperLogQuery>({ ...queryParams.value })
 
 const operationLogsQuery = useTenantQuery<PageResponse<OperLogRecord>>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-operation-logs',
   () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
   async signal => {
@@ -195,4 +196,14 @@ function handleDetail(row: OperLogRecord): void {
 function formatDate(value: string | null | undefined): string {
   return value ? formatLocalizedDate(value) : '—'
 }
+
+onActivated(() => {
+  if (pageActive.value) return
+  pageActive.value = true
+  void operationLogsQuery.refetch()
+})
+
+onDeactivated(() => {
+  pageActive.value = false
+})
 </script>

@@ -14,6 +14,7 @@ type Translate = (key: string, params?: Record<string, unknown>) => string
 
 export function useOnlineManagement(t: Translate) {
   const userStore = useUserStore()
+  const pageActive = ref(true)
   const queryParams = ref<OnlineUserQuery>({
     page: 1,
     page_size: 10,
@@ -24,7 +25,7 @@ export function useOnlineManagement(t: Translate) {
 
   const onlineUsersQuery = useTenantQuery<PageResponse<OnlineUserRecord>>(
     () => userStore.tenantId,
-    () => userStore.sessionStatus === 'authenticated',
+    () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     'monitor-online-users',
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
     async signal => {
@@ -96,6 +97,16 @@ export function useOnlineManagement(t: Translate) {
     await logoutMutation.mutateAsync(row)
     await onlineUsersQuery.refetch({ throwOnError: true })
   }
+
+  onActivated(() => {
+    if (pageActive.value) return
+    pageActive.value = true
+    void onlineUsersQuery.refetch()
+  })
+
+  onDeactivated(() => {
+    pageActive.value = false
+  })
 
   return {
     fetchData,

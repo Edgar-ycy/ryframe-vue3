@@ -70,9 +70,10 @@ import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const pageActive = ref(true)
 const poolQuery = useTenantQuery<DbPoolInfo | null>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated',
+  () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-db-pool',
   () => ({ scope: 'status' }),
   async signal => {
@@ -101,4 +102,14 @@ function formatTime(value?: string) {
 async function fetchData(): Promise<void> {
   await poolQuery.refetch({ throwOnError: true })
 }
+
+onActivated(() => {
+  if (pageActive.value) return
+  pageActive.value = true
+  void poolQuery.refetch()
+})
+
+onDeactivated(() => {
+  pageActive.value = false
+})
 </script>

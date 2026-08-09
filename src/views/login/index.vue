@@ -137,11 +137,12 @@ async function refreshCaptcha() {
 }
 
 const handleLogin = async () => {
-  const valid = await loginFormRef.value?.validate().catch(() => false)
-  if (!valid) return
-
+  if (loading.value) return
   loading.value = true
   try {
+    const valid = await loginFormRef.value?.validate().catch(() => false)
+    if (!valid) return
+
     await userStore.login(
       loginForm.value.username,
       loginForm.value.password,
@@ -153,7 +154,8 @@ const handleLogin = async () => {
     ElMessage.success(t('account.signInSuccess'))
     const redirect = resolveLoginRedirect(route.query.redirect)
     await router.replace(resolveAccessibleRoute(redirect))
-  } catch {
+  } catch (error) {
+    ElMessage.error(error instanceof Error && error.message ? error.message : t('shell.http.requestFailed'))
     if (captchaEnabled.value) {
       await refreshCaptcha()
     }

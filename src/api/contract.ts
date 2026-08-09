@@ -22,11 +22,23 @@ export type OperationJsonBody<Name extends keyof operations> =
     ? Body
     : never
 
+type JsonContent<Response> = Response extends {
+  content: { 'application/json': infer Body }
+}
+  ? Body
+  : never
+
+type ResponseAt<Responses, Status extends PropertyKey> = Status extends keyof Responses
+  ? Responses[Status]
+  : never
+
 export type OperationJsonResponse<Name extends keyof operations> =
-  ApiOperation<Name> extends {
-    responses: { 200: { content: { 'application/json': infer Response } } }
-  }
-    ? Response
+  ApiOperation<Name> extends { responses: infer Responses }
+    ? JsonContent<
+      | ResponseAt<Responses, 200>
+      | ResponseAt<Responses, 201>
+      | ResponseAt<Responses, 202>
+    >
     : never
 
 export type OperationData<Name extends keyof operations> =

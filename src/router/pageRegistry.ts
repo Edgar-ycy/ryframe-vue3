@@ -29,6 +29,8 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
   'monitor.server': { path: '/monitor/server', component: () => import('@/views/monitor/server/index.vue') },
   'monitor.cache': { path: '/monitor/cache', component: () => import('@/views/monitor/cache/index.vue') },
   'monitor.db-pool': { path: '/monitor/db-pool', component: () => import('@/views/monitor/db-pool/index.vue') },
+  'monitor.jobs': { path: '/monitor/jobs', component: () => import('@/views/monitor/jobs/index.vue') },
+  'monitor.schedules': { path: '/monitor/schedules', component: () => import('@/views/monitor/schedules/index.vue') },
 
   'tools.gen': { path: '/tools/gen', component: () => import('@/views/tools/gen/index.vue') },
 }
@@ -54,6 +56,8 @@ export const permissionRouteKeys: Readonly<Record<string, string>> = Object.free
   'monitor:server:list': 'monitor.server',
   'monitor:cache:list': 'monitor.cache',
   'monitor:db-pool:list': 'monitor.db-pool',
+  'monitor:job:list': 'monitor.jobs',
+  'monitor:schedule:list': 'monitor.schedules',
   'tools:gen:list': 'tools.gen',
 })
 

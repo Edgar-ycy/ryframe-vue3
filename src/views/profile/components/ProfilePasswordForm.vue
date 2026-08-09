@@ -3,7 +3,7 @@
     <template #header>
       <span>{{ t('account.changePassword') }}</span>
     </template>
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" class="profile-password-form">
       <el-form-item :label="t('account.currentPassword')" prop="old_password">
         <el-input
           v-model="form.old_password"
@@ -118,3 +118,24 @@ function passwordValidationMessage(password: string): string | undefined {
   return undefined
 }
 </script>
+
+<style scoped>
+@media (width <= 480px) {
+  .profile-password-form :deep(.el-form-item) {
+    display: block;
+  }
+
+  .profile-password-form :deep(.el-form-item__label) {
+    display: block;
+    width: 100% !important;
+    height: auto;
+    padding: 0 0 6px;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .profile-password-form :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
+}
+</style>

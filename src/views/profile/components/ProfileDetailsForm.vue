@@ -28,7 +28,7 @@
         <span v-else>-</span>
       </el-form-item>
       <el-form-item :label="t('profile.createdAt')">
-        <el-input :model-value="profile.created_at || '-'" disabled />
+        <el-input :model-value="formatCreatedAt(profile.created_at)" disabled />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :loading="submitting" @click="submit">{{ t('common.save') }}</el-button>
@@ -44,6 +44,7 @@ import {
   type ProfileUpdateParams,
 } from '@/api/modules/auth'
 import { useProfileDetailsMutation } from '../useProfileMutations'
+import { formatLocalizedDate } from '@/i18n'
 
 const props = defineProps<{
   profile: ProfileInfo
@@ -90,6 +91,16 @@ async function submit(): Promise<void> {
     phone: form.value.phone || undefined,
   }
   await saveProfile(payload)
+}
+
+function formatCreatedAt(value: string | null | undefined): string {
+  if (!value) return '—'
+  try {
+    return formatLocalizedDate(value)
+  }
+  catch {
+    return value
+  }
 }
 </script>
 

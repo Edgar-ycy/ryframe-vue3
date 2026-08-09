@@ -1,7 +1,7 @@
 <template>
   <main class="workspace">
     <header class="workspace-header">
-      <div>
+      <div class="workspace-header__content">
         <p class="workspace-label">{{ t('dashboard.workspace') }}</p>
         <h1>{{ t('dashboard.greeting', { name: displayName }) }}</h1>
         <p class="workspace-subtitle">{{ t('dashboard.subtitle') }}</p>
@@ -113,23 +113,30 @@ function openLink(path: string): void {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
   max-width: 1120px;
   margin: 0 auto;
   padding: 4px 0 24px;
   border-bottom: 1px solid var(--border-color-base);
 }
 
+.workspace-header__content {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .workspace-header :deep(.session-tag.el-tag--success) {
-  color: #166534;
-  background-color: #f0fdf4;
-  border-color: #86efac;
+  flex: 0 0 auto;
+  color: var(--el-color-success-dark-2);
+  background-color: var(--el-color-success-light-9);
+  border-color: var(--el-color-success-light-5);
   transition: none;
 }
 
 :global(html.dark) .workspace-header :deep(.session-tag.el-tag--success) {
-  color: #bbf7d0;
-  background-color: #14532d;
-  border-color: #16a34a;
+  color: var(--el-color-success-light-5);
+  background-color: var(--el-color-success-dark-2);
+  border-color: var(--el-color-success);
 }
 
 .workspace-label {
@@ -146,9 +153,11 @@ p {
 }
 
 h1 {
+  min-width: 0;
   margin-bottom: 8px;
   font-size: 28px;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .workspace-subtitle,
@@ -280,6 +289,14 @@ h2 {
   .account-summary dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 0;
+  }
+
+  .workspace-header {
+    flex-wrap: wrap;
+  }
+
+  .workspace-header :deep(.session-tag.el-tag--success) {
+    margin-left: 0;
   }
 
   .account-summary dl > div:nth-child(3) {

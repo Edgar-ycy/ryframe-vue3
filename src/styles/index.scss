@@ -366,6 +366,97 @@ a:hover {
   }
 }
 
+/* ====== 内容卡片与监控页面 ====== */
+.content-card {
+  margin-top: 12px;
+}
+
+.monitor-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.monitor-page__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.monitor-page__alert {
+  margin-bottom: 12px;
+}
+
+.monitor-metric-card {
+  margin-bottom: 12px;
+}
+
+.monitor-metric-card--compact {
+  height: 128px;
+}
+
+.monitor-metric-card--tall {
+  height: 148px;
+}
+
+.monitor-metric-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
+.monitor-metric-value {
+  color: var(--el-text-color-primary);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.monitor-metric-value--compact {
+  font-size: 24px;
+}
+
+.monitor-metric-value--time {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.monitor-metric-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 14px;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.monitor-metric-endpoint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitor-section-card {
+  margin-bottom: 12px;
+}
+
+.monitor-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  h2 {
+    margin: 0;
+    color: var(--el-text-color-primary);
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
 /* ====== 错误页面 ====== */
 .error-page {
   height: 100vh;
@@ -586,6 +677,10 @@ a:hover {
       margin-bottom: 12px;
       font-size: 16px;
     }
+  }
+
+  .content-card {
+    margin-top: 8px;
   }
 
   .search-bar {

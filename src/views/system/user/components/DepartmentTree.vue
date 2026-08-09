@@ -149,7 +149,7 @@ function selectNode(node: DepartmentOption): void {
   }
 
   :deep(.el-tree-node.is-current > .el-tree-node__content) {
-    background-color: rgb(99 102 241 / 10%);
+    background-color: var(--el-color-primary-light-9);
     color: var(--color-primary);
     font-weight: 500;
   }

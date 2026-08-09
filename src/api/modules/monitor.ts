@@ -1,6 +1,7 @@
 import request, { requestText } from '@/shared/http/client'
 import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
+import { requestOperation } from '@/api/operationRequest'
 import { stripPagination, type PageResponse } from '@/shared/http/types'
 
 // ========== 服务器监控 (/monitor) ==========
@@ -111,4 +112,101 @@ export function listOnlineUser(params: OnlineUserQuery, signal?: AbortSignal) {
 /** 强制指定会话下线。 */
 export function forceLogout(sid: string) {
   return request({ url: `/system/online/${encodeURIComponent(sid)}`, method: 'delete' })
+}
+
+// ========== 后台任务 (/monitor/jobs) ==========
+
+export type BackgroundJobQuery = OperationQuery<'get_monitor_jobs'>
+export type BackgroundJobRecord = ApiSchema<'BackgroundJobVo'>
+export type BackgroundJobStats = ApiSchema<'BackgroundJobQueueStats'>
+
+/** 分页获取当前租户可见的后台任务。 */
+export function listBackgroundJobs(params: BackgroundJobQuery, signal?: AbortSignal) {
+  return requestOperation('get_monitor_jobs', { params, signal })
+}
+
+/** 获取当前租户可见的后台任务统计。 */
+export function getBackgroundJobStats(signal?: AbortSignal) {
+  return requestOperation('get_monitor_jobs_stats', { signal })
+}
+
+/** 重新投递指定死信任务。 */
+export function retryBackgroundJob(id: string) {
+  return requestOperation('post_monitor_jobs_by_id_retry', { path: { id } })
+}
+
+// ========== 定时任务 (/monitor/schedules) ==========
+
+export type ScheduleQuery = OperationQuery<'get_monitor_schedules'>
+export type ScheduleExecutionQuery = OperationQuery<'get_monitor_schedules_by_id_executions'>
+export type CreateScheduleBody = OperationJsonBody<'post_monitor_schedules'>
+export type UpdateScheduleBody = OperationJsonBody<'put_monitor_schedules_by_id'>
+export type UpdateScheduleStatusBody = OperationJsonBody<'put_monitor_schedules_by_id_status'>
+export type ScheduleVersionBody = OperationJsonBody<'delete_monitor_schedules_by_id'>
+export type SchedulePreviewBody = OperationJsonBody<'post_monitor_schedules_preview'>
+export type JobScheduleRecord = ApiSchema<'JobScheduleVo'>
+export type JobScheduleExecutionRecord = ApiSchema<'JobScheduleExecutionVo'>
+export type JobSchedulePreview = ApiSchema<'JobSchedulePreview'>
+export type JobScheduleOccurrence = ApiSchema<'JobScheduleOccurrence'>
+export type ScheduleTargetRecord = ApiSchema<'ScheduleTargetVo'>
+
+/** 获取当前租户可见的调度目标目录。 */
+export function listScheduleTargets(signal?: AbortSignal) {
+  return requestOperation('get_monitor_schedules_targets', { signal })
+}
+
+/** 预览未来五次执行时间。 */
+export function previewSchedule(data: SchedulePreviewBody, signal?: AbortSignal) {
+  return requestOperation('post_monitor_schedules_preview', { data, signal })
+}
+
+/** 分页获取定时任务。 */
+export function listSchedules(params: ScheduleQuery, signal?: AbortSignal) {
+  return requestOperation('get_monitor_schedules', { params, signal })
+}
+
+/** 获取定时任务详情。 */
+export function getSchedule(id: string, signal?: AbortSignal) {
+  return requestOperation('get_monitor_schedules_by_id', { path: { id }, signal })
+}
+
+/** 创建定时任务。 */
+export function createSchedule(data: CreateScheduleBody) {
+  return requestOperation('post_monitor_schedules', { data })
+}
+
+/** 更新定时任务。 */
+export function updateSchedule(id: string, data: UpdateScheduleBody) {
+  return requestOperation('put_monitor_schedules_by_id', { path: { id }, data })
+}
+
+/** 更新定时任务启停状态。 */
+export function updateScheduleStatus(id: string, data: UpdateScheduleStatusBody) {
+  return requestOperation('put_monitor_schedules_by_id_status', { path: { id }, data })
+}
+
+/** 软删除定时任务。 */
+export function removeSchedule(id: string, data: ScheduleVersionBody) {
+  return requestOperation('delete_monitor_schedules_by_id', { path: { id }, data })
+}
+
+/** 立即执行定时任务，幂等键由调用方按一次用户操作生成。 */
+export function runSchedule(id: string, idempotencyKey: string) {
+  return requestOperation('post_monitor_schedules_by_id_run', {
+    path: { id },
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+}
+
+/** 分页获取定时任务执行历史。 */
+export function listScheduleExecutions(
+  id: string,
+  params: ScheduleExecutionQuery,
+  signal?: AbortSignal,
+) {
+  return requestOperation('get_monitor_schedules_by_id_executions', {
+    path: { id },
+    params,
+    signal,
+  })
 }

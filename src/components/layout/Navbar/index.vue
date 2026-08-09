@@ -19,7 +19,9 @@
 
     <div class="navbar-right">
       <el-tag class="tenant-tag" effect="plain" type="info">
-        {{ userStore.tenantName || userStore.tenantId }} · {{ userStore.tenantId }}
+        <span class="tenant-tag__value" :title="`${userStore.tenantName || userStore.tenantId} · ${userStore.tenantId}`">
+          {{ userStore.tenantName || userStore.tenantId }} · {{ userStore.tenantId }}
+        </span>
       </el-tag>
       <el-button
         text
@@ -132,20 +134,26 @@ async function handleCommand(command: string): Promise<void> {
 </script>
 
 <style scoped>
-.tenant-tag.el-tag--info {
-  color: #374151;
-  background-color: #f3f4f6;
-  border-color: #d1d5db;
-  transition: none;
+.tenant-tag {
+  display: inline-flex;
+  min-width: 0;
+  max-width: min(28vw, 320px);
 }
 
-:global(html.dark) .tenant-tag.el-tag--info {
-  color: #cbd5e1;
-  background-color: #1e293b;
-  border-color: #475569;
+.tenant-tag__value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .theme-switch {
-  --el-switch-on-color: #409eff;
+  --el-switch-on-color: var(--color-primary);
+}
+
+@media (width <= 480px) {
+  .tenant-tag {
+    max-width: 88px;
+  }
 }
 </style>

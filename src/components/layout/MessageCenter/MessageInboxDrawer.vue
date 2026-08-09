@@ -15,7 +15,7 @@
       </span>
       <div class="message-center__toolbar-actions">
         <el-button text :loading="loading" @click="emit('refresh')">{{ t('common.refresh') }}</el-button>
-        <el-button text :disabled="unreadCount === 0 || mutating" @click="emit('mark-all-read')">
+        <el-button text :loading="mutating" :disabled="unreadCount === 0 || mutating" @click="emit('mark-all-read')">
           {{ t('messageCenter.markAllRead') }}
         </el-button>
       </div>
@@ -26,6 +26,7 @@
       <el-button
         type="danger"
         link
+        :loading="mutating"
         :disabled="selectedIds.length === 0 || mutating"
         @click="emit('delete-selected')"
       >
@@ -74,6 +75,7 @@
                   <el-button
                     link
                     type="danger"
+                    :loading="mutating"
                     :disabled="mutating"
                     @click="emit('delete-one', message)"
                   >

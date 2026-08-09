@@ -15,7 +15,7 @@
       </el-form>
     </el-card>
 
-    <el-card shadow="never" style="margin-top:12px">
+    <el-card shadow="never" class="content-card">
       <template #header>
         <div class="card-header">
           <span>{{ t('system.config.list') }}</span>

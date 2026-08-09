@@ -29,7 +29,7 @@
       </el-form>
     </el-card>
 
-    <el-card shadow="never" style="margin-top:12px">
+    <el-card shadow="never" class="content-card">
       <template #header>
         <div class="card-header">
           <span>{{ t('monitor.operationLog.title') }}</span>
@@ -49,7 +49,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="cost_time" :label="t('monitor.operationLog.duration')" align="center" />
-        <el-table-column prop="oper_time" :label="t('monitor.operationLog.operationTime')" />
+        <el-table-column :label="t('monitor.operationLog.operationTime')" min-width="160">
+          <template #default="{ row }">{{ formatDate(row.oper_time) }}</template>
+        </el-table-column>
         <el-table-column :label="t('monitor.operationLog.operation')" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-perm="'system:operlog:list'" type="primary" link icon="View" @click="handleDetail(row)">{{ t('monitor.operationLog.details') }}</el-button>
@@ -84,7 +86,7 @@
           <div style="max-height:150px;overflow-y:auto;word-break:break-all;font-size:12px;font-family:monospace">{{ detailRow.json_result }}</div>
         </el-descriptions-item>
         <el-descriptions-item :label="t('monitor.operationLog.duration')">{{ t('monitor.operationLog.durationValue', { value: detailRow.cost_time }) }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.operationLog.operationTime')">{{ detailRow.oper_time }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.operationLog.operationTime')">{{ formatDate(detailRow.oper_time) }}</el-descriptions-item>
         <el-descriptions-item v-if="detailRow.error_msg" :label="t('monitor.operationLog.errorMessage')" :span="2">
           <span style="color:var(--el-color-danger)">{{ detailRow.error_msg }}</span>
         </el-descriptions-item>
@@ -98,6 +100,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { formatLocalizedDate } from '@/i18n'
 import {
   exportOperLog,
   listOperLog,
@@ -187,5 +190,9 @@ const detailRow = ref<Partial<OperLogRecord>>({})
 function handleDetail(row: OperLogRecord): void {
   detailRow.value = row
   detailVisible.value = true
+}
+
+function formatDate(value: string | null | undefined): string {
+  return value ? formatLocalizedDate(value) : '—'
 }
 </script>

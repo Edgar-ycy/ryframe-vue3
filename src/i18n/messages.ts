@@ -1,5 +1,6 @@
 import { accountMessages } from './catalog/account'
 import { monitorToolsMessages } from './catalog/monitor-tools'
+import { monitorJobsMessages } from './catalog/monitor-jobs'
 import { shellMessages } from './catalog/shell'
 import { systemMessages } from './catalog/system'
 
@@ -7,6 +8,7 @@ export const messageCatalogs = [
   shellMessages,
   accountMessages,
   monitorToolsMessages,
+  monitorJobsMessages,
   systemMessages,
 ] as const
 
@@ -15,7 +17,12 @@ export const messages = {
     ...shellMessages['zh-CN'],
     ...accountMessages['zh-CN'],
     ...monitorToolsMessages['zh-CN'],
+    ...monitorJobsMessages['zh-CN'],
     ...systemMessages['zh-CN'],
+    monitor: {
+      ...monitorToolsMessages['zh-CN'].monitor,
+      ...monitorJobsMessages['zh-CN'].monitor,
+    },
     common: {
       add: '新增',
       cancel: '取消',
@@ -51,6 +58,8 @@ export const messages = {
       cache: '缓存监控',
       runtime: '运行监控',
       dbPool: '数据库连接池',
+      jobs: '后台任务',
+      schedules: '定时任务',
       tools: '工具管理',
       generator: '代码生成',
       tenant: '租户管理',
@@ -168,7 +177,12 @@ export const messages = {
     ...shellMessages['en-US'],
     ...accountMessages['en-US'],
     ...monitorToolsMessages['en-US'],
+    ...monitorJobsMessages['en-US'],
     ...systemMessages['en-US'],
+    monitor: {
+      ...monitorToolsMessages['en-US'].monitor,
+      ...monitorJobsMessages['en-US'].monitor,
+    },
     common: {
       add: 'Add',
       cancel: 'Cancel',
@@ -204,6 +218,8 @@ export const messages = {
       cache: 'Cache monitor',
       runtime: 'Runtime monitor',
       dbPool: 'Database pool',
+      jobs: 'Background jobs',
+      schedules: 'Schedules',
       tools: 'Tools',
       generator: 'Code generator',
       tenant: 'Tenant management',
@@ -341,6 +357,8 @@ export const navigationTitleKeys: Record<string, string> = {
   '缓存监控': 'cache',
   '运行监控': 'runtime',
   '数据库连接池': 'dbPool',
+  '后台任务': 'jobs',
+  '定时任务': 'schedules',
   '工具管理': 'tools',
   '代码生成': 'generator',
   '租户管理': 'tenant',

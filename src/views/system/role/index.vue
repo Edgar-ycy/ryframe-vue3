@@ -35,7 +35,7 @@
       </el-form>
     </el-card>
 
-    <el-card shadow="never" class="table-card">
+    <el-card shadow="never" class="content-card">
       <template #header>
         <div class="card-header">
           <span>{{ t('system.role.list') }}</span>
@@ -195,9 +195,3 @@ const {
   total,
 } = useRoleManagement()
 </script>
-
-<style scoped>
-.table-card {
-  margin-top: 12px;
-}
-</style>

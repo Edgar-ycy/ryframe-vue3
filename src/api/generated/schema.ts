@@ -531,6 +531,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/monitor/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_schedules"];
+        put?: never;
+        post: operations["post_monitor_schedules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/schedules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_monitor_schedules_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/schedules/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_schedules_targets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/schedules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_schedules_by_id"];
+        put: operations["put_monitor_schedules_by_id"];
+        post?: never;
+        delete: operations["delete_monitor_schedules_by_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/schedules/{id}/executions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_schedules_by_id_executions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/schedules/{id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_monitor_schedules_by_id_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/schedules/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["put_monitor_schedules_by_id_status"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/monitor/server": {
         parameters: {
             query?: never;
@@ -1769,6 +1881,26 @@ export interface components {
             request_id: string;
         };
         /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_JobScheduleExecutionVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_JobScheduleExecutionVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_JobScheduleVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_JobScheduleVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
         ApiPageResponse_LoginInfoVo: {
             /** Format: int32 */
             code: number;
@@ -1978,7 +2110,12 @@ export interface components {
                 /** Format: int32 */
                 max_attempts: number;
                 /** Format: int32 */
+                max_runtime_seconds?: number | null;
+                /** Format: int32 */
                 priority: number;
+                schedule_id?: string | null;
+                /** Format: date-time */
+                scheduled_for?: string | null;
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
@@ -2255,6 +2392,95 @@ export interface components {
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_JobScheduleExecutionVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                background_job_id?: string | null;
+                background_job_status?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                detail?: string | null;
+                handler_key: string;
+                id: string;
+                outcome: string;
+                schedule_id: string;
+                schedule_name: string;
+                /** Format: date-time */
+                scheduled_for: string;
+                trigger_kind: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_JobSchedulePreview: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                occurrences: components["schemas"]["JobScheduleOccurrence"][];
+                timezone: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_JobScheduleVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                concurrency_policy: string;
+                /** Format: date-time */
+                created_at: string;
+                cron_expression: string;
+                enabled: boolean;
+                handler_key: string;
+                id: string;
+                /** Format: date-time */
+                last_run_at?: string | null;
+                /** Format: int32 */
+                max_runtime_seconds: number;
+                misfire_policy: string;
+                name: string;
+                /** Format: date-time */
+                next_run_at?: string | null;
+                timezone: string;
+                /** Format: date-time */
+                updated_at: string;
+                /** Format: int64 */
+                version: number;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -2994,6 +3220,29 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_ScheduleTargetVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                available: boolean;
+                display_name: string;
+                handler_key: string;
+                job_type: string;
+                scope: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_String: {
             /**
              * Format: int32
@@ -3160,6 +3409,8 @@ export interface components {
              * @description 每页记录数；上限由 `pagination.max_page_size` 决定。
              */
             page_size?: number | null;
+            /** @description 按来源计划 ID 精确过滤。 */
+            schedule_id?: string | null;
             /** @description 按状态精确过滤：pending、running、succeeded 或 dead。 */
             status?: string | null;
         };
@@ -3198,7 +3449,12 @@ export interface components {
             /** Format: int32 */
             max_attempts: number;
             /** Format: int32 */
+            max_runtime_seconds?: number | null;
+            /** Format: int32 */
             priority: number;
+            schedule_id?: string | null;
+            /** Format: date-time */
+            scheduled_for?: string | null;
             status: string;
             /** Format: date-time */
             updated_at: string;
@@ -3301,6 +3557,8 @@ export interface components {
             tenant_id: string;
             token: string;
         };
+        /** @enum {string} */
+        ConcurrencyPolicyDto: "forbid" | "allow";
         /** @description 参数配置响应。 */
         ConfigVo: {
             /** Format: date-time */
@@ -3379,6 +3637,17 @@ export interface components {
             name: string;
             /** Format: int32 */
             sort?: number | null;
+        };
+        CreateScheduleRequest: {
+            concurrency_policy?: components["schemas"]["ConcurrencyPolicyDto"];
+            cron_expression: string;
+            enabled?: boolean;
+            handler_key: string;
+            /** Format: int32 */
+            max_runtime_seconds?: number;
+            misfire_policy?: components["schemas"]["MisfirePolicyDto"];
+            name: string;
+            timezone: string;
         };
         CreateTenantDto: {
             admin_password: string;
@@ -3523,6 +3792,52 @@ export interface components {
             content: string;
             path: string;
         };
+        JobScheduleExecutionVo: {
+            background_job_id?: string | null;
+            background_job_status?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            detail?: string | null;
+            handler_key: string;
+            id: string;
+            outcome: string;
+            schedule_id: string;
+            schedule_name: string;
+            /** Format: date-time */
+            scheduled_for: string;
+            trigger_kind: string;
+        };
+        JobScheduleOccurrence: {
+            schedule_time: string;
+            /** Format: date-time */
+            utc: string;
+        };
+        JobSchedulePreview: {
+            occurrences: components["schemas"]["JobScheduleOccurrence"][];
+            timezone: string;
+        };
+        JobScheduleVo: {
+            concurrency_policy: string;
+            /** Format: date-time */
+            created_at: string;
+            cron_expression: string;
+            enabled: boolean;
+            handler_key: string;
+            id: string;
+            /** Format: date-time */
+            last_run_at?: string | null;
+            /** Format: int32 */
+            max_runtime_seconds: number;
+            misfire_policy: string;
+            name: string;
+            /** Format: date-time */
+            next_run_at?: string | null;
+            timezone: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: int64 */
+            version: number;
+        };
         LivenessResponse: {
             status: string;
         };
@@ -3633,6 +3948,8 @@ export interface components {
             title: string;
             topic: string;
         };
+        /** @enum {string} */
+        MisfirePolicyDto: "skip" | "fire_once";
         /** @description 通知公告响应。 */
         NoticeVo: {
             content_markdown: string;
@@ -3725,7 +4042,12 @@ export interface components {
                 /** Format: int32 */
                 max_attempts: number;
                 /** Format: int32 */
+                max_runtime_seconds?: number | null;
+                /** Format: int32 */
                 priority: number;
+                schedule_id?: string | null;
+                /** Format: date-time */
+                scheduled_for?: string | null;
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
@@ -3798,6 +4120,69 @@ export interface components {
                 name: string;
                 remark?: string | null;
                 status: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_JobScheduleExecutionVo: {
+            items: {
+                background_job_id?: string | null;
+                background_job_status?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                detail?: string | null;
+                handler_key: string;
+                id: string;
+                outcome: string;
+                schedule_id: string;
+                schedule_name: string;
+                /** Format: date-time */
+                scheduled_for: string;
+                trigger_kind: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_JobScheduleVo: {
+            items: {
+                concurrency_policy: string;
+                /** Format: date-time */
+                created_at: string;
+                cron_expression: string;
+                enabled: boolean;
+                handler_key: string;
+                id: string;
+                /** Format: date-time */
+                last_run_at?: string | null;
+                /** Format: int32 */
+                max_runtime_seconds: number;
+                misfire_policy: string;
+                name: string;
+                /** Format: date-time */
+                next_run_at?: string | null;
+                timezone: string;
+                /** Format: date-time */
+                updated_at: string;
+                /** Format: int64 */
+                version: number;
             }[];
             /** Format: int64 */
             max_page_size: number;
@@ -4249,6 +4634,39 @@ export interface components {
             connected: boolean;
             endpoint?: string | null;
         };
+        ScheduleExecutionPageQuery: {
+            background_job_status?: string | null;
+            outcome?: string | null;
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+            trigger_kind?: string | null;
+        };
+        SchedulePageQuery: {
+            enabled?: boolean | null;
+            handler_key?: string | null;
+            name?: string | null;
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+        };
+        SchedulePreviewRequest: {
+            cron_expression: string;
+            timezone: string;
+        };
+        ScheduleTargetVo: {
+            available: boolean;
+            display_name: string;
+            handler_key: string;
+            job_type: string;
+            scope: string;
+        };
+        ScheduleVersionRequest: {
+            /** Format: int64 */
+            version: number;
+        };
         ServerInfo: {
             /** @description CPU 核心数。 */
             cpu_cores: number;
@@ -4381,6 +4799,24 @@ export interface components {
             /** Format: int32 */
             sort?: number | null;
             status: string;
+        };
+        UpdateScheduleRequest: {
+            concurrency_policy: components["schemas"]["ConcurrencyPolicyDto"];
+            cron_expression: string;
+            enabled: boolean;
+            handler_key: string;
+            /** Format: int32 */
+            max_runtime_seconds: number;
+            misfire_policy: components["schemas"]["MisfirePolicyDto"];
+            name: string;
+            timezone: string;
+            /** Format: int64 */
+            version: number;
+        };
+        UpdateScheduleStatusRequest: {
+            enabled: boolean;
+            /** Format: int64 */
+            version: number;
         };
         UpdateTenantDto: {
             domain?: string | null;
@@ -5291,6 +5727,8 @@ export interface operations {
                 page?: number;
                 /** @description 每页记录数；上限由 `pagination.max_page_size` 决定。 */
                 page_size?: number;
+                /** @description 按来源计划 ID 精确过滤。 */
+                schedule_id?: string;
                 /** @description 按任务类型精确过滤。 */
                 job_type?: string;
                 /** @description 按状态精确过滤：pending、running、succeeded 或 dead。 */
@@ -5414,6 +5852,329 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponse_RuntimeStatus"];
                 };
+            };
+        };
+    };
+    get_monitor_schedules: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                name?: string;
+                handler_key?: string;
+                enabled?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 定时任务列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_JobScheduleVo"];
+                };
+            };
+        };
+    };
+    post_monitor_schedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description 定时任务已创建 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_JobScheduleVo"];
+                };
+            };
+            /** @description 输入无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 目标范围越权 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 启用数量超过租户限制 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_monitor_schedules_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchedulePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description 未来五次执行时间 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_JobSchedulePreview"];
+                };
+            };
+            /** @description Cron 表达式或时区无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_monitor_schedules_targets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前租户可见的调度目标 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_ScheduleTargetVo"];
+                };
+            };
+        };
+    };
+    get_monitor_schedules_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 定时任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 定时任务详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_JobScheduleVo"];
+                };
+            };
+            /** @description 记录不可见或不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_monitor_schedules_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 定时任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description 定时任务已更新 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_JobScheduleVo"];
+                };
+            };
+            /** @description 记录不可见或不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 版本冲突或启用数量超限 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_monitor_schedules_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 定时任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description 定时任务已软删除 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description 版本冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_monitor_schedules_by_id_executions: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                trigger_kind?: string;
+                outcome?: string;
+                background_job_status?: string;
+            };
+            header?: never;
+            path: {
+                /** @description 定时任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 计划执行历史 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_JobScheduleExecutionVo"];
+                };
+            };
+        };
+    };
+    post_monitor_schedules_by_id_run: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 立即执行幂等键 */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description 定时任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 任务已入队 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_JobScheduleExecutionVo"];
+                };
+            };
+            /** @description 禁止并发冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_monitor_schedules_by_id_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 定时任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateScheduleStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description 启停状态已更新 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_JobScheduleVo"];
+                };
+            };
+            /** @description 版本冲突或启用数量超限 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

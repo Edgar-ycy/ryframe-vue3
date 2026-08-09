@@ -106,7 +106,7 @@
               </el-button>
             </div>
           </template>
-          <el-table v-loading="dataLoading" :data="dataList" border stripe>
+          <el-table v-if="currentType" v-loading="dataLoading" :data="dataList" border stripe>
             <el-table-column prop="label" :label="t('system.dict.label')" min-width="120" show-overflow-tooltip />
             <el-table-column prop="value" :label="t('system.dict.value')" />
             <el-table-column prop="sort" :label="t('system.common.sort')" align="center" />
@@ -143,7 +143,7 @@
               </template>
             </el-table-column>
           </el-table>
-          <el-empty v-if="!currentType" :description="t('system.dict.selectType')" />
+          <el-empty v-else :description="t('system.dict.selectType')" />
         </el-card>
       </div>
     </div>

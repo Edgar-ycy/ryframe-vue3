@@ -4,6 +4,10 @@
  */
 
 export const operationManifest = {
+  "delete_monitor_schedules_by_id": {
+    "method": "delete",
+    "path": "/monitor/schedules/{id}"
+  },
   "delete_system_configs_by_id": {
     "method": "delete",
     "path": "/system/configs/{id}"
@@ -127,6 +131,22 @@ export const operationManifest = {
   "get_monitor_runtime": {
     "method": "get",
     "path": "/monitor/runtime"
+  },
+  "get_monitor_schedules": {
+    "method": "get",
+    "path": "/monitor/schedules"
+  },
+  "get_monitor_schedules_by_id": {
+    "method": "get",
+    "path": "/monitor/schedules/{id}"
+  },
+  "get_monitor_schedules_by_id_executions": {
+    "method": "get",
+    "path": "/monitor/schedules/{id}/executions"
+  },
+  "get_monitor_schedules_targets": {
+    "method": "get",
+    "path": "/monitor/schedules/targets"
   },
   "get_monitor_server": {
     "method": "get",
@@ -316,6 +336,18 @@ export const operationManifest = {
     "method": "post",
     "path": "/monitor/jobs/{id}/retry"
   },
+  "post_monitor_schedules": {
+    "method": "post",
+    "path": "/monitor/schedules"
+  },
+  "post_monitor_schedules_by_id_run": {
+    "method": "post",
+    "path": "/monitor/schedules/{id}/run"
+  },
+  "post_monitor_schedules_preview": {
+    "method": "post",
+    "path": "/monitor/schedules/preview"
+  },
   "post_platform_tenants": {
     "method": "post",
     "path": "/platform/tenants"
@@ -439,6 +471,14 @@ export const operationManifest = {
   "put_auth_profile_password": {
     "method": "put",
     "path": "/auth/profile/password"
+  },
+  "put_monitor_schedules_by_id": {
+    "method": "put",
+    "path": "/monitor/schedules/{id}"
+  },
+  "put_monitor_schedules_by_id_status": {
+    "method": "put",
+    "path": "/monitor/schedules/{id}/status"
   },
   "put_platform_tenants_by_tenant_id": {
     "method": "put",

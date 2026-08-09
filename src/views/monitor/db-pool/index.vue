@@ -1,40 +1,41 @@
 <template>
-  <div class="db-pool-page">
+  <div v-loading="loading && !poolInfo" class="page-container monitor-page">
+    <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="monitor-page__alert" />
     <el-row :gutter="12">
       <el-col :xs="24" :sm="12" :lg="8">
-        <el-card shadow="never" class="metric-card">
-          <div class="metric-header">
+        <el-card shadow="never" class="monitor-metric-card monitor-metric-card--compact">
+          <div class="monitor-metric-header">
             <el-icon><Connection /></el-icon>
             <span>{{ t('monitor.dbPool.connectionStatus') }}</span>
           </div>
-          <el-tag :type="poolInfo?.status === 'connected' ? 'success' : 'danger'" size="large">
-            {{ poolInfo?.status === 'connected' ? t('monitor.dbPool.connected') : t('monitor.dbPool.disconnected') }}
+          <el-tag :type="poolStatusType" size="large">
+            {{ poolStatusText }}
           </el-tag>
         </el-card>
       </el-col>
 
       <el-col :xs="24" :sm="12" :lg="8">
-        <el-card shadow="never" class="metric-card">
-          <div class="metric-header">
+        <el-card shadow="never" class="monitor-metric-card monitor-metric-card--compact">
+          <div class="monitor-metric-header">
             <el-icon><DataLine /></el-icon>
             <span>{{ t('monitor.dbPool.activeConnections') }}</span>
           </div>
-          <div class="metric-value">{{ poolInfo?.active_connections ?? '-' }}</div>
+          <div class="monitor-metric-value">{{ poolInfo?.active_connections ?? '—' }}</div>
         </el-card>
       </el-col>
 
       <el-col :xs="24" :sm="24" :lg="8">
-        <el-card shadow="never" class="metric-card">
-          <div class="metric-header">
+        <el-card shadow="never" class="monitor-metric-card monitor-metric-card--compact">
+          <div class="monitor-metric-header">
             <el-icon><Clock /></el-icon>
             <span>{{ t('monitor.dbPool.checkTime') }}</span>
           </div>
-          <div class="metric-time">{{ formatTime(poolInfo?.timestamp) }}</div>
+          <div class="monitor-metric-value monitor-metric-value--time">{{ formatTime(poolInfo?.timestamp) }}</div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card shadow="never" class="section-card">
+    <el-card shadow="never" class="monitor-section-card">
       <template #header>
         <div class="card-header">
           <span>{{ t('monitor.dbPool.title') }}</span>
@@ -44,7 +45,7 @@
 
       <el-descriptions :column="1" border>
         <el-descriptions-item :label="t('monitor.dbPool.currentStatus')">
-          <el-tag :type="poolInfo?.status === 'connected' ? 'success' : 'danger'">
+          <el-tag :type="poolStatusType">
             {{ poolStatusText }}
           </el-tag>
         </el-descriptions-item>
@@ -63,6 +64,7 @@
 import { Clock, Connection, DataLine } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { getDbPool, type DbPoolInfo } from '@/api/modules/monitor'
+import { formatLocalizedDate } from '@/i18n'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -80,65 +82,23 @@ const poolQuery = useTenantQuery<DbPoolInfo | null>(
 )
 const loading = computed(() => poolQuery.isFetching.value)
 const poolInfo = computed(() => poolQuery.data.value ?? null)
+const errorMessage = computed(() => poolQuery.error.value?.message ?? '')
+const poolStatusType = computed(() => {
+  if (!poolInfo.value?.status) return 'info'
+  return poolInfo.value.status === 'connected' ? 'success' : 'danger'
+})
 const poolStatusText = computed(() => {
-  if (!poolInfo.value?.status) return '-'
+  if (!poolInfo.value?.status) return '—'
   return poolInfo.value.status === 'connected'
     ? t('monitor.dbPool.connected')
     : t('monitor.dbPool.disconnected')
 })
 
 function formatTime(value?: string) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+  return value ? formatLocalizedDate(value) : '—'
 }
 
 async function fetchData(): Promise<void> {
   await poolQuery.refetch({ throwOnError: true })
 }
 </script>
-
-<style scoped>
-.db-pool-page {
-  padding: 12px;
-}
-
-.metric-card {
-  height: 128px;
-  margin-bottom: 12px;
-}
-
-.metric-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
-  color: var(--el-text-color-secondary);
-  font-size: 14px;
-}
-
-.metric-value {
-  font-size: 28px;
-  line-height: 1;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.metric-time {
-  font-size: 18px;
-  line-height: 1.35;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.section-card {
-  margin-top: 4px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-</style>

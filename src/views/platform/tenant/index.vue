@@ -1,54 +1,61 @@
 <template>
-  <div class="app-container">
-    <el-card>
+  <div class="page-container tenant-page">
+    <el-card shadow="never" class="tenant-card">
       <template #header>
-        <div class="header">
+        <div class="card-header">
           <span>{{ t('account.tenantManagement') }}</span>
-          <el-button v-perm="'tenant:add'" type="primary" @click="openCreate">{{ t('account.createTenant') }}</el-button>
+          <div>
+            <el-button v-perm="'tenant:add'" type="primary" icon="Plus" @click="openCreate">{{ t('account.createTenant') }}</el-button>
+          </div>
         </div>
       </template>
 
-      <el-table v-loading="loading" :data="tenants">
-        <el-table-column prop="tenant_id" :label="t('account.tenantId')" />
-        <el-table-column prop="name" :label="t('account.tenantName')" />
-        <el-table-column prop="domain" :label="t('account.domain')" />
-        <el-table-column prop="expire_at" :label="t('account.expiry')" />
-        <el-table-column :label="t('account.quota')" min-width="260">
-          <template #default="{ row }">
-            {{ t('account.tenantQuota', {
-              users: row.max_users,
-              roles: row.max_roles,
-              storage: row.max_storage_mb,
-              requests: row.max_requests_per_min,
-            }) }}
-          </template>
-        </el-table-column>
-        <el-table-column :label="t('account.status')" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'">
-              {{ row.status === '1' ? t('account.enabled') : t('account.disabled') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column :label="t('account.actions')" width="180">
-          <template #default="{ row }">
-            <el-button v-perm="'tenant:edit'" link @click="openEdit(row)">{{ t('account.editTenant') }}</el-button>
-            <el-button
-              v-perm="'tenant:status'"
-              link
-              :disabled="row.tenant_id === 'system'"
-              :loading="togglingTenantId === row.tenant_id"
-              @click="toggle(row)"
-            >
-              {{ row.status === '1' ? t('account.disabled') : t('account.enabled') }}
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="table-scroll">
+        <el-table v-loading="loading" :data="tenants" border stripe class="tenant-table">
+          <el-table-column prop="tenant_id" :label="t('account.tenantId')" min-width="130" show-overflow-tooltip />
+          <el-table-column prop="name" :label="t('account.tenantName')" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="domain" :label="t('account.domain')" min-width="160" show-overflow-tooltip />
+          <el-table-column :label="t('account.expiry')" min-width="160" show-overflow-tooltip>
+            <template #default="{ row }">{{ formatExpiry(row.expire_at) }}</template>
+          </el-table-column>
+          <el-table-column :label="t('account.quota')" min-width="260" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ t('account.tenantQuota', {
+                users: row.max_users,
+                roles: row.max_roles,
+                storage: row.max_storage_mb,
+                requests: row.max_requests_per_min,
+              }) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('account.status')" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.status === '1' ? 'success' : 'danger'">
+                {{ row.status === '1' ? t('account.enabled') : t('account.disabled') }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('account.actions')" width="180" fixed="right" align="center">
+            <template #default="{ row }">
+              <el-button v-perm="'tenant:edit'" type="primary" link icon="Edit" :disabled="statusUpdating" @click="openEdit(row)">{{ t('account.editTenant') }}</el-button>
+              <el-button
+                v-perm="'tenant:status'"
+                :type="row.status === '1' ? 'warning' : 'success'"
+                link
+                :disabled="row.tenant_id === 'system' || statusUpdating"
+                :loading="togglingTenantId === row.tenant_id"
+                @click="toggle(row)"
+              >
+                {{ row.status === '1' ? t('account.disabled') : t('account.enabled') }}
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </el-card>
 
-    <el-dialog v-model="visible" :title="editingTenantId ? t('account.editTenant') : t('account.createTenant')" width="520px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog v-model="visible" :title="editingTenantId ? t('account.editTenant') : t('account.createTenant')" width="520px" class="tenant-dialog">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" class="tenant-form">
         <el-form-item :label="t('account.tenantId')" prop="tenant_id">
           <el-input v-model="form.tenant_id" :disabled="!!editingTenantId" />
         </el-form-item>
@@ -121,6 +128,8 @@ import {
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { requireOperationData } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
+import { formatLocalizedDate } from '@/i18n'
+import { confirmAction } from '@/utils/confirmAction'
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -218,6 +227,7 @@ const statusMutation = useTenantMutation<void, ToggleTenantCommand>(
 const togglingTenantId = computed(() => (
   statusMutation.pending.value ? statusMutation.variables.value?.tenantId ?? null : null
 ))
+const statusUpdating = computed(() => statusMutation.pending.value)
 
 function resetForm() {
   Object.assign(form, {
@@ -297,11 +307,31 @@ async function toggle(row: Tenant) {
     ElMessage.warning(t('account.systemTenantCannotDisable'))
     return
   }
+  const nextStatus: TenantStatus = row.status === '1' ? '0' : '1'
+  const confirmed = await confirmAction(
+    t('account.tenantStatusConfirm', {
+      name: row.name || row.tenant_id,
+      status: nextStatus === '1' ? t('account.enabled') : t('account.disabled'),
+    }),
+    t('account.tenantStatusConfirmTitle'),
+    { type: 'warning' },
+  )
+  if (!confirmed || statusMutation.pending.value) return
   await statusMutation.mutateAsync({
     tenantId: row.tenant_id,
-    status: row.status === '1' ? '0' : '1',
+    status: nextStatus,
   })
   await tenantsQuery.refetch({ throwOnError: true })
+}
+
+function formatExpiry(value: string | null | undefined): string {
+  if (!value) return '—'
+  try {
+    return formatLocalizedDate(value)
+  }
+  catch {
+    return value
+  }
 }
 
 function passwordValidationMessage(password: string): string | undefined {
@@ -329,9 +359,44 @@ function passwordValidationMessage(password: string): string | undefined {
 </script>
 
 <style scoped>
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.tenant-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tenant-table {
+  min-width: 1120px;
+}
+
+@media (width <= 480px) {
+  .tenant-form :deep(.el-form-item) {
+    display: block;
+  }
+
+  .tenant-form :deep(.el-form-item__label) {
+    display: block;
+    width: 100% !important;
+    height: auto;
+    padding: 0 0 6px;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .tenant-form :deep(.el-form-item__content) {
+    display: flex;
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .tenant-form :deep(.el-input),
+  .tenant-form :deep(.el-input-number),
+  .tenant-form :deep(.el-date-editor) {
+    width: 100% !important;
+  }
 }
 </style>

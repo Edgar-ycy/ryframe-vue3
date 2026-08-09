@@ -29,7 +29,7 @@
       </el-form>
     </el-card>
 
-    <el-card shadow="never" style="margin-top:12px">
+    <el-card shadow="never" class="content-card">
       <template #header>
         <div class="card-header">
           <span>{{ t('monitor.loginLog.title') }}</span>
@@ -52,7 +52,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="msg" :label="t('monitor.loginLog.message')" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="login_time" :label="t('monitor.loginLog.loginTime')" />
+        <el-table-column :label="t('monitor.loginLog.loginTime')" min-width="160">
+          <template #default="{ row }">{{ formatDate(row.login_time) }}</template>
+        </el-table-column>
         <el-table-column :label="t('monitor.loginLog.operation')" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-perm="'system:logininfor:list'" type="primary" link icon="View" @click="handleDetail(row)">{{ t('monitor.loginLog.details') }}</el-button>
@@ -79,7 +81,7 @@
         <el-descriptions-item :label="t('monitor.loginLog.loginLocation')">{{ detailRow.login_location }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.loginLog.browser')">{{ detailRow.browser }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.loginLog.operatingSystem')">{{ detailRow.os }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.loginTime')" :span="2">{{ detailRow.login_time }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.loginTime')" :span="2">{{ formatDate(detailRow.login_time) }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.loginLog.message')" :span="2">{{ detailRow.msg }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -91,6 +93,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { formatLocalizedDate } from '@/i18n'
 import {
   exportLoginLog,
   listLoginLog,
@@ -180,5 +183,9 @@ const detailRow = ref<Partial<LoginLogRecord>>({})
 function handleDetail(row: LoginLogRecord): void {
   detailRow.value = row
   detailVisible.value = true
+}
+
+function formatDate(value: string | null | undefined): string {
+  return value ? formatLocalizedDate(value) : '—'
 }
 </script>

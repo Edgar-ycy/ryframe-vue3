@@ -98,22 +98,28 @@ async function performRefresh(refreshEpoch: number): Promise<string> {
 
 async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise<string> {
   const challenge = await ensureCsrfToken(forceCsrf)
-  assertSessionEpoch(refreshEpoch)
-  const response = await refreshTokenApi(challenge)
-  assertSessionEpoch(refreshEpoch)
-  const auth = response.data
-  if (!auth?.access_token || !auth.user_info) {
-    throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
-      status: 401,
-      kind: 'invalid_response',
-    })
+  try {
+    assertSessionEpoch(refreshEpoch)
+    const response = await refreshTokenApi(challenge)
+    assertSessionEpoch(refreshEpoch)
+    const auth = response.data
+    if (!auth?.access_token || !auth.user_info) {
+      throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
+        status: 401,
+        kind: 'invalid_response',
+      })
+    }
+    const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.user_info)
+    if (scopeChanged) await synchronizeAuthorizationUi({ skipAuthRefresh: true })
+    else await ensureRoutesAfterAuthentication(true)
+    assertSessionEpoch(refreshEpoch)
+    return auth.access_token
   }
-  const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.user_info)
-  if (scopeChanged) await synchronizeAuthorizationUi({ skipAuthRefresh: true })
-  else await ensureRoutesAfterAuthentication(true)
-  assertSessionEpoch(refreshEpoch)
-  invalidateCsrfToken()
-  return auth.access_token
+  finally {
+    // 后端在刷新失败时会清理认证 Cookie；本次双提交挑战也必须同步作废，
+    // 避免登录或后续刷新继续复用已经失去 Cookie 配对的内存令牌。
+    invalidateCsrfToken()
+  }
 }
 
 function userStoreToInfo(user: ReturnType<typeof useUserStore>): UserInfo {

@@ -62,6 +62,14 @@ function sourceUrl(metadata) {
   return `https://raw.githubusercontent.com/${metadata.backend_repository}/${metadata.backend_commit}/${metadata.openapi_path}`
 }
 
+function contentsApiUrl(metadata) {
+  const sourcePath = metadata.openapi_path
+    .split('/')
+    .map(segment => encodeURIComponent(segment))
+    .join('/')
+  return `https://api.github.com/repos/${metadata.backend_repository}/contents/${sourcePath}?ref=${metadata.backend_commit}`
+}
+
 function validateMetadata(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('openapi/source.json must contain an object')
@@ -138,17 +146,40 @@ function validateContract(document, label) {
   requirePermissionCatalog(document['x-ryframe-permission-catalog'], label)
 }
 
-async function readRemoteSource(value) {
-  const response = await fetch(value, { redirect: 'error' })
+async function fetchRemoteSource(value, headers) {
+  const response = await fetch(value, { headers, redirect: 'error' })
   if (!response.ok) {
     throw new Error(`failed to fetch OpenAPI contract: ${response.status} ${response.statusText}`)
   }
   return Buffer.from(await response.arrayBuffer())
 }
 
+async function readRemoteSource(metadata) {
+  const rawUrl = sourceUrl(metadata)
+  try {
+    return await fetchRemoteSource(rawUrl)
+  }
+  catch (rawError) {
+    const apiUrl = contentsApiUrl(metadata)
+    try {
+      return await fetchRemoteSource(apiUrl, {
+        Accept: 'application/vnd.github.raw+json',
+        'User-Agent': 'ryframe-api-contract-check',
+        'X-GitHub-Api-Version': '2022-11-28',
+      })
+    }
+    catch (apiError) {
+      throw new Error(
+        `failed to fetch pinned OpenAPI contract from GitHub Raw (${rawError.message})`
+        + ` or Contents API (${apiError.message})`,
+      )
+    }
+  }
+}
+
 async function readPinnedSource(metadata) {
   const backendWorktree = process.env.RYFRAME_BACKEND_WORKTREE?.trim()
-  if (!backendWorktree) return readRemoteSource(sourceUrl(metadata))
+  if (!backendWorktree) return readRemoteSource(metadata)
 
   const worktree = path.resolve(backendWorktree)
   const objectName = `${metadata.backend_commit}:${metadata.openapi_path}`
@@ -241,7 +272,7 @@ async function verifyUpstream() {
   const metadata = await readMetadata()
   const local = await verifyLocal(metadata)
   const upstream = parseContract(
-    await readRemoteSource(sourceUrl(metadata)),
+    await readRemoteSource(metadata),
     sourceUrl(metadata),
   )
   const upstreamBytes = Buffer.from(canonicalJson(upstream), 'utf8')

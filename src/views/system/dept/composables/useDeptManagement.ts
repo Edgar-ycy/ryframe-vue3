@@ -91,10 +91,10 @@ export function useDeptManagement(t: Translate) {
     },
   )
 
-  const loading = computed(() => departmentsQuery.isFetching.value)
-  const tableData = computed(() => departmentsQuery.data.value ?? [])
+  const loading = departmentsQuery.isFetching
+  const tableData = departmentsQuery.data
   const deptOptions = tableData
-  const detailLoading = computed(() => detailQuery.isFetching.value)
+  const detailLoading = detailQuery.isFetching
   const submitLoading = saveMutation.pending
   const deletingId = computed<Id | null>(() => (
     deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null

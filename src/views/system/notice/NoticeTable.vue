@@ -56,12 +56,14 @@
       </el-table-column>
     </el-table>
     <el-pagination
-      v-model:current-page="page"
-      v-model:page-size="limit"
+      :current-page="props.page ?? 1"
+      :page-size="props.limit ?? 10"
       :total="total"
       :page-sizes="[10, 20, 50, 100]"
       layout="total, sizes, prev, pager, next, jumper"
       background
+      @update:current-page="emit('update:page', $event)"
+      @update:page-size="emit('update:limit', $event)"
       @change="emit('pagination-change')"
     />
   </el-card>
@@ -93,12 +95,4 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const page = computed({
-  get: () => props.page ?? 1,
-  set: value => emit('update:page', value),
-})
-const limit = computed({
-  get: () => props.limit ?? 10,
-  set: value => emit('update:limit', value),
-})
 </script>

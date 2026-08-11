@@ -29,8 +29,8 @@
       v-model:page="queryParams.page"
       :limit="queryParams.page_size"
       :loading="loading"
-      :table-data="tableData"
-      :total="total"
+      :table-data="tableResponse?.items ?? []"
+      :total="tableResponse?.total ?? 0"
       :publishing-id="publishingId"
       :deleting-id="deletingId"
       @add="handleAdd"
@@ -80,9 +80,8 @@ const {
   rules,
   setFormRef,
   submitLoading,
-  tableData,
+  tableResponse,
   t,
-  total,
   handleSubmit,
 } = useNoticeManagement()
 </script>

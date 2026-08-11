@@ -1,9 +1,8 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue'
+import { ref, type Ref } from 'vue'
 
 export interface IconSelection {
   dialogVisible: Ref<boolean>
   pendingIcon: Ref<string>
-  selectedIcon: ComputedRef<string>
   closeDialog(): void
   confirmSelection(): void
   openDialog(): void
@@ -17,10 +16,8 @@ export function useIconSelection(
 ): IconSelection {
   const dialogVisible = ref(false)
   const pendingIcon = ref('')
-  const selectedIcon = computed(() => getModelValue() ?? '')
-
   function openDialog(): void {
-    pendingIcon.value = selectedIcon.value
+    pendingIcon.value = getModelValue() ?? ''
     dialogVisible.value = true
   }
 
@@ -43,7 +40,6 @@ export function useIconSelection(
     dialogVisible,
     openDialog,
     pendingIcon,
-    selectedIcon,
     selectIcon,
   }
 }

@@ -1,7 +1,7 @@
 <template>
   <el-badge
-    :value="badgeValue"
-    :hidden="unreadCount === 0"
+    :value="badgeValue()"
+    :hidden="(unreadData ?? 0) === 0"
     :max="99"
     class="message-center-trigger"
   >
@@ -21,10 +21,10 @@
     v-model:visible="visible"
     v-model:selected-ids="selectedIds"
     :connection-status="messageStore.connectionStatus"
-    :connection-label="connectionLabel"
-    :messages="messages"
-    :unread-count="unreadCount"
-    :loading="loading"
+    :connection-label="connectionLabel()"
+    :messages="inboxData?.records ?? []"
+    :unread-count="unreadData ?? 0"
+    :loading="inboxLoading || unreadLoading"
     :mutating="mutating"
     @drawer-open="handleDrawerOpen"
     @refresh="refresh"
@@ -37,7 +37,7 @@
   <MessageDetailDialog
     v-if="detailVisible"
     v-model:visible="detailVisible"
-    :message="detailMessage"
+    :message="detailMessage()"
     :mutating="mutating"
     @delete-one="deleteOne"
   />
@@ -59,24 +59,35 @@ const inboxQuery = {
   unread_only: false,
 } satisfies MessageInboxQuery
 const messageCenter = useMessageCenterQueries(inboxQuery)
-const { messages, unreadCount, loading, mutating } = messageCenter
+const { inboxData, unreadData, inboxLoading, unreadLoading, mutating } = messageCenter
 const visible = ref(false)
 const selectedIds = ref<string[]>([])
 const detailVisible = ref(false)
 const detailSeed = ref<MessageRecord>()
 const { t } = useI18n()
 
-const badgeValue = computed(() => unreadCount.value > 99 ? '99+' : unreadCount.value)
-const connectionLabel = computed(() => ({
-  connecting: t('messageCenter.connecting'),
-  connected: t('messageCenter.connected'),
-  retrying: t('messageCenter.retrying'),
-  disconnected: t('messageCenter.disconnected'),
-})[messageStore.connectionStatus] ?? t('messageCenter.disconnected'))
-const detailMessage = computed(() => {
+function badgeValue(): string | number {
+  const unreadCount = unreadData.value ?? 0
+  return unreadCount > 99 ? '99+' : unreadCount
+}
+
+function connectionLabel(): string {
+  return {
+    connecting: t('messageCenter.connecting'),
+    connected: t('messageCenter.connected'),
+    retrying: t('messageCenter.retrying'),
+    disconnected: t('messageCenter.disconnected'),
+  }[messageStore.connectionStatus] ?? t('messageCenter.disconnected')
+}
+
+function currentMessages(): MessageRecord[] {
+  return inboxData.value?.records ?? []
+}
+
+function detailMessage(): MessageRecord | undefined {
   const id = detailSeed.value?.id
-  return messages.value.find(message => message.id === id) ?? detailSeed.value
-})
+  return currentMessages().find(message => message.id === id) ?? detailSeed.value
+}
 
 const {
   deleteOne,
@@ -92,14 +103,14 @@ const {
   selectedIds,
 })
 
-function acknowledgeReceivedMessages(records = messages.value): void {
+function acknowledgeReceivedMessages(records = currentMessages()): void {
   messageStore.queueAcknowledgement(
     records.filter(message => !message.acked_at).map(message => message.id),
   )
 }
 
 watch(
-  messages,
+  currentMessages,
   (records) => {
     const ids = records.map(message => message.id)
     messageStore.pruneDeletedMessages(ids)

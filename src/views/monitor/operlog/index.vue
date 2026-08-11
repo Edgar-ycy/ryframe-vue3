@@ -36,7 +36,7 @@
           <el-button v-perm="'system:operlog:export'" icon="Download" :loading="exportLoading" @click="handleExport">{{ t('monitor.operationLog.export') }}</el-button>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <el-table v-loading="loading" :data="operationLogPage?.items ?? []" border stripe>
         <el-table-column prop="id" :label="t('monitor.operationLog.id')" width="170" align="center" />
         <el-table-column prop="title" :label="t('monitor.operationLog.operationModule')" min-width="120" show-overflow-tooltip />
         <el-table-column prop="business_type" :label="t('monitor.operationLog.businessType')" />
@@ -50,7 +50,7 @@
         </el-table-column>
         <el-table-column prop="cost_time" :label="t('monitor.operationLog.duration')" align="center" />
         <el-table-column :label="t('monitor.operationLog.operationTime')" min-width="160">
-          <template #default="{ row }">{{ formatDate(row.oper_time) }}</template>
+          <template #default="{ row }">{{ formatOptionalLocalizedDate(row.oper_time) }}</template>
         </el-table-column>
         <el-table-column :label="t('monitor.operationLog.operation')" fixed="right" align="center">
           <template #default="{ row }">
@@ -61,7 +61,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total" :page-sizes="[10, 20, 50, 100]"
+        :total="operationLogPage?.total ?? 0" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
       />
@@ -86,7 +86,7 @@
           <div style="max-height:150px;overflow-y:auto;word-break:break-all;font-size:12px;font-family:monospace">{{ detailRow.json_result }}</div>
         </el-descriptions-item>
         <el-descriptions-item :label="t('monitor.operationLog.duration')">{{ t('monitor.operationLog.durationValue', { value: detailRow.cost_time }) }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.operationLog.operationTime')">{{ formatDate(detailRow.oper_time) }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.operationLog.operationTime')">{{ formatOptionalLocalizedDate(detailRow.oper_time) }}</el-descriptions-item>
         <el-descriptions-item v-if="detailRow.error_msg" :label="t('monitor.operationLog.errorMessage')" :span="2">
           <span style="color:var(--el-color-danger)">{{ detailRow.error_msg }}</span>
         </el-descriptions-item>
@@ -100,7 +100,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { formatLocalizedDate } from '@/i18n'
+import { formatOptionalLocalizedDate } from '@/i18n'
 import {
   exportOperLog,
   listOperLog,
@@ -108,7 +108,8 @@ import {
   type OperLogRecord,
 } from '@/api/modules/monitor'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
-import type { PageResponse } from '@/shared/http/types'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
+import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -130,20 +131,12 @@ const operationLogsQuery = useTenantQuery<PageResponse<OperLogRecord>>(
   () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
   async signal => {
     const response = await listOperLog({ ...activeQueryParams.value }, signal)
-    return response.data ?? {
-      items: [],
-      page: activeQueryParams.value.page ?? 1,
-      page_size: activeQueryParams.value.page_size ?? 10,
-      total: 0,
-      total_pages: 0,
-      max_page_size: activeQueryParams.value.page_size ?? 10,
-    }
+    return response.data ?? emptyPageResponse<OperLogRecord>(activeQueryParams.value)
   },
 )
 
-const loading = computed(() => operationLogsQuery.isFetching.value)
-const tableData = computed(() => operationLogsQuery.data.value?.items ?? [])
-const total = computed(() => operationLogsQuery.data.value?.total ?? 0)
+const loading = operationLogsQuery.isFetching
+const operationLogPage = operationLogsQuery.data
 
 function handleExport() {
   return exportAndDownload(
@@ -193,17 +186,5 @@ function handleDetail(row: OperLogRecord): void {
   detailVisible.value = true
 }
 
-function formatDate(value: string | null | undefined): string {
-  return value ? formatLocalizedDate(value) : '—'
-}
-
-onActivated(() => {
-  if (pageActive.value) return
-  pageActive.value = true
-  void operationLogsQuery.refetch()
-})
-
-onDeactivated(() => {
-  pageActive.value = false
-})
+useKeepAlivePageActive(pageActive, () => operationLogsQuery.refetch())
 </script>

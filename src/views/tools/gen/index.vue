@@ -21,7 +21,7 @@
           <span>{{ t('tools.generator.title') }}</span>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
         <el-table-column prop="table_name" :label="t('tools.generator.tableName')" min-width="160" show-overflow-tooltip />
         <el-table-column prop="comment" :label="t('tools.generator.tableDescription')" min-width="200" show-overflow-tooltip />
         <el-table-column :label="t('tools.generator.columnCount')" width="100" align="center">
@@ -55,7 +55,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total" :page-sizes="[10, 20, 50, 100]"
+        :total="tableResponse?.total ?? 0" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
       />
@@ -158,7 +158,6 @@ const {
   selectedTable,
   setGenerateFormRef,
   submitGeneration,
-  tableData,
-  total,
+  tableResponse,
 } = useGeneratorManagement(t)
 </script>

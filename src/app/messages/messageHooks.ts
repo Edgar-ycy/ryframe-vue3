@@ -58,21 +58,25 @@ export function useMessageCenterQueries(
   query: MaybeRefOrGetter<MessageInboxQuery>,
 ) {
   const userStore = useUserStore()
-  const enabled = computed(() => (
-    userStore.sessionStatus === 'authenticated'
-    && Boolean(userStore.tenantId)
-    && Boolean(userStore.userId)
-  ))
-  const userId = computed(() => String(userStore.userId || ''))
+
+  function isMessageSessionActive(): boolean {
+    return userStore.sessionStatus === 'authenticated'
+      && Boolean(userStore.tenantId)
+      && Boolean(userStore.userId)
+  }
+
+  function currentUserId(): string {
+    return String(userStore.userId || '')
+  }
 
   const inboxQuery = useTenantQuery<MessageInboxPage>(
     () => userStore.tenantId,
-    enabled,
+    isMessageSessionActive,
     MESSAGE_INBOX_RESOURCE,
-    () => messageInboxKeyParams(userId.value, toValue(query)),
+    () => messageInboxKeyParams(currentUserId(), toValue(query)),
     async (signal) => {
       const tenantId = userStore.tenantId
-      const requestedUserId = userId.value
+      const requestedUserId = currentUserId()
       const requestedQuery = toValue(query)
       return fetchMessageInboxPage(
         queryClient,
@@ -86,9 +90,9 @@ export function useMessageCenterQueries(
   )
   const unreadQuery = useTenantQuery<number>(
     () => userStore.tenantId,
-    enabled,
+    isMessageSessionActive,
     MESSAGE_UNREAD_RESOURCE,
-    () => ({ user_id: userId.value }),
+    () => ({ user_id: currentUserId() }),
     async (signal) => {
       const response = await getUnreadMessageCount(signal)
       if (response.data === undefined) {
@@ -198,9 +202,10 @@ export function useMessageCenterQueries(
   return {
     inboxQuery,
     unreadQuery,
-    messages: computed(() => inboxQuery.data.value?.records ?? []),
-    unreadCount: computed(() => unreadQuery.data.value ?? 0),
-    loading: computed(() => inboxQuery.isFetching.value || unreadQuery.isFetching.value),
+    inboxData: inboxQuery.data,
+    unreadData: unreadQuery.data,
+    inboxLoading: inboxQuery.isFetching,
+    unreadLoading: unreadQuery.isFetching,
     mutating: computed(() => (
       acknowledgeMutation.isPending.value
       || markReadMutation.isPending.value

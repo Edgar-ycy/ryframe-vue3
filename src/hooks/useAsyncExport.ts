@@ -159,9 +159,7 @@ export function useAsyncExport(tenantId: MaybeRefOrGetter<string | undefined>) {
 
   watch(
     () => toValue(tenantId),
-    (current, previous) => {
-      if (current !== previous) cancel()
-    },
+    () => cancel(),
     { flush: 'sync' },
   )
   if (getCurrentScope()) onScopeDispose(cancel)

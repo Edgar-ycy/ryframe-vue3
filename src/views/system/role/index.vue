@@ -55,7 +55,7 @@
         </div>
       </template>
 
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
         <el-table-column prop="name" :label="t('system.role.name')" min-width="130" show-overflow-tooltip />
         <el-table-column prop="code" :label="t('system.role.code')" />
@@ -128,10 +128,10 @@
       </el-table>
 
       <el-pagination
-        v-if="total > 0"
+        v-if="(tableResponse?.total ?? 0) > 0"
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total"
+        :total="tableResponse?.total ?? 0"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         background
@@ -147,13 +147,13 @@
     <RolePermissionDialog
       v-model="permissionDialogVisible"
       :role="permissionRole"
-      :permission-tree="permissionTree"
+      :permission-tree="permissionTree ?? []"
       @saved="fetchData"
     />
     <RoleDataScopeDialog
       v-model="dataScopeDialogVisible"
       :role="dataScopeRole"
-      :dept-tree="deptTree"
+      :dept-tree="deptTree ?? []"
       @saved="fetchData"
     />
   </div>
@@ -191,7 +191,6 @@ const {
   permissionTree,
   queryParams,
   roleDialogVisible,
-  tableData,
-  total,
+  tableResponse,
 } = useRoleManagement()
 </script>

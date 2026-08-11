@@ -57,9 +57,8 @@ export function useNoticeManagement() {
       return requireOperationData(response)
     },
   )
-  const loading = computed(() => noticesQuery.isFetching.value)
-  const tableData = computed(() => noticesQuery.data.value?.items ?? [])
-  const total = computed(() => noticesQuery.data.value?.total ?? 0)
+  const loading = noticesQuery.isFetching
+  const tableResponse = noticesQuery.data
 
   async function fetchData() {
     const nextParams = { ...queryParams.value }
@@ -285,8 +284,7 @@ export function useNoticeManagement() {
     rules,
     setFormRef,
     submitLoading,
-    tableData,
+    tableResponse,
     t,
-    total,
   }
 }

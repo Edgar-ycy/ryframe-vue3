@@ -19,17 +19,20 @@ export function useRoleOptions(
   const debouncedSearchText = ref('')
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
-  const params = computed(() => ({
-    q: debouncedSearchText.value || undefined,
-    limit: ROLE_OPTION_LIMIT,
-  }))
+  function currentParams() {
+    return {
+      q: debouncedSearchText.value || undefined,
+      limit: ROLE_OPTION_LIMIT,
+    }
+  }
+
   const rolesQuery = useTenantQuery<SelectOptionList>(
     () => userStore.tenantId,
     () => userStore.sessionStatus === 'authenticated' && toValue(enabled),
     'role-options',
-    () => params.value,
+    currentParams,
     async (signal) => {
-      const response = await listRoleOptions(params.value, signal)
+      const response = await listRoleOptions(currentParams(), signal)
       return response.data ?? { items: [], has_more: false }
     },
   )
@@ -62,8 +65,7 @@ export function useRoleOptions(
   onScopeDispose(resetSearch)
 
   return {
-    hasMore: computed(() => rolesQuery.data.value?.has_more ?? false),
-    loading: computed(() => rolesQuery.isFetching.value),
+    loading: rolesQuery.isFetching,
     options,
     remoteMethod,
     resetSearch,

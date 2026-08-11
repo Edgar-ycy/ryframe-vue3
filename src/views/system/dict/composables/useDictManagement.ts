@@ -10,7 +10,7 @@ import {
 } from '@/api/modules/dict'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { translate } from '@/i18n'
-import type { Id, PageResponse } from '@/shared/http/types'
+import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -18,7 +18,7 @@ import { confirmAction } from '@/utils/confirmAction'
 
 export function useDictManagement() {
   const typePage = ref<DictTypeQuery>({ page: 1, page_size: 10 })
-  const currentType = ref<DictTypeRecord | null>(null)
+  const currentTypeId = ref<Id | null>(null)
   const typeDialogVisible = ref(false)
   const editingType = ref<DictTypeRecord | null>(null)
   const dataDialogVisible = ref(false)
@@ -35,16 +35,21 @@ export function useDictManagement() {
     () => ({ scope: 'list', filters: { ...typePage.value } }),
     async signal => {
       const response = await listDictType({ ...typePage.value }, signal)
-      return response.data ?? {
-        items: [],
-        page: typePage.value.page ?? 1,
-        page_size: typePage.value.page_size ?? 10,
-        total: 0,
-        total_pages: 0,
-        max_page_size: typePage.value.page_size ?? 10,
-      }
+      return response.data ?? emptyPageResponse<DictTypeRecord>(typePage.value)
     },
   )
+  const typePageResponse = typesQuery.data
+  const currentType = computed<DictTypeRecord | null>({
+    get: () => {
+      const id = currentTypeId.value
+      return id === null
+        ? null
+        : typePageResponse.value?.items.find(item => item.id === id) ?? null
+    },
+    set: value => {
+      currentTypeId.value = value?.id ?? null
+    },
+  })
   const dataQuery = useTenantQuery<DictDataRecord[]>(
     () => userStore.tenantId,
     () => authenticated() && currentType.value !== null,
@@ -58,16 +63,9 @@ export function useDictManagement() {
     },
   )
 
-  const typeList = computed(() => typesQuery.data.value?.items ?? [])
-  const typeTotal = computed(() => typesQuery.data.value?.total ?? 0)
-  const typeLoading = computed(() => typesQuery.isFetching.value)
-  const dataList = computed(() => dataQuery.data.value ?? [])
-  const dataLoading = computed(() => dataQuery.isFetching.value)
-
-  watch(typeList, items => {
-    if (!currentType.value) return
-    currentType.value = items.find(item => item.id === currentType.value?.id) ?? null
-  })
+  const typeLoading = typesQuery.isFetching
+  const dataList = dataQuery.data
+  const dataLoading = dataQuery.isFetching
 
   const deleteTypeMutation = useTenantMutation<void, DictTypeRecord>(
     () => userStore.tenantId,
@@ -105,7 +103,7 @@ export function useDictManagement() {
   ))
 
   function clearCurrentType(): void {
-    currentType.value = null
+    currentTypeId.value = null
   }
 
   async function fetchTypeList(): Promise<void> {
@@ -157,7 +155,7 @@ export function useDictManagement() {
 
     await deleteTypeMutation.mutateAsync(dictType)
     if (currentType.value?.id === dictType.id) clearCurrentType()
-    if (typeList.value.length === 1 && (typePage.value.page ?? 1) > 1) {
+    if ((typePageResponse.value?.items.length ?? 0) === 1 && (typePage.value.page ?? 1) > 1) {
       typePage.value.page = (typePage.value.page ?? 1) - 1
     }
     await fetchTypeList()
@@ -216,9 +214,8 @@ export function useDictManagement() {
     handleTypeClick,
     handleTypeSaved,
     typeDialogVisible,
-    typeList,
     typeLoading,
     typePage,
-    typeTotal,
+    typePageResponse,
   }
 }

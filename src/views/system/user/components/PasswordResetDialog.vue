@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="t('system.user.passwordResetTitle')" width="420px" @closed="reset">
+  <el-dialog v-model="visible" :title="t('system.user.passwordResetTitle')" width="420px" @open="reset" @closed="reset">
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="t('system.user.reason')" prop="reason">
         <el-input
@@ -46,21 +46,13 @@ import { useUserStore } from '@/stores/user'
 const { t } = useI18n()
 
 const props = defineProps<{
-  modelValue: boolean
   userId: Id | null
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-}>()
-
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
+const visible = defineModel<boolean>({ required: true })
 const formRef = ref<FormInstance>()
 const form = ref({ reason: '' })
-const result = ref<PasswordResetRequestResult | null>(null)
+const resetLink = ref('')
 const userStore = useUserStore()
 const resetMutation = useTenantMutation<
   PasswordResetRequestResult,
@@ -75,32 +67,21 @@ const resetMutation = useTenantMutation<
       return response.data
     },
     onSuccess: data => {
-      result.value = data
+      resetLink.value = new URL(data.reset_url, window.location.origin).toString()
       ElMessage.success(t('system.user.resetRequested'))
     },
   },
 )
 const submitting = resetMutation.pending
-const resetLink = computed(() => {
-  const url = result.value?.reset_url
-  return url ? new URL(url, window.location.origin).toString() : ''
-})
 const rules = computed<FormRules>(() => ({
   reason: [{ required: true, message: t('system.user.resetReasonRequired'), trigger: 'blur' }],
 }))
 
 function reset() {
   form.value.reason = ''
-  result.value = null
+  resetLink.value = ''
   formRef.value?.clearValidate()
 }
-
-watch(
-  () => props.modelValue,
-  open => {
-    if (open) reset()
-  },
-)
 
 async function submit() {
   if (submitting.value) return

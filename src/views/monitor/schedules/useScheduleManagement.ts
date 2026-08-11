@@ -13,8 +13,9 @@ import {
   type ScheduleTargetRecord,
   type UpdateScheduleBody,
 } from '@/api/modules/monitor'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import type { PageResponse } from '@/shared/http/types'
+import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { invalidateTenantResource, queryClient, tenantQueryKey } from '@/shared/query/client'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
@@ -36,18 +37,6 @@ type RunSchedulePayload = { row: JobScheduleRecord, idempotencyKey: string }
 const BUILT_IN_TARGET_LABELS: Record<string, string> = {
   'system.export_result_cleanup': 'monitor.schedules.targetExportResultCleanup',
   'system.message_retention_cleanup': 'monitor.schedules.targetMessageRetentionCleanup',
-}
-
-function emptyPage(params: ScheduleQuery): PageResponse<JobScheduleRecord> {
-  const pageSize = params.page_size ?? 10
-  return {
-    items: [],
-    page: params.page ?? 1,
-    page_size: pageSize,
-    total: 0,
-    total_pages: 0,
-    max_page_size: pageSize,
-  }
 }
 
 function normalizeQueryParams(params: ScheduleQuery): ScheduleQuery {
@@ -101,7 +90,7 @@ export function useScheduleManagement(t: Translate) {
     async signal => {
       const params = normalizeQueryParams(activeQueryParams.value)
       const response = await listSchedules(params, signal)
-      return response.data ?? emptyPage(params)
+      return response.data ?? emptyPageResponse<JobScheduleRecord>(params)
     },
   )
   const targetsQuery = useTenantQuery<ScheduleTargetRecord[]>(
@@ -159,13 +148,13 @@ export function useScheduleManagement(t: Translate) {
     },
   )
 
-  const loading = computed(() => schedulesQuery.isFetching.value)
-  const targetLoading = computed(() => targetsQuery.isFetching.value)
-  const tableData = computed(() => schedulesQuery.data.value?.items ?? [])
-  const total = computed(() => schedulesQuery.data.value?.total ?? 0)
-  const targets = computed(() => targetsQuery.data.value ?? [])
-  const availableTargets = computed(() => targets.value.filter(target => target.available))
-  const targetsLoaded = computed(() => targetsQuery.isSuccess.value)
+  const loading = schedulesQuery.isFetching
+  const targetLoading = targetsQuery.isFetching
+  const schedules = schedulesQuery.data
+  const schedulesError = schedulesQuery.error
+  const targets = targetsQuery.data
+  const targetsError = targetsQuery.error
+  const targetsLoaded = targetsQuery.isSuccess
   const formSaving = computed(() => createMutation.pending.value || updateMutation.pending.value)
   const statusPendingId = computed(() => (
     statusMutation.pending.value ? statusMutation.variables.value?.row.id ?? undefined : undefined
@@ -182,10 +171,6 @@ export function useScheduleManagement(t: Translate) {
     || removeMutation.pending.value
     || runMutation.pending.value
   ))
-  const errorMessage = computed(() => (
-    schedulesQuery.error.value?.message ?? targetsQuery.error.value?.message ?? ''
-  ))
-
   async function refresh(): Promise<void> {
     await Promise.all([
       schedulesQuery.refetch({ throwOnError: true }),
@@ -193,15 +178,7 @@ export function useScheduleManagement(t: Translate) {
     ])
   }
 
-  onActivated(() => {
-    if (pageActive.value) return
-    pageActive.value = true
-    void refresh()
-  })
-
-  onDeactivated(() => {
-    pageActive.value = false
-  })
+  useKeepAlivePageActive(pageActive, refresh)
 
   async function fetchData(): Promise<void> {
     const nextParams = normalizeQueryParams(queryParams.value)
@@ -229,7 +206,7 @@ export function useScheduleManagement(t: Translate) {
   }
 
   function openCreate(): void {
-    if (!availableTargets.value.length) return
+    if (!availableTargets().length) return
     editingSchedule.value = undefined
     formVisible.value = true
   }
@@ -346,14 +323,17 @@ export function useScheduleManagement(t: Translate) {
   function targetName(handlerKey: string): string {
     const labelKey = BUILT_IN_TARGET_LABELS[handlerKey]
     if (labelKey) return t(labelKey)
-    return targets.value.find(target => target.handler_key === handlerKey)?.display_name ?? handlerKey
+    return targets.value?.find(target => target.handler_key === handlerKey)?.display_name ?? handlerKey
+  }
+
+  function availableTargets(): ScheduleTargetRecord[] {
+    return (targets.value ?? []).filter(target => target.available)
   }
 
   return {
     availableTargets,
     editingId,
     editingSchedule,
-    errorMessage,
     fetchData,
     formSaving,
     formVisible,
@@ -375,11 +355,12 @@ export function useScheduleManagement(t: Translate) {
     runPendingId,
     saveSchedule,
     statusPendingId,
-    tableData,
+    schedules,
+    schedulesError,
     targetLoading,
     targetsLoaded,
     targetName,
     targets,
-    total,
+    targetsError,
   }
 }

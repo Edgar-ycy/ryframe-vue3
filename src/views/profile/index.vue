@@ -7,7 +7,7 @@
         @saved="handleProfileSaved"
       />
       <div class="profile-side">
-        <ProfileAvatar :src="avatarPreview" @updated="handleAvatarUpdated" />
+        <ProfileAvatar :src="profile.avatar || userStore.avatar" @updated="handleAvatarUpdated" />
         <ProfilePasswordForm />
       </div>
     </div>
@@ -23,7 +23,6 @@ import { useProfileManagement } from './useProfileManagement'
 
 const { t } = useI18n()
 const {
-  avatarPreview,
   handleAvatarUpdated,
   handleProfileSaved,
   loading,

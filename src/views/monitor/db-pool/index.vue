@@ -1,6 +1,6 @@
 <template>
   <div v-loading="loading && !poolInfo" class="page-container monitor-page">
-    <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="monitor-page__alert" />
+    <el-alert v-if="error?.message" :title="error?.message ?? ''" type="error" show-icon :closable="false" class="monitor-page__alert" />
     <el-row :gutter="12">
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="never" class="monitor-metric-card monitor-metric-card--compact">
@@ -30,7 +30,7 @@
             <el-icon><Clock /></el-icon>
             <span>{{ t('monitor.dbPool.checkTime') }}</span>
           </div>
-          <div class="monitor-metric-value monitor-metric-value--time">{{ formatTime(poolInfo?.timestamp) }}</div>
+          <div class="monitor-metric-value monitor-metric-value--time">{{ formatOptionalLocalizedDate(poolInfo?.timestamp) }}</div>
         </el-card>
       </el-col>
     </el-row>
@@ -53,7 +53,7 @@
           {{ poolInfo?.active_connections ?? t('monitor.dbPool.unsupportedMetric') }}
         </el-descriptions-item>
         <el-descriptions-item :label="t('monitor.dbPool.lastCheckedAt')">
-          {{ formatTime(poolInfo?.timestamp) }}
+          {{ formatOptionalLocalizedDate(poolInfo?.timestamp) }}
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
@@ -64,7 +64,8 @@
 import { Clock, Connection, DataLine } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { getDbPool, type DbPoolInfo } from '@/api/modules/monitor'
-import { formatLocalizedDate } from '@/i18n'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
+import { formatOptionalLocalizedDate } from '@/i18n'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -81,9 +82,9 @@ const poolQuery = useTenantQuery<DbPoolInfo | null>(
     return response.data ?? null
   },
 )
-const loading = computed(() => poolQuery.isFetching.value)
-const poolInfo = computed(() => poolQuery.data.value ?? null)
-const errorMessage = computed(() => poolQuery.error.value?.message ?? '')
+const loading = poolQuery.isFetching
+const poolInfo = poolQuery.data
+const error = poolQuery.error
 const poolStatusType = computed(() => {
   if (!poolInfo.value?.status) return 'info'
   return poolInfo.value.status === 'connected' ? 'success' : 'danger'
@@ -95,21 +96,9 @@ const poolStatusText = computed(() => {
     : t('monitor.dbPool.disconnected')
 })
 
-function formatTime(value?: string) {
-  return value ? formatLocalizedDate(value) : '—'
-}
-
 async function fetchData(): Promise<void> {
   await poolQuery.refetch({ throwOnError: true })
 }
 
-onActivated(() => {
-  if (pageActive.value) return
-  pageActive.value = true
-  void poolQuery.refetch()
-})
-
-onDeactivated(() => {
-  pageActive.value = false
-})
+useKeepAlivePageActive(pageActive, () => poolQuery.refetch())
 </script>

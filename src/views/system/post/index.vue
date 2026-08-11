@@ -31,7 +31,7 @@
           </div>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
         <el-table-column prop="name" :label="t('system.post.name')" min-width="130" show-overflow-tooltip />
         <el-table-column prop="code" :label="t('system.post.code')" />
@@ -61,7 +61,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total" :page-sizes="[10, 20, 50, 100]"
+        :total="tableResponse?.total ?? 0" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
       />
@@ -109,7 +109,7 @@ import {
   type PostUpdateInput,
 } from '@/api/modules/post'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
-import type { Id, PageResponse } from '@/shared/http/types'
+import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -128,19 +128,11 @@ const postsQuery = useTenantQuery<PageResponse<PostRecord>>(
   () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
   async signal => {
     const response = await listPost({ ...activeQueryParams.value }, signal)
-    return response.data ?? {
-      items: [],
-      page: activeQueryParams.value.page ?? 1,
-      page_size: activeQueryParams.value.page_size ?? 10,
-      total: 0,
-      total_pages: 0,
-      max_page_size: activeQueryParams.value.page_size ?? 10,
-    }
+    return response.data ?? emptyPageResponse<PostRecord>(activeQueryParams.value)
   },
 )
-const loading = computed(() => postsQuery.isFetching.value)
-const tableData = computed(() => postsQuery.data.value?.items ?? [])
-const total = computed(() => postsQuery.data.value?.total ?? 0)
+const loading = postsQuery.isFetching
+const tableResponse = postsQuery.data
 const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
 
 function handleExport() {

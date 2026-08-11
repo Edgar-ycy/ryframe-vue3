@@ -29,16 +29,23 @@
           <span>{{ t('monitor.schedules.listTitle') }}</span>
           <div>
             <el-button v-perm="'monitor:schedule:list'" icon="Refresh" :loading="loading || targetLoading" @click="refresh">{{ t('monitor.schedules.refresh') }}</el-button>
-            <el-button v-if="hasPermission('monitor:schedule:add')" type="primary" icon="Plus" :disabled="availableTargets.length === 0 || hasPendingWrite" @click="openCreate">{{ t('monitor.schedules.add') }}</el-button>
+            <el-button v-if="hasPermission('monitor:schedule:add')" type="primary" icon="Plus" :disabled="availableTargets().length === 0 || hasPendingWrite" @click="openCreate">{{ t('monitor.schedules.add') }}</el-button>
           </div>
         </div>
       </template>
 
-      <el-alert v-if="availableTargets.length === 0 && targetsLoaded" :title="t('monitor.schedules.noTargetsHint')" type="info" show-icon :closable="false" class="schedules-alert" />
-      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="schedules-alert" />
+      <el-alert v-if="availableTargets().length === 0 && targetsLoaded" :title="t('monitor.schedules.noTargetsHint')" type="info" show-icon :closable="false" class="schedules-alert" />
+      <el-alert
+        v-if="schedulesError?.message || targetsError?.message"
+        :title="schedulesError?.message || targetsError?.message || ''"
+        type="error"
+        show-icon
+        :closable="false"
+        class="schedules-alert"
+      />
 
       <div class="table-scroll">
-        <el-table v-loading="loading" :data="tableData" border stripe class="schedules-table" :empty-text="t('common.noData')">
+        <el-table v-loading="loading" :data="schedules?.items ?? []" border stripe class="schedules-table" :empty-text="t('common.noData')">
           <el-table-column prop="name" :label="t('monitor.schedules.name')" min-width="160" show-overflow-tooltip />
           <el-table-column :label="t('monitor.schedules.target')" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">{{ targetName(row.handler_key) }}</template>
@@ -51,10 +58,10 @@
             </template>
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.lastRunAt')" min-width="160">
-            <template #default="{ row }">{{ formatDate(row.last_run_at) }}</template>
+            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.last_run_at) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.nextRunAt')" min-width="160">
-            <template #default="{ row }">{{ formatDate(row.next_run_at) }}</template>
+            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.next_run_at) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.operation')" min-width="350" fixed="right" align="center">
             <template #default="{ row }">
@@ -71,7 +78,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total"
+        :total="schedules?.total ?? 0"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         background
@@ -82,7 +89,7 @@
     <ScheduleFormDialog
       v-model="formVisible"
       :schedule="editingSchedule"
-      :targets="targets"
+      :targets="targets ?? []"
       :target-name="targetName"
       :saving="formSaving"
       @save="saveSchedule"
@@ -93,7 +100,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { formatLocalizedDate } from '@/i18n'
+import { formatOptionalLocalizedDate } from '@/i18n'
 import { usePermission } from '@/hooks/usePermission'
 import ScheduleFormDialog from './ScheduleFormDialog.vue'
 import ScheduleHistoryDrawer from './ScheduleHistoryDrawer.vue'
@@ -105,7 +112,6 @@ const {
   availableTargets,
   editingId,
   editingSchedule,
-  errorMessage,
   fetchData,
   formSaving,
   formVisible,
@@ -126,18 +132,16 @@ const {
   removePendingId,
   runPendingId,
   saveSchedule,
+  schedules,
+  schedulesError,
   statusPendingId,
-  tableData,
   targetLoading,
   targetsLoaded,
   targetName,
   targets,
-  total,
+  targetsError,
 } = useScheduleManagement(t)
 
-function formatDate(value: string | null | undefined): string {
-  return value ? formatLocalizedDate(value) : '—'
-}
 </script>
 
 <style scoped lang="scss">

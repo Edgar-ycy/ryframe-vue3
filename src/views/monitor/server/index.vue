@@ -38,6 +38,7 @@
 import { getServerInfo, type ServerInfo } from '@/api/modules/monitor'
 import { Cpu, Monitor, Odometer } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -54,8 +55,8 @@ const serverQuery = useTenantQuery<ServerInfo | null>(
     return response.data ?? null
   },
 )
-const loading = computed(() => serverQuery.isFetching.value)
-const info = computed(() => serverQuery.data.value ?? null)
+const loading = serverQuery.isFetching
+const info = serverQuery.data
 
 const cpuColor = computed(() => {
   const v = info.value?.cpu_usage ?? 0
@@ -79,15 +80,7 @@ const uptimeStr = computed(() => {
   return t('monitor.server.uptimeValue', { days: d, hours: h, minutes: m })
 })
 
-onActivated(() => {
-  if (pageActive.value) return
-  pageActive.value = true
-  void serverQuery.refetch()
-})
-
-onDeactivated(() => {
-  pageActive.value = false
-})
+useKeepAlivePageActive(pageActive, () => serverQuery.refetch())
 
 </script>
 

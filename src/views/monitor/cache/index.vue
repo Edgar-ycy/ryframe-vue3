@@ -1,6 +1,6 @@
 <template>
-  <div v-loading="loading && !cacheInfo" class="page-container monitor-page">
-    <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="monitor-page__alert" />
+  <div v-loading="loading && !cacheSnapshot?.info" class="page-container monitor-page">
+    <el-alert v-if="error?.message" :title="error?.message ?? ''" type="error" show-icon :closable="false" class="monitor-page__alert" />
     <el-row :gutter="12">
       <el-col :xs="24" :sm="12" :lg="6">
         <el-card shadow="never" class="monitor-metric-card monitor-metric-card--compact">
@@ -8,7 +8,7 @@
             <el-icon><Coin /></el-icon>
             <span>{{ t('monitor.cache.cacheMode') }}</span>
           </div>
-          <div class="monitor-metric-value">{{ cacheInfo?.mode || '—' }}</div>
+          <div class="monitor-metric-value">{{ cacheSnapshot?.info?.mode || '—' }}</div>
         </el-card>
       </el-col>
 
@@ -30,7 +30,7 @@
             <el-icon><Key /></el-icon>
             <span>{{ t('monitor.cache.totalKeys') }}</span>
           </div>
-          <div class="monitor-metric-value">{{ cacheInfo?.keys.total_keys ?? '—' }}</div>
+          <div class="monitor-metric-value">{{ cacheSnapshot?.info?.keys.total_keys ?? '—' }}</div>
         </el-card>
       </el-col>
 
@@ -40,7 +40,7 @@
             <el-icon><TrendCharts /></el-icon>
             <span>{{ t('monitor.cache.usedMemory') }}</span>
           </div>
-          <div class="monitor-metric-value monitor-metric-value--compact">{{ cacheInfo?.memory?.used_memory_human || '—' }}</div>
+          <div class="monitor-metric-value monitor-metric-value--compact">{{ cacheSnapshot?.info?.memory?.used_memory_human || '—' }}</div>
         </el-card>
       </el-col>
     </el-row>
@@ -56,13 +56,13 @@
           </template>
 
           <el-descriptions :column="1" border size="small">
-            <el-descriptions-item :label="t('monitor.cache.version')">{{ cacheInfo?.server?.version || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('monitor.cache.runtimeMode')">{{ cacheInfo?.server?.mode || cacheInfo?.mode || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('monitor.cache.operatingSystem')">{{ cacheInfo?.server?.os || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('monitor.cache.uptimeDays')">{{ cacheInfo?.server?.uptime_days ?? '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('monitor.cache.clientConnections')">{{ cacheInfo?.server?.connected_clients ?? '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('monitor.cache.peakMemory')">{{ cacheInfo?.memory?.used_memory_peak_human || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('monitor.cache.memoryFragmentationRatio')">{{ formatRatio(cacheInfo?.memory?.mem_fragmentation_ratio) }}</el-descriptions-item>
+            <el-descriptions-item :label="t('monitor.cache.version')">{{ cacheSnapshot?.info?.server?.version || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('monitor.cache.runtimeMode')">{{ cacheSnapshot?.info?.server?.mode || cacheSnapshot?.info?.mode || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('monitor.cache.operatingSystem')">{{ cacheSnapshot?.info?.server?.os || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('monitor.cache.uptimeDays')">{{ cacheSnapshot?.info?.server?.uptime_days ?? '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('monitor.cache.clientConnections')">{{ cacheSnapshot?.info?.server?.connected_clients ?? '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('monitor.cache.peakMemory')">{{ cacheSnapshot?.info?.memory?.used_memory_peak_human || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('monitor.cache.memoryFragmentationRatio')">{{ formatRatio(cacheSnapshot?.info?.memory?.mem_fragmentation_ratio) }}</el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
@@ -80,7 +80,7 @@
 
     <el-card shadow="never" class="monitor-section-card">
       <template #header><span>{{ t('monitor.cache.commandStatistics') }}</span></template>
-      <el-table v-loading="commandLoading" :data="commandRows" border stripe>
+      <el-table v-loading="loading" :data="commandRows" border stripe>
         <el-table-column prop="command" :label="t('monitor.cache.command')" width="180" />
         <el-table-column prop="stats" :label="t('monitor.cache.statistics')" min-width="360" show-overflow-tooltip />
       </el-table>
@@ -96,6 +96,7 @@ import {
   getCacheInfo,
   type CacheInfo,
 } from '@/api/modules/monitor'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -125,22 +126,22 @@ const cacheQuery = useTenantQuery<CacheSnapshot>(
   },
 )
 
-const loading = computed(() => cacheQuery.isFetching.value)
-const commandLoading = loading
-const cacheInfo = computed(() => cacheQuery.data.value?.info ?? null)
-const commandStats = computed(() => cacheQuery.data.value?.commands ?? {})
-const errorMessage = computed(() => cacheQuery.error.value?.message ?? '')
+const loading = cacheQuery.isFetching
+const cacheSnapshot = cacheQuery.data
+const error = cacheQuery.error
 const cacheStatusType = computed(() => {
-  if (!cacheInfo.value) return 'info'
-  return cacheInfo.value.available ? 'success' : 'danger'
+  const cacheInfo = cacheSnapshot.value?.info
+  if (!cacheInfo) return 'info'
+  return cacheInfo.available ? 'success' : 'danger'
 })
 const cacheStatusText = computed(() => {
-  if (!cacheInfo.value) return '—'
-  return cacheInfo.value.available ? t('monitor.cache.available') : t('monitor.cache.unavailable')
+  const cacheInfo = cacheSnapshot.value?.info
+  if (!cacheInfo) return '—'
+  return cacheInfo.available ? t('monitor.cache.available') : t('monitor.cache.unavailable')
 })
 
 const keyRows = computed(() => {
-  const keys = cacheInfo.value?.keys
+  const keys = cacheSnapshot.value?.info?.keys
   return [
     { label: t('monitor.cache.allKeys'), count: keys?.total_keys ?? '—' },
     { label: t('monitor.cache.onlineUserSessions'), count: keys?.online_users ?? '—' },
@@ -152,7 +153,7 @@ const keyRows = computed(() => {
 })
 
 const commandRows = computed(() => {
-  return Object.entries(commandStats.value)
+  return Object.entries(cacheSnapshot.value?.commands ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([command, stats]) => ({ command, stats }))
 })
@@ -166,13 +167,5 @@ async function fetchData(): Promise<void> {
   await cacheQuery.refetch({ throwOnError: true })
 }
 
-onActivated(() => {
-  if (pageActive.value) return
-  pageActive.value = true
-  void cacheQuery.refetch()
-})
-
-onDeactivated(() => {
-  pageActive.value = false
-})
+useKeepAlivePageActive(pageActive, () => cacheQuery.refetch())
 </script>

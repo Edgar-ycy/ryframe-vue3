@@ -1,8 +1,9 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isEdit ? t('system.menu.editTitle') : t('system.menu.addTitle')"
+    :title="isEdit() ? t('system.menu.editTitle') : t('system.menu.addTitle')"
     width="600px"
+    @open="populateForm"
     @closed="resetForm"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
@@ -56,7 +57,7 @@
           <el-radio :value="false">{{ t('system.menu.hidden') }}</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item v-if="isEdit" :label="t('system.common.status')">
+      <el-form-item v-if="isEdit()" :label="t('system.common.status')">
         <el-radio-group v-model="form.status">
           <el-radio value="1">{{ t('system.common.normal') }}</el-radio>
           <el-radio value="0">{{ t('system.common.disabled') }}</el-radio>
@@ -66,7 +67,7 @@
     <template #footer>
       <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
-        v-perm="isEdit ? 'system:menu:edit' : 'system:menu:add'"
+        v-perm="isEdit() ? 'system:menu:edit' : 'system:menu:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
@@ -113,7 +114,6 @@ type SaveMenuCommand =
   | { kind: 'update', id: Id, data: MenuUpdateInput }
 
 const props = defineProps<{
-  modelValue: boolean
   menu: MenuTreeNode | null
   parentId?: Id
   menuTree: MenuTreeNode[]
@@ -121,15 +121,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   saved: []
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
-const isEdit = computed(() => props.menu !== null)
+const visible = defineModel<boolean>({ required: true })
+function isEdit(): boolean {
+  return props.menu !== null
+}
 const formRef = ref<FormInstance>()
 const userStore = useUserStore()
 const saveMutation = useTenantMutation<void, SaveMenuCommand>(
@@ -228,13 +226,6 @@ function populateForm(): void {
   form.value.parent_id = props.parentId
   form.value.menu_type = props.parentId ? 'C' : 'M'
 }
-
-watch(
-  () => props.modelValue,
-  open => {
-    if (open) populateForm()
-  },
-)
 
 async function submit(): Promise<void> {
   if (submitting.value) return

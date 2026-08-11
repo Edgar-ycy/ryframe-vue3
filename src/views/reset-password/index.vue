@@ -85,9 +85,7 @@ const {
   resetRequestKey,
   token,
 } = resetCredentials
-const missingParams = computed(
-  () => !isValidTenantId(tenantId) || !resetRequestKey || !token,
-)
+const missingParams = !isValidTenantId(tenantId) || !resetRequestKey || !token
 
 const form = ref({
   newPassword: '',
@@ -119,7 +117,7 @@ const rules = computed<FormRules>(() => ({
 }))
 
 async function handleSubmit() {
-  if (missingParams.value || loading.value) return
+  if (missingParams || loading.value) return
   loading.value = true
   try {
     const valid = await formRef.value?.validate().catch(() => false)

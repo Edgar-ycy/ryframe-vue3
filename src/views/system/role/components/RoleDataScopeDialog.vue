@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="t('system.role.setDataScopeTitle')" width="560px" @closed="reset">
+  <el-dialog v-model="visible" :title="t('system.role.setDataScopeTitle')" width="560px" @open="handleOpen" @closed="reset">
     <el-form v-loading="loading" label-width="110px">
       <el-form-item :label="t('system.role.dataScope')" required>
         <el-select v-model="dataScope" style="width:100%">
@@ -49,20 +49,15 @@ import { useUserStore } from '@/stores/user'
 const { t } = useI18n()
 
 const props = defineProps<{
-  modelValue: boolean
   role: RoleRecord | null
   deptTree: DeptNode[]
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   saved: []
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
+const visible = defineModel<boolean>({ required: true })
 const dataScope = ref<RoleDataScope>('1')
 const deptIds = ref<Id[]>([])
 const userStore = useUserStore()
@@ -97,7 +92,7 @@ const dataScopeMutation = useTenantMutation<
     },
   },
 )
-const loading = computed(() => detailQuery.isFetching.value)
+const loading = detailQuery.isFetching
 const submitting = dataScopeMutation.pending
 
 function reset(): void {
@@ -110,14 +105,12 @@ function populateDataScope(role: RoleRecord): void {
   deptIds.value = role.dept_ids ?? []
 }
 
-watch(
-  () => props.modelValue,
-  (open) => {
-    if (!open || !props.role) return
-    reset()
-    if (detailQuery.data.value) populateDataScope(detailQuery.data.value)
-  },
-)
+function handleOpen(): void {
+  if (!props.role) return
+  reset()
+  if (detailQuery.data.value) populateDataScope(detailQuery.data.value)
+}
+
 watch(
   () => detailQuery.data.value,
   role => {

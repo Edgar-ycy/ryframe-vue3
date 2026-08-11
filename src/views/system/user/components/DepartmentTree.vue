@@ -10,12 +10,13 @@
     <el-empty v-else-if="nodes.length === 0" :description="t('system.user.noDepartments')" :image-size="80" />
     <div v-else class="department-tree__content">
       <el-input
-        v-model="filterText"
+        :model-value="filterText"
         :placeholder="t('system.user.searchDepartment')"
         :prefix-icon="Search"
         clearable
         size="small"
         class="department-tree__filter"
+        @update:model-value="handleFilterChange"
       />
       <el-scrollbar class="department-tree__scroll">
         <el-tree
@@ -23,6 +24,7 @@
           :data="displayNodes"
           :props="{ label: 'name', children: 'children' }"
           node-key="id"
+          :current-node-key="props.selectedId ?? ''"
           highlight-current
           expand-on-click-node
           default-expand-all
@@ -75,11 +77,10 @@ const displayNodes = computed<DepartmentOption[]>(() => [
   { id: '', name: t('system.user.allDepartments'), children: props.nodes },
 ])
 
-watch(filterText, value => treeRef.value?.filter(value))
-watch(
-  () => props.selectedId,
-  value => treeRef.value?.setCurrentKey(value ?? ''),
-)
+function handleFilterChange(value: string): void {
+  filterText.value = value
+  treeRef.value?.filter(value)
+}
 
 function filterNode(value: string, node: DepartmentOption): boolean {
   return !value || node.name.includes(value)

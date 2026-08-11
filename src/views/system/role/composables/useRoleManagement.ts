@@ -10,7 +10,7 @@ import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permis
 import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
-import type { Id, PageResponse } from '@/shared/http/types'
+import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -45,14 +45,7 @@ export function useRoleManagement() {
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
     async signal => {
       const response = await listRole({ ...activeQueryParams.value }, signal)
-      return response.data ?? {
-        items: [],
-        page: activeQueryParams.value.page ?? 1,
-        page_size: activeQueryParams.value.page_size ?? 10,
-        total: 0,
-        total_pages: 0,
-        max_page_size: activeQueryParams.value.page_size ?? 10,
-      }
+      return response.data ?? emptyPageResponse<RoleRecord>(activeQueryParams.value)
     },
   )
   const departmentsQuery = useTenantQuery<DeptNode[]>(
@@ -76,11 +69,10 @@ export function useRoleManagement() {
     },
   )
 
-  const tableData = computed(() => rolesQuery.data.value?.items ?? [])
-  const total = computed(() => rolesQuery.data.value?.total ?? 0)
-  const loading = computed(() => rolesQuery.isFetching.value)
-  const deptTree = computed(() => departmentsQuery.data.value ?? [])
-  const permissionTree = computed(() => permissionsQuery.data.value ?? [])
+  const tableResponse = rolesQuery.data
+  const loading = rolesQuery.isFetching
+  const deptTree = departmentsQuery.data
+  const permissionTree = permissionsQuery.data
 
   const deleteMutation = useTenantMutation<void, RoleRecord>(
     () => userStore.tenantId,
@@ -201,7 +193,6 @@ export function useRoleManagement() {
     permissionTree,
     queryParams,
     roleDialogVisible,
-    tableData,
-    total,
+    tableResponse,
   }
 }

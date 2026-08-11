@@ -10,7 +10,7 @@
         </div>
       </template>
       <el-table
-        v-loading="loading" :data="tableData" border stripe row-key="id"
+        v-loading="loading" :data="tableData ?? []" border stripe row-key="id"
         :tree-props="{ children: 'children' }"
       >
         <el-table-column prop="name" :label="t('system.department.name')" min-width="180" show-overflow-tooltip />
@@ -52,7 +52,7 @@
         <el-form-item :label="t('system.department.parent')">
           <el-tree-select
             v-model="form.parent_id"
-            :data="deptOptions"
+            :data="deptOptions ?? []"
             :props="{ label: 'name', value: 'id', children: 'children' }"
             :placeholder="t('system.department.rootPlaceholder')"
             clearable check-strictly

@@ -1,10 +1,10 @@
 <template>
   <el-button
-    :icon="resolveElementIcon(selectedIcon, 'Plus')"
-    :aria-label="selectedIcon ? t('shell.icon.changeCurrent', { icon: selectedIcon }) : t('shell.icon.select')"
+    :icon="resolveElementIcon(props.modelValue, 'Plus')"
+    :aria-label="props.modelValue ? t('shell.icon.changeCurrent', { icon: props.modelValue }) : t('shell.icon.select')"
     @click="openDialog"
   >
-    {{ selectedIcon ? '' : t('shell.icon.select') }}
+    {{ props.modelValue ? '' : t('shell.icon.select') }}
   </el-button>
   <el-dialog v-model="dialogVisible" :title="t('shell.icon.dialogTitle')" width="600px" append-to-body>
     <el-input v-model="search" :placeholder="t('shell.icon.search')" clearable style="margin-bottom:12px" />
@@ -56,7 +56,6 @@ const {
   dialogVisible,
   openDialog,
   pendingIcon,
-  selectedIcon,
   selectIcon,
 } = useIconSelection(
   () => props.modelValue,

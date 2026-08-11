@@ -9,7 +9,7 @@ import {
   type TableInfo,
   type WriteReport,
 } from '@/api/modules/tools'
-import type { PageResponse } from '@/shared/http/types'
+import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -34,20 +34,12 @@ export function useGeneratorManagement(t: Translate) {
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
     async signal => {
       const response = await listTable({ ...activeQueryParams.value }, signal)
-      return response.data ?? {
-        items: [],
-        page: activeQueryParams.value.page ?? 1,
-        page_size: activeQueryParams.value.page_size ?? 10,
-        total: 0,
-        total_pages: 0,
-        max_page_size: activeQueryParams.value.page_size ?? 10,
-      }
+      return response.data ?? emptyPageResponse<TableInfo>(activeQueryParams.value)
     },
   )
 
-  const loading = computed(() => tablesQuery.isFetching.value)
-  const tableData = computed(() => tablesQuery.data.value?.items ?? [])
-  const total = computed(() => tablesQuery.data.value?.total ?? 0)
+  const loading = tablesQuery.isFetching
+  const tableResponse = tablesQuery.data
 
   async function fetchData(): Promise<void> {
     const nextParams = { ...queryParams.value }
@@ -74,7 +66,7 @@ export function useGeneratorManagement(t: Translate) {
   }
 
   const previewVisible = ref(false)
-  const previewTab = ref('')
+  const selectedPreviewTab = ref('')
   const previewTableName = ref<string>()
   const previewQuery = useTenantQuery<GeneratedFile[]>(
     () => userStore.tenantId,
@@ -95,16 +87,21 @@ export function useGeneratorManagement(t: Translate) {
     name: file.path,
     content: file.content,
   })))
-  const previewLoading = computed(() => previewQuery.isFetching.value)
+  const previewTab = computed({
+    get: () => {
+      const selected = selectedPreviewTab.value
+      return previewFiles.value.some(file => file.name === selected)
+        ? selected
+        : previewFiles.value[0]?.name ?? ''
+    },
+    set: value => {
+      selectedPreviewTab.value = value
+    },
+  })
+  const previewLoading = previewQuery.isFetching
   const previewingTable = computed(() => (
     previewQuery.isFetching.value ? previewTableName.value ?? null : null
   ))
-
-  watch(previewFiles, files => {
-    if (!files.some(file => file.name === previewTab.value)) {
-      previewTab.value = files[0]?.name ?? ''
-    }
-  })
 
   function handlePreview(row: TableInfo): void {
     const isCurrentTable = previewTableName.value === row.table_name
@@ -214,7 +211,6 @@ export function useGeneratorManagement(t: Translate) {
     selectedTable,
     setGenerateFormRef,
     submitGeneration,
-    tableData,
-    total,
+    tableResponse,
   }
 }

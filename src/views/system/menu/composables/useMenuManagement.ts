@@ -51,11 +51,11 @@ export function useMenuManagement() {
       return response.data ?? []
     },
   )
-  const tableData = computed(() => menusQuery.data.value ?? [])
+  const tableData = menusQuery.data
   const permissionOptions = computed(() => flattenPermissionOptions(
     permissionsQuery.data.value ?? [],
   ))
-  const loading = computed(() => menusQuery.isFetching.value)
+  const loading = menusQuery.isFetching
 
   const statusMutation = useTenantMutation<void, StatusCommand>(
     () => userStore.tenantId,

@@ -89,3 +89,8 @@ export function formatLocalizedDate(value: string): string {
     timeStyle: 'short',
   }).format(timestamp)
 }
+
+/** 将可空日期统一显示为本地化时间或占位符。 */
+export function formatOptionalLocalizedDate(value: string | null | undefined): string {
+  return value ? formatLocalizedDate(value) : '—'
+}

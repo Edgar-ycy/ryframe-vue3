@@ -11,7 +11,7 @@
       </template>
 
       <div class="table-scroll">
-        <el-table v-loading="loading" :data="tenants" border stripe class="tenant-table">
+        <el-table v-loading="loading" :data="tenants ?? []" border stripe class="tenant-table">
           <el-table-column prop="tenant_id" :label="t('account.tenantId')" min-width="130" show-overflow-tooltip />
           <el-table-column prop="name" :label="t('account.tenantName')" min-width="150" show-overflow-tooltip />
           <el-table-column prop="domain" :label="t('account.domain')" min-width="160" show-overflow-tooltip />
@@ -148,8 +148,8 @@ const tenantsQuery = useTenantQuery<Tenant[]>(
     return requireOperationData(response)
   },
 )
-const tenants = computed(() => tenantsQuery.data.value ?? [])
-const loading = computed(() => tenantsQuery.isFetching.value)
+const tenants = tenantsQuery.data
+const loading = tenantsQuery.isFetching
 
 const form = reactive<CreateTenantPayload>({
   tenant_id: '',
@@ -227,7 +227,7 @@ const statusMutation = useTenantMutation<void, ToggleTenantCommand>(
 const togglingTenantId = computed(() => (
   statusMutation.pending.value ? statusMutation.variables.value?.tenantId ?? null : null
 ))
-const statusUpdating = computed(() => statusMutation.pending.value)
+const statusUpdating = statusMutation.pending
 
 function resetForm() {
   Object.assign(form, {

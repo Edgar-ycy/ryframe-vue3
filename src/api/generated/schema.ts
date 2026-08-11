@@ -2441,6 +2441,8 @@ export interface components {
              */
             code: number;
             data?: {
+                /** Format: date-time */
+                calculated_at: string;
                 occurrences: components["schemas"]["JobScheduleOccurrence"][];
                 timezone: string;
             };
@@ -2779,6 +2781,7 @@ export interface components {
             code: number;
             data?: {
                 database: components["schemas"]["RuntimeDatabaseStatus"];
+                jobs: components["schemas"]["RuntimeJobsStatus"];
                 object_storage: components["schemas"]["RuntimeStorageStatus"];
                 redis: components["schemas"]["RuntimeRedisStatus"];
                 upload_circuit_breaker: components["schemas"]["RuntimeCircuitBreakerStatus"];
@@ -3813,6 +3816,8 @@ export interface components {
             utc: string;
         };
         JobSchedulePreview: {
+            /** Format: date-time */
+            calculated_at: string;
             occurrences: components["schemas"]["JobScheduleOccurrence"][];
             timezone: string;
         };
@@ -4619,12 +4624,17 @@ export interface components {
             source_count: number;
             sources: components["schemas"]["RuntimeDatabaseSourceStatus"][];
         };
+        RuntimeJobsStatus: {
+            mode: string;
+            scheduler_enabled: boolean;
+        };
         RuntimeRedisStatus: {
             configured: boolean;
             connected: boolean;
         };
         RuntimeStatus: {
             database: components["schemas"]["RuntimeDatabaseStatus"];
+            jobs: components["schemas"]["RuntimeJobsStatus"];
             object_storage: components["schemas"]["RuntimeStorageStatus"];
             redis: components["schemas"]["RuntimeRedisStatus"];
             upload_circuit_breaker: components["schemas"]["RuntimeCircuitBreakerStatus"];

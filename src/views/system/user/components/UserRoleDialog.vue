@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="t('system.user.roleDialogTitle')" width="520px" @closed="reset">
+  <el-dialog v-model="visible" :title="t('system.user.roleDialogTitle')" width="520px" @open="handleOpen" @closed="reset">
     <el-form v-loading="loading" label-width="80px">
       <el-form-item :label="t('system.user.userLabel')">
         <el-input :model-value="user?.nickname ?? ''" disabled />
@@ -13,8 +13,9 @@
           :remote-method="remoteRoleSearch"
           :loading="roleOptionsLoading"
           :placeholder="t('system.user.selectRole')"
-          :disabled="selfAssignmentLocked"
+          :disabled="selfAssignmentLocked()"
           style="width: 100%"
+          @change="syncSelectedRoleOptions"
         >
           <el-option
             v-for="role in roleOptions"
@@ -32,7 +33,7 @@
         v-perm="'system:user:edit'"
         type="primary"
         :loading="submitting"
-        :disabled="loading || selfAssignmentLocked"
+        :disabled="loading || selfAssignmentLocked()"
         @click="submit"
       >
         {{ t('system.common.confirm') }}
@@ -59,27 +60,22 @@ import { useRoleOptions } from '../composables/useRoleOptions'
 const { t } = useI18n()
 
 const props = defineProps<{
-  modelValue: boolean
   user: UserRecord | null
   currentUserId: Id | ''
   currentUserIsSuper: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   saved: []
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
+const visible = defineModel<boolean>({ required: true })
 const userStore = useUserStore()
 const selectedRoleIds = ref<Id[]>([])
 const selectedRoleOptions = ref<SelectOption[]>([])
-const selfAssignmentLocked = computed(
-  () => props.user?.id === props.currentUserId && !props.currentUserIsSuper,
-)
+function selfAssignmentLocked(): boolean {
+  return props.user?.id === props.currentUserId && !props.currentUserIsSuper
+}
 const {
   loading: roleOptionsLoading,
   options: roleOptions,
@@ -115,7 +111,7 @@ const assignmentMutation = useTenantMutation<void, { userId: Id, roleIds: Id[] }
     },
   },
 )
-const loading = computed(() => detailQuery.isFetching.value)
+const loading = detailQuery.isFetching
 const submitting = assignmentMutation.pending
 
 function reset(): void {
@@ -124,28 +120,21 @@ function reset(): void {
   resetRoleSearch()
 }
 
-watch(
-  selectedRoleIds,
-  (roleIds) => {
-    const known = new Map(
-      [...selectedRoleOptions.value, ...roleOptions.value]
-        .map(option => [option.value, option]),
-    )
-    selectedRoleOptions.value = roleIds
-      .map(roleId => known.get(roleId))
-      .filter((option): option is SelectOption => option !== undefined)
-  },
-  { deep: true },
-)
+function syncSelectedRoleOptions(): void {
+  const known = new Map(
+    [...selectedRoleOptions.value, ...roleOptions.value]
+      .map(option => [option.value, option]),
+  )
+  selectedRoleOptions.value = selectedRoleIds.value
+    .map(roleId => known.get(roleId))
+    .filter((option): option is SelectOption => option !== undefined)
+}
 
-watch(
-  () => props.modelValue,
-  open => {
-    if (!open || !props.user) return
-    reset()
-    if (detailQuery.data.value) populateRoles(detailQuery.data.value)
-  },
-)
+function handleOpen(): void {
+  if (!props.user) return
+  reset()
+  if (detailQuery.data.value) populateRoles(detailQuery.data.value)
+}
 
 function populateRoles(detail: UserDetail): void {
   selectedRoleOptions.value = detail.roles.map(role => ({
@@ -165,7 +154,7 @@ watch(
 )
 
 async function submit(): Promise<void> {
-  if (!props.user || selfAssignmentLocked.value || submitting.value) return
+  if (!props.user || selfAssignmentLocked() || submitting.value) return
   await assignmentMutation.mutateAsync({
     userId: props.user.id,
     roleIds: [...selectedRoleIds.value],

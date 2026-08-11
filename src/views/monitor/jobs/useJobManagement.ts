@@ -7,7 +7,8 @@ import {
   type BackgroundJobRecord,
   type BackgroundJobStats,
 } from '@/api/modules/monitor'
-import type { PageResponse } from '@/shared/http/types'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
+import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -15,6 +16,7 @@ import { confirmAction } from '@/utils/confirmAction'
 import { MONITOR_JOBS_RESOURCE, MONITOR_JOB_STATS_RESOURCE } from '../queryResources'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
+type RouteQuerySource = Pick<RouteLocationNormalizedLoaded, 'query'>
 
 const EMPTY_STATS: BackgroundJobStats = {
   total: 0,
@@ -23,18 +25,6 @@ const EMPTY_STATS: BackgroundJobStats = {
   running: 0,
   succeeded: 0,
   dead: 0,
-}
-
-function emptyPage(params: BackgroundJobQuery): PageResponse<BackgroundJobRecord> {
-  const pageSize = params.page_size ?? 10
-  return {
-    items: [],
-    page: params.page ?? 1,
-    page_size: pageSize,
-    total: 0,
-    total_pages: 0,
-    max_page_size: pageSize,
-  }
 }
 
 function parseScheduleId(value: unknown): string | undefined {
@@ -60,7 +50,7 @@ function sameParams(left: BackgroundJobQuery, right: BackgroundJobQuery): boolea
 /** 后台任务列表、统计和死信重投的页面状态。 */
 export function useJobManagement(
   t: Translate,
-  route: RouteLocationNormalizedLoaded,
+  route: RouteQuerySource,
   syncScheduleId: (scheduleId: string | undefined) => void,
 ) {
   const userStore = useUserStore()
@@ -85,7 +75,7 @@ export function useJobManagement(
     async signal => {
       const params = normalizeQueryParams(activeQueryParams.value)
       const response = await listBackgroundJobs(params, signal)
-      return response.data ?? emptyPage(params)
+      return response.data ?? emptyPageResponse<BackgroundJobRecord>(params)
     },
   )
   const statsQuery = useTenantQuery<BackgroundJobStats>(
@@ -109,17 +99,15 @@ export function useJobManagement(
     },
   )
 
-  const loading = computed(() => jobsQuery.isFetching.value)
-  const statsLoading = computed(() => statsQuery.isFetching.value)
-  const tableData = computed(() => jobsQuery.data.value?.items ?? [])
-  const total = computed(() => jobsQuery.data.value?.total ?? 0)
-  const stats = computed(() => statsQuery.data.value ?? EMPTY_STATS)
+  const loading = jobsQuery.isFetching
+  const statsLoading = statsQuery.isFetching
+  const jobs = jobsQuery.data
+  const jobsError = jobsQuery.error
+  const stats = statsQuery.data
+  const statsError = statsQuery.error
   const retryPending = retryMutation.pending
   const retryingId = computed(() => (
     retryMutation.pending.value ? retryMutation.variables.value?.id ?? undefined : undefined
-  ))
-  const errorMessage = computed(() => (
-    jobsQuery.error.value?.message ?? statsQuery.error.value?.message ?? ''
   ))
 
   async function refresh(): Promise<void> {
@@ -128,16 +116,6 @@ export function useJobManagement(
       statsQuery.refetch({ throwOnError: true }),
     ])
   }
-
-  onActivated(() => {
-    if (pageActive.value) return
-    pageActive.value = true
-    void refresh()
-  })
-
-  onDeactivated(() => {
-    pageActive.value = false
-  })
 
   async function fetchData(): Promise<void> {
     const nextParams = normalizeQueryParams(queryParams.value)
@@ -165,7 +143,7 @@ export function useJobManagement(
     void fetchData()
   }
 
-  function syncFromRoute(nextRoute: RouteLocationNormalizedLoaded): void {
+  function syncFromRoute(nextRoute: RouteQuerySource): void {
     const nextScheduleId = parseScheduleId(nextRoute.query.schedule_id)
     if (nextScheduleId === queryParams.value.schedule_id) return
     queryParams.value = {
@@ -175,6 +153,13 @@ export function useJobManagement(
     }
     activeQueryParams.value = normalizeQueryParams(queryParams.value)
   }
+
+  async function refreshActivePage(): Promise<void> {
+    syncFromRoute(route)
+    await refresh()
+  }
+
+  useKeepAlivePageActive(pageActive, refreshActivePage)
 
   function showError(row: BackgroundJobRecord): void {
     selectedError.value = row
@@ -196,11 +181,12 @@ export function useJobManagement(
 
   return {
     errorDialogVisible,
-    errorMessage,
     fetchData,
     handleReset,
     handleRetry,
     handleSearch,
+    jobs,
+    jobsError,
     loading,
     queryParams,
     refresh,
@@ -209,9 +195,8 @@ export function useJobManagement(
     selectedError,
     showError,
     stats,
+    statsError,
     statsLoading,
     syncFromRoute,
-    tableData,
-    total,
   }
 }

@@ -44,8 +44,7 @@ export function useProfileManagement(t: Translate) {
     },
   )
 
-  const loading = computed(() => profileQuery.isFetching.value)
-  const avatarPreview = computed(() => profile.value.avatar || userStore.avatar)
+  const loading = profileQuery.isFetching
 
   function applyProfile(nextProfile: ProfileInfo): void {
     profile.value = nextProfile
@@ -92,7 +91,6 @@ export function useProfileManagement(t: Translate) {
   }
 
   return {
-    avatarPreview,
     handleAvatarUpdated,
     handleProfileSaved,
     loading,

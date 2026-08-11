@@ -1,8 +1,9 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isEdit ? t('system.permission.editTitle') : t('system.permission.addTitle')"
+    :title="isEdit() ? t('system.permission.editTitle') : t('system.permission.addTitle')"
     width="520px"
+    @open="populateForm"
     @closed="resetForm"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
@@ -45,7 +46,7 @@
     <template #footer>
       <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
-        v-perm="isEdit ? 'system:perm:edit' : 'system:perm:add'"
+        v-perm="isEdit() ? 'system:perm:edit' : 'system:perm:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
@@ -71,22 +72,19 @@ import { useUserStore } from '@/stores/user'
 const { t } = useI18n()
 
 const props = defineProps<{
-  modelValue: boolean
   permission: PermissionTreeNode | null
   parentId?: Id
   parentTree: PermissionTreeNode[]
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   saved: []
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
-const isEdit = computed(() => props.permission !== null)
+const visible = defineModel<boolean>({ required: true })
+function isEdit(): boolean {
+  return props.permission !== null
+}
 const formRef = ref<FormInstance>()
 const userStore = useUserStore()
 const saveMutation = useTenantMutation<
@@ -156,13 +154,6 @@ function populateForm(): void {
   }
   form.value.parent_id = props.parentId ?? null
 }
-
-watch(
-  () => props.modelValue,
-  open => {
-    if (open) populateForm()
-  },
-)
 
 async function submit(): Promise<void> {
   if (submitting.value) return

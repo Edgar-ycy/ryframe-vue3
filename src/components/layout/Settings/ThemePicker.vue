@@ -4,7 +4,7 @@
     <el-color-picker
       :model-value="props.modelValue"
       :predefine="props.presetColors"
-      :aria-label="pickerLabel"
+      :aria-label="props.label || t('settings.themeColor')"
       @update:model-value="(value: string) => emit('update:modelValue', value)"
     />
     <div class="theme-presets">
@@ -57,8 +57,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const pickerLabel = computed(() => props.label || t('settings.themeColor'))
-
 function selectPreset(color: string): void {
   emit('update:modelValue', color)
 }

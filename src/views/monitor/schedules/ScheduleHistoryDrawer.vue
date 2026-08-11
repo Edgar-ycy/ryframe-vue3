@@ -4,6 +4,8 @@
     :title="schedule ? t('monitor.schedules.historyTitle', { name: schedule.name }) : t('monitor.schedules.history')"
     size="min(760px, calc(100vw - 32px))"
     direction="rtl"
+    @open="handleOpen"
+    @closed="handleClosed"
   >
     <template v-if="schedule">
       <el-form :model="queryParams" inline class="history-filters" @submit.prevent="handleSearch">
@@ -20,6 +22,7 @@
             <el-option :label="t('monitor.schedules.outcomeSkippedMisfire')" value="skipped_misfire" />
             <el-option :label="t('monitor.schedules.outcomeSkippedConcurrency')" value="skipped_concurrency" />
             <el-option :label="t('monitor.schedules.outcomeTargetUnavailable')" value="target_unavailable" />
+            <el-option :label="t('monitor.schedules.outcomeInvalidConfiguration')" value="invalid_configuration" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('monitor.schedules.jobStatus')">
@@ -36,10 +39,10 @@
         </el-form-item>
       </el-form>
 
-      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="history-error" />
+      <el-alert v-if="executionsError?.message" :title="executionsError.message" type="error" show-icon :closable="false" class="history-error" />
 
       <div class="table-scroll">
-        <el-table v-loading="loading" :data="history" border stripe class="history-table" :empty-text="t('monitor.schedules.emptyHistory')">
+        <el-table v-loading="loading" :data="executions?.items ?? []" border stripe class="history-table" :empty-text="t('monitor.schedules.emptyHistory')">
           <el-table-column :label="t('monitor.schedules.triggerKind')" min-width="118">
             <template #default="{ row }"><el-tag :type="triggerTagType(row.trigger_kind)" size="small">{{ triggerLabel(row.trigger_kind) }}</el-tag></template>
           </el-table-column>
@@ -72,7 +75,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total"
+        :total="executions?.total ?? 0"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         background
@@ -92,7 +95,7 @@ import {
   type ScheduleExecutionQuery,
 } from '@/api/modules/monitor'
 import { formatLocalizedDate } from '@/i18n'
-import type { PageResponse } from '@/shared/http/types'
+import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 import { MONITOR_SCHEDULE_EXECUTIONS_RESOURCE } from '../queryResources'
@@ -104,33 +107,30 @@ const router = useRouter()
 const userStore = useUserStore()
 const queryParams = ref<ScheduleExecutionQuery>(defaultQuery())
 const activeQueryParams = ref<ScheduleExecutionQuery>(normalizeQueryParams(queryParams.value))
+const queryReady = ref(false)
 
 const executionsQuery = useTenantQuery<PageResponse<JobScheduleExecutionRecord>>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(props.schedule),
+  () => (
+    userStore.sessionStatus === 'authenticated'
+    && visible.value
+    && queryReady.value
+    && Boolean(props.schedule)
+  ),
   MONITOR_SCHEDULE_EXECUTIONS_RESOURCE,
   () => ({ scheduleId: props.schedule?.id, filters: normalizeQueryParams(activeQueryParams.value) }),
   async signal => {
     const params = normalizeQueryParams(activeQueryParams.value)
-    if (!props.schedule) return emptyPage(params)
+    if (!props.schedule) return emptyPageResponse<JobScheduleExecutionRecord>(params)
     const response = await listScheduleExecutions(props.schedule.id, params, signal)
-    return response.data ?? emptyPage(params)
+    return response.data ?? emptyPageResponse<JobScheduleExecutionRecord>(params)
   },
   { refetchInterval: false },
 )
 
-watch(
-  () => [visible.value, props.schedule?.id],
-  () => {
-    queryParams.value = defaultQuery()
-    activeQueryParams.value = normalizeQueryParams(queryParams.value)
-  },
-)
-
-const loading = computed(() => executionsQuery.isFetching.value)
-const history = computed(() => executionsQuery.data.value?.items ?? [])
-const total = computed(() => executionsQuery.data.value?.total ?? 0)
-const errorMessage = computed(() => executionsQuery.error.value?.message ?? '')
+const loading = executionsQuery.isFetching
+const executions = executionsQuery.data
+const executionsError = executionsQuery.error
 
 function defaultQuery(): ScheduleExecutionQuery {
   return {
@@ -142,18 +142,6 @@ function defaultQuery(): ScheduleExecutionQuery {
   }
 }
 
-function emptyPage(params: ScheduleExecutionQuery): PageResponse<JobScheduleExecutionRecord> {
-  const pageSize = params.page_size ?? 10
-  return {
-    items: [],
-    page: params.page ?? 1,
-    page_size: pageSize,
-    total: 0,
-    total_pages: 0,
-    max_page_size: pageSize,
-  }
-}
-
 function normalizeQueryParams(params: ScheduleExecutionQuery): ScheduleExecutionQuery {
   return {
     ...params,
@@ -161,6 +149,20 @@ function normalizeQueryParams(params: ScheduleExecutionQuery): ScheduleExecution
     outcome: params.outcome || undefined,
     background_job_status: params.background_job_status || undefined,
   }
+}
+
+function resetQuery(): void {
+  queryParams.value = defaultQuery()
+  activeQueryParams.value = normalizeQueryParams(queryParams.value)
+}
+
+function handleOpen(): void {
+  resetQuery()
+  queryReady.value = true
+}
+
+function handleClosed(): void {
+  queryReady.value = false
 }
 
 async function fetchData(): Promise<void> {
@@ -215,6 +217,7 @@ function outcomeLabel(value: string): string {
     skipped_misfire: t('monitor.schedules.outcomeSkippedMisfire'),
     skipped_concurrency: t('monitor.schedules.outcomeSkippedConcurrency'),
     target_unavailable: t('monitor.schedules.outcomeTargetUnavailable'),
+    invalid_configuration: t('monitor.schedules.outcomeInvalidConfiguration'),
   }
   return labels[value] ?? value
 }
@@ -225,6 +228,7 @@ function outcomeTagType(value: string): TagProps['type'] {
     skipped_misfire: 'warning',
     skipped_concurrency: 'info',
     target_unavailable: 'warning',
+    invalid_configuration: 'danger',
   }
   return types[value] ?? 'info'
 }

@@ -12,7 +12,7 @@
 
       <el-table
         v-loading="loading"
-        :data="tableData"
+        :data="tableData ?? []"
         border
         stripe
         row-key="id"
@@ -104,7 +104,7 @@
       v-model="dialogVisible"
       :menu="editingMenu"
       :parent-id="parentMenuId"
-      :menu-tree="tableData"
+      :menu-tree="tableData ?? []"
       :permission-options="permissionOptions"
       @saved="fetchData"
     />

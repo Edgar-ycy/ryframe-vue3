@@ -10,7 +10,7 @@
         :collapse="appStore.sidebarCollapsed"
         :unique-opened="true"
         :background-color="'transparent'"
-        :text-color="menuTextColor"
+        :text-color="settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af'"
         :active-text-color="settingsStore.themeColor"
         @select="handleMenuSelect"
       >
@@ -71,8 +71,6 @@ const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
   && (isAdmin() || hasPermission('tenant:list')),
 )
-
-const menuTextColor = computed(() => settingsStore.theme === 'dark' ? '#a5b4fc' : '#9ca3af')
 
 function handleMenuSelect(indexPath: string): void {
   const target = router.resolve(indexPath)

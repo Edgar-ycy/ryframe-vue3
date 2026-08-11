@@ -31,7 +31,7 @@
 
           <el-table
             v-loading="typeLoading"
-            :data="typeList"
+            :data="typePageResponse?.items ?? []"
             border
             stripe
             highlight-current-row
@@ -75,7 +75,7 @@
           <el-pagination
             v-model:current-page="typePage.page"
             v-model:page-size="typePage.page_size"
-            :total="typeTotal"
+            :total="typePageResponse?.total ?? 0"
             :page-sizes="[10, 20, 50]"
             layout="total, prev, pager, next"
             size="small"
@@ -106,7 +106,7 @@
               </el-button>
             </div>
           </template>
-          <el-table v-if="currentType" v-loading="dataLoading" :data="dataList" border stripe>
+          <el-table v-if="currentType" v-loading="dataLoading" :data="dataList ?? []" border stripe>
             <el-table-column prop="label" :label="t('system.dict.label')" min-width="120" show-overflow-tooltip />
             <el-table-column prop="value" :label="t('system.dict.value')" />
             <el-table-column prop="sort" :label="t('system.common.sort')" align="center" />
@@ -191,10 +191,9 @@ const {
   handleTypeClick,
   handleTypeSaved,
   typeDialogVisible,
-  typeList,
   typeLoading,
   typePage,
-  typeTotal,
+  typePageResponse,
 } = useDictManagement()
 </script>
 

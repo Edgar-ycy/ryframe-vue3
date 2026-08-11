@@ -30,3 +30,16 @@ export interface PageResponse<T> {
   total_pages: number
   max_page_size: number
 }
+
+/** 构造与后端分页协议一致的空结果，保留调用方当前页与每页数量。 */
+export function emptyPageResponse<T>(query?: PageQuery): PageResponse<T> {
+  const pageSize = query?.page_size ?? 10
+  return {
+    items: [],
+    page: query?.page ?? 1,
+    page_size: pageSize,
+    total: 0,
+    total_pages: 0,
+    max_page_size: pageSize,
+  }
+}

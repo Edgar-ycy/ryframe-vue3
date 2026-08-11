@@ -3,6 +3,7 @@
     v-model="visible"
     :title="t('system.role.assignPermissionTitle')"
     width="min(620px, calc(100vw - 32px))"
+    @open="handleOpen"
     @closed="reset"
   >
     <div class="permission-tree-options">
@@ -68,20 +69,15 @@ import { useUserStore } from '@/stores/user'
 const { t } = useI18n()
 
 const props = defineProps<{
-  modelValue: boolean
   role: RoleRecord | null
   permissionTree: PermissionTreeNode[]
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   saved: []
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
+const visible = defineModel<boolean>({ required: true })
 const treeRef = ref<TreeInstance>()
 const checkedKeys = ref<Id[]>([])
 const expandedAll = ref(false)
@@ -111,7 +107,7 @@ const assignmentMutation = useTenantMutation<void, { roleId: Id, permissionIds: 
     },
   },
 )
-const loading = computed(() => assignmentsQuery.isFetching.value)
+const loading = assignmentsQuery.isFetching
 const submitting = assignmentMutation.pending
 const allNodeIds = computed(() => flattenNodeIds(props.permissionTree))
 const allSelected = computed(() => (
@@ -141,14 +137,12 @@ async function populateAssignments(ids: Id[]): Promise<void> {
   setAllExpanded(false)
 }
 
-watch(
-  () => props.modelValue,
-  (open) => {
-    if (!open || !props.role) return
-    reset()
-    if (assignmentsQuery.data.value) void populateAssignments(assignmentsQuery.data.value)
-  },
-)
+function handleOpen(): void {
+  if (!props.role) return
+  reset()
+  if (assignmentsQuery.data.value) void populateAssignments(assignmentsQuery.data.value)
+}
+
 watch(
   () => assignmentsQuery.data.value,
   ids => {

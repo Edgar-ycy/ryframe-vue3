@@ -1,6 +1,6 @@
 <template>
   <el-drawer
-    v-model="drawerVisible"
+    v-model="visible"
     :title="t('messageCenter.title')"
     size="min(460px, 100vw)"
     append-to-body
@@ -96,9 +96,7 @@ import { useI18n } from 'vue-i18n'
 import type { MessageRecord } from '@/api/modules/messages'
 import { formatMessageTime, messageSeverityType } from './formatters'
 
-const props = defineProps<{
-  visible: boolean
-  selectedIds: string[]
+defineProps<{
   connectionStatus: string
   connectionLabel: string
   messages: MessageRecord[]
@@ -108,8 +106,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
-  'update:selectedIds': [value: string[]]
   'drawer-open': []
   refresh: []
   'mark-all-read': []
@@ -119,14 +115,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const drawerVisible = computed({
-  get: () => props.visible,
-  set: value => emit('update:visible', value),
-})
-const selectedIds = computed({
-  get: () => props.selectedIds,
-  set: value => emit('update:selectedIds', value),
-})
+const visible = defineModel<boolean>('visible', { required: true })
+const selectedIds = defineModel<string[]>('selectedIds', { required: true })
 
 function severityLabel(severity: string): string {
   if (severity === 'success') return t('messageCenter.severitySuccess')

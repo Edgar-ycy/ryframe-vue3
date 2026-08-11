@@ -4,7 +4,8 @@ import {
   type OnlineUserQuery,
   type OnlineUserRecord,
 } from '@/api/modules/monitor'
-import type { PageResponse } from '@/shared/http/types'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
+import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -30,14 +31,7 @@ export function useOnlineManagement(t: Translate) {
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
     async signal => {
       const response = await listOnlineUser({ ...activeQueryParams.value }, signal)
-      return response.data ?? {
-        items: [],
-        page: activeQueryParams.value.page ?? 1,
-        page_size: activeQueryParams.value.page_size ?? 10,
-        total: 0,
-        total_pages: 0,
-        max_page_size: activeQueryParams.value.page_size ?? 10,
-      }
+      return response.data ?? emptyPageResponse<OnlineUserRecord>(activeQueryParams.value)
     },
   )
   const logoutMutation = useTenantMutation<void, OnlineUserRecord>(
@@ -53,9 +47,8 @@ export function useOnlineManagement(t: Translate) {
     },
   )
 
-  const loading = computed(() => onlineUsersQuery.isFetching.value)
-  const tableData = computed(() => onlineUsersQuery.data.value?.items ?? [])
-  const total = computed(() => onlineUsersQuery.data.value?.total ?? 0)
+  const loading = onlineUsersQuery.isFetching
+  const onlineUsers = onlineUsersQuery.data
   const forceLogoutPending = logoutMutation.pending
   const forcingSid = computed(() => (
     logoutMutation.pending.value ? logoutMutation.variables.value?.sid ?? null : null
@@ -98,15 +91,7 @@ export function useOnlineManagement(t: Translate) {
     await onlineUsersQuery.refetch({ throwOnError: true })
   }
 
-  onActivated(() => {
-    if (pageActive.value) return
-    pageActive.value = true
-    void onlineUsersQuery.refetch()
-  })
-
-  onDeactivated(() => {
-    pageActive.value = false
-  })
+  useKeepAlivePageActive(pageActive, () => onlineUsersQuery.refetch())
 
   return {
     fetchData,
@@ -116,8 +101,7 @@ export function useOnlineManagement(t: Translate) {
     handleReset,
     handleSearch,
     loading,
+    onlineUsers,
     queryParams,
-    tableData,
-    total,
   }
 }

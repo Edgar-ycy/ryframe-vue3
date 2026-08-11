@@ -2,17 +2,31 @@
   <el-dialog
     v-model="visible"
     :title="schedule ? t('monitor.schedules.editTitle') : t('monitor.schedules.addTitle')"
-    width="min(680px, calc(100vw - 32px))"
+    width="min(960px, calc(100vw - 24px))"
     :close-on-click-modal="!saving"
     :close-on-press-escape="!saving"
-    @closed="resetPreview"
+    destroy-on-close
+    @open="handleOpen"
+    @close="cancelPreview"
+    @closed="handleClosed"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="116px" class="schedule-form">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="132px" class="schedule-form">
       <el-form-item :label="t('monitor.schedules.name')" prop="name">
-        <el-input v-model="form.name" :placeholder="t('monitor.schedules.namePlaceholder')" maxlength="100" show-word-limit />
+        <el-input
+          v-model="form.name"
+          :placeholder="t('monitor.schedules.namePlaceholder')"
+          maxlength="100"
+          show-word-limit
+        />
       </el-form-item>
+
       <el-form-item :label="t('monitor.schedules.target')" prop="handler_key">
-        <el-select v-model="form.handler_key" :placeholder="t('monitor.schedules.targetPlaceholder')" filterable class="form-control-wide">
+        <el-select
+          v-model="form.handler_key"
+          :placeholder="t('monitor.schedules.targetPlaceholder')"
+          filterable
+          class="form-control-wide"
+        >
           <el-option
             v-for="target in targets"
             :key="target.handler_key"
@@ -21,66 +35,155 @@
             :disabled="!target.available"
           />
         </el-select>
-        <p v-if="selectedTarget && !selectedTarget.available" class="form-hint form-hint--warning">{{ t('monitor.schedules.unavailableTargetHint') }}</p>
+        <p v-if="selectedTarget() && !selectedTarget()?.available" class="form-hint form-hint--warning">
+          {{ t('monitor.schedules.unavailableTargetHint') }}
+        </p>
       </el-form-item>
-      <el-form-item :label="t('monitor.schedules.presets')">
-        <div class="cron-presets">
-          <el-button v-for="preset in cronPresets" :key="preset.value" size="small" @click="applyPreset(preset.value)">{{ preset.label }}</el-button>
-        </div>
+
+      <el-form-item prop="cron_expression" class="schedule-rule-item">
+        <CronScheduleBuilder
+          ref="builderRef"
+          v-model="form.cron_expression"
+          :disabled="saving"
+          @change="handleBuilderChange"
+        />
       </el-form-item>
-      <el-form-item :label="t('monitor.schedules.cron')" prop="cron_expression">
-        <el-input v-model="form.cron_expression" :placeholder="t('monitor.schedules.cronPlaceholder')" class="form-control-wide" />
-        <p class="form-hint">{{ t('monitor.schedules.advancedCronHint') }}</p>
-      </el-form-item>
+
       <el-form-item :label="t('monitor.schedules.timezone')" prop="timezone">
-        <el-input v-model="form.timezone" :placeholder="t('monitor.schedules.timezonePlaceholder')" class="form-control-wide" />
+        <el-select
+          :model-value="form.timezone"
+          :placeholder="t('monitor.schedules.timezonePlaceholder')"
+          filterable
+          allow-create
+          default-first-option
+          class="form-control-wide"
+          @update:model-value="updateTimezone"
+        >
+          <el-option v-for="timezone in timezoneOptions" :key="timezone" :label="timezone" :value="timezone" />
+        </el-select>
+        <p class="form-hint">{{ t('monitor.schedules.timezoneHint') }}</p>
       </el-form-item>
+
       <el-form-item :label="t('monitor.schedules.misfirePolicy')">
         <el-radio-group v-model="form.misfire_policy">
           <el-radio value="fire_once">{{ t('monitor.schedules.misfireFireOnce') }}</el-radio>
           <el-radio value="skip">{{ t('monitor.schedules.misfireSkip') }}</el-radio>
         </el-radio-group>
       </el-form-item>
+
       <el-form-item :label="t('monitor.schedules.concurrencyPolicy')">
         <el-radio-group v-model="form.concurrency_policy">
           <el-radio value="forbid">{{ t('monitor.schedules.concurrencyForbid') }}</el-radio>
           <el-radio value="allow">{{ t('monitor.schedules.concurrencyAllow') }}</el-radio>
         </el-radio-group>
       </el-form-item>
+
       <el-form-item :label="t('monitor.schedules.maxRuntime')" prop="max_runtime_seconds">
         <el-input-number v-model="form.max_runtime_seconds" :min="1" :max="86400" :precision="0" />
         <span class="runtime-unit">{{ t('monitor.schedules.maxRuntimeUnit') }}</span>
         <p class="form-hint">{{ t('monitor.schedules.maxRuntimeHint') }}</p>
       </el-form-item>
+
       <el-form-item :label="t('monitor.schedules.status')">
-        <el-switch v-model="form.enabled" :active-text="t('monitor.schedules.enabled')" :inactive-text="t('monitor.schedules.disabled')" />
+        <el-switch
+          v-model="form.enabled"
+          :active-text="t('monitor.schedules.enabled')"
+          :inactive-text="t('monitor.schedules.disabled')"
+        />
       </el-form-item>
     </el-form>
 
-    <section v-if="preview" class="schedule-preview" :aria-label="t('monitor.schedules.previewTitle')">
-      <h3>{{ t('monitor.schedules.previewTitle') }}</h3>
-      <p>{{ t('monitor.schedules.previewHint') }}</p>
-      <p>{{ t('monitor.schedules.browserTimezone', { timezone: browserTimezone }) }}</p>
-      <div class="table-scroll">
+    <section class="schedule-preview" :aria-label="t('monitor.schedules.previewTitle')">
+      <div class="schedule-preview__header">
+        <div>
+          <h3>{{ t('monitor.schedules.previewTitle') }}</h3>
+          <p>{{ t('monitor.schedules.previewServerHint') }}</p>
+        </div>
+        <el-tag :type="previewStatusType()" effect="plain">{{ previewStatusText() }}</el-tag>
+      </div>
+
+      <dl class="schedule-preview__metadata">
+        <div>
+          <dt>{{ t('monitor.schedules.summary') }}</dt>
+          <dd>{{ scheduleSummary || t('monitor.schedules.summaryIncomplete') }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('monitor.schedules.timezone') }}</dt>
+          <dd>{{ form.timezone || '—' }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('monitor.schedules.browserTimezoneLabel') }}</dt>
+          <dd>{{ browserTimezone }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('monitor.schedules.calculatedAt') }}</dt>
+          <dd>{{ preview ? formatUtcTime(preview.calculated_at) : '—' }}</dd>
+        </div>
+      </dl>
+
+      <div v-if="previewLoading" class="schedule-preview__state" v-loading="true">
+        <span>{{ t('monitor.schedules.previewLoading') }}</span>
+      </div>
+
+      <el-alert
+        v-else-if="previewError"
+        :title="previewError"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+
+      <el-empty
+        v-else-if="!canPreview()"
+        :description="t('monitor.schedules.previewIncomplete')"
+        :image-size="72"
+      />
+
+      <div v-else-if="preview" class="table-scroll">
         <el-table :data="preview.occurrences" border size="small" class="preview-table">
-          <el-table-column :label="t('monitor.schedules.scheduleTime')" min-width="180">
+          <el-table-column type="index" :label="t('monitor.schedules.sequence')" width="72" />
+          <el-table-column :label="t('monitor.schedules.scheduleTime')" min-width="190">
             <template #default="{ row }">{{ formatScheduleTime(row.utc, preview.timezone) }}</template>
           </el-table-column>
-          <el-table-column :label="t('monitor.schedules.utcTime')" min-width="180">
-            <template #default="{ row }">{{ formatUtcTime(row.utc) }}</template>
-          </el-table-column>
-          <el-table-column :label="t('monitor.schedules.browserTime')" min-width="180">
+          <el-table-column :label="t('monitor.schedules.browserTime')" min-width="190">
             <template #default="{ row }">{{ formatLocalizedDate(row.utc) }}</template>
           </el-table-column>
+          <el-table-column :label="t('monitor.schedules.utcTime')" min-width="190">
+            <template #default="{ row }">{{ formatUtcTime(row.utc) }}</template>
+          </el-table-column>
         </el-table>
+      </div>
+
+      <div v-else class="schedule-preview__state">
+        <span>{{ t('monitor.schedules.previewWaiting') }}</span>
+      </div>
+
+      <div class="schedule-preview__actions">
+        <el-button :loading="previewLoading" :disabled="saving || !canPreview()" @click="runPreviewNow">
+          {{ t('monitor.schedules.recalculatePreview') }}
+        </el-button>
       </div>
     </section>
 
     <template #footer>
-      <el-button :disabled="saving || previewPending" @click="visible = false">{{ t('monitor.schedules.cancel') }}</el-button>
-      <el-button :loading="previewPending" :disabled="saving" @click="handlePreview">{{ t('monitor.schedules.preview') }}</el-button>
-      <el-button type="primary" :loading="saving" :disabled="previewPending" @click="submit">
-        {{ preview ? t('monitor.schedules.confirmSave') : t('monitor.schedules.previewAndContinue') }}
+      <el-button :disabled="saving" @click="visible = false">{{ t('monitor.schedules.cancel') }}</el-button>
+      <el-button
+        v-if="!hasValidPreview()"
+        type="primary"
+        :loading="previewLoading"
+        :disabled="saving || !canPreview()"
+        @click="submit"
+      >
+        {{ t('monitor.schedules.previewAndContinue') }}
+      </el-button>
+      <el-button
+        v-else
+        type="primary"
+        :loading="saving"
+        :disabled="!canSubmit()"
+        @click="submit"
+      >
+        {{ t('monitor.schedules.confirmSave') }}
       </el-button>
     </template>
   </el-dialog>
@@ -88,7 +191,6 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
-import { useMutation } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import {
   previewSchedule,
@@ -99,7 +201,8 @@ import {
   type UpdateScheduleBody,
 } from '@/api/modules/monitor'
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
-import { requireOperationData } from '@/shared/http/client'
+import { HttpError, requireOperationData } from '@/shared/http/client'
+import CronScheduleBuilder from './CronScheduleBuilder.vue'
 
 type ScheduleFormModel = {
   name: string
@@ -110,6 +213,15 @@ type ScheduleFormModel = {
   misfire_policy: NonNullable<CreateScheduleBody['misfire_policy']>
   concurrency_policy: NonNullable<CreateScheduleBody['concurrency_policy']>
   max_runtime_seconds: number
+}
+
+type BuilderState = {
+  complete: boolean
+  summary: string
+}
+
+type BuilderInstance = {
+  loadExpression: (expression: string) => BuilderState
 }
 
 const props = defineProps<{
@@ -126,10 +238,19 @@ const emit = defineEmits<{
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const formRef = ref<FormInstance>()
-const preview = ref<JobSchedulePreview>()
-const previewSignature = ref('')
+const builderRef = ref<BuilderInstance>()
 const browserTimezone = browserTimeZone()
+const timezoneOptions = ref(buildTimezoneOptions())
 const form = reactive<ScheduleFormModel>(createDefaultForm())
+const builderComplete = ref(true)
+const scheduleSummary = ref('')
+const previewTimer = ref<ReturnType<typeof setTimeout>>()
+const previewController = ref<AbortController>()
+const previewRequestSequence = ref(0)
+const previewSignature = ref('')
+const previewLoading = ref(false)
+const previewError = ref('')
+const preview = ref<JobSchedulePreview>()
 
 const rules: FormRules<ScheduleFormModel> = {
   name: [
@@ -138,40 +259,9 @@ const rules: FormRules<ScheduleFormModel> = {
   ],
   handler_key: [{ required: true, message: t('monitor.schedules.targetRequired'), trigger: 'change' }],
   cron_expression: [{ required: true, message: t('monitor.schedules.cronRequired'), trigger: 'blur' }],
-  timezone: [{ required: true, message: t('monitor.schedules.timezoneRequired'), trigger: 'blur' }],
+  timezone: [{ required: true, message: t('monitor.schedules.timezoneRequired'), trigger: 'change' }],
   max_runtime_seconds: [{ required: true, message: t('monitor.schedules.runtimeRequired'), trigger: 'change' }],
 }
-
-const selectedTarget = computed(() => (
-  props.targets.find(target => target.handler_key === form.handler_key)
-))
-const cronPresets = computed(() => [
-  { label: t('monitor.schedules.presetHourly'), value: '0 0 * * * * *' },
-  { label: t('monitor.schedules.presetDaily'), value: '0 0 0 * * * *' },
-  { label: t('monitor.schedules.presetWeekly'), value: '0 0 0 * * MON *' },
-  { label: t('monitor.schedules.presetMonthly'), value: '0 0 0 1 * * *' },
-])
-const previewMutation = useMutation({
-  mutationFn: async () => {
-    const response = await previewSchedule({
-      cron_expression: form.cron_expression.trim(),
-      timezone: form.timezone.trim(),
-    })
-    return requireOperationData(response)
-  },
-})
-const previewPending = computed(() => previewMutation.isPending.value)
-
-watch(() => props.schedule, schedule => {
-  if (visible.value) resetForm(schedule)
-})
-watch(visible, isVisible => {
-  if (isVisible) resetForm(props.schedule)
-})
-watch(
-  () => [form.cron_expression, form.timezone],
-  () => resetPreview(),
-)
 
 function browserTimeZone(): string {
   try {
@@ -180,6 +270,21 @@ function browserTimeZone(): string {
   catch {
     return 'UTC'
   }
+}
+
+function buildTimezoneOptions(): string[] {
+  const values = new Set<string>(['UTC', 'Asia/Shanghai', browserTimezone])
+  try {
+    for (const timezone of Intl.supportedValuesOf('timeZone')) values.add(timezone)
+  }
+  catch {
+    // 旧浏览器不支持时保留最小 IANA 时区集合。
+  }
+  return [...values].filter(Boolean).sort((left, right) => {
+    if (left === 'UTC') return -1
+    if (right === 'UTC') return 1
+    return left.localeCompare(right)
+  })
 }
 
 function createDefaultForm(): ScheduleFormModel {
@@ -196,26 +301,47 @@ function createDefaultForm(): ScheduleFormModel {
 }
 
 function resetForm(schedule: JobScheduleRecord | undefined): void {
-  const next = schedule
+  Object.assign(form, schedule
     ? {
-      name: schedule.name,
-      handler_key: schedule.handler_key,
-      cron_expression: schedule.cron_expression,
-      timezone: schedule.timezone,
-      enabled: schedule.enabled,
-      misfire_policy: schedule.misfire_policy as ScheduleFormModel['misfire_policy'],
-      concurrency_policy: schedule.concurrency_policy as ScheduleFormModel['concurrency_policy'],
-      max_runtime_seconds: schedule.max_runtime_seconds,
-    }
-    : createDefaultForm()
-  Object.assign(form, next)
-  resetPreview()
+        name: schedule.name,
+        handler_key: schedule.handler_key,
+        cron_expression: schedule.cron_expression,
+        timezone: schedule.timezone,
+        enabled: schedule.enabled,
+        misfire_policy: schedule.misfire_policy as ScheduleFormModel['misfire_policy'],
+        concurrency_policy: schedule.concurrency_policy as ScheduleFormModel['concurrency_policy'],
+        max_runtime_seconds: schedule.max_runtime_seconds,
+      }
+    : createDefaultForm())
   void nextTick(() => formRef.value?.clearValidate())
 }
 
-function resetPreview(): void {
+async function handleOpen(): Promise<void> {
+  cancelPreview()
+  resetForm(props.schedule)
+  await nextTick()
+  const state = builderRef.value?.loadExpression(form.cron_expression)
+  builderComplete.value = state?.complete ?? Boolean(form.cron_expression.trim())
+  scheduleSummary.value = state?.summary ?? ''
+  schedulePreview()
+}
+
+function handleClosed(): void {
+  cancelPreview()
   preview.value = undefined
+  previewError.value = ''
   previewSignature.value = ''
+}
+
+function handleBuilderChange(state: BuilderState): void {
+  builderComplete.value = state.complete
+  scheduleSummary.value = state.summary
+  schedulePreview()
+}
+
+function updateTimezone(value: string): void {
+  form.timezone = value
+  schedulePreview()
 }
 
 function currentPreviewSignature(): string {
@@ -223,6 +349,122 @@ function currentPreviewSignature(): string {
     cron_expression: form.cron_expression.trim(),
     timezone: form.timezone.trim(),
   })
+}
+
+function canPreview(): boolean {
+  return builderComplete.value
+    && Boolean(form.cron_expression.trim())
+    && Boolean(form.timezone.trim())
+}
+
+function hasValidPreview(): boolean {
+  return Boolean(preview.value)
+    && previewSignature.value === currentPreviewSignature()
+    && !previewLoading.value
+}
+
+function schedulePreview(): void {
+  clearPreviewTimer()
+  previewController.value?.abort()
+  previewController.value = undefined
+  previewRequestSequence.value += 1
+  preview.value = undefined
+  previewSignature.value = ''
+  previewError.value = ''
+  if (!canPreview()) {
+    previewLoading.value = false
+    return
+  }
+  previewLoading.value = true
+  const signature = currentPreviewSignature()
+  previewTimer.value = setTimeout(() => {
+    previewTimer.value = undefined
+    void runPreview(signature)
+  }, 500)
+}
+
+function runPreviewNow(): void {
+  clearPreviewTimer()
+  if (!canPreview()) return
+  void runPreview(currentPreviewSignature())
+}
+
+async function runPreview(signature: string): Promise<boolean> {
+  clearPreviewTimer()
+  const validationError = previewInputError()
+  if (validationError) {
+    preview.value = undefined
+    previewSignature.value = ''
+    previewError.value = validationError
+    previewLoading.value = false
+    return false
+  }
+  previewController.value?.abort()
+  const controller = new AbortController()
+  previewController.value = controller
+  const sequence = previewRequestSequence.value + 1
+  previewRequestSequence.value = sequence
+  preview.value = undefined
+  previewSignature.value = ''
+  previewError.value = ''
+  previewLoading.value = true
+  try {
+    const result = requireOperationData(await previewSchedule({
+      cron_expression: form.cron_expression.trim(),
+      timezone: form.timezone.trim(),
+    }, controller.signal))
+    if (sequence !== previewRequestSequence.value || signature !== currentPreviewSignature()) return false
+    preview.value = result
+    previewSignature.value = signature
+    return true
+  }
+  catch (error) {
+    if (isCancelledRequest(error, controller.signal) || sequence !== previewRequestSequence.value) return false
+    previewError.value = error instanceof HttpError && error.errorKey === 'validation'
+      ? t('monitor.schedules.previewValidationFailed')
+      : error instanceof Error && error.message
+      ? error.message
+      : t('monitor.schedules.previewRequestFailed')
+    return false
+  }
+  finally {
+    if (sequence === previewRequestSequence.value) {
+      previewLoading.value = false
+      previewController.value = undefined
+    }
+  }
+}
+
+function previewInputError(): string {
+  const fields = form.cron_expression.trim().split(/\s+/)
+  if (fields.length !== 7) return t('monitor.schedules.cronSevenFieldsError')
+  if (fields[0] !== '0') return t('monitor.schedules.cronSecondError')
+  if (fields[6] !== '*') return t('monitor.schedules.cronYearError')
+  if (fields[3] !== '*' && fields[5] !== '*') return t('monitor.schedules.cronDayWeekError')
+  return ''
+}
+
+function isCancelledRequest(error: unknown, signal: AbortSignal): boolean {
+  if (signal.aborted) return true
+  if (error instanceof DOMException && error.name === 'AbortError') return true
+  return typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && (error as { code?: string }).code === 'ERR_CANCELED'
+}
+
+function clearPreviewTimer(): void {
+  if (previewTimer.value === undefined) return
+  clearTimeout(previewTimer.value)
+  previewTimer.value = undefined
+}
+
+function cancelPreview(): void {
+  clearPreviewTimer()
+  previewController.value?.abort()
+  previewController.value = undefined
+  previewRequestSequence.value += 1
+  previewLoading.value = false
 }
 
 function byteLength(value: string): number {
@@ -237,8 +479,23 @@ function validateName(_rule: unknown, value: unknown, callback: (error?: Error) 
   callback(new Error(t('monitor.schedules.nameTooLong')))
 }
 
-function applyPreset(value: string): void {
-  form.cron_expression = value
+function selectedTarget(): ScheduleTargetRecord | undefined {
+  return props.targets.find(target => target.handler_key === form.handler_key)
+}
+
+function isFormComplete(): boolean {
+  const target = selectedTarget()
+  return Boolean(form.name.trim())
+    && byteLength(form.name.trim()) <= 100
+    && Boolean(target?.available)
+    && canPreview()
+    && Number.isInteger(form.max_runtime_seconds)
+    && form.max_runtime_seconds >= 1
+    && form.max_runtime_seconds <= 86400
+}
+
+function canSubmit(): boolean {
+  return isFormComplete() && hasValidPreview() && !props.saving
 }
 
 async function validateForm(): Promise<boolean> {
@@ -250,18 +507,12 @@ async function validateForm(): Promise<boolean> {
   }
 }
 
-async function handlePreview(): Promise<boolean> {
-  if (!await validateForm()) return false
-  const result = await previewMutation.mutateAsync()
-  preview.value = result
-  previewSignature.value = currentPreviewSignature()
-  return true
-}
-
 async function submit(): Promise<void> {
-  if (!await validateForm()) return
-  if (previewSignature.value !== currentPreviewSignature()) {
-    await handlePreview()
+  if (props.saving || previewLoading.value) return
+  if (!await validateForm() || !isFormComplete()) return
+  if (!hasValidPreview()) {
+    const succeeded = await runPreview(currentPreviewSignature())
+    if (succeeded) ElMessage.info(t('monitor.schedules.previewReviewBeforeSave'))
     return
   }
   const payload: CreateScheduleBody = {
@@ -281,11 +532,25 @@ async function submit(): Promise<void> {
   emit('save', payload)
 }
 
+function previewStatusType(): 'success' | 'warning' | 'info' | 'danger' {
+  if (previewError.value) return 'danger'
+  if (hasValidPreview()) return 'success'
+  if (previewLoading.value) return 'warning'
+  return 'info'
+}
+
+function previewStatusText(): string {
+  if (previewError.value) return t('monitor.schedules.previewStatusFailed')
+  if (hasValidPreview()) return t('monitor.schedules.previewStatusValid')
+  if (previewLoading.value) return t('monitor.schedules.previewStatusCalculating')
+  return t('monitor.schedules.previewStatusPending')
+}
+
 function formatScheduleTime(value: string, timezone: string): string {
   try {
     return new Intl.DateTimeFormat(getApplicationLocale(), {
       timeZone: timezone,
-      dateStyle: 'short',
+      dateStyle: 'medium',
       timeStyle: 'medium',
     }).format(new Date(value))
   }
@@ -295,11 +560,17 @@ function formatScheduleTime(value: string, timezone: string): string {
 }
 
 function formatUtcTime(value: string): string {
-  return new Intl.DateTimeFormat(getApplicationLocale(), {
-    timeZone: 'UTC',
-    dateStyle: 'short',
-    timeStyle: 'medium',
-  }).format(new Date(value))
+  try {
+    const formatted = new Intl.DateTimeFormat(getApplicationLocale(), {
+      timeZone: 'UTC',
+      dateStyle: 'medium',
+      timeStyle: 'medium',
+    }).format(new Date(value))
+    return `${formatted} UTC`
+  }
+  catch {
+    return `${value} UTC`
+  }
 }
 
 function targetLabel(target: ScheduleTargetRecord): string {
@@ -308,6 +579,8 @@ function targetLabel(target: ScheduleTargetRecord): string {
     ? targetName
     : `${targetName} (${t('monitor.schedules.unavailable')})`
 }
+
+onBeforeUnmount(cancelPreview)
 </script>
 
 <style scoped lang="scss">
@@ -331,10 +604,9 @@ function targetLabel(target: ScheduleTargetRecord): string {
   color: var(--el-color-warning);
 }
 
-.cron-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.schedule-rule-item :deep(.el-form-item__content) {
+  display: block;
+  margin-left: 0 !important;
 }
 
 .runtime-unit {
@@ -343,10 +615,19 @@ function targetLabel(target: ScheduleTargetRecord): string {
 }
 
 .schedule-preview {
+  display: grid;
+  gap: 14px;
   padding: 16px;
   border: 1px solid var(--border-color-base);
   border-radius: var(--border-radius-base);
-  background: var(--border-color-light);
+  background: var(--color-bg-container);
+}
+
+.schedule-preview__header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
 
   h3,
   p {
@@ -359,21 +640,54 @@ function targetLabel(target: ScheduleTargetRecord): string {
   }
 
   p {
-    margin-top: 6px;
+    margin-top: 4px;
     color: var(--color-text-secondary);
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 12px;
   }
+}
+
+.schedule-preview__metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+
+  div {
+    min-width: 0;
+  }
+
+  dt {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+
+  dd {
+    margin: 3px 0 0;
+    overflow-wrap: anywhere;
+    color: var(--color-text-primary);
+    font-size: 13px;
+  }
+}
+
+.schedule-preview__state {
+  display: grid;
+  min-height: 96px;
+  place-items: center;
+  color: var(--color-text-secondary);
+}
+
+.schedule-preview__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .table-scroll {
   max-width: 100%;
-  margin-top: 12px;
   overflow-x: auto;
 }
 
 .preview-table {
-  min-width: 560px;
+  min-width: 650px;
 }
 
 @media (width <= 640px) {
@@ -390,6 +704,14 @@ function targetLabel(target: ScheduleTargetRecord): string {
   .schedule-form :deep(.el-form-item__content) {
     width: 100%;
     margin-left: 0 !important;
+  }
+
+  .schedule-preview__header {
+    flex-direction: column;
+  }
+
+  .schedule-preview__metadata {
+    grid-template-columns: 1fr;
   }
 }
 </style>

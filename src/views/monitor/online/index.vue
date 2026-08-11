@@ -16,8 +16,8 @@
     </el-card>
 
     <el-card shadow="never" style="margin-top:12px">
-      <template #header><span>{{ t('monitor.online.title', { count: total }) }}</span></template>
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <template #header><span>{{ t('monitor.online.title', { count: onlineUsers?.total ?? 0 }) }}</span></template>
+      <el-table v-loading="loading" :data="onlineUsers?.items ?? []" border stripe>
         <el-table-column prop="sid" :label="t('monitor.online.sessionId')" show-overflow-tooltip />
         <el-table-column prop="username" :label="t('monitor.online.username')" />
         <el-table-column prop="dept_name" :label="t('monitor.online.department')" show-overflow-tooltip />
@@ -45,7 +45,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total"
+        :total="onlineUsers?.total ?? 0"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         background
@@ -68,8 +68,7 @@ const {
   handleReset,
   handleSearch,
   loading,
+  onlineUsers,
   queryParams,
-  tableData,
-  total,
 } = useOnlineManagement(t)
 </script>

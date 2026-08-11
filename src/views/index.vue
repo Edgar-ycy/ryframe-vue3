@@ -3,7 +3,7 @@
     <header class="workspace-header">
       <div class="workspace-header__content">
         <p class="workspace-label">{{ t('dashboard.workspace') }}</p>
-        <h1>{{ t('dashboard.greeting', { name: displayName }) }}</h1>
+        <h1>{{ t('dashboard.greeting', { name: userStore.nickname || userStore.username || t('dashboard.defaultUser') }) }}</h1>
         <p class="workspace-subtitle">{{ t('dashboard.subtitle') }}</p>
       </div>
       <el-tag class="session-tag" type="success" effect="plain">{{ t('dashboard.signedIn') }}</el-tag>
@@ -17,11 +17,11 @@
         </div>
         <div>
           <dt>{{ t('dashboard.currentTenant') }}</dt>
-          <dd>{{ tenantLabel }}</dd>
+          <dd>{{ userStore.tenantName || userStore.tenantId || '-' }}</dd>
         </div>
         <div>
           <dt>{{ t('dashboard.role') }}</dt>
-          <dd>{{ roleLabel }}</dd>
+          <dd>{{ userStore.roles.length ? userStore.roles.join(', ') : '-' }}</dd>
         </div>
         <div>
           <dt>{{ t('dashboard.accessibleFeatures') }}</dt>
@@ -38,9 +38,9 @@
         </div>
       </div>
 
-      <div v-if="quickLinks.length" class="quick-grid">
+      <div v-if="allLinks.length" class="quick-grid">
         <button
-          v-for="link in quickLinks"
+          v-for="link in allLinks.slice(0, 8)"
           :key="link.path"
           type="button"
           class="quick-link"
@@ -79,9 +79,6 @@ const userStore = useUserStore()
 const { hasPermission, isAdmin } = usePermission()
 const { t } = useI18n()
 
-const displayName = computed(() => userStore.nickname || userStore.username || t('dashboard.defaultUser'))
-const tenantLabel = computed(() => userStore.tenantName || userStore.tenantId || '-')
-const roleLabel = computed(() => userStore.roles.length ? userStore.roles.join(', ') : '-')
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'
   && (isAdmin() || hasPermission('tenant:list')),
@@ -94,8 +91,6 @@ const allLinks = computed<DashboardLink[]>(() => {
   }
   return links
 })
-const quickLinks = computed(() => allLinks.value.slice(0, 8))
-
 function openLink(path: string): void {
   void router.push(path)
 }

@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    v-model="dialogVisible"
+    v-model="visible"
     :title="message?.title || t('messageCenter.detailTitle')"
     width="min(720px, calc(100vw - 32px))"
     append-to-body
@@ -24,7 +24,7 @@
       <div class="message-detail__markdown" v-html="renderedDetail" />
     </template>
     <template #footer>
-      <el-button @click="dialogVisible = false">{{ t('common.confirm') }}</el-button>
+      <el-button @click="visible = false">{{ t('common.confirm') }}</el-button>
       <el-button
         v-if="message"
         type="danger"
@@ -44,21 +44,16 @@ import { renderMarkdown } from '@/shared/markdown/render'
 import { formatMessageTime, messageSeverityType } from './formatters'
 
 const props = defineProps<{
-  visible: boolean
   message?: MessageRecord
   mutating: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
   'delete-one': [message: MessageRecord]
 }>()
 
 const { t } = useI18n()
-const dialogVisible = computed({
-  get: () => props.visible,
-  set: value => emit('update:visible', value),
-})
+const visible = defineModel<boolean>('visible', { required: true })
 const renderedDetail = computed(() => renderMarkdown(props.message?.content ?? ''))
 
 function severityLabel(severity: string): string {

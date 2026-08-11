@@ -30,8 +30,8 @@ export function usePermissionManagement() {
       return response.data ?? []
     },
   )
-  const tableData = computed(() => permissionsQuery.data.value ?? [])
-  const loading = computed(() => permissionsQuery.isFetching.value)
+  const tableData = permissionsQuery.data
+  const loading = permissionsQuery.isFetching
 
   const deleteMutation = useTenantMutation<void, PermissionTreeNode>(
     () => userStore.tenantId,
@@ -67,14 +67,14 @@ export function usePermissionManagement() {
     deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
   ))
   const syncLoading = syncMutation.pending
-  const syncReportTitle = computed(() => {
+  function syncReportTitle(): string {
     if (!syncReport.value) return ''
     return translate(
       syncReport.value.created > 0
         ? 'system.permission.syncDone'
         : 'system.permission.syncNoNew',
     )
-  })
+  }
   const parentTree = computed<PermissionTreeNode[]>(() => [{
     id: '0',
     name: translate('system.permission.root'),
@@ -82,7 +82,7 @@ export function usePermissionManagement() {
     perm_type: 'menu',
     sort: 0,
     status: '1',
-    children: tableData.value,
+    children: tableData.value ?? [],
   }])
 
   async function fetchData(): Promise<void> {

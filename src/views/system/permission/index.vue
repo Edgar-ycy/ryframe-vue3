@@ -26,7 +26,7 @@
       <el-alert
         v-if="syncReport"
         class="sync-alert"
-        :title="syncReportTitle"
+        :title="syncReportTitle()"
         type="success"
         closable
         show-icon
@@ -55,7 +55,7 @@
 
       <el-table
         v-loading="loading"
-        :data="tableData"
+        :data="tableData ?? []"
         border
         stripe
         row-key="id"

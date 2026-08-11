@@ -25,7 +25,7 @@
           </div>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
         <el-table-column prop="name" :label="t('system.config.name')" min-width="120" show-overflow-tooltip />
         <el-table-column prop="key" :label="t('system.config.key')" min-width="140" show-overflow-tooltip />
@@ -51,7 +51,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total" :page-sizes="[10, 20, 50, 100]"
+        :total="tableResponse?.total ?? 0" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
       />
@@ -95,8 +95,8 @@ import {
   type ConfigRecord,
 } from '@/api/modules/config'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
-import { useShellSettingsQuery } from '@/app/settings/shellSettingsQuery'
-import type { Id, PageResponse } from '@/shared/http/types'
+import { refreshShellSettings } from '@/app/settings/shellSettingsQuery'
+import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -105,7 +105,6 @@ import { confirmAction } from '@/utils/confirmAction'
 const { t } = useI18n()
 const userStore = useUserStore()
 const authenticated = () => userStore.sessionStatus === 'authenticated'
-const { refresh: refreshShellSettings } = useShellSettingsQuery()
 
 const queryParams = ref<ConfigQuery>({ page: 1, page_size: 10, name: '', key: '' })
 const activeQueryParams = ref<ConfigQuery>({ ...queryParams.value })
@@ -117,19 +116,11 @@ const configsQuery = useTenantQuery<PageResponse<ConfigRecord>>(
   () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
   async signal => {
     const response = await listConfig({ ...activeQueryParams.value }, signal)
-    return response.data ?? {
-      items: [],
-      page: activeQueryParams.value.page ?? 1,
-      page_size: activeQueryParams.value.page_size ?? 10,
-      total: 0,
-      total_pages: 0,
-      max_page_size: activeQueryParams.value.page_size ?? 10,
-    }
+    return response.data ?? emptyPageResponse<ConfigRecord>(activeQueryParams.value)
   },
 )
-const tableData = computed(() => configsQuery.data.value?.items ?? [])
-const total = computed(() => configsQuery.data.value?.total ?? 0)
-const loading = computed(() => configsQuery.isFetching.value)
+const tableResponse = configsQuery.data
+const loading = configsQuery.isFetching
 
 function handleExport() {
   return exportAndDownload(signal => exportConfig(activeQueryParams.value, signal), {
@@ -205,7 +196,7 @@ const saveMutation = useTenantMutation<void, SaveConfigCommand>(
         command.kind === 'update'
         && (command.key === 'sys.index.skinName' || command.key === 'sys.index.sideTheme')
       ) {
-        await refreshShellSettings()
+        await refreshShellSettings(userStore.tenantId)
       }
     },
   },

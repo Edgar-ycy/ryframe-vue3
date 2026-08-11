@@ -13,7 +13,7 @@ import { useAsyncExport } from '@/hooks/useAsyncExport'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
 import { translate } from '@/i18n'
-import type { Id, PageResponse } from '@/shared/http/types'
+import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { confirmAction } from '@/utils/confirmAction'
@@ -56,14 +56,7 @@ export function useUserManagement() {
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
     async signal => {
       const response = await listUser({ ...activeQueryParams.value }, signal)
-      return response.data ?? {
-        items: [],
-        page: activeQueryParams.value.page ?? 1,
-        page_size: activeQueryParams.value.page_size ?? 10,
-        total: 0,
-        total_pages: 0,
-        max_page_size: activeQueryParams.value.page_size ?? 10,
-      }
+      return response.data ?? emptyPageResponse<UserRecord>(activeQueryParams.value)
     },
   )
   const departmentsQuery = useTenantQuery<DeptNode[]>(
@@ -77,11 +70,10 @@ export function useUserManagement() {
     },
   )
 
-  const tableData = computed(() => usersQuery.data.value?.items ?? [])
-  const total = computed(() => usersQuery.data.value?.total ?? 0)
-  const loading = computed(() => usersQuery.isFetching.value)
-  const deptTree = computed(() => departmentsQuery.data.value ?? [])
-  const deptTreeLoading = computed(() => departmentsQuery.isFetching.value)
+  const tableResponse = usersQuery.data
+  const loading = usersQuery.isFetching
+  const deptTree = departmentsQuery.data
+  const deptTreeLoading = departmentsQuery.isFetching
 
   const statusMutation = useTenantMutation<void, StatusCommand>(
     () => userStore.tenantId,
@@ -261,8 +253,7 @@ export function useUserManagement() {
     selectedDeptId,
     selectedDeptName,
     statusUpdatingId,
-    tableData,
-    total,
+    tableResponse,
     userStatusLabel,
     userStatusTag,
     userDialogVisible,

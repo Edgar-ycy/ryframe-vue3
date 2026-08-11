@@ -1,8 +1,9 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isEdit ? t('system.role.editTitle') : t('system.role.addTitle')"
+    :title="isEdit() ? t('system.role.editTitle') : t('system.role.addTitle')"
     width="500px"
+    @open="handleOpen"
     @closed="resetForm"
   >
     <el-form ref="formRef" v-loading="detailLoading" :model="form" :rules="rules" label-width="80px">
@@ -10,12 +11,12 @@
         <el-input v-model="form.name" :placeholder="t('system.role.enterName')" maxlength="50" />
       </el-form-item>
       <el-form-item :label="t('system.role.code')" prop="code">
-        <el-input v-model="form.code" :disabled="isEdit" :placeholder="t('system.role.enterCode')" maxlength="50" />
+        <el-input v-model="form.code" :disabled="isEdit()" :placeholder="t('system.role.enterCode')" maxlength="50" />
       </el-form-item>
       <el-form-item :label="t('system.common.sort')">
         <el-input-number v-model="form.sort" :min="0" :max="999" />
       </el-form-item>
-      <el-form-item v-if="isEdit" :label="t('system.common.status')">
+      <el-form-item v-if="isEdit()" :label="t('system.common.status')">
         <el-radio-group v-model="form.status">
           <el-radio value="1">{{ t('system.common.normal') }}</el-radio>
           <el-radio value="0">{{ t('system.common.disabled') }}</el-radio>
@@ -25,7 +26,7 @@
     <template #footer>
       <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
-        v-perm="isEdit ? 'system:role:edit' : 'system:role:add'"
+        v-perm="isEdit() ? 'system:role:edit' : 'system:role:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
@@ -65,20 +66,17 @@ type SaveRoleCommand =
   | { kind: 'update', id: Id, data: RoleUpdateInput }
 
 const props = defineProps<{
-  modelValue: boolean
   role: RoleRecord | null
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   saved: []
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
-const isEdit = computed(() => props.role !== null)
+const visible = defineModel<boolean>({ required: true })
+function isEdit(): boolean {
+  return props.role !== null
+}
 const userStore = useUserStore()
 const formRef = ref<FormInstance>()
 const detailQuery = useTenantQuery<RoleRecord>(
@@ -111,7 +109,7 @@ const saveMutation = useTenantMutation<void, SaveRoleCommand>(
     },
   },
 )
-const detailLoading = computed(() => detailQuery.isFetching.value)
+const detailLoading = detailQuery.isFetching
 const submitting = saveMutation.pending
 
 function initialForm(): RoleFormState {
@@ -138,14 +136,11 @@ function populateForm(role: RoleRecord): void {
   }
 }
 
-watch(
-  () => props.modelValue,
-  (open) => {
-    if (!open) return
-    resetForm()
-    if (detailQuery.data.value) populateForm(detailQuery.data.value)
-  },
-)
+function handleOpen(): void {
+  resetForm()
+  if (detailQuery.data.value) populateForm(detailQuery.data.value)
+}
+
 watch(
   () => detailQuery.data.value,
   role => {

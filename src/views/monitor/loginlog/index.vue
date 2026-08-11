@@ -36,7 +36,7 @@
           <el-button v-perm="'system:logininfor:export'" icon="Download" :loading="exportLoading" @click="handleExport">{{ t('monitor.loginLog.export') }}</el-button>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <el-table v-loading="loading" :data="loginLogPage?.items ?? []" border stripe>
         <el-table-column prop="user_name" :label="t('monitor.loginLog.username')" />
         <el-table-column prop="ipaddr" :label="t('monitor.loginLog.ipAddress')" />
         <el-table-column prop="login_location" :label="t('monitor.loginLog.loginLocation')" show-overflow-tooltip />
@@ -53,7 +53,7 @@
         </el-table-column>
         <el-table-column prop="msg" :label="t('monitor.loginLog.message')" min-width="150" show-overflow-tooltip />
         <el-table-column :label="t('monitor.loginLog.loginTime')" min-width="160">
-          <template #default="{ row }">{{ formatDate(row.login_time) }}</template>
+          <template #default="{ row }">{{ formatOptionalLocalizedDate(row.login_time) }}</template>
         </el-table-column>
         <el-table-column :label="t('monitor.loginLog.operation')" fixed="right" align="center">
           <template #default="{ row }">
@@ -64,7 +64,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total" :page-sizes="[10, 20, 50, 100]"
+        :total="loginLogPage?.total ?? 0" :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper" background
         @change="fetchData"
       />
@@ -81,7 +81,7 @@
         <el-descriptions-item :label="t('monitor.loginLog.loginLocation')">{{ detailRow.login_location }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.loginLog.browser')">{{ detailRow.browser }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.loginLog.operatingSystem')">{{ detailRow.os }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.loginTime')" :span="2">{{ formatDate(detailRow.login_time) }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.loginTime')" :span="2">{{ formatOptionalLocalizedDate(detailRow.login_time) }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.loginLog.message')" :span="2">{{ detailRow.msg }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -93,7 +93,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { formatLocalizedDate } from '@/i18n'
+import { formatOptionalLocalizedDate } from '@/i18n'
 import {
   exportLoginLog,
   listLoginLog,
@@ -101,7 +101,8 @@ import {
   type LoginLogRecord,
 } from '@/api/modules/monitor'
 import { useAsyncExport } from '@/hooks/useAsyncExport'
-import type { PageResponse } from '@/shared/http/types'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
+import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -123,20 +124,12 @@ const loginLogsQuery = useTenantQuery<PageResponse<LoginLogRecord>>(
   () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
   async signal => {
     const response = await listLoginLog({ ...activeQueryParams.value }, signal)
-    return response.data ?? {
-      items: [],
-      page: activeQueryParams.value.page ?? 1,
-      page_size: activeQueryParams.value.page_size ?? 10,
-      total: 0,
-      total_pages: 0,
-      max_page_size: activeQueryParams.value.page_size ?? 10,
-    }
+    return response.data ?? emptyPageResponse<LoginLogRecord>(activeQueryParams.value)
   },
 )
 
-const loading = computed(() => loginLogsQuery.isFetching.value)
-const tableData = computed(() => loginLogsQuery.data.value?.items ?? [])
-const total = computed(() => loginLogsQuery.data.value?.total ?? 0)
+const loading = loginLogsQuery.isFetching
+const loginLogPage = loginLogsQuery.data
 
 function handleExport() {
   return exportAndDownload(
@@ -186,17 +179,5 @@ function handleDetail(row: LoginLogRecord): void {
   detailVisible.value = true
 }
 
-function formatDate(value: string | null | undefined): string {
-  return value ? formatLocalizedDate(value) : '—'
-}
-
-onActivated(() => {
-  if (pageActive.value) return
-  pageActive.value = true
-  void loginLogsQuery.refetch()
-})
-
-onDeactivated(() => {
-  pageActive.value = false
-})
+useKeepAlivePageActive(pageActive, () => loginLogsQuery.refetch())
 </script>

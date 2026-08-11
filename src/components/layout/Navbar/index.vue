@@ -34,10 +34,11 @@
         <el-icon :size="24"><FullScreen /></el-icon>
       </el-button>
       <el-switch
-        v-model="isDark"
+        :model-value="settingsStore.theme === 'dark'"
         inline-prompt
         class="theme-switch"
         :aria-label="t('settings.theme')"
+        @update:model-value="setDarkMode"
       >
         <template #active-icon><el-icon><Moon /></el-icon></template>
         <template #inactive-icon><el-icon><Sunny /></el-icon></template>
@@ -97,10 +98,9 @@ const { imageSrc: avatarSrc } = useAuthenticatedImage(() => userStore.avatar)
 const settingsVisible = ref(false)
 const breadcrumbs = computed(() => route.matched.filter(item => item.meta?.title))
 
-const isDark = computed({
-  get: () => settingsStore.theme === 'dark',
-  set: (value: boolean) => settingsStore.setTheme(value ? 'dark' : 'light'),
-})
+function setDarkMode(value: boolean): void {
+  settingsStore.setTheme(value ? 'dark' : 'light')
+}
 
 async function toggleFullscreen(): Promise<void> {
   try {

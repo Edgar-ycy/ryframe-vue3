@@ -1,8 +1,8 @@
 <template>
-  <el-dialog v-model="visible" :title="isEdit ? t('system.user.editTitle') : t('system.user.addTitle')" width="580px" @closed="resetForm">
+  <el-dialog v-model="visible" :title="isEdit() ? t('system.user.editTitle') : t('system.user.addTitle')" width="580px" @open="handleOpen" @closed="resetForm">
     <el-form ref="formRef" v-loading="detailLoading" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="t('system.user.username')" prop="username">
-        <el-input v-model="form.username" :disabled="isEdit" :placeholder="t('system.user.enterUsername')" maxlength="50" />
+        <el-input v-model="form.username" :disabled="isEdit()" :placeholder="t('system.user.enterUsername')" maxlength="50" />
       </el-form-item>
       <el-form-item :label="t('system.user.nickname')" prop="nickname">
         <el-input v-model="form.nickname" :placeholder="t('system.user.enterNickname')" maxlength="50" />
@@ -24,7 +24,7 @@
           style="width:100%"
         />
       </el-form-item>
-      <el-form-item v-if="!isEdit" :label="t('system.user.role')">
+      <el-form-item v-if="!isEdit()" :label="t('system.user.role')">
         <el-select
           v-model="form.role_ids"
           multiple
@@ -34,6 +34,7 @@
           :loading="roleOptionsLoading"
           :placeholder="t('system.user.selectRole')"
           style="width:100%"
+          @change="syncSelectedRoleOptions"
         >
           <el-option
             v-for="role in roleOptions"
@@ -48,7 +49,7 @@
     <template #footer>
       <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
       <el-button
-        v-perm="isEdit ? 'system:user:edit' : 'system:user:add'"
+        v-perm="isEdit() ? 'system:user:edit' : 'system:user:add'"
         type="primary"
         :loading="submitting"
         @click="submit"
@@ -94,21 +95,18 @@ type SaveUserCommand =
   | { kind: 'update', id: Id, data: UserUpdateInput }
 
 const props = defineProps<{
-  modelValue: boolean
   user: UserRecord | null
   deptTree: DeptNode[]
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   saved: []
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
-const isEdit = computed(() => props.user !== null)
+const visible = defineModel<boolean>({ required: true })
+function isEdit(): boolean {
+  return props.user !== null
+}
 const userStore = useUserStore()
 const selectedRoleOptions = ref<SelectOption[]>([])
 const {
@@ -116,7 +114,7 @@ const {
   options: roleOptions,
   remoteMethod: remoteRoleSearch,
   resetSearch: resetRoleSearch,
-} = useRoleOptions(() => visible.value && !isEdit.value, selectedRoleOptions)
+} = useRoleOptions(() => visible.value && !isEdit(), selectedRoleOptions)
 
 const formRef = ref<FormInstance>()
 const detailQuery = useTenantQuery<UserDetail>(
@@ -136,7 +134,7 @@ const detailQuery = useTenantQuery<UserDetail>(
     return response.data
   },
 )
-const detailLoading = computed(() => detailQuery.isFetching.value)
+const detailLoading = detailQuery.isFetching
 const saveMutation = useTenantMutation<void, SaveUserCommand>(
   () => userStore.tenantId,
   'users',
@@ -185,19 +183,15 @@ function resetForm() {
   formRef.value?.clearValidate()
 }
 
-watch(
-  () => form.value.role_ids,
-  (roleIds) => {
-    const known = new Map(
-      [...selectedRoleOptions.value, ...roleOptions.value]
-        .map(option => [option.value, option]),
-    )
-    selectedRoleOptions.value = roleIds
-      .map(roleId => known.get(roleId))
-      .filter((option): option is SelectOption => option !== undefined)
-  },
-  { deep: true },
-)
+function syncSelectedRoleOptions(): void {
+  const known = new Map(
+    [...selectedRoleOptions.value, ...roleOptions.value]
+      .map(option => [option.value, option]),
+  )
+  selectedRoleOptions.value = form.value.role_ids
+    .map(roleId => known.get(roleId))
+    .filter((option): option is SelectOption => option !== undefined)
+}
 
 function populateForm(detail: UserDetail): void {
   form.value = {
@@ -210,14 +204,11 @@ function populateForm(detail: UserDetail): void {
   }
 }
 
-watch(
-  () => props.modelValue,
-  open => {
-    if (!open) return
-    resetForm()
-    if (detailQuery.data.value) populateForm(detailQuery.data.value)
-  },
-)
+function handleOpen(): void {
+  resetForm()
+  if (detailQuery.data.value) populateForm(detailQuery.data.value)
+}
+
 watch(
   () => detailQuery.data.value,
   detail => {
@@ -227,7 +218,7 @@ watch(
 
 async function submit() {
   if (submitting.value) return
-  const fields = isEdit.value ? ['nickname'] : ['username', 'nickname']
+  const fields = isEdit() ? ['nickname'] : ['username', 'nickname']
   const valid = await formRef.value?.validateField(fields).catch(() => false)
   if (valid === false) return
   const editingUser = props.user

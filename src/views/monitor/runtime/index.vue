@@ -1,6 +1,6 @@
 <template>
   <div v-loading="loading && !runtime" class="page-container monitor-page">
-    <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="monitor-page__alert" />
+    <el-alert v-if="error?.message" :title="error?.message ?? ''" type="error" show-icon :closable="false" class="monitor-page__alert" />
     <div class="monitor-page__actions">
       <el-button v-perm="'monitor:runtime:list'" :loading="loading" @click="fetchRuntime">
         <el-icon><Refresh /></el-icon>
@@ -62,6 +62,26 @@
           <el-tag :type="circuitTagType" size="large">{{ circuitStatusText }}</el-tag>
         </el-card>
       </el-col>
+
+      <el-col :xs="24" :sm="12" :lg="6">
+        <el-card shadow="never" class="monitor-metric-card monitor-metric-card--tall">
+          <div class="monitor-metric-header">
+            <el-icon><Operation /></el-icon>
+            <span>{{ t('monitor.runtime.jobMode') }}</span>
+          </div>
+          <el-tag type="info" size="large">{{ jobModeText() }}</el-tag>
+        </el-card>
+      </el-col>
+
+      <el-col :xs="24" :sm="12" :lg="6">
+        <el-card shadow="never" class="monitor-metric-card monitor-metric-card--tall">
+          <div class="monitor-metric-header">
+            <el-icon><Timer /></el-icon>
+            <span>{{ t('monitor.runtime.scheduler') }}</span>
+          </div>
+          <el-tag :type="schedulerTagType()" size="large">{{ schedulerStatusText() }}</el-tag>
+        </el-card>
+      </el-col>
     </el-row>
 
     <section class="monitor-section-card">
@@ -85,9 +105,10 @@
 </template>
 
 <script setup lang="ts">
-import { Coin, Connection, FolderOpened, Refresh, Switch } from '@element-plus/icons-vue'
+import { Coin, Connection, FolderOpened, Operation, Refresh, Switch, Timer } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { getRuntimeStatus, type RuntimeStatus } from '@/api/modules/monitor'
+import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -104,9 +125,9 @@ const runtimeQuery = useTenantQuery<RuntimeStatus | null>(
     return response.data ?? null
   },
 )
-const loading = computed(() => runtimeQuery.isFetching.value)
-const runtime = computed(() => runtimeQuery.data.value ?? null)
-const errorMessage = computed(() => runtimeQuery.error.value?.message ?? '')
+const loading = runtimeQuery.isFetching
+const runtime = runtimeQuery.data
+const error = runtimeQuery.error
 
 interface DatabaseNodeRow {
   name: string
@@ -191,17 +212,28 @@ const redisStatusText = computed(() => {
   return runtime.value.redis.connected ? t('monitor.runtime.connected') : t('monitor.runtime.disconnected')
 })
 
+function jobModeText(): string {
+  const mode = runtime.value?.jobs.mode
+  if (mode === 'embedded') return t('monitor.runtime.jobModeEmbedded')
+  if (mode === 'external') return t('monitor.runtime.jobModeExternal')
+  if (mode === 'disabled') return t('monitor.runtime.jobModeDisabled')
+  return '—'
+}
+
+function schedulerTagType(): 'success' | 'info' {
+  return runtime.value?.jobs.scheduler_enabled ? 'success' : 'info'
+}
+
+function schedulerStatusText(): string {
+  if (!runtime.value) return '—'
+  return runtime.value.jobs.scheduler_enabled
+    ? t('monitor.runtime.schedulerEnabled')
+    : t('monitor.runtime.schedulerDisabled')
+}
+
 async function fetchRuntime(): Promise<void> {
   await runtimeQuery.refetch({ throwOnError: true })
 }
 
-onActivated(() => {
-  if (pageActive.value) return
-  pageActive.value = true
-  void runtimeQuery.refetch()
-})
-
-onDeactivated(() => {
-  pageActive.value = false
-})
+useKeepAlivePageActive(pageActive, () => runtimeQuery.refetch())
 </script>

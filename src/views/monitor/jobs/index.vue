@@ -2,14 +2,14 @@
   <div class="page-container jobs-page">
     <section class="job-stats" :aria-label="t('monitor.jobs.title')">
       <el-card
-        v-for="item in statItems"
-        :key="item.key"
+        v-for="key in statKeys"
+        :key="key"
         shadow="never"
         class="job-stat-card"
-        :class="`job-stat-card--${item.key}`"
+        :class="`job-stat-card--${key}`"
       >
-        <span class="job-stat-card__label">{{ item.label }}</span>
-        <strong v-loading="statsLoading" class="job-stat-card__value">{{ item.value }}</strong>
+        <span class="job-stat-card__label">{{ statLabel(key) }}</span>
+        <strong v-loading="statsLoading" class="job-stat-card__value">{{ statValue(key) }}</strong>
       </el-card>
     </section>
 
@@ -46,10 +46,17 @@
         </div>
       </template>
 
-      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="jobs-card__error" />
+      <el-alert
+        v-if="jobsError?.message || statsError?.message"
+        :title="jobsError?.message || statsError?.message || ''"
+        type="error"
+        show-icon
+        :closable="false"
+        class="jobs-card__error"
+      />
 
       <div class="table-scroll">
-        <el-table v-loading="loading" :data="tableData" border stripe class="jobs-table" :empty-text="t('common.noData')">
+        <el-table v-loading="loading" :data="jobs?.items ?? []" border stripe class="jobs-table" :empty-text="t('common.noData')">
           <el-table-column prop="id" :label="t('monitor.jobs.id')" min-width="178" show-overflow-tooltip />
           <el-table-column prop="job_type" :label="t('monitor.jobs.jobType')" min-width="150" show-overflow-tooltip />
           <el-table-column :label="t('monitor.jobs.scheduleId')" min-width="125" show-overflow-tooltip>
@@ -67,25 +74,25 @@
             <template #default="{ row }">{{ t('monitor.jobs.attemptsValue', { attempts: row.attempts, max: row.max_attempts }) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.scheduledFor')" min-width="160">
-            <template #default="{ row }">{{ formatDate(row.scheduled_for) }}</template>
+            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.scheduled_for) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.availableAt')" min-width="160">
-            <template #default="{ row }">{{ formatDate(row.available_at) }}</template>
+            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.available_at) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.lease')" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">
               <div v-if="row.lease_until" class="lease-cell">
                 <span>{{ row.lease_owner ?? t('monitor.jobs.noLease') }}</span>
-                <span>{{ formatDate(row.lease_until) }}</span>
+                <span>{{ formatOptionalLocalizedDate(row.lease_until) }}</span>
               </div>
               <span v-else>{{ t('monitor.jobs.noLease') }}</span>
             </template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.createdAt')" min-width="160">
-            <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
+            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.created_at) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.completedAt')" min-width="160">
-            <template #default="{ row }">{{ formatDate(row.completed_at) }}</template>
+            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.completed_at) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.lastError')" min-width="140" show-overflow-tooltip>
             <template #default="{ row }">
@@ -114,7 +121,7 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="total"
+        :total="jobs?.total ?? 0"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         background
@@ -144,7 +151,7 @@
 <script setup lang="ts">
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { formatLocalizedDate } from '@/i18n'
+import { formatOptionalLocalizedDate } from '@/i18n'
 import { usePermission } from '@/hooks/usePermission'
 import { useJobManagement } from './useJobManagement'
 
@@ -155,11 +162,12 @@ const { hasPermission } = usePermission()
 
 const {
   errorDialogVisible,
-  errorMessage,
   fetchData,
   handleReset,
   handleRetry,
   handleSearch,
+  jobs,
+  jobsError,
   loading,
   queryParams,
   refresh,
@@ -168,29 +176,26 @@ const {
   selectedError,
   showError,
   stats,
+  statsError,
   statsLoading,
   syncFromRoute,
-  tableData,
-  total,
 } = useJobManagement(t, route, scheduleId => {
   const query = scheduleId ? { schedule_id: String(scheduleId) } : {}
   if (route.query.schedule_id === query.schedule_id) return
   void router.replace({ query })
 })
 
-watch(() => route.fullPath, () => syncFromRoute(route))
+onBeforeRouteUpdate(nextRoute => syncFromRoute(nextRoute))
 
-const statItems = computed(() => [
-  { key: 'total', label: t('monitor.jobs.total'), value: stats.value.total },
-  { key: 'ready', label: t('monitor.jobs.ready'), value: stats.value.ready },
-  { key: 'pending', label: t('monitor.jobs.pending'), value: stats.value.pending },
-  { key: 'running', label: t('monitor.jobs.running'), value: stats.value.running },
-  { key: 'succeeded', label: t('monitor.jobs.succeeded'), value: stats.value.succeeded },
-  { key: 'dead', label: t('monitor.jobs.dead'), value: stats.value.dead },
-])
+const statKeys = ['total', 'ready', 'pending', 'running', 'succeeded', 'dead'] as const
+type JobStatKey = typeof statKeys[number]
 
-function formatDate(value: string | null | undefined): string {
-  return value ? formatLocalizedDate(value) : '—'
+function statLabel(key: JobStatKey): string {
+  return t(`monitor.jobs.${key}`)
+}
+
+function statValue(key: JobStatKey): number {
+  return stats.value?.[key] ?? 0
 }
 
 function statusLabel(status: string): string {

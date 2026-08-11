@@ -29,6 +29,7 @@
     "@tanstack/vue-query": "^5.101.4",
     "axios": "^1.18.1",
     "dompurify": "^3.4.12",
+    "echarts": "6.1.0",
     "element-plus": "^2.14.3",
     "markdown-it": "^14.3.0",
     "pinia": "^3.0.4",

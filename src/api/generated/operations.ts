@@ -128,6 +128,22 @@ export const operationManifest = {
     "method": "get",
     "path": "/monitor/metrics"
   },
+  "get_monitor_overview": {
+    "method": "get",
+    "path": "/monitor/overview"
+  },
+  "get_monitor_overview_trends": {
+    "method": "get",
+    "path": "/monitor/overview/trends"
+  },
+  "get_monitor_retention": {
+    "method": "get",
+    "path": "/monitor/retention"
+  },
+  "get_monitor_retention_runs": {
+    "method": "get",
+    "path": "/monitor/retention/runs"
+  },
   "get_monitor_runtime": {
     "method": "get",
     "path": "/monitor/runtime"
@@ -155,6 +171,10 @@ export const operationManifest = {
   "get_platform_tenants": {
     "method": "get",
     "path": "/platform/tenants"
+  },
+  "get_system_authorization_diagnostics_users_by_id": {
+    "method": "get",
+    "path": "/system/authorization-diagnostics/users/{id}"
   },
   "get_system_configs": {
     "method": "get",
@@ -268,6 +288,22 @@ export const operationManifest = {
     "method": "get",
     "path": "/system/roles/options"
   },
+  "get_system_user_imports": {
+    "method": "get",
+    "path": "/system/user-imports"
+  },
+  "get_system_user_imports_by_id": {
+    "method": "get",
+    "path": "/system/user-imports/{id}"
+  },
+  "get_system_user_imports_by_id_report": {
+    "method": "get",
+    "path": "/system/user-imports/{id}/report"
+  },
+  "get_system_user_imports_by_id_rows": {
+    "method": "get",
+    "path": "/system/user-imports/{id}/rows"
+  },
   "get_system_users": {
     "method": "get",
     "path": "/system/users"
@@ -335,6 +371,14 @@ export const operationManifest = {
   "post_monitor_jobs_by_id_retry": {
     "method": "post",
     "path": "/monitor/jobs/{id}/retry"
+  },
+  "post_monitor_retention_preview": {
+    "method": "post",
+    "path": "/monitor/retention/preview"
+  },
+  "post_monitor_retention_run": {
+    "method": "post",
+    "path": "/monitor/retention/run"
   },
   "post_monitor_schedules": {
     "method": "post",
@@ -432,6 +476,14 @@ export const operationManifest = {
     "method": "post",
     "path": "/system/roles/exports"
   },
+  "post_system_user_imports": {
+    "method": "post",
+    "path": "/system/user-imports"
+  },
+  "post_system_user_imports_by_id_cancel": {
+    "method": "post",
+    "path": "/system/user-imports/{id}/cancel"
+  },
   "post_system_users": {
     "method": "post",
     "path": "/system/users"
@@ -443,10 +495,6 @@ export const operationManifest = {
   "post_system_users_exports": {
     "method": "post",
     "path": "/system/users/exports"
-  },
-  "post_system_users_import": {
-    "method": "post",
-    "path": "/system/users/import"
   },
   "post_tools_gen_download": {
     "method": "post",

@@ -515,6 +515,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/monitor/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/overview/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_overview_trends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/retention": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_retention"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/retention/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_monitor_retention_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/retention/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_monitor_retention_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitor/retention/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_monitor_retention_runs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/monitor/runtime": {
         parameters: {
             query?: never;
@@ -700,6 +796,22 @@ export interface paths {
         };
         get?: never;
         put: operations["put_platform_tenants_by_tenant_id_status"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/authorization-diagnostics/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_authorization_diagnostics_users_by_id"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1537,6 +1649,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/user-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_user_imports"];
+        put?: never;
+        post: operations["post_system_user_imports"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/user-imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_user_imports_by_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/user-imports/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_system_user_imports_by_id_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/user-imports/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_user_imports_by_id_report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/user-imports/{id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_user_imports_by_id_rows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/users": {
         parameters: {
             query?: never;
@@ -1580,22 +1772,6 @@ export interface paths {
         put?: never;
         /** 创建用户异步导出任务，实际文件由 Worker 生成并保存到对象存储。 */
         post: operations["post_system_users_exports"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/users/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["post_system_users_import"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1861,6 +2037,16 @@ export interface components {
             request_id: string;
         };
         /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_DataRetentionRunVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_DataRetentionRunVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
         ApiPageResponse_DeptVo: {
             /** Format: int32 */
             code: number;
@@ -1981,6 +2167,26 @@ export interface components {
             request_id: string;
         };
         /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_UserImportJobVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_UserImportJobVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_UserImportRowVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_UserImportRowVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
         ApiPageResponse_UserVo: {
             /** Format: int32 */
             code: number;
@@ -2004,6 +2210,35 @@ export interface components {
                 name: string;
                 source_commit: string;
                 version: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_AuthorizationDiagnosticVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: date-time */
+                calculated_at: string;
+                data_scope: components["schemas"]["AuthorizationDiagnosticDataScopeVo"];
+                dynamic_refresh: components["schemas"]["AuthorizationDiagnosticRefreshVo"];
+                menus: components["schemas"]["AuthorizationDiagnosticMenuVo"][];
+                permissions: components["schemas"]["AuthorizationDiagnosticPermissionVo"][];
+                roles: components["schemas"]["AuthorizationDiagnosticRoleVo"][];
+                tenant: components["schemas"]["AuthorizationDiagnosticTenantVo"];
+                user: components["schemas"]["AuthorizationDiagnosticUserVo"];
+                versions: components["schemas"]["AuthorizationDiagnosticVersionVo"];
+                warnings: string[];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -2253,6 +2488,89 @@ export interface components {
             data?: {
                 csrf_token: string;
                 expires_in: number;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_DataRetentionOverview: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: date-time */
+                calculated_at: string;
+                cutoffs: components["schemas"]["DataRetentionCutoff"][];
+                policy: components["schemas"]["DataRetentionPolicy"];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_DataRetentionPreview: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: date-time */
+                calculated_at: string;
+                cutoffs: components["schemas"]["DataRetentionCutoff"][];
+                eligible_counts: {
+                    [key: string]: number;
+                };
+                policy: components["schemas"]["DataRetentionPolicy"];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_DataRetentionRunVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                background_job_id: string;
+                /** Format: date-time */
+                completed_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                deleted_counts: unknown;
+                eligible_counts: unknown;
+                error_summary?: string | null;
+                id: string;
+                policy_snapshot: unknown;
+                remaining_counts: unknown;
+                requested_by?: string | null;
+                /** Format: date-time */
+                started_at?: string | null;
+                status: string;
+                trigger_kind: string;
+                /** Format: date-time */
+                updated_at: string;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -2558,6 +2876,54 @@ export interface components {
             data?: {
                 next_cursor?: string | null;
                 records: components["schemas"]["MessageVo"][];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_MonitorOverviewTrendsVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: int32 */
+                bucket_seconds: number;
+                buckets: components["schemas"]["MonitorOverviewTrendBucketVo"][];
+                /** Format: date-time */
+                calculated_at: string;
+                range: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_MonitorOverviewVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: date-time */
+                calculated_at: string;
+                database_pool: components["schemas"]["MonitorOverviewDatabasePoolVo"];
+                dependencies: components["schemas"]["MonitorOverviewDependenciesVo"];
+                jobs: components["schemas"]["MonitorOverviewJobsVo"];
+                system: components["schemas"]["MonitorOverviewSystemVo"];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -2920,16 +3286,40 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_UserImportResult: {
+        ApiResponse_UserImportJobVo: {
             /**
              * Format: int32
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
             data?: {
-                errors: string[];
-                fail_count: number;
+                background_job_id: string;
+                cancel_requested: boolean;
+                /** Format: date-time */
+                completed_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                duplicate_policy: string;
+                /** Format: int32 */
+                failure_count: number;
+                id: string;
+                last_error?: string | null;
+                /** Format: int32 */
+                processed_rows: number;
+                report_available: boolean;
+                requester_user_id: string;
+                /** Format: int32 */
+                skipped_count: number;
+                source_name: string;
+                /** Format: date-time */
+                started_at?: string | null;
+                status: string;
+                /** Format: int32 */
                 success_count: number;
+                /** Format: int32 */
+                total_rows: number;
+                /** Format: date-time */
+                updated_at: string;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -3395,6 +3785,96 @@ export interface components {
             source_commit: string;
             version: string;
         };
+        AuthorizationDiagnosticDataScopeSourceVo: {
+            role_code: string;
+            scope: string;
+        };
+        AuthorizationDiagnosticDataScopeVo: {
+            custom_departments: components["schemas"]["AuthorizationDiagnosticDepartmentVo"][];
+            department_path: components["schemas"]["AuthorizationDiagnosticDepartmentVo"][];
+            include_self: boolean;
+            scope: string;
+            sources: components["schemas"]["AuthorizationDiagnosticDataScopeSourceVo"][];
+        };
+        AuthorizationDiagnosticDepartmentVo: {
+            id: string;
+            name: string;
+        };
+        AuthorizationDiagnosticMenuVo: {
+            accessible: boolean;
+            configured_visible: boolean;
+            id: string;
+            inaccessible_reason?: string | null;
+            name: string;
+            parent_id?: string | null;
+            permission_code?: string | null;
+            route_key?: string | null;
+            status: string;
+            visible_in_navigation: boolean;
+        };
+        AuthorizationDiagnosticPermissionVo: {
+            code: string;
+            effective: boolean;
+            id: string;
+            name: string;
+            source_roles: string[];
+        };
+        AuthorizationDiagnosticRefreshVo: {
+            response_header_epoch_fallback_available: boolean;
+            websocket_notification_available: boolean;
+            websocket_online_state_asserted: boolean;
+        };
+        AuthorizationDiagnosticRoleVo: {
+            code: string;
+            data_scope: string;
+            id: string;
+            is_super: boolean;
+            name: string;
+            participates: boolean;
+            status: string;
+        };
+        AuthorizationDiagnosticTenantVo: {
+            available: boolean;
+            /** Format: date-time */
+            expire_at?: string | null;
+            name: string;
+            status: string;
+            tenant_id: string;
+        };
+        AuthorizationDiagnosticUserVo: {
+            dept_id?: string | null;
+            dept_name?: string | null;
+            enabled: boolean;
+            final_access_enabled: boolean;
+            id: string;
+            nickname: string;
+            status: string;
+            username: string;
+        };
+        AuthorizationDiagnosticVersionVo: {
+            cache_status: string;
+            /** Format: int32 */
+            cached_tenant_authorization_epoch?: number | null;
+            /** Format: int32 */
+            cached_user_authorization_version?: number | null;
+            /** Format: int32 */
+            tenant_authorization_epoch: number;
+            /** Format: int32 */
+            user_authorization_version: number;
+        };
+        AuthorizationDiagnosticVo: {
+            /** Format: date-time */
+            calculated_at: string;
+            data_scope: components["schemas"]["AuthorizationDiagnosticDataScopeVo"];
+            dynamic_refresh: components["schemas"]["AuthorizationDiagnosticRefreshVo"];
+            menus: components["schemas"]["AuthorizationDiagnosticMenuVo"][];
+            permissions: components["schemas"]["AuthorizationDiagnosticPermissionVo"][];
+            roles: components["schemas"]["AuthorizationDiagnosticRoleVo"][];
+            tenant: components["schemas"]["AuthorizationDiagnosticTenantVo"];
+            user: components["schemas"]["AuthorizationDiagnosticUserVo"];
+            versions: components["schemas"]["AuthorizationDiagnosticVersionVo"];
+            warnings: string[];
+        };
         AvatarResponse: {
             avatar_url: string;
         };
@@ -3682,6 +4162,70 @@ export interface components {
             csrf_token: string;
             expires_in: number;
         };
+        DataRetentionCutoff: {
+            /** Format: date-time */
+            before: string;
+            resource: string;
+        };
+        DataRetentionOverview: {
+            /** Format: date-time */
+            calculated_at: string;
+            cutoffs: components["schemas"]["DataRetentionCutoff"][];
+            policy: components["schemas"]["DataRetentionPolicy"];
+        };
+        DataRetentionPolicy: {
+            /** Format: int32 */
+            background_job_succeeded_days: number;
+            cleanup_batch_size: number;
+            dead_background_jobs_permanent: boolean;
+            dead_outbox_events_permanent: boolean;
+            /** Format: int32 */
+            export_job_history_days: number;
+            /** Format: int32 */
+            login_log_days: number;
+            max_rows_per_resource_per_run: number;
+            /** Format: int32 */
+            operation_log_days: number;
+            /** Format: int32 */
+            outbox_published_days: number;
+            /** Format: int32 */
+            retention_run_days: number;
+            /** Format: int32 */
+            schedule_execution_days: number;
+            /** Format: int32 */
+            user_import_artifact_hours: number;
+            /** Format: int32 */
+            user_import_history_days: number;
+        };
+        DataRetentionPreview: {
+            /** Format: date-time */
+            calculated_at: string;
+            cutoffs: components["schemas"]["DataRetentionCutoff"][];
+            eligible_counts: {
+                [key: string]: number;
+            };
+            policy: components["schemas"]["DataRetentionPolicy"];
+        };
+        DataRetentionRunVo: {
+            background_job_id: string;
+            /** Format: date-time */
+            completed_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            deleted_counts: unknown;
+            eligible_counts: unknown;
+            error_summary?: string | null;
+            id: string;
+            policy_snapshot: unknown;
+            remaining_counts: unknown;
+            requested_by?: string | null;
+            /** Format: date-time */
+            started_at?: string | null;
+            status: string;
+            trigger_kind: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
         DbPoolInfo: {
             /** Format: int64 */
             active_connections?: number | null;
@@ -3741,6 +4285,8 @@ export interface components {
             remark?: string | null;
             status: string;
         };
+        /** @description 不携带业务字段的写操作请求体。 */
+        EmptyRequestDto: Record<string, never>;
         /** @description 导出任务响应。 */
         ExportJobVo: {
             /** Format: date-time */
@@ -3955,6 +4501,99 @@ export interface components {
         };
         /** @enum {string} */
         MisfirePolicyDto: "skip" | "fire_once";
+        MonitorOverviewDatabasePoolVo: {
+            /** Format: int64 */
+            active_connections?: number | null;
+            status: string;
+        };
+        MonitorOverviewDependenciesVo: {
+            database: components["schemas"]["MonitorOverviewDependencyVo"];
+            messaging: components["schemas"]["MonitorOverviewDependencyVo"];
+            object_storage: components["schemas"]["MonitorOverviewDependencyVo"];
+            redis: components["schemas"]["MonitorOverviewDependencyVo"];
+        };
+        MonitorOverviewDependencyVo: {
+            configured: boolean;
+            detail?: string | null;
+            status: string;
+        };
+        MonitorOverviewJobsVo: {
+            /** Format: int64 */
+            dead: number;
+            /** Format: int64 */
+            enabled_schedules: number;
+            mode: string;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            ready: number;
+            /** Format: int64 */
+            running: number;
+            /** Format: double */
+            schedule_lag_seconds: number;
+            scheduler_enabled: boolean;
+            /** Format: int64 */
+            succeeded: number;
+            /** Format: int64 */
+            total: number;
+        };
+        MonitorOverviewSystemVo: {
+            cpu_cores: number;
+            /** Format: float */
+            cpu_usage: number;
+            hostname: string;
+            /** Format: float */
+            memory_usage: number;
+            os: string;
+            process_id: string;
+            process_status: string;
+            /** Format: double */
+            total_memory_gb: number;
+            /** Format: int64 */
+            uptime_seconds: number;
+            /** Format: double */
+            used_memory_gb: number;
+        };
+        MonitorOverviewTrendBucketVo: {
+            /** Format: int64 */
+            background_jobs_created: number;
+            /** Format: int64 */
+            login_failure: number;
+            /** Format: int64 */
+            login_success: number;
+            /** Format: int64 */
+            operation_failure: number;
+            /** Format: int64 */
+            operation_success: number;
+            /** Format: int64 */
+            schedule_enqueued: number;
+            /** Format: int64 */
+            schedule_invalid_configuration: number;
+            /** Format: int64 */
+            schedule_skipped_concurrency: number;
+            /** Format: int64 */
+            schedule_skipped_misfire: number;
+            /** Format: int64 */
+            schedule_target_unavailable: number;
+            /** Format: date-time */
+            started_at: string;
+        };
+        MonitorOverviewTrendsVo: {
+            /** Format: int32 */
+            bucket_seconds: number;
+            buckets: components["schemas"]["MonitorOverviewTrendBucketVo"][];
+            /** Format: date-time */
+            calculated_at: string;
+            range: string;
+        };
+        MonitorOverviewVo: {
+            /** Format: date-time */
+            calculated_at: string;
+            database_pool: components["schemas"]["MonitorOverviewDatabasePoolVo"];
+            dependencies: components["schemas"]["MonitorOverviewDependenciesVo"];
+            jobs: components["schemas"]["MonitorOverviewJobsVo"];
+            system: components["schemas"]["MonitorOverviewSystemVo"];
+        };
         /** @description 通知公告响应。 */
         NoticeVo: {
             content_markdown: string;
@@ -4026,6 +4665,9 @@ export interface components {
             has_more: boolean;
             items: components["schemas"]["OptionItem"][];
         };
+        OverviewTrendQuery: {
+            range?: string;
+        };
         /** @description 分页接口的业务数据。 */
         PageData_BackgroundJobVo: {
             items: {
@@ -4078,6 +4720,39 @@ export interface components {
                 name: string;
                 remark?: string | null;
                 value: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_DataRetentionRunVo: {
+            items: {
+                background_job_id: string;
+                /** Format: date-time */
+                completed_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                deleted_counts: unknown;
+                eligible_counts: unknown;
+                error_summary?: string | null;
+                id: string;
+                policy_snapshot: unknown;
+                remaining_counts: unknown;
+                requested_by?: string | null;
+                /** Format: date-time */
+                started_at?: string | null;
+                status: string;
+                trigger_kind: string;
+                /** Format: date-time */
+                updated_at: string;
             }[];
             /** Format: int64 */
             max_page_size: number;
@@ -4402,6 +5077,71 @@ export interface components {
             total_pages: number;
         };
         /** @description 分页接口的业务数据。 */
+        PageData_UserImportJobVo: {
+            items: {
+                background_job_id: string;
+                cancel_requested: boolean;
+                /** Format: date-time */
+                completed_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                duplicate_policy: string;
+                /** Format: int32 */
+                failure_count: number;
+                id: string;
+                last_error?: string | null;
+                /** Format: int32 */
+                processed_rows: number;
+                report_available: boolean;
+                requester_user_id: string;
+                /** Format: int32 */
+                skipped_count: number;
+                source_name: string;
+                /** Format: date-time */
+                started_at?: string | null;
+                status: string;
+                /** Format: int32 */
+                success_count: number;
+                /** Format: int32 */
+                total_rows: number;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_UserImportRowVo: {
+            items: {
+                code: string;
+                /** Format: date-time */
+                created_at: string;
+                message: string;
+                outcome: string;
+                /** Format: int32 */
+                row_number: number;
+                username: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
         PageData_UserVo: {
             items: {
                 avatar?: string | null;
@@ -4567,6 +5307,13 @@ export interface components {
         };
         ReplaceUserRolesDto: {
             role_ids?: string[];
+        };
+        /** @description 数据保留运行记录分页参数。 */
+        RetentionRunPageQuery: {
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
         };
         /** @description 用户关联的简要角色信息。 */
         RoleBriefVo: {
@@ -4874,10 +5621,64 @@ export interface components {
             status?: string | null;
             username?: string | null;
         };
-        UserImportResult: {
-            errors: string[];
-            fail_count: number;
+        UserImportJobVo: {
+            background_job_id: string;
+            cancel_requested: boolean;
+            /** Format: date-time */
+            completed_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            duplicate_policy: string;
+            /** Format: int32 */
+            failure_count: number;
+            id: string;
+            last_error?: string | null;
+            /** Format: int32 */
+            processed_rows: number;
+            report_available: boolean;
+            requester_user_id: string;
+            /** Format: int32 */
+            skipped_count: number;
+            source_name: string;
+            /** Format: date-time */
+            started_at?: string | null;
+            status: string;
+            /** Format: int32 */
             success_count: number;
+            /** Format: int32 */
+            total_rows: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description 用户导入任务分页查询。 */
+        UserImportPageQuery: {
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+            status?: string | null;
+        };
+        /** @description 用户导入异常行分页查询。 */
+        UserImportRowPageQuery: {
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+        };
+        UserImportRowVo: {
+            code: string;
+            /** Format: date-time */
+            created_at: string;
+            message: string;
+            outcome: string;
+            /** Format: int32 */
+            row_number: number;
+            username: string;
+        };
+        /** @description OpenAPI 中的严格单文件上传表单。 */
+        UserImportUploadForm: {
+            /** Format: binary */
+            file: string;
         };
         /** @description 当前登录用户的公开信息。 */
         UserInfo: {
@@ -5845,6 +6646,142 @@ export interface operations {
             };
         };
     };
+    get_monitor_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前租户运维快照 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_MonitorOverviewVo"];
+                };
+            };
+        };
+    };
+    get_monitor_overview_trends: {
+        parameters: {
+            query?: {
+                range?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前租户补零后的 UTC 趋势桶 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_MonitorOverviewTrendsVo"];
+                };
+            };
+        };
+    };
+    get_monitor_retention: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前有效保留策略 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DataRetentionOverview"];
+                };
+            };
+        };
+    };
+    post_monitor_retention_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmptyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description 预计可清理数量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DataRetentionPreview"];
+                };
+            };
+        };
+    };
+    post_monitor_retention_run: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 人工清理幂等键 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmptyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description 清理任务已入队 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DataRetentionRunVo"];
+                };
+            };
+        };
+    };
+    get_monitor_retention_runs: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 数据保留运行记录 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_DataRetentionRunVo"];
+                };
+            };
+        };
+    };
     get_monitor_runtime: {
         parameters: {
             query?: never;
@@ -6300,6 +7237,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+        };
+    };
+    get_system_authorization_diagnostics_users_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 目标用户ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 主库授权诊断结果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_AuthorizationDiagnosticVo"];
                 };
             };
         };
@@ -8102,6 +9062,156 @@ export interface operations {
             };
         };
     };
+    get_system_user_imports: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 用户导入任务列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_UserImportJobVo"];
+                };
+            };
+        };
+    };
+    post_system_user_imports: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 用户导入幂等键 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UserImportUploadForm"];
+            };
+        };
+        responses: {
+            /** @description 用户导入任务已创建 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_UserImportJobVo"];
+                };
+            };
+        };
+    };
+    get_system_user_imports_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 用户导入任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 用户导入任务详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_UserImportJobVo"];
+                };
+            };
+        };
+    };
+    post_system_user_imports_by_id_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 用户导入任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmptyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description 已申请取消用户导入 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_UserImportJobVo"];
+                };
+            };
+        };
+    };
+    get_system_user_imports_by_id_report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 用户导入任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 用户导入错误报告 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                };
+            };
+        };
+    };
+    get_system_user_imports_by_id_rows: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 用户导入任务 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 用户导入异常行 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_UserImportRowVo"];
+                };
+            };
+        };
+    };
     get_system_users: {
         parameters: {
             query?: {
@@ -8204,30 +9314,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_ExportJobVo"];
-                };
-            };
-        };
-    };
-    post_system_users_import: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["FileUploadForm"];
-            };
-        };
-        responses: {
-            /** @description 导入用户 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_UserImportResult"];
                 };
             };
         };

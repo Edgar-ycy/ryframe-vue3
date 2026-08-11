@@ -1,6 +1,7 @@
 import type { AxiosRequestConfig } from 'axios'
 
 import type {
+  ApiOperation,
   OperationData,
   OperationJsonBody,
   OperationJsonResponse,
@@ -8,10 +9,16 @@ import type {
   OperationQuery,
 } from './contract'
 import { operationManifest, type OperationId } from './generated/operations'
-import request from '@/shared/http/client'
+import request, { requestBlob } from '@/shared/http/client'
 
 type JsonOperationId = {
   [Name in OperationId]: [OperationJsonResponse<Name>] extends [never] ? never : Name
+}[OperationId]
+
+type MultipartOperationId = {
+  [Name in OperationId]: ApiOperation<Name> extends {
+    requestBody: { content: { 'multipart/form-data': unknown } }
+  } ? Name : never
 }[OperationId]
 
 type RequestTransportOptions = Omit<
@@ -35,6 +42,16 @@ export type OperationRequestOptions<Name extends JsonOperationId> = RequestTrans
   & PathOptions<Name>
   & QueryOptions<Name>
   & BodyOptions<Name>
+
+export type MultipartOperationRequestOptions<Name extends MultipartOperationId> =
+  RequestTransportOptions
+  & PathOptions<Name>
+  & QueryOptions<Name>
+  & { data: FormData }
+
+export type BlobOperationRequestOptions<Name extends OperationId> = RequestTransportOptions
+  & PathOptions<Name>
+  & QueryOptions<Name>
 
 function resolveOperationPath(
   template: string,
@@ -75,4 +92,53 @@ export function requestOperation<Name extends JsonOperationId>(
   if (params !== undefined) config.params = params
   if (data !== undefined) config.data = data
   return request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
+}
+
+/** 使用 OpenAPI operationId 发送 multipart 请求，避免业务模块重复维护方法和路径。 */
+export function requestMultipartOperation<Name extends MultipartOperationId>(
+  operationId: Name,
+  options: MultipartOperationRequestOptions<Name>,
+): Promise<OperationJsonResponse<Name>> {
+  const operation = operationManifest[operationId]
+  const {
+    path: pathParameters,
+    params,
+    data,
+    ...transportOptions
+  } = options as RequestTransportOptions & {
+    path?: Record<string, unknown>
+    params?: unknown
+    data: FormData
+  }
+  const config: AxiosRequestConfig = {
+    ...transportOptions,
+    data,
+    method: operation.method,
+    url: resolveOperationPath(operation.path, pathParameters),
+  }
+  if (params !== undefined) config.params = params
+  return request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
+}
+
+/** 使用 OpenAPI operationId 下载二进制响应。 */
+export function requestBlobOperation<Name extends OperationId>(
+  operationId: Name,
+  options: BlobOperationRequestOptions<Name>,
+): Promise<Blob> {
+  const operation = operationManifest[operationId]
+  const {
+    path: pathParameters,
+    params,
+    ...transportOptions
+  } = options as RequestTransportOptions & {
+    path?: Record<string, unknown>
+    params?: unknown
+  }
+  const config: AxiosRequestConfig = {
+    ...transportOptions,
+    method: operation.method,
+    url: resolveOperationPath(operation.path, pathParameters),
+  }
+  if (params !== undefined) config.params = params
+  return requestBlob(config)
 }

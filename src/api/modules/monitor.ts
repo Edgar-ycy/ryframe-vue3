@@ -210,3 +210,54 @@ export function listScheduleExecutions(
     signal,
   })
 }
+
+// ========== 数据保留 (/monitor/retention) ==========
+
+export type RetentionRunQuery = OperationQuery<'get_monitor_retention_runs'>
+export type DataRetentionOverview = ApiSchema<'DataRetentionOverview'>
+export type DataRetentionPreview = ApiSchema<'DataRetentionPreview'>
+export type DataRetentionRunRecord = ApiSchema<'DataRetentionRunVo'>
+export type DataRetentionPolicy = ApiSchema<'DataRetentionPolicy'>
+
+/** 获取当前系统租户生效的数据保留策略。 */
+export function getDataRetention(signal?: AbortSignal) {
+  return requestOperation('get_monitor_retention', { signal })
+}
+
+/** 只统计当前策略可清理的数据，不执行删除。 */
+export function previewDataRetention(signal?: AbortSignal) {
+  return requestOperation('post_monitor_retention_preview', { data: {}, signal })
+}
+
+/** 人工入队一次数据保留任务。 */
+export function runDataRetention(idempotencyKey: string) {
+  return requestOperation('post_monitor_retention_run', {
+    data: {},
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+}
+
+/** 分页获取数据保留运行记录。 */
+export function listDataRetentionRuns(params: RetentionRunQuery, signal?: AbortSignal) {
+  return requestOperation('get_monitor_retention_runs', { params, signal })
+}
+
+// ========== 运维总览 (/monitor/overview) ==========
+
+export type OverviewRange = '6h' | '24h' | '7d'
+export type MonitorOverview = ApiSchema<'MonitorOverviewVo'>
+export type MonitorOverviewTrends = ApiSchema<'MonitorOverviewTrendsVo'>
+export type MonitorOverviewTrendBucket = ApiSchema<'MonitorOverviewTrendBucketVo'>
+
+/** 获取严格按当前租户聚合的实时运维快照。 */
+export function getMonitorOverview(signal?: AbortSignal) {
+  return requestOperation('get_monitor_overview', { signal })
+}
+
+/** 获取固定时间桶、已补零的租户运维趋势。 */
+export function getMonitorOverviewTrends(range: OverviewRange, signal?: AbortSignal) {
+  return requestOperation('get_monitor_overview_trends', {
+    params: { range },
+    signal,
+  })
+}

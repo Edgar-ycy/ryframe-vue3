@@ -87,6 +87,10 @@ export default defineConfig(({ mode }) => {
         '@tanstack/vue-query',
         'axios',
         'dompurify',
+        'echarts/charts',
+        'echarts/components',
+        'echarts/core',
+        'echarts/renderers',
         'element-plus',
         'element-plus/es',
         'element-plus/es/locale/lang/en',
@@ -122,6 +126,13 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id: string) {
             if (id.includes('node_modules/vue') || id.includes('node_modules/vue-router') || id.includes('node_modules/pinia')) return 'vue-vendor'
+            if (id.includes('node_modules/zrender')) return 'zrender-vendor'
+            if (id.includes('node_modules/echarts')) {
+              if (id.includes('/chart/')) return 'echarts-charts'
+              if (id.includes('/component/')) return 'echarts-components'
+              if (id.includes('/renderer/')) return 'echarts-renderer'
+              return 'echarts-core'
+            }
           },
         },
         onLog(level, log, defaultHandler) {

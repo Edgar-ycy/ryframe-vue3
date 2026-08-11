@@ -14,7 +14,8 @@ import {
   type UpdateScheduleBody,
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
-import { HttpError, requireOperationData } from '@/shared/http/client'
+import { requireOperationData } from '@/shared/http/client'
+import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { invalidateTenantResource, queryClient, tenantQueryKey } from '@/shared/query/client'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
@@ -52,15 +53,6 @@ function normalizeQueryParams(params: ScheduleQuery): ScheduleQuery {
 
 function isUpdatePayload(payload: ScheduleSavePayload): payload is UpdateScheduleBody {
   return 'version' in payload
-}
-
-function createIdempotencyKey(): string {
-  if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID()
-  return `schedule-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
-function hasUnknownRunOutcome(error: unknown): boolean {
-  return !(error instanceof HttpError) || error.status === undefined || error.status >= 500
 }
 
 /** 定时任务列表、目标目录和所有写操作的页面状态。 */
@@ -273,13 +265,13 @@ export function useScheduleManagement(t: Translate) {
       { type: 'warning' },
     )
     if (!confirmed || hasPendingWrite.value) return
-    const idempotencyKey = pendingRunKeys.get(row.id) ?? createIdempotencyKey()
+    const idempotencyKey = pendingRunKeys.get(row.id) ?? createIdempotencyKey('schedule')
     try {
       await runMutation.mutateAsync({ row, idempotencyKey })
       pendingRunKeys.delete(row.id)
     }
     catch (error) {
-      if (hasUnknownRunOutcome(error)) {
+      if (shouldReuseIdempotencyKey(error)) {
         pendingRunKeys.set(row.id, idempotencyKey)
       }
       else {

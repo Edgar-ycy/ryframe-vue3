@@ -279,6 +279,7 @@ const requiredQueryOperationIds = new Set([
   'get_auth_captcha_image',
   'get_common_file_download',
   'get_monitor_jobs',
+  'get_monitor_retention_runs',
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
   'get_system_configs',
@@ -296,11 +297,14 @@ const requiredQueryOperationIds = new Set([
   'get_system_roles',
   'get_system_roles_options',
   'get_system_users',
+  'get_system_user_imports',
+  'get_system_user_imports_by_id_rows',
   'get_system_users_options',
   'get_tools_gen_tables',
 ])
 const c1PaginatedOperationIds = new Set([
   'get_monitor_jobs',
+  'get_monitor_retention_runs',
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
   'get_system_configs',
@@ -313,6 +317,8 @@ const c1PaginatedOperationIds = new Set([
   'get_system_operlogs',
   'get_system_posts',
   'get_system_roles',
+  'get_system_user_imports',
+  'get_system_user_imports_by_id_rows',
   'get_system_users',
   'get_tools_gen_tables',
 ])
@@ -500,8 +506,8 @@ function validateC1QueryParameter(operationId, parameters, parameterName, expect
 }
 
 function validateC1QueryContracts() {
-  if (c1PaginatedOperationIds.size !== 15) {
-    errors.push(`C1 pagination manifest must contain 15 operationIds, found ${c1PaginatedOperationIds.size}`)
+  if (c1PaginatedOperationIds.size !== 18) {
+    errors.push(`C1 pagination manifest must contain 18 operationIds, found ${c1PaginatedOperationIds.size}`)
   }
   if (c1OptionOperationContracts.size !== 2) {
     errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)

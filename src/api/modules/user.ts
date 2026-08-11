@@ -29,7 +29,6 @@ export type PasswordResetRequestInput = OperationJsonBody<
   'post_system_users_by_id_password_reset_requests'
 >
 export type PasswordResetRequestResult = ApiSchema<'PasswordResetRequestResponse'>
-export type UserImportResult = ApiSchema<'UserImportResult'>
 
 /** 分页查询用户列表 */
 export function listUser(params: UserQuery, signal?: AbortSignal) {
@@ -101,14 +100,4 @@ export function exportUser(params?: UserExportQuery, signal?: AbortSignal) {
 /** 下载导入模板 */
 export function downloadImportTemplate() {
   return requestBlob({ url: `${BASE}/import-template`, method: 'get' })
-}
-
-/** 导入用户 */
-export function importUser(data: FormData) {
-  return request<UserImportResult>({
-    url: `${BASE}/import`,
-    method: 'post',
-    data,
-    timeout: 120000,
-  })
 }

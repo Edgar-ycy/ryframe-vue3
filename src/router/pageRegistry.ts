@@ -23,7 +23,9 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
   'system.operlog': { path: '/system/operlog', component: () => import('@/views/monitor/operlog/index.vue') },
   'system.logininfor': { path: '/system/logininfor', component: () => import('@/views/monitor/loginlog/index.vue') },
   'system.perm': { path: '/system/permission', component: () => import('@/views/system/permission/index.vue') },
+  'system.authorization-diagnostics': { path: '/system/authorization-diagnostics', component: () => import('@/views/system/authorization-diagnostics/index.vue') },
 
+  'monitor.overview': { path: '/monitor/overview', component: () => import('@/views/monitor/overview/index.vue') },
   'monitor.runtime': { path: '/monitor/runtime', component: () => import('@/views/monitor/runtime/index.vue') },
   'monitor.online': { path: '/monitor/online', component: () => import('@/views/monitor/online/index.vue') },
   'monitor.server': { path: '/monitor/server', component: () => import('@/views/monitor/server/index.vue') },
@@ -31,6 +33,7 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
   'monitor.db-pool': { path: '/monitor/db-pool', component: () => import('@/views/monitor/db-pool/index.vue') },
   'monitor.jobs': { path: '/monitor/jobs', component: () => import('@/views/monitor/jobs/index.vue') },
   'monitor.schedules': { path: '/monitor/schedules', component: () => import('@/views/monitor/schedules/index.vue') },
+  'monitor.retention': { path: '/monitor/retention', component: () => import('@/views/monitor/retention/index.vue') },
 
   'tools.gen': { path: '/tools/gen', component: () => import('@/views/tools/gen/index.vue') },
 }
@@ -51,6 +54,8 @@ export const permissionRouteKeys: Readonly<Record<string, string>> = Object.free
   'system:operlog:list': 'system.operlog',
   'system:logininfor:list': 'system.logininfor',
   'system:perm:list': 'system.perm',
+  'system:authorization-diagnostic:list': 'system.authorization-diagnostics',
+  'monitor:overview:list': 'monitor.overview',
   'monitor:runtime:list': 'monitor.runtime',
   'monitor:online:list': 'monitor.online',
   'monitor:server:list': 'monitor.server',
@@ -58,6 +63,7 @@ export const permissionRouteKeys: Readonly<Record<string, string>> = Object.free
   'monitor:db-pool:list': 'monitor.db-pool',
   'monitor:job:list': 'monitor.jobs',
   'monitor:schedule:list': 'monitor.schedules',
+  'monitor:retention:list': 'monitor.retention',
   'tools:gen:list': 'tools.gen',
 })
 

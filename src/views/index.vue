@@ -30,6 +30,8 @@
       </dl>
     </section>
 
+    <TenantActivityChart v-if="hasPermission('monitor:overview:list')" />
+
     <section class="quick-section">
       <div class="section-heading">
         <div>
@@ -62,6 +64,7 @@
 
 <script setup lang="ts">
 import { ArrowRight } from '@element-plus/icons-vue'
+import { defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePermission } from '@/hooks/usePermission'
 import { translateNavigationTitle } from '@/i18n'
@@ -78,6 +81,9 @@ const permissionStore = usePermissionStore()
 const userStore = useUserStore()
 const { hasPermission, isAdmin } = usePermission()
 const { t } = useI18n()
+const TenantActivityChart = defineAsyncComponent(
+  () => import('@/views/dashboard/TenantActivityChart.vue'),
+)
 
 const canManageTenants = computed(() =>
   userStore.tenantId === 'system'

@@ -72,6 +72,29 @@
             <span>{{ t('system.user.list') }}</span>
             <div>
               <el-button
+                v-if="hasPermission('system:user-import:add')"
+                icon="Download"
+                :loading="templateLoading"
+                @click="handleDownloadTemplate"
+              >
+                {{ t('system.userImport.downloadTemplate') }}
+              </el-button>
+              <el-button
+                v-if="hasPermission('system:user-import:list')"
+                icon="Clock"
+                @click="openImportHistory"
+              >
+                {{ t('system.userImport.history') }}
+              </el-button>
+              <el-button
+                v-if="hasPermission('system:user-import:add')"
+                icon="Upload"
+                :loading="importLoading"
+                @click="openImport"
+              >
+                {{ t('system.userImport.open') }}
+              </el-button>
+              <el-button
                 v-perm="'system:user:export'"
                 icon="Download"
                 :loading="exportLoading"
@@ -188,6 +211,8 @@
       @saved="fetchData"
     />
     <PasswordResetDialog v-model="passwordDialogVisible" :user-id="passwordResetUserId" />
+    <UserImportDialog v-model="importDialogVisible" :loading="importLoading" @submit="submitImport" />
+    <UserImportHistoryDrawer v-model="importHistoryVisible" />
   </div>
 </template>
 
@@ -195,12 +220,17 @@
 import { ArrowRight } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { UserManageableStatus } from '@/api/modules/user'
+import { installPlatformOperationsMessages } from '@/i18n/catalog/platform-operations'
 import DepartmentTree from './components/DepartmentTree.vue'
 import PasswordResetDialog from './components/PasswordResetDialog.vue'
 import UserFormDialog from './components/UserFormDialog.vue'
 import UserRoleDialog from './components/UserRoleDialog.vue'
+import UserImportDialog from './components/UserImportDialog.vue'
+import UserImportHistoryDrawer from './components/UserImportHistoryDrawer.vue'
 import { useUserManagement } from './composables/useUserManagement'
+import { useUserImportManagement } from './composables/useUserImportManagement'
 
+installPlatformOperationsMessages()
 const { t } = useI18n()
 const {
   clearDeptFilter,
@@ -237,6 +267,17 @@ const {
   userDialogVisible,
   userStore,
 } = useUserManagement()
+
+const {
+  handleDownloadTemplate,
+  importDialogVisible,
+  importHistoryVisible,
+  importLoading,
+  openHistory: openImportHistory,
+  openImport,
+  submitImport,
+  templateLoading,
+} = useUserImportManagement(fetchData)
 </script>
 
 <style scoped lang="scss">

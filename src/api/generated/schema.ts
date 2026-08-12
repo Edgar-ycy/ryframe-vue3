@@ -3293,7 +3293,6 @@ export interface components {
              */
             code: number;
             data?: {
-                background_job_id: string;
                 cancel_requested: boolean;
                 /** Format: date-time */
                 completed_at?: string | null;
@@ -3307,7 +3306,7 @@ export interface components {
                 /** Format: int32 */
                 processed_rows: number;
                 report_available: boolean;
-                requester_user_id: string;
+                requester_username?: string | null;
                 /** Format: int32 */
                 skipped_count: number;
                 source_name: string;
@@ -5079,7 +5078,6 @@ export interface components {
         /** @description 分页接口的业务数据。 */
         PageData_UserImportJobVo: {
             items: {
-                background_job_id: string;
                 cancel_requested: boolean;
                 /** Format: date-time */
                 completed_at?: string | null;
@@ -5093,7 +5091,7 @@ export interface components {
                 /** Format: int32 */
                 processed_rows: number;
                 report_available: boolean;
-                requester_user_id: string;
+                requester_username?: string | null;
                 /** Format: int32 */
                 skipped_count: number;
                 source_name: string;
@@ -5622,7 +5620,6 @@ export interface components {
             username?: string | null;
         };
         UserImportJobVo: {
-            background_job_id: string;
             cancel_requested: boolean;
             /** Format: date-time */
             completed_at?: string | null;
@@ -5636,7 +5633,7 @@ export interface components {
             /** Format: int32 */
             processed_rows: number;
             report_available: boolean;
-            requester_user_id: string;
+            requester_username?: string | null;
             /** Format: int32 */
             skipped_count: number;
             source_name: string;

@@ -24,6 +24,13 @@
       <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
       <div class="el-upload__text">{{ t('system.userImport.chooseFile') }}</div>
     </el-upload>
+    <el-alert
+      class="import-hint"
+      :title="t('system.userImport.departmentHint')"
+      type="info"
+      show-icon
+      :closable="false"
+    />
     <el-alert class="import-hint" :title="t('system.userImport.duplicateHint')" type="warning" show-icon :closable="false" />
     <el-alert class="import-hint" :title="t('system.userImport.activationHint')" type="info" show-icon :closable="false" />
     <template #footer>

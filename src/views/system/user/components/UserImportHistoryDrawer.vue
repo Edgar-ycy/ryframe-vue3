@@ -21,6 +21,9 @@
         :empty-text="t('common.noData')"
       >
         <el-table-column prop="source_name" :label="t('system.userImport.sourceName')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('system.userImport.requester')" min-width="130" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.requester_username || '—' }}</template>
+        </el-table-column>
         <el-table-column :label="t('system.userImport.status')" width="110">
           <template #default="{ row }">
             <el-tag :type="statusTag(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
@@ -79,6 +82,7 @@
       <h3 class="detail-title">{{ t('system.userImport.details') }}</h3>
       <el-descriptions :column="2" border class="job-details">
         <el-descriptions-item :label="t('system.userImport.sourceName')">{{ currentJob()!.source_name }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.requester')">{{ currentJob()!.requester_username || '—' }}</el-descriptions-item>
         <el-descriptions-item :label="t('system.userImport.status')">{{ statusLabel(currentJob()!.status) }}</el-descriptions-item>
         <el-descriptions-item :label="t('system.userImport.totalRows')">{{ currentJob()!.total_rows }}</el-descriptions-item>
         <el-descriptions-item :label="t('system.userImport.processedRows')">{{ currentJob()!.processed_rows }}</el-descriptions-item>
@@ -337,7 +341,7 @@ function fetchRows(): void {
 }
 
 .imports-table {
-  min-width: 1120px;
+  min-width: 1250px;
 }
 
 .rows-table {

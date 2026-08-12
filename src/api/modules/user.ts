@@ -93,8 +93,12 @@ export function batchDeleteUser(ids: Id[]) {
 }
 
 /** 导出用户 */
-export function exportUser(params?: UserExportQuery, signal?: AbortSignal) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params), signal)
+export function exportUser(
+  params: UserExportQuery | undefined,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestExportJob(`${BASE}/exports`, stripPagination(params), idempotencyKey, signal)
 }
 
 /** 下载导入模板 */

@@ -43,11 +43,12 @@
         <template #active-icon><el-icon><Moon /></el-icon></template>
         <template #inactive-icon><el-icon><Sunny /></el-icon></template>
       </el-switch>
+      <ExportCenter />
       <MessageCenter />
       <el-button
         text
         circle
-        class="navbar-action"
+        class="navbar-action navbar-settings-action"
         :aria-label="t('navbar.openSettings')"
         :title="t('navbar.openSettings')"
         @click="settingsVisible = true"
@@ -55,16 +56,21 @@
         <el-icon :size="24"><Setting /></el-icon>
       </el-button>
       <el-dropdown @command="handleCommand">
-        <span class="user-info">
+        <button
+          type="button"
+          class="user-info"
+          :aria-label="userStore.nickname || userStore.username || t('navbar.profile')"
+        >
           <el-avatar :size="32" :src="avatarSrc">
             <el-icon><UserFilled /></el-icon>
           </el-avatar>
           <span>{{ userStore.nickname || userStore.username }}</span>
           <el-icon><ArrowDown /></el-icon>
-        </span>
+        </button>
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item command="profile">{{ t('navbar.profile') }}</el-dropdown-item>
+            <el-dropdown-item command="exports">{{ t('exportCenter.myExports') }}</el-dropdown-item>
             <el-dropdown-item command="logout" divided>{{ t('navbar.logout') }}</el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -84,6 +90,7 @@ import { useAppStore } from '@/stores/app'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
+import ExportCenter from '../ExportCenter/index.vue'
 import MessageCenter from '../MessageCenter/index.vue'
 import Settings from '../Settings/index.vue'
 
@@ -129,6 +136,9 @@ async function handleCommand(command: string): Promise<void> {
     case 'profile':
       await router.push('/profile')
       break
+    case 'exports':
+      await router.push('/profile/exports')
+      break
   }
 }
 </script>
@@ -153,7 +163,12 @@ async function handleCommand(command: string): Promise<void> {
 
 @media (width <= 480px) {
   .tenant-tag {
-    max-width: 88px;
+    display: none;
+  }
+
+  .theme-switch,
+  .navbar-settings-action {
+    display: none;
   }
 }
 </style>

@@ -37,6 +37,15 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '个人中心', icon: 'User', hidden: true },
       },
       {
+        path: 'profile/exports',
+        name: 'ProfileExports',
+        component: withRouteComponentName(
+          'ProfileExports',
+          () => import('@/views/profile/exports/index.vue'),
+        ),
+        meta: { title: '我的导出', icon: 'Download', hidden: true },
+      },
+      {
         path: 'platform/tenants',
         name: 'PlatformTenants',
         component: withRouteComponentName(

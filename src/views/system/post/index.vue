@@ -108,7 +108,7 @@ import {
   type PostRecord,
   type PostUpdateInput,
 } from '@/api/modules/post'
-import { useAsyncExport } from '@/hooks/useAsyncExport'
+import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
@@ -133,12 +133,14 @@ const postsQuery = useTenantQuery<PageResponse<PostRecord>>(
 )
 const loading = postsQuery.isFetching
 const tableResponse = postsQuery.data
-const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+const { pending: exportLoading, submitExport } = useExportJobRequest()
 
 function handleExport() {
-  return exportAndDownload(signal => exportPost(activeQueryParams.value, signal), {
-    filename: t('system.post.exportFilename'),
-  })
+  const filters = { ...activeQueryParams.value }
+  return submitExport(
+    `posts:${JSON.stringify(filters)}`,
+    (idempotencyKey, signal) => exportPost(filters, idempotencyKey, signal),
+  )
 }
 
 async function fetchData() {

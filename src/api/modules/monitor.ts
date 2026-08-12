@@ -69,8 +69,17 @@ export function listOperLog(params: OperLogQuery, signal?: AbortSignal) {
 }
 
 /** 导出操作日志。 */
-export function exportOperLog(params?: OperLogExportQuery, signal?: AbortSignal) {
-  return requestExportJob('/system/operlogs/exports', stripPagination(params), signal)
+export function exportOperLog(
+  params: OperLogExportQuery | undefined,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestExportJob(
+    '/system/operlogs/exports',
+    stripPagination(params),
+    idempotencyKey,
+    signal,
+  )
 }
 
 // ========== 登录日志 (/system/loginlogs) ==========
@@ -90,8 +99,17 @@ export function listLoginLog(params: LoginLogQuery, signal?: AbortSignal) {
 }
 
 /** 导出登录日志。 */
-export function exportLoginLog(params?: LoginLogExportQuery, signal?: AbortSignal) {
-  return requestExportJob('/system/loginlogs/exports', stripPagination(params), signal)
+export function exportLoginLog(
+  params: LoginLogExportQuery | undefined,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestExportJob(
+    '/system/loginlogs/exports',
+    stripPagination(params),
+    idempotencyKey,
+    signal,
+  )
 }
 
 // ========== 在线用户 (/system/online) ==========

@@ -14,8 +14,12 @@ export type PostRecord = ApiSchema<'PostVo'>
 export function listPost(params: PostQuery, signal?: AbortSignal) {
   return request<PageResponse<PostRecord>>({ url: BASE, method: 'get', params, signal })
 }
-export function exportPost(params?: PostExportQuery, signal?: AbortSignal) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params), signal)
+export function exportPost(
+  params: PostExportQuery | undefined,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestExportJob(`${BASE}/exports`, stripPagination(params), idempotencyKey, signal)
 }
 export function getPost(id: Id, signal?: AbortSignal) {
   return request<PostRecord>({ url: `${BASE}/${id}`, method: 'get', signal })

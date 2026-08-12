@@ -107,7 +107,7 @@ import {
   type OperLogQuery,
   type OperLogRecord,
 } from '@/api/modules/monitor'
-import { useAsyncExport } from '@/hooks/useAsyncExport'
+import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
@@ -117,7 +117,7 @@ const { t } = useI18n()
 const dateRange = ref<[string, string] | []>([])
 const userStore = useUserStore()
 const pageActive = ref(true)
-const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+const { pending: exportLoading, submitExport } = useExportJobRequest()
 
 const queryParams = ref<OperLogQuery>({
   page: 1, page_size: 10, oper_name: '', status: '', begin_time: '', end_time: '',
@@ -139,14 +139,15 @@ const loading = operationLogsQuery.isFetching
 const operationLogPage = operationLogsQuery.data
 
 function handleExport() {
-  return exportAndDownload(
-    signal => exportOperLog({
-      name: activeQueryParams.value.oper_name,
-      status: activeQueryParams.value.status,
-      begin_time: activeQueryParams.value.begin_time,
-      end_time: activeQueryParams.value.end_time,
-    }, signal),
-    { filename: t('monitor.operationLog.exportFilename') },
+  const filters = {
+    name: activeQueryParams.value.oper_name,
+    status: activeQueryParams.value.status,
+    begin_time: activeQueryParams.value.begin_time,
+    end_time: activeQueryParams.value.end_time,
+  }
+  return submitExport(
+    `operlogs:${JSON.stringify(filters)}`,
+    (idempotencyKey, signal) => exportOperLog(filters, idempotencyKey, signal),
   )
 }
 

@@ -3,22 +3,25 @@ import type { ApiSchema } from '@/api/contract'
 
 export type ExportJob = ApiSchema<'ExportJobVo'>
 
-function idempotencyKey(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return `export-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
-/** 创建导出任务。每次用户操作都使用独立幂等键，网络重试由 HTTP 层安全复用。 */
-export function requestExportJob(url: string, filters: unknown, signal?: AbortSignal) {
+/** 创建导出任务；幂等键由上层按同一导出意图复用。 */
+export function requestExportJob(
+  url: string,
+  filters: unknown,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
   return request<ExportJob>({
     url,
     method: 'post',
     data: filters,
-    headers: { 'Idempotency-Key': idempotencyKey() },
+    headers: { 'Idempotency-Key': idempotencyKey },
     signal,
   })
+}
+
+/** 查询当前申请人最近一百条导出任务。 */
+export function listExportJobs(signal?: AbortSignal) {
+  return request<ExportJob[]>({ url: '/common/jobs', method: 'get', signal })
 }
 
 /** 查询导出任务的最新状态。 */

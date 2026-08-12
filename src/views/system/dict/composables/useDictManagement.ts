@@ -8,7 +8,7 @@ import {
   type DictTypeQuery,
   type DictTypeRecord,
 } from '@/api/modules/dict'
-import { useAsyncExport } from '@/hooks/useAsyncExport'
+import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
@@ -25,7 +25,7 @@ export function useDictManagement() {
   const editingData = ref<DictDataRecord | null>(null)
 
   const userStore = useUserStore()
-  const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+  const { pending: exportLoading, submitExport } = useExportJobRequest()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
 
   const typesQuery = useTenantQuery<PageResponse<DictTypeRecord>>(
@@ -116,9 +116,11 @@ export function useDictManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return exportAndDownload(signal => exportDictType(typePage.value, signal), {
-      filename: translate('system.dict.exportFilename'),
-    })
+    const filters = { ...typePage.value }
+    return submitExport(
+      `dict-types:${JSON.stringify(filters)}`,
+      (idempotencyKey, signal) => exportDictType(filters, idempotencyKey, signal),
+    ).then(() => undefined)
   }
 
   async function handleTypeClick(dictType: DictTypeRecord): Promise<void> {

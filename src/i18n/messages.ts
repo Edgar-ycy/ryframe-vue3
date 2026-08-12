@@ -1,4 +1,5 @@
 import { accountMessages } from './catalog/account'
+import { exportJobMessages } from './catalog/export-jobs'
 import { monitorToolsMessages } from './catalog/monitor-tools'
 import { monitorJobsMessages } from './catalog/monitor-jobs'
 import { shellMessages } from './catalog/shell'
@@ -7,6 +8,7 @@ import { systemMessages } from './catalog/system'
 export const messageCatalogs = [
   shellMessages,
   accountMessages,
+  exportJobMessages,
   monitorToolsMessages,
   monitorJobsMessages,
   systemMessages,
@@ -16,6 +18,7 @@ export const messages = {
   'zh-CN': {
     ...shellMessages['zh-CN'],
     ...accountMessages['zh-CN'],
+    ...exportJobMessages['zh-CN'],
     ...monitorToolsMessages['zh-CN'],
     ...monitorJobsMessages['zh-CN'],
     ...systemMessages['zh-CN'],
@@ -41,6 +44,7 @@ export const messages = {
       login: '登录',
       resetPassword: '重置密码',
       profile: '个人中心',
+      exports: '我的导出',
       system: '系统管理',
       user: '用户管理',
       role: '角色管理',
@@ -184,6 +188,7 @@ export const messages = {
   'en-US': {
     ...shellMessages['en-US'],
     ...accountMessages['en-US'],
+    ...exportJobMessages['en-US'],
     ...monitorToolsMessages['en-US'],
     ...monitorJobsMessages['en-US'],
     ...systemMessages['en-US'],
@@ -209,6 +214,7 @@ export const messages = {
       login: 'Sign in',
       resetPassword: 'Reset password',
       profile: 'Profile',
+      exports: 'My exports',
       system: 'System',
       user: 'Users',
       role: 'Roles',
@@ -356,6 +362,7 @@ export const navigationTitleKeys: Record<string, string> = {
   '登录': 'login',
   '重置密码': 'resetPassword',
   '个人中心': 'profile',
+  '我的导出': 'exports',
   '系统管理': 'system',
   '用户管理': 'user',
   '角色管理': 'role',

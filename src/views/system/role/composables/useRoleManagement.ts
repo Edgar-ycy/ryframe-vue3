@@ -7,7 +7,7 @@ import {
 } from '@/api/modules/role'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permission'
-import { useAsyncExport } from '@/hooks/useAsyncExport'
+import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
@@ -35,7 +35,7 @@ export function useRoleManagement() {
 
   const { isAdmin } = usePermission()
   const userStore = useUserStore()
-  const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+  const { pending: exportLoading, submitExport } = useExportJobRequest()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
 
   const rolesQuery = useTenantQuery<PageResponse<RoleRecord>>(
@@ -116,9 +116,11 @@ export function useRoleManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return exportAndDownload(signal => exportRole(activeQueryParams.value, signal), {
-      filename: translate('system.role.exportFilename'),
-    })
+    const filters = { ...activeQueryParams.value }
+    return submitExport(
+      `roles:${JSON.stringify(filters)}`,
+      (idempotencyKey, signal) => exportRole(filters, idempotencyKey, signal),
+    ).then(() => undefined)
   }
 
   function isProtectedRole(role: RoleRecord): boolean {

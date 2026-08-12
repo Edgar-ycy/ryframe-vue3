@@ -94,7 +94,7 @@ import {
   type ConfigQuery,
   type ConfigRecord,
 } from '@/api/modules/config'
-import { useAsyncExport } from '@/hooks/useAsyncExport'
+import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { refreshShellSettings } from '@/app/settings/shellSettingsQuery'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
@@ -108,7 +108,7 @@ const authenticated = () => userStore.sessionStatus === 'authenticated'
 
 const queryParams = ref<ConfigQuery>({ page: 1, page_size: 10, name: '', key: '' })
 const activeQueryParams = ref<ConfigQuery>({ ...queryParams.value })
-const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+const { pending: exportLoading, submitExport } = useExportJobRequest()
 const configsQuery = useTenantQuery<PageResponse<ConfigRecord>>(
   () => userStore.tenantId,
   authenticated,
@@ -123,9 +123,11 @@ const tableResponse = configsQuery.data
 const loading = configsQuery.isFetching
 
 function handleExport() {
-  return exportAndDownload(signal => exportConfig(activeQueryParams.value, signal), {
-    filename: t('system.config.exportFilename'),
-  })
+  const filters = { ...activeQueryParams.value }
+  return submitExport(
+    `configs:${JSON.stringify(filters)}`,
+    (idempotencyKey, signal) => exportConfig(filters, idempotencyKey, signal),
+  )
 }
 
 async function fetchData() {

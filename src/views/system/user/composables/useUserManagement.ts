@@ -9,7 +9,7 @@ import {
   type UserStatus,
 } from '@/api/modules/user'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
-import { useAsyncExport } from '@/hooks/useAsyncExport'
+import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
 import { translate } from '@/i18n'
@@ -46,7 +46,7 @@ export function useUserManagement() {
 
   const { hasPermission } = usePermission()
   const userStore = useUserStore()
-  const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+  const { pending: exportLoading, submitExport } = useExportJobRequest()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
 
   const usersQuery = useTenantQuery<PageResponse<UserRecord>>(
@@ -143,10 +143,11 @@ export function useUserManagement() {
   }
 
   function handleExport(): Promise<void> {
-    return exportAndDownload(
-      signal => exportUser(activeQueryParams.value, signal),
-      { filename: translate('system.user.exportFilename') },
-    )
+    const filters = { ...activeQueryParams.value }
+    return submitExport(
+      `users:${JSON.stringify(filters)}`,
+      (idempotencyKey, signal) => exportUser(filters, idempotencyKey, signal),
+    ).then(() => undefined)
   }
 
   function isManageableStatus(status: UserStatus): status is UserManageableStatus {

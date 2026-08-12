@@ -100,7 +100,7 @@ import {
   type LoginLogQuery,
   type LoginLogRecord,
 } from '@/api/modules/monitor'
-import { useAsyncExport } from '@/hooks/useAsyncExport'
+import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
@@ -110,7 +110,7 @@ const { t } = useI18n()
 const dateRange = ref<[string, string] | []>([])
 const userStore = useUserStore()
 const pageActive = ref(true)
-const { pending: exportLoading, exportAndDownload } = useAsyncExport(() => userStore.tenantId)
+const { pending: exportLoading, submitExport } = useExportJobRequest()
 
 const queryParams = ref<LoginLogQuery>({
   page: 1, page_size: 10, user_name: '', status: '', begin_time: '', end_time: '',
@@ -132,14 +132,15 @@ const loading = loginLogsQuery.isFetching
 const loginLogPage = loginLogsQuery.data
 
 function handleExport() {
-  return exportAndDownload(
-    signal => exportLoginLog({
-      name: activeQueryParams.value.user_name,
-      status: activeQueryParams.value.status,
-      begin_time: activeQueryParams.value.begin_time,
-      end_time: activeQueryParams.value.end_time,
-    }, signal),
-    { filename: t('monitor.loginLog.exportFilename') },
+  const filters = {
+    name: activeQueryParams.value.user_name,
+    status: activeQueryParams.value.status,
+    begin_time: activeQueryParams.value.begin_time,
+    end_time: activeQueryParams.value.end_time,
+  }
+  return submitExport(
+    `loginlogs:${JSON.stringify(filters)}`,
+    (idempotencyKey, signal) => exportLoginLog(filters, idempotencyKey, signal),
   )
 }
 

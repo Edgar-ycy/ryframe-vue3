@@ -28,8 +28,12 @@ export function listRole(params: RoleQuery, signal?: AbortSignal) {
 export function listRoleOptions(params?: RoleOptionQuery, signal?: AbortSignal) {
   return request<ApiSchema<'OptionList'>>({ url: `${BASE}/options`, method: 'get', params, signal })
 }
-export function exportRole(params?: RoleExportQuery, signal?: AbortSignal) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params), signal)
+export function exportRole(
+  params: RoleExportQuery | undefined,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestExportJob(`${BASE}/exports`, stripPagination(params), idempotencyKey, signal)
 }
 export function getRole(id: Id, signal?: AbortSignal) {
   return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'get', signal })

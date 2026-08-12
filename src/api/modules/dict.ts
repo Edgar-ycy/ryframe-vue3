@@ -24,8 +24,17 @@ export function listDictType(params: DictTypeQuery, signal?: AbortSignal) {
 }
 
 /** 导出字典类型 */
-export function exportDictType(params?: DictTypeExportQuery, signal?: AbortSignal) {
-  return requestExportJob(`${DICT_TYPE_BASE}/exports`, stripPagination(params), signal)
+export function exportDictType(
+  params: DictTypeExportQuery | undefined,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestExportJob(
+    `${DICT_TYPE_BASE}/exports`,
+    stripPagination(params),
+    idempotencyKey,
+    signal,
+  )
 }
 
 /** 创建字典类型 */

@@ -14,8 +14,12 @@ export type ConfigRecord = ApiSchema<'ConfigVo'>
 export function listConfig(params: ConfigQuery, signal?: AbortSignal) {
   return request<PageResponse<ConfigRecord>>({ url: BASE, method: 'get', params, signal })
 }
-export function exportConfig(params?: ConfigExportQuery, signal?: AbortSignal) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params), signal)
+export function exportConfig(
+  params: ConfigExportQuery | undefined,
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestExportJob(`${BASE}/exports`, stripPagination(params), idempotencyKey, signal)
 }
 export function getConfig(id: Id, signal?: AbortSignal) {
   return request<ConfigRecord>({ url: `${BASE}/${id}`, method: 'get', signal })

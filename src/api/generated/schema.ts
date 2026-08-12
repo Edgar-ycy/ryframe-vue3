@@ -819,6 +819,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/config-packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_config_packages"];
+        put?: never;
+        post: operations["post_system_config_packages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-packages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_config_packages_by_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-packages/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_config_packages_by_id_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_config_transfers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers/from-package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_system_config_transfers_from_package"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_system_config_transfers_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_config_transfers_by_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers/{id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_system_config_transfers_by_id_apply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers/{id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_config_transfers_by_id_items"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_system_config_transfers_by_id_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/config-transfers/{id}/rollback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_system_config_transfers_by_id_rollback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/configs": {
         parameters: {
             query?: never;
@@ -2167,6 +2343,36 @@ export interface components {
             request_id: string;
         };
         /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_TenantConfigBundleVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_TenantConfigBundleVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_TenantConfigTransferItemVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_TenantConfigTransferItemVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_TenantConfigTransferVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_TenantConfigTransferVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
         ApiPageResponse_UserImportJobVo: {
             /** Format: int32 */
             code: number;
@@ -2466,6 +2672,7 @@ export interface components {
                 id: string;
                 key: string;
                 name: string;
+                portable: boolean;
                 remark?: string | null;
                 value: string;
             };
@@ -3233,6 +3440,88 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_TenantConfigBundleVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 配置包的安全公开视图，不包含对象路径或数据库内部标识。 */
+            data?: {
+                /** Format: date-time */
+                created_at: string;
+                error_summary?: string | null;
+                /** Format: date-time */
+                expires_at?: string | null;
+                id: string;
+                /** Format: int32 */
+                item_count: number;
+                origin: string;
+                package_schema_version: string;
+                resource_counts: {
+                    [key: string]: number;
+                };
+                sha256?: string | null;
+                source_app_version: string;
+                source_tenant_key: string;
+                source_tenant_name: string;
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_TenantConfigTransferVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 一次目标租户配置预览、应用或回滚的公开视图。 */
+            data?: {
+                /** Format: int32 */
+                applied_authorization_epoch?: number | null;
+                /** Format: int64 */
+                applied_configuration_version?: number | null;
+                bundle_summary: components["schemas"]["TenantConfigBundleSummaryVo"];
+                change_counts: {
+                    [key: string]: number;
+                };
+                /** Format: date-time */
+                created_at: string;
+                error_summary?: string | null;
+                id: string;
+                plan_hash?: string | null;
+                /** Format: date-time */
+                preview_calculated_at?: string | null;
+                /** Format: date-time */
+                rollback_expires_at?: string | null;
+                status: string;
+                /** Format: int32 */
+                target_authorization_epoch: number;
+                /** Format: int64 */
+                target_configuration_version: number;
+                /** Format: date-time */
+                updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_TenantVo: {
             /**
              * Format: int32
@@ -3784,6 +4073,14 @@ export interface components {
             source_commit: string;
             version: string;
         };
+        /** @description 应用已经预览并由用户确认的配置迁移计划。 */
+        ApplyTenantConfigTransferDto: {
+            plan_hash: string;
+            /** Format: int32 */
+            target_authorization_epoch: number;
+            /** Format: int64 */
+            target_configuration_version: number;
+        };
         AuthorizationDiagnosticDataScopeSourceVo: {
             role_code: string;
             scope: string;
@@ -4048,12 +4345,14 @@ export interface components {
             id: string;
             key: string;
             name: string;
+            portable: boolean;
             remark?: string | null;
             value: string;
         };
         CreateConfigDto: {
             key: string;
             name: string;
+            portable?: boolean;
             remark?: string | null;
             value: string;
         };
@@ -4131,6 +4430,10 @@ export interface components {
             name: string;
             timezone: string;
         };
+        /** @description 从当前租户已有配置包创建一次迁移。 */
+        CreateTenantConfigTransferDto: {
+            bundle_id: string;
+        };
         CreateTenantDto: {
             admin_password: string;
             admin_username: string;
@@ -4191,6 +4494,10 @@ export interface components {
             retention_run_days: number;
             /** Format: int32 */
             schedule_execution_days: number;
+            /** Format: int32 */
+            tenant_config_artifact_hours: number;
+            /** Format: int32 */
+            tenant_config_rollback_hours: number;
             /** Format: int32 */
             user_import_artifact_hours: number;
             /** Format: int32 */
@@ -4717,6 +5024,7 @@ export interface components {
                 id: string;
                 key: string;
                 name: string;
+                portable: boolean;
                 remark?: string | null;
                 value: string;
             }[];
@@ -5063,6 +5371,102 @@ export interface components {
                 columns: components["schemas"]["ColumnInfo"][];
                 comment?: string | null;
                 table_name: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_TenantConfigBundleVo: {
+            items: {
+                /** Format: date-time */
+                created_at: string;
+                error_summary?: string | null;
+                /** Format: date-time */
+                expires_at?: string | null;
+                id: string;
+                /** Format: int32 */
+                item_count: number;
+                origin: string;
+                package_schema_version: string;
+                resource_counts: {
+                    [key: string]: number;
+                };
+                sha256?: string | null;
+                source_app_version: string;
+                source_tenant_key: string;
+                source_tenant_name: string;
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_TenantConfigTransferItemVo: {
+            items: {
+                action: string;
+                detail?: string | null;
+                detail_code?: string | null;
+                display_name: string;
+                outcome: string;
+                resource_type: string;
+                stable_key: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_TenantConfigTransferVo: {
+            items: {
+                /** Format: int32 */
+                applied_authorization_epoch?: number | null;
+                /** Format: int64 */
+                applied_configuration_version?: number | null;
+                bundle_summary: components["schemas"]["TenantConfigBundleSummaryVo"];
+                change_counts: {
+                    [key: string]: number;
+                };
+                /** Format: date-time */
+                created_at: string;
+                error_summary?: string | null;
+                id: string;
+                plan_hash?: string | null;
+                /** Format: date-time */
+                preview_calculated_at?: string | null;
+                /** Format: date-time */
+                rollback_expires_at?: string | null;
+                status: string;
+                /** Format: int32 */
+                target_authorization_epoch: number;
+                /** Format: int64 */
+                target_configuration_version: number;
+                /** Format: date-time */
+                updated_at: string;
             }[];
             /** Format: int64 */
             max_page_size: number;
@@ -5466,6 +5870,97 @@ export interface components {
             comment?: string | null;
             table_name: string;
         };
+        /** @description 配置迁移中关联配置包的安全摘要，不包含数据库内部标识。 */
+        TenantConfigBundleSummaryVo: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** Format: int32 */
+            item_count: number;
+            origin: string;
+            package_schema_version: string;
+            resource_counts: {
+                [key: string]: number;
+            };
+            sha256?: string | null;
+            source_app_version: string;
+            source_tenant_key: string;
+            source_tenant_name: string;
+            status: string;
+        };
+        /** @description 配置包的安全公开视图，不包含对象路径或数据库内部标识。 */
+        TenantConfigBundleVo: {
+            /** Format: date-time */
+            created_at: string;
+            error_summary?: string | null;
+            /** Format: date-time */
+            expires_at?: string | null;
+            id: string;
+            /** Format: int32 */
+            item_count: number;
+            origin: string;
+            package_schema_version: string;
+            resource_counts: {
+                [key: string]: number;
+            };
+            sha256?: string | null;
+            source_app_version: string;
+            source_tenant_key: string;
+            source_tenant_name: string;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description OpenAPI 中的严格单文件配置包上传表单。 */
+        TenantConfigPackageUploadForm: {
+            /** Format: binary */
+            file: string;
+        };
+        /** @description 配置包与配置迁移分页查询。 */
+        TenantConfigPageQuery: {
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+        };
+        /** @description 配置迁移预览和执行的逐项安全结果。 */
+        TenantConfigTransferItemVo: {
+            action: string;
+            detail?: string | null;
+            detail_code?: string | null;
+            display_name: string;
+            outcome: string;
+            resource_type: string;
+            stable_key: string;
+        };
+        /** @description 一次目标租户配置预览、应用或回滚的公开视图。 */
+        TenantConfigTransferVo: {
+            /** Format: int32 */
+            applied_authorization_epoch?: number | null;
+            /** Format: int64 */
+            applied_configuration_version?: number | null;
+            bundle_summary: components["schemas"]["TenantConfigBundleSummaryVo"];
+            change_counts: {
+                [key: string]: number;
+            };
+            /** Format: date-time */
+            created_at: string;
+            error_summary?: string | null;
+            id: string;
+            plan_hash?: string | null;
+            /** Format: date-time */
+            preview_calculated_at?: string | null;
+            /** Format: date-time */
+            rollback_expires_at?: string | null;
+            status: string;
+            /** Format: int32 */
+            target_authorization_epoch: number;
+            /** Format: int64 */
+            target_configuration_version: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
         /** @description 租户响应。 */
         TenantVo: {
             domain?: string | null;
@@ -5484,6 +5979,7 @@ export interface components {
             tenant_id: string;
         };
         UpdateConfigDto: {
+            portable?: boolean | null;
             value: string;
         };
         UpdateDeptDto: {
@@ -7258,6 +7754,643 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponse_AuthorizationDiagnosticVo"];
                 };
+            };
+        };
+    };
+    get_system_config_packages: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 配置包列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_TenantConfigBundleVo"];
+                };
+            };
+            /** @description 分页参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置包列表权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_config_packages: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 配置包导出幂等键 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 配置包导出任务已创建 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigBundleVo"];
+                };
+            };
+            /** @description 幂等键格式无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置包导出权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 同一幂等键对应不同请求 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 数据库、对象存储或后台任务服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_config_packages_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 配置包 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 配置包详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigBundleVo"];
+                };
+            };
+            /** @description 配置包 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置包列表权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置包不存在或不属于当前租户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_config_packages_by_id_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 配置包 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 配置包文件 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": number[];
+                };
+            };
+            /** @description 配置包 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置包下载权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置包或文件不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置包尚未生成或文件已经过期 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 对象存储不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_config_transfers: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 配置迁移列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_TenantConfigTransferVo"];
+                };
+            };
+            /** @description 分页参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移列表权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_config_transfers_from_package: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 配置迁移创建幂等键 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTenantConfigTransferDto"];
+            };
+        };
+        responses: {
+            /** @description 配置迁移已创建 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigTransferVo"];
+                };
+            };
+            /** @description 配置包 ID 或幂等键无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移创建权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置包不存在或不属于当前租户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置包状态或幂等结果冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 数据库或后台任务服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_config_transfers_upload: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 配置包上传幂等键 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["TenantConfigPackageUploadForm"];
+            };
+        };
+        responses: {
+            /** @description 配置迁移已创建 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigTransferVo"];
+                };
+            };
+            /** @description 上传表单、幂等键或配置包无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移创建权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 幂等冲突或当前配置状态冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置包压缩或解压大小超过限制 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 数据库、对象存储或后台任务服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_config_transfers_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 配置迁移 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 配置迁移详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigTransferVo"];
+                };
+            };
+            /** @description 配置迁移 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移列表权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置迁移不存在或不属于当前租户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_config_transfers_by_id_apply: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 配置应用幂等键 */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description 配置迁移 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyTenantConfigTransferDto"];
+            };
+        };
+        responses: {
+            /** @description 配置应用任务已创建 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigTransferVo"];
+                };
+            };
+            /** @description 请求参数、计划哈希或幂等键无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移应用权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置迁移不存在或不属于当前租户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 预览、目标版本、租约或迁移状态冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 数据库、对象存储或后台任务服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_config_transfers_by_id_items: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 配置迁移 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 配置迁移明细 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_TenantConfigTransferItemVo"];
+                };
+            };
+            /** @description 配置迁移 ID 或分页参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移列表权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置迁移不存在或不属于当前租户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_config_transfers_by_id_preview: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 配置预览幂等键 */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description 配置迁移 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmptyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description 配置预览任务已创建 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigTransferVo"];
+                };
+            };
+            /** @description 配置迁移 ID 或幂等键无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移预览权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置迁移不存在或不属于当前租户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 预览任务、配置版本或迁移状态冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 数据库或后台任务服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_config_transfers_by_id_rollback: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 配置回滚幂等键 */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description 配置迁移 ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmptyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description 配置回滚任务已创建 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantConfigTransferVo"];
+                };
+            };
+            /** @description 配置迁移 ID 或幂等键无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有配置迁移回滚权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 配置迁移或回滚快照不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 回滚窗口、引用、版本、租约或迁移状态冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 数据库、对象存储或后台任务服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

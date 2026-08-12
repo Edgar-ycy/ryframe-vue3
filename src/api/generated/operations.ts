@@ -176,6 +176,30 @@ export const operationManifest = {
     "method": "get",
     "path": "/system/authorization-diagnostics/users/{id}"
   },
+  "get_system_config_packages": {
+    "method": "get",
+    "path": "/system/config-packages"
+  },
+  "get_system_config_packages_by_id": {
+    "method": "get",
+    "path": "/system/config-packages/{id}"
+  },
+  "get_system_config_packages_by_id_download": {
+    "method": "get",
+    "path": "/system/config-packages/{id}/download"
+  },
+  "get_system_config_transfers": {
+    "method": "get",
+    "path": "/system/config-transfers"
+  },
+  "get_system_config_transfers_by_id": {
+    "method": "get",
+    "path": "/system/config-transfers/{id}"
+  },
+  "get_system_config_transfers_by_id_items": {
+    "method": "get",
+    "path": "/system/config-transfers/{id}/items"
+  },
   "get_system_configs": {
     "method": "get",
     "path": "/system/configs"
@@ -395,6 +419,30 @@ export const operationManifest = {
   "post_platform_tenants": {
     "method": "post",
     "path": "/platform/tenants"
+  },
+  "post_system_config_packages": {
+    "method": "post",
+    "path": "/system/config-packages"
+  },
+  "post_system_config_transfers_by_id_apply": {
+    "method": "post",
+    "path": "/system/config-transfers/{id}/apply"
+  },
+  "post_system_config_transfers_by_id_preview": {
+    "method": "post",
+    "path": "/system/config-transfers/{id}/preview"
+  },
+  "post_system_config_transfers_by_id_rollback": {
+    "method": "post",
+    "path": "/system/config-transfers/{id}/rollback"
+  },
+  "post_system_config_transfers_from_package": {
+    "method": "post",
+    "path": "/system/config-transfers/from-package"
+  },
+  "post_system_config_transfers_upload": {
+    "method": "post",
+    "path": "/system/config-transfers/upload"
   },
   "post_system_configs": {
     "method": "post",

@@ -268,6 +268,7 @@ const bodylessWriteAllowlist = new Set([
   'post_auth_ws_ticket',
   'post_monitor_jobs_by_id_retry',
   'post_monitor_schedules_by_id_run',
+  'post_system_config_packages',
   'post_system_perms_sync',
   'post_system_notices_by_id_publish_message',
   'put_system_messages_by_id_read',
@@ -282,6 +283,9 @@ const requiredQueryOperationIds = new Set([
   'get_monitor_retention_runs',
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
+  'get_system_config_packages',
+  'get_system_config_transfers',
+  'get_system_config_transfers_by_id_items',
   'get_system_configs',
   'get_system_depts',
   'get_system_dict_data',
@@ -307,6 +311,9 @@ const c1PaginatedOperationIds = new Set([
   'get_monitor_retention_runs',
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
+  'get_system_config_packages',
+  'get_system_config_transfers',
+  'get_system_config_transfers_by_id_items',
   'get_system_configs',
   'get_system_depts',
   'get_system_dict_types',
@@ -506,8 +513,8 @@ function validateC1QueryParameter(operationId, parameters, parameterName, expect
 }
 
 function validateC1QueryContracts() {
-  if (c1PaginatedOperationIds.size !== 18) {
-    errors.push(`C1 pagination manifest must contain 18 operationIds, found ${c1PaginatedOperationIds.size}`)
+  if (c1PaginatedOperationIds.size !== 21) {
+    errors.push(`C1 pagination manifest must contain 21 operationIds, found ${c1PaginatedOperationIds.size}`)
   }
   if (c1OptionOperationContracts.size !== 2) {
     errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)

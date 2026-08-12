@@ -30,6 +30,13 @@
         <el-table-column prop="name" :label="t('system.config.name')" min-width="120" show-overflow-tooltip />
         <el-table-column prop="key" :label="t('system.config.key')" min-width="140" show-overflow-tooltip />
         <el-table-column prop="value" :label="t('system.config.value')" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="portable" :label="t('system.config.portable')" width="130" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.portable ? 'success' : 'info'" effect="plain">
+              {{ t(row.portable ? 'system.common.yes' : 'system.common.no') }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="remark" :label="t('system.config.remark')" min-width="120" show-overflow-tooltip />
         <el-table-column prop="created_at" :label="t('system.common.createdAt')" />
         <el-table-column :label="t('system.common.actions')" fixed="right" align="center">
@@ -57,7 +64,7 @@
       />
     </el-card>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="500px" @close="resetDialog">
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="min(500px, calc(100vw - 32px))" @close="resetDialog">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item :label="t('system.config.name')" prop="name">
           <el-input v-model="form.name" :placeholder="t('system.config.enterName')" />
@@ -70,6 +77,12 @@
         </el-form-item>
         <el-form-item :label="t('system.config.remark')">
           <el-input v-model="form.remark" type="textarea" :rows="2" :placeholder="t('system.config.enterRemark')" />
+        </el-form-item>
+        <el-form-item :label="t('system.config.portable')">
+          <div class="portable-field">
+            <el-switch v-model="form.portable" :aria-label="t('system.config.portable')" />
+            <span class="portable-field__hint">{{ t('system.config.portableHint') }}</span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -93,6 +106,7 @@ import {
   type ConfigCreateInput,
   type ConfigQuery,
   type ConfigRecord,
+  type ConfigUpdateInput,
 } from '@/api/modules/config'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { refreshShellSettings } from '@/app/settings/shellSettingsQuery'
@@ -146,14 +160,21 @@ const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
 const currentEditId = ref<Id | null>(null)
 const editingConfig = ref<ConfigRecord | null>(null)
-const form = ref({ name: '', key: '', value: '', remark: '' })
+const form = ref({ name: '', key: '', value: '', remark: '', portable: false })
 const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: t('system.config.enterName'), trigger: 'blur' }],
   key: [{ required: true, message: t('system.config.enterKey'), trigger: 'blur' }],
   value: [{ required: true, message: t('system.config.enterValue'), trigger: 'blur' }],
 }))
 
-function resetForm() { form.value.name = ''; form.value.key = ''; form.value.value = ''; form.value.remark = ''; formRef.value?.clearValidate() }
+function resetForm() {
+  form.value.name = ''
+  form.value.key = ''
+  form.value.value = ''
+  form.value.remark = ''
+  form.value.portable = false
+  formRef.value?.clearValidate()
+}
 
 function resetDialog() {
   resetForm()
@@ -177,7 +198,7 @@ const detailQuery = useTenantQuery<ConfigRecord>(
 
 type SaveConfigCommand =
   | { kind: 'create'; data: ConfigCreateInput }
-  | { kind: 'update'; id: Id; key: string; value: string }
+  | { kind: 'update'; id: Id; key: string; data: ConfigUpdateInput }
 
 const saveMutation = useTenantMutation<void, SaveConfigCommand>(
   () => userStore.tenantId,
@@ -187,7 +208,7 @@ const saveMutation = useTenantMutation<void, SaveConfigCommand>(
       if (command.kind === 'create') {
         await createConfig(command.data)
       } else {
-        await updateConfig(command.id, { value: command.value })
+        await updateConfig(command.id, command.data)
       }
     },
     onSuccess: async (_data, command) => {
@@ -240,6 +261,7 @@ async function handleEdit(row: ConfigRecord) {
   if (!d) throw new Error(t('system.config.detailMissing'))
   form.value.name = d.name; form.value.key = d.key
   form.value.value = d.value; form.value.remark = d.remark || ''
+  form.value.portable = d.portable
   dialog.value.visible = true
 }
 
@@ -252,7 +274,10 @@ async function handleSubmit() {
       kind: 'update',
       id: currentEditId.value!,
       key: form.value.key,
-      value: form.value.value,
+      data: {
+        value: form.value.value,
+        portable: form.value.portable,
+      },
     })
   } else {
     await saveMutation.mutateAsync({
@@ -262,6 +287,7 @@ async function handleSubmit() {
         key: form.value.key,
         value: form.value.value,
         remark: form.value.remark || undefined,
+        portable: form.value.portable,
       },
     })
   }
@@ -281,3 +307,24 @@ async function handleDelete(row: ConfigRecord) {
   await configsQuery.refetch({ throwOnError: true })
 }
 </script>
+
+<style scoped lang="scss">
+.portable-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  &__hint {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+@media (width <= 480px) {
+  .portable-field {
+    width: 100%;
+  }
+}
+</style>

@@ -1,0 +1,88 @@
+import { i18n } from '@/i18n'
+
+export const profileSessionsMessages = {
+  'zh-CN': {
+    profile: {
+      sessions: {
+        title: '登录设备',
+        description: '查看当前账号的登录设备，并撤销不再使用的会话。',
+        currentDevice: '当前设备',
+        device: '设备',
+        browser: '浏览器',
+        operatingSystem: '操作系统',
+        ipAddress: 'IP 地址',
+        loginLocation: '登录位置',
+        loginTime: '登录时间',
+        lastActivity: '最近活动',
+        expiresAt: '过期时间',
+        actions: '操作',
+        refresh: '刷新登录设备',
+        retry: '重新加载',
+        revoke: '撤销会话',
+        revokeDeviceLabel: '撤销设备“{device}”的登录会话',
+        revokeOthers: '退出其他设备',
+        empty: '暂无有效登录设备',
+        loadFailed: '登录设备加载失败，请刷新重试',
+        unknownDevice: '未知设备',
+        unknownValue: '未知',
+        responseMissing: '登录设备响应缺少数据',
+        confirmTitle: '确认撤销会话',
+        revokeCurrentConfirm: '撤销当前设备后，本设备将立即退出登录。是否继续？',
+        revokeSessionConfirm: '确认撤销“{device}”的登录会话吗？',
+        revokeOthersConfirm: '确认退出其他全部设备吗？当前设备会保持登录。',
+        revokeSuccess: '登录会话已撤销',
+        revokeCurrentSuccess: '当前登录会话已撤销',
+        revokeOthersSuccess: '已退出其他 {count} 个登录设备',
+        alreadyGone: '该登录会话已不存在或已经撤销',
+        serviceUnavailable: '会话服务暂时不可用，请稍后重试',
+      },
+    },
+  },
+  'en-US': {
+    profile: {
+      sessions: {
+        title: 'Login devices',
+        description: 'Review devices signed in to this account and revoke sessions you no longer use.',
+        currentDevice: 'Current device',
+        device: 'Device',
+        browser: 'Browser',
+        operatingSystem: 'Operating system',
+        ipAddress: 'IP address',
+        loginLocation: 'Login location',
+        loginTime: 'Login time',
+        lastActivity: 'Last activity',
+        expiresAt: 'Expires at',
+        actions: 'Actions',
+        refresh: 'Refresh login devices',
+        retry: 'Try again',
+        revoke: 'Revoke session',
+        revokeDeviceLabel: 'Revoke the login session for {device}',
+        revokeOthers: 'Sign out other devices',
+        empty: 'No active login devices',
+        loadFailed: 'Could not load login devices. Refresh and try again.',
+        unknownDevice: 'Unknown device',
+        unknownValue: 'Unknown',
+        responseMissing: 'The login devices response is missing data',
+        confirmTitle: 'Confirm session revocation',
+        revokeCurrentConfirm: 'Revoking the current device will sign you out immediately. Continue?',
+        revokeSessionConfirm: 'Revoke the login session for “{device}”?',
+        revokeOthersConfirm: 'Sign out every other device? The current device will remain signed in.',
+        revokeSuccess: 'The login session was revoked',
+        revokeCurrentSuccess: 'The current login session was revoked',
+        revokeOthersSuccess: 'Signed out {count} other login devices',
+        alreadyGone: 'This login session no longer exists or has already been revoked',
+        serviceUnavailable: 'The session service is temporarily unavailable. Try again later.',
+      },
+    },
+  },
+} as const
+
+let installed = false
+
+/** 在个人中心首次加载时注册登录设备文案，避免未访问页面进入首屏资源。 */
+export function installProfileSessionsMessages(): void {
+  if (installed) return
+  i18n.global.mergeLocaleMessage('zh-CN', profileSessionsMessages['zh-CN'])
+  i18n.global.mergeLocaleMessage('en-US', profileSessionsMessages['en-US'])
+  installed = true
+}

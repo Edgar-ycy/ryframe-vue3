@@ -34,9 +34,9 @@ export function useProfileManagement(t: Translate) {
   const profile = ref<ProfileInfo>(initialProfile())
   const profileQuery = useTenantQuery<ProfileInfo>(
     () => userStore.tenantId,
-    () => userStore.sessionStatus === 'authenticated',
+    () => userStore.sessionStatus === 'authenticated' && Boolean(userStore.userId),
     'profile',
-    () => ({ scope: 'self' }),
+    () => ({ scope: 'self', userId: String(userStore.userId || 'anonymous') }),
     async signal => {
       const response = await getProfile(signal)
       if (!response.data) throw new Error(t('profile.responseMissing'))

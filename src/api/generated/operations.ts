@@ -4,6 +4,10 @@
  */
 
 export const operationManifest = {
+  "delete_auth_sessions_by_sid": {
+    "method": "delete",
+    "path": "/auth/sessions/{sid}"
+  },
   "delete_monitor_schedules_by_id": {
     "method": "delete",
     "path": "/monitor/schedules/{id}"
@@ -87,6 +91,10 @@ export const operationManifest = {
   "get_auth_profile": {
     "method": "get",
     "path": "/auth/profile"
+  },
+  "get_auth_sessions": {
+    "method": "get",
+    "path": "/auth/sessions"
   },
   "get_common_file_download": {
     "method": "get",
@@ -371,6 +379,10 @@ export const operationManifest = {
   "post_auth_refresh": {
     "method": "post",
     "path": "/auth/refresh"
+  },
+  "post_auth_sessions_revoke_others": {
+    "method": "post",
+    "path": "/auth/sessions/revoke-others"
   },
   "post_auth_ws_ticket": {
     "method": "post",

@@ -244,6 +244,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前用户的登录设备。 */
+        get: operations["get_auth_sessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 撤销当前用户除本设备之外的全部登录设备。 */
+        post: operations["post_auth_sessions_revoke_others"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/{sid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 撤销当前用户的一台登录设备。 */
+        delete: operations["delete_auth_sessions_by_sid"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/ws-ticket": {
         parameters: {
             query?: never;
@@ -3314,6 +3365,27 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_RevokeOtherSessionsResponse: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 批量撤销其他登录设备的结果。 */
+            data?: {
+                /** Format: int64 */
+                revoked_count: number;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_RoleVo: {
             /**
              * Format: int32
@@ -3716,6 +3788,37 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_AuthSessionResponse: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                browser?: string | null;
+                current: boolean;
+                /** Format: date-time */
+                expires_at: string;
+                ipaddr: string;
+                /** Format: date-time */
+                last_access_time: string;
+                login_location?: string | null;
+                /** Format: date-time */
+                login_time: string;
+                os?: string | null;
+                /** @description 稳定会话标识，只用于精确撤销，不是访问令牌或刷新令牌。 */
+                sid: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_DeptTreeNode: {
             /**
              * Format: int32
@@ -4080,6 +4183,22 @@ export interface components {
             target_authorization_epoch: number;
             /** Format: int64 */
             target_configuration_version: number;
+        };
+        /** @description 当前用户可管理的登录设备会话。 */
+        AuthSessionResponse: {
+            browser?: string | null;
+            current: boolean;
+            /** Format: date-time */
+            expires_at: string;
+            ipaddr: string;
+            /** Format: date-time */
+            last_access_time: string;
+            login_location?: string | null;
+            /** Format: date-time */
+            login_time: string;
+            os?: string | null;
+            /** @description 稳定会话标识，只用于精确撤销，不是访问令牌或刷新令牌。 */
+            sid: string;
         };
         AuthorizationDiagnosticDataScopeSourceVo: {
             role_code: string;
@@ -5717,6 +5836,11 @@ export interface components {
             /** Format: int64 */
             page_size?: number | null;
         };
+        /** @description 批量撤销其他登录设备的结果。 */
+        RevokeOtherSessionsResponse: {
+            /** Format: int64 */
+            revoked_count: number;
+        };
         /** @description 用户关联的简要角色信息。 */
         RoleBriefVo: {
             code: string;
@@ -6419,6 +6543,20 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description 登录设备数量已达到安全上限 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 会话元数据或 Redis 服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     post_auth_logout: {
@@ -6674,6 +6812,149 @@ export interface operations {
                 content?: never;
             };
             /** @description Redis 会话服务不可用；显式重试必须复用原 X-CSRF-Token */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_auth_sessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前用户的登录设备 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_AuthSessionResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 会话服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_auth_sessions_revoke_others: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 与当前访问会话绑定的 CSRF 挑战令牌 */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmptyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description 其他会话已撤销 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_RevokeOtherSessionsResponse"];
+                };
+            };
+            /** @description 可治理的会话候选超过单次安全上限 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF 挑战令牌无效 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 会话服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_auth_sessions_by_sid: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 与当前访问会话绑定的 CSRF 挑战令牌 */
+                "X-CSRF-Token": string;
+            };
+            path: {
+                /** @description 稳定的设备会话标识 */
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 会话已撤销 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF 挑战令牌无效 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 会话不存在或不属于当前用户 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 会话服务不可用 */
             503: {
                 headers: {
                     [name: string]: unknown;

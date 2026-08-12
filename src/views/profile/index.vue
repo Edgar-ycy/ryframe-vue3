@@ -1,6 +1,6 @@
 <template>
-  <div v-loading="loading" class="page-container">
-    <div class="profile-layout">
+  <div class="page-container">
+    <div v-loading="loading" class="profile-layout">
       <ProfileDetailsForm
         :profile="profile"
         :username="userStore.username"
@@ -11,16 +11,32 @@
         <ProfilePasswordForm />
       </div>
     </div>
+    <ProfileSessionsCard
+      :devices="sessionDevices"
+      :has-other-devices="hasOtherDevices()"
+      :has-error="Boolean(sessionsError)"
+      :loading="sessionsLoading"
+      :pending-device-key="pendingDeviceKey"
+      :refreshing="sessionsRefreshing"
+      :revoke-others-pending="revokeOthersPending"
+      @refresh="refreshSessions"
+      @revoke="revokeSession"
+      @revoke-others="revokeOtherSessions"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { installProfileSessionsMessages } from '@/i18n/catalog/profile-sessions'
 import ProfileAvatar from './components/ProfileAvatar.vue'
 import ProfileDetailsForm from './components/ProfileDetailsForm.vue'
 import ProfilePasswordForm from './components/ProfilePasswordForm.vue'
+import ProfileSessionsCard from './components/ProfileSessionsCard.vue'
+import { useAuthSessionManagement } from './useAuthSessionManagement'
 import { useProfileManagement } from './useProfileManagement'
 
+installProfileSessionsMessages()
 const { t } = useI18n()
 const {
   handleAvatarUpdated,
@@ -29,6 +45,19 @@ const {
   profile,
   userStore,
 } = useProfileManagement(t)
+
+const {
+  devices: sessionDevices,
+  error: sessionsError,
+  hasOtherDevices,
+  loading: sessionsLoading,
+  pendingDeviceKey,
+  refresh: refreshSessions,
+  refreshing: sessionsRefreshing,
+  revokeOtherSessions,
+  revokeOthersPending,
+  revokeSession,
+} = useAuthSessionManagement()
 </script>
 
 <style scoped>

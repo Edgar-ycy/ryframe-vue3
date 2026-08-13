@@ -83,6 +83,7 @@ export const permissionCatalog = [
   "tenant:edit",
   "tenant:list",
   "tenant:status",
+  "tenant:usage:list",
   "tools:gen:add",
   "tools:gen:list"
 ] as const

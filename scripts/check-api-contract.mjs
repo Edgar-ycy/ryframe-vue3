@@ -283,6 +283,7 @@ const requiredQueryOperationIds = new Set([
   'get_monitor_retention_runs',
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
+  'get_platform_tenants_page',
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
@@ -311,6 +312,7 @@ const c1PaginatedOperationIds = new Set([
   'get_monitor_retention_runs',
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
+  'get_platform_tenants_page',
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
@@ -388,6 +390,10 @@ const c1StringPathIdOperationIds = new Set([
 const c1PaginationParameterContracts = new Map([
   ['page', { type: 'integer', minimum: 1, maximum: undefined }],
   ['page_size', { type: 'integer', minimum: 1, maximum: undefined }],
+])
+// 平台租户容量页固定将单页上限收紧为 100，不受通用分页配置放宽。
+const fixedPaginationPageSizeMaximums = new Map([
+  ['get_platform_tenants_page', 100],
 ])
 const c1OptionParameterContracts = new Map([
   ['q', { type: 'string', minLength: undefined, maxLength: 64 }],
@@ -513,8 +519,8 @@ function validateC1QueryParameter(operationId, parameters, parameterName, expect
 }
 
 function validateC1QueryContracts() {
-  if (c1PaginatedOperationIds.size !== 21) {
-    errors.push(`C1 pagination manifest must contain 21 operationIds, found ${c1PaginatedOperationIds.size}`)
+  if (c1PaginatedOperationIds.size !== 22) {
+    errors.push(`C1 pagination manifest must contain 22 operationIds, found ${c1PaginatedOperationIds.size}`)
   }
   if (c1OptionOperationContracts.size !== 2) {
     errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)
@@ -528,7 +534,17 @@ function validateC1QueryContracts() {
     }
     const parameters = queryParametersFor(operationId, entry)
     for (const [parameterName, expectedSchema] of c1PaginationParameterContracts) {
-      validateC1QueryParameter(operationId, parameters, parameterName, expectedSchema)
+      const fixedMaximum = parameterName === 'page_size'
+        ? fixedPaginationPageSizeMaximums.get(operationId)
+        : undefined
+      validateC1QueryParameter(
+        operationId,
+        parameters,
+        parameterName,
+        fixedMaximum === undefined
+          ? expectedSchema
+          : { ...expectedSchema, maximum: fixedMaximum },
+      )
     }
   }
 

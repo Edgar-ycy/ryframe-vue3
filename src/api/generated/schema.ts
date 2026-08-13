@@ -822,6 +822,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/platform/tenants/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_tenants_page"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/platform/tenants/{tenant_id}": {
         parameters: {
             query?: never;
@@ -829,7 +845,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["get_platform_tenants_by_tenant_id"];
         put: operations["put_platform_tenants_by_tenant_id"];
         post?: never;
         delete?: never;
@@ -847,6 +863,22 @@ export interface paths {
         };
         get?: never;
         put: operations["put_platform_tenants_by_tenant_id_status"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenants/{tenant_id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_tenants_by_tenant_id_usage"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2394,6 +2426,16 @@ export interface components {
             request_id: string;
         };
         /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_TenantCapacityVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_TenantCapacityVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
         ApiPageResponse_TenantConfigBundleVo: {
             /** Format: int32 */
             code: number;
@@ -3512,6 +3554,44 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_TenantCapacityVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 平台租户分页与详情响应。 */
+            data?: {
+                /** @description 调用者没有 `tenant:usage:list` 权限时为 `None`。 */
+                capacity_status?: string | null;
+                domain?: string | null;
+                expiration_status: string;
+                /** Format: date-time */
+                expire_at?: string | null;
+                /** Format: int32 */
+                max_requests_per_min: number;
+                /** Format: int32 */
+                max_roles: number;
+                /** Format: int64 */
+                max_storage_mb: number;
+                /** Format: int32 */
+                max_users: number;
+                name: string;
+                /** @description 对外统一使用 `enabled` 或 `disabled`。 */
+                status: string;
+                tenant_id: string;
+                usage?: null | components["schemas"]["TenantUsageVo"];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_TenantConfigBundleVo: {
             /**
              * Format: int32
@@ -3583,6 +3663,33 @@ export interface components {
                 target_configuration_version: number;
                 /** Format: date-time */
                 updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_TenantUsageVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 租户容量与当前窗口用量。 */
+            data?: {
+                auxiliary: components["schemas"]["TenantAuxiliaryUsageVo"];
+                /** Format: date-time */
+                calculated_at: string;
+                request_window: components["schemas"]["TenantRequestWindowUsageVo"];
+                roles: components["schemas"]["TenantQuotaUsageVo"];
+                storage: components["schemas"]["TenantQuotaUsageVo"];
+                tenant_id: string;
+                users: components["schemas"]["TenantQuotaUsageVo"];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -5503,6 +5610,40 @@ export interface components {
             total_pages: number;
         };
         /** @description 分页接口的业务数据。 */
+        PageData_TenantCapacityVo: {
+            items: {
+                /** @description 调用者没有 `tenant:usage:list` 权限时为 `None`。 */
+                capacity_status?: string | null;
+                domain?: string | null;
+                expiration_status: string;
+                /** Format: date-time */
+                expire_at?: string | null;
+                /** Format: int32 */
+                max_requests_per_min: number;
+                /** Format: int32 */
+                max_roles: number;
+                /** Format: int64 */
+                max_storage_mb: number;
+                /** Format: int32 */
+                max_users: number;
+                name: string;
+                /** @description 对外统一使用 `enabled` 或 `disabled`。 */
+                status: string;
+                tenant_id: string;
+                usage?: null | components["schemas"]["TenantUsageVo"];
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
         PageData_TenantConfigBundleVo: {
             items: {
                 /** Format: date-time */
@@ -5994,6 +6135,67 @@ export interface components {
             comment?: string | null;
             table_name: string;
         };
+        /** @description 租户后台运行状态汇总。 */
+        TenantAuxiliaryUsageVo: {
+            /** Format: int64 */
+            active_user_imports: number;
+            cron_enabled: boolean;
+            /** Format: int64 */
+            dead_jobs: number;
+            /** Format: int64 */
+            enabled_schedules: number;
+            /** Format: int64 */
+            pending_jobs: number;
+            /** Format: int64 */
+            running_jobs: number;
+        };
+        /** @description 平台租户容量分页查询参数。 */
+        TenantCapacityPageQuery: {
+            capacity_status?: null | components["schemas"]["TenantCapacityStatusFilter"];
+            expiration_status?: null | components["schemas"]["TenantExpirationStatusFilter"];
+            /** @description 按租户名称模糊搜索。 */
+            name?: string | null;
+            /**
+             * Format: int64
+             * @description 页码，从 1 开始；省略时为 1。
+             */
+            page?: number | null;
+            /**
+             * Format: int64
+             * @description 每页记录数，省略时为 20，最大为 100。
+             */
+            page_size?: number | null;
+            status?: null | components["schemas"]["TenantStatusFilter"];
+            /** @description 按租户标识模糊搜索。 */
+            tenant_id?: string | null;
+        };
+        /**
+         * @description 租户容量状态筛选。
+         * @enum {string}
+         */
+        TenantCapacityStatusFilter: "normal" | "warning" | "critical" | "exceeded" | "unlimited" | "unknown";
+        /** @description 平台租户分页与详情响应。 */
+        TenantCapacityVo: {
+            /** @description 调用者没有 `tenant:usage:list` 权限时为 `None`。 */
+            capacity_status?: string | null;
+            domain?: string | null;
+            expiration_status: string;
+            /** Format: date-time */
+            expire_at?: string | null;
+            /** Format: int32 */
+            max_requests_per_min: number;
+            /** Format: int32 */
+            max_roles: number;
+            /** Format: int64 */
+            max_storage_mb: number;
+            /** Format: int32 */
+            max_users: number;
+            name: string;
+            /** @description 对外统一使用 `enabled` 或 `disabled`。 */
+            status: string;
+            tenant_id: string;
+            usage?: null | components["schemas"]["TenantUsageVo"];
+        };
         /** @description 配置迁移中关联配置包的安全摘要，不包含数据库内部标识。 */
         TenantConfigBundleSummaryVo: {
             /** Format: date-time */
@@ -6084,6 +6286,64 @@ export interface components {
             target_configuration_version: number;
             /** Format: date-time */
             updated_at: string;
+        };
+        /**
+         * @description 租户到期状态筛选。
+         * @enum {string}
+         */
+        TenantExpirationStatusFilter: "active" | "expiring" | "expired" | "never";
+        /** @description 单项租户配额用量。 */
+        TenantQuotaUsageVo: {
+            /**
+             * Format: int64
+             * @description `None` 表示该资源不受配额限制。
+             */
+            limit?: number | null;
+            /**
+             * Format: int32
+             * @description 使用率基点，10000 表示 100%；无限制时为 `None`。
+             */
+            percentage_basis_points?: number | null;
+            status: string;
+            /** Format: int64 */
+            used: number;
+        };
+        /** @description 租户当前请求限流窗口用量。 */
+        TenantRequestWindowUsageVo: {
+            /**
+             * Format: int64
+             * @description Redis 不可用时为 `None`。
+             */
+            current?: number | null;
+            /**
+             * Format: int64
+             * @description `None` 表示租户请求限流未启用。
+             */
+            limit?: number | null;
+            /** Format: int32 */
+            percentage_basis_points?: number | null;
+            /**
+             * Format: int64
+             * @description Redis 不可用时为 `None`。
+             */
+            remaining_secs?: number | null;
+            status: string;
+        };
+        /**
+         * @description 租户启停状态筛选。
+         * @enum {string}
+         */
+        TenantStatusFilter: "enabled" | "disabled";
+        /** @description 租户容量与当前窗口用量。 */
+        TenantUsageVo: {
+            auxiliary: components["schemas"]["TenantAuxiliaryUsageVo"];
+            /** Format: date-time */
+            calculated_at: string;
+            request_window: components["schemas"]["TenantRequestWindowUsageVo"];
+            roles: components["schemas"]["TenantQuotaUsageVo"];
+            storage: components["schemas"]["TenantQuotaUsageVo"];
+            tenant_id: string;
+            users: components["schemas"]["TenantQuotaUsageVo"];
         };
         /** @description 租户响应。 */
         TenantVo: {
@@ -7963,6 +8223,113 @@ export interface operations {
             };
         };
     };
+    get_platform_tenants_page: {
+        parameters: {
+            query?: {
+                /** @description 页码，从 1 开始；省略时为 1。 */
+                page?: number;
+                /** @description 每页记录数，省略时为 20，最大为 100。 */
+                page_size?: number;
+                /** @description 按租户标识模糊搜索。 */
+                tenant_id?: string;
+                /** @description 按租户名称模糊搜索。 */
+                name?: string;
+                /** @description 按租户启停状态筛选。 */
+                status?: components["schemas"]["TenantStatusFilter"];
+                /** @description 按到期状态筛选。 */
+                expiration_status?: components["schemas"]["TenantExpirationStatusFilter"];
+                /** @description 按容量状态筛选；调用者还必须具有 `tenant:usage:list` 权限。 */
+                capacity_status?: components["schemas"]["TenantCapacityStatusFilter"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 平台租户分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_TenantCapacityVo"];
+                };
+            };
+            /** @description 分页或筛选参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 不是系统租户、缺少租户列表权限，或没有容量筛选权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_tenants_by_tenant_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 租户标识 */
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 平台租户详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantCapacityVo"];
+                };
+            };
+            /** @description 租户标识无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 不是系统租户或缺少租户列表权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 租户不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     put_platform_tenants_by_tenant_id: {
         parameters: {
             query?: never;
@@ -8012,6 +8379,57 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiEmptyResponse"];
                 };
+            };
+        };
+    };
+    get_platform_tenants_by_tenant_id_usage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 租户标识 */
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 租户容量与当前请求窗口用量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TenantUsageVo"];
+                };
+            };
+            /** @description 租户标识无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 不是系统租户或缺少租户用量查看权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 租户不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

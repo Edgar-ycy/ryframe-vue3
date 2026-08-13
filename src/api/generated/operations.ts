@@ -180,6 +180,18 @@ export const operationManifest = {
     "method": "get",
     "path": "/platform/tenants"
   },
+  "get_platform_tenants_by_tenant_id": {
+    "method": "get",
+    "path": "/platform/tenants/{tenant_id}"
+  },
+  "get_platform_tenants_by_tenant_id_usage": {
+    "method": "get",
+    "path": "/platform/tenants/{tenant_id}/usage"
+  },
+  "get_platform_tenants_page": {
+    "method": "get",
+    "path": "/platform/tenants/page"
+  },
   "get_system_authorization_diagnostics_users_by_id": {
     "method": "get",
     "path": "/system/authorization-diagnostics/users/{id}"

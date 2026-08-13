@@ -59,11 +59,11 @@ function resolveOperationPath(
 ): string {
   return template.replace(/\{([^{}]+)\}/gu, (_placeholder, name: string) => {
     if (!parameters || !Object.hasOwn(parameters, name)) {
-      throw new TypeError(`operationId 请求缺少路径参数：${name}`)
+      throw new TypeError(`路径参数缺失：${name}`)
     }
     const value = parameters[name]
     if (value === undefined || value === null) {
-      throw new TypeError(`operationId 请求的路径参数不能为空：${name}`)
+      throw new TypeError(`路径参数为空：${name}`)
     }
     return encodeURIComponent(String(value))
   })

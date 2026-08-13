@@ -40,6 +40,7 @@ export type OperationId =
   | "get_common_jobs"
   | "get_common_jobs_by_id"
   | "get_common_jobs_by_id_download"
+  | "get_common_jobs_notifications_unread_count"
   | "get_monitor_cache"
   | "get_monitor_cache_commands"
   | "get_monitor_db_pool"
@@ -121,6 +122,7 @@ export type OperationId =
   | "post_auth_sessions_revoke_others"
   | "post_auth_ws_ticket"
   | "post_common_jobs_by_id_cancel"
+  | "post_common_jobs_notifications_read"
   | "post_common_upload"
   | "post_common_upload_avatar"
   | "post_common_upload_image"
@@ -272,6 +274,8 @@ export const get_common_jobs = {"operationId":"get_common_jobs","method":"get","
 export const get_common_jobs_by_id = {"operationId":"get_common_jobs_by_id","method":"get","path":"/common/jobs/{id}"} as const satisfies OperationDescriptor<"get_common_jobs_by_id">
 
 export const get_common_jobs_by_id_download = {"operationId":"get_common_jobs_by_id_download","method":"get","path":"/common/jobs/{id}/download"} as const satisfies OperationDescriptor<"get_common_jobs_by_id_download">
+
+export const get_common_jobs_notifications_unread_count = {"operationId":"get_common_jobs_notifications_unread_count","method":"get","path":"/common/jobs/notifications/unread-count"} as const satisfies OperationDescriptor<"get_common_jobs_notifications_unread_count">
 
 export const get_monitor_cache = {"operationId":"get_monitor_cache","method":"get","path":"/monitor/cache"} as const satisfies OperationDescriptor<"get_monitor_cache">
 
@@ -434,6 +438,8 @@ export const post_auth_sessions_revoke_others = {"operationId":"post_auth_sessio
 export const post_auth_ws_ticket = {"operationId":"post_auth_ws_ticket","method":"post","path":"/auth/ws-ticket"} as const satisfies OperationDescriptor<"post_auth_ws_ticket">
 
 export const post_common_jobs_by_id_cancel = {"operationId":"post_common_jobs_by_id_cancel","method":"post","path":"/common/jobs/{id}/cancel"} as const satisfies OperationDescriptor<"post_common_jobs_by_id_cancel">
+
+export const post_common_jobs_notifications_read = {"operationId":"post_common_jobs_notifications_read","method":"post","path":"/common/jobs/notifications/read"} as const satisfies OperationDescriptor<"post_common_jobs_notifications_read">
 
 export const post_common_upload = {"operationId":"post_common_upload","method":"post","path":"/common/upload"} as const satisfies OperationDescriptor<"post_common_upload">
 

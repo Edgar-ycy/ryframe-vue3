@@ -1,3 +1,4 @@
+import { Clock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useMutation } from '@tanstack/vue-query'
 import { getCurrentScope, onScopeDispose } from 'vue'
@@ -75,7 +76,12 @@ export function useExportJobRequest() {
       if (!identityMatchesCurrent(user, variables.identity)) return
       prependExportJob(queryClient, variables.identity, job)
       publishExportJobEvent({ type: 'created', ...variables.identity, jobId: job.id })
-      ElMessage.success(translate('exportCenter.submitted'))
+      ElMessage({
+        message: translate('exportCenter.submitted'),
+        type: 'info',
+        icon: Clock,
+        showClose: false,
+      })
     },
     onError: (error, variables) => {
       if (!shouldReuseIdempotencyKey(error)) {

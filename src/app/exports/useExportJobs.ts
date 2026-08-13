@@ -12,7 +12,9 @@ import {
   cancelExportJob,
   downloadExportJob,
   getExportJob,
+  getUnreadExportNotificationCount,
   listExportJobs,
+  markExportNotificationsRead,
   type ExportJob,
 } from '@/api/modules/exportJob'
 import { downloadBlobDirect } from '@/hooks/useDownload'
@@ -23,7 +25,10 @@ import { useUserStore } from '@/stores/user'
 import { publishExportJobEvent, subscribeExportJobEvents } from './exportJobChannel'
 import {
   exportJobListQueryKey,
+  exportJobUnreadQueryKey,
   isActiveExportJob,
+  isUnreadExportNotification,
+  markExportNotificationsReadInCache,
   mergeExportJob,
   removeExportJob,
   type ExportJobIdentity,
@@ -88,6 +93,91 @@ export function useExportJobList(
     loading: listQuery.isFetching,
     error: listQuery.error,
     refresh,
+  }
+}
+
+/** 未读数量独立于任务列表，保持和消息中心一致的持久徽标语义。 */
+export function useExportNotificationState(
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
+  const user = useUserStore()
+  const unreadQuery = useQuery<number, HttpError>({
+    queryKey: computed(() => exportJobUnreadQueryKey(
+      user.tenantId || 'anonymous',
+      String(user.userId || 'anonymous'),
+    )),
+    enabled: computed(() => shouldEnable(enabled)),
+    queryFn: async ({ signal }) => requireOperationData(
+      await getUnreadExportNotificationCount(signal),
+    ),
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: 10 * 60_000,
+    refetchInterval: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    meta: { errorMode: 'silent' },
+  })
+  let readController: AbortController | undefined
+  let readIdentity: ExportJobIdentity | undefined
+
+  function identityStillCurrent(identity: ExportJobIdentity): boolean {
+    const latest = currentIdentity()
+    return latest !== undefined && sameIdentity(identity, latest)
+  }
+
+  async function refreshUnread(): Promise<void> {
+    if (!shouldEnable(enabled)) return
+    await unreadQuery.refetch({ throwOnError: true })
+  }
+
+  async function markVisibleNotificationsRead(jobs: readonly ExportJob[]): Promise<void> {
+    const identity = currentIdentity()
+    if (!identity) return
+    const ids = jobs.filter(isUnreadExportNotification).map(job => job.id).slice(0, 100)
+    if (ids.length === 0) return
+    readController?.abort()
+    const controller = new AbortController()
+    readController = controller
+    readIdentity = identity
+    try {
+      const affected = requireOperationData(
+        await markExportNotificationsRead(ids, controller.signal),
+      )
+      if (!identityStillCurrent(identity)) return
+      const readAt = new Date().toISOString()
+      markExportNotificationsReadInCache(queryClient, identity, ids, readAt)
+      queryClient.setQueryData(
+        exportJobUnreadQueryKey(identity.tenantId, identity.userId),
+        (current: number | undefined) => Math.max(0, (current ?? affected) - affected),
+      )
+      publishExportJobEvent({ type: 'notifications-read', ...identity, jobIds: ids, readAt })
+      await refreshUnread().catch(() => undefined)
+    }
+    finally {
+      if (readController === controller) {
+        readController = undefined
+        readIdentity = undefined
+      }
+    }
+  }
+
+  const unsubscribeUser = user.$subscribe(() => {
+    if (readIdentity && !identityStillCurrent(readIdentity)) readController?.abort()
+  }, { flush: 'sync' })
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      readController?.abort()
+      unsubscribeUser()
+    })
+  }
+
+  return {
+    unreadCount: unreadQuery.data,
+    unreadLoading: unreadQuery.isFetching,
+    refreshUnread,
+    markVisibleNotificationsRead,
   }
 }
 
@@ -225,6 +315,7 @@ export function useExportJobActions() {
 export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   const enabled = options.enabled ?? true
   const list = useExportJobList(enabled)
+  const notifications = useExportNotificationState(enabled)
   const actions = useExportJobActions()
   const activeCount = ref(0)
   const previousJobs = new Map<string, ExportJob>()
@@ -259,6 +350,9 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
       const previous = previousJobs.get(current.id)
       previousJobs.set(current.id, current)
       if (running && previous && isActiveExportJob(previous) && !isActiveExportJob(current)) {
+        if (isUnreadExportNotification(current)) {
+          void notifications.refreshUnread().catch(() => undefined)
+        }
         options.onTransition?.(previous, current)
       }
     }
@@ -339,7 +433,10 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   }
 
   async function refresh(): Promise<void> {
-    await list.refresh()
+    await Promise.all([
+      list.refresh(),
+      notifications.refreshUnread().catch(() => undefined),
+    ])
     const identity = currentIdentity()
     if (identity) reconcileList(identity)
     if (activeCount.value > 0) scheduleNextCycle(true)
@@ -397,13 +494,22 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   const unsubscribeChannel = subscribeExportJobEvents((event) => {
     const identity = currentIdentity()
     if (!identity || !sameIdentity(identity, event)) return
+    if (event.type === 'notifications-read') {
+      markExportNotificationsReadInCache(queryClient, identity, event.jobIds, event.readAt)
+      void notifications.refreshUnread().catch(() => undefined)
+      return
+    }
     const controller = new AbortController()
     channelControllers.add(controller)
     void getExportJob(event.jobId, controller.signal)
       .then((response) => {
         const latestIdentity = currentIdentity()
         if (!latestIdentity || !sameIdentity(identity, latestIdentity)) return
-        mergeExportJob(queryClient, identity, requireOperationData(response))
+        const job = requireOperationData(response)
+        mergeExportJob(queryClient, identity, job)
+        if (isUnreadExportNotification(job)) {
+          void notifications.refreshUnread().catch(() => undefined)
+        }
       })
       .catch((error: unknown) => {
         const latestIdentity = currentIdentity()
@@ -451,6 +557,10 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     listLoading: list.loading,
     listError: list.error,
     activeCount,
+    unreadCount: notifications.unreadCount,
+    unreadLoading: notifications.unreadLoading,
+    markVisibleNotificationsRead: notifications.markVisibleNotificationsRead,
+    refreshUnread: notifications.refreshUnread,
     refresh,
     startTracking,
     stopTracking,

@@ -32,6 +32,7 @@
           v-model="statusFilter"
           :placeholder="t('exportCenter.statusFilter')"
           :aria-label="t('exportCenter.statusFilter')"
+          @change="handleVisibleJobsChange"
         >
           <el-option :label="t('exportCenter.allStatuses')" value="" />
           <el-option
@@ -45,6 +46,7 @@
           v-model="resourceFilter"
           :placeholder="t('exportCenter.resourceFilter')"
           :aria-label="t('exportCenter.resourceFilter')"
+          @change="handleVisibleJobsChange"
         >
           <el-option :label="t('exportCenter.allResources')" value="" />
           <el-option
@@ -257,7 +259,11 @@ import {
   formatExportFileSize,
   isExportDownloadExpired,
 } from '@/app/exports/exportJobPresentation'
-import { useExportJobActions, useExportJobList } from '@/app/exports/useExportJobs'
+import {
+  useExportJobActions,
+  useExportJobList,
+  useExportNotificationState,
+} from '@/app/exports/useExportJobs'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { formatOptionalLocalizedDate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
@@ -271,6 +277,7 @@ const errorDialogVisible = ref(false)
 const selectedErrorJob = ref<ExportJob>()
 
 const { jobs, loading, error, refresh } = useExportJobList(() => pageActive.value)
+const { markVisibleNotificationsRead } = useExportNotificationState(() => pageActive.value)
 const {
   cancelJob,
   cancellingJobId,
@@ -279,6 +286,10 @@ const {
 } = useExportJobActions()
 
 useKeepAlivePageActive(pageActive, handleRefresh)
+
+onMounted(() => {
+  void handleRefresh()
+})
 
 const STATUS_OPTIONS = ['queued', 'running', 'succeeded', 'failed', 'cancelled', 'expired'] as const
 const RESOURCE_OPTIONS = [
@@ -296,6 +307,10 @@ function visibleJobs(): ExportJob[] {
     (!statusFilter.value || job.status === statusFilter.value)
     && (!resourceFilter.value || job.resource === resourceFilter.value)
   ))
+}
+
+function handleVisibleJobsChange(): void {
+  void markVisibleNotificationsRead(visibleJobs()).catch(() => undefined)
 }
 
 function displayName(job: ExportJob): string {
@@ -388,6 +403,13 @@ async function handleRefresh(): Promise<void> {
   }
   catch {
     ElMessage.error(t('exportCenter.loadFailed'))
+    return
+  }
+  try {
+    await markVisibleNotificationsRead(visibleJobs())
+  }
+  catch {
+    // 已读确认失败时保留徽标，不把已成功加载的任务列表误报为读取失败。
   }
 }
 </script>

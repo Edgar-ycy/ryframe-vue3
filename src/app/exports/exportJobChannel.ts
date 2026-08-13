@@ -2,12 +2,10 @@ import type { ExportJobIdentity } from './exportJobCache'
 
 const CHANNEL_NAME = 'ryframe-export-jobs-v1'
 
-export type ExportJobEventType = 'created' | 'cancelled'
-
-export interface ExportJobEvent extends ExportJobIdentity {
-  type: ExportJobEventType
-  jobId: string
-}
+export type ExportJobEvent = ExportJobIdentity & (
+  | { type: 'created' | 'cancelled', jobId: string }
+  | { type: 'notifications-read', jobIds: string[], readAt: string }
+)
 
 type ExportJobEventHandler = (event: ExportJobEvent) => void
 
@@ -17,10 +15,16 @@ let channel: BroadcastChannel | undefined
 function isExportJobEvent(value: unknown): value is ExportJobEvent {
   if (typeof value !== 'object' || value === null) return false
   const event = value as Partial<ExportJobEvent>
-  return (event.type === 'created' || event.type === 'cancelled')
-    && typeof event.tenantId === 'string'
-    && typeof event.userId === 'string'
-    && typeof event.jobId === 'string'
+  if (typeof event.tenantId !== 'string' || typeof event.userId !== 'string') return false
+  if (event.type === 'created' || event.type === 'cancelled') {
+    return typeof event.jobId === 'string'
+  }
+  return event.type === 'notifications-read'
+    && Array.isArray(event.jobIds)
+    && event.jobIds.length > 0
+    && event.jobIds.length <= 100
+    && event.jobIds.every(id => typeof id === 'string')
+    && typeof event.readAt === 'string'
 }
 
 function notify(event: ExportJobEvent): void {

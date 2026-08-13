@@ -1,7 +1,7 @@
 <template>
   <el-badge
-    :value="activeCount > 99 ? '99+' : activeCount"
-    :hidden="activeCount === 0"
+    :value="badgeCount() > 99 ? '99+' : badgeCount()"
+    :hidden="badgeCount() === 0"
     :max="99"
     class="export-center-trigger"
   >
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { Download } from '@element-plus/icons-vue'
+import { CircleCheckFilled, Download, WarningFilled } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { ExportJob } from '@/api/modules/exportJob'
 import { exportJobDisplayName } from '@/app/exports/exportJobPresentation'
@@ -61,7 +61,9 @@ const {
   listLoading,
   listError,
   activeCount,
+  unreadCount,
   refresh,
+  markVisibleNotificationsRead,
   cancelJob,
   cancellingJobId,
   downloadJob,
@@ -117,9 +119,18 @@ async function initializeTracker(): Promise<void> {
 }
 
 function triggerLabel(): string {
-  return activeCount.value > 0
-    ? `${t('exportCenter.open')}（${activeCount.value}）`
-    : t('exportCenter.open')
+  if ((unreadCount.value ?? 0) > 0) {
+    return t('exportCenter.openWithUnread', { count: unreadCount.value })
+  }
+  if (activeCount.value > 0) {
+    return t('exportCenter.openWithActive', { count: activeCount.value })
+  }
+  return t('exportCenter.open')
+}
+
+function badgeCount(): number {
+  const unread = unreadCount.value ?? 0
+  return unread > 0 ? unread : activeCount.value
 }
 
 function recentJobs(): ExportJob[] {
@@ -137,10 +148,27 @@ function notifyTerminalTransition(previous: ExportJob, current: ExportJob): void
   void nextTick(() => {
     liveMessage.value = notification.message
   })
-  ElMessage({
-    message: notification.message,
-    type: notification.type,
-  })
+  if (current.status === 'succeeded' || current.status === 'failed') {
+    const notice = ElNotification({
+      title: t(current.status === 'succeeded'
+        ? 'exportCenter.notifyTitleSucceeded'
+        : 'exportCenter.notifyTitleFailed'),
+      message: notification.message,
+      type: notification.type,
+      icon: current.status === 'succeeded' ? CircleCheckFilled : WarningFilled,
+      duration: 8_000,
+      showClose: false,
+      onClick: () => {
+        notice.close()
+        void viewAll()
+      },
+    })
+    if (visible.value || router.currentRoute.value.path === '/profile/exports') {
+      void markVisibleNotificationsRead([current]).catch(() => undefined)
+    }
+    return
+  }
+  ElMessage.info({ message: notification.message, showClose: false })
 }
 
 function openDrawer(): void {
@@ -149,6 +177,12 @@ function openDrawer(): void {
 
 async function handleDrawerOpen(): Promise<void> {
   await refreshJobs()
+  try {
+    await markVisibleNotificationsRead(recentJobs())
+  }
+  catch {
+    // 已读确认失败时保留徽标，下次打开或刷新继续确认。
+  }
 }
 
 async function refreshJobs(): Promise<void> {

@@ -429,6 +429,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/common/jobs/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 将当前用户已经实际看到的导出完成或失败通知标记为已查看。 */
+        post: operations["post_common_jobs_notifications_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/common/jobs/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前用户尚未查看的导出完成或失败通知数量。 */
+        get: operations["get_common_jobs_notifications_unread_count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/common/jobs/{id}": {
         parameters: {
             query?: never;
@@ -3460,6 +3494,8 @@ export interface components {
                 /** Format: int64 */
                 file_size?: number | null;
                 id: string;
+                /** Format: date-time */
+                notification_read_at?: string | null;
                 resource: string;
                 result_file_name?: string | null;
                 status: string;
@@ -4544,6 +4580,8 @@ export interface components {
                 /** Format: int64 */
                 file_size?: number | null;
                 id: string;
+                /** Format: date-time */
+                notification_read_at?: string | null;
                 resource: string;
                 result_file_name?: string | null;
                 status: string;
@@ -5479,6 +5517,8 @@ export interface components {
             /** Format: int64 */
             file_size?: number | null;
             id: string;
+            /** Format: date-time */
+            notification_read_at?: string | null;
             resource: string;
             result_file_name?: string | null;
             status: string;
@@ -5610,6 +5650,10 @@ export interface components {
             access_token: string;
             expires_in: number;
             user_info: components["schemas"]["UserInfo"];
+        };
+        /** @description 确认当前用户已经实际看到的导出完成或失败通知。 */
+        MarkExportNotificationsReadDto: {
+            ids: string[];
         };
         /** @description 菜单树节点。 */
         MenuTreeNode: {
@@ -8576,6 +8620,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_Vec_ExportJobVo"];
+                };
+            };
+        };
+    };
+    post_common_jobs_notifications_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkExportNotificationsReadDto"];
+            };
+        };
+        responses: {
+            /** @description 已查看的导出通知数量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_u64"];
+                };
+            };
+        };
+    };
+    get_common_jobs_notifications_unread_count: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 未读导出通知数量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_u64"];
                 };
             };
         };

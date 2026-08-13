@@ -27,13 +27,27 @@
         :description="t('exportCenter.empty')"
       />
       <el-scrollbar v-if="jobs.length > 0" class="export-center__scrollbar">
-        <article v-for="job in jobs" :key="job.id" class="export-job-card">
+        <article
+          v-for="job in jobs"
+          :key="job.id"
+          class="export-job-card"
+          :class="{ 'export-job-card--unread': isUnreadExportNotification(job) }"
+        >
           <div class="export-job-card__heading">
             <div class="export-job-card__title-wrap">
               <strong class="export-job-card__title" :title="displayName(job)">
                 {{ displayName(job) }}
               </strong>
               <span class="export-job-card__resource">{{ resourceLabel(job.resource) }}</span>
+              <el-tag
+                v-if="isUnreadExportNotification(job)"
+                class="export-job-card__unread"
+                type="primary"
+                size="small"
+                effect="dark"
+              >
+                {{ t('exportCenter.unread') }}
+              </el-tag>
             </div>
             <el-tag
               :type="exportJobStatusTag(job.status)"
@@ -111,6 +125,7 @@ import {
   formatExportFileSize,
   isExportDownloadExpired,
 } from '@/app/exports/exportJobPresentation'
+import { isUnreadExportNotification } from '@/app/exports/exportJobCache'
 
 defineProps<{
   jobs: ExportJob[]
@@ -180,6 +195,14 @@ function displayName(job: ExportJob): string {
 .export-job-card {
   padding: 14px 4px;
   border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.export-job-card--unread {
+  box-shadow: inset 3px 0 0 var(--el-color-primary);
+}
+
+.export-job-card__unread {
+  margin-top: 6px;
 }
 
 .export-job-card__heading {

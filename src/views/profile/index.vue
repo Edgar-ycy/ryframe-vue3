@@ -23,6 +23,20 @@
       @revoke="revokeSession"
       @revoke-others="revokeOtherSessions"
     />
+    <ProfileServiceDelegationsCard
+      ref="serviceDelegationsCardRef"
+      :delegations="serviceDelegations"
+      :targets="serviceDelegationTargets"
+      :loading="serviceDelegationsLoading || serviceDelegationTargetsLoading"
+      :has-error="Boolean(serviceDelegationsError || serviceDelegationTargetsError)"
+      :create-pending="serviceDelegationCreatePending"
+      :revoking-id="serviceDelegationRevokingId"
+      :sensitive-material-generation="serviceDelegationSensitiveGeneration"
+      :capture-identity="captureServiceDelegationIdentity"
+      @refresh="refreshServiceDelegations"
+      @create="createServiceDelegation"
+      @revoke="revokeServiceDelegation"
+    />
   </div>
 </template>
 
@@ -33,10 +47,15 @@ import ProfileAvatar from './components/ProfileAvatar.vue'
 import ProfileDetailsForm from './components/ProfileDetailsForm.vue'
 import ProfilePasswordForm from './components/ProfilePasswordForm.vue'
 import ProfileSessionsCard from './components/ProfileSessionsCard.vue'
+import ProfileServiceDelegationsCard from './components/ProfileServiceDelegationsCard.vue'
+import type { CreateProfileServiceDelegationInput, ProfileServiceDelegation } from '@/api/modules/profileServiceDelegation'
 import { useAuthSessionManagement } from './useAuthSessionManagement'
 import { useProfileManagement } from './useProfileManagement'
+import { useServiceDelegationManagement } from './useServiceDelegationManagement'
+import { installProfileServiceDelegationsMessages } from '@/i18n/catalog/profile-service-delegations'
 
 installProfileSessionsMessages()
+installProfileServiceDelegationsMessages()
 const { t } = useI18n()
 const {
   handleAvatarUpdated,
@@ -58,6 +77,58 @@ const {
   revokeOthersPending,
   revokeSession,
 } = useAuthSessionManagement()
+
+const {
+  createPending: serviceDelegationCreatePending,
+  captureIdentity: captureServiceDelegationIdentity,
+  delegations: serviceDelegations,
+  error: serviceDelegationsError,
+  issueDelegation,
+  identityMatches: serviceDelegationIdentityMatches,
+  loading: serviceDelegationsLoading,
+  refresh: refreshServiceDelegations,
+  revokeDelegation,
+  revokingId: serviceDelegationRevokingId,
+  targets: serviceDelegationTargets,
+  targetsError: serviceDelegationTargetsError,
+  targetsLoading: serviceDelegationTargetsLoading,
+  onIdentityChanged: onServiceDelegationIdentityChanged,
+} = useServiceDelegationManagement()
+
+const serviceDelegationSensitiveGeneration = ref(0)
+const serviceDelegationsCardRef = ref<{ clearSensitiveMaterial: () => void }>()
+const unsubscribeServiceDelegationIdentity = onServiceDelegationIdentityChanged(() => {
+  serviceDelegationsCardRef.value?.clearSensitiveMaterial()
+  serviceDelegationSensitiveGeneration.value += 1
+})
+onDeactivated(() => {
+  serviceDelegationsCardRef.value?.clearSensitiveMaterial()
+  serviceDelegationSensitiveGeneration.value += 1
+})
+onBeforeUnmount(() => {
+  serviceDelegationsCardRef.value?.clearSensitiveMaterial()
+  unsubscribeServiceDelegationIdentity()
+})
+
+async function createServiceDelegation(
+  input: CreateProfileServiceDelegationInput,
+  guard: string | undefined,
+  done: (token: string | null) => void,
+): Promise<void> {
+  if (!serviceDelegationIdentityMatches(guard)) return
+  const result = await issueDelegation(input, guard)
+  ElMessage.success(t('profile.serviceDelegations.created'))
+  done(result.token ?? null)
+}
+
+async function revokeServiceDelegation(
+  delegation: ProfileServiceDelegation,
+  guard: string | undefined,
+): Promise<void> {
+  if (!serviceDelegationIdentityMatches(guard)) return
+  await revokeDelegation(delegation, guard)
+  ElMessage.success(t('profile.serviceDelegations.revokedSuccess'))
+}
 </script>
 
 <style scoped>

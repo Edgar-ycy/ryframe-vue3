@@ -279,6 +279,10 @@ const requiredQueryOperationIds = new Set([
   'get_auth_captcha_generate',
   'get_auth_captcha_image',
   'get_common_file_download',
+  'get_agent_v1_directory_departments',
+  'get_agent_v1_directory_posts',
+  'get_agent_v1_directory_users',
+  'get_agent_v1_reference_dictionaries_by_type_code',
   'get_monitor_jobs',
   'get_monitor_retention_runs',
   'get_monitor_schedules',
@@ -287,6 +291,9 @@ const requiredQueryOperationIds = new Set([
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
+  'get_system_service_access_audits',
+  'get_system_service_accounts',
+  'get_system_service_delegations',
   'get_system_configs',
   'get_system_depts',
   'get_system_dict_data',
@@ -308,6 +315,10 @@ const requiredQueryOperationIds = new Set([
   'get_tools_gen_tables',
 ])
 const c1PaginatedOperationIds = new Set([
+  'get_agent_v1_directory_departments',
+  'get_agent_v1_directory_posts',
+  'get_agent_v1_directory_users',
+  'get_agent_v1_reference_dictionaries_by_type_code',
   'get_monitor_jobs',
   'get_monitor_retention_runs',
   'get_monitor_schedules',
@@ -316,6 +327,9 @@ const c1PaginatedOperationIds = new Set([
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
+  'get_system_service_access_audits',
+  'get_system_service_accounts',
+  'get_system_service_delegations',
   'get_system_configs',
   'get_system_depts',
   'get_system_dict_types',
@@ -393,6 +407,10 @@ const c1PaginationParameterContracts = new Map([
 ])
 // 平台租户容量页固定将单页上限收紧为 100，不受通用分页配置放宽。
 const fixedPaginationPageSizeMaximums = new Map([
+  ['get_agent_v1_directory_departments', 100],
+  ['get_agent_v1_directory_posts', 100],
+  ['get_agent_v1_directory_users', 100],
+  ['get_agent_v1_reference_dictionaries_by_type_code', 100],
   ['get_platform_tenants_page', 100],
 ])
 const c1OptionParameterContracts = new Map([
@@ -519,8 +537,8 @@ function validateC1QueryParameter(operationId, parameters, parameterName, expect
 }
 
 function validateC1QueryContracts() {
-  if (c1PaginatedOperationIds.size !== 22) {
-    errors.push(`C1 pagination manifest must contain 22 operationIds, found ${c1PaginatedOperationIds.size}`)
+  if (c1PaginatedOperationIds.size !== 29) {
+    errors.push(`C1 pagination manifest must contain 29 operationIds, found ${c1PaginatedOperationIds.size}`)
   }
   if (c1OptionOperationContracts.size !== 2) {
     errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)

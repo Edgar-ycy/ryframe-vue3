@@ -4,6 +4,14 @@ import {
   requestMultipartOperation,
   requestOperation,
 } from '@/api/operationRequest'
+import {
+  get_system_user_imports,
+  get_system_user_imports_by_id,
+  get_system_user_imports_by_id_report,
+  get_system_user_imports_by_id_rows,
+  post_system_user_imports,
+  post_system_user_imports_by_id_cancel,
+} from '@/api/generated/operations'
 
 export type UserImportQuery = OperationQuery<'get_system_user_imports'>
 export type UserImportRowQuery = OperationQuery<'get_system_user_imports_by_id_rows'>
@@ -14,7 +22,7 @@ export type UserImportRow = ApiSchema<'UserImportRowVo'>
 export function createUserImport(file: File, idempotencyKey: string) {
   const data = new FormData()
   data.append('file', file)
-  return requestMultipartOperation('post_system_user_imports', {
+  return requestMultipartOperation(post_system_user_imports, {
     data,
     headers: { 'Idempotency-Key': idempotencyKey },
     timeout: 120_000,
@@ -23,17 +31,17 @@ export function createUserImport(file: File, idempotencyKey: string) {
 
 /** 分页查询当前租户的导入历史。 */
 export function listUserImports(params: UserImportQuery, signal?: AbortSignal) {
-  return requestOperation('get_system_user_imports', { params, signal })
+  return requestOperation(get_system_user_imports, { params, signal })
 }
 
 /** 查询单个导入任务的最新进度。 */
 export function getUserImport(id: string, signal?: AbortSignal) {
-  return requestOperation('get_system_user_imports_by_id', { path: { id }, signal })
+  return requestOperation(get_system_user_imports_by_id, { path: { id }, signal })
 }
 
 /** 请求在下一个批次边界取消导入。 */
 export function cancelUserImport(id: string) {
-  return requestOperation('post_system_user_imports_by_id_cancel', { data: {}, path: { id } })
+  return requestOperation(post_system_user_imports_by_id_cancel, { data: {}, path: { id } })
 }
 
 /** 分页查询失败和跳过的行结果。 */
@@ -42,7 +50,7 @@ export function listUserImportRows(
   params: UserImportRowQuery,
   signal?: AbortSignal,
 ) {
-  return requestOperation('get_system_user_imports_by_id_rows', {
+  return requestOperation(get_system_user_imports_by_id_rows, {
     path: { id },
     params,
     signal,
@@ -51,7 +59,7 @@ export function listUserImportRows(
 
 /** 下载私有 Excel 错误报告。 */
 export function downloadUserImportReport(id: string, signal?: AbortSignal) {
-  return requestBlobOperation('get_system_user_imports_by_id_report', {
+  return requestBlobOperation(get_system_user_imports_by_id_report, {
     path: { id },
     signal,
   })

@@ -2,6 +2,27 @@ import request, { requestText } from '@/shared/http/client'
 import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { requestOperation } from '@/api/operationRequest'
+import {
+  delete_monitor_schedules_by_id,
+  get_monitor_jobs,
+  get_monitor_jobs_stats,
+  get_monitor_overview,
+  get_monitor_overview_trends,
+  get_monitor_retention,
+  get_monitor_retention_runs,
+  get_monitor_schedules,
+  get_monitor_schedules_by_id,
+  get_monitor_schedules_by_id_executions,
+  get_monitor_schedules_targets,
+  post_monitor_jobs_by_id_retry,
+  post_monitor_retention_preview,
+  post_monitor_retention_run,
+  post_monitor_schedules,
+  post_monitor_schedules_by_id_run,
+  post_monitor_schedules_preview,
+  put_monitor_schedules_by_id,
+  put_monitor_schedules_by_id_status,
+} from '@/api/generated/operations'
 import { stripPagination, type PageResponse } from '@/shared/http/types'
 
 // ========== 服务器监控 (/monitor) ==========
@@ -140,17 +161,17 @@ export type BackgroundJobStats = ApiSchema<'BackgroundJobQueueStats'>
 
 /** 分页获取当前租户可见的后台任务。 */
 export function listBackgroundJobs(params: BackgroundJobQuery, signal?: AbortSignal) {
-  return requestOperation('get_monitor_jobs', { params, signal })
+  return requestOperation(get_monitor_jobs, { params, signal })
 }
 
 /** 获取当前租户可见的后台任务统计。 */
 export function getBackgroundJobStats(signal?: AbortSignal) {
-  return requestOperation('get_monitor_jobs_stats', { signal })
+  return requestOperation(get_monitor_jobs_stats, { signal })
 }
 
 /** 重新投递指定死信任务。 */
 export function retryBackgroundJob(id: string) {
-  return requestOperation('post_monitor_jobs_by_id_retry', { path: { id } })
+  return requestOperation(post_monitor_jobs_by_id_retry, { path: { id } })
 }
 
 // ========== 定时任务 (/monitor/schedules) ==========
@@ -170,47 +191,47 @@ export type ScheduleTargetRecord = ApiSchema<'ScheduleTargetVo'>
 
 /** 获取当前租户可见的调度目标目录。 */
 export function listScheduleTargets(signal?: AbortSignal) {
-  return requestOperation('get_monitor_schedules_targets', { signal })
+  return requestOperation(get_monitor_schedules_targets, { signal })
 }
 
 /** 预览未来五次执行时间。 */
 export function previewSchedule(data: SchedulePreviewBody, signal?: AbortSignal) {
-  return requestOperation('post_monitor_schedules_preview', { data, signal })
+  return requestOperation(post_monitor_schedules_preview, { data, signal })
 }
 
 /** 分页获取定时任务。 */
 export function listSchedules(params: ScheduleQuery, signal?: AbortSignal) {
-  return requestOperation('get_monitor_schedules', { params, signal })
+  return requestOperation(get_monitor_schedules, { params, signal })
 }
 
 /** 获取定时任务详情。 */
 export function getSchedule(id: string, signal?: AbortSignal) {
-  return requestOperation('get_monitor_schedules_by_id', { path: { id }, signal })
+  return requestOperation(get_monitor_schedules_by_id, { path: { id }, signal })
 }
 
 /** 创建定时任务。 */
 export function createSchedule(data: CreateScheduleBody) {
-  return requestOperation('post_monitor_schedules', { data })
+  return requestOperation(post_monitor_schedules, { data })
 }
 
 /** 更新定时任务。 */
 export function updateSchedule(id: string, data: UpdateScheduleBody) {
-  return requestOperation('put_monitor_schedules_by_id', { path: { id }, data })
+  return requestOperation(put_monitor_schedules_by_id, { path: { id }, data })
 }
 
 /** 更新定时任务启停状态。 */
 export function updateScheduleStatus(id: string, data: UpdateScheduleStatusBody) {
-  return requestOperation('put_monitor_schedules_by_id_status', { path: { id }, data })
+  return requestOperation(put_monitor_schedules_by_id_status, { path: { id }, data })
 }
 
 /** 软删除定时任务。 */
 export function removeSchedule(id: string, data: ScheduleVersionBody) {
-  return requestOperation('delete_monitor_schedules_by_id', { path: { id }, data })
+  return requestOperation(delete_monitor_schedules_by_id, { path: { id }, data })
 }
 
 /** 立即执行定时任务，幂等键由调用方按一次用户操作生成。 */
 export function runSchedule(id: string, idempotencyKey: string) {
-  return requestOperation('post_monitor_schedules_by_id_run', {
+  return requestOperation(post_monitor_schedules_by_id_run, {
     path: { id },
     headers: { 'Idempotency-Key': idempotencyKey },
   })
@@ -222,7 +243,7 @@ export function listScheduleExecutions(
   params: ScheduleExecutionQuery,
   signal?: AbortSignal,
 ) {
-  return requestOperation('get_monitor_schedules_by_id_executions', {
+  return requestOperation(get_monitor_schedules_by_id_executions, {
     path: { id },
     params,
     signal,
@@ -239,17 +260,17 @@ export type DataRetentionPolicy = ApiSchema<'DataRetentionPolicy'>
 
 /** 获取当前系统租户生效的数据保留策略。 */
 export function getDataRetention(signal?: AbortSignal) {
-  return requestOperation('get_monitor_retention', { signal })
+  return requestOperation(get_monitor_retention, { signal })
 }
 
 /** 只统计当前策略可清理的数据，不执行删除。 */
 export function previewDataRetention(signal?: AbortSignal) {
-  return requestOperation('post_monitor_retention_preview', { data: {}, signal })
+  return requestOperation(post_monitor_retention_preview, { data: {}, signal })
 }
 
 /** 人工入队一次数据保留任务。 */
 export function runDataRetention(idempotencyKey: string) {
-  return requestOperation('post_monitor_retention_run', {
+  return requestOperation(post_monitor_retention_run, {
     data: {},
     headers: { 'Idempotency-Key': idempotencyKey },
   })
@@ -257,7 +278,7 @@ export function runDataRetention(idempotencyKey: string) {
 
 /** 分页获取数据保留运行记录。 */
 export function listDataRetentionRuns(params: RetentionRunQuery, signal?: AbortSignal) {
-  return requestOperation('get_monitor_retention_runs', { params, signal })
+  return requestOperation(get_monitor_retention_runs, { params, signal })
 }
 
 // ========== 运维总览 (/monitor/overview) ==========
@@ -269,12 +290,12 @@ export type MonitorOverviewTrendBucket = ApiSchema<'MonitorOverviewTrendBucketVo
 
 /** 获取严格按当前租户聚合的实时运维快照。 */
 export function getMonitorOverview(signal?: AbortSignal) {
-  return requestOperation('get_monitor_overview', { signal })
+  return requestOperation(get_monitor_overview, { signal })
 }
 
 /** 获取固定时间桶、已补零的租户运维趋势。 */
 export function getMonitorOverviewTrends(range: OverviewRange, signal?: AbortSignal) {
-  return requestOperation('get_monitor_overview_trends', {
+  return requestOperation(get_monitor_overview_trends, {
     params: { range },
     signal,
   })

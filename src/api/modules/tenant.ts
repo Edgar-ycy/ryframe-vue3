@@ -1,4 +1,13 @@
 import { requestOperation } from '@/api/operationRequest'
+import {
+  get_platform_tenants,
+  get_platform_tenants_by_tenant_id,
+  get_platform_tenants_by_tenant_id_usage,
+  get_platform_tenants_page,
+  post_platform_tenants,
+  put_platform_tenants_by_tenant_id,
+  put_platform_tenants_by_tenant_id_status,
+} from '@/api/generated/operations'
 import type {
   OperationData,
   OperationJsonBody,
@@ -21,43 +30,43 @@ export type UpdateTenantPayload = OperationJsonBody<'put_platform_tenants_by_ten
 
 /** 保留旧的不分页接口，供尚未迁移的轻量选择器继续使用。 */
 export function listTenants(signal?: AbortSignal) {
-  return requestOperation('get_platform_tenants', { signal })
+  return requestOperation(get_platform_tenants, { signal })
 }
 
 export function listTenantCapacities(query: TenantCapacityQuery, signal?: AbortSignal) {
-  return requestOperation('get_platform_tenants_page', {
+  return requestOperation(get_platform_tenants_page, {
     params: query,
     signal,
   })
 }
 
 export function getTenantCapacity(tenantId: string, signal?: AbortSignal) {
-  return requestOperation('get_platform_tenants_by_tenant_id', {
+  return requestOperation(get_platform_tenants_by_tenant_id, {
     path: { tenant_id: tenantId },
     signal,
   })
 }
 
 export function getTenantUsage(tenantId: string, signal?: AbortSignal) {
-  return requestOperation('get_platform_tenants_by_tenant_id_usage', {
+  return requestOperation(get_platform_tenants_by_tenant_id_usage, {
     path: { tenant_id: tenantId },
     signal,
   })
 }
 
 export function createTenant(data: CreateTenantPayload) {
-  return requestOperation('post_platform_tenants', { data })
+  return requestOperation(post_platform_tenants, { data })
 }
 
 export function updateTenant(tenantId: string, data: UpdateTenantPayload) {
-  return requestOperation('put_platform_tenants_by_tenant_id', {
+  return requestOperation(put_platform_tenants_by_tenant_id, {
     path: { tenant_id: tenantId },
     data,
   })
 }
 
 export function updateTenantStatus(tenantId: string, status: TenantStatus) {
-  return requestOperation('put_platform_tenants_by_tenant_id_status', {
+  return requestOperation(put_platform_tenants_by_tenant_id_status, {
     path: { tenant_id: tenantId },
     data: { status },
   })

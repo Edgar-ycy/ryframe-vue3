@@ -8,7 +8,7 @@ import type {
   OperationPath,
   OperationQuery,
 } from './contract'
-import { operationManifest, type OperationId } from './generated/operations'
+import type { OperationDescriptor, OperationId } from './generated/operations'
 import request, { requestBlob } from '@/shared/http/client'
 
 type JsonOperationId = {
@@ -69,11 +69,10 @@ function resolveOperationPath(
   })
 }
 
-export function requestOperation<Name extends JsonOperationId>(
-  operationId: Name,
+export async function requestOperation<Name extends JsonOperationId>(
+  operation: OperationDescriptor<Name>,
   options: OperationRequestOptions<Name>,
 ): Promise<OperationJsonResponse<Name>> {
-  const operation = operationManifest[operationId]
   const {
     path: pathParameters,
     params,
@@ -95,11 +94,10 @@ export function requestOperation<Name extends JsonOperationId>(
 }
 
 /** 使用 OpenAPI operationId 发送 multipart 请求，避免业务模块重复维护方法和路径。 */
-export function requestMultipartOperation<Name extends MultipartOperationId>(
-  operationId: Name,
+export async function requestMultipartOperation<Name extends MultipartOperationId>(
+  operation: OperationDescriptor<Name>,
   options: MultipartOperationRequestOptions<Name>,
 ): Promise<OperationJsonResponse<Name>> {
-  const operation = operationManifest[operationId]
   const {
     path: pathParameters,
     params,
@@ -121,11 +119,10 @@ export function requestMultipartOperation<Name extends MultipartOperationId>(
 }
 
 /** 使用 OpenAPI operationId 下载二进制响应。 */
-export function requestBlobOperation<Name extends OperationId>(
-  operationId: Name,
+export async function requestBlobOperation<Name extends OperationId>(
+  operation: OperationDescriptor<Name>,
   options: BlobOperationRequestOptions<Name>,
 ): Promise<Blob> {
-  const operation = operationManifest[operationId]
   const {
     path: pathParameters,
     params,

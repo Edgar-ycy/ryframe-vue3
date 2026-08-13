@@ -8,6 +8,20 @@ import {
   requestMultipartOperation,
   requestOperation,
 } from '@/api/operationRequest'
+import {
+  get_system_config_packages,
+  get_system_config_packages_by_id,
+  get_system_config_packages_by_id_download,
+  get_system_config_transfers,
+  get_system_config_transfers_by_id,
+  get_system_config_transfers_by_id_items,
+  post_system_config_packages,
+  post_system_config_transfers_by_id_apply,
+  post_system_config_transfers_by_id_preview,
+  post_system_config_transfers_by_id_rollback,
+  post_system_config_transfers_from_package,
+  post_system_config_transfers_upload,
+} from '@/api/generated/operations'
 
 export type TenantConfigBundle = ApiSchema<'TenantConfigBundleVo'>
 export type TenantConfigBundleSummary = ApiSchema<'TenantConfigBundleSummaryVo'>
@@ -25,7 +39,7 @@ export function listTenantConfigPackages(
   params: TenantConfigPackageQuery,
   signal?: AbortSignal,
 ) {
-  return requestOperation('get_system_config_packages', { params, signal })
+  return requestOperation(get_system_config_packages, { params, signal })
 }
 
 /** 创建当前租户配置包的异步导出任务。 */
@@ -33,7 +47,7 @@ export function createTenantConfigPackage(
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation('post_system_config_packages', {
+  return requestOperation(post_system_config_packages, {
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
   })
@@ -41,7 +55,7 @@ export function createTenantConfigPackage(
 
 /** 读取单个配置包的最新状态。 */
 export function getTenantConfigPackage(id: string, signal?: AbortSignal) {
-  return requestOperation('get_system_config_packages_by_id', {
+  return requestOperation(get_system_config_packages_by_id, {
     path: { id },
     signal,
   })
@@ -49,7 +63,7 @@ export function getTenantConfigPackage(id: string, signal?: AbortSignal) {
 
 /** 由用户显式下载已经生成且仍有效的配置包。 */
 export function downloadTenantConfigPackage(id: string, signal?: AbortSignal) {
-  return requestBlobOperation('get_system_config_packages_by_id_download', {
+  return requestBlobOperation(get_system_config_packages_by_id_download, {
     path: { id },
     signal,
   })
@@ -60,7 +74,7 @@ export function listTenantConfigTransfers(
   params: TenantConfigTransferQuery,
   signal?: AbortSignal,
 ) {
-  return requestOperation('get_system_config_transfers', { params, signal })
+  return requestOperation(get_system_config_transfers, { params, signal })
 }
 
 /** 使用当前租户已经持有的配置包创建迁移。 */
@@ -69,7 +83,7 @@ export function createTenantConfigTransferFromPackage(
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation('post_system_config_transfers_from_package', {
+  return requestOperation(post_system_config_transfers_from_package, {
     data: { bundle_id: bundleId },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
@@ -84,7 +98,7 @@ export function uploadTenantConfigTransfer(
 ) {
   const data = new FormData()
   data.append('file', file)
-  return requestMultipartOperation('post_system_config_transfers_upload', {
+  return requestMultipartOperation(post_system_config_transfers_upload, {
     data,
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
@@ -94,7 +108,7 @@ export function uploadTenantConfigTransfer(
 
 /** 读取单个配置迁移的强一致最新状态。 */
 export function getTenantConfigTransfer(id: string, signal?: AbortSignal) {
-  return requestOperation('get_system_config_transfers_by_id', {
+  return requestOperation(get_system_config_transfers_by_id, {
     path: { id },
     signal,
   })
@@ -106,7 +120,7 @@ export function listTenantConfigTransferItems(
   params: TenantConfigTransferItemQuery,
   signal?: AbortSignal,
 ) {
-  return requestOperation('get_system_config_transfers_by_id_items', {
+  return requestOperation(get_system_config_transfers_by_id_items, {
     path: { id },
     params,
     signal,
@@ -119,7 +133,7 @@ export function previewTenantConfigTransfer(
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation('post_system_config_transfers_by_id_preview', {
+  return requestOperation(post_system_config_transfers_by_id_preview, {
     data: {},
     headers: { 'Idempotency-Key': idempotencyKey },
     path: { id },
@@ -134,7 +148,7 @@ export function applyTenantConfigTransfer(
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation('post_system_config_transfers_by_id_apply', {
+  return requestOperation(post_system_config_transfers_by_id_apply, {
     data: input,
     headers: { 'Idempotency-Key': idempotencyKey },
     path: { id },
@@ -148,7 +162,7 @@ export function rollbackTenantConfigTransfer(
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation('post_system_config_transfers_by_id_rollback', {
+  return requestOperation(post_system_config_transfers_by_id_rollback, {
     data: {},
     headers: { 'Idempotency-Key': idempotencyKey },
     path: { id },

@@ -70,10 +70,22 @@ export function createOperationManifest(document) {
 
 export function renderOperationManifest(document) {
   const manifest = createOperationManifest(document)
-  return `${generatedHeader}export const operationManifest = ${JSON.stringify(manifest, null, 2)} as const
+  const operationIds = Object.keys(manifest)
+  const operationIdType = operationIds.map(operationId => JSON.stringify(operationId)).join('\n  | ')
+  const descriptors = Object.entries(manifest).map(([operationId, operation]) => (
+    `export const ${operationId} = ${JSON.stringify({ operationId, ...operation })} as const satisfies OperationDescriptor<${JSON.stringify(operationId)}>`
+  )).join('\n\n')
 
-export type OperationManifest = typeof operationManifest
-export type OperationId = keyof OperationManifest
+  return `${generatedHeader}export type OperationId =
+  | ${operationIdType}
+
+export type OperationDescriptor<Name extends OperationId = OperationId> = Readonly<{
+  operationId: Name
+  method: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'trace'
+  path: string
+}>
+
+${descriptors}
 `
 }
 

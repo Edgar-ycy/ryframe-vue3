@@ -4,6 +4,86 @@
  */
 
 export interface paths {
+    "/api/v1/agent/v1/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_agent_v1_capabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/v1/directory/departments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_agent_v1_directory_departments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/v1/directory/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_agent_v1_directory_posts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/v1/directory/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_agent_v1_directory_users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/v1/reference/dictionaries/{type_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_agent_v1_reference_dictionaries_by_type_code"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/captcha/config": {
         parameters: {
             query?: never;
@@ -881,6 +961,54 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/service-delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_profile_service_delegations"];
+        put?: never;
+        post: operations["post_profile_service_delegations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/service-delegations/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_profile_service_delegations_capabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/service-delegations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete_profile_service_delegations_by_id"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1908,6 +2036,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/service-access-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_service_access_audits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_service_accounts"];
+        put?: never;
+        post: operations["post_system_service_accounts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_service_accounts_by_id"];
+        put: operations["put_system_service_accounts_by_id"];
+        post?: never;
+        delete: operations["delete_system_service_accounts_by_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-accounts/{id}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_service_accounts_by_id_credentials"];
+        put?: never;
+        post: operations["post_system_service_accounts_by_id_credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-accounts/{id}/credentials/{credential_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete_system_service_accounts_by_id_credentials_by_credential_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-accounts/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_service_accounts_by_id_roles"];
+        put: operations["put_system_service_accounts_by_id_roles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-accounts/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["put_system_service_accounts_by_id_status"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_system_service_delegations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/service-delegations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete_system_service_delegations_by_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/user-imports": {
         parameters: {
             query?: never;
@@ -2259,6 +2531,57 @@ export interface components {
         AcknowledgeMessagesDto: {
             ids: string[];
         };
+        AgentCapabilityResponse: {
+            key: string;
+            method: string;
+            path: string;
+        };
+        AgentDepartmentResponse: {
+            id: string;
+            name: string;
+            parent_id?: string | null;
+            status: string;
+        };
+        AgentDictionaryItemResponse: {
+            label: string;
+            /** Format: int32 */
+            sort: number;
+            value: string;
+        };
+        AgentDictionaryResponse: {
+            items: components["schemas"]["AgentDictionaryItemResponse"][];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+            type_code: string;
+        };
+        /** @description Agent 只读列表的固定分页参数；未知过滤条件由服务层审计后拒绝。 */
+        AgentPageQuery: {
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+        };
+        AgentPostResponse: {
+            code: string;
+            id: string;
+            name: string;
+            status: string;
+        };
+        AgentUserResponse: {
+            dept_name?: string | null;
+            id: string;
+            nickname: string;
+            status: string;
+            username: string;
+        };
         /**
          * @description 不携带业务数据的统一响应。
          *
@@ -2270,6 +2593,36 @@ export interface components {
             code: number;
             /** @default null */
             data: unknown;
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_AgentDepartmentResponse: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_AgentDepartmentResponse"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_AgentPostResponse: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_AgentPostResponse"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_AgentUserResponse: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_AgentUserResponse"];
             details?: unknown;
             error_key?: string | null;
             message: string;
@@ -2416,6 +2769,36 @@ export interface components {
             request_id: string;
         };
         /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_ServiceAccessAuditVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_ServiceAccessAuditVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_ServiceAccountVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_ServiceAccountVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_ServiceDelegationVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_ServiceDelegationVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
         ApiPageResponse_TableInfo: {
             /** Format: int32 */
             code: number;
@@ -2493,6 +2876,36 @@ export interface components {
             details?: unknown;
             error_key?: string | null;
             message: string;
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_AgentDictionaryResponse: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                items: components["schemas"]["AgentDictionaryItemResponse"][];
+                /** Format: int64 */
+                max_page_size: number;
+                /** Format: int64 */
+                page: number;
+                /** Format: int64 */
+                page_size: number;
+                /** Format: int64 */
+                total: number;
+                /** Format: int64 */
+                total_pages: number;
+                type_code: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
@@ -2768,6 +3181,48 @@ export interface components {
                 portable: boolean;
                 remark?: string | null;
                 value: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_CreatedServiceCredentialVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                credential: components["schemas"]["ServiceCredentialVo"];
+                /** @description 仅首次成功时返回完整 API Key；幂等重放为 `null`。 */
+                secret?: string | null;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_CreatedServiceDelegationVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                delegation: components["schemas"]["ServiceDelegationVo"];
+                /** @description 仅首次成功时返回委托令牌；幂等重放为 `null`。 */
+                token?: string | null;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -3537,6 +3992,58 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_ServiceAccountDetailVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                account: components["schemas"]["ServiceAccountVo"];
+                role_ids: string[];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_ServiceAccountVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: int32 */
+                authorization_version: number;
+                code: string;
+                /** Format: date-time */
+                created_at: string;
+                dept_id?: string | null;
+                description?: string | null;
+                id: string;
+                /** Format: int32 */
+                max_requests_per_minute: number;
+                name: string;
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_String: {
             /**
              * Format: int32
@@ -3895,6 +4402,27 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_AgentCapabilityResponse: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                key: string;
+                method: string;
+                path: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_AuthSessionResponse: {
             /**
              * Format: int32
@@ -4123,6 +4651,93 @@ export interface components {
                 handler_key: string;
                 job_type: string;
                 scope: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_ServiceCredentialVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                account_id: string;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: date-time */
+                expires_at: string;
+                id: string;
+                key_id: string;
+                label: string;
+                /** Format: date-time */
+                last_used_at?: string | null;
+                /** Format: date-time */
+                revoked_at?: string | null;
+                status: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_ServiceDelegationTargetResponse: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                account_code: string;
+                account_id: string;
+                account_name: string;
+                capabilities: components["schemas"]["ServiceCapabilityVo"][];
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_ServiceDelegationVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                account_id: string;
+                capability_keys: string[];
+                /** Format: date-time */
+                created_at: string;
+                /** Format: date-time */
+                expires_at: string;
+                id: string;
+                /** Format: date-time */
+                not_before: string;
+                reason: string;
+                /** Format: date-time */
+                revoked_at?: string | null;
+                status: string;
+                user_id: string;
+                /** Format: int32 */
+                version: number;
             }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -4656,6 +5271,26 @@ export interface components {
             name: string;
             timezone: string;
         };
+        CreateServiceAccountDto: {
+            code: string;
+            dept_id?: string | null;
+            description?: string | null;
+            /** Format: int32 */
+            max_requests_per_minute?: number | null;
+            name: string;
+        };
+        CreateServiceCredentialDto: {
+            /** Format: date-time */
+            expires_at: string;
+            label: string;
+        };
+        CreateServiceDelegationDto: {
+            capability_keys: string[];
+            /** Format: date-time */
+            expires_at?: string | null;
+            reason: string;
+            service_account_id: string;
+        };
         /** @description 从当前租户已有配置包创建一次迁移。 */
         CreateTenantConfigTransferDto: {
             bundle_id: string;
@@ -4685,6 +5320,16 @@ export interface components {
             phone?: string | null;
             role_ids?: string[];
             username: string;
+        };
+        CreatedServiceCredentialVo: {
+            credential: components["schemas"]["ServiceCredentialVo"];
+            /** @description 仅首次成功时返回完整 API Key；幂等重放为 `null`。 */
+            secret?: string | null;
+        };
+        CreatedServiceDelegationVo: {
+            delegation: components["schemas"]["ServiceDelegationVo"];
+            /** @description 仅首次成功时返回委托令牌；幂等重放为 `null`。 */
+            token?: string | null;
         };
         CsrfResponse: {
             csrf_token: string;
@@ -4720,6 +5365,8 @@ export interface components {
             retention_run_days: number;
             /** Format: int32 */
             schedule_execution_days: number;
+            /** Format: int32 */
+            service_access_audit_days: number;
             /** Format: int32 */
             tenant_config_artifact_hours: number;
             /** Format: int32 */
@@ -5201,6 +5848,64 @@ export interface components {
             range?: string;
         };
         /** @description 分页接口的业务数据。 */
+        PageData_AgentDepartmentResponse: {
+            items: {
+                id: string;
+                name: string;
+                parent_id?: string | null;
+                status: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_AgentPostResponse: {
+            items: {
+                code: string;
+                id: string;
+                name: string;
+                status: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_AgentUserResponse: {
+            items: {
+                dept_name?: string | null;
+                id: string;
+                nickname: string;
+                status: string;
+                username: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
         PageData_BackgroundJobVo: {
             items: {
                 /** Format: int32 */
@@ -5592,6 +6297,112 @@ export interface components {
             total_pages: number;
         };
         /** @description 分页接口的业务数据。 */
+        PageData_ServiceAccessAuditVo: {
+            items: {
+                access_mode: string;
+                /** Format: int32 */
+                account_authorization_version?: number | null;
+                account_id?: string | null;
+                capability_key: string;
+                /** Format: date-time */
+                completed_at: string;
+                credential_id?: string | null;
+                delegation_id?: string | null;
+                /** Format: int32 */
+                delegation_version?: number | null;
+                /** Format: int32 */
+                http_status: number;
+                id: string;
+                operation_id: string;
+                reason_code: string;
+                represented_user_id?: string | null;
+                request_id: string;
+                required_permission: string;
+                /** Format: int64 */
+                response_bytes?: number | null;
+                result: string;
+                /** Format: int32 */
+                row_count?: number | null;
+                /** Format: date-time */
+                started_at: string;
+                /** Format: int32 */
+                tenant_epoch?: number | null;
+                tenant_id?: string | null;
+                /** Format: int32 */
+                user_authorization_version?: number | null;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_ServiceAccountVo: {
+            items: {
+                /** Format: int32 */
+                authorization_version: number;
+                code: string;
+                /** Format: date-time */
+                created_at: string;
+                dept_id?: string | null;
+                description?: string | null;
+                id: string;
+                /** Format: int32 */
+                max_requests_per_minute: number;
+                name: string;
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_ServiceDelegationVo: {
+            items: {
+                account_id: string;
+                capability_keys: string[];
+                /** Format: date-time */
+                created_at: string;
+                /** Format: date-time */
+                expires_at: string;
+                id: string;
+                /** Format: date-time */
+                not_before: string;
+                reason: string;
+                /** Format: date-time */
+                revoked_at?: string | null;
+                status: string;
+                user_id: string;
+                /** Format: int32 */
+                version: number;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
         PageData_TableInfo: {
             items: {
                 columns: components["schemas"]["ColumnInfo"][];
@@ -5967,6 +6778,9 @@ export interface components {
         ReplaceRolePermissionsDto: {
             perm_ids?: string[];
         };
+        ReplaceServiceAccountRolesDto: {
+            role_ids: string[];
+        };
         ReplaceUserRolesDto: {
             role_ids?: string[];
         };
@@ -6128,6 +6942,113 @@ export interface components {
              * @description 已用内存（GB）。
              */
             used_memory: number;
+        };
+        ServiceAccessAuditVo: {
+            access_mode: string;
+            /** Format: int32 */
+            account_authorization_version?: number | null;
+            account_id?: string | null;
+            capability_key: string;
+            /** Format: date-time */
+            completed_at: string;
+            credential_id?: string | null;
+            delegation_id?: string | null;
+            /** Format: int32 */
+            delegation_version?: number | null;
+            /** Format: int32 */
+            http_status: number;
+            id: string;
+            operation_id: string;
+            reason_code: string;
+            represented_user_id?: string | null;
+            request_id: string;
+            required_permission: string;
+            /** Format: int64 */
+            response_bytes?: number | null;
+            result: string;
+            /** Format: int32 */
+            row_count?: number | null;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: int32 */
+            tenant_epoch?: number | null;
+            tenant_id?: string | null;
+            /** Format: int32 */
+            user_authorization_version?: number | null;
+        };
+        ServiceAccountDetailVo: {
+            account: components["schemas"]["ServiceAccountVo"];
+            role_ids: string[];
+        };
+        /** @enum {string} */
+        ServiceAccountStatusDto: "enabled" | "disabled";
+        ServiceAccountVo: {
+            /** Format: int32 */
+            authorization_version: number;
+            code: string;
+            /** Format: date-time */
+            created_at: string;
+            dept_id?: string | null;
+            description?: string | null;
+            id: string;
+            /** Format: int32 */
+            max_requests_per_minute: number;
+            name: string;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ServiceCapabilityVo: {
+            delegated: boolean;
+            direct: boolean;
+            key: string;
+            permission: string;
+        };
+        ServiceCredentialVo: {
+            account_id: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            id: string;
+            key_id: string;
+            label: string;
+            /** Format: date-time */
+            last_used_at?: string | null;
+            /** Format: date-time */
+            revoked_at?: string | null;
+            status: string;
+        };
+        ServiceDelegationTargetResponse: {
+            account_code: string;
+            account_id: string;
+            account_name: string;
+            capabilities: components["schemas"]["ServiceCapabilityVo"][];
+        };
+        ServiceDelegationVo: {
+            account_id: string;
+            capability_keys: string[];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            id: string;
+            /** Format: date-time */
+            not_before: string;
+            reason: string;
+            /** Format: date-time */
+            revoked_at?: string | null;
+            status: string;
+            user_id: string;
+            /** Format: int32 */
+            version: number;
+        };
+        /** @description 服务账号、委托与访问审计共用的分页参数。 */
+        ServiceResourcePageQuery: {
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
         };
         /** @description 数据库表结构响应。 */
         TableInfo: {
@@ -6453,6 +7374,16 @@ export interface components {
             /** Format: int64 */
             version: number;
         };
+        UpdateServiceAccountDto: {
+            dept_id?: string | null;
+            description?: string | null;
+            /** Format: int32 */
+            max_requests_per_minute: number;
+            name: string;
+        };
+        UpdateServiceAccountStatusDto: {
+            status: components["schemas"]["ServiceAccountStatusDto"];
+        };
         UpdateTenantDto: {
             domain?: string | null;
             /** Format: date-time */
@@ -6626,6 +7557,337 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_agent_v1_capabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前身份真正可用的编译期能力 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_AgentCapabilityResponse"];
+                };
+            };
+            /** @description 请求参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agent 凭据无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 能力不可用 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 响应超过固定上限 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求频率或并发超过上限 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 授权、限流、数据库或审计服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_agent_v1_directory_departments: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 双主体数据范围交集内的部门 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_AgentDepartmentResponse"];
+                };
+            };
+            /** @description 分页或过滤参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agent 凭据无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 权限交集不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 响应超过固定上限 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求频率或并发超过上限 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 授权、限流、数据库或审计服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_agent_v1_directory_posts: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 双方数据范围均为全部时可见的岗位 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_AgentPostResponse"];
+                };
+            };
+            /** @description 分页或过滤参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agent 凭据无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 权限交集不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 响应超过固定上限 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求频率或并发超过上限 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 授权、限流、数据库或审计服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_agent_v1_directory_users: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 双主体数据范围交集内的用户 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_AgentUserResponse"];
+                };
+            };
+            /** @description 分页或过滤参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agent 凭据无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 权限交集不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 响应超过固定上限 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求频率或并发超过上限 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 授权、限流、数据库或审计服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_agent_v1_reference_dictionaries_by_type_code: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                type_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 双方数据范围均为全部时可见的启用字典 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_AgentDictionaryResponse"];
+                };
+            };
+            /** @description 字典类型或分页参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agent 凭据无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 权限交集不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 字典类型不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 响应超过固定上限 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求频率或并发超过上限 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 授权、限流、数据库或审计服务不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_auth_captcha_config: {
         parameters: {
             query?: never;
@@ -8426,6 +9688,206 @@ export interface operations {
             };
             /** @description 租户不存在 */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_profile_service_delegations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前用户本人创建的委托 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_ServiceDelegationVo"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_profile_service_delegations: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceDelegationDto"];
+            };
+        };
+        responses: {
+            /** @description 委托已创建；令牌只显示一次 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_CreatedServiceDelegationVo"];
+                };
+            };
+            /** @description 参数、能力或幂等键无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 能力不是双方共同拥有或账号不可委托 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 幂等键冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能、Pepper 或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_profile_service_delegations_capabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前用户与服务账号共同可委托的编译期能力 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_ServiceDelegationTargetResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_profile_service_delegations_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 本人委托已撤销 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description 委托 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 只能撤销本人委托 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 委托不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 委托已撤销 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10888,6 +12350,828 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiEmptyResponse"];
                 };
+            };
+        };
+    };
+    get_system_service_access_audits: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent 访问审计列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_ServiceAccessAuditVo"];
+                };
+            };
+            /** @description 分页参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务访问审计权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_service_accounts: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 服务账号分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_ServiceAccountVo"];
+                };
+            };
+            /** @description 分页参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号查看权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_service_accounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceAccountDto"];
+            };
+        };
+        responses: {
+            /** @description 服务账号已创建 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ServiceAccountVo"];
+                };
+            };
+            /** @description 请求参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号创建权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 账号代码冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_service_accounts_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 服务账号详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ServiceAccountDetailVo"];
+                };
+            };
+            /** @description 账号 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号查看权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_system_service_accounts_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateServiceAccountDto"];
+            };
+        };
+        responses: {
+            /** @description 服务账号已更新 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ServiceAccountVo"];
+                };
+            };
+            /** @description 请求参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号编辑权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_system_service_accounts_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 服务账号已删除 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description 账号 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号删除权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_service_accounts_by_id_credentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API Key 元数据列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_ServiceCredentialVo"];
+                };
+            };
+            /** @description 账号 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号查看权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_system_service_accounts_by_id_credentials: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceCredentialDto"];
+            };
+        };
+        responses: {
+            /** @description API Key 已创建；Secret 只显示一次 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_CreatedServiceCredentialVo"];
+                };
+            };
+            /** @description 请求参数或幂等键无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有 API Key 轮换权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 有效 Key 已达上限或幂等冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能、Pepper 或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_system_service_accounts_by_id_credentials_by_credential_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                credential_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API Key 已撤销 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有 API Key 撤销权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号或 API Key 不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API Key 已撤销 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_service_accounts_by_id_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 服务账号角色 ID */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_String"];
+                };
+            };
+            /** @description 账号 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号角色权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_system_service_accounts_by_id_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceServiceAccountRolesDto"];
+            };
+        };
+        responses: {
+            /** @description 服务账号角色已替换 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description 账号或角色 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号角色权限，或选择了超级角色 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号或角色不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_system_service_accounts_by_id_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateServiceAccountStatusDto"];
+            };
+        };
+        responses: {
+            /** @description 服务账号状态已更新 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description 请求参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有服务账号编辑权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_system_service_delegations: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前租户委托列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_ServiceDelegationVo"];
+                };
+            };
+            /** @description 分页参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有委托查看权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_system_service_delegations_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 委托已撤销 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
+            };
+            /** @description 委托 ID 无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 没有委托撤销权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 委托不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 委托已撤销 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 服务账号功能未启用或数据库不可用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

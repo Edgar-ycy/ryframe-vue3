@@ -25,6 +25,7 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
   'system.logininfor': { path: '/system/logininfor', component: () => import('@/views/monitor/loginlog/index.vue') },
   'system.perm': { path: '/system/permission', component: () => import('@/views/system/permission/index.vue') },
   'system.authorization-diagnostics': { path: '/system/authorization-diagnostics', component: () => import('@/views/system/authorization-diagnostics/index.vue') },
+  'system.service-accounts': { path: '/system/service-accounts', component: () => import('@/views/system/service-accounts/index.vue') },
 
   'monitor.overview': { path: '/monitor/overview', component: () => import('@/views/monitor/overview/index.vue') },
   'monitor.runtime': { path: '/monitor/runtime', component: () => import('@/views/monitor/runtime/index.vue') },
@@ -57,6 +58,7 @@ export const permissionRouteKeys: Readonly<Record<string, string>> = Object.free
   'system:logininfor:list': 'system.logininfor',
   'system:perm:list': 'system.perm',
   'system:authorization-diagnostic:list': 'system.authorization-diagnostics',
+  'system:service-account:list': 'system.service-accounts',
   'monitor:overview:list': 'monitor.overview',
   'monitor:runtime:list': 'monitor.runtime',
   'monitor:online:list': 'monitor.online',

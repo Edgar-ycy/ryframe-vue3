@@ -1,6 +1,11 @@
 import request, { rawRequest } from '@/shared/http/client'
 import type { AppLocale } from '@/i18n'
 import { requestOperation } from '@/api/operationRequest'
+import {
+  delete_auth_sessions_by_sid,
+  get_auth_sessions,
+  post_auth_sessions_revoke_others,
+} from '@/api/generated/operations'
 import type {
   ApiSchema,
   OperationData,
@@ -166,7 +171,7 @@ export function updateAvatar(data: FormData) {
 
 /** 获取当前租户、当前用户仍然有效的登录设备。 */
 export function getAuthSessions(signal?: AbortSignal) {
-  return requestOperation('get_auth_sessions', { signal })
+  return requestOperation(get_auth_sessions, { signal })
 }
 
 /** 精确撤销当前用户的一个登录设备；CSRF 挑战由调用方按当前会话取得。 */
@@ -175,7 +180,7 @@ export function revokeAuthSession(
   csrfToken: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation('delete_auth_sessions_by_sid', {
+  return requestOperation(delete_auth_sessions_by_sid, {
     path: { sid },
     headers: { 'X-CSRF-Token': csrfToken },
     signal,
@@ -184,7 +189,7 @@ export function revokeAuthSession(
 
 /** 撤销当前用户除当前设备之外的全部登录会话。 */
 export function revokeOtherAuthSessions(csrfToken: string, signal?: AbortSignal) {
-  return requestOperation('post_auth_sessions_revoke_others', {
+  return requestOperation(post_auth_sessions_revoke_others, {
     data: {},
     headers: { 'X-CSRF-Token': csrfToken },
     signal,

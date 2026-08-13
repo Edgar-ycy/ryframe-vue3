@@ -34,6 +34,10 @@ import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/i
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { queryClient, tenantQueryKey } from '@/shared/query/client'
+import {
+  createIdentityOperationScope,
+  type IdentityOperationGuard,
+} from '@/shared/query/createIdentityOperationScope'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -123,7 +127,6 @@ export function useTenantConfigTransferManagement() {
   const createTransferBusy = ref(false)
   const downloadingPackageId = ref<string>()
   const pendingIntentKeys = new Map<string, string>()
-  const pendingControllers = new Set<AbortController>()
   let activeTimer: ReturnType<typeof globalThis.setTimeout> | undefined
   let activeCycleController: AbortController | undefined
   let activeCycleRunning = false
@@ -138,8 +141,14 @@ export function useTenantConfigTransferManagement() {
     return { tenantId: userStore.tenantId, userId: String(userStore.userId) }
   }
 
+  const operationScope = createIdentityOperationScope({
+    currentIdentity,
+    isActive: () => pageActive.value,
+    sameIdentity,
+  })
+
   function isCurrentIdentity(identity: TenantConfigIdentity): boolean {
-    return sameIdentity(identity, currentIdentity())
+    return operationScope.isCurrentIdentity(identity)
   }
 
   function queryEnabled(): boolean {
@@ -408,20 +417,41 @@ export function useTenantConfigTransferManagement() {
   }
 
   function beginController(): AbortController {
-    const controller = new AbortController()
-    pendingControllers.add(controller)
-    return controller
+    return operationScope.beginController()
+  }
+
+  function requireOperationContext(): IdentityOperationGuard {
+    const guard = operationScope.capture()
+    if (!guard) {
+      throw new HttpError('页面或登录身份已经切换', { kind: 'cancelled' })
+    }
+    return guard
+  }
+
+  function operationContextMatches(
+    identity: TenantConfigIdentity,
+    guard: IdentityOperationGuard,
+  ): boolean {
+    return isCurrentIdentity(identity) && operationScope.matches(guard)
+  }
+
+  function ensureOperationContext(
+    identity: TenantConfigIdentity,
+    guard: IdentityOperationGuard,
+  ): void {
+    if (!operationContextMatches(identity, guard)) {
+      throw new HttpError('页面或登录身份已经切换', { kind: 'cancelled' })
+    }
   }
 
   async function cancelListBeforeMerge(
     identity: TenantConfigIdentity,
+    guard: IdentityOperationGuard,
     kind: 'package' | 'transfer',
   ): Promise<void> {
     const queryKey = kind === 'package' ? packageListKey(identity) : transferListKey(identity)
     await queryClient.cancelQueries({ queryKey, exact: true })
-    if (!isCurrentIdentity(identity)) {
-      throw new HttpError('登录身份已经切换，请重新操作', { kind: 'cancelled' })
-    }
+    ensureOperationContext(identity, guard)
     activeCycleController?.abort()
   }
 
@@ -439,6 +469,7 @@ export function useTenantConfigTransferManagement() {
 
   async function runIdempotent<T>(
     identity: TenantConfigIdentity,
+    guard: IdentityOperationGuard,
     signature: string,
     prefix: string,
     execute: (idempotencyKey: string, controller: AbortController) => Promise<T>,
@@ -447,13 +478,12 @@ export function useTenantConfigTransferManagement() {
     const controller = beginController()
     try {
       const result = await execute(idempotencyKey, controller)
-      if (!isCurrentIdentity(identity)) {
-        throw new HttpError('登录身份已经切换，请重新操作', { kind: 'cancelled' })
-      }
+      ensureOperationContext(identity, guard)
       pendingIntentKeys.delete(signature)
       return result
     }
     catch (error) {
+      // 页面失活会中止请求，但服务端结果可能已经提交；同一身份保留幂等键供恢复后重试。
       if (isCurrentIdentity(identity) && shouldReuseIdempotencyKey(error)) {
         pendingIntentKeys.set(signature, idempotencyKey)
       }
@@ -463,16 +493,17 @@ export function useTenantConfigTransferManagement() {
       throw error
     }
     finally {
-      pendingControllers.delete(controller)
+      operationScope.finishController(controller)
     }
   }
 
   async function reconcileTransferError(
     identity: TenantConfigIdentity,
+    guard: IdentityOperationGuard,
     transferId: string,
     error: unknown,
   ): Promise<void> {
-    if (!isCurrentIdentity(identity) || !(error instanceof HttpError)) return
+    if (!operationContextMatches(identity, guard) || !(error instanceof HttpError)) return
     if (error.kind === 'cancelled') return
     if (error.status === 403 || error.status === 404) {
       removeTransfer(identity, transferId)
@@ -485,6 +516,7 @@ export function useTenantConfigTransferManagement() {
         transferId,
         controller.signal,
       ))
+      ensureOperationContext(identity, guard)
       mergeTransfer(identity, latest)
     }
     catch (detailError) {
@@ -493,9 +525,9 @@ export function useTenantConfigTransferManagement() {
       }
     }
     finally {
-      pendingControllers.delete(controller)
+      operationScope.finishController(controller)
     }
-    if (isCurrentIdentity(identity)) {
+    if (operationContextMatches(identity, guard)) {
       await transfersQuery.refetch({ throwOnError: false })
     }
   }
@@ -505,12 +537,13 @@ export function useTenantConfigTransferManagement() {
       throw new HttpError('配置包导出正在提交', { status: 409, kind: 'http' })
     }
     const identity = requireIdentity()
-    const bundle = await runIdempotent(identity, 'package-export', 'tenant-config-export', (
+    const guard = requireOperationContext()
+    const bundle = await runIdempotent(identity, guard, 'package-export', 'tenant-config-export', (
       idempotencyKey,
       controller,
     ) => packageMutation.mutateAsync({ idempotencyKey, controller }))
     await selectFirstListPage('package')
-    await cancelListBeforeMerge(identity, 'package')
+    await cancelListBeforeMerge(identity, guard, 'package')
     mergePackage(identity, bundle)
     scheduleActiveCycle()
     return bundle
@@ -523,8 +556,10 @@ export function useTenantConfigTransferManagement() {
     createTransferBusy.value = true
     try {
       const identity = requireIdentity()
+      const guard = requireOperationContext()
       const transfer = await runIdempotent(
         identity,
+        guard,
         `from-package:${bundle.id}`,
         'tenant-config-from-package',
         (idempotencyKey, controller) => createTransferMutation.mutateAsync({
@@ -535,7 +570,7 @@ export function useTenantConfigTransferManagement() {
         }),
       )
       await selectFirstListPage('transfer')
-      await cancelListBeforeMerge(identity, 'transfer')
+      await cancelListBeforeMerge(identity, guard, 'transfer')
       mergeTransfer(identity, transfer)
       selectedTransfer.value = transfer
       scheduleActiveCycle()
@@ -553,13 +588,13 @@ export function useTenantConfigTransferManagement() {
     createTransferBusy.value = true
     try {
       const identity = requireIdentity()
+      const guard = requireOperationContext()
       const contentSha256 = await fileSha256(file)
-      if (!isCurrentIdentity(identity)) {
-        throw new HttpError('登录身份已经切换，请重新操作', { kind: 'cancelled' })
-      }
+      ensureOperationContext(identity, guard)
       const signature = `upload:${contentSha256}`
       const transfer = await runIdempotent(
         identity,
+        guard,
         signature,
         'tenant-config-upload',
         (idempotencyKey, controller) => createTransferMutation.mutateAsync({
@@ -570,7 +605,7 @@ export function useTenantConfigTransferManagement() {
         }),
       )
       await selectFirstListPage('transfer')
-      await cancelListBeforeMerge(identity, 'transfer')
+      await cancelListBeforeMerge(identity, guard, 'transfer')
       mergeTransfer(identity, transfer)
       selectedTransfer.value = transfer
       scheduleActiveCycle()
@@ -589,6 +624,7 @@ export function useTenantConfigTransferManagement() {
       throw new HttpError('配置迁移操作正在提交', { status: 409, kind: 'http' })
     }
     const identity = requireIdentity()
+    const guard = requireOperationContext()
     const suffix = kind === 'preview'
       ? ''
       : `:${transfer.plan_hash ?? ''}:${transfer.target_configuration_version}:${transfer.target_authorization_epoch}`
@@ -596,6 +632,7 @@ export function useTenantConfigTransferManagement() {
     try {
       const latest = await runIdempotent(
         identity,
+        guard,
         signature,
         `tenant-config-${kind}`,
         (idempotencyKey, controller) => operationMutation.mutateAsync({
@@ -605,13 +642,13 @@ export function useTenantConfigTransferManagement() {
           controller,
         }),
       )
-      await cancelListBeforeMerge(identity, 'transfer')
+      await cancelListBeforeMerge(identity, guard, 'transfer')
       mergeTransfer(identity, latest)
       scheduleActiveCycle()
       return latest
     }
     catch (error) {
-      await reconcileTransferError(identity, transfer.id, error)
+      await reconcileTransferError(identity, guard, transfer.id, error)
       throw error
     }
   }
@@ -631,18 +668,17 @@ export function useTenantConfigTransferManagement() {
   async function downloadPackage(bundle: TenantConfigBundle): Promise<void> {
     if (downloadingPackageId.value) return
     const identity = requireIdentity()
+    const guard = requireOperationContext()
     const controller = beginController()
     downloadingPackageId.value = bundle.id
     try {
       const blob = await downloadTenantConfigPackage(bundle.id, controller.signal)
-      if (!isCurrentIdentity(identity)) {
-        throw new HttpError('登录身份已经切换，请重新下载', { kind: 'cancelled' })
-      }
+      ensureOperationContext(identity, guard)
       downloadBlobDirect(blob, safePackageFilename(bundle))
     }
     catch (error) {
       if (
-        isCurrentIdentity(identity)
+        operationContextMatches(identity, guard)
         && error instanceof HttpError
         && [403, 404, 409].includes(error.status ?? 0)
       ) {
@@ -659,7 +695,7 @@ export function useTenantConfigTransferManagement() {
       throw error
     }
     finally {
-      pendingControllers.delete(controller)
+      operationScope.finishController(controller)
       if (downloadingPackageId.value === bundle.id) downloadingPackageId.value = undefined
     }
   }
@@ -830,13 +866,15 @@ export function useTenantConfigTransferManagement() {
     selectedPackage.value = bundle
     if (!bundle || !canListPackages()) return
     const identity = requireIdentity()
+    const guard = requireOperationContext()
     const controller = beginController()
     try {
       const latest = requireOperationData(await getTenantConfigPackage(bundle.id, controller.signal))
+      ensureOperationContext(identity, guard)
       mergePackage(identity, latest)
     }
     finally {
-      pendingControllers.delete(controller)
+      operationScope.finishController(controller)
     }
   }
 
@@ -845,18 +883,21 @@ export function useTenantConfigTransferManagement() {
     itemQueryParams.value.page = 1
     if (!transfer) return
     const identity = requireIdentity()
+    const guard = requireOperationContext()
     const controller = beginController()
     try {
       const latest = requireOperationData(await getTenantConfigTransfer(
         transfer.id,
         controller.signal,
       ))
+      ensureOperationContext(identity, guard)
       mergeTransfer(identity, latest)
       await nextTick()
+      ensureOperationContext(identity, guard)
       await itemsQuery.refetch({ throwOnError: false })
     }
     finally {
-      pendingControllers.delete(controller)
+      operationScope.finishController(controller)
     }
   }
 
@@ -904,8 +945,7 @@ export function useTenantConfigTransferManagement() {
     const nextIdentity = currentIdentity()
     if (sameIdentity(trackedIdentity, nextIdentity)) return
     if (trackedIdentity) cancelIdentityQueries(trackedIdentity)
-    for (const controller of pendingControllers) controller.abort()
-    pendingControllers.clear()
+    operationScope.invalidate()
     pendingIntentKeys.clear()
     stopActiveCycle()
     selectedPackage.value = undefined
@@ -931,14 +971,14 @@ export function useTenantConfigTransferManagement() {
 
   onDeactivated(() => {
     pageActive.value = false
+    operationScope.invalidate()
     stopActiveCycle()
   })
 
   if (getCurrentScope()) {
     onScopeDispose(() => {
       stopActiveCycle()
-      for (const controller of pendingControllers) controller.abort()
-      pendingControllers.clear()
+      operationScope.dispose()
       unsubscribeCache()
       unsubscribeUser()
       document.removeEventListener('visibilitychange', handleVisibilityChange)

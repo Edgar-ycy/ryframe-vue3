@@ -45,6 +45,10 @@ import {
 } from '@/shared/http/idempotency'
 import type { PageResponse } from '@/shared/http/types'
 import { queryClient, tenantQueryKey } from '@/shared/query/client'
+import {
+  createIdentityOperationScope,
+  type IdentityOperationGuard,
+} from '@/shared/query/createIdentityOperationScope'
 import { useUserStore } from '@/stores/user'
 import {
   SERVICE_ACCESS_AUDITS_RESOURCE,
@@ -65,7 +69,7 @@ interface ServiceAccountIdentity {
 type SaveServiceAccountInput = CreateServiceAccountInput | UpdateServiceAccountInput
 type ServiceResourcePageState = { page: number; page_size: number }
 
-export type ServiceAccountIdentityGuard = string
+export type ServiceAccountIdentityGuard = IdentityOperationGuard
 
 function sameIdentity(
   left: ServiceAccountIdentity | undefined,
@@ -118,11 +122,7 @@ export function useServiceAccountManagement() {
   const issueCredentialPending = ref(false)
   const revokingCredentialId = ref<string>()
   const revokingDelegationId = ref<string>()
-  const pendingControllers = new Set<AbortController>()
   const pendingCredentialKeys = new Map<string, string>()
-  const identityChangedCallbacks = new Set<() => void>()
-  const contextNonce = createIdempotencyKey('service-account-context')
-  let contextGeneration = 0
   let trackedIdentity = currentIdentity()
 
   const canListAccounts = computed(() => hasPermission('system:service-account:list'))
@@ -162,6 +162,12 @@ export function useServiceAccountManagement() {
     }
   }
 
+  const operationScope = createIdentityOperationScope({
+    currentIdentity,
+    isActive: () => pageActive.value,
+    sameIdentity,
+  })
+
   function requireIdentity(): ServiceAccountIdentity {
     const identity = currentIdentity()
     if (!identity) {
@@ -178,16 +184,11 @@ export function useServiceAccountManagement() {
 
   /** 捕获不包含租户或用户信息的当前上下文守卫。 */
   function captureIdentity(): ServiceAccountIdentityGuard | undefined {
-    return pageActive.value && currentIdentity()
-      ? `${contextNonce}:${contextGeneration}`
-      : undefined
+    return operationScope.capture()
   }
 
   function identityMatches(snapshot: ServiceAccountIdentityGuard | undefined): boolean {
-    return snapshot !== undefined
-      && pageActive.value
-      && currentIdentity() !== undefined
-      && snapshot === `${contextNonce}:${contextGeneration}`
+    return operationScope.matches(snapshot)
   }
 
   function requireOperationContext(
@@ -212,19 +213,7 @@ export function useServiceAccountManagement() {
 
   /** 注册身份失效回调，供 UI 同步关闭并清空一次性安全材料。 */
   function onIdentityChanged(callback: () => void): () => void {
-    identityChangedCallbacks.add(callback)
-    return () => identityChangedCallbacks.delete(callback)
-  }
-
-  function notifyIdentityChanged(): void {
-    for (const callback of identityChangedCallbacks) {
-      try {
-        callback()
-      }
-      catch {
-        // 单个展示层回调异常不能阻断请求取消与旧身份缓存清理。
-      }
-    }
+    return operationScope.onInvalidated(callback)
   }
 
   function identityParams(identity = currentIdentity()) {
@@ -381,13 +370,11 @@ export function useServiceAccountManagement() {
   const audits = auditsQuery.data
 
   function beginController(): AbortController {
-    const controller = new AbortController()
-    pendingControllers.add(controller)
-    return controller
+    return operationScope.beginController()
   }
 
   function finishController(controller: AbortController): void {
-    pendingControllers.delete(controller)
+    operationScope.finishController(controller)
   }
 
   function updateAccountPage(
@@ -740,10 +727,7 @@ export function useServiceAccountManagement() {
     if (sameIdentity(trackedIdentity, nextIdentity)) return
     const previousIdentity = trackedIdentity
     trackedIdentity = nextIdentity
-    contextGeneration += 1
-    notifyIdentityChanged()
-    for (const controller of pendingControllers) controller.abort()
-    pendingControllers.clear()
+    operationScope.invalidate()
     pendingCredentialKeys.clear()
     selectedAccount.value = null
     roleIds.value = []
@@ -757,10 +741,7 @@ export function useServiceAccountManagement() {
   })
   onDeactivated(() => {
     pageActive.value = false
-    contextGeneration += 1
-    notifyIdentityChanged()
-    for (const controller of pendingControllers) controller.abort()
-    pendingControllers.clear()
+    operationScope.invalidate()
     const identity = currentIdentity()
     if (identity) cancelIdentityQueries(identity, false)
   })
@@ -768,12 +749,8 @@ export function useServiceAccountManagement() {
   if (getCurrentScope()) {
     onScopeDispose(() => {
       pageActive.value = false
-      contextGeneration += 1
-      notifyIdentityChanged()
-      for (const controller of pendingControllers) controller.abort()
-      pendingControllers.clear()
+      operationScope.dispose()
       pendingCredentialKeys.clear()
-      identityChangedCallbacks.clear()
       unsubscribeUser()
     })
   }

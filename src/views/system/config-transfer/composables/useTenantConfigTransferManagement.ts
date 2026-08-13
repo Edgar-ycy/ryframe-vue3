@@ -7,7 +7,6 @@ import {
   onScopeDispose,
   ref,
 } from 'vue'
-import type { QueryKey } from '@tanstack/vue-query'
 import {
   applyTenantConfigTransfer,
   createTenantConfigPackage,
@@ -15,49 +14,37 @@ import {
   downloadTenantConfigPackage,
   getTenantConfigPackage,
   getTenantConfigTransfer,
-  listTenantConfigPackages,
-  listTenantConfigTransferItems,
-  listTenantConfigTransfers,
   previewTenantConfigTransfer,
   rollbackTenantConfigTransfer,
   type TenantConfigBundle,
-  type TenantConfigPackageQuery,
   type TenantConfigTransfer,
-  type TenantConfigTransferItem,
-  type TenantConfigTransferItemQuery,
-  type TenantConfigTransferQuery,
   uploadTenantConfigTransfer,
 } from '@/api/modules/tenantConfigTransfer'
 import { downloadBlobDirect } from '@/hooks/useDownload'
 import { usePermission } from '@/hooks/usePermission'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { queryClient, tenantQueryKey } from '@/shared/query/client'
+import { queryClient } from '@/shared/query/client'
 import {
   createIdentityOperationScope,
   type IdentityOperationGuard,
 } from '@/shared/query/createIdentityOperationScope'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 import {
   isActiveTenantConfigPackage,
   isActiveTenantConfigTransfer,
 } from '../presentation'
+import { useTenantConfigTransferQueries, type TenantConfigIdentity } from './useTenantConfigTransferQueries'
 import {
   TENANT_CONFIG_PACKAGES_RESOURCE,
   TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
   TENANT_CONFIG_TRANSFERS_RESOURCE,
 } from '../queryResources'
+import { tenantConfigTransferFileFingerprint } from './tenantConfigTransferFileFingerprint'
 
 const ACTIVE_REFRESH_INTERVAL_MS = 5_000
 const MAX_CONCURRENT_DETAILS = 4
-
-interface TenantConfigIdentity {
-  tenantId: string
-  userId: string
-}
 
 interface PackageCommand {
   controller: AbortController
@@ -91,22 +78,10 @@ function sameIdentity(
   return left?.tenantId === right?.tenantId && left?.userId === right?.userId
 }
 
-function samePageQuery(
-  left: TenantConfigPackageQuery,
-  right: TenantConfigPackageQuery,
-): boolean {
-  return left.page === right.page && left.page_size === right.page_size
-}
-
 function safePackageFilename(bundle: TenantConfigBundle): string {
   const tenant = bundle.source_tenant_key.replace(/[^a-zA-Z0-9._-]+/gu, '-') || 'tenant'
   const timestamp = bundle.created_at.replace(/[^0-9]+/gu, '').slice(0, 14)
   return `${tenant}-${timestamp || 'config'}.ryframe-config.zip`
-}
-
-async function fileSha256(file: File): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', await file.arrayBuffer())
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
 /**
@@ -117,20 +92,12 @@ export function useTenantConfigTransferManagement() {
   const userStore = useUserStore()
   const { hasPermission } = usePermission()
   const pageActive = ref(true)
-  const packageQueryParams = ref<TenantConfigPackageQuery>({ page: 1, page_size: 10 })
-  const activePackageQueryParams = ref<TenantConfigPackageQuery>({ ...packageQueryParams.value })
-  const queryParams = ref<TenantConfigTransferQuery>({ page: 1, page_size: 10 })
-  const activeQueryParams = ref<TenantConfigTransferQuery>({ ...queryParams.value })
-  const itemQueryParams = ref<TenantConfigTransferItemQuery>({ page: 1, page_size: 20 })
-  const selectedPackage = ref<TenantConfigBundle>()
-  const selectedTransfer = ref<TenantConfigTransfer>()
   const createTransferBusy = ref(false)
   const downloadingPackageId = ref<string>()
   const pendingIntentKeys = new Map<string, string>()
   let activeTimer: ReturnType<typeof globalThis.setTimeout> | undefined
   let activeCycleController: AbortController | undefined
   let activeCycleRunning = false
-  let trackedIdentity = currentIdentity()
 
   function currentIdentity(): TenantConfigIdentity | undefined {
     if (
@@ -151,169 +118,42 @@ export function useTenantConfigTransferManagement() {
     return operationScope.isCurrentIdentity(identity)
   }
 
-  function queryEnabled(): boolean {
-    return pageActive.value && currentIdentity() !== undefined
-  }
-
   function canListPackages(): boolean {
     return hasPermission('system:config-package:list')
   }
 
-  function packageListParams(params = activePackageQueryParams.value) {
-    return {
-      scope: 'list',
-      userId: String(userStore.userId || 'anonymous'),
-      filters: { ...params },
-    }
-  }
-
-  function transferListParams(params = activeQueryParams.value) {
-    return {
-      scope: 'list',
-      userId: String(userStore.userId || 'anonymous'),
-      filters: { ...params },
-    }
-  }
-
-  function transferItemParams(
-    transferId = selectedTransfer.value?.id ?? 'none',
-    params = itemQueryParams.value,
-  ) {
-    return {
-      scope: 'items',
-      userId: String(userStore.userId || 'anonymous'),
-      transferId,
-      filters: { ...params },
-    }
-  }
-
-  function packageListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(
-      identity.tenantId,
-      TENANT_CONFIG_PACKAGES_RESOURCE,
-      packageListParams(),
-    )
-  }
-
-  function transferListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(
-      identity.tenantId,
-      TENANT_CONFIG_TRANSFERS_RESOURCE,
-      transferListParams(),
-    )
-  }
-
-  const packagesQuery = useTenantQuery<PageResponse<TenantConfigBundle>>(
-    () => userStore.tenantId,
-    () => queryEnabled() && canListPackages(),
-    TENANT_CONFIG_PACKAGES_RESOURCE,
-    packageListParams,
-    async (signal) => {
-      const params = { ...activePackageQueryParams.value }
-      return requireOperationData(await listTenantConfigPackages(params, signal))
-    },
-    {
-      staleTime: 0,
-      refetchInterval: false,
-      refetchOnMount: 'always',
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    },
-  )
-
-  const transfersQuery = useTenantQuery<PageResponse<TenantConfigTransfer>>(
-    () => userStore.tenantId,
+  let trackedIdentity = currentIdentity()
+  const {
+    activePackageQueryParams,
+    activeQueryParams,
+    itemQueryParams,
+    itemsQuery,
+    mergePackage,
+    mergeTransfer: mergeTransferCache,
+    packageListKey,
+    packageQueryParams,
+    packagesQuery,
     queryEnabled,
-    TENANT_CONFIG_TRANSFERS_RESOURCE,
-    transferListParams,
-    async (signal) => {
-      const params = { ...activeQueryParams.value }
-      return requireOperationData(await listTenantConfigTransfers(params, signal))
-    },
-    {
-      staleTime: 0,
-      refetchInterval: false,
-      refetchOnMount: 'always',
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    },
-  )
-
-  const itemsQuery = useTenantQuery<PageResponse<TenantConfigTransferItem>>(
-    () => userStore.tenantId,
-    () => queryEnabled() && selectedTransfer.value !== undefined,
-    TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
-    transferItemParams,
-    async (signal) => {
-      const transferId = selectedTransfer.value?.id
-      if (!transferId) return emptyPageResponse<TenantConfigTransferItem>(itemQueryParams.value)
-      const params = { ...itemQueryParams.value }
-      return requireOperationData(await listTenantConfigTransferItems(transferId, params, signal))
-    },
-    {
-      staleTime: 0,
-      refetchInterval: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    },
-  )
-
-  function mergePageRecord<T extends { id: string }>(
-    key: QueryKey,
-    value: T,
-    fallbackQuery: TenantConfigPackageQuery,
-  ): void {
-    queryClient.setQueryData<PageResponse<T>>(key, (current) => {
-      if (!current) {
-        return {
-          ...emptyPageResponse<T>(fallbackQuery),
-          items: [value],
-          total: 1,
-          total_pages: 1,
-        }
-      }
-      const index = current.items.findIndex(item => item.id === value.id)
-      if (index >= 0) {
-        const items = [...current.items]
-        items[index] = value
-        return { ...current, items }
-      }
-      if (current.page !== 1) return current
-      return {
-        ...current,
-        items: [value, ...current.items].slice(0, current.page_size),
-        total: current.total + 1,
-        total_pages: Math.max(1, Math.ceil((current.total + 1) / current.page_size)),
-      }
-    })
-  }
-
-  function removePageRecord<T extends { id: string }>(key: QueryKey, id: string): void {
-    queryClient.setQueryData<PageResponse<T>>(key, (current) => {
-      if (!current || !current.items.some(item => item.id === id)) return current
-      return {
-        ...current,
-        items: current.items.filter(item => item.id !== id),
-        total: Math.max(0, current.total - 1),
-        total_pages: Math.ceil(Math.max(0, current.total - 1) / current.page_size),
-      }
-    })
-  }
-
-  function mergePackage(identity: TenantConfigIdentity, bundle: TenantConfigBundle): void {
-    if (!isCurrentIdentity(identity)) return
-    mergePageRecord(packageListKey(identity), bundle, activePackageQueryParams.value)
-    if (selectedPackage.value?.id === bundle.id) selectedPackage.value = bundle
-  }
+    queryParams,
+    removePackage,
+    removeTransfer: removeTransferCache,
+    samePageQuery,
+    selectedPackage,
+    selectedTransfer,
+    transferListKey,
+    transfersQuery,
+  } = useTenantConfigTransferQueries({
+    pageActive,
+    currentIdentity,
+    isCurrentIdentity,
+    canListPackages,
+  })
 
   function mergeTransfer(
     identity: TenantConfigIdentity,
     transfer: TenantConfigTransfer,
   ): void {
-    if (!isCurrentIdentity(identity)) return
-    mergePageRecord(transferListKey(identity), transfer, activeQueryParams.value)
-    if (selectedTransfer.value?.id === transfer.id) selectedTransfer.value = transfer
+    mergeTransferCache(identity, transfer)
     if (!isActiveTenantConfigTransfer(transfer)) {
       pendingIntentKeys.delete(`preview:${transfer.id}`)
       if (transfer.status === 'applied' || transfer.status === 'failed') {
@@ -330,9 +170,7 @@ export function useTenantConfigTransferManagement() {
   }
 
   function removeTransfer(identity: TenantConfigIdentity, transferId: string): void {
-    if (!isCurrentIdentity(identity)) return
-    removePageRecord<TenantConfigTransfer>(transferListKey(identity), transferId)
-    if (selectedTransfer.value?.id === transferId) selectedTransfer.value = undefined
+    removeTransferCache(identity, transferId)
   }
 
   const packageMutation = useTenantMutation<TenantConfigBundle, PackageCommand>(
@@ -589,7 +427,7 @@ export function useTenantConfigTransferManagement() {
     try {
       const identity = requireIdentity()
       const guard = requireOperationContext()
-      const contentSha256 = await fileSha256(file)
+      const contentSha256 = await tenantConfigTransferFileFingerprint(file)
       ensureOperationContext(identity, guard)
       const signature = `upload:${contentSha256}`
       const transfer = await runIdempotent(
@@ -712,8 +550,7 @@ export function useTenantConfigTransferManagement() {
       if (!isCurrentIdentity(identity) || !(error instanceof HttpError)) return
       if (error.kind === 'cancelled') return
       if (error.status === 403 || error.status === 404) {
-        removePageRecord<TenantConfigBundle>(packageListKey(identity), id)
-        if (selectedPackage.value?.id === id) selectedPackage.value = undefined
+        removePackage(identity, id)
       }
       else if (error.status === 409) {
         await packagesQuery.refetch({ throwOnError: false })

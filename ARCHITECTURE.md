@@ -175,6 +175,16 @@ GET /system/menus/current
 
 ## 7. CI 门禁
 
+### 7.1 源码规模与职责边界
+
+`check:source-size` 不使用永久 allowlist。它扫描手写前端源码中的 Composable 与 `src/app/**/use*.ts`，单文件上限为
+500 行；Vue SFC 和 SCSS 单文件上限为 700 行。`src/api/generated/`、OpenAPI 产物和 i18n Catalog 属于生成或文案资产，
+不参与规模扫描。
+
+页面 facade 只组合查询、命令和展示组件；Composable facade 只维持既有公开返回结构；领域子模块负责独立的查询、命令、
+缓存或展示职责。需要临时超过上限时，必须在本节记录文件路径、原因与复审日期，并在复审日前完成拆分；不得以无理由的
+永久豁免替代重构。
+
 本地完整门禁使用统一入口：
 
 ```bash
@@ -185,7 +195,7 @@ pnpm check
 `pnpm check` 依次执行：
 
 ```text
-check:workflows -> check:dependencies -> api:check
+check:workflows -> check:dependencies -> check:source-size -> api:check
 -> lint -> lint:styles -> typecheck -> build -> check:bundle
 ```
 

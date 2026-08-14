@@ -50,6 +50,9 @@ jobs:
       - name: Reject prerelease dependencies
         run: pnpm check:dependencies
 
+      - name: Enforce source size limits
+        run: pnpm check:source-size
+
       - name: Check local and exact upstream API contract
         run: pnpm api:check:upstream
 

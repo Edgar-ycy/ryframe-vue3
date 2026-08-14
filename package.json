@@ -13,6 +13,7 @@
     "lint:styles": "stylelint \"src/**/*.{css,scss,vue}\" --max-warnings=0",
     "check:workflows": "node scripts/check-workflows.mjs",
     "check:dependencies": "node scripts/check-prerelease-dependencies.mjs",
+    "check:source-size": "node scripts/check-source-size.mjs",
     "check:contract": "node scripts/check-api-contract.mjs",
     "api:generate": "node scripts/generate-api-artifacts.mjs --write",
     "api:sync": "node scripts/sync-api-contract.mjs && node scripts/generate-api-artifacts.mjs --write",
@@ -21,7 +22,7 @@
     "typecheck": "vue-tsc --noEmit",
     "build": "vite build",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
-    "check": "pnpm check:workflows && pnpm check:dependencies && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm build && pnpm check:bundle",
+    "check": "pnpm check:workflows && pnpm check:dependencies && pnpm check:source-size && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm build && pnpm check:bundle",
     "preview": "vite preview"
   },
   "dependencies": {

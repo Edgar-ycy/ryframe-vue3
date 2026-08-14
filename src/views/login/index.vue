@@ -9,7 +9,7 @@
         size="large"
         @keyup.enter="handleLogin"
       >
-        <el-form-item prop="tenant_id">
+        <el-form-item v-if="runtimeCapabilities.multiTenancyEnabled" prop="tenant_id">
           <el-input
             v-model="loginForm.tenant_id"
             :placeholder="t('account.tenantId')"
@@ -80,14 +80,16 @@
 import { useI18n } from 'vue-i18n'
 import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
 import { isValidTenantId } from '@/shared/security/tenantId'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
-import { getTenantId } from '@/utils/auth'
+import { DEFAULT_TENANT_ID, getTenantId } from '@/utils/auth'
 import { ensureAccessibleRoutes, resolveAccessibleRoute } from '@/router'
 import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const runtimeCapabilities = useRuntimeCapabilitiesStore()
 const { t } = useI18n()
 
 const loginFormRef = ref<FormInstance>()
@@ -95,20 +97,25 @@ const loading = ref(false)
 
 const loginForm = ref(createInitialLoginForm(getTenantId(), import.meta.env.DEV))
 
-const loginRules = computed<FormRules>(() => ({
-  tenant_id: [
-    { required: true, message: t('account.enterTenantId'), trigger: 'blur' },
-    {
-      validator: (_rule, value, callback) => {
-        callback(isValidTenantId(String(value ?? '')) ? undefined : new Error(t('account.tenantIdInvalid')))
+const loginRules = computed<FormRules>(() => {
+  const rules: FormRules = {
+    username: [{ required: true, message: t('account.enterUsername'), trigger: 'blur' }],
+    password: [{ required: true, message: t('account.enterPassword'), trigger: 'blur' }],
+    captcha_code: [{ required: true, message: t('account.enterCaptcha'), trigger: 'blur' }],
+  }
+  if (runtimeCapabilities.multiTenancyEnabled) {
+    rules.tenant_id = [
+      { required: true, message: t('account.enterTenantId'), trigger: 'blur' },
+      {
+        validator: (_rule, value, callback) => {
+          callback(isValidTenantId(String(value ?? '')) ? undefined : new Error(t('account.tenantIdInvalid')))
+        },
+        trigger: 'blur',
       },
-      trigger: 'blur',
-    },
-  ],
-  username: [{ required: true, message: t('account.enterUsername'), trigger: 'blur' }],
-  password: [{ required: true, message: t('account.enterPassword'), trigger: 'blur' }],
-  captcha_code: [{ required: true, message: t('account.enterCaptcha'), trigger: 'blur' }],
-}))
+    ]
+  }
+  return rules
+})
 
 const captchaEnabled = ref(false)
 const captchaImage = ref('')
@@ -146,7 +153,9 @@ const handleLogin = async () => {
     await userStore.login(
       loginForm.value.username,
       loginForm.value.password,
-      loginForm.value.tenant_id.trim(),
+      runtimeCapabilities.multiTenancyEnabled
+        ? loginForm.value.tenant_id.trim()
+        : DEFAULT_TENANT_ID,
       captchaEnabled.value ? captchaId.value : undefined,
       captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )

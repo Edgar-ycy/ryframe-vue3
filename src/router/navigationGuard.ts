@@ -21,10 +21,16 @@ export interface NavigationPermissionState {
   isRoutesLoaded: boolean
 }
 
+export interface NavigationRuntimeCapabilities {
+  multiTenancyEnabled: boolean
+  ensureLoaded(): Promise<void>
+}
+
 export interface NavigationGuardDependencies {
   initializeSession(): Promise<void>
   getUser(): NavigationUser
   getPermissionState(): NavigationPermissionState
+  getRuntimeCapabilities(): NavigationRuntimeCapabilities
   ensureAccessibleRoutes(): Promise<unknown>
   clearSession(): Promise<void>
   isKnownRoute(path: string): boolean
@@ -36,6 +42,8 @@ const publicPaths = new Set(['/login', '/reset-password'])
 
 export function createNavigationGuard(dependencies: NavigationGuardDependencies) {
   return async (target: NavigationTarget): Promise<true | RouteLocationRaw> => {
+    const runtimeCapabilities = dependencies.getRuntimeCapabilities()
+    await runtimeCapabilities.ensureLoaded()
     await dependencies.initializeSession()
     const user = dependencies.getUser()
     const originalPath = getOriginalFullPath(target)
@@ -80,7 +88,7 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
       return dependencies.resolveReplacement(originalPath)
     }
 
-    return canAccessRoute(user, target)
+    return canAccessRoute(user, target, runtimeCapabilities.multiTenancyEnabled)
       ? true
       : { path: '/403', replace: true }
   }
@@ -90,7 +98,12 @@ function getOriginalFullPath(target: NavigationTarget): string {
   return target.redirectedFrom?.fullPath || target.fullPath || target.path || '/'
 }
 
-function canAccessRoute(user: NavigationUser, target: NavigationTarget): boolean {
+function canAccessRoute(
+  user: NavigationUser,
+  target: NavigationTarget,
+  multiTenancyEnabled: boolean,
+): boolean {
+  if (target.meta?.requiresMultiTenancy && !multiTenancyEnabled) return false
   if (!target.meta?.requiresPermission) return true
   const required = target.meta.permission
   return typeof required === 'string'

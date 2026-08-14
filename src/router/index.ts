@@ -7,6 +7,7 @@ import {
 import { getUserMenus } from '@/api/modules/menu'
 import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
 import { usePermissionStore } from '@/stores/permission'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import { ROOT_LAYOUT_ROUTE_NAME } from './layout'
@@ -28,6 +29,7 @@ declare module 'vue-router' {
     isFrame?: boolean
     buttonPerms?: string[]
     requiresPermission?: boolean
+    requiresMultiTenancy?: boolean
   }
 }
 
@@ -144,7 +146,9 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
   ) return fallback
 
   const user = useUserStore()
+  const runtimeCapabilities = useRuntimeCapabilitiesStore()
   const accessible = resolved.matched.every((record) => {
+    if (record.meta.requiresMultiTenancy && !runtimeCapabilities.multiTenancyEnabled) return false
     if (!record.meta.requiresPermission) return true
     const permission = record.meta.permission
     return typeof permission === 'string'
@@ -157,6 +161,7 @@ const navigationGuard = createNavigationGuard({
   initializeSession,
   getUser: useUserStore,
   getPermissionState: usePermissionStore,
+  getRuntimeCapabilities: useRuntimeCapabilitiesStore,
   ensureAccessibleRoutes,
   clearSession,
   isKnownRoute: (path) => {

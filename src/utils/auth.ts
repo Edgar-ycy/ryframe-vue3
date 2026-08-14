@@ -1,5 +1,5 @@
 const TENANT_ID_KEY = 'ryframe_tenant_id'
-const DEFAULT_TENANT_ID = 'system'
+export const DEFAULT_TENANT_ID = 'system'
 
 function storage(): Storage | undefined {
   return typeof window === 'undefined' ? undefined : window.localStorage

@@ -56,6 +56,7 @@ import { resolveElementIcon } from '@/shared/ui/icons'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
 import { useSettingsStore } from '@/stores/settings'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -63,12 +64,14 @@ const route = useRoute()
 const appStore = useAppStore()
 const permissionStore = usePermissionStore()
 const settingsStore = useSettingsStore()
+const runtimeCapabilities = useRuntimeCapabilitiesStore()
 const userStore = useUserStore()
 const { hasPermission, isAdmin } = usePermission()
 const { t } = useI18n()
 
 const canManageTenants = computed(() =>
-  userStore.tenantId === 'system'
+  runtimeCapabilities.multiTenancyEnabled
+  && userStore.tenantId === 'system'
   && (isAdmin() || hasPermission('tenant:list')),
 )
 

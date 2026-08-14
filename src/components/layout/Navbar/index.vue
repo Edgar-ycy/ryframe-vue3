@@ -18,7 +18,12 @@
     </el-breadcrumb>
 
     <div class="navbar-right">
-      <el-tag class="tenant-tag" effect="plain" type="info">
+      <el-tag
+        v-if="runtimeCapabilities.multiTenancyEnabled"
+        class="tenant-tag"
+        effect="plain"
+        type="info"
+      >
         <span class="tenant-tag__value" :title="`${userStore.tenantName || userStore.tenantId} · ${userStore.tenantId}`">
           {{ userStore.tenantName || userStore.tenantId }} · {{ userStore.tenantId }}
         </span>
@@ -88,6 +93,7 @@ import { translateNavigationTitle } from '@/i18n'
 import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 import { useAppStore } from '@/stores/app'
 import { useSettingsStore } from '@/stores/settings'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import ExportCenter from '../ExportCenter/index.vue'
@@ -99,6 +105,7 @@ const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const runtimeCapabilities = useRuntimeCapabilitiesStore()
 const { t } = useI18n()
 const { imageSrc: avatarSrc } = useAuthenticatedImage(() => userStore.avatar)
 

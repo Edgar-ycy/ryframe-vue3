@@ -57,6 +57,7 @@ export const constantRoutes: RouteRecordRaw[] = [
           icon: 'OfficeBuilding',
           hidden: true,
           requiresPermission: true,
+          requiresMultiTenancy: true,
           permission: 'tenant:list',
         },
       },

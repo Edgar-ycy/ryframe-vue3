@@ -9,13 +9,17 @@
       <el-tag class="session-tag" type="success" effect="plain">{{ t('dashboard.signedIn') }}</el-tag>
     </header>
 
-    <section class="account-summary" :aria-label="t('dashboard.accountOverview')">
+    <section
+      class="account-summary"
+      :class="{ 'account-summary--single-tenant': !runtimeCapabilities.multiTenancyEnabled }"
+      :aria-label="t('dashboard.accountOverview')"
+    >
       <dl>
         <div>
           <dt>{{ t('dashboard.account') }}</dt>
           <dd>{{ userStore.username || '-' }}</dd>
         </div>
-        <div>
+        <div v-if="runtimeCapabilities.multiTenancyEnabled">
           <dt>{{ t('dashboard.currentTenant') }}</dt>
           <dd>{{ userStore.tenantName || userStore.tenantId || '-' }}</dd>
         </div>
@@ -70,6 +74,7 @@ import { usePermission } from '@/hooks/usePermission'
 import { translateNavigationTitle } from '@/i18n'
 import { resolveElementIcon } from '@/shared/ui/icons'
 import { usePermissionStore } from '@/stores/permission'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
 import {
   collectDashboardLinks,
@@ -78,6 +83,7 @@ import {
 
 const router = useRouter()
 const permissionStore = usePermissionStore()
+const runtimeCapabilities = useRuntimeCapabilitiesStore()
 const userStore = useUserStore()
 const { hasPermission, isAdmin } = usePermission()
 const { t } = useI18n()
@@ -86,7 +92,8 @@ const TenantActivityChart = defineAsyncComponent(
 )
 
 const canManageTenants = computed(() =>
-  userStore.tenantId === 'system'
+  runtimeCapabilities.multiTenancyEnabled
+  && userStore.tenantId === 'system'
   && (isAdmin() || hasPermission('tenant:list')),
 )
 
@@ -179,6 +186,10 @@ h1 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
+}
+
+.account-summary--single-tenant dl {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .account-summary dl > div {

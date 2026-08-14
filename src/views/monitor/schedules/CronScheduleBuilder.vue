@@ -222,42 +222,8 @@
 import { defineComponent, h } from 'vue'
 import { ElInputNumber } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { confirmAction } from '@/utils/confirmAction'
-
-type CronBuilderMode =
-  | 'interval_minutes'
-  | 'interval_hours'
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'yearly'
-  | 'advanced'
-
-type CronTemplate =
-  | 'every_five_minutes'
-  | 'hourly'
-  | 'daily_midnight'
-  | 'daily_two'
-  | 'weekdays'
-  | 'monday'
-  | 'monthly_first'
-
-type BuilderState = {
-  complete: boolean
-  summary: string
-}
-
-type RecognizedExpression = {
-  mode: Exclude<CronBuilderMode, 'advanced'>
-  intervalMinutes?: number
-  intervalHours?: number
-  hour?: number
-  minute?: number
-  weekdays?: string[]
-  monthDays?: number[]
-  yearlyMonth?: number
-  yearlyDay?: number
-}
+import { useCronBuilder } from './cron/useCronBuilder'
+import type { BuilderState } from './cron/model'
 
 defineProps<{
   disabled?: boolean
@@ -306,388 +272,42 @@ const TimeFields = defineComponent({
     ]
   },
 })
-const mode = ref<CronBuilderMode>('daily')
-const intervalMinutes = ref<number | undefined>(5)
-const intervalHours = ref<number | undefined>(1)
-const hour = ref<number | undefined>(0)
-const minute = ref<number | undefined>(0)
-const weekdays = ref<string[]>(['MON'])
-const monthDays = ref<number[]>([1])
-const yearlyMonth = ref(1)
-const yearlyDay = ref(1)
-const yearlyDayOptions = ref<number[]>(range(1, 31))
-const summary = ref('')
-const advancedOutsideBuilder = ref(false)
-const weekdayOptions = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const
-const allMonthDays = range(1, 31)
-const monthOptions = range(1, 12)
-
-function range(start: number, end: number): number[] {
-  return Array.from({ length: end - start + 1 }, (_, index) => start + index)
-}
-
-function pad(value: number | undefined): string {
-  return String(value ?? 0).padStart(2, '0')
-}
-
-function weekdayLabel(value: string): string {
-  return t(`monitor.schedules.weekday${value}`)
-}
-
-function monthLabel(value: number): string {
-  return t('monitor.schedules.monthValue', { month: value })
-}
-
-function daysInMonth(month: number): number {
-  if (month === 2) return 29
-  return [4, 6, 9, 11].includes(month) ? 30 : 31
-}
-
-function hasLateMonthDay(): boolean {
-  return monthDays.value.some(day => day >= 29)
-}
-
-function normalizeWeekdays(values: string[]): string[] {
-  const unique = new Set(values.filter(value => weekdayOptions.includes(value as typeof weekdayOptions[number])))
-  return weekdayOptions.filter(value => unique.has(value))
-}
-
-function normalizeMonthDays(values: number[]): number[] {
-  return [...new Set(values.filter(value => Number.isInteger(value) && value >= 1 && value <= 31))]
-    .sort((left, right) => left - right)
-}
-
-function buildExpression(): string | undefined {
-  if (mode.value === 'interval_minutes') {
-    if (!intervalMinutes.value || intervalMinutes.value < 1 || intervalMinutes.value > 59) return undefined
-    return `0 */${intervalMinutes.value} * * * * *`
-  }
-  if (mode.value === 'interval_hours') {
-    if (!intervalHours.value || intervalHours.value < 1 || intervalHours.value > 23) return undefined
-    if (minute.value === undefined || minute.value < 0 || minute.value > 59) return undefined
-    return `0 ${minute.value} */${intervalHours.value} * * * *`
-  }
-  if (mode.value === 'daily') {
-    if (!validTime()) return undefined
-    return `0 ${minute.value} ${hour.value} * * * *`
-  }
-  if (mode.value === 'weekly') {
-    if (!validTime() || weekdays.value.length === 0) return undefined
-    return `0 ${minute.value} ${hour.value} * * ${weekdays.value.join(',')} *`
-  }
-  if (mode.value === 'monthly') {
-    if (!validTime() || monthDays.value.length === 0) return undefined
-    return `0 ${minute.value} ${hour.value} ${monthDays.value.join(',')} * * *`
-  }
-  if (mode.value === 'yearly') {
-    if (!validTime() || yearlyDay.value > daysInMonth(yearlyMonth.value)) return undefined
-    return `0 ${minute.value} ${hour.value} ${yearlyDay.value} ${yearlyMonth.value} * *`
-  }
-  return cronExpression.value.trim() || undefined
-}
-
-function validTime(): boolean {
-  return hour.value !== undefined
-    && minute.value !== undefined
-    && hour.value >= 0
-    && hour.value <= 23
-    && minute.value >= 0
-    && minute.value <= 59
-}
-
-function updateSummary(): void {
-  if (mode.value === 'interval_minutes') {
-    summary.value = intervalMinutes.value
-      ? t('monitor.schedules.summaryIntervalMinutes', { minutes: intervalMinutes.value })
-      : t('monitor.schedules.summaryIncomplete')
-    return
-  }
-  if (mode.value === 'interval_hours') {
-    summary.value = intervalHours.value !== undefined && minute.value !== undefined
-      ? t('monitor.schedules.summaryIntervalHours', { hours: intervalHours.value, minute: minute.value })
-      : t('monitor.schedules.summaryIncomplete')
-    return
-  }
-  if (mode.value === 'daily') {
-    summary.value = validTime()
-      ? t('monitor.schedules.summaryDaily', { time: `${pad(hour.value)}:${pad(minute.value)}` })
-      : t('monitor.schedules.summaryIncomplete')
-    return
-  }
-  if (mode.value === 'weekly') {
-    summary.value = validTime() && weekdays.value.length
-      ? t('monitor.schedules.summaryWeekly', {
-          weekdays: weekdays.value.map(weekdayLabel).join(t('monitor.schedules.listSeparator')),
-          time: `${pad(hour.value)}:${pad(minute.value)}`,
-        })
-      : t('monitor.schedules.summaryIncomplete')
-    return
-  }
-  if (mode.value === 'monthly') {
-    summary.value = validTime() && monthDays.value.length
-      ? t('monitor.schedules.summaryMonthly', {
-          days: monthDays.value.join(t('monitor.schedules.listSeparator')),
-          time: `${pad(hour.value)}:${pad(minute.value)}`,
-        })
-      : t('monitor.schedules.summaryIncomplete')
-    return
-  }
-  if (mode.value === 'yearly') {
-    summary.value = validTime() && yearlyDay.value <= daysInMonth(yearlyMonth.value)
-      ? t('monitor.schedules.summaryYearly', {
-          month: yearlyMonth.value,
-          day: yearlyDay.value,
-          time: `${pad(hour.value)}:${pad(minute.value)}`,
-        })
-      : t('monitor.schedules.summaryIncomplete')
-    return
-  }
-  summary.value = cronExpression.value.trim()
-    ? t('monitor.schedules.summaryAdvanced')
-    : t('monitor.schedules.summaryIncomplete')
-}
-
-function syncCronExpression(): void {
-  const expression = buildExpression()
-  cronExpression.value = expression ?? ''
-  advancedOutsideBuilder.value = false
-  updateSummary()
-  emit('change', { complete: Boolean(expression), summary: summary.value })
-}
-
-function initializeMode(value: Exclude<CronBuilderMode, 'advanced'>): void {
-  mode.value = value
-  if (value === 'interval_minutes') intervalMinutes.value = 5
-  if (value === 'interval_hours') {
-    intervalHours.value = 1
-    minute.value = 0
-  }
-  if (value === 'daily') {
-    hour.value = 0
-    minute.value = 0
-  }
-  if (value === 'weekly') {
-    weekdays.value = ['MON']
-    hour.value = 0
-    minute.value = 0
-  }
-  if (value === 'monthly') {
-    monthDays.value = [1]
-    hour.value = 0
-    minute.value = 0
-  }
-  if (value === 'yearly') {
-    yearlyMonth.value = 1
-    yearlyDay.value = 1
-    yearlyDayOptions.value = range(1, 31)
-    hour.value = 0
-    minute.value = 0
-  }
-  syncCronExpression()
-}
-
-async function handleModeChange(value: CronBuilderMode): Promise<void> {
-  if (value === mode.value) return
-  if (value === 'advanced') {
-    mode.value = 'advanced'
-    advancedOutsideBuilder.value = false
-    updateSummary()
-    emit('change', { complete: Boolean(cronExpression.value.trim()), summary: summary.value })
-    return
-  }
-  if (mode.value === 'advanced') {
-    const recognized = recognizeExpression(cronExpression.value)
-    if (recognized) {
-      applyRecognizedExpression(recognized)
-      emit('change', { complete: true, summary: summary.value })
-      return
-    }
-    const confirmed = await confirmAction(
-      t('monitor.schedules.advancedOverwriteConfirm'),
-      t('monitor.schedules.advancedOverwriteTitle'),
-      { type: 'warning' },
-    )
-    if (!confirmed) return
-  }
-  initializeMode(value)
-}
-
-function updateIntervalMinutes(value: number | undefined): void {
-  intervalMinutes.value = value
-  syncCronExpression()
-}
-
-function updateIntervalHours(value: number | undefined): void {
-  intervalHours.value = value
-  syncCronExpression()
-}
-
-function updateHour(value: number | undefined): void {
-  hour.value = value
-  syncCronExpression()
-}
-
-function updateMinute(value: number | undefined): void {
-  minute.value = value
-  syncCronExpression()
-}
-
-function updateWeekdays(values: string[]): void {
-  weekdays.value = normalizeWeekdays(values)
-  syncCronExpression()
-}
-
-function updateMonthDays(values: number[]): void {
-  monthDays.value = normalizeMonthDays(values)
-  syncCronExpression()
-}
-
-function updateYearlyMonth(value: number): void {
-  yearlyMonth.value = value
-  yearlyDayOptions.value = range(1, daysInMonth(value))
-  if (yearlyDay.value > yearlyDayOptions.value.length) {
-    yearlyDay.value = yearlyDayOptions.value.length
-  }
-  syncCronExpression()
-}
-
-function updateYearlyDay(value: number): void {
-  yearlyDay.value = value
-  syncCronExpression()
-}
-
-function updateAdvancedExpression(value: string): void {
-  cronExpression.value = value
-  advancedOutsideBuilder.value = !recognizeExpression(value)
-  updateSummary()
-  emit('change', { complete: Boolean(value.trim()), summary: summary.value })
-}
-
-function applyTemplate(template: CronTemplate): void {
-  if (template === 'every_five_minutes') {
-    mode.value = 'interval_minutes'
-    intervalMinutes.value = 5
-  }
-  else if (template === 'hourly') {
-    mode.value = 'interval_hours'
-    intervalHours.value = 1
-    minute.value = 0
-  }
-  else if (template === 'daily_midnight' || template === 'daily_two') {
-    mode.value = 'daily'
-    hour.value = template === 'daily_two' ? 2 : 0
-    minute.value = 0
-  }
-  else if (template === 'weekdays' || template === 'monday') {
-    mode.value = 'weekly'
-    weekdays.value = template === 'weekdays'
-      ? ['MON', 'TUE', 'WED', 'THU', 'FRI']
-      : ['MON']
-    hour.value = template === 'weekdays' ? 9 : 0
-    minute.value = 0
-  }
-  else {
-    mode.value = 'monthly'
-    monthDays.value = [1]
-    hour.value = 0
-    minute.value = 0
-  }
-  syncCronExpression()
-}
-
-function loadExpression(expression: string): BuilderState {
-  cronExpression.value = expression
-  const recognized = recognizeExpression(expression)
-  if (recognized) {
-    applyRecognizedExpression(recognized)
-    return { complete: true, summary: summary.value }
-  }
-  mode.value = 'advanced'
-  advancedOutsideBuilder.value = Boolean(expression.trim())
-  updateSummary()
-  return { complete: Boolean(expression.trim()), summary: summary.value }
-}
-
-function applyRecognizedExpression(recognized: RecognizedExpression): void {
-  mode.value = recognized.mode
-  if (recognized.intervalMinutes !== undefined) intervalMinutes.value = recognized.intervalMinutes
-  if (recognized.intervalHours !== undefined) intervalHours.value = recognized.intervalHours
-  if (recognized.hour !== undefined) hour.value = recognized.hour
-  if (recognized.minute !== undefined) minute.value = recognized.minute
-  if (recognized.weekdays) weekdays.value = recognized.weekdays
-  if (recognized.monthDays) monthDays.value = recognized.monthDays
-  if (recognized.yearlyMonth !== undefined) {
-    yearlyMonth.value = recognized.yearlyMonth
-    yearlyDayOptions.value = range(1, daysInMonth(recognized.yearlyMonth))
-  }
-  if (recognized.yearlyDay !== undefined) yearlyDay.value = recognized.yearlyDay
-  advancedOutsideBuilder.value = false
-  updateSummary()
-}
-
-function recognizeExpression(expression: string): RecognizedExpression | undefined {
-  const fields = expression.trim().split(/\s+/)
-  if (fields.length !== 7 || fields[0] !== '0' || fields[6] !== '*') return undefined
-  const minuteInterval = parseStep(fields[1], 1, 59)
-  if (minuteInterval !== undefined && fields.slice(2, 6).every(field => field === '*')) {
-    return { mode: 'interval_minutes', intervalMinutes: minuteInterval }
-  }
-  const parsedMinute = parseInteger(fields[1], 0, 59)
-  const hourInterval = parseStep(fields[2], 1, 23)
-  if (parsedMinute !== undefined && hourInterval !== undefined && fields.slice(3, 6).every(field => field === '*')) {
-    return { mode: 'interval_hours', intervalHours: hourInterval, minute: parsedMinute }
-  }
-  const parsedHour = parseInteger(fields[2], 0, 23)
-  if (parsedMinute === undefined || parsedHour === undefined) return undefined
-  if (fields[3] === '*' && fields[4] === '*' && fields[5] === '*') {
-    return { mode: 'daily', hour: parsedHour, minute: parsedMinute }
-  }
-  if (fields[3] === '*' && fields[4] === '*' && fields[5] !== '*') {
-    const parsedWeekdays = parseWeekdays(fields[5])
-    if (!parsedWeekdays) return undefined
-    return { mode: 'weekly', hour: parsedHour, minute: parsedMinute, weekdays: parsedWeekdays }
-  }
-  if (fields[4] === '*' && fields[5] === '*') {
-    const parsedDays = parseNumberList(fields[3], 1, 31)
-    if (!parsedDays) return undefined
-    return { mode: 'monthly', hour: parsedHour, minute: parsedMinute, monthDays: parsedDays }
-  }
-  if (fields[5] === '*') {
-    const parsedDay = parseInteger(fields[3], 1, 31)
-    const parsedMonth = parseInteger(fields[4], 1, 12)
-    if (parsedDay === undefined || parsedMonth === undefined || parsedDay > daysInMonth(parsedMonth)) return undefined
-    return {
-      mode: 'yearly',
-      hour: parsedHour,
-      minute: parsedMinute,
-      yearlyMonth: parsedMonth,
-      yearlyDay: parsedDay,
-    }
-  }
-  return undefined
-}
-
-function parseInteger(value: string, minimum: number, maximum: number): number | undefined {
-  if (!/^\d+$/.test(value)) return undefined
-  const parsed = Number(value)
-  return Number.isInteger(parsed) && parsed >= minimum && parsed <= maximum ? parsed : undefined
-}
-
-function parseStep(value: string, minimum: number, maximum: number): number | undefined {
-  const match = /^\*\/(\d+)$/.exec(value)
-  return match ? parseInteger(match[1], minimum, maximum) : undefined
-}
-
-function parseNumberList(value: string, minimum: number, maximum: number): number[] | undefined {
-  const parsed = value.split(',').map(item => parseInteger(item, minimum, maximum))
-  if (parsed.some(item => item === undefined)) return undefined
-  return normalizeMonthDays(parsed as number[])
-}
-
-function parseWeekdays(value: string): string[] | undefined {
-  const parsed = normalizeWeekdays(value.toUpperCase().split(','))
-  return parsed.length > 0 && parsed.length === new Set(value.split(',')).size ? parsed : undefined
-}
+const {
+  advancedOutsideBuilder,
+  allMonthDays,
+  applyTemplate,
+  handleModeChange,
+  hasLateMonthDay,
+  hour,
+  intervalHours,
+  intervalMinutes,
+  loadExpression,
+  mode,
+  monthDays,
+  monthLabel,
+  monthOptions,
+  minute,
+  summary,
+  updateAdvancedExpression,
+  updateHour,
+  updateIntervalHours,
+  updateIntervalMinutes,
+  updateMinute,
+  updateMonthDays,
+  updateWeekdays,
+  updateYearlyDay,
+  updateYearlyMonth,
+  weekdayLabel,
+  weekdayOptions,
+  weekdays,
+  yearlyDay,
+  yearlyDayOptions,
+  yearlyMonth,
+} = useCronBuilder({
+  cronExpression,
+  translate: t,
+  emitChange: state => emit('change', state),
+})
 
 defineExpose({ loadExpression, applyTemplate })
 </script>

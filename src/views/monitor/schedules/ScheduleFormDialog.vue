@@ -193,32 +193,22 @@
 import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
-  previewSchedule,
   type CreateScheduleBody,
-  type JobSchedulePreview,
   type JobScheduleRecord,
   type ScheduleTargetRecord,
   type UpdateScheduleBody,
 } from '@/api/modules/monitor'
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
-import { HttpError, requireOperationData } from '@/shared/http/client'
 import CronScheduleBuilder from './CronScheduleBuilder.vue'
-
-type ScheduleFormModel = {
-  name: string
-  handler_key: string
-  cron_expression: string
-  timezone: string
-  enabled: boolean
-  misfire_policy: NonNullable<CreateScheduleBody['misfire_policy']>
-  concurrency_policy: NonNullable<CreateScheduleBody['concurrency_policy']>
-  max_runtime_seconds: number
-}
-
-type BuilderState = {
-  complete: boolean
-  summary: string
-}
+import type { BuilderState } from './cron/model'
+import {
+  browserTimeZone,
+  buildTimezoneOptions,
+  createDefaultScheduleForm,
+  isValidScheduleName,
+  type ScheduleFormModel,
+} from './schedule-form/model'
+import { useSchedulePreview } from './schedule-form/useSchedulePreview'
 
 type BuilderInstance = {
   loadExpression: (expression: string) => BuilderState
@@ -240,17 +230,31 @@ const { t } = useI18n()
 const formRef = ref<FormInstance>()
 const builderRef = ref<BuilderInstance>()
 const browserTimezone = browserTimeZone()
-const timezoneOptions = ref(buildTimezoneOptions())
-const form = reactive<ScheduleFormModel>(createDefaultForm())
+const timezoneOptions = buildTimezoneOptions(browserTimezone)
+const form = reactive<ScheduleFormModel>(createDefaultScheduleForm(browserTimezone))
 const builderComplete = ref(true)
 const scheduleSummary = ref('')
-const previewTimer = ref<ReturnType<typeof setTimeout>>()
-const previewController = ref<AbortController>()
-const previewRequestSequence = ref(0)
-const previewSignature = ref('')
-const previewLoading = ref(false)
-const previewError = ref('')
-const preview = ref<JobSchedulePreview>()
+const {
+  cancelPreview,
+  canPreview,
+  formatScheduleTime,
+  formatUtcTime,
+  hasValidPreview,
+  preview,
+  previewError,
+  previewLoading,
+  previewStatusText,
+  previewStatusType,
+  runPreview,
+  runPreviewNow,
+  schedulePreview,
+} = useSchedulePreview({
+  cronExpression: () => form.cron_expression,
+  timezone: () => form.timezone,
+  builderComplete: () => builderComplete.value,
+  locale: getApplicationLocale,
+  translate: t,
+})
 
 const rules: FormRules<ScheduleFormModel> = {
   name: [
@@ -261,43 +265,6 @@ const rules: FormRules<ScheduleFormModel> = {
   cron_expression: [{ required: true, message: t('monitor.schedules.cronRequired'), trigger: 'blur' }],
   timezone: [{ required: true, message: t('monitor.schedules.timezoneRequired'), trigger: 'change' }],
   max_runtime_seconds: [{ required: true, message: t('monitor.schedules.runtimeRequired'), trigger: 'change' }],
-}
-
-function browserTimeZone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  }
-  catch {
-    return 'UTC'
-  }
-}
-
-function buildTimezoneOptions(): string[] {
-  const values = new Set<string>(['UTC', 'Asia/Shanghai', browserTimezone])
-  try {
-    for (const timezone of Intl.supportedValuesOf('timeZone')) values.add(timezone)
-  }
-  catch {
-    // 旧浏览器不支持时保留最小 IANA 时区集合。
-  }
-  return [...values].filter(Boolean).sort((left, right) => {
-    if (left === 'UTC') return -1
-    if (right === 'UTC') return 1
-    return left.localeCompare(right)
-  })
-}
-
-function createDefaultForm(): ScheduleFormModel {
-  return {
-    name: '',
-    handler_key: '',
-    cron_expression: '0 0 0 * * * *',
-    timezone: browserTimezone,
-    enabled: true,
-    misfire_policy: 'fire_once',
-    concurrency_policy: 'forbid',
-    max_runtime_seconds: 900,
-  }
 }
 
 function resetForm(schedule: JobScheduleRecord | undefined): void {
@@ -312,7 +279,7 @@ function resetForm(schedule: JobScheduleRecord | undefined): void {
         concurrency_policy: schedule.concurrency_policy as ScheduleFormModel['concurrency_policy'],
         max_runtime_seconds: schedule.max_runtime_seconds,
       }
-    : createDefaultForm())
+    : createDefaultScheduleForm(browserTimezone))
   void nextTick(() => formRef.value?.clearValidate())
 }
 
@@ -330,7 +297,6 @@ function handleClosed(): void {
   cancelPreview()
   preview.value = undefined
   previewError.value = ''
-  previewSignature.value = ''
 }
 
 function handleBuilderChange(state: BuilderState): void {
@@ -344,135 +310,8 @@ function updateTimezone(value: string): void {
   schedulePreview()
 }
 
-function currentPreviewSignature(): string {
-  return JSON.stringify({
-    cron_expression: form.cron_expression.trim(),
-    timezone: form.timezone.trim(),
-  })
-}
-
-function canPreview(): boolean {
-  return builderComplete.value
-    && Boolean(form.cron_expression.trim())
-    && Boolean(form.timezone.trim())
-}
-
-function hasValidPreview(): boolean {
-  return Boolean(preview.value)
-    && previewSignature.value === currentPreviewSignature()
-    && !previewLoading.value
-}
-
-function schedulePreview(): void {
-  clearPreviewTimer()
-  previewController.value?.abort()
-  previewController.value = undefined
-  previewRequestSequence.value += 1
-  preview.value = undefined
-  previewSignature.value = ''
-  previewError.value = ''
-  if (!canPreview()) {
-    previewLoading.value = false
-    return
-  }
-  previewLoading.value = true
-  const signature = currentPreviewSignature()
-  previewTimer.value = setTimeout(() => {
-    previewTimer.value = undefined
-    void runPreview(signature)
-  }, 500)
-}
-
-function runPreviewNow(): void {
-  clearPreviewTimer()
-  if (!canPreview()) return
-  void runPreview(currentPreviewSignature())
-}
-
-async function runPreview(signature: string): Promise<boolean> {
-  clearPreviewTimer()
-  const validationError = previewInputError()
-  if (validationError) {
-    preview.value = undefined
-    previewSignature.value = ''
-    previewError.value = validationError
-    previewLoading.value = false
-    return false
-  }
-  previewController.value?.abort()
-  const controller = new AbortController()
-  previewController.value = controller
-  const sequence = previewRequestSequence.value + 1
-  previewRequestSequence.value = sequence
-  preview.value = undefined
-  previewSignature.value = ''
-  previewError.value = ''
-  previewLoading.value = true
-  try {
-    const result = requireOperationData(await previewSchedule({
-      cron_expression: form.cron_expression.trim(),
-      timezone: form.timezone.trim(),
-    }, controller.signal))
-    if (sequence !== previewRequestSequence.value || signature !== currentPreviewSignature()) return false
-    preview.value = result
-    previewSignature.value = signature
-    return true
-  }
-  catch (error) {
-    if (isCancelledRequest(error, controller.signal) || sequence !== previewRequestSequence.value) return false
-    previewError.value = error instanceof HttpError && error.errorKey === 'validation'
-      ? t('monitor.schedules.previewValidationFailed')
-      : error instanceof Error && error.message
-      ? error.message
-      : t('monitor.schedules.previewRequestFailed')
-    return false
-  }
-  finally {
-    if (sequence === previewRequestSequence.value) {
-      previewLoading.value = false
-      previewController.value = undefined
-    }
-  }
-}
-
-function previewInputError(): string {
-  const fields = form.cron_expression.trim().split(/\s+/)
-  if (fields.length !== 7) return t('monitor.schedules.cronSevenFieldsError')
-  if (fields[0] !== '0') return t('monitor.schedules.cronSecondError')
-  if (fields[6] !== '*') return t('monitor.schedules.cronYearError')
-  if (fields[3] !== '*' && fields[5] !== '*') return t('monitor.schedules.cronDayWeekError')
-  return ''
-}
-
-function isCancelledRequest(error: unknown, signal: AbortSignal): boolean {
-  if (signal.aborted) return true
-  if (error instanceof DOMException && error.name === 'AbortError') return true
-  return typeof error === 'object'
-    && error !== null
-    && 'code' in error
-    && (error as { code?: string }).code === 'ERR_CANCELED'
-}
-
-function clearPreviewTimer(): void {
-  if (previewTimer.value === undefined) return
-  clearTimeout(previewTimer.value)
-  previewTimer.value = undefined
-}
-
-function cancelPreview(): void {
-  clearPreviewTimer()
-  previewController.value?.abort()
-  previewController.value = undefined
-  previewRequestSequence.value += 1
-  previewLoading.value = false
-}
-
-function byteLength(value: string): number {
-  return new TextEncoder().encode(value).length
-}
-
 function validateName(_rule: unknown, value: unknown, callback: (error?: Error) => void): void {
-  if (typeof value === 'string' && value.trim() && byteLength(value.trim()) <= 100) {
+  if (typeof value === 'string' && isValidScheduleName(value)) {
     callback()
     return
   }
@@ -485,8 +324,7 @@ function selectedTarget(): ScheduleTargetRecord | undefined {
 
 function isFormComplete(): boolean {
   const target = selectedTarget()
-  return Boolean(form.name.trim())
-    && byteLength(form.name.trim()) <= 100
+  return isValidScheduleName(form.name)
     && Boolean(target?.available)
     && canPreview()
     && Number.isInteger(form.max_runtime_seconds)
@@ -511,7 +349,10 @@ async function submit(): Promise<void> {
   if (props.saving || previewLoading.value) return
   if (!await validateForm() || !isFormComplete()) return
   if (!hasValidPreview()) {
-    const succeeded = await runPreview(currentPreviewSignature())
+    const succeeded = await runPreview(JSON.stringify({
+      cron_expression: form.cron_expression.trim(),
+      timezone: form.timezone.trim(),
+    }))
     if (succeeded) ElMessage.info(t('monitor.schedules.previewReviewBeforeSave'))
     return
   }
@@ -532,55 +373,12 @@ async function submit(): Promise<void> {
   emit('save', payload)
 }
 
-function previewStatusType(): 'success' | 'warning' | 'info' | 'danger' {
-  if (previewError.value) return 'danger'
-  if (hasValidPreview()) return 'success'
-  if (previewLoading.value) return 'warning'
-  return 'info'
-}
-
-function previewStatusText(): string {
-  if (previewError.value) return t('monitor.schedules.previewStatusFailed')
-  if (hasValidPreview()) return t('monitor.schedules.previewStatusValid')
-  if (previewLoading.value) return t('monitor.schedules.previewStatusCalculating')
-  return t('monitor.schedules.previewStatusPending')
-}
-
-function formatScheduleTime(value: string, timezone: string): string {
-  try {
-    return new Intl.DateTimeFormat(getApplicationLocale(), {
-      timeZone: timezone,
-      dateStyle: 'medium',
-      timeStyle: 'medium',
-    }).format(new Date(value))
-  }
-  catch {
-    return value
-  }
-}
-
-function formatUtcTime(value: string): string {
-  try {
-    const formatted = new Intl.DateTimeFormat(getApplicationLocale(), {
-      timeZone: 'UTC',
-      dateStyle: 'medium',
-      timeStyle: 'medium',
-    }).format(new Date(value))
-    return `${formatted} UTC`
-  }
-  catch {
-    return `${value} UTC`
-  }
-}
-
 function targetLabel(target: ScheduleTargetRecord): string {
   const targetName = props.targetName(target.handler_key)
   return target.available
     ? targetName
     : `${targetName} (${t('monitor.schedules.unavailable')})`
 }
-
-onBeforeUnmount(cancelPreview)
 </script>
 
 <style scoped lang="scss">

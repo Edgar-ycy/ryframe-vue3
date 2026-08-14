@@ -1,0 +1,88 @@
+/* ====== 顶部导航栏 ====== */
+.navbar {
+  height: var(--navbar-height);
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--border-color-base);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+
+  .hamburger {
+    cursor: pointer;
+    font-size: 24px;
+    color: var(--color-text-regular);
+    margin-right: 16px;
+    padding: 4px;
+    border-radius: 8px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--border-color-light);
+      color: var(--color-primary-readable);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  .breadcrumb {
+    flex: 1;
+  }
+
+  .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .navbar-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--color-text-regular);
+      transition: all 0.2s;
+
+      &:hover {
+        background: var(--border-color-light);
+        color: var(--color-primary-readable);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
+    }
+
+    .user-info {
+      min-width: 0;
+      border: 0;
+      color: var(--color-text-regular);
+      font: inherit;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: var(--border-color-light);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+/* ====== Element Plus 覆盖样式 ====== */
+.el-card {
+  border-radius: var(--border-radius-lg) !important;
+  border: 1px solid var(--border-color-base) !important;
+  box-shadow: var(--shadow-sm) !important;
+
+  .el-card__header {
+    border-bottom: 1px solid var(--border-color-light);
+    font-weight: 600;
+    padding: 16px 20px;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  }
+
+  .el-card__body {
+    padding: 20px;
+  }
+}
+
+.el-button {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.el-button--primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border: none;
+
+  &:hover {
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+  }
+}
+
+.el-table {
+  border-radius: var(--border-radius-base);
+  overflow: hidden;
+
+  th.el-table__cell {
+    background: var(--border-color-light);
+    font-weight: 600;
+    color: var(--color-text-regular);
+  }
+
+  td.el-table__cell {
+    border-bottom-color: var(--border-color-light);
+  }
+}
+
+.el-pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.el-tag {
+  border-radius: 6px;
+}
+
+.el-dialog {
+  border-radius: var(--border-radius-lg);
+}
+
+.el-drawer__header {
+  font-weight: 600;
+}
+
+.el-input__wrapper {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--border-color-base) inset;
+  transition: all 0.2s;
+}
+
+.el-select .el-input__wrapper {
+  border-radius: 8px;
+}

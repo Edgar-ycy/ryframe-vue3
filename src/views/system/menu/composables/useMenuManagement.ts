@@ -1,3 +1,4 @@
+import type { TagProps } from 'element-plus'
 import {
   deleteMenu,
   getMenuTree,
@@ -108,8 +109,9 @@ export function useMenuManagement() {
     } as const)[type])
   }
 
-  function menuTypeTag(type: MenuType): '' | 'success' | 'warning' {
-    return ({ M: '', C: 'success', F: 'warning' } as const)[type]
+  function menuTypeTag(type: MenuType): TagProps['type'] | undefined {
+    // 目录不使用彩色标签，返回 undefined 让 el-tag 走默认样式，避免空字符串 prop 告警。
+    return ({ M: undefined, C: 'success', F: 'warning' } as const)[type]
   }
 
   function permissionLabel(menu: MenuTreeNode): string {

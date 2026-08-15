@@ -1263,8 +1263,16 @@
               "endpoints": {
                 "$ref": "#/components/schemas/ApiVersionEndpoints"
               },
+              "multi_tenancy_enabled": {
+                "description": "是否允许客户端选择和管理多个租户。",
+                "type": "boolean"
+              },
               "name": {
                 "type": "string"
+              },
+              "service_accounts_enabled": {
+                "description": "服务账号与个人服务委托功能是否启用。",
+                "type": "boolean"
               },
               "source_commit": {
                 "type": "string"
@@ -1278,6 +1286,8 @@
               "version",
               "source_commit",
               "api_prefix",
+              "multi_tenancy_enabled",
+              "service_accounts_enabled",
               "endpoints"
             ],
             "type": "object"
@@ -6793,8 +6803,16 @@
           "endpoints": {
             "$ref": "#/components/schemas/ApiVersionEndpoints"
           },
+          "multi_tenancy_enabled": {
+            "description": "是否允许客户端选择和管理多个租户。",
+            "type": "boolean"
+          },
           "name": {
             "type": "string"
+          },
+          "service_accounts_enabled": {
+            "description": "服务账号与个人服务委托功能是否启用。",
+            "type": "boolean"
           },
           "source_commit": {
             "type": "string"
@@ -6808,6 +6826,8 @@
           "version",
           "source_commit",
           "api_prefix",
+          "multi_tenancy_enabled",
+          "service_accounts_enabled",
           "endpoints"
         ],
         "type": "object"
@@ -7717,14 +7737,16 @@
           },
           "tenant_id": {
             "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9])$",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "token": {
             "type": "string"
           }
         },
         "required": [
-          "tenant_id",
           "request_id",
           "token",
           "new_password"

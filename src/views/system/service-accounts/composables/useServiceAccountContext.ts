@@ -24,6 +24,7 @@ import {
   type IdentityOperationGuard,
 } from '@/shared/query/createIdentityOperationScope'
 import { useUserStore } from '@/stores/user'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import {
   SERVICE_ACCESS_AUDITS_RESOURCE,
   SERVICE_ACCOUNTS_RESOURCE,
@@ -63,6 +64,7 @@ export function copyServiceAccountQuery<T extends { page?: number, page_size?: n
 /** 服务账号管理的身份、权限、Query Key 与服务端 Query 上下文。 */
 export function useServiceAccountContext() {
   const userStore = useUserStore()
+  const runtimeCapabilities = useRuntimeCapabilitiesStore()
   const { hasPermission } = usePermission()
   const pageActive = ref(true)
   const queryParams = reactive<ServiceResourcePageState>({
@@ -239,7 +241,10 @@ export function useServiceAccountContext() {
   const accountsQuery = useQuery<PageResponse<ServiceAccount>, HttpError>({
     queryKey: computed(() => accountsKey()),
     enabled: computed(() => (
-      pageActive.value && currentIdentity() !== undefined && canListAccounts.value
+      pageActive.value
+      && currentIdentity() !== undefined
+      && canListAccounts.value
+      && runtimeCapabilities.serviceAccountsEnabled
     )),
     queryFn: async ({ signal }) => requireOperationData(
       await listServiceAccounts(copyServiceAccountQuery(activeQueryParams), signal),
@@ -259,6 +264,7 @@ export function useServiceAccountContext() {
       pageActive.value
       && currentIdentity() !== undefined
       && canListAccounts.value
+      && runtimeCapabilities.serviceAccountsEnabled
       && selectedAccount.value !== null
     )),
     queryFn: async ({ signal }) => {
@@ -434,6 +440,7 @@ export function useServiceAccountContext() {
     requireOperationContext,
     roleIds,
     selectedAccount,
+    serviceAccountsEnabled: computed(() => runtimeCapabilities.serviceAccountsEnabled),
     updateAccountPage,
   }
 }

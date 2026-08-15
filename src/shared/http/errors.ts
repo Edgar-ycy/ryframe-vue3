@@ -54,6 +54,7 @@ const errorKeyTranslation: Record<string, string> = {
   payload_too_large: 'shell.http.errors.payloadTooLarge',
   rate_limited: 'shell.http.errors.rateLimited',
   service_unavailable: 'shell.http.errors.serviceUnavailable',
+  feature_disabled: 'shell.http.errors.featureDisabled',
   internal: 'shell.http.errors.internal',
 }
 

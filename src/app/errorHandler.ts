@@ -39,6 +39,22 @@ function redactContext(context: ErrorContext): ErrorContext {
   }
 }
 
+function describeUnknownError(error: unknown): string {
+  if (typeof error === 'string') return error
+  if (typeof error === 'object' && error !== null) {
+    const candidate = (error as { message?: unknown }).message
+    if (typeof candidate === 'string' && candidate.trim()) return candidate
+    try {
+      const serialized = JSON.stringify(error)
+      if (serialized !== undefined) return serialized
+    }
+    catch {
+      // 循环引用等无法序列化的对象退回 toString。
+    }
+  }
+  return String(error)
+}
+
 function reportUnhandled(error: unknown, context: ErrorContext): void {
   // HTTP 错误由 Query 和会话层统一提示，避免同一个失败重复输出。
   if (error instanceof HttpError) return
@@ -54,7 +70,7 @@ function reportUnhandled(error: unknown, context: ErrorContext): void {
           message: redact(error.message),
           stack: error.stack ? redact(error.stack) : undefined,
         }
-      : { message: redact(String(error)) }
+      : { message: redact(describeUnknownError(error)) }
     console.error('[RyFrame] 未捕获运行时错误', details, redactContext(context))
     return
   }

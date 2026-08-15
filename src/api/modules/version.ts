@@ -2,6 +2,7 @@ import { rawRequest } from '@/shared/http/client'
 
 export interface ApiVersionInfo {
   multi_tenancy_enabled?: boolean
+  service_accounts_enabled?: boolean
 }
 
 /** 获取无需认证的服务端运行能力。 */

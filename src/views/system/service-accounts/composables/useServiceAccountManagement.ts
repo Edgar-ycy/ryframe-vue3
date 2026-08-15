@@ -84,6 +84,7 @@ export function useServiceAccountManagement() {
     saveRoles: roles.saveRoles,
     selectAccount: directory.selectAccount,
     selectedAccount: context.selectedAccount,
+    serviceAccountsEnabled: context.serviceAccountsEnabled,
     setAccountStatus: directory.setAccountStatus,
     statusPending: directory.statusPending,
   }

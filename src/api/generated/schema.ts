@@ -2953,7 +2953,11 @@ export interface components {
             data?: {
                 api_prefix: string;
                 endpoints: components["schemas"]["ApiVersionEndpoints"];
+                /** @description 是否允许客户端选择和管理多个租户。 */
+                multi_tenancy_enabled: boolean;
                 name: string;
+                /** @description 服务账号与个人服务委托功能是否启用。 */
+                service_accounts_enabled: boolean;
                 source_commit: string;
                 version: string;
             };
@@ -4932,7 +4936,11 @@ export interface components {
         ApiVersionInfo: {
             api_prefix: string;
             endpoints: components["schemas"]["ApiVersionEndpoints"];
+            /** @description 是否允许客户端选择和管理多个租户。 */
+            multi_tenancy_enabled: boolean;
             name: string;
+            /** @description 服务账号与个人服务委托功能是否启用。 */
+            service_accounts_enabled: boolean;
             source_commit: string;
             version: string;
         };
@@ -5212,7 +5220,7 @@ export interface components {
         CompletePasswordResetRequest: {
             new_password: string;
             request_id: string;
-            tenant_id: string;
+            tenant_id?: string | null;
             token: string;
         };
         /** @enum {string} */

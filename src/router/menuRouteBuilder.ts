@@ -43,10 +43,11 @@ export function buildAccessibleMenus(
   routes: readonly RouteRecordRaw[],
   permissions: readonly string[],
   roles: readonly string[],
+  serviceAccountsEnabled = true,
 ): RouteRecordRaw[] {
   return [
     ...getConstantMenus(),
-    ...filterAccessibleRoutes(routes, permissions, roles),
+    ...filterAccessibleRoutes(routes, permissions, roles, serviceAccountsEnabled),
   ]
 }
 
@@ -137,6 +138,7 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
       sort: node.sort,
       permission: node.perm_code || undefined,
       requiresPermission: true,
+      requiresServiceAccounts: node.route_key === 'system.service-accounts',
     },
   }
 }
@@ -161,11 +163,14 @@ function filterAccessibleRoutes(
   routes: readonly RouteRecordRaw[],
   permissions: readonly string[],
   roles: readonly string[],
+  serviceAccountsEnabled: boolean,
 ): RouteRecordRaw[] {
   const result: RouteRecordRaw[] = []
 
   for (const route of routes) {
     if (route.meta?.hidden) continue
+
+    if (route.meta?.requiresServiceAccounts && !serviceAccountsEnabled) continue
 
     const required = route.meta?.permission
     if (
@@ -176,7 +181,7 @@ function filterAccessibleRoutes(
     }
 
     const children = route.children
-      ? filterAccessibleRoutes(route.children, permissions, roles)
+      ? filterAccessibleRoutes(route.children, permissions, roles, serviceAccountsEnabled)
       : []
     if (route.meta?.alwaysShow && route.children?.length && children.length === 0) continue
 

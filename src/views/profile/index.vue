@@ -24,6 +24,7 @@
       @revoke-others="revokeOtherSessions"
     />
     <ProfileServiceDelegationsCard
+      v-if="runtimeCapabilities.serviceAccountsEnabled"
       ref="serviceDelegationsCardRef"
       :delegations="serviceDelegations"
       :targets="serviceDelegationTargets"
@@ -52,11 +53,13 @@ import type { CreateProfileServiceDelegationInput, ProfileServiceDelegation } fr
 import { useAuthSessionManagement } from './useAuthSessionManagement'
 import { useProfileManagement } from './useProfileManagement'
 import { useServiceDelegationManagement } from './useServiceDelegationManagement'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { installProfileServiceDelegationsMessages } from '@/i18n/catalog/profile-service-delegations'
 
 installProfileSessionsMessages()
 installProfileServiceDelegationsMessages()
 const { t } = useI18n()
+const runtimeCapabilities = useRuntimeCapabilitiesStore()
 const {
   handleAvatarUpdated,
   handleProfileSaved,

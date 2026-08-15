@@ -8,7 +8,7 @@
             <p>{{ t('serviceAccounts.subtitle') }}</p>
           </div>
           <el-button
-            v-if="activeTab === 'accounts'"
+            v-if="serviceAccountsEnabled && activeTab === 'accounts'"
             v-perm="'system:service-account:add'"
             type="primary"
             icon="Plus"
@@ -19,7 +19,19 @@
         </div>
       </template>
 
-      <el-tabs v-model="activeTab" class="management-tabs" @tab-change="handleTabChange">
+      <el-result
+        v-if="!serviceAccountsEnabled"
+        icon="info"
+        :title="t('serviceAccounts.featureDisabledTitle')"
+        :sub-title="t('serviceAccounts.featureDisabledDescription')"
+      />
+
+      <el-tabs
+        v-else
+        v-model="activeTab"
+        class="management-tabs"
+        @tab-change="handleTabChange"
+      >
         <el-tab-pane
           v-if="canListAccounts"
           :label="t('serviceAccounts.accountsTab')"
@@ -215,6 +227,7 @@ const {
   saveRoles,
   selectAccount,
   selectedAccount,
+  serviceAccountsEnabled,
   setAccountStatus,
   statusPending,
 } = useServiceAccountManagement()

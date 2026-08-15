@@ -30,6 +30,7 @@ declare module 'vue-router' {
     buttonPerms?: string[]
     requiresPermission?: boolean
     requiresMultiTenancy?: boolean
+    requiresServiceAccounts?: boolean
   }
 }
 
@@ -59,10 +60,12 @@ async function buildAccessibleRoutes(
 
   const permissionStore = usePermissionStore()
   const userStore = useUserStore()
+  const runtimeCapabilities = useRuntimeCapabilitiesStore()
   return permissionStore.generateRoutes(
     menuRes.data ?? [],
     userStore.permissions,
     userStore.roles,
+    runtimeCapabilities.serviceAccountsEnabled,
   )
 }
 

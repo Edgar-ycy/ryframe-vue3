@@ -27,14 +27,20 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     captureIdentity, credentialsKey, currentIdentity, detailKey, detailQuery,
     ensureOperationContext, finishController,
     pageActive, queryParams, removeAccountFromPage, requireIdentity,
-    requireOperationContext, roleIds, selectedAccount, updateAccountPage,
+    requireOperationContext, roleIds, selectedAccount, serviceAccountsEnabled,
+    updateAccountPage,
   } = context
   const savePending = ref(false)
   const statusPending = ref(false)
   const removePending = ref(false)
 
   async function fetchAccounts(): Promise<void> {
-    if (!pageActive.value || !currentIdentity() || !canListAccounts.value) return
+    if (
+      !pageActive.value
+      || !serviceAccountsEnabled.value
+      || !currentIdentity()
+      || !canListAccounts.value
+    ) return
     const next = copyServiceAccountQuery(queryParams)
     if (!sameServiceAccountPageQuery(next, activeQueryParams)) {
       Object.assign(activeQueryParams, next)
@@ -74,7 +80,7 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
   }
 
   async function refresh(): Promise<void> {
-    if (!pageActive.value || !currentIdentity()) return
+    if (!pageActive.value || !serviceAccountsEnabled.value || !currentIdentity()) return
     const requests: Promise<unknown>[] = []
     if (canListAccounts.value) requests.push(accountsQuery.refetch({ throwOnError: true }))
     if (selectedAccount.value && canListAccounts.value) {

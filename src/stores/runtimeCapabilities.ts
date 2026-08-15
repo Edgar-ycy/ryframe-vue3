@@ -5,6 +5,7 @@ import { DEFAULT_TENANT_ID, setTenantId } from '@/utils/auth'
 interface RuntimeCapabilitiesState {
   loaded: boolean
   multiTenancyEnabled: boolean
+  serviceAccountsEnabled: boolean
 }
 
 let loadingPromise: Promise<void> | undefined
@@ -13,6 +14,7 @@ export const useRuntimeCapabilitiesStore = defineStore('runtime-capabilities', {
   state: (): RuntimeCapabilitiesState => ({
     loaded: false,
     multiTenancyEnabled: true,
+    serviceAccountsEnabled: true,
   }),
 
   actions: {
@@ -24,12 +26,15 @@ export const useRuntimeCapabilitiesStore = defineStore('runtime-capabilities', {
         .then((response) => {
           // 旧版本服务端没有此字段时继续启用多租户，避免误隐藏已有功能。
           this.multiTenancyEnabled = response.data?.multi_tenancy_enabled !== false
+          // 旧版本服务端没有此字段时继续展示服务账号，避免误隐藏已有功能。
+          this.serviceAccountsEnabled = response.data?.service_accounts_enabled !== false
           // 清理浏览器中残留的历史租户，避免后续验证码等公开请求携带冲突租户头。
           if (!this.multiTenancyEnabled) setTenantId(DEFAULT_TENANT_ID)
         })
         .catch(() => {
           // 运行能力不可用时保持兼容模式，不阻断登录和导航。
           this.multiTenancyEnabled = true
+          this.serviceAccountsEnabled = true
         })
         .finally(() => {
           this.loaded = true

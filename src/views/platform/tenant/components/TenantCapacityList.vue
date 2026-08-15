@@ -154,7 +154,7 @@
         :page-size="pageSize"
         :total="tenantPage?.total ?? 0"
         layout="prev, pager, next"
-        small
+        size="small"
         background
         @current-change="emit('page-change', $event)"
       />

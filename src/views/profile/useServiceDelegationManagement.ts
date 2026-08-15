@@ -24,6 +24,7 @@ import {
 } from '@/shared/http/idempotency'
 import { queryClient, tenantQueryKey } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 
 const PROFILE_SERVICE_DELEGATIONS_RESOURCE = 'profile-service-delegations'
 const PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE = 'profile-service-delegation-targets'
@@ -46,6 +47,7 @@ function sameIdentity(
 /** 个人中心服务委托管理；一次性 Token 仅作为创建调用的局部返回值存在。 */
 export function useServiceDelegationManagement() {
   const userStore = useUserStore()
+  const runtimeCapabilities = useRuntimeCapabilitiesStore()
   const pageActive = ref(true)
   const createPending = ref(false)
   const revokingId = ref<string>()
@@ -148,7 +150,9 @@ export function useServiceDelegationManagement() {
   }
 
   const enabled = computed(() => (
-    pageActive.value && currentIdentity() !== undefined
+    pageActive.value
+    && currentIdentity() !== undefined
+    && runtimeCapabilities.serviceAccountsEnabled
   ))
 
   const delegationsQuery = useQuery<readonly ProfileServiceDelegation[], HttpError>({

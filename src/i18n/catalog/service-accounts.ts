@@ -30,6 +30,8 @@ export const serviceAccountsMessages = {
     serviceAccounts: {
       title: '服务账号',
       subtitle: '管理不可登录的机器主体、角色范围、API Key、用户委托与 Agent 访问审计。',
+      featureDisabledTitle: '功能未启用',
+      featureDisabledDescription: '服务账号功能未在服务端启用，请联系管理员开启后使用。',
       accountsTab: '账号',
       delegationsTab: '委托治理',
       auditsTab: '访问审计',
@@ -142,6 +144,8 @@ export const serviceAccountsMessages = {
     serviceAccounts: {
       title: 'Service accounts',
       subtitle: 'Manage non-interactive machine identities, role scope, API keys, user delegations, and Agent access audits.',
+      featureDisabledTitle: 'Feature not enabled',
+      featureDisabledDescription: 'The service-account feature is not enabled on the server. Ask an administrator to enable it.',
       accountsTab: 'Accounts',
       delegationsTab: 'Delegation governance',
       auditsTab: 'Access audits',

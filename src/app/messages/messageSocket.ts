@@ -1,5 +1,6 @@
 import { runtimeConfig } from '@/shared/config/runtimeConfig'
 import type { MessageRecord } from '@/api/modules/messages'
+import { HttpError } from '@/shared/http/client'
 
 const SOCKET_CONNECTING = 0
 const SOCKET_OPEN = 1
@@ -8,7 +9,7 @@ const MAX_RECONNECT_DELAY_MS = 30_000
 const MAX_RETRY_AFTER_DELAY_MS = 60_000
 const HEARTBEAT_INTERVAL_MS = 25_000
 
-export type MessageSocketState = 'idle' | 'connecting' | 'connected' | 'retrying' | 'stopped'
+export type MessageSocketState = 'idle' | 'connecting' | 'connected' | 'retrying' | 'degraded' | 'stopped'
 
 export interface MessageSocketLike {
   readonly readyState: number
@@ -85,6 +86,16 @@ export function reconnectDelayForError(
     exponential,
     Math.min(retryAfterSeconds * 1_000, MAX_RETRY_AFTER_DELAY_MS),
   )
+}
+
+/**
+ * 仅服务端通过专用响应头声明的实时服务不可用才进入低频健康重试。
+ * 旧版服务端在同一语义下仅返回 service_unavailable 与 Retry-After 时也兼容降级。
+ */
+export function isRealtimeServiceUnavailable(error: unknown): boolean {
+  if (!(error instanceof HttpError) || error.status !== 503) return false
+  return error.realtimeStatus === 'unavailable'
+    || (error.errorKey === 'service_unavailable' && error.retryAfterSeconds !== undefined)
 }
 
 /** 解析服务端 v1 消息投递帧。 */
@@ -216,13 +227,26 @@ export class MessageSocket {
 
   private scheduleReconnect(error?: unknown): void {
     if (!this.active || this.reconnectTimer !== undefined) return
-    const delay = reconnectDelayForError(this.reconnectAttempt, error, this.options.random)
-    this.reconnectAttempt += 1
-    this.setState('retrying')
+    const degraded = isRealtimeServiceUnavailable(error)
+    const delay = reconnectDelayForError(
+      degraded ? 0 : this.reconnectAttempt,
+      error,
+      this.options.random,
+    )
+    if (degraded) {
+      // 服务端的 Retry-After 是实时服务的健康探测节奏，不能退化为短周期重连。
+      this.reconnectAttempt = 0
+      this.setState('degraded')
+    }
+    else {
+      this.reconnectAttempt += 1
+      this.setState('retrying')
+    }
     const schedule = this.options.schedule ?? ((callback, timeout) => setTimeout(callback, timeout))
     this.reconnectTimer = schedule(() => {
       this.reconnectTimer = undefined
-      this.setState('connecting')
+      // 受控降级期间保持明确状态，只有普通网络故障才显示短周期重连中。
+      if (!degraded) this.setState('connecting')
       void this.connect()
     }, delay)
   }

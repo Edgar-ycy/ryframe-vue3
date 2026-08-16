@@ -62,7 +62,7 @@ ryframe-vue3/
 ### 环境要求
 
 - **Node.js** 24.15.0（默认版本，见 `.node-version`）；CI 额外验证 22.22.2 兼容性
-- **pnpm** 10.28.2（以 `packageManager` 字段为准，推荐通过 Corepack 使用）
+- **pnpm** 11.20.0（以 `packageManager` 字段为准，推荐通过 Corepack 使用）
 
 ### 安装依赖
 

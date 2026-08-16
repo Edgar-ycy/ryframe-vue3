@@ -19,6 +19,7 @@ export interface HttpErrorOptions {
   kind?: HttpErrorKind
   cause?: unknown
   retryAfterSeconds?: number
+  realtimeStatus?: string
 }
 
 export class HttpError extends Error {
@@ -30,6 +31,8 @@ export class HttpError extends Error {
   readonly kind: HttpErrorKind
   readonly cause?: unknown
   readonly retryAfterSeconds?: number
+  /** 由受控实时服务响应通过 X-RyFrame-Realtime 明确声明的状态。 */
+  readonly realtimeStatus?: string
 
   constructor(message: string, options: HttpErrorOptions = {}) {
     super(message)
@@ -42,6 +45,7 @@ export class HttpError extends Error {
     this.kind = options.kind ?? (options.status === undefined ? 'unknown' : 'http')
     this.cause = options.cause
     this.retryAfterSeconds = options.retryAfterSeconds
+    this.realtimeStatus = options.realtimeStatus
   }
 }
 
@@ -121,6 +125,7 @@ export async function toHttpError(error: unknown): Promise<HttpError> {
         kind: axiosErrorKind(error, status),
         cause: error,
         retryAfterSeconds: parseRetryAfter(error.response?.headers['retry-after']),
+        realtimeStatus: responseHeader(error.response?.headers, 'x-ryframe-realtime'),
       },
     )
   }
@@ -133,6 +138,13 @@ export async function toHttpError(error: unknown): Promise<HttpError> {
 function parseRetryAfter(value: unknown): number | undefined {
   const seconds = Number(value)
   return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined
+}
+
+function responseHeader(headers: unknown, name: string): string | undefined {
+  if (!headers || typeof headers !== 'object') return undefined
+  const value = (headers as Record<string, unknown>)[name]
+  if (Array.isArray(value)) return value.join(',')
+  return value === undefined ? undefined : String(value)
 }
 
 export function parseEnvelope<T>(response: AxiosResponse<ApiResponse<T>>): ApiResponse<T> {

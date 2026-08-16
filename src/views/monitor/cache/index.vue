@@ -80,7 +80,19 @@
 
     <el-card shadow="never" class="monitor-section-card">
       <template #header><span>{{ t('monitor.cache.commandStatistics') }}</span></template>
-      <el-table v-loading="loading" :data="commandRows" border stripe>
+      <el-empty
+        v-if="commandStatus !== 'available'"
+        :description="commandStatusDescription"
+        :image-size="88"
+      />
+      <el-table
+        v-else
+        v-loading="loading"
+        :data="commandRows"
+        :empty-text="t('common.noData')"
+        border
+        stripe
+      >
         <el-table-column prop="command" :label="t('monitor.cache.command')" width="180" />
         <el-table-column prop="stats" :label="t('monitor.cache.statistics')" min-width="360" show-overflow-tooltip />
       </el-table>
@@ -94,6 +106,7 @@ import { useI18n } from 'vue-i18n'
 import {
   getCacheCommands,
   getCacheInfo,
+  type CacheCommandStats,
   type CacheInfo,
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
@@ -105,7 +118,7 @@ const userStore = useUserStore()
 const pageActive = ref(true)
 
 interface CacheSnapshot {
-  commands: Record<string, string>
+  commands: CacheCommandStats | null
   info: CacheInfo | null
 }
 
@@ -120,7 +133,7 @@ const cacheQuery = useTenantQuery<CacheSnapshot>(
       getCacheCommands(signal),
     ])
     return {
-      commands: commandsResponse.data ?? {},
+      commands: commandsResponse.data ?? null,
       info: infoResponse.data ?? null,
     }
   },
@@ -153,10 +166,17 @@ const keyRows = computed(() => {
 })
 
 const commandRows = computed(() => {
-  return Object.entries(cacheSnapshot.value?.commands ?? {})
+  return Object.entries(cacheSnapshot.value?.commands?.commands ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([command, stats]) => ({ command, stats }))
 })
+
+const commandStatus = computed(() => cacheSnapshot.value?.commands?.status ?? 'unavailable')
+const commandStatusDescription = computed(() => (
+  commandStatus.value === 'not_configured'
+    ? t('monitor.cache.commandStatsNotConfigured')
+    : t('monitor.cache.commandStatsUnavailable')
+))
 
 function formatRatio(value?: number | null) {
   if (value === null || value === undefined) return '—'

@@ -46,8 +46,8 @@
           <div class="monitor-metric-value">{{ runtime?.object_storage.backend?.toUpperCase() || '—' }}</div>
           <div class="monitor-metric-footer">
             <el-tag :type="storageTagType" size="small">{{ storageStatusText }}</el-tag>
-            <span class="monitor-metric-endpoint" :title="runtime?.object_storage.endpoint || ''">
-              {{ runtime ? runtime.object_storage.endpoint || t('monitor.runtime.localFileSystem') : '—' }}
+            <span class="monitor-metric-endpoint" :title="storageEndpointTitle">
+              {{ storageEndpoint }}
             </span>
           </div>
         </el-card>
@@ -176,6 +176,19 @@ const storageStatusText = computed(() => {
   return runtime.value.object_storage.connected
     ? t('monitor.runtime.connected')
     : t('monitor.runtime.disconnected')
+})
+
+const storageEndpoint = computed(() => {
+  const storage = runtime.value?.object_storage
+  if (!storage) return '—'
+  if (storage.backend.toLowerCase() === 'local') return t('monitor.runtime.localFileSystem')
+  return storage.endpoint || '—'
+})
+
+const storageEndpointTitle = computed(() => {
+  const storage = runtime.value?.object_storage
+  if (!storage || storage.backend.toLowerCase() === 'local') return ''
+  return storage.endpoint || ''
 })
 
 const readPolicyText = computed(() => {

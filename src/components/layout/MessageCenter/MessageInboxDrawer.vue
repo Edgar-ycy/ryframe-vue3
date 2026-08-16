@@ -14,6 +14,13 @@
         {{ connectionLabel }}
       </span>
       <div class="message-center__toolbar-actions">
+        <el-button
+          v-if="connectionStatus === 'degraded'"
+          text
+          @click="emit('retry-realtime')"
+        >
+          {{ t('messageCenter.retryRealtime') }}
+        </el-button>
         <el-button text :loading="loading" @click="emit('refresh')">{{ t('common.refresh') }}</el-button>
         <el-button text :loading="mutating" :disabled="unreadCount === 0 || mutating" @click="emit('mark-all-read')">
           {{ t('messageCenter.markAllRead') }}
@@ -107,6 +114,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'drawer-open': []
+  'retry-realtime': []
   refresh: []
   'mark-all-read': []
   'delete-selected': []
@@ -164,6 +172,10 @@ function severityLabel(severity: string): string {
   &--retrying,
   &--connecting {
     color: var(--el-color-warning);
+  }
+
+  &--degraded {
+    color: var(--el-color-info);
   }
 }
 

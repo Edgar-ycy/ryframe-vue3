@@ -27,6 +27,7 @@
     :loading="inboxLoading || unreadLoading"
     :mutating="mutating"
     @drawer-open="handleDrawerOpen"
+    @retry-realtime="messageStore.restartConnection"
     @refresh="refresh"
     @mark-all-read="markAllRead"
     @delete-selected="deleteSelected"
@@ -76,6 +77,7 @@ function connectionLabel(): string {
     connecting: t('messageCenter.connecting'),
     connected: t('messageCenter.connected'),
     retrying: t('messageCenter.retrying'),
+    degraded: t('messageCenter.degraded'),
     disconnected: t('messageCenter.disconnected'),
   }[messageStore.connectionStatus] ?? t('messageCenter.disconnected')
 }

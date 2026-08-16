@@ -37,7 +37,7 @@ export interface NavigationGuardDependencies {
   resolveReplacement(path: string): RouteLocationRaw
 }
 
-const authenticatedErrorPaths = new Set(['/403', '/500'])
+const authenticatedErrorPaths = new Set(['/403', '/503'])
 const publicPaths = new Set(['/login', '/reset-password'])
 
 export function createNavigationGuard(dependencies: NavigationGuardDependencies) {
@@ -49,7 +49,7 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
     const originalPath = getOriginalFullPath(target)
 
     if (user.sessionStatus === 'unavailable') {
-      return target.path === '/500' ? true : { path: '/500', replace: true }
+      return target.path === '/503' ? true : { path: '/503', replace: true }
     }
 
     if (!user.token) {
@@ -76,7 +76,7 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
         if (error instanceof HttpError && error.status === 403) {
           return { path: '/403', replace: true }
         }
-        return { path: '/500', replace: true }
+        return { path: '/503', replace: true }
       }
     }
 

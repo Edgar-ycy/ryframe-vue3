@@ -29,6 +29,7 @@ import { stripPagination, type PageResponse } from '@/shared/http/types'
 
 export type ServerInfo = ApiSchema<'ServerInfo'>
 export type CacheInfo = ApiSchema<'CacheInfo'>
+export type CacheCommandStats = OperationData<'get_monitor_cache_commands'>
 export type DbPoolInfo = ApiSchema<'DbPoolInfo'>
 export type RuntimeStatus = ApiSchema<'RuntimeStatus'>
 
@@ -44,7 +45,7 @@ export function getCacheInfo(signal?: AbortSignal) {
 
 /** 获取 Redis 命令统计。 */
 export function getCacheCommands(signal?: AbortSignal) {
-  return request<OperationData<'get_monitor_cache_commands'>>({
+  return request<CacheCommandStats>({
     url: '/monitor/cache/commands',
     method: 'get',
     signal,

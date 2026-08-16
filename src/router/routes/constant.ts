@@ -64,7 +64,7 @@ export const constantRoutes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: '/redirect',
+    path: '/redirect/:path(.*)*',
     name: 'Redirect',
     component: withRouteComponentName('Redirect', () => import('@/views/redirect/index.vue')),
     meta: { title: '重定向', hidden: true },
@@ -88,10 +88,10 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { title: '禁止访问', hidden: true },
   },
   {
-    path: '/500',
-    name: '500',
-    component: withRouteComponentName('500', () => import('@/views/error/500.vue')),
-    meta: { title: '服务器错误', hidden: true },
+    path: '/503',
+    name: '503',
+    component: withRouteComponentName('503', () => import('@/views/error/503.vue')),
+    meta: { title: '服务暂不可用', hidden: true },
   },
   {
     path: '/:pathMatch(.*)*',

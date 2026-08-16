@@ -7,6 +7,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import {Loading} from "@element-plus/icons-vue";
+import { normalizeRedirectPath } from '@/router/redirect'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,8 +16,7 @@ const { t } = useI18n()
 
 onMounted(() => {
   const { params, query } = route
-  const path = params.path || '/'
-  router.replace({ path: '/' + path, query })
+  router.replace({ path: normalizeRedirectPath(params.path), query })
 })
 </script>
 

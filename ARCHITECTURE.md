@@ -87,7 +87,7 @@ ESLint 对 `shared` 和 `api/modules` 的禁止依赖进行编译期检查。
 ### 3.3 消息中心
 
 - 收件箱页、未读数、加载和刷新状态只保存在 TanStack Query；查询键固定包含租户、用户、过滤条件和游标。
-- WebSocket 投递直接按消息 ID 合并到 QueryClient，连接成功、重连成功及连接存续期间每 60 秒通过 REST 补拉。
+- WebSocket 投递直接按消息 ID 合并到 QueryClient，连接成功、重连成功及连接存续期间每 60 秒通过 REST 补拉；服务端以 `503`、`Retry-After` 和 `X-RyFrame-Realtime: unavailable` 声明实时服务不可用时，前端保持降级状态并按该间隔低频健康重试，不进入短周期重连。
 - 确认送达、单条已读和全部已读统一走 mutation；送达确认按 100 条分批并在失败后有界退避。
 - `stores/message.ts` 只保存连接状态和不可观察的传输运行时，不得复制消息列表或未读数。
 

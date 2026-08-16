@@ -141,7 +141,7 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
     return fallback
   }
 
-  const blockedPaths = new Set(['/login', '/reset-password', '/401', '/403', '/404', '/500'])
+  const blockedPaths = new Set(['/login', '/reset-password', '/401', '/403', '/404', '/503'])
   if (
     blockedPaths.has(resolved.path)
     || resolved.matched.length === 0

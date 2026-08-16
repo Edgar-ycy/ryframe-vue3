@@ -12,7 +12,7 @@ const SKIP_PATHS = new Set([
   '/404',
   '/401',
   '/403',
-  '/500',
+  '/503',
   '/redirect',
   '/profile',
 ])

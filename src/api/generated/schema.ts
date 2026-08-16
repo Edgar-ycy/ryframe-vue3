@@ -3019,25 +3019,6 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_BTreeMap_String_String: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                [key: string]: string;
-            };
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
         ApiResponse_BackgroundJobQueueStats: {
             /**
              * Format: int32
@@ -3104,6 +3085,29 @@ export interface components {
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_CacheCommandStats: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description Redis 命令统计响应。 */
+            data?: {
+                commands: {
+                    [key: string]: string;
+                };
+                status: components["schemas"]["CacheCommandStatsStatus"];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -5125,6 +5129,22 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /** @description Redis 命令统计响应。 */
+        CacheCommandStats: {
+            commands: {
+                [key: string]: string;
+            };
+            status: components["schemas"]["CacheCommandStatsStatus"];
+        };
+        /**
+         * @description Redis 命令统计查询状态。
+         *
+         *     `not_configured` 表示当前实例没有启用 Redis；`unavailable` 表示 Redis
+         *     已配置但连接或查询失败。两种情况下均返回空的 `commands`，避免让调用方
+         *     将错误文本误当作命令名称渲染。
+         * @enum {string}
+         */
+        CacheCommandStatsStatus: "available" | "not_configured" | "unavailable";
         /** @description 缓存信息响应 */
         CacheInfo: {
             /** @description Redis 是否可用 */
@@ -8562,11 +8582,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Redis 不可用；显式禁用时返回 Retry-After: 60 */
+            /** @description 实时消息通道不可用；客户端应回退到收件箱轮询 */
             503: {
                 headers: {
-                    /** @description 仅 Redis 显式禁用时为 60 秒 */
+                    /** @description 再次申请票据前至少等待 60 秒 */
                     "Retry-After"?: string;
+                    /** @description 固定值 unavailable，标识受控的实时通道降级 */
+                    "X-RyFrame-Realtime"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8898,7 +8920,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_BTreeMap_String_String"];
+                    "application/json": components["schemas"]["ApiResponse_CacheCommandStats"];
                 };
             };
         };

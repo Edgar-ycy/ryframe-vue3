@@ -11,6 +11,7 @@ function addRouteTag(route: TagRoute, addView: (view: TagView) => void): void {
     title: typeof route.meta.title === 'string' ? route.meta.title : undefined,
     affix: route.meta.affix === true,
     noCache: route.meta.noCache === true,
+    requiredCapabilities: route.meta.requiredCapabilities,
   })
 }
 

@@ -156,6 +156,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_auth_context"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -206,26 +222,6 @@ export interface paths {
          * @description POST /api/v1/auth/logout
          */
         post: operations["post_auth_logout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取当前用户信息
-         * @description GET /api/v1/auth/me
-         */
-        get: operations["get_auth_me"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -920,6 +916,214 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/platform/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_capabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/data-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_data_targets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/data-targets/{target_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_data_targets_by_target_key"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/data-targets/{target_key}/backup-points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_data_targets_by_target_key_backup_points"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/product-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_product_plans"];
+        put?: never;
+        post: operations["post_platform_product_plans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/product-plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_product_plans_by_plan_id"];
+        put: operations["put_platform_product_plans_by_plan_id"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/product-plans/{plan_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_product_plans_by_plan_id_versions"];
+        put?: never;
+        post: operations["post_platform_product_plans_by_plan_id_versions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/product-plans/{plan_id}/versions/{version}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["put_platform_product_plans_by_plan_id_versions_by_version_draft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/product-plans/{plan_id}/versions/{version}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_platform_product_plans_by_plan_id_versions_by_version_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/product-plans/{plan_id}/versions/{version}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_platform_product_plans_by_plan_id_versions_by_version_retire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenant-data-migrations/{migration_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_tenant_data_migrations_by_migration_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenant-data-migrations/{migration_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_platform_tenant_data_migrations_by_migration_id_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenant-data-migrations/{migration_id}/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_platform_tenant_data_migrations_by_migration_id_finalize"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/platform/tenants": {
         parameters: {
             query?: never;
@@ -961,6 +1165,102 @@ export interface paths {
         };
         get: operations["get_platform_tenants_by_tenant_id"];
         put: operations["put_platform_tenants_by_tenant_id"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenants/{tenant_id}/data-migration-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_platform_tenants_by_tenant_id_data_migration_previews"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenants/{tenant_id}/data-migrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_tenants_by_tenant_id_data_migrations"];
+        put?: never;
+        post: operations["post_platform_tenants_by_tenant_id_data_migrations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenants/{tenant_id}/data-placement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_tenants_by_tenant_id_data_placement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenants/{tenant_id}/product-change-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_platform_tenants_by_tenant_id_product_change_previews"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenants/{tenant_id}/product-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_platform_tenants_by_tenant_id_product_changes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/tenants/{tenant_id}/product-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_platform_tenants_by_tenant_id_product_context"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1539,23 +1839,6 @@ export interface paths {
         put?: never;
         /** 创建菜单 */
         post: operations["post_system_menus"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/menus/current": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 当前用户可见的菜单树（按角色过滤，前端用） */
-        get: operations["get_system_menus_current"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2693,6 +2976,16 @@ export interface components {
             request_id: string;
         };
         /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_DataTargetSummary: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_DataTargetSummary"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
         ApiPageResponse_DeptVo: {
             /** Format: int32 */
             code: number;
@@ -2787,6 +3080,16 @@ export interface components {
             /** Format: int32 */
             code: number;
             data: components["schemas"]["PageData_PostVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_ProductPlanVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_ProductPlanVo"];
             details?: unknown;
             error_key?: string | null;
             message: string;
@@ -2956,8 +3259,6 @@ export interface components {
                 /** @description 是否允许客户端选择和管理多个租户。 */
                 multi_tenancy_enabled: boolean;
                 name: string;
-                /** @description 服务账号与个人服务委托功能是否启用。 */
-                service_accounts_enabled: boolean;
                 source_commit: string;
                 version: string;
             };
@@ -3296,6 +3597,30 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_DataPlacementView: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                current_target_key: string;
+                placement_generation: string;
+                state: components["schemas"]["TenantBusinessDataState"];
+                tenant_id: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_DataRetentionOverview: {
             /**
              * Format: int32
@@ -3368,6 +3693,32 @@ export interface components {
                 trigger_kind: string;
                 /** Format: date-time */
                 updated_at: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_DataTargetDetail: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: components["schemas"]["DataTargetSummary"] & {
+                /** Format: date-time */
+                last_verified_at?: string | null;
+                /** Format: int32 */
+                max_total_connections: number;
+                open_targets: number;
+                opening_targets: number;
+                /** Format: int32 */
+                reserved_connections: number;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -3620,7 +3971,7 @@ export interface components {
             data?: {
                 access_token: string;
                 expires_in: number;
-                user_info: components["schemas"]["UserInfo"];
+                session_context: components["schemas"]["SessionContextVo"];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -3644,7 +3995,7 @@ export interface components {
                 created_at: string;
                 icon?: string | null;
                 id: string;
-                menu_type: string;
+                menu_type: components["schemas"]["MenuType"];
                 name: string;
                 parent_id?: string | null;
                 perm_id?: string | null;
@@ -3675,6 +4026,104 @@ export interface components {
             data?: {
                 next_cursor?: string | null;
                 records: components["schemas"]["MessageVo"][];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_MigrationPreview: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                blockers: string[];
+                eligible: boolean;
+                expected_placement_generation: string;
+                impact: components["schemas"]["MigrationImpact"];
+                plan_hash: string;
+                source_target_key: string;
+                target_generation: string;
+                target_target_key: string;
+                tenant_id: string;
+                warnings: string[];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_MigrationView: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                action_reasons: string[];
+                /** Format: date-time */
+                activated_at?: string | null;
+                can_cancel: boolean;
+                can_finalize: boolean;
+                cancel_requested: boolean;
+                /** Format: date-time */
+                cancelled_at?: string | null;
+                /** Format: date-time */
+                copy_completed_at?: string | null;
+                /** Format: date-time */
+                copy_started_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: date-time */
+                cut_over_at?: string | null;
+                error_code?: string | null;
+                /** Format: date-time */
+                failed_at?: string | null;
+                finalize_requested: boolean;
+                /** Format: date-time */
+                finalized_at?: string | null;
+                /** Format: date-time */
+                frozen_at?: string | null;
+                id: string;
+                items: components["schemas"]["MigrationItemView"][];
+                operator_id: string;
+                plan_hash: string;
+                /** Format: date-time */
+                prechecked_at?: string | null;
+                /** Format: date-time */
+                queued_at?: string | null;
+                /** Format: date-time */
+                quiesced_at?: string | null;
+                /** Format: int32 */
+                retention_hours: number;
+                /** Format: date-time */
+                retention_until?: string | null;
+                source_generation: string;
+                source_schema_fingerprint: string;
+                source_target_key: string;
+                state: components["schemas"]["TenantDataMigrationState"];
+                /** Format: date-time */
+                succeeded_at?: string | null;
+                target_generation: string;
+                target_schema_fingerprint: string;
+                target_target_key: string;
+                tenant_id: string;
+                /** Format: date-time */
+                updated_at: string;
+                /** Format: date-time */
+                verified_at?: string | null;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -3841,7 +4290,7 @@ export interface components {
                 id: string;
                 name: string;
                 parent_id?: string | null;
-                perm_type: string;
+                perm_type: components["schemas"]["PermissionType"];
                 /** Format: int32 */
                 sort: number;
                 status: string;
@@ -3873,6 +4322,118 @@ export interface components {
                 /** Format: int32 */
                 sort: number;
                 status: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_ProductChangePreviewVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                capability_additions: string[];
+                capability_changes: components["schemas"]["ProductCapabilityChangeVo"][];
+                capability_removals: string[];
+                current: components["schemas"]["ProductContextVo"];
+                menu_additions: string[];
+                menu_removals: string[];
+                permission_additions: string[];
+                permission_removals: string[];
+                plan_hash: string;
+                runtime_epoch: string;
+                target: components["schemas"]["ProductContextVo"];
+                tenant_id: string;
+                warnings: string[];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_ProductContextVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                capabilities: components["schemas"]["EffectiveCapabilityVo"][];
+                overrides: components["schemas"]["CapabilityOverrideVo"][];
+                plan_key: string;
+                plan_name: string;
+                /** Format: int32 */
+                plan_version: number;
+                plan_version_id: string;
+                runtime_epoch: string;
+                tenant_id: string;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_ProductPlanVersionVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                capabilities: components["schemas"]["ProductCapabilityVo"][];
+                created_by: string;
+                description?: string | null;
+                id: string;
+                name: string;
+                /** Format: date-time */
+                published_at?: string | null;
+                published_by?: string | null;
+                status: components["schemas"]["ProductPlanVersionStatus"];
+                /** Format: int32 */
+                version: number;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_ProductPlanVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                created_by: string;
+                description?: string | null;
+                id: string;
+                key: string;
+                name: string;
+                status: components["schemas"]["ProductPlanStatus"];
+                versions: components["schemas"]["ProductPlanVersionVo"][];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -4088,6 +4649,34 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_SessionContextVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 登录、刷新和 GET /auth/context 共用的会话启动快照。 */
+            data?: {
+                /** @description 控制库授权纪元；避免 JavaScript 精度漂移，所有 epoch 均以十进制字符串输出。 */
+                authorization_epoch: string;
+                business_data: components["schemas"]["TenantBusinessDataContextVo"];
+                capabilities: components["schemas"]["SessionCapabilityVo"][];
+                menus: components["schemas"]["MenuTreeNode"][];
+                permissions: string[];
+                roles: string[];
+                runtime_epoch: string;
+                user: components["schemas"]["SessionUserVo"];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_String: {
             /**
              * Format: int32
@@ -4190,8 +4779,7 @@ export interface components {
             code: number;
             /** @description 一次目标租户配置预览、应用或回滚的公开视图。 */
             data?: {
-                /** Format: int32 */
-                applied_authorization_epoch?: number | null;
+                applied_authorization_epoch?: string | null;
                 /** Format: int64 */
                 applied_configuration_version?: number | null;
                 bundle_summary: components["schemas"]["TenantConfigBundleSummaryVo"];
@@ -4208,8 +4796,7 @@ export interface components {
                 /** Format: date-time */
                 rollback_expires_at?: string | null;
                 status: string;
-                /** Format: int32 */
-                target_authorization_epoch: number;
+                target_authorization_epoch: string;
                 /** Format: int64 */
                 target_configuration_version: number;
                 /** Format: date-time */
@@ -4349,37 +4936,6 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_UserInfo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            /** @description 当前登录用户的公开信息。 */
-            data?: {
-                avatar?: string | null;
-                dept_name?: string | null;
-                email: string;
-                id: string;
-                nickname: string;
-                perms: string[];
-                phone: string;
-                preferred_locale?: string | null;
-                roles: string[];
-                tenant_id: string;
-                tenant_name: string;
-                username: string;
-            };
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
         ApiResponse_UserProfileResponse: {
             /**
              * Format: int32
@@ -4487,6 +5043,71 @@ export interface components {
                 os?: string | null;
                 /** @description 稳定会话标识，只用于精确撤销，不是访问令牌或刷新令牌。 */
                 sid: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_BackupPointView: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: date-time */
+                captured_at: string;
+                checksum?: string | null;
+                /** Format: date-time */
+                expires_at?: string | null;
+                id: string;
+                /** Format: date-time */
+                last_restore_drill_at?: string | null;
+                placement_generation?: string | null;
+                /** Format: date-time */
+                retention_until: string;
+                schema_fingerprint: string;
+                scope: components["schemas"]["BackupPointScope"];
+                target_key: string;
+                tenant_id?: string | null;
+                validation_status: components["schemas"]["BackupPointValidationStatus"];
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_CapabilityCatalogVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                affects_authorization: boolean;
+                client_config_fields: string[];
+                code: string;
+                conflicts: string[];
+                default_admin_permissions: string[];
+                dependencies: string[];
+                deployment_available: boolean;
+                deployment_dependencies: string[];
+                description: string;
+                name: string;
+                permission_codes: string[];
+                route_keys: string[];
+                variants: components["schemas"]["CapabilityVariantVo"][];
             }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -4636,7 +5257,7 @@ export interface components {
                 children: components["schemas"]["MenuTreeNode"][];
                 icon?: string | null;
                 id: string;
-                menu_type: string;
+                menu_type: components["schemas"]["MenuType"];
                 name: string;
                 parent_id?: string | null;
                 perm_code?: string | null;
@@ -4646,6 +5267,76 @@ export interface components {
                 sort: number;
                 status: string;
                 visible: boolean;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_MigrationView: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                action_reasons: string[];
+                /** Format: date-time */
+                activated_at?: string | null;
+                can_cancel: boolean;
+                can_finalize: boolean;
+                cancel_requested: boolean;
+                /** Format: date-time */
+                cancelled_at?: string | null;
+                /** Format: date-time */
+                copy_completed_at?: string | null;
+                /** Format: date-time */
+                copy_started_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: date-time */
+                cut_over_at?: string | null;
+                error_code?: string | null;
+                /** Format: date-time */
+                failed_at?: string | null;
+                finalize_requested: boolean;
+                /** Format: date-time */
+                finalized_at?: string | null;
+                /** Format: date-time */
+                frozen_at?: string | null;
+                id: string;
+                items: components["schemas"]["MigrationItemView"][];
+                operator_id: string;
+                plan_hash: string;
+                /** Format: date-time */
+                prechecked_at?: string | null;
+                /** Format: date-time */
+                queued_at?: string | null;
+                /** Format: date-time */
+                quiesced_at?: string | null;
+                /** Format: int32 */
+                retention_hours: number;
+                /** Format: date-time */
+                retention_until?: string | null;
+                source_generation: string;
+                source_schema_fingerprint: string;
+                source_target_key: string;
+                state: components["schemas"]["TenantDataMigrationState"];
+                /** Format: date-time */
+                succeeded_at?: string | null;
+                target_generation: string;
+                target_schema_fingerprint: string;
+                target_target_key: string;
+                tenant_id: string;
+                /** Format: date-time */
+                updated_at: string;
+                /** Format: date-time */
+                verified_at?: string | null;
             }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -4670,10 +5361,39 @@ export interface components {
                 id: string;
                 name: string;
                 parent_id?: string | null;
-                perm_type: string;
+                perm_type: components["schemas"]["PermissionType"];
                 /** Format: int32 */
                 sort: number;
                 status: string;
+            }[];
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_Vec_ProductPlanVersionVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                capabilities: components["schemas"]["ProductCapabilityVo"][];
+                created_by: string;
+                description?: string | null;
+                id: string;
+                name: string;
+                /** Format: date-time */
+                published_at?: string | null;
+                published_by?: string | null;
+                status: components["schemas"]["ProductPlanVersionStatus"];
+                /** Format: int32 */
+                version: number;
             }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -4943,16 +5663,13 @@ export interface components {
             /** @description 是否允许客户端选择和管理多个租户。 */
             multi_tenancy_enabled: boolean;
             name: string;
-            /** @description 服务账号与个人服务委托功能是否启用。 */
-            service_accounts_enabled: boolean;
             source_commit: string;
             version: string;
         };
         /** @description 应用已经预览并由用户确认的配置迁移计划。 */
         ApplyTenantConfigTransferDto: {
             plan_hash: string;
-            /** Format: int32 */
-            target_authorization_epoch: number;
+            target_authorization_epoch: string;
             /** Format: int64 */
             target_configuration_version: number;
         };
@@ -5040,12 +5757,10 @@ export interface components {
         };
         AuthorizationDiagnosticVersionVo: {
             cache_status: string;
-            /** Format: int32 */
-            cached_tenant_authorization_epoch?: number | null;
+            cached_tenant_authorization_epoch?: string | null;
             /** Format: int32 */
             cached_user_authorization_version?: number | null;
-            /** Format: int32 */
-            tenant_authorization_epoch: number;
+            tenant_authorization_epoch: string;
             /** Format: int32 */
             user_authorization_version: number;
         };
@@ -5129,6 +5844,40 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        BackupPointListQuery: {
+            /** Format: int64 */
+            limit?: number | null;
+            /** @description 指定后仅返回该租户 tenant-scope 与目标 shard-scope 恢复点。 */
+            tenant_id?: string | null;
+        };
+        /**
+         * @description 数据库平台恢复点的隔离粒度。
+         * @enum {string}
+         */
+        BackupPointScope: "tenant" | "shard";
+        /**
+         * @description 数据库平台恢复点校验状态。
+         * @enum {string}
+         */
+        BackupPointValidationStatus: "pending" | "valid" | "invalid";
+        BackupPointView: {
+            /** Format: date-time */
+            captured_at: string;
+            checksum?: string | null;
+            /** Format: date-time */
+            expires_at?: string | null;
+            id: string;
+            /** Format: date-time */
+            last_restore_drill_at?: string | null;
+            placement_generation?: string | null;
+            /** Format: date-time */
+            retention_until: string;
+            schema_fingerprint: string;
+            scope: components["schemas"]["BackupPointScope"];
+            target_key: string;
+            tenant_id?: string | null;
+            validation_status: components["schemas"]["BackupPointValidationStatus"];
+        };
         /** @description Redis 命令统计响应。 */
         CacheCommandStats: {
             commands: {
@@ -5195,6 +5944,57 @@ export interface components {
          *     保留空对象而不是省略请求体，使写操作契约保持一致，并为后续增加取消原因等字段预留空间。
          */
         CancelExportJobDto: Record<string, never>;
+        CapabilityCatalogVo: {
+            affects_authorization: boolean;
+            client_config_fields: string[];
+            code: string;
+            conflicts: string[];
+            default_admin_permissions: string[];
+            dependencies: string[];
+            deployment_available: boolean;
+            deployment_dependencies: string[];
+            description: string;
+            name: string;
+            permission_codes: string[];
+            route_keys: string[];
+            variants: components["schemas"]["CapabilityVariantVo"][];
+        };
+        CapabilityOverrideDto: {
+            capability_code: string;
+            config: {
+                [key: string]: unknown;
+            };
+            enabled: boolean;
+            /** Format: int32 */
+            schema_version: number;
+            variant_code: string;
+        };
+        CapabilityOverrideVo: {
+            capability_code: string;
+            changed_by?: string | null;
+            config: {
+                [key: string]: unknown;
+            };
+            enabled: boolean;
+            reason?: string | null;
+            /** Format: int32 */
+            schema_version: number;
+            variant_code: string;
+        };
+        CapabilitySnapshotDto: {
+            capability_code: string;
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: int32 */
+            schema_version: number;
+            variant_code: string;
+        };
+        CapabilityVariantVo: {
+            code: string;
+            /** Format: int32 */
+            schema_version: number;
+        };
         CaptchaConfigResponse: {
             captcha_enabled: boolean;
         };
@@ -5296,6 +6096,11 @@ export interface components {
             sort?: number | null;
             visible?: boolean | null;
         };
+        CreateMigrationDto: {
+            expected_placement_generation: string;
+            plan_hash: string;
+            target_key: string;
+        };
         CreateNoticeDto: {
             /** @description 公告 Markdown 原文，长度为 1 到 60,000 个 UTF-8 字节。 */
             content_markdown: string;
@@ -5317,6 +6122,16 @@ export interface components {
             name: string;
             /** Format: int32 */
             sort?: number | null;
+        };
+        CreateProductPlanDto: {
+            description?: string | null;
+            key: string;
+            name: string;
+        };
+        CreateProductPlanVersionDto: {
+            capabilities: components["schemas"]["CapabilitySnapshotDto"][];
+            description?: string | null;
+            name: string;
         };
         CreateRoleDto: {
             code: string;
@@ -5364,6 +6179,8 @@ export interface components {
         CreateTenantDto: {
             admin_password: string;
             admin_username: string;
+            /** @description 初始租户数据目标稳定键。 */
+            data_target_key: string;
             domain?: string | null;
             /** Format: date-time */
             expire_at?: string | null;
@@ -5376,6 +6193,8 @@ export interface components {
             /** Format: int32 */
             max_users?: number | null;
             name: string;
+            /** @description 已发布产品套餐版本 ID；为避免 JavaScript 精度损失使用十进制字符串。 */
+            plan_version_id: string;
             tenant_id: string;
         };
         CreateUserDto: {
@@ -5400,6 +6219,14 @@ export interface components {
         CsrfResponse: {
             csrf_token: string;
             expires_in: number;
+        };
+        DataPlacementView: {
+            current_target_key: string;
+            placement_generation: string;
+            state: components["schemas"]["TenantBusinessDataState"];
+            tenant_id: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         DataRetentionCutoff: {
             /** Format: date-time */
@@ -5471,6 +6298,60 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        DataTargetDetail: components["schemas"]["DataTargetSummary"] & {
+            /** Format: date-time */
+            last_verified_at?: string | null;
+            /** Format: int32 */
+            max_total_connections: number;
+            open_targets: number;
+            opening_targets: number;
+            /** Format: int32 */
+            reserved_connections: number;
+        };
+        /**
+         * @description 数据目标资格检查用途。
+         * @enum {string}
+         */
+        DataTargetEligibility: "new_tenant" | "migration";
+        /**
+         * @description 数据目标健康快照。
+         * @enum {string}
+         */
+        DataTargetHealth: "unknown" | "verified" | "unavailable";
+        /**
+         * @description 数据目标连接来源。
+         * @enum {string}
+         */
+        DataTargetKind: "control" | "mysql";
+        DataTargetListQuery: {
+            eligible_for?: null | components["schemas"]["DataTargetEligibility"];
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+            q?: string | null;
+            tenant_id?: string | null;
+        };
+        /**
+         * @description 数据目标占用模式。
+         * @enum {string}
+         */
+        DataTargetMode: "shared" | "dedicated";
+        DataTargetSummary: {
+            active_leases: number;
+            connected: boolean;
+            display_name?: string | null;
+            eligible: boolean;
+            health: components["schemas"]["DataTargetHealth"];
+            key: string;
+            kind: components["schemas"]["DataTargetKind"];
+            mode: components["schemas"]["DataTargetMode"];
+            /** Format: int32 */
+            pool_max_connections?: number | null;
+            reasons: string[];
+            region?: string | null;
+            schema_fingerprint?: string | null;
+        };
         DbPoolInfo: {
             /** Format: int64 */
             active_connections?: number | null;
@@ -5530,6 +6411,25 @@ export interface components {
             remark?: string | null;
             status: string;
         };
+        /**
+         * @description 有效能力配置的来源。
+         * @enum {string}
+         */
+        EffectiveCapabilitySource: "plan" | "override" | "none";
+        EffectiveCapabilityVo: {
+            capability_code: string;
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            deployment_enabled: boolean;
+            enabled: boolean;
+            entitled: boolean;
+            name: string;
+            /** Format: int32 */
+            schema_version?: number | null;
+            source: components["schemas"]["EffectiveCapabilitySource"];
+            variant_code?: string | null;
+        };
         /** @description 不携带业务字段的写操作请求体。 */
         EmptyRequestDto: Record<string, never>;
         /** @description 导出任务响应。 */
@@ -5562,6 +6462,12 @@ export interface components {
         FileUploadForm: {
             file: number[];
         };
+        ForeignKeyInfo: {
+            columns: string[];
+            name: string;
+            referenced_columns: string[];
+            referenced_table: string;
+        };
         GenerateOptionsDto: {
             dto_dir?: string | null;
             entity_dir?: string | null;
@@ -5587,6 +6493,12 @@ export interface components {
         GeneratedFile: {
             content: string;
             path: string;
+        };
+        IndexInfo: {
+            columns: string[];
+            index_type: string;
+            name: string;
+            unique: boolean;
         };
         JobScheduleExecutionVo: {
             background_job_id?: string | null;
@@ -5677,7 +6589,7 @@ export interface components {
         LoginResponse: {
             access_token: string;
             expires_in: number;
-            user_info: components["schemas"]["UserInfo"];
+            session_context: components["schemas"]["SessionContextVo"];
         };
         /** @description 确认当前用户已经实际看到的导出完成或失败通知。 */
         MarkExportNotificationsReadDto: {
@@ -5688,7 +6600,7 @@ export interface components {
             children: components["schemas"]["MenuTreeNode"][];
             icon?: string | null;
             id: string;
-            menu_type: string;
+            menu_type: components["schemas"]["MenuType"];
             name: string;
             parent_id?: string | null;
             perm_code?: string | null;
@@ -5710,7 +6622,7 @@ export interface components {
             created_at: string;
             icon?: string | null;
             id: string;
-            menu_type: string;
+            menu_type: components["schemas"]["MenuType"];
             name: string;
             parent_id?: string | null;
             perm_id?: string | null;
@@ -5749,6 +6661,102 @@ export interface components {
             severity: string;
             title: string;
             topic: string;
+        };
+        MigrationImpact: {
+            catalog_table_count: number;
+            /** Format: int32 */
+            retention_hours: number;
+            rollback_boundary: string;
+            stop_write: boolean;
+        };
+        MigrationItemView: {
+            cleanup_row_count: string;
+            cleanup_state: components["schemas"]["TenantDataMigrationCleanupState"];
+            /** Format: int32 */
+            copy_order: number;
+            cursor?: unknown;
+            error_code?: string | null;
+            id: string;
+            source_digest?: string | null;
+            source_row_count?: string | null;
+            state: components["schemas"]["TenantDataMigrationItemState"];
+            table_name: string;
+            target_digest?: string | null;
+            target_row_count?: string | null;
+        };
+        MigrationListQuery: {
+            /** Format: int64 */
+            limit?: number | null;
+        };
+        MigrationPreview: {
+            blockers: string[];
+            eligible: boolean;
+            expected_placement_generation: string;
+            impact: components["schemas"]["MigrationImpact"];
+            plan_hash: string;
+            source_target_key: string;
+            target_generation: string;
+            target_target_key: string;
+            tenant_id: string;
+            warnings: string[];
+        };
+        MigrationPreviewDto: {
+            expected_placement_generation: string;
+            target_key: string;
+        };
+        MigrationView: {
+            action_reasons: string[];
+            /** Format: date-time */
+            activated_at?: string | null;
+            can_cancel: boolean;
+            can_finalize: boolean;
+            cancel_requested: boolean;
+            /** Format: date-time */
+            cancelled_at?: string | null;
+            /** Format: date-time */
+            copy_completed_at?: string | null;
+            /** Format: date-time */
+            copy_started_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            cut_over_at?: string | null;
+            error_code?: string | null;
+            /** Format: date-time */
+            failed_at?: string | null;
+            finalize_requested: boolean;
+            /** Format: date-time */
+            finalized_at?: string | null;
+            /** Format: date-time */
+            frozen_at?: string | null;
+            id: string;
+            items: components["schemas"]["MigrationItemView"][];
+            operator_id: string;
+            plan_hash: string;
+            /** Format: date-time */
+            prechecked_at?: string | null;
+            /** Format: date-time */
+            queued_at?: string | null;
+            /** Format: date-time */
+            quiesced_at?: string | null;
+            /** Format: int32 */
+            retention_hours: number;
+            /** Format: date-time */
+            retention_until?: string | null;
+            source_generation: string;
+            source_schema_fingerprint: string;
+            source_target_key: string;
+            state: components["schemas"]["TenantDataMigrationState"];
+            /** Format: date-time */
+            succeeded_at?: string | null;
+            target_generation: string;
+            target_schema_fingerprint: string;
+            target_target_key: string;
+            tenant_id: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            verified_at?: string | null;
         };
         /** @enum {string} */
         MisfirePolicyDto: "skip" | "fire_once";
@@ -6076,6 +7084,34 @@ export interface components {
             total_pages: number;
         };
         /** @description 分页接口的业务数据。 */
+        PageData_DataTargetSummary: {
+            items: {
+                active_leases: number;
+                connected: boolean;
+                display_name?: string | null;
+                eligible: boolean;
+                health: components["schemas"]["DataTargetHealth"];
+                key: string;
+                kind: components["schemas"]["DataTargetKind"];
+                mode: components["schemas"]["DataTargetMode"];
+                /** Format: int32 */
+                pool_max_connections?: number | null;
+                reasons: string[];
+                region?: string | null;
+                schema_fingerprint?: string | null;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
         PageData_DeptVo: {
             items: {
                 ancestors: string;
@@ -6216,7 +7252,7 @@ export interface components {
                 created_at: string;
                 icon?: string | null;
                 id: string;
-                menu_type: string;
+                menu_type: components["schemas"]["MenuType"];
                 name: string;
                 parent_id?: string | null;
                 perm_id?: string | null;
@@ -6341,6 +7377,28 @@ export interface components {
             total_pages: number;
         };
         /** @description 分页接口的业务数据。 */
+        PageData_ProductPlanVo: {
+            items: {
+                created_by: string;
+                description?: string | null;
+                id: string;
+                key: string;
+                name: string;
+                status: components["schemas"]["ProductPlanStatus"];
+                versions: components["schemas"]["ProductPlanVersionVo"][];
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
+        };
+        /** @description 分页接口的业务数据。 */
         PageData_RoleVo: {
             items: {
                 code: string;
@@ -6397,8 +7455,7 @@ export interface components {
                 row_count?: number | null;
                 /** Format: date-time */
                 started_at: string;
-                /** Format: int32 */
-                tenant_epoch?: number | null;
+                tenant_epoch?: string | null;
                 tenant_id?: string | null;
                 /** Format: int32 */
                 user_authorization_version?: number | null;
@@ -6479,6 +7536,10 @@ export interface components {
             items: {
                 columns: components["schemas"]["ColumnInfo"][];
                 comment?: string | null;
+                foreign_key_dependencies: string[];
+                foreign_keys: components["schemas"]["ForeignKeyInfo"][];
+                indexes: components["schemas"]["IndexInfo"][];
+                schema_canonical: string;
                 table_name: string;
             }[];
             /** Format: int64 */
@@ -6586,8 +7647,7 @@ export interface components {
         /** @description 分页接口的业务数据。 */
         PageData_TenantConfigTransferVo: {
             items: {
-                /** Format: int32 */
-                applied_authorization_epoch?: number | null;
+                applied_authorization_epoch?: string | null;
                 /** Format: int64 */
                 applied_configuration_version?: number | null;
                 bundle_summary: components["schemas"]["TenantConfigBundleSummaryVo"];
@@ -6604,8 +7664,7 @@ export interface components {
                 /** Format: date-time */
                 rollback_expires_at?: string | null;
                 status: string;
-                /** Format: int32 */
-                target_authorization_epoch: number;
+                target_authorization_epoch: string;
                 /** Format: int64 */
                 target_configuration_version: number;
                 /** Format: date-time */
@@ -6736,7 +7795,7 @@ export interface components {
             id: string;
             name: string;
             parent_id?: string | null;
-            perm_type: string;
+            perm_type: components["schemas"]["PermissionType"];
             /** Format: int32 */
             sort: number;
             status: string;
@@ -6755,7 +7814,7 @@ export interface components {
             id: string;
             name: string;
             parent_id?: string | null;
-            perm_type: string;
+            perm_type: components["schemas"]["PermissionType"];
             /** Format: int32 */
             sort: number;
             status: string;
@@ -6771,6 +7830,89 @@ export interface components {
             /** Format: int32 */
             sort: number;
             status: string;
+        };
+        ProductCapabilityChangeVo: {
+            after: components["schemas"]["EffectiveCapabilityVo"];
+            before: components["schemas"]["EffectiveCapabilityVo"];
+            capability_code: string;
+        };
+        ProductCapabilityVo: {
+            capability_code: string;
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: int32 */
+            schema_version: number;
+            variant_code: string;
+        };
+        ProductChangeApplyDto: {
+            overrides?: components["schemas"]["CapabilityOverrideDto"][];
+            plan_hash: string;
+            plan_version_id: string;
+            preview_runtime_epoch: string;
+            reason?: string | null;
+        };
+        ProductChangePreviewDto: {
+            overrides?: components["schemas"]["CapabilityOverrideDto"][];
+            plan_version_id: string;
+        };
+        ProductChangePreviewVo: {
+            capability_additions: string[];
+            capability_changes: components["schemas"]["ProductCapabilityChangeVo"][];
+            capability_removals: string[];
+            current: components["schemas"]["ProductContextVo"];
+            menu_additions: string[];
+            menu_removals: string[];
+            permission_additions: string[];
+            permission_removals: string[];
+            plan_hash: string;
+            runtime_epoch: string;
+            target: components["schemas"]["ProductContextVo"];
+            tenant_id: string;
+            warnings: string[];
+        };
+        ProductContextVo: {
+            capabilities: components["schemas"]["EffectiveCapabilityVo"][];
+            overrides: components["schemas"]["CapabilityOverrideVo"][];
+            plan_key: string;
+            plan_name: string;
+            /** Format: int32 */
+            plan_version: number;
+            plan_version_id: string;
+            runtime_epoch: string;
+            tenant_id: string;
+        };
+        /**
+         * @description 产品套餐是否允许被使用。Wire value 沿用控制库既有的 `0`/`1`。
+         * @enum {string}
+         */
+        ProductPlanStatus: "0" | "1";
+        /**
+         * @description 产品套餐版本生命周期。
+         * @enum {string}
+         */
+        ProductPlanVersionStatus: "draft" | "published" | "retired";
+        ProductPlanVersionVo: {
+            capabilities: components["schemas"]["ProductCapabilityVo"][];
+            created_by: string;
+            description?: string | null;
+            id: string;
+            name: string;
+            /** Format: date-time */
+            published_at?: string | null;
+            published_by?: string | null;
+            status: components["schemas"]["ProductPlanVersionStatus"];
+            /** Format: int32 */
+            version: number;
+        };
+        ProductPlanVo: {
+            created_by: string;
+            description?: string | null;
+            id: string;
+            key: string;
+            name: string;
+            status: components["schemas"]["ProductPlanStatus"];
+            versions: components["schemas"]["ProductPlanVersionVo"][];
         };
         /** @description 创建消息请求。 */
         PublishMessageDto: {
@@ -7042,8 +8184,7 @@ export interface components {
             row_count?: number | null;
             /** Format: date-time */
             started_at: string;
-            /** Format: int32 */
-            tenant_epoch?: number | null;
+            tenant_epoch?: string | null;
             tenant_id?: string | null;
             /** Format: int32 */
             user_authorization_version?: number | null;
@@ -7122,10 +8263,53 @@ export interface components {
             /** Format: int64 */
             page_size?: number | null;
         };
+        SessionCapabilityVo: {
+            client_config: {
+                [key: string]: unknown;
+            };
+            code: string;
+            /** Format: int32 */
+            schema_version: number;
+            variant: string;
+        };
+        /** @description 登录、刷新和 GET /auth/context 共用的会话启动快照。 */
+        SessionContextVo: {
+            /** @description 控制库授权纪元；避免 JavaScript 精度漂移，所有 epoch 均以十进制字符串输出。 */
+            authorization_epoch: string;
+            business_data: components["schemas"]["TenantBusinessDataContextVo"];
+            capabilities: components["schemas"]["SessionCapabilityVo"][];
+            menus: components["schemas"]["MenuTreeNode"][];
+            permissions: string[];
+            roles: string[];
+            runtime_epoch: string;
+            user: components["schemas"]["SessionUserVo"];
+        };
+        SessionProductContextVo: {
+            authorization_epoch: string;
+            capabilities: components["schemas"]["SessionCapabilityVo"][];
+            runtime_epoch: string;
+        };
+        /** @description 会话身份，仅包含稳定身份与展示字段；授权集合只存在于 SessionContext 顶层。 */
+        SessionUserVo: {
+            avatar?: string | null;
+            dept_name?: string | null;
+            email: string;
+            id: string;
+            nickname: string;
+            phone: string;
+            preferred_locale?: string | null;
+            tenant_id: string;
+            tenant_name: string;
+            username: string;
+        };
         /** @description 数据库表结构响应。 */
         TableInfo: {
             columns: components["schemas"]["ColumnInfo"][];
             comment?: string | null;
+            foreign_key_dependencies: string[];
+            foreign_keys: components["schemas"]["ForeignKeyInfo"][];
+            indexes: components["schemas"]["IndexInfo"][];
+            schema_canonical: string;
             table_name: string;
         };
         /** @description 租户后台运行状态汇总。 */
@@ -7142,6 +8326,15 @@ export interface components {
             /** Format: int64 */
             running_jobs: number;
         };
+        TenantBusinessDataContextVo: {
+            placement_generation: string;
+            state: components["schemas"]["TenantBusinessDataState"];
+        };
+        /**
+         * @description 租户业务数据控制面状态。
+         * @enum {string}
+         */
+        TenantBusinessDataState: "provisioning" | "active" | "maintenance" | "failed";
         /** @description 平台租户容量分页查询参数。 */
         TenantCapacityPageQuery: {
             capacity_status?: null | components["schemas"]["TenantCapacityStatusFilter"];
@@ -7255,8 +8448,7 @@ export interface components {
         };
         /** @description 一次目标租户配置预览、应用或回滚的公开视图。 */
         TenantConfigTransferVo: {
-            /** Format: int32 */
-            applied_authorization_epoch?: number | null;
+            applied_authorization_epoch?: string | null;
             /** Format: int64 */
             applied_configuration_version?: number | null;
             bundle_summary: components["schemas"]["TenantConfigBundleSummaryVo"];
@@ -7273,13 +8465,27 @@ export interface components {
             /** Format: date-time */
             rollback_expires_at?: string | null;
             status: string;
-            /** Format: int32 */
-            target_authorization_epoch: number;
+            target_authorization_epoch: string;
             /** Format: int64 */
             target_configuration_version: number;
             /** Format: date-time */
             updated_at: string;
         };
+        /**
+         * @description 单表源数据清理检查点状态。
+         * @enum {string}
+         */
+        TenantDataMigrationCleanupState: "pending" | "cleaning" | "cleaned";
+        /**
+         * @description 单表复制与校验检查点状态。
+         * @enum {string}
+         */
+        TenantDataMigrationItemState: "pending" | "copying" | "copied" | "verifying" | "verified" | "failed";
+        /**
+         * @description 停写迁移状态机。
+         * @enum {string}
+         */
+        TenantDataMigrationState: "prechecking" | "queued" | "quiescing" | "frozen" | "copying" | "verifying" | "cutting_over" | "activating" | "succeeded" | "retention_pending" | "finalized" | "failed" | "cancelled";
         /**
          * @description 租户到期状态筛选。
          * @enum {string}
@@ -7414,6 +8620,11 @@ export interface components {
             /** Format: int32 */
             sort?: number | null;
             status: string;
+        };
+        UpdateProductPlanDto: {
+            description?: string | null;
+            name: string;
+            status: components["schemas"]["ProductPlanStatus"];
         };
         UpdateProfileRequest: {
             email?: string | null;
@@ -8078,6 +9289,64 @@ export interface operations {
             };
         };
     };
+    get_auth_context: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前原子会话上下文 */
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_SessionContextVo"];
+                };
+            };
+            /** @description 未认证或会话失效 */
+            401: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 控制库上下文暂不可用 */
+            503: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_auth_csrf: {
         parameters: {
             query?: never;
@@ -8190,33 +9459,6 @@ export interface operations {
             };
         };
     };
-    get_auth_me: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 用户信息 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_UserInfo"];
-                };
-            };
-            /** @description 未认证 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     post_auth_password_reset_complete: {
         parameters: {
             query?: never;
@@ -8267,6 +9509,14 @@ export interface operations {
             /** @description 个人信息 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8291,6 +9541,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8315,6 +9573,14 @@ export interface operations {
             /** @description 头像更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8324,6 +9590,14 @@ export interface operations {
             /** @description 上传内容超过 5 MiB 限制 */
             413: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8331,6 +9605,14 @@ export interface operations {
             /** @description 数据库或对象存储暂不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8353,6 +9635,14 @@ export interface operations {
             /** @description 修改成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8426,6 +9716,14 @@ export interface operations {
             /** @description 当前用户的登录设备 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8435,6 +9733,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8442,6 +9748,14 @@ export interface operations {
             /** @description 会话服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8467,6 +9781,14 @@ export interface operations {
             /** @description 其他会话已撤销 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8476,6 +9798,14 @@ export interface operations {
             /** @description 可治理的会话候选超过单次安全上限 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8483,6 +9813,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8490,6 +9828,14 @@ export interface operations {
             /** @description CSRF 挑战令牌无效 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8497,6 +9843,14 @@ export interface operations {
             /** @description 会话服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8521,6 +9875,14 @@ export interface operations {
             /** @description 会话已撤销 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8530,6 +9892,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8537,6 +9907,14 @@ export interface operations {
             /** @description CSRF 挑战令牌无效 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8544,6 +9922,14 @@ export interface operations {
             /** @description 会话不存在或不属于当前用户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8551,6 +9937,14 @@ export interface operations {
             /** @description 会话服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8569,6 +9963,14 @@ export interface operations {
             /** @description 一次性 WebSocket 票据 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8578,6 +9980,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8587,8 +9997,16 @@ export interface operations {
                 headers: {
                     /** @description 再次申请票据前至少等待 60 秒 */
                     "Retry-After"?: string;
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
                     /** @description 固定值 unavailable，标识受控的实时通道降级 */
                     "X-RyFrame-Realtime"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8612,6 +10030,14 @@ export interface operations {
             /** @description 文件下载 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8621,6 +10047,14 @@ export interface operations {
             /** @description 文件或对象不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8628,6 +10062,14 @@ export interface operations {
             /** @description 对象存储暂不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8646,6 +10088,14 @@ export interface operations {
             /** @description 导出任务列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8670,6 +10120,14 @@ export interface operations {
             /** @description 已查看的导出通知数量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8690,6 +10148,14 @@ export interface operations {
             /** @description 未读导出通知数量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8713,6 +10179,14 @@ export interface operations {
             /** @description 导出任务详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8740,6 +10214,14 @@ export interface operations {
             /** @description 导出任务已取消 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8763,6 +10245,14 @@ export interface operations {
             /** @description 导出文件 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8787,6 +10277,14 @@ export interface operations {
             /** @description 上传成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8796,6 +10294,14 @@ export interface operations {
             /** @description 上传内容超过 10 MiB 限制 */
             413: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8803,6 +10309,14 @@ export interface operations {
             /** @description 对象存储暂不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8825,6 +10339,14 @@ export interface operations {
             /** @description 头像上传成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8834,6 +10356,14 @@ export interface operations {
             /** @description 上传内容超过 5 MiB 限制 */
             413: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8841,6 +10371,14 @@ export interface operations {
             /** @description 对象存储暂不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8863,6 +10401,14 @@ export interface operations {
             /** @description 图片上传成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8872,6 +10418,14 @@ export interface operations {
             /** @description 上传内容超过 10 MiB 限制 */
             413: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8879,6 +10433,14 @@ export interface operations {
             /** @description 对象存储暂不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -8897,6 +10459,14 @@ export interface operations {
             /** @description 缓存运行状态 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8917,6 +10487,14 @@ export interface operations {
             /** @description Redis 命令统计 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8937,6 +10515,14 @@ export interface operations {
             /** @description 数据库连接池状态 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8968,6 +10554,14 @@ export interface operations {
             /** @description 后台任务列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8988,6 +10582,14 @@ export interface operations {
             /** @description 后台任务队列统计 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9011,6 +10613,14 @@ export interface operations {
             /** @description 任务已重新投递 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9020,6 +10630,14 @@ export interface operations {
             /** @description 任务不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9027,6 +10645,14 @@ export interface operations {
             /** @description 任务不是死信状态或状态已变化 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9072,6 +10698,14 @@ export interface operations {
             /** @description 当前租户运维快照 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9094,6 +10728,14 @@ export interface operations {
             /** @description 当前租户补零后的 UTC 趋势桶 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9114,6 +10756,14 @@ export interface operations {
             /** @description 当前有效保留策略 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9138,6 +10788,14 @@ export interface operations {
             /** @description 预计可清理数量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9165,6 +10823,14 @@ export interface operations {
             /** @description 清理任务已入队 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9188,6 +10854,14 @@ export interface operations {
             /** @description 数据保留运行记录 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9208,6 +10882,14 @@ export interface operations {
             /** @description 主应用运行时组件状态 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9234,6 +10916,14 @@ export interface operations {
             /** @description 定时任务列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9258,6 +10948,14 @@ export interface operations {
             /** @description 定时任务已创建 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9267,6 +10965,14 @@ export interface operations {
             /** @description 输入无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9274,6 +10980,14 @@ export interface operations {
             /** @description 目标范围越权 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9281,6 +10995,14 @@ export interface operations {
             /** @description 启用数量超过租户限制 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9303,6 +11025,14 @@ export interface operations {
             /** @description 未来五次执行时间 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9312,6 +11042,14 @@ export interface operations {
             /** @description Cron 表达式或时区无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9330,6 +11068,14 @@ export interface operations {
             /** @description 当前租户可见的调度目标 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9353,6 +11099,14 @@ export interface operations {
             /** @description 定时任务详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9362,6 +11116,14 @@ export interface operations {
             /** @description 记录不可见或不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9387,6 +11149,14 @@ export interface operations {
             /** @description 定时任务已更新 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9396,6 +11166,14 @@ export interface operations {
             /** @description 记录不可见或不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9403,6 +11181,14 @@ export interface operations {
             /** @description 版本冲突或启用数量超限 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9428,6 +11214,14 @@ export interface operations {
             /** @description 定时任务已软删除 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9437,6 +11231,14 @@ export interface operations {
             /** @description 版本冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9464,6 +11266,14 @@ export interface operations {
             /** @description 计划执行历史 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9490,6 +11300,14 @@ export interface operations {
             /** @description 任务已入队 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9499,6 +11317,14 @@ export interface operations {
             /** @description 禁止并发冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9524,6 +11350,14 @@ export interface operations {
             /** @description 启停状态已更新 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9533,6 +11367,14 @@ export interface operations {
             /** @description 版本冲突或启用数量超限 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9551,11 +11393,977 @@ export interface operations {
             /** @description 服务器 CPU、内存、磁盘信息 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_ServerInfo"];
                 };
+            };
+        };
+    };
+    get_platform_capabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_CapabilityCatalogVo"];
+                };
+            };
+        };
+    };
+    get_platform_data_targets: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                /** @description 省略时只返回缓存健康快照；向导可指定 new_tenant 或 migration 做资格检查。 */
+                eligible_for?: components["schemas"]["DataTargetEligibility"];
+                tenant_id?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_DataTargetSummary"];
+                };
+            };
+            /** @description 非 system 租户或缺少权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_data_targets_by_target_key: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DataTargetDetail"];
+                };
+            };
+            /** @description 目标不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_data_targets_by_target_key_backup_points: {
+        parameters: {
+            query?: {
+                /** @description 指定后仅返回该租户 tenant-scope 与目标 shard-scope 恢复点。 */
+                tenant_id?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                target_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_BackupPointView"];
+                };
+            };
+            /** @description 目标不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_product_plans: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_ProductPlanVo"];
+                };
+            };
+        };
+    };
+    post_platform_product_plans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductPlanDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductPlanVo"];
+                };
+            };
+            /** @description 参数无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少平台套餐创建权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐 key 冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_product_plans_by_plan_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductPlanVo"];
+                };
+            };
+        };
+    };
+    put_platform_product_plans_by_plan_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProductPlanDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductPlanVo"];
+                };
+            };
+            /** @description 参数无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少平台套餐编辑权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐状态冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_product_plans_by_plan_id_versions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_ProductPlanVersionVo"];
+                };
+            };
+        };
+    };
+    post_platform_product_plans_by_plan_id_versions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductPlanVersionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductPlanVersionVo"];
+                };
+            };
+            /** @description 能力快照无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少平台套餐创建权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 版本冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_platform_product_plans_by_plan_id_versions_by_version_draft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductPlanVersionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductPlanVersionVo"];
+                };
+            };
+            /** @description 能力快照无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少平台套餐编辑权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐版本不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 版本非 draft */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_platform_product_plans_by_plan_id_versions_by_version_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductPlanVersionVo"];
+                };
+            };
+            /** @description 能力依赖、冲突或 schema 无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少发布权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐版本不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 版本非 draft */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 部署依赖不可用 */
+            501: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_platform_product_plans_by_plan_id_versions_by_version_retire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductPlanVersionVo"];
+                };
+            };
+            /** @description 缺少发布权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐版本不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 版本非 published 或仍被竞态分配 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_tenant_data_migrations_by_migration_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_MigrationView"];
+                };
+            };
+            /** @description 迁移不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_platform_tenant_data_migrations_by_migration_id_cancel: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_MigrationView"];
+                };
+            };
+            /** @description 迁移不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 已经越过取消边界或幂等键冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_platform_tenant_data_migrations_by_migration_id_finalize: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                migration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_MigrationView"];
+                };
+            };
+            /** @description 迁移不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 保留期、备份资格或幂等键冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -9571,6 +12379,14 @@ export interface operations {
             /** @description 租户列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9582,7 +12398,10 @@ export interface operations {
     post_platform_tenants: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description 必填，16–128 位可见 ASCII；持久绑定租户创建 Saga */
+                "Idempotency-Key": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -9592,14 +12411,131 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 租户创建成功 */
+            /** @description 租户创建或同参数幂等续跑成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_TenantVo"];
                 };
+            };
+            /** @description 幂等键、租户、套餐版本或数据目标参数无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少租户创建权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐版本或数据目标不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 幂等参数不一致或租户操作冲突 */
+            409: {
+                headers: {
+                    /** @description 存在可重试冲突时的等待秒数 */
+                    "Retry-After"?: string;
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 套餐要求的部署能力不可用 */
+            501: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 目标数据库不可用 */
+            503: {
+                headers: {
+                    /** @description 再次尝试前等待的秒数 */
+                    "Retry-After"?: string;
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -9630,6 +12566,14 @@ export interface operations {
             /** @description 平台租户分页列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9639,6 +12583,14 @@ export interface operations {
             /** @description 分页或筛选参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9646,6 +12598,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9653,6 +12613,14 @@ export interface operations {
             /** @description 不是系统租户、缺少租户列表权限，或没有容量筛选权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9674,6 +12642,14 @@ export interface operations {
             /** @description 平台租户详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9683,6 +12659,14 @@ export interface operations {
             /** @description 租户标识无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9690,6 +12674,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9697,6 +12689,14 @@ export interface operations {
             /** @description 不是系统租户或缺少租户列表权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9704,6 +12704,14 @@ export interface operations {
             /** @description 租户不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9728,10 +12736,496 @@ export interface operations {
             /** @description 租户更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_TenantVo"];
+                };
+            };
+        };
+    };
+    post_platform_tenants_by_tenant_id_data_migration_previews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MigrationPreviewDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_MigrationPreview"];
+                };
+            };
+            /** @description placement generation 已变化 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 租户数据维护中；响应含 Retry-After */
+            423: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 目标不可用；响应含 Retry-After */
+            503: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_tenants_by_tenant_id_data_migrations: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_MigrationView"];
+                };
+            };
+        };
+    };
+    post_platform_tenants_by_tenant_id_data_migrations: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMigrationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_MigrationView"];
+                };
+            };
+            /** @description 计划、代际、幂等键或租约冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 租户数据维护中；响应含 Retry-After */
+            423: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 目标不可用；响应含 Retry-After */
+            503: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_tenants_by_tenant_id_data_placement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DataPlacementView"];
+                };
+            };
+            /** @description placement 不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_platform_tenants_by_tenant_id_product_change_previews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductChangePreviewDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductChangePreviewVo"];
+                };
+            };
+            /** @description 目标套餐、override 或 schema 无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少套餐分配或能力覆盖权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 租户或套餐版本不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 目标版本不可分配 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 部署能力不可用 */
+            501: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_platform_tenants_by_tenant_id_product_changes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductChangeApplyDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductContextVo"];
+                };
+            };
+            /** @description 目标套餐、override 或 schema 无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少套餐分配或能力覆盖权限 */
+            403: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 租户或套餐版本不存在 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description runtime_epoch、计划哈希、租约或版本状态冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 部署能力不可用 */
+            501: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_platform_tenants_by_tenant_id_product_context: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ProductContextVo"];
                 };
             };
         };
@@ -9754,11 +13248,34 @@ export interface operations {
             /** @description 租户状态更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ApiEmptyResponse"];
                 };
+            };
+            /** @description provisioning 状态必须由创建 Saga 完成，不能直接切换 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -9777,6 +13294,14 @@ export interface operations {
             /** @description 租户容量与当前请求窗口用量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9786,6 +13311,14 @@ export interface operations {
             /** @description 租户标识无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9793,6 +13326,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9800,6 +13341,14 @@ export interface operations {
             /** @description 不是系统租户或缺少租户用量查看权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9807,6 +13356,14 @@ export interface operations {
             /** @description 租户不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9825,6 +13382,14 @@ export interface operations {
             /** @description 当前用户本人创建的委托 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9834,6 +13399,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9841,6 +13414,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9865,6 +13446,14 @@ export interface operations {
             /** @description 委托已创建；令牌只显示一次 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9874,6 +13463,14 @@ export interface operations {
             /** @description 参数、能力或幂等键无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9881,6 +13478,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9888,6 +13493,14 @@ export interface operations {
             /** @description 能力不是双方共同拥有或账号不可委托 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9895,6 +13508,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9902,6 +13523,14 @@ export interface operations {
             /** @description 幂等键冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9909,6 +13538,14 @@ export interface operations {
             /** @description 服务账号功能、Pepper 或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9927,6 +13564,14 @@ export interface operations {
             /** @description 当前用户与服务账号共同可委托的编译期能力 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9936,6 +13581,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9943,6 +13596,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9963,6 +13624,14 @@ export interface operations {
             /** @description 本人委托已撤销 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9972,6 +13641,14 @@ export interface operations {
             /** @description 委托 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9979,6 +13656,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9986,6 +13671,14 @@ export interface operations {
             /** @description 只能撤销本人委托 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -9993,6 +13686,14 @@ export interface operations {
             /** @description 委托不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10000,6 +13701,14 @@ export interface operations {
             /** @description 委托已撤销 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10007,6 +13716,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10028,6 +13745,14 @@ export interface operations {
             /** @description 主库授权诊断结果 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10051,6 +13776,14 @@ export interface operations {
             /** @description 配置包列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10060,6 +13793,14 @@ export interface operations {
             /** @description 分页参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10067,6 +13808,14 @@ export interface operations {
             /** @description 没有配置包列表权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10088,6 +13837,14 @@ export interface operations {
             /** @description 配置包导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10097,6 +13854,14 @@ export interface operations {
             /** @description 幂等键格式无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10104,6 +13869,14 @@ export interface operations {
             /** @description 没有配置包导出权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10111,6 +13884,14 @@ export interface operations {
             /** @description 同一幂等键对应不同请求 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10118,6 +13899,14 @@ export interface operations {
             /** @description 数据库、对象存储或后台任务服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10139,6 +13928,14 @@ export interface operations {
             /** @description 配置包详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10148,6 +13945,14 @@ export interface operations {
             /** @description 配置包 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10155,6 +13960,14 @@ export interface operations {
             /** @description 没有配置包列表权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10162,6 +13975,14 @@ export interface operations {
             /** @description 配置包不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10183,6 +14004,14 @@ export interface operations {
             /** @description 配置包文件 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10192,6 +14021,14 @@ export interface operations {
             /** @description 配置包 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10199,6 +14036,14 @@ export interface operations {
             /** @description 没有配置包下载权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10206,6 +14051,14 @@ export interface operations {
             /** @description 配置包或文件不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10213,6 +14066,14 @@ export interface operations {
             /** @description 配置包尚未生成或文件已经过期 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10220,6 +14081,14 @@ export interface operations {
             /** @description 对象存储不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10241,6 +14110,14 @@ export interface operations {
             /** @description 配置迁移列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10250,6 +14127,14 @@ export interface operations {
             /** @description 分页参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10257,6 +14142,14 @@ export interface operations {
             /** @description 没有配置迁移列表权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10282,6 +14175,14 @@ export interface operations {
             /** @description 配置迁移已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10291,6 +14192,14 @@ export interface operations {
             /** @description 配置包 ID 或幂等键无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10298,6 +14207,14 @@ export interface operations {
             /** @description 没有配置迁移创建权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10305,6 +14222,14 @@ export interface operations {
             /** @description 配置包不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10312,6 +14237,14 @@ export interface operations {
             /** @description 配置包状态或幂等结果冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10319,6 +14252,14 @@ export interface operations {
             /** @description 数据库或后台任务服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10344,6 +14285,14 @@ export interface operations {
             /** @description 配置迁移已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10353,6 +14302,14 @@ export interface operations {
             /** @description 上传表单、幂等键或配置包无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10360,6 +14317,14 @@ export interface operations {
             /** @description 没有配置迁移创建权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10367,6 +14332,14 @@ export interface operations {
             /** @description 幂等冲突或当前配置状态冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10374,6 +14347,14 @@ export interface operations {
             /** @description 配置包压缩或解压大小超过限制 */
             413: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10381,6 +14362,14 @@ export interface operations {
             /** @description 数据库、对象存储或后台任务服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10402,6 +14391,14 @@ export interface operations {
             /** @description 配置迁移详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10411,6 +14408,14 @@ export interface operations {
             /** @description 配置迁移 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10418,6 +14423,14 @@ export interface operations {
             /** @description 没有配置迁移列表权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10425,6 +14438,14 @@ export interface operations {
             /** @description 配置迁移不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10453,6 +14474,14 @@ export interface operations {
             /** @description 配置应用任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10462,6 +14491,14 @@ export interface operations {
             /** @description 请求参数、计划哈希或幂等键无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10469,6 +14506,14 @@ export interface operations {
             /** @description 没有配置迁移应用权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10476,6 +14521,14 @@ export interface operations {
             /** @description 配置迁移不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10483,6 +14536,14 @@ export interface operations {
             /** @description 预览、目标版本、租约或迁移状态冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10490,6 +14551,14 @@ export interface operations {
             /** @description 数据库、对象存储或后台任务服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10514,6 +14583,14 @@ export interface operations {
             /** @description 配置迁移明细 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10523,6 +14600,14 @@ export interface operations {
             /** @description 配置迁移 ID 或分页参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10530,6 +14615,14 @@ export interface operations {
             /** @description 没有配置迁移列表权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10537,6 +14630,14 @@ export interface operations {
             /** @description 配置迁移不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10565,6 +14666,14 @@ export interface operations {
             /** @description 配置预览任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10574,6 +14683,14 @@ export interface operations {
             /** @description 配置迁移 ID 或幂等键无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10581,6 +14698,14 @@ export interface operations {
             /** @description 没有配置迁移预览权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10588,6 +14713,14 @@ export interface operations {
             /** @description 配置迁移不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10595,6 +14728,14 @@ export interface operations {
             /** @description 预览任务、配置版本或迁移状态冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10602,6 +14743,14 @@ export interface operations {
             /** @description 数据库或后台任务服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10630,6 +14779,14 @@ export interface operations {
             /** @description 配置回滚任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10639,6 +14796,14 @@ export interface operations {
             /** @description 配置迁移 ID 或幂等键无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10646,6 +14811,14 @@ export interface operations {
             /** @description 没有配置迁移回滚权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10653,6 +14826,14 @@ export interface operations {
             /** @description 配置迁移或回滚快照不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10660,6 +14841,14 @@ export interface operations {
             /** @description 回滚窗口、引用、版本、租约或迁移状态冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10667,6 +14856,14 @@ export interface operations {
             /** @description 数据库、对象存储或后台任务服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10695,6 +14892,14 @@ export interface operations {
             /** @description 配置列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10719,6 +14924,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10739,6 +14952,14 @@ export interface operations {
             /** @description 缓存刷新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10766,6 +14987,14 @@ export interface operations {
             /** @description 参数配置导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10788,6 +15017,14 @@ export interface operations {
             /** @description 参数值 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10810,6 +15047,14 @@ export interface operations {
             /** @description 配置详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10836,6 +15081,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10858,6 +15111,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10888,6 +15149,14 @@ export interface operations {
             /** @description 部门列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10912,6 +15181,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10932,6 +15209,14 @@ export interface operations {
             /** @description 部门树 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10954,6 +15239,14 @@ export interface operations {
             /** @description 部门详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10980,6 +15273,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11002,6 +15303,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11024,6 +15333,14 @@ export interface operations {
             /** @description 字典数据列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11048,6 +15365,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11070,6 +15395,14 @@ export interface operations {
             /** @description 字典数据 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11096,6 +15429,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11118,6 +15459,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11149,6 +15498,14 @@ export interface operations {
             /** @description 字典类型列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11173,6 +15530,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11200,6 +15565,14 @@ export interface operations {
             /** @description 字典类型导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11226,6 +15599,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11248,6 +15629,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11280,6 +15669,14 @@ export interface operations {
             /** @description 日志列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11307,6 +15704,14 @@ export interface operations {
             /** @description 登录日志导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11337,6 +15742,14 @@ export interface operations {
             /** @description 菜单列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11361,30 +15774,18 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_MenuVo"];
-                };
-            };
-        };
-    };
-    get_system_menus_current: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 用户菜单树 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_MenuTreeNode"];
                 };
             };
         };
@@ -11401,6 +15802,14 @@ export interface operations {
             /** @description 菜单树 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11423,6 +15832,14 @@ export interface operations {
             /** @description 菜单详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11449,6 +15866,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11471,6 +15896,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11495,6 +15928,14 @@ export interface operations {
             /** @description 消息收件箱 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11519,6 +15960,14 @@ export interface operations {
             /** @description 发布结果 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11543,6 +15992,14 @@ export interface operations {
             /** @description 确认数量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11567,6 +16024,14 @@ export interface operations {
             /** @description 实际删除数量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11587,6 +16052,14 @@ export interface operations {
             /** @description 已读数量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11607,6 +16080,14 @@ export interface operations {
             /** @description 未读数量 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11629,6 +16110,14 @@ export interface operations {
             /** @description 已读 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11660,6 +16149,14 @@ export interface operations {
             /** @description 公告列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11684,6 +16181,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11706,6 +16211,14 @@ export interface operations {
             /** @description 通知详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11732,6 +16245,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11754,6 +16275,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11776,6 +16305,14 @@ export interface operations {
             /** @description 消息中心发布结果 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11806,6 +16343,14 @@ export interface operations {
             /** @description 在线用户列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11829,6 +16374,14 @@ export interface operations {
             /** @description 强退成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11838,6 +16391,14 @@ export interface operations {
             /** @description 会话不存在或不属于当前租户 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -11845,6 +16406,14 @@ export interface operations {
             /** @description Redis 会话服务不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -11875,6 +16444,14 @@ export interface operations {
             /** @description 日志列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11902,6 +16479,14 @@ export interface operations {
             /** @description 操作日志导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11926,6 +16511,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11946,6 +16539,14 @@ export interface operations {
             /** @description 同步成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11968,6 +16569,14 @@ export interface operations {
             /** @description 权限树 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11990,6 +16599,14 @@ export interface operations {
             /** @description 权限详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12016,6 +16633,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12038,6 +16663,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12069,6 +16702,14 @@ export interface operations {
             /** @description 岗位列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12093,6 +16734,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12120,6 +16769,14 @@ export interface operations {
             /** @description 岗位导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12142,6 +16799,14 @@ export interface operations {
             /** @description 岗位详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12168,6 +16833,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12190,6 +16863,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12221,6 +16902,14 @@ export interface operations {
             /** @description 角色列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12245,6 +16934,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12267,6 +16964,14 @@ export interface operations {
             /** @description 批量删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12294,6 +16999,14 @@ export interface operations {
             /** @description 角色导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12319,6 +17032,14 @@ export interface operations {
             /** @description 角色选项 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12341,6 +17062,14 @@ export interface operations {
             /** @description 角色详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12367,6 +17096,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12389,6 +17126,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12415,6 +17160,14 @@ export interface operations {
             /** @description 数据权限更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12437,6 +17190,14 @@ export interface operations {
             /** @description 角色权限ID列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12463,6 +17224,14 @@ export interface operations {
             /** @description 权限分配成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12486,6 +17255,14 @@ export interface operations {
             /** @description Agent 访问审计列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12495,6 +17272,14 @@ export interface operations {
             /** @description 分页参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12502,6 +17287,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12509,6 +17302,14 @@ export interface operations {
             /** @description 没有服务访问审计权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12516,6 +17317,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12537,6 +17346,14 @@ export interface operations {
             /** @description 服务账号分页列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12546,6 +17363,14 @@ export interface operations {
             /** @description 分页参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12553,6 +17378,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12560,6 +17393,14 @@ export interface operations {
             /** @description 没有服务账号查看权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12567,6 +17408,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12589,6 +17438,14 @@ export interface operations {
             /** @description 服务账号已创建 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12598,6 +17455,14 @@ export interface operations {
             /** @description 请求参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12605,6 +17470,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12612,6 +17485,14 @@ export interface operations {
             /** @description 没有服务账号创建权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12619,6 +17500,14 @@ export interface operations {
             /** @description 账号代码冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12626,6 +17515,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12646,6 +17543,14 @@ export interface operations {
             /** @description 服务账号详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12655,6 +17560,14 @@ export interface operations {
             /** @description 账号 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12662,6 +17575,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12669,6 +17590,14 @@ export interface operations {
             /** @description 没有服务账号查看权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12676,6 +17605,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12683,6 +17620,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12707,6 +17652,14 @@ export interface operations {
             /** @description 服务账号已更新 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12716,6 +17669,14 @@ export interface operations {
             /** @description 请求参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12723,6 +17684,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12730,6 +17699,14 @@ export interface operations {
             /** @description 没有服务账号编辑权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12737,6 +17714,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12744,6 +17729,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12764,6 +17757,14 @@ export interface operations {
             /** @description 服务账号已删除 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12773,6 +17774,14 @@ export interface operations {
             /** @description 账号 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12780,6 +17789,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12787,6 +17804,14 @@ export interface operations {
             /** @description 没有服务账号删除权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12794,6 +17819,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12801,6 +17834,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12821,6 +17862,14 @@ export interface operations {
             /** @description API Key 元数据列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12830,6 +17879,14 @@ export interface operations {
             /** @description 账号 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12837,6 +17894,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12844,6 +17909,14 @@ export interface operations {
             /** @description 没有服务账号查看权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12851,6 +17924,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12858,6 +17939,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12884,6 +17973,14 @@ export interface operations {
             /** @description API Key 已创建；Secret 只显示一次 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12893,6 +17990,14 @@ export interface operations {
             /** @description 请求参数或幂等键无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12900,6 +18005,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12907,6 +18020,14 @@ export interface operations {
             /** @description 没有 API Key 轮换权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12914,6 +18035,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12921,6 +18050,14 @@ export interface operations {
             /** @description 有效 Key 已达上限或幂等冲突 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12928,6 +18065,14 @@ export interface operations {
             /** @description 服务账号功能、Pepper 或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12949,6 +18094,14 @@ export interface operations {
             /** @description API Key 已撤销 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12958,6 +18111,14 @@ export interface operations {
             /** @description ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12965,6 +18126,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12972,6 +18141,14 @@ export interface operations {
             /** @description 没有 API Key 撤销权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12979,6 +18156,14 @@ export interface operations {
             /** @description 服务账号或 API Key 不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12986,6 +18171,14 @@ export interface operations {
             /** @description API Key 已撤销 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12993,6 +18186,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13013,6 +18214,14 @@ export interface operations {
             /** @description 服务账号角色 ID */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13022,6 +18231,14 @@ export interface operations {
             /** @description 账号 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13029,6 +18246,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13036,6 +18261,14 @@ export interface operations {
             /** @description 没有服务账号角色权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13043,6 +18276,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13050,6 +18291,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13074,6 +18323,14 @@ export interface operations {
             /** @description 服务账号角色已替换 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13083,6 +18340,14 @@ export interface operations {
             /** @description 账号或角色 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13090,6 +18355,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13097,6 +18370,14 @@ export interface operations {
             /** @description 没有服务账号角色权限，或选择了超级角色 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13104,6 +18385,14 @@ export interface operations {
             /** @description 服务账号或角色不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13111,6 +18400,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13135,6 +18432,14 @@ export interface operations {
             /** @description 服务账号状态已更新 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13144,6 +18449,14 @@ export interface operations {
             /** @description 请求参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13151,6 +18464,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13158,6 +18479,14 @@ export interface operations {
             /** @description 没有服务账号编辑权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13165,6 +18494,14 @@ export interface operations {
             /** @description 服务账号不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13172,6 +18509,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13193,6 +18538,14 @@ export interface operations {
             /** @description 当前租户委托列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13202,6 +18555,14 @@ export interface operations {
             /** @description 分页参数无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13209,6 +18570,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13216,6 +18585,14 @@ export interface operations {
             /** @description 没有委托查看权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13223,6 +18600,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13243,6 +18628,14 @@ export interface operations {
             /** @description 委托已撤销 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13252,6 +18645,14 @@ export interface operations {
             /** @description 委托 ID 无效 */
             400: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13259,6 +18660,14 @@ export interface operations {
             /** @description 未认证 */
             401: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13266,6 +18675,14 @@ export interface operations {
             /** @description 没有委托撤销权限 */
             403: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13273,6 +18690,14 @@ export interface operations {
             /** @description 委托不存在 */
             404: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13280,6 +18705,14 @@ export interface operations {
             /** @description 委托已撤销 */
             409: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13287,6 +18720,14 @@ export interface operations {
             /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13309,6 +18750,14 @@ export interface operations {
             /** @description 用户导入任务列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13336,6 +18785,14 @@ export interface operations {
             /** @description 用户导入任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13359,6 +18816,14 @@ export interface operations {
             /** @description 用户导入任务详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13386,6 +18851,14 @@ export interface operations {
             /** @description 已申请取消用户导入 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13409,6 +18882,14 @@ export interface operations {
             /** @description 用户导入错误报告 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13435,6 +18916,14 @@ export interface operations {
             /** @description 用户导入异常行 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13467,6 +18956,14 @@ export interface operations {
             /** @description 用户列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13491,6 +18988,14 @@ export interface operations {
             /** @description 创建成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13514,6 +19019,14 @@ export interface operations {
             /** @description 批量删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13541,6 +19054,14 @@ export interface operations {
             /** @description 用户导出任务已创建 */
             202: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13561,6 +19082,14 @@ export interface operations {
             /** @description 下载用户导入模板 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13586,6 +19115,14 @@ export interface operations {
             /** @description 用户选项 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13609,6 +19146,14 @@ export interface operations {
             /** @description 用户详情 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13636,6 +19181,14 @@ export interface operations {
             /** @description 更新成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13659,6 +19212,14 @@ export interface operations {
             /** @description 删除成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13686,6 +19247,14 @@ export interface operations {
             /** @description 密码重置请求已发起 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13713,6 +19282,14 @@ export interface operations {
             /** @description 角色分配成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13740,6 +19317,14 @@ export interface operations {
             /** @description 状态修改成功 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13764,6 +19349,14 @@ export interface operations {
             /** @description 下载生成代码 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13788,6 +19381,14 @@ export interface operations {
             /** @description 代码生成报告 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13812,6 +19413,14 @@ export interface operations {
             /** @description 生成结果预览 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13839,6 +19448,14 @@ export interface operations {
             /** @description 数据库表列表 */
             200: {
                 headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {

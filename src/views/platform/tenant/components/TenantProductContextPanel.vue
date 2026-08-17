@@ -1,0 +1,145 @@
+<template>
+  <div v-loading="loading" class="product-context-panel">
+    <el-alert v-if="!canView" :title="t('productPlans.permissionDenied')" type="info" show-icon :closable="false" />
+    <el-alert v-else-if="error" :title="t('productPlans.contextUnavailable')" type="warning" show-icon :closable="false" />
+    <template v-else-if="context">
+      <div class="panel-heading">
+        <p>{{ t('productPlans.tenantContextHint') }}</p>
+        <el-button v-if="canAssign" type="primary" @click="changeVisible = true">
+          {{ t('productPlans.assignPlan') }}
+        </el-button>
+      </div>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item :label="t('productPlans.currentPlanVersion')">
+          {{ context.plan_name }} · v{{ context.plan_version }} ({{ context.plan_version_id }})
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('productPlans.runtimeEpoch')">
+          {{ context.runtime_epoch }}
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <section>
+        <h3>{{ t('productPlans.effectiveCapabilities') }}</h3>
+        <el-table :data="context.capabilities" row-key="capability_code">
+          <el-table-column prop="capability_code" :label="t('productPlans.code')" min-width="180" />
+          <el-table-column :label="t('productPlans.enabled')" width="90">
+            <template #default="{ row }">{{ row.enabled ? t('productPlans.yes') : t('productPlans.no') }}</template>
+          </el-table-column>
+          <el-table-column prop="variant_code" label="Variant" min-width="130" />
+          <el-table-column prop="schema_version" label="Schema" width="100" />
+          <el-table-column label="Config" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">{{ JSON.stringify(row.config) }}</template>
+          </el-table-column>
+          <template #empty><el-empty :description="t('productPlans.noCapabilities')" /></template>
+        </el-table>
+      </section>
+
+      <section>
+        <h3>{{ t('productPlans.overrides') }}</h3>
+        <el-table :data="context.overrides" row-key="capability_code">
+          <el-table-column prop="capability_code" :label="t('productPlans.code')" min-width="180" />
+          <el-table-column :label="t('productPlans.enabled')" width="90">
+            <template #default="{ row }">{{ row.enabled ? t('productPlans.yes') : t('productPlans.no') }}</template>
+          </el-table-column>
+          <el-table-column prop="variant_code" label="Variant" min-width="130" />
+          <el-table-column prop="schema_version" label="Schema" width="100" />
+          <el-table-column label="Config" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">{{ JSON.stringify(row.config) }}</template>
+          </el-table-column>
+          <template #empty><el-empty :description="t('productPlans.noOverrides')" /></template>
+        </el-table>
+      </section>
+    </template>
+
+    <TenantProductChangeDialog
+      v-if="context"
+      v-model="changeVisible"
+      :can-override="canOverride"
+      :context="context"
+      :tenant-id="tenantId"
+      @applied="handleApplied"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { getTenantProductContext, type TenantProductContext } from '@/api/modules/productPlan'
+import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
+import { installProductPlanMessages } from '@/i18n/catalog/product-plans'
+import { requireOperationData } from '@/shared/http/client'
+import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useUserStore } from '@/stores/user'
+import { hasPermission } from '@/utils/permission'
+import TenantProductChangeDialog from './TenantProductChangeDialog.vue'
+
+const props = defineProps<{ active: boolean, tenantId: string }>()
+installProductPlanMessages()
+const { t } = useI18n()
+const userStore = useUserStore()
+const changeVisible = ref(false)
+const can = (permission: string) => hasPermission(userStore.permissions, permission, userStore.roles)
+const canView = computed(() => can(TENANT_PRODUCT_PERMISSIONS.view))
+const canAssign = computed(() => can(TENANT_PRODUCT_PERMISSIONS.assign))
+const canOverride = computed(() => can(TENANT_PRODUCT_PERMISSIONS.override))
+const contextQuery = useTenantQuery<TenantProductContext>(
+  () => userStore.tenantId,
+  () => props.active
+    && userStore.tenantId === 'system'
+    && canView.value
+    && Boolean(props.tenantId),
+  'platform-tenant-product-context',
+  () => ({ tenant_id: props.tenantId }),
+  async signal => requireOperationData(await getTenantProductContext(props.tenantId, signal)),
+  { staleTime: 0 },
+)
+const context = contextQuery.data
+const loading = contextQuery.isFetching
+const error = contextQuery.error
+
+watch(canAssign, (allowed) => {
+  if (!allowed) changeVisible.value = false
+})
+
+async function handleApplied(updated: TenantProductContext): Promise<void> {
+  if (updated.tenant_id !== props.tenantId) return
+  await contextQuery.refetch({ throwOnError: true })
+  ElMessage.success(t('productPlans.changeApplied'))
+}
+</script>
+
+<style scoped>
+.product-context-panel,
+section {
+  display: grid;
+  gap: 14px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-heading p,
+h3 {
+  margin: 0;
+}
+
+.panel-heading p {
+  color: var(--el-text-color-secondary);
+  line-height: 1.6;
+}
+
+section {
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+@media (width <= 640px) {
+  .panel-heading {
+    flex-direction: column;
+  }
+}
+</style>

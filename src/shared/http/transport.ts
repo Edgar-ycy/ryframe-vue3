@@ -33,16 +33,46 @@ function createTransport() {
 export const transport = createTransport()
 export const rawTransport = createTransport()
 
-function observeResponseAuthorizationEpoch(response: AxiosResponse | undefined): void {
+const TENANT_CONTEXT_HEADERS = Object.freeze({
+  authorizationEpoch: 'X-Authorization-Epoch',
+  runtimeEpoch: 'X-Tenant-Runtime-Epoch',
+  placementGeneration: 'X-Tenant-Data-Generation',
+  businessDataState: 'X-Tenant-Data-State',
+})
+
+function observeResponseTenantContext(response: AxiosResponse | undefined): void {
   const session = getHttpSession()
   if (!session) return
   const accessToken = session.getAccessToken()
   const requestAuthorization = response?.config.headers.get('Authorization')
   if (!accessToken || requestAuthorization !== `Bearer ${accessToken}`) return
-  const raw = response?.headers['x-authorization-epoch']
-  const authorizationEpoch = typeof raw === 'string' ? Number(raw) : raw
-  if (typeof authorizationEpoch !== 'number' || !Number.isSafeInteger(authorizationEpoch)) return
-  session.observeAuthorizationEpoch(authorizationEpoch)
+  const authorizationEpoch = decimalHeader(response, TENANT_CONTEXT_HEADERS.authorizationEpoch)
+  const runtimeEpoch = decimalHeader(response, TENANT_CONTEXT_HEADERS.runtimeEpoch)
+  const placementGeneration = decimalHeader(
+    response,
+    TENANT_CONTEXT_HEADERS.placementGeneration,
+  )
+  const businessDataState = stringHeader(response, TENANT_CONTEXT_HEADERS.businessDataState)
+  const observation = {
+    ...(authorizationEpoch === undefined ? {} : { authorizationEpoch }),
+    ...(runtimeEpoch === undefined ? {} : { runtimeEpoch }),
+    ...(placementGeneration === undefined ? {} : { placementGeneration }),
+    ...(businessDataState === undefined ? {} : { businessDataState }),
+  }
+  if (Object.keys(observation).length > 0) session.observeTenantContext(observation)
+}
+
+function stringHeader(response: AxiosResponse | undefined, name: string): string | undefined {
+  const raw = response?.headers[name.toLowerCase()]
+  return typeof raw === 'string' && raw.length > 0 ? raw : undefined
+}
+
+function decimalHeader(response: AxiosResponse | undefined, name: string): string | undefined {
+  const raw = response?.headers[name.toLowerCase()]
+  if (typeof raw === 'string' && /^(?:0|[1-9]\d*)$/u.test(raw)) return raw
+  return typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0
+    ? String(raw)
+    : undefined
 }
 
 function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig): void {
@@ -77,11 +107,11 @@ rawTransport.interceptors.request.use((config) => {
 
 transport.interceptors.response.use(
   (response) => {
-    observeResponseAuthorizationEpoch(response)
+    observeResponseTenantContext(response)
     return response
   },
   async (error: AxiosError) => {
-    observeResponseAuthorizationEpoch(error.response)
+    observeResponseTenantContext(error.response)
     const config = error.config
     const status = error.response?.status
     const sessionAdapter = getHttpSession()

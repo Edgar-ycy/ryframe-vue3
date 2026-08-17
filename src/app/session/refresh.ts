@@ -1,7 +1,9 @@
-import { refreshToken as refreshTokenApi, type UserInfo } from '@/api/modules/auth'
+import { refreshToken as refreshTokenApi } from '@/api/modules/auth'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
+import { useTenantContextStore } from '@/app/tenant-context'
+import { synchronizeTenantContextUi } from '@/app/tenant-context/contextRefresh'
 import {
   broadcastAuthenticated,
   broadcastRefreshFailed,
@@ -17,7 +19,6 @@ import {
   getSessionEpoch,
   isSessionTerminating,
 } from './state'
-import { synchronizeAuthorizationUi } from './authorization'
 
 let refreshPromise: Promise<string> | undefined
 
@@ -57,7 +58,14 @@ export async function refreshAccessToken(): Promise<string> {
     const pending = performRefresh(refreshEpoch)
       .then((token) => {
         assertSessionEpoch(refreshEpoch)
-        broadcastAuthenticated(operation, token, userStoreToInfo(useUserStore()))
+        const context = useTenantContextStore().context
+        if (!context) {
+          throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
+            status: 401,
+            kind: 'invalid_response',
+          })
+        }
+        broadcastAuthenticated(operation, token, context)
         return token
       })
       .catch((error: unknown) => {
@@ -103,14 +111,16 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
     const response = await refreshTokenApi(challenge)
     assertSessionEpoch(refreshEpoch)
     const auth = response.data
-    if (!auth?.access_token || !auth.user_info) {
+    if (!auth?.access_token || !auth.session_context) {
       throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
         status: 401,
         kind: 'invalid_response',
       })
     }
-    const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.user_info)
-    if (scopeChanged) await synchronizeAuthorizationUi({ skipAuthRefresh: true })
+    const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.session_context)
+    if (scopeChanged) {
+      await synchronizeTenantContextUi({ skipAuthRefresh: true, refreshContext: false })
+    }
     else await ensureRoutesAfterAuthentication(true)
     assertSessionEpoch(refreshEpoch)
     return auth.access_token
@@ -120,20 +130,4 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
     // 避免登录或后续刷新继续复用已经失去 Cookie 配对的内存令牌。
     invalidateCsrfToken()
   }
-}
-
-function userStoreToInfo(user: ReturnType<typeof useUserStore>): UserInfo {
-  return {
-    id: user.userId,
-    tenant_id: user.tenantId,
-    tenant_name: user.tenantName,
-    username: user.username,
-    nickname: user.nickname,
-    avatar: user.avatar || undefined,
-    email: user.email,
-    phone: user.phone,
-    roles: [...user.roles],
-    perms: [...user.permissions],
-    ...(user.preferredLocale ? { preferred_locale: user.preferredLocale } : {}),
-  } as UserInfo
 }

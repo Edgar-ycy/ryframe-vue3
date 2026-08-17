@@ -11,7 +11,7 @@ import {
   MessageSocket,
   type MessageSocketProtocolError,
 } from '@/app/messages/messageSocket'
-import { notifyAuthorizationChanged } from '@/app/session/authorization'
+import { notifyTenantContextChanged } from '@/app/tenant-context/contextRefresh'
 import { HttpError } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
 import { useUserStore } from './user'
@@ -102,9 +102,9 @@ export const useMessageStore = defineStore('message', {
           receiveMessageDelivery(identity.tenantId, identity.userId, message)
           if (!message.acked_at) this.queueAcknowledgement([message.id])
         },
-        onAuthorizationChanged: (authorizationEpoch) => {
+        onTenantContextChanged: (frame) => {
           if (!this.isCurrentSession(runtime, identity.sessionKey, generation)) return
-          void notifyAuthorizationChanged(authorizationEpoch).catch(() => undefined)
+          void notifyTenantContextChanged(frame).catch(() => undefined)
         },
         onProtocolError: (error: MessageSocketProtocolError) => {
           if (this.isCurrentSession(runtime, identity.sessionKey, generation)) {

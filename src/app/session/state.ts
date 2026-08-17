@@ -1,8 +1,9 @@
 import type { Router } from 'vue-router'
-import type { UserInfo } from '@/api/modules/auth'
+import type { SessionContext } from '@/api/modules/sessionContext'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
+import { useTenantContextStore } from '@/app/tenant-context'
 
 export interface SessionRuntime {
   router: Router
@@ -52,13 +53,21 @@ export function assertSessionEpoch(expected: number): void {
  * 写入认证结果，并返回动态路由所属的身份或授权范围是否发生变化。
  * 跨标签页刷新令牌可能切换到另一个用户、租户或权限集合，调用方必须据此清理旧路由。
  */
-export function applyAuthenticatedSession(accessToken: string, userInfo: UserInfo): boolean {
+export function applyAuthenticatedSession(accessToken: string, context: SessionContext): boolean {
   const userStore = useUserStore()
-  const scopeChanged = hasAuthenticatedScopeChanged(userStore, userInfo)
-  userStore.token = accessToken
-  userStore.sessionStatus = 'authenticated'
-  userStore.applyUserInfo(userInfo)
-  return scopeChanged
+  const tenantContext = useTenantContextStore()
+  const scopeChanged = hasAuthenticatedScopeChanged(userStore, tenantContext, context)
+  try {
+    tenantContext.applySessionContext(context)
+    userStore.token = accessToken
+    userStore.sessionStatus = 'authenticated'
+    return scopeChanged
+  }
+  catch (error) {
+    tenantContext.failClosed()
+    userStore.resetState()
+    throw error
+  }
 }
 
 export async function ensureRoutesAfterAuthentication(
@@ -69,13 +78,21 @@ export async function ensureRoutesAfterAuthentication(
 
 function hasAuthenticatedScopeChanged(
   userStore: ReturnType<typeof useUserStore>,
-  userInfo: UserInfo,
+  tenantContext: ReturnType<typeof useTenantContextStore>,
+  context: SessionContext,
 ): boolean {
+  const userInfo = context.user
   if (userStore.sessionStatus !== 'authenticated' || userStore.userId === '') return false
   return String(userStore.userId) !== String(userInfo.id)
     || userStore.tenantId !== userInfo.tenant_id
-    || accessFingerprint(userStore.roles) !== accessFingerprint(userInfo.roles ?? [])
-    || accessFingerprint(userStore.permissions) !== accessFingerprint(userInfo.perms ?? [])
+    || accessFingerprint(userStore.roles) !== accessFingerprint(context.roles)
+    || accessFingerprint(userStore.permissions) !== accessFingerprint(context.permissions)
+    || tenantContext.authorizationEpoch !== context.authorization_epoch
+    || tenantContext.runtimeEpoch !== context.runtime_epoch
+    || accessFingerprint(tenantContext.capabilityCodes) !== accessFingerprint(
+      context.capabilities.map(item => item.code),
+    )
+    || JSON.stringify(tenantContext.context?.menus ?? []) !== JSON.stringify(context.menus)
 }
 
 function accessFingerprint(values: string[]): string {

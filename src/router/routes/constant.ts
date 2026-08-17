@@ -45,22 +45,6 @@ export const constantRoutes: RouteRecordRaw[] = [
         ),
         meta: { title: '我的导出', icon: 'Download', hidden: true },
       },
-      {
-        path: 'platform/tenants',
-        name: 'PlatformTenants',
-        component: withRouteComponentName(
-          'PlatformTenants',
-          () => import('@/views/platform/tenant/index.vue'),
-        ),
-        meta: {
-          title: '租户管理',
-          icon: 'OfficeBuilding',
-          hidden: true,
-          requiresPermission: true,
-          requiresMultiTenancy: true,
-          permission: 'tenant:list',
-        },
-      },
     ],
   },
   {

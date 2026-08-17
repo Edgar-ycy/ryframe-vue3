@@ -21,13 +21,18 @@ export const usePermissionStore = defineStore('permission', {
       menuTree: MenuTreeNode[],
       permissions: string[],
       roles: string[],
-      serviceAccountsEnabled = true,
+      capabilities: string[],
     ) {
-      const routes = buildRoutesFromMenuTree(menuTree)
-      this.routes = routes
-      this.menus = buildAccessibleMenus(routes, permissions, roles, serviceAccountsEnabled)
-      this.isRoutesLoaded = true
+      const routes = buildRoutesFromMenuTree(menuTree, capabilities)
+      const menus = buildAccessibleMenus(routes, permissions, roles, capabilities)
+      this.applyGeneratedRoutes(routes, menus)
       return routes
+    },
+
+    applyGeneratedRoutes(routes: RouteRecordRaw[], menus: RouteRecordRaw[]) {
+      this.routes = routes
+      this.menus = menus
+      this.isRoutesLoaded = true
     },
 
     resetRoutes() {

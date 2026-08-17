@@ -6,6 +6,7 @@ export interface TagView {
   title?: string
   affix?: boolean
   noCache?: boolean
+  requiredCapabilities?: readonly string[]
 }
 
 interface TagsViewState {

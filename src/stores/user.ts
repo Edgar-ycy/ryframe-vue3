@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getUserInfo, login as loginApi, type UserInfo } from '@/api/modules/auth'
+import { login as loginApi, type UserInfo } from '@/api/modules/auth'
 import { ensureCsrfToken, publishAuthenticatedSession } from '@/app/session/sessionCoordinator'
 import type { Id } from '@/shared/http/types'
 import { getTenantId, setTenantId } from '@/utils/auth'
@@ -64,38 +64,14 @@ export const useUserStore = defineStore('user', {
       )
       const authData = res.data
       if (!authData) throw new Error(translate('shell.session.loginResponseMissingAuth'))
-      const userInfo = authData.user_info
+      const context = authData.session_context
 
-      if (!authData.access_token || !userInfo?.tenant_id) {
+      if (!authData.access_token || !context?.user.tenant_id) {
         throw new Error(translate('shell.session.loginResponseMissingTenant'))
       }
 
       clearServerState()
-      this.token = authData.access_token
-      this.sessionStatus = 'authenticated'
-      this.tenantId = userInfo.tenant_id
-      this.tenantName = userInfo.tenant_name || userInfo.tenant_id
-      setTenantId(userInfo.tenant_id)
-
-      this.userId = userInfo.id
-      this.username = userInfo.username
-      this.nickname = userInfo.nickname || ''
-      this.email = userInfo.email || ''
-      this.phone = userInfo.phone || ''
-      this.avatar = userInfo.avatar || ''
-      const preferredLocale = getPreferredLocale(userInfo)
-      this.preferredLocale = preferredLocale
-      if (preferredLocale) useSettingsStore().setLocale(preferredLocale)
-      this.roles = userInfo.roles || []
-      this.permissions = userInfo.perms || []
-      publishAuthenticatedSession(authData.access_token, userInfo)
-      return res
-    },
-
-    async getUserInfo() {
-      const res = await getUserInfo()
-      if (!res.data) throw new Error(translate('shell.session.userInfoResponseMissing'))
-      this.applyUserInfo(res.data)
+      publishAuthenticatedSession(authData.access_token, context)
       return res
     },
 

@@ -167,6 +167,7 @@ async function handleUpdate(tenantId: string, payload: UpdateTenantPayload): Pro
 
 async function handleToggle(tenant: TenantCapacity): Promise<void> {
   if (statusPending.value) return
+  if (tenant.status !== 'enabled' && tenant.status !== 'disabled') return
   if (tenant.tenant_id === 'system') {
     ElMessage.warning(t('tenantCapacity.systemTenantCannotDisable'))
     return
@@ -182,7 +183,7 @@ async function handleToggle(tenant: TenantCapacity): Promise<void> {
   )
   if (!confirmed || statusPending.value) return
   try {
-    await toggleTenantStatus(tenant.tenant_id, nextEnabled ? '1' : '0')
+    await toggleTenantStatus(tenant.tenant_id, nextEnabled ? 'enabled' : 'disabled')
     ElMessage.success(t('tenantCapacity.tenantStatusUpdated'))
   }
   catch (error) {
@@ -245,7 +246,13 @@ function formatDate(value: string | null | undefined): string {
 }
 
 function statusLabel(status: string): string {
-  return status === 'enabled' ? t('tenantCapacity.statusEnabled') : t('tenantCapacity.statusDisabled')
+  const labels: Record<string, string> = {
+    enabled: 'statusEnabled',
+    disabled: 'statusDisabled',
+    provisioning: 'statusProvisioning',
+    provisioning_failed: 'statusProvisioningFailed',
+  }
+  return t(`tenantCapacity.${labels[status] ?? 'statusUnknown'}`)
 }
 
 function capacityType(status: string | null | undefined): TagProps['type'] {

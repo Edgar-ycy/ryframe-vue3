@@ -1,6 +1,7 @@
 import { runtimeConfig } from '@/shared/config/runtimeConfig'
 import type { MessageRecord } from '@/api/modules/messages'
 import { HttpError } from '@/shared/http/client'
+import type { TenantContextChangedFrame } from '@/app/tenant-context/contextRefresh'
 
 const SOCKET_CONNECTING = 0
 const SOCKET_OPEN = 1
@@ -24,7 +25,7 @@ export interface MessageSocketLike {
 export interface MessageSocketOptions {
   requestTicket: () => Promise<string>
   onDelivery: (message: MessageRecord) => void
-  onAuthorizationChanged?: (authorizationEpoch: number) => void
+  onTenantContextChanged?: (frame: TenantContextChangedFrame) => void
   onProtocolError?: (error: MessageSocketProtocolError) => void
   onStateChange?: (state: MessageSocketState) => void
   createSocket?: (url: string) => MessageSocketLike
@@ -41,6 +42,9 @@ type SocketFrame = {
   message?: unknown
   code?: unknown
   authorization_epoch?: unknown
+  runtime_epoch?: unknown
+  placement_generation?: unknown
+  business_data_state?: unknown
 }
 
 export interface MessageSocketProtocolError {
@@ -106,15 +110,34 @@ export function parseMessageDelivery(raw: unknown): MessageRecord | undefined {
   return normalizeMessage(frame.message)
 }
 
-/** 解析服务端授权纪元变化帧；权限明细由认证接口重新读取。 */
-export function parseAuthorizationChanged(raw: unknown): number | undefined {
+/** 只接受完整的 v1 租户上下文变化帧；权限、菜单和能力明细由认证接口重读。 */
+export function parseTenantContextChanged(raw: unknown): TenantContextChangedFrame | undefined {
   if (!isRecord(raw)) return undefined
   const frame = raw as SocketFrame
-  if (frame.v !== 1 || frame.type !== 'authorization_changed') return undefined
-  const epoch = frame.authorization_epoch
-  return typeof epoch === 'number' && Number.isSafeInteger(epoch) && epoch > 0
-    ? epoch
-    : undefined
+  if (frame.v !== 1 || frame.type !== 'tenant_context_changed') return undefined
+  if (
+    typeof frame.authorization_epoch !== 'number'
+    || !Number.isSafeInteger(frame.authorization_epoch)
+    || frame.authorization_epoch < 0
+      || typeof frame.runtime_epoch !== 'string'
+      || !/^(?:0|[1-9]\d*)$/u.test(frame.runtime_epoch)
+      || typeof frame.placement_generation !== 'string'
+      || !/^(?:0|[1-9]\d*)$/u.test(frame.placement_generation)
+    || !isBusinessDataState(frame.business_data_state)
+  ) return undefined
+  return {
+    v: 1,
+    type: 'tenant_context_changed',
+    authorization_epoch: frame.authorization_epoch,
+    runtime_epoch: frame.runtime_epoch,
+    placement_generation: frame.placement_generation,
+    business_data_state: frame.business_data_state,
+  }
+}
+
+function isBusinessDataState(value: unknown): value is TenantContextChangedFrame['business_data_state'] {
+  return typeof value === 'string'
+    && ['provisioning', 'active', 'maintenance', 'failed'].includes(value)
 }
 
 /** 解析服务端返回的协议错误帧，避免忽略可展示的本地化错误信息。 */
@@ -190,9 +213,9 @@ export class MessageSocket {
         const delivery = parseMessageDelivery(frame)
         if (delivery) this.options.onDelivery(delivery)
         else {
-          const authorizationEpoch = parseAuthorizationChanged(frame)
-          if (authorizationEpoch !== undefined) {
-            this.options.onAuthorizationChanged?.(authorizationEpoch)
+          const contextChange = parseTenantContextChanged(frame)
+          if (contextChange) {
+            this.options.onTenantContextChanged?.(contextChange)
           }
           else {
             const protocolError = parseMessageSocketError(frame)

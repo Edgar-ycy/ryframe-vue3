@@ -32,8 +32,8 @@ export type OperationId =
   | "get_auth_captcha_config"
   | "get_auth_captcha_generate"
   | "get_auth_captcha_image"
+  | "get_auth_context"
   | "get_auth_csrf"
-  | "get_auth_me"
   | "get_auth_profile"
   | "get_auth_sessions"
   | "get_common_file_download"
@@ -57,8 +57,19 @@ export type OperationId =
   | "get_monitor_schedules_by_id_executions"
   | "get_monitor_schedules_targets"
   | "get_monitor_server"
+  | "get_platform_capabilities"
+  | "get_platform_data_targets"
+  | "get_platform_data_targets_by_target_key"
+  | "get_platform_data_targets_by_target_key_backup_points"
+  | "get_platform_product_plans"
+  | "get_platform_product_plans_by_plan_id"
+  | "get_platform_product_plans_by_plan_id_versions"
+  | "get_platform_tenant_data_migrations_by_migration_id"
   | "get_platform_tenants"
   | "get_platform_tenants_by_tenant_id"
+  | "get_platform_tenants_by_tenant_id_data_migrations"
+  | "get_platform_tenants_by_tenant_id_data_placement"
+  | "get_platform_tenants_by_tenant_id_product_context"
   | "get_platform_tenants_by_tenant_id_usage"
   | "get_platform_tenants_page"
   | "get_profile_service_delegations"
@@ -82,7 +93,6 @@ export type OperationId =
   | "get_system_loginlogs"
   | "get_system_menus"
   | "get_system_menus_by_id"
-  | "get_system_menus_current"
   | "get_system_menus_tree"
   | "get_system_messages"
   | "get_system_messages_unread_count"
@@ -132,7 +142,17 @@ export type OperationId =
   | "post_monitor_schedules"
   | "post_monitor_schedules_by_id_run"
   | "post_monitor_schedules_preview"
+  | "post_platform_product_plans"
+  | "post_platform_product_plans_by_plan_id_versions"
+  | "post_platform_product_plans_by_plan_id_versions_by_version_publish"
+  | "post_platform_product_plans_by_plan_id_versions_by_version_retire"
+  | "post_platform_tenant_data_migrations_by_migration_id_cancel"
+  | "post_platform_tenant_data_migrations_by_migration_id_finalize"
   | "post_platform_tenants"
+  | "post_platform_tenants_by_tenant_id_data_migration_previews"
+  | "post_platform_tenants_by_tenant_id_data_migrations"
+  | "post_platform_tenants_by_tenant_id_product_change_previews"
+  | "post_platform_tenants_by_tenant_id_product_changes"
   | "post_profile_service_delegations"
   | "post_system_config_packages"
   | "post_system_config_transfers_by_id_apply"
@@ -175,6 +195,8 @@ export type OperationId =
   | "put_auth_profile_password"
   | "put_monitor_schedules_by_id"
   | "put_monitor_schedules_by_id_status"
+  | "put_platform_product_plans_by_plan_id"
+  | "put_platform_product_plans_by_plan_id_versions_by_version_draft"
   | "put_platform_tenants_by_tenant_id"
   | "put_platform_tenants_by_tenant_id_status"
   | "put_system_configs_by_id"
@@ -259,9 +281,9 @@ export const get_auth_captcha_generate = {"operationId":"get_auth_captcha_genera
 
 export const get_auth_captcha_image = {"operationId":"get_auth_captcha_image","method":"get","path":"/auth/captcha/image"} as const satisfies OperationDescriptor<"get_auth_captcha_image">
 
-export const get_auth_csrf = {"operationId":"get_auth_csrf","method":"get","path":"/auth/csrf"} as const satisfies OperationDescriptor<"get_auth_csrf">
+export const get_auth_context = {"operationId":"get_auth_context","method":"get","path":"/auth/context"} as const satisfies OperationDescriptor<"get_auth_context">
 
-export const get_auth_me = {"operationId":"get_auth_me","method":"get","path":"/auth/me"} as const satisfies OperationDescriptor<"get_auth_me">
+export const get_auth_csrf = {"operationId":"get_auth_csrf","method":"get","path":"/auth/csrf"} as const satisfies OperationDescriptor<"get_auth_csrf">
 
 export const get_auth_profile = {"operationId":"get_auth_profile","method":"get","path":"/auth/profile"} as const satisfies OperationDescriptor<"get_auth_profile">
 
@@ -309,9 +331,31 @@ export const get_monitor_schedules_targets = {"operationId":"get_monitor_schedul
 
 export const get_monitor_server = {"operationId":"get_monitor_server","method":"get","path":"/monitor/server"} as const satisfies OperationDescriptor<"get_monitor_server">
 
+export const get_platform_capabilities = {"operationId":"get_platform_capabilities","method":"get","path":"/platform/capabilities"} as const satisfies OperationDescriptor<"get_platform_capabilities">
+
+export const get_platform_data_targets = {"operationId":"get_platform_data_targets","method":"get","path":"/platform/data-targets"} as const satisfies OperationDescriptor<"get_platform_data_targets">
+
+export const get_platform_data_targets_by_target_key = {"operationId":"get_platform_data_targets_by_target_key","method":"get","path":"/platform/data-targets/{target_key}"} as const satisfies OperationDescriptor<"get_platform_data_targets_by_target_key">
+
+export const get_platform_data_targets_by_target_key_backup_points = {"operationId":"get_platform_data_targets_by_target_key_backup_points","method":"get","path":"/platform/data-targets/{target_key}/backup-points"} as const satisfies OperationDescriptor<"get_platform_data_targets_by_target_key_backup_points">
+
+export const get_platform_product_plans = {"operationId":"get_platform_product_plans","method":"get","path":"/platform/product-plans"} as const satisfies OperationDescriptor<"get_platform_product_plans">
+
+export const get_platform_product_plans_by_plan_id = {"operationId":"get_platform_product_plans_by_plan_id","method":"get","path":"/platform/product-plans/{plan_id}"} as const satisfies OperationDescriptor<"get_platform_product_plans_by_plan_id">
+
+export const get_platform_product_plans_by_plan_id_versions = {"operationId":"get_platform_product_plans_by_plan_id_versions","method":"get","path":"/platform/product-plans/{plan_id}/versions"} as const satisfies OperationDescriptor<"get_platform_product_plans_by_plan_id_versions">
+
+export const get_platform_tenant_data_migrations_by_migration_id = {"operationId":"get_platform_tenant_data_migrations_by_migration_id","method":"get","path":"/platform/tenant-data-migrations/{migration_id}"} as const satisfies OperationDescriptor<"get_platform_tenant_data_migrations_by_migration_id">
+
 export const get_platform_tenants = {"operationId":"get_platform_tenants","method":"get","path":"/platform/tenants"} as const satisfies OperationDescriptor<"get_platform_tenants">
 
 export const get_platform_tenants_by_tenant_id = {"operationId":"get_platform_tenants_by_tenant_id","method":"get","path":"/platform/tenants/{tenant_id}"} as const satisfies OperationDescriptor<"get_platform_tenants_by_tenant_id">
+
+export const get_platform_tenants_by_tenant_id_data_migrations = {"operationId":"get_platform_tenants_by_tenant_id_data_migrations","method":"get","path":"/platform/tenants/{tenant_id}/data-migrations"} as const satisfies OperationDescriptor<"get_platform_tenants_by_tenant_id_data_migrations">
+
+export const get_platform_tenants_by_tenant_id_data_placement = {"operationId":"get_platform_tenants_by_tenant_id_data_placement","method":"get","path":"/platform/tenants/{tenant_id}/data-placement"} as const satisfies OperationDescriptor<"get_platform_tenants_by_tenant_id_data_placement">
+
+export const get_platform_tenants_by_tenant_id_product_context = {"operationId":"get_platform_tenants_by_tenant_id_product_context","method":"get","path":"/platform/tenants/{tenant_id}/product-context"} as const satisfies OperationDescriptor<"get_platform_tenants_by_tenant_id_product_context">
 
 export const get_platform_tenants_by_tenant_id_usage = {"operationId":"get_platform_tenants_by_tenant_id_usage","method":"get","path":"/platform/tenants/{tenant_id}/usage"} as const satisfies OperationDescriptor<"get_platform_tenants_by_tenant_id_usage">
 
@@ -358,8 +402,6 @@ export const get_system_loginlogs = {"operationId":"get_system_loginlogs","metho
 export const get_system_menus = {"operationId":"get_system_menus","method":"get","path":"/system/menus"} as const satisfies OperationDescriptor<"get_system_menus">
 
 export const get_system_menus_by_id = {"operationId":"get_system_menus_by_id","method":"get","path":"/system/menus/{id}"} as const satisfies OperationDescriptor<"get_system_menus_by_id">
-
-export const get_system_menus_current = {"operationId":"get_system_menus_current","method":"get","path":"/system/menus/current"} as const satisfies OperationDescriptor<"get_system_menus_current">
 
 export const get_system_menus_tree = {"operationId":"get_system_menus_tree","method":"get","path":"/system/menus/tree"} as const satisfies OperationDescriptor<"get_system_menus_tree">
 
@@ -459,7 +501,27 @@ export const post_monitor_schedules_by_id_run = {"operationId":"post_monitor_sch
 
 export const post_monitor_schedules_preview = {"operationId":"post_monitor_schedules_preview","method":"post","path":"/monitor/schedules/preview"} as const satisfies OperationDescriptor<"post_monitor_schedules_preview">
 
+export const post_platform_product_plans = {"operationId":"post_platform_product_plans","method":"post","path":"/platform/product-plans"} as const satisfies OperationDescriptor<"post_platform_product_plans">
+
+export const post_platform_product_plans_by_plan_id_versions = {"operationId":"post_platform_product_plans_by_plan_id_versions","method":"post","path":"/platform/product-plans/{plan_id}/versions"} as const satisfies OperationDescriptor<"post_platform_product_plans_by_plan_id_versions">
+
+export const post_platform_product_plans_by_plan_id_versions_by_version_publish = {"operationId":"post_platform_product_plans_by_plan_id_versions_by_version_publish","method":"post","path":"/platform/product-plans/{plan_id}/versions/{version}/publish"} as const satisfies OperationDescriptor<"post_platform_product_plans_by_plan_id_versions_by_version_publish">
+
+export const post_platform_product_plans_by_plan_id_versions_by_version_retire = {"operationId":"post_platform_product_plans_by_plan_id_versions_by_version_retire","method":"post","path":"/platform/product-plans/{plan_id}/versions/{version}/retire"} as const satisfies OperationDescriptor<"post_platform_product_plans_by_plan_id_versions_by_version_retire">
+
+export const post_platform_tenant_data_migrations_by_migration_id_cancel = {"operationId":"post_platform_tenant_data_migrations_by_migration_id_cancel","method":"post","path":"/platform/tenant-data-migrations/{migration_id}/cancel"} as const satisfies OperationDescriptor<"post_platform_tenant_data_migrations_by_migration_id_cancel">
+
+export const post_platform_tenant_data_migrations_by_migration_id_finalize = {"operationId":"post_platform_tenant_data_migrations_by_migration_id_finalize","method":"post","path":"/platform/tenant-data-migrations/{migration_id}/finalize"} as const satisfies OperationDescriptor<"post_platform_tenant_data_migrations_by_migration_id_finalize">
+
 export const post_platform_tenants = {"operationId":"post_platform_tenants","method":"post","path":"/platform/tenants"} as const satisfies OperationDescriptor<"post_platform_tenants">
+
+export const post_platform_tenants_by_tenant_id_data_migration_previews = {"operationId":"post_platform_tenants_by_tenant_id_data_migration_previews","method":"post","path":"/platform/tenants/{tenant_id}/data-migration-previews"} as const satisfies OperationDescriptor<"post_platform_tenants_by_tenant_id_data_migration_previews">
+
+export const post_platform_tenants_by_tenant_id_data_migrations = {"operationId":"post_platform_tenants_by_tenant_id_data_migrations","method":"post","path":"/platform/tenants/{tenant_id}/data-migrations"} as const satisfies OperationDescriptor<"post_platform_tenants_by_tenant_id_data_migrations">
+
+export const post_platform_tenants_by_tenant_id_product_change_previews = {"operationId":"post_platform_tenants_by_tenant_id_product_change_previews","method":"post","path":"/platform/tenants/{tenant_id}/product-change-previews"} as const satisfies OperationDescriptor<"post_platform_tenants_by_tenant_id_product_change_previews">
+
+export const post_platform_tenants_by_tenant_id_product_changes = {"operationId":"post_platform_tenants_by_tenant_id_product_changes","method":"post","path":"/platform/tenants/{tenant_id}/product-changes"} as const satisfies OperationDescriptor<"post_platform_tenants_by_tenant_id_product_changes">
 
 export const post_profile_service_delegations = {"operationId":"post_profile_service_delegations","method":"post","path":"/profile/service-delegations"} as const satisfies OperationDescriptor<"post_profile_service_delegations">
 
@@ -544,6 +606,10 @@ export const put_auth_profile_password = {"operationId":"put_auth_profile_passwo
 export const put_monitor_schedules_by_id = {"operationId":"put_monitor_schedules_by_id","method":"put","path":"/monitor/schedules/{id}"} as const satisfies OperationDescriptor<"put_monitor_schedules_by_id">
 
 export const put_monitor_schedules_by_id_status = {"operationId":"put_monitor_schedules_by_id_status","method":"put","path":"/monitor/schedules/{id}/status"} as const satisfies OperationDescriptor<"put_monitor_schedules_by_id_status">
+
+export const put_platform_product_plans_by_plan_id = {"operationId":"put_platform_product_plans_by_plan_id","method":"put","path":"/platform/product-plans/{plan_id}"} as const satisfies OperationDescriptor<"put_platform_product_plans_by_plan_id">
+
+export const put_platform_product_plans_by_plan_id_versions_by_version_draft = {"operationId":"put_platform_product_plans_by_plan_id_versions_by_version_draft","method":"put","path":"/platform/product-plans/{plan_id}/versions/{version}/draft"} as const satisfies OperationDescriptor<"put_platform_product_plans_by_plan_id_versions_by_version_draft">
 
 export const put_platform_tenants_by_tenant_id = {"operationId":"put_platform_tenants_by_tenant_id","method":"put","path":"/platform/tenants/{tenant_id}"} as const satisfies OperationDescriptor<"put_platform_tenants_by_tenant_id">
 

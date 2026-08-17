@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
 import ts from 'typescript'
@@ -10,6 +10,7 @@ import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 const contractPath = new URL('../openapi/openapi.json', import.meta.url)
 const packagePath = new URL('../package.json', import.meta.url)
 const pageRegistryPath = new URL('../src/router/pageRegistry.ts', import.meta.url)
+const featuresPath = new URL('../src/features/', import.meta.url)
 const passwordPolicyPath = new URL(
   '../src/shared/security/passwordPolicy.generated.json',
   import.meta.url,
@@ -66,7 +67,164 @@ function propertyName(property) {
   return undefined
 }
 
-function readPageRegistry(source) {
+function staticString(node, constants = new Map()) {
+  if (node && ts.isStringLiteral(node)) return node.text
+  if (node && ts.isIdentifier(node)) return constants.get(node.text)
+  return undefined
+}
+
+function staticStringArray(node, constants = new Map()) {
+  if (!node || !ts.isArrayLiteralExpression(node)) return undefined
+  const values = node.elements.map(element => staticString(element, constants))
+  return values.every(value => typeof value === 'string') ? values : undefined
+}
+
+async function readFeatureRegistry() {
+  const entries = new Map()
+  const directories = await readdir(featuresPath, { withFileTypes: true })
+  for (const directory of directories) {
+    if (!directory.isDirectory()) continue
+    const manifestPath = new URL(`./${directory.name}/manifest.ts`, featuresPath)
+    let source
+    try {
+      source = await readFile(manifestPath, 'utf8')
+    }
+    catch (error) {
+      if (error?.code === 'ENOENT') continue
+      throw error
+    }
+    const sourceFile = ts.createSourceFile(
+      manifestPath.pathname,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    )
+    const constants = new Map()
+    for (const statement of sourceFile.statements) {
+      if (!ts.isVariableStatement(statement)) continue
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name)
+          && declaration.initializer
+          && ts.isStringLiteral(declaration.initializer)) {
+          constants.set(declaration.name.text, declaration.initializer.text)
+        }
+      }
+    }
+    for (const statement of sourceFile.statements) {
+      if (!ts.isVariableStatement(statement)) continue
+      for (const declaration of statement.declarationList.declarations) {
+        const initializer = declaration.initializer
+        if (!initializer
+          || !ts.isCallExpression(initializer)
+          || !ts.isIdentifier(initializer.expression)
+          || initializer.expression.text !== 'defineFeatureManifest'
+          || initializer.arguments.length !== 1
+          || !ts.isObjectLiteralExpression(initializer.arguments[0])) continue
+        const fields = new Map()
+        for (const field of initializer.arguments[0].properties) {
+          if (ts.isPropertyAssignment(field)) fields.set(propertyName(field), field.initializer)
+        }
+        const routeKeyNode = fields.get('routeKey')
+        const routePathNode = fields.get('path')
+        const capabilityCode = staticString(fields.get('capabilityCode'), constants)
+        const permissionCode = staticString(fields.get('permissionCode'), constants)
+        const routeKey = staticString(routeKeyNode, constants)
+        const routePath = staticString(routePathNode, constants)
+        const allowedVariants = staticStringArray(fields.get('allowedVariants'), constants)
+        if (!capabilityCode
+          || !permissionCode
+          || !routeKey
+          || !routePath?.startsWith('/')
+          || !allowedVariants?.length
+          || new Set(allowedVariants).size !== allowedVariants.length
+          || !fields.has('page')
+          || !fields.has('planConfigEditor')) {
+          errors.push(
+            `${manifestPath.pathname}: feature manifest requires static capabilityCode, `
+            + 'permissionCode, routeKey, path, unique allowedVariants, page, and planConfigEditor',
+          )
+          continue
+        }
+        if (entries.has(routeKey)) {
+          errors.push(`feature manifests contain duplicate route_key ${routeKey}`)
+          continue
+        }
+        entries.set(routeKey, {
+          allowedVariants,
+          capabilityCode,
+          hasComponent: true,
+          permissionCode,
+        })
+      }
+    }
+  }
+  return entries
+}
+
+function readPermissionRouteKeys(source, featureEntries) {
+  const sourceFile = ts.createSourceFile(
+    pageRegistryPath.pathname,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
+  let registry
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) continue
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name)
+        || declaration.name.text !== 'permissionRouteKeys'
+        || !declaration.initializer) continue
+      const initializer = declaration.initializer
+      if (ts.isCallExpression(initializer)
+        && initializer.arguments.length === 1
+        && ts.isObjectLiteralExpression(initializer.arguments[0])) {
+        registry = initializer.arguments[0]
+      }
+      else if (ts.isObjectLiteralExpression(initializer)) {
+        registry = initializer
+      }
+    }
+  }
+  if (!registry) {
+    errors.push('src/router/pageRegistry.ts: permissionRouteKeys object literal is missing')
+    return new Map()
+  }
+
+  const entries = new Map()
+  for (const property of registry.properties) {
+    if (ts.isSpreadAssignment(property)
+      && ts.isIdentifier(property.expression)
+      && property.expression.text === 'featurePermissionRouteKeys') {
+      for (const [routeKey, feature] of featureEntries) {
+        if (entries.has(feature.permissionCode)) {
+          errors.push(`permissionRouteKeys contains duplicate permission ${feature.permissionCode}`)
+        }
+        entries.set(feature.permissionCode, routeKey)
+      }
+      continue
+    }
+    if (!ts.isPropertyAssignment(property)) {
+      errors.push('permissionRouteKeys may only contain static entries or featurePermissionRouteKeys')
+      continue
+    }
+    const permissionCode = propertyName(property)
+    const routeKey = staticString(property.initializer)
+    if (!permissionCode || !routeKey) {
+      errors.push('permissionRouteKeys entries must use static string keys and values')
+      continue
+    }
+    if (entries.has(permissionCode)) {
+      errors.push(`permissionRouteKeys contains duplicate permission ${permissionCode}`)
+    }
+    entries.set(permissionCode, routeKey)
+  }
+  return entries
+}
+
+function readPageRegistry(source, featureEntries) {
   const sourceFile = ts.createSourceFile(
     pageRegistryPath.pathname,
     source,
@@ -95,8 +253,14 @@ function readPageRegistry(source) {
 
   const entries = new Map()
   for (const property of registry.properties) {
+    if (ts.isSpreadAssignment(property)
+      && ts.isIdentifier(property.expression)
+      && property.expression.text === 'featureMenuPageRegistry') {
+      for (const [routeKey, entry] of featureEntries) entries.set(routeKey, entry)
+      continue
+    }
     if (!ts.isPropertyAssignment(property)) {
-      errors.push('menuPageRegistry may only contain explicit property assignments')
+      errors.push('menuPageRegistry may only contain explicit entries or featureMenuPageRegistry')
       continue
     }
     const routeKey = propertyName(property)
@@ -122,7 +286,15 @@ function readPageRegistry(source) {
   return entries
 }
 
-const pageRegistry = readPageRegistry(await readFile(pageRegistryPath, 'utf8'))
+const featureRegistry = await readFeatureRegistry()
+const pageRegistrySource = await readFile(pageRegistryPath, 'utf8')
+const pageRegistry = readPageRegistry(pageRegistrySource, featureRegistry)
+const permissionRouteKeys = readPermissionRouteKeys(pageRegistrySource, featureRegistry)
+const routePermissions = new Map()
+for (const [permissionCode, routeKey] of permissionRouteKeys) {
+  if (!routePermissions.has(routeKey)) routePermissions.set(routeKey, [])
+  routePermissions.get(routeKey).push(permissionCode)
+}
 const menuRouteExtension = document['x-ryframe-menu-routes']
 const contractRoutes = new Map()
 
@@ -153,7 +325,15 @@ else {
         errors.push(`menu route contract contains duplicate route_key ${routeKey}`)
         continue
       }
-      contractRoutes.set(routeKey, menuType)
+      const permissionCode = route?.permission_code ?? null
+      const capabilityCode = route?.capability_code ?? null
+      if (permissionCode !== null && typeof permissionCode !== 'string') {
+        errors.push(`menu route contract entry ${routeKey} has an invalid permission_code`)
+      }
+      if (capabilityCode !== null && typeof capabilityCode !== 'string') {
+        errors.push(`menu route contract entry ${routeKey} has an invalid capability_code`)
+      }
+      contractRoutes.set(routeKey, { capabilityCode, menuType, permissionCode })
     }
   }
 }
@@ -161,17 +341,35 @@ else {
 if (contractRoutes.size < 21) {
   errors.push(`expected at least 21 menu route contracts, found ${contractRoutes.size}`)
 }
-for (const [routeKey, menuType] of contractRoutes) {
+for (const [routeKey, contract] of contractRoutes) {
   const entry = pageRegistry.get(routeKey)
   if (!entry) {
     errors.push(`menuPageRegistry is missing backend route_key ${routeKey}`)
     continue
   }
-  if (menuType === 'C' && !entry.hasComponent) {
+  if (contract.menuType === 'C' && !entry.hasComponent) {
     errors.push(`menuPageRegistry.${routeKey}: page menu must declare a component`)
   }
-  if (menuType === 'M' && entry.hasComponent) {
+  if (contract.menuType === 'M' && entry.hasComponent) {
     errors.push(`menuPageRegistry.${routeKey}: directory menu must not declare a component`)
+  }
+  const permissions = routePermissions.get(routeKey) ?? []
+  if (permissions.length > 1) {
+    errors.push(`permissionRouteKeys maps multiple page permissions to ${routeKey}`)
+  }
+  const expectedPermission = permissions[0] ?? null
+  if (contract.permissionCode !== expectedPermission) {
+    errors.push(
+      `menu route contract ${routeKey}: permission_code must be `
+      + `${JSON.stringify(expectedPermission)}, found ${JSON.stringify(contract.permissionCode)}`,
+    )
+  }
+  const expectedCapability = featureRegistry.get(routeKey)?.capabilityCode ?? null
+  if (contract.capabilityCode !== expectedCapability) {
+    errors.push(
+      `menu route contract ${routeKey}: capability_code must be `
+      + `${JSON.stringify(expectedCapability)}, found ${JSON.stringify(contract.capabilityCode)}`,
+    )
   }
 }
 for (const routeKey of pageRegistry.keys()) {
@@ -179,6 +377,188 @@ for (const routeKey of pageRegistry.keys()) {
     errors.push(`menuPageRegistry contains undeclared route_key ${routeKey}`)
   }
 }
+
+for (const [permissionCode, routeKey] of permissionRouteKeys) {
+  if (!pageRegistry.has(routeKey)) {
+    errors.push(`permissionRouteKeys.${permissionCode}: unknown route_key ${routeKey}`)
+  }
+}
+
+function sortedUniqueStrings(value, location) {
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) {
+    errors.push(`${location}: expected a string array`)
+    return []
+  }
+  if (new Set(value).size !== value.length) errors.push(`${location}: contains duplicates`)
+  return [...value].sort()
+}
+
+function validateProductCapabilityContract() {
+  const extension = document['x-ryframe-product-capabilities']
+  if (!extension || typeof extension !== 'object' || extension.version !== 1) {
+    errors.push('OpenAPI is missing x-ryframe-product-capabilities version 1')
+    return new Map()
+  }
+  if (!Array.isArray(extension.capabilities)) {
+    errors.push('x-ryframe-product-capabilities.capabilities must be an array')
+    return new Map()
+  }
+
+  const manifestsByCapability = new Map()
+  for (const [routeKey, manifest] of featureRegistry) {
+    if (manifestsByCapability.has(manifest.capabilityCode)) {
+      errors.push(`feature manifests contain duplicate capability ${manifest.capabilityCode}`)
+      continue
+    }
+    manifestsByCapability.set(manifest.capabilityCode, { ...manifest, routeKey })
+  }
+
+  const capabilities = new Map()
+  for (const [index, capability] of extension.capabilities.entries()) {
+    const location = `x-ryframe-product-capabilities.capabilities[${index}]`
+    if (!capability || typeof capability.code !== 'string' || !capability.code) {
+      errors.push(`${location}: missing capability code`)
+      continue
+    }
+    if (capabilities.has(capability.code)) {
+      errors.push(`${location}: duplicate capability ${capability.code}`)
+      continue
+    }
+    const dependencies = sortedUniqueStrings(capability.dependencies, `${location}.dependencies`)
+    const conflicts = sortedUniqueStrings(capability.conflicts, `${location}.conflicts`)
+    const routeKeys = sortedUniqueStrings(capability.route_keys, `${location}.route_keys`)
+    const permissionCodes = sortedUniqueStrings(
+      capability.permission_codes,
+      `${location}.permission_codes`,
+    )
+    sortedUniqueStrings(
+      capability.default_admin_permissions,
+      `${location}.default_admin_permissions`,
+    )
+    sortedUniqueStrings(
+      capability.deployment_dependencies,
+      `${location}.deployment_dependencies`,
+    )
+    sortedUniqueStrings(capability.client_config_fields, `${location}.client_config_fields`)
+    if (typeof capability.deployment_available !== 'boolean') {
+      errors.push(`${location}.deployment_available: expected boolean`)
+    }
+    if (!Array.isArray(capability.variants) || capability.variants.length === 0) {
+      errors.push(`${location}.variants: expected a non-empty array`)
+    }
+    const variants = (capability.variants ?? []).map((variant, variantIndex) => {
+      if (!variant
+        || typeof variant.code !== 'string'
+        || !variant.code
+        || !Number.isSafeInteger(variant.schema_version)
+        || variant.schema_version < 1) {
+        errors.push(`${location}.variants[${variantIndex}]: invalid code or schema_version`)
+        return undefined
+      }
+      return variant.code
+    }).filter(Boolean)
+    if (new Set(variants).size !== variants.length) {
+      errors.push(`${location}.variants: duplicate variant code`)
+    }
+    capabilities.set(capability.code, {
+      conflicts,
+      dependencies,
+      permissionCodes,
+      routeKeys,
+      variants: [...variants].sort(),
+    })
+  }
+
+  const backendCodes = [...capabilities.keys()].sort()
+  const frontendCodes = [...manifestsByCapability.keys()].sort()
+  if (!isDeepStrictEqual(backendCodes, frontendCodes)) {
+    errors.push(
+      'feature capability codes do not exactly match x-ryframe-product-capabilities: '
+      + `frontend=${JSON.stringify(frontendCodes)}, backend=${JSON.stringify(backendCodes)}`,
+    )
+  }
+  for (const [capabilityCode, manifest] of manifestsByCapability) {
+    const capability = capabilities.get(capabilityCode)
+    if (!capability) continue
+    if (!isDeepStrictEqual(capability.routeKeys, [manifest.routeKey].sort())) {
+      errors.push(`${capabilityCode}: manifest route_key does not exactly match backend route_keys`)
+    }
+    if (!isDeepStrictEqual(capability.variants, [...manifest.allowedVariants].sort())) {
+      errors.push(`${capabilityCode}: manifest allowedVariants do not exactly match backend variants`)
+    }
+    if (!capability.permissionCodes.includes(manifest.permissionCode)) {
+      errors.push(`${capabilityCode}: manifest permissionCode is absent from backend permission_codes`)
+    }
+  }
+  for (const [capabilityCode, capability] of capabilities) {
+    for (const dependency of capability.dependencies) {
+      if (!capabilities.has(dependency)) {
+        errors.push(`${capabilityCode}: unknown dependency ${dependency}`)
+      }
+    }
+    for (const conflict of capability.conflicts) {
+      if (!capabilities.has(conflict)) errors.push(`${capabilityCode}: unknown conflict ${conflict}`)
+    }
+  }
+  return capabilities
+}
+
+function validateCapabilityRouteContract(capabilities) {
+  const extension = document['x-ryframe-route-contract']
+  if (!extension || typeof extension !== 'object' || extension.version !== 1) {
+    errors.push('OpenAPI is missing x-ryframe-route-contract version 1')
+    return
+  }
+  if (!Array.isArray(extension.routes)) {
+    errors.push('x-ryframe-route-contract.routes must be an array')
+    return
+  }
+  const routeKeys = new Set()
+  const boundPermissions = new Map()
+  for (const [index, route] of extension.routes.entries()) {
+    const location = `x-ryframe-route-contract.routes[${index}]`
+    if (!route
+      || typeof route.source !== 'string'
+      || typeof route.handler !== 'string'
+      || typeof route.method !== 'string'
+      || typeof route.path !== 'string'
+      || typeof route.capability_code !== 'string') {
+      errors.push(`${location}: malformed route binding`)
+      continue
+    }
+    const key = `${route.method.toUpperCase()} ${route.path}`
+    if (routeKeys.has(key)) errors.push(`${location}: duplicate route binding ${key}`)
+    routeKeys.add(key)
+    if (!route.path.startsWith('/api/v1/')) errors.push(`${location}: path must use /api/v1`)
+    const capability = capabilities.get(route.capability_code)
+    if (!capability) {
+      errors.push(`${location}: unknown capability_code ${route.capability_code}`)
+      continue
+    }
+    if (route.permission_code !== null && typeof route.permission_code !== 'string') {
+      errors.push(`${location}: permission_code must be string or null`)
+      continue
+    }
+    if (route.permission_code && !capability.permissionCodes.includes(route.permission_code)) {
+      errors.push(`${location}: permission_code is outside the capability descriptor`)
+    }
+    if (route.permission_code) {
+      if (!boundPermissions.has(route.capability_code)) {
+        boundPermissions.set(route.capability_code, new Set())
+      }
+      boundPermissions.get(route.capability_code).add(route.permission_code)
+    }
+  }
+  for (const [capabilityCode, capability] of capabilities) {
+    const actual = [...(boundPermissions.get(capabilityCode) ?? [])].sort()
+    if (!isDeepStrictEqual(actual, capability.permissionCodes)) {
+      errors.push(`${capabilityCode}: route contract does not bind every descriptor permission`)
+    }
+  }
+}
+
+const productCapabilities = validateProductCapabilityContract()
+validateCapabilityRouteContract(productCapabilities)
 
 const expectedPasswordPolicy = {
   version: 1,
@@ -268,6 +648,10 @@ const bodylessWriteAllowlist = new Set([
   'post_auth_ws_ticket',
   'post_monitor_jobs_by_id_retry',
   'post_monitor_schedules_by_id_run',
+  'post_platform_product_plans_by_plan_id_versions_by_version_publish',
+  'post_platform_product_plans_by_plan_id_versions_by_version_retire',
+  'post_platform_tenant_data_migrations_by_migration_id_cancel',
+  'post_platform_tenant_data_migrations_by_migration_id_finalize',
   'post_system_config_packages',
   'post_system_perms_sync',
   'post_system_notices_by_id_publish_message',
@@ -288,6 +672,8 @@ const requiredQueryOperationIds = new Set([
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
   'get_platform_tenants_page',
+  'get_platform_data_targets',
+  'get_platform_product_plans',
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
@@ -324,6 +710,8 @@ const c1PaginatedOperationIds = new Set([
   'get_monitor_schedules',
   'get_monitor_schedules_by_id_executions',
   'get_platform_tenants_page',
+  'get_platform_data_targets',
+  'get_platform_product_plans',
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
@@ -412,6 +800,8 @@ const fixedPaginationPageSizeMaximums = new Map([
   ['get_agent_v1_directory_users', 100],
   ['get_agent_v1_reference_dictionaries_by_type_code', 100],
   ['get_platform_tenants_page', 100],
+  ['get_platform_data_targets', 100],
+  ['get_platform_product_plans', 100],
 ])
 const c1OptionParameterContracts = new Map([
   ['q', { type: 'string', minLength: undefined, maxLength: 64 }],
@@ -537,8 +927,8 @@ function validateC1QueryParameter(operationId, parameters, parameterName, expect
 }
 
 function validateC1QueryContracts() {
-  if (c1PaginatedOperationIds.size !== 29) {
-    errors.push(`C1 pagination manifest must contain 29 operationIds, found ${c1PaginatedOperationIds.size}`)
+  if (c1PaginatedOperationIds.size !== 31) {
+    errors.push(`C1 pagination manifest must contain 31 operationIds, found ${c1PaginatedOperationIds.size}`)
   }
   if (c1OptionOperationContracts.size !== 2) {
     errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)

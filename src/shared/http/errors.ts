@@ -58,7 +58,14 @@ const errorKeyTranslation: Record<string, string> = {
   payload_too_large: 'shell.http.errors.payloadTooLarge',
   rate_limited: 'shell.http.errors.rateLimited',
   service_unavailable: 'shell.http.errors.serviceUnavailable',
-  feature_disabled: 'shell.http.errors.featureDisabled',
+  capability_unavailable: 'shell.http.errors.capabilityUnavailable',
+  tenant_capability_denied: 'shell.http.errors.tenantCapabilityDenied',
+  permission_denied: 'shell.http.errors.permissionDenied',
+  stale_runtime_epoch: 'shell.http.errors.staleRuntimeEpoch',
+  stale_placement_generation: 'shell.http.errors.stalePlacementGeneration',
+  tenant_operation_conflict: 'shell.http.errors.tenantOperationConflict',
+  tenant_data_maintenance: 'shell.http.errors.tenantDataMaintenance',
+  tenant_data_target_unavailable: 'shell.http.errors.tenantDataTargetUnavailable',
   internal: 'shell.http.errors.internal',
 }
 
@@ -114,8 +121,9 @@ export async function toHttpError(error: unknown): Promise<HttpError> {
       error.response?.data,
       error.message || translate('shell.http.requestFailed'),
     )
+    const retryAfterSeconds = parseRetryAfter(error.response?.headers['retry-after'])
     return new HttpError(
-      payload.message,
+      withRetryAfter(payload.message, status, retryAfterSeconds),
       {
         status,
         code: payload.envelope?.code,
@@ -124,7 +132,7 @@ export async function toHttpError(error: unknown): Promise<HttpError> {
         request_id: payload.envelope?.request_id,
         kind: axiosErrorKind(error, status),
         cause: error,
-        retryAfterSeconds: parseRetryAfter(error.response?.headers['retry-after']),
+        retryAfterSeconds,
         realtimeStatus: responseHeader(error.response?.headers, 'x-ryframe-realtime'),
       },
     )
@@ -137,7 +145,21 @@ export async function toHttpError(error: unknown): Promise<HttpError> {
 
 function parseRetryAfter(value: unknown): number | undefined {
   const seconds = Number(value)
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds
+  if (typeof value !== 'string') return undefined
+  const timestamp = Date.parse(value)
+  return Number.isNaN(timestamp)
+    ? undefined
+    : Math.max(0, Math.ceil((timestamp - Date.now()) / 1_000))
+}
+
+function withRetryAfter(
+  message: string,
+  status: number | undefined,
+  retryAfterSeconds: number | undefined,
+): string {
+  if ((status !== 423 && status !== 503) || retryAfterSeconds === undefined) return message
+  return `${message} ${translate('shell.http.retryAfter', { seconds: retryAfterSeconds })}`
 }
 
 function responseHeader(headers: unknown, name: string): string | undefined {

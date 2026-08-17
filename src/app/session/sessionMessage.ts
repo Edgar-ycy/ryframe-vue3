@@ -1,4 +1,4 @@
-import type { UserInfo } from '@/api/modules/auth'
+import type { SessionContext, SessionUser } from '@/api/modules/sessionContext'
 
 export type SessionMessage =
   | { type: 'refresh-start'; source: string; operationId: string; startedAt: number }
@@ -8,7 +8,7 @@ export type SessionMessage =
     operationId: string
     startedAt: number
     accessToken: string
-    userInfo: UserInfo
+    sessionContext: SessionContext
   }
   | { type: 'refresh-failed'; source: string; operationId: string; startedAt: number; status?: number }
   | { type: 'logout'; source: string; at: number }
@@ -20,7 +20,7 @@ export type SessionOutboundMessage =
     operationId: string
     startedAt: number
     accessToken: string
-    userInfo: UserInfo
+    sessionContext: SessionContext
   }
   | { type: 'refresh-failed'; operationId: string; startedAt: number; status?: number }
   | { type: 'logout'; at: number }
@@ -31,10 +31,8 @@ const userInfoKeys = new Set([
   'email',
   'id',
   'nickname',
-  'perms',
   'phone',
   'preferred_locale',
-  'roles',
   'tenant_id',
   'tenant_name',
   'username',
@@ -90,7 +88,7 @@ function isOptionalLocale(value: unknown): boolean {
   return value === undefined || value === null || value === 'zh-CN' || value === 'en-US'
 }
 
-function isUserInfo(value: unknown): value is UserInfo {
+function isUserInfo(value: unknown): value is SessionUser {
   if (!isRecord(value)) return false
   const keys = Reflect.ownKeys(value)
   if (!keys.every(key => typeof key === 'string' && userInfoKeys.has(key))) return false
@@ -98,9 +96,7 @@ function isUserInfo(value: unknown): value is UserInfo {
     'email',
     'id',
     'nickname',
-    'perms',
     'phone',
-    'roles',
     'tenant_id',
     'tenant_name',
     'username',
@@ -113,11 +109,65 @@ function isUserInfo(value: unknown): value is UserInfo {
     && isString(value.nickname)
     && isString(value.email)
     && isString(value.phone)
-    && isStringArray(value.roles)
-    && isStringArray(value.perms)
     && isOptionalString(value.avatar)
     && isOptionalString(value.dept_name)
     && isOptionalLocale(value.preferred_locale)
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+}
+
+function isCapability(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return hasExactKeys(value, [
+    'code',
+    'variant',
+    'schema_version',
+    'client_config',
+  ])
+    && isNonEmptyString(value.code)
+    && isNonEmptyString(value.variant)
+    && isNonNegativeInteger(value.schema_version)
+    && value.schema_version >= 1
+    && isRecord(value.client_config)
+}
+
+function isBusinessData(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return hasExactKeys(value, ['state', 'placement_generation'])
+    && ['provisioning', 'active', 'maintenance', 'failed'].includes(
+      String(value.state),
+    )
+    && isDecimalString(value.placement_generation)
+}
+
+function isSessionContext(value: unknown): value is SessionContext {
+  if (!isRecord(value)) return false
+  return hasExactKeys(value, [
+    'user',
+    'roles',
+    'permissions',
+    'authorization_epoch',
+    'runtime_epoch',
+    'capabilities',
+    'business_data',
+    'menus',
+  ])
+    && isUserInfo(value.user)
+    && isStringArray(value.roles)
+    && isStringArray(value.permissions)
+    && isDecimalString(value.authorization_epoch)
+    && isDecimalString(value.runtime_epoch)
+    && Array.isArray(value.capabilities)
+    && value.capabilities.every(isCapability)
+    && isBusinessData(value.business_data)
+    && Array.isArray(value.menus)
+    && value.menus.every(isRecord)
+}
+
+function isDecimalString(value: unknown): value is string {
+  return typeof value === 'string' && /^(?:0|[1-9]\d*)$/u.test(value)
 }
 
 export function isSessionMessage(value: unknown): value is SessionMessage {
@@ -131,12 +181,12 @@ export function isSessionMessage(value: unknown): value is SessionMessage {
     case 'authenticated':
       return hasExactKeys(
         value,
-        ['type', 'source', 'operationId', 'startedAt', 'accessToken', 'userInfo'],
+        ['type', 'source', 'operationId', 'startedAt', 'accessToken', 'sessionContext'],
       )
         && isOperationId(value.operationId)
         && isTimestamp(value.startedAt)
         && isNonEmptyString(value.accessToken)
-        && isUserInfo(value.userInfo)
+        && isSessionContext(value.sessionContext)
     case 'refresh-failed':
       return hasExactKeys(value, ['type', 'source', 'operationId', 'startedAt'], ['status'])
         && isOperationId(value.operationId)

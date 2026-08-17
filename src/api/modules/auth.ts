@@ -1,5 +1,4 @@
 import request, { rawRequest } from '@/shared/http/client'
-import type { AppLocale } from '@/i18n'
 import { requestOperation } from '@/api/operationRequest'
 import {
   delete_auth_sessions_by_sid,
@@ -14,21 +13,13 @@ import type {
   OperationQuery,
 } from '@/api/contract'
 
-export type UserInfo = ApiSchema<'UserInfo'> & {
-  preferred_locale?: AppLocale | null
-}
-export type LoginResult = Omit<OperationData<'post_auth_login'>, 'user_info'> & {
-  user_info: UserInfo
-}
+export type UserInfo = ApiSchema<'UserInfo'>
+export type LoginResult = OperationData<'post_auth_login'>
 export type LoginParams = OperationJsonBody<'post_auth_login'>
 export type CsrfChallenge = OperationData<'get_auth_csrf'>
 export type CompletePasswordResetParams = OperationJsonBody<'post_auth_password_reset_complete'>
-export type ProfileInfo = ApiSchema<'UserProfileResponse'> & {
-  preferred_locale?: AppLocale | null
-}
-export type ProfileUpdateParams = OperationJsonBody<'put_auth_profile'> & {
-  preferred_locale?: AppLocale | null
-}
+export type ProfileInfo = ApiSchema<'UserProfileResponse'>
+export type ProfileUpdateParams = OperationJsonBody<'put_auth_profile'>
 export type PasswordChangeParams = OperationJsonBody<'put_auth_profile_password'>
 export type AuthSession = OperationData<'get_auth_sessions'>[number]
 export type AuthSessionPath = OperationPath<'delete_auth_sessions_by_sid'>
@@ -90,13 +81,6 @@ export function completePasswordReset(data: CompletePasswordResetParams) {
     data,
     headers: { 'X-Tenant-Id': data.tenant_id },
     skipAuthRefresh: true,
-  })
-}
-
-export function getUserInfo() {
-  return request<UserInfo>({
-    url: '/auth/me',
-    method: 'get',
   })
 }
 

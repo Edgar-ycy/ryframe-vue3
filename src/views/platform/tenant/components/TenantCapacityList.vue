@@ -21,7 +21,7 @@
         </el-table-column>
         <el-table-column :label="t('tenantCapacity.status')" width="112" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'enabled' ? 'success' : 'danger'">
+            <el-tag :type="tenantStatusType(row.status)">
               {{ statusLabel(row.status) }}
             </el-tag>
           </template>
@@ -66,7 +66,7 @@
             <el-button type="primary" link icon="View" @click="emit('detail', row.tenant_id)">
               {{ t('tenantCapacity.details') }}
             </el-button>
-            <el-button v-perm="'tenant:edit'" type="primary" link icon="Edit" :disabled="statusPending" @click="emit('edit', row)">
+            <el-button v-perm="'tenant:edit'" type="primary" link icon="Edit" :disabled="statusPending || !isMutableStatus(row.status)" @click="emit('edit', row)">
               {{ t('tenantCapacity.edit') }}
             </el-button>
             <el-button
@@ -74,10 +74,10 @@
               :type="row.status === 'enabled' ? 'warning' : 'success'"
               link
               :loading="togglingTenantId === row.tenant_id"
-              :disabled="row.tenant_id === 'system' || statusPending"
+              :disabled="row.tenant_id === 'system' || statusPending || !isMutableStatus(row.status)"
               @click="emit('toggle', row)"
             >
-              {{ row.status === 'enabled' ? t('tenantCapacity.disable') : t('tenantCapacity.enable') }}
+              {{ statusActionLabel(row.status) }}
             </el-button>
           </template>
         </el-table-column>
@@ -95,7 +95,7 @@
             <strong>{{ tenant.name }}</strong>
             <small>{{ tenant.tenant_id }}</small>
           </button>
-          <el-tag :type="tenant.status === 'enabled' ? 'success' : 'danger'" size="small">
+          <el-tag :type="tenantStatusType(tenant.status)" size="small">
             {{ statusLabel(tenant.status) }}
           </el-tag>
         </header>
@@ -117,17 +117,17 @@
           <el-button type="primary" plain icon="View" @click="emit('detail', tenant.tenant_id)">
             {{ t('tenantCapacity.details') }}
           </el-button>
-          <el-button v-perm="'tenant:edit'" icon="Edit" :disabled="statusPending" @click="emit('edit', tenant)">
+          <el-button v-perm="'tenant:edit'" icon="Edit" :disabled="statusPending || !isMutableStatus(tenant.status)" @click="emit('edit', tenant)">
             {{ t('tenantCapacity.edit') }}
           </el-button>
           <el-button
             v-perm="'tenant:status'"
             :type="tenant.status === 'enabled' ? 'warning' : 'success'"
             :loading="togglingTenantId === tenant.tenant_id"
-            :disabled="tenant.tenant_id === 'system' || statusPending"
+            :disabled="tenant.tenant_id === 'system' || statusPending || !isMutableStatus(tenant.status)"
             @click="emit('toggle', tenant)"
           >
-            {{ tenant.status === 'enabled' ? t('tenantCapacity.disable') : t('tenantCapacity.enable') }}
+            {{ statusActionLabel(tenant.status) }}
           </el-button>
         </footer>
       </article>
@@ -193,6 +193,22 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function isMutableStatus(status: string): boolean {
+  return status === 'enabled' || status === 'disabled'
+}
+
+function tenantStatusType(status: string): TagProps['type'] {
+  if (status === 'enabled') return 'success'
+  if (status === 'disabled' || status === 'provisioning_failed') return 'danger'
+  return 'warning'
+}
+
+function statusActionLabel(status: string): string {
+  if (status === 'enabled') return t('tenantCapacity.disable')
+  if (status === 'disabled') return t('tenantCapacity.enable')
+  return t('tenantCapacity.pendingAction')
+}
 </script>
 
 <style scoped lang="scss">

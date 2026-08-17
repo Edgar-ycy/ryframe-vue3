@@ -26,7 +26,9 @@
 - **系统工具**: 代码生成
 - **个人中心**: 个人信息编辑、密码修改、头像更新
 - **消息中心**: 按租户和用户隔离的持久收件箱、未读计数、实时投递与补拉
-- **权限控制**: 按钮级权限指令、角色权限、后端菜单驱动的动态路由
+- **产品套餐与能力**: 套餐版本生命周期、租户套餐变更预览/应用、通用 capability/variant 功能裁剪
+- **数据放置**: 安全数据目标目录、租户放置与迁移、迁移状态动作和备份恢复点
+- **权限控制**: 按钮级权限指令、角色权限、会话菜单与 feature manifest 共同驱动的动态路由
 
 ## 项目结构
 
@@ -36,6 +38,8 @@ ryframe-vue3/
 ├── src/
 │   ├── app/session/        # Token 刷新、退出和会话协调
 │   ├── app/messages/       # 消息查询、mutation 与 WebSocket 传输
+│   ├── app/tenant-context/ # 会话上下文、能力判断和强一致刷新
+│   ├── features/           # 功能清单、能力映射和领域共享规则
 │   ├── shared/             # 运行时配置、HTTP 基础层和生成式安全策略
 │   ├── api/contract.ts     # 生成契约的稳定类型入口
 │   ├── api/generated/      # OpenAPI 生成类型，禁止手工修改
@@ -118,7 +122,7 @@ $env:RYFRAME_BACKEND_WORKTREE='..'
 pnpm api:sync
 ```
 
-设置 `RYFRAME_BACKEND_WORKTREE` 后，同步脚本只会通过 `git -C <后端仓库> show <提交>:<契约路径>` 读取精确 Git 对象，不读取后端工作区文件；不设置时则读取完整提交对应的 GitHub Raw 地址。`pnpm api:check` 会在系统临时目录重新生成派生文件并只读比较仓库内容，不访问网络，也不会先覆盖受管文件。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。API 模块通过 `src/api/contract.ts` 引用生成类型，逐步改用 operationId 请求门面，不手工复制 DTO、URL 或 HTTP 方法；密码、公告策略和编译期权限码同样从 OpenAPI 生成，不复制限制常量、正则或权限字符串联合类型。
+设置 `RYFRAME_BACKEND_WORKTREE` 后，同步脚本只会通过 `git -C <后端仓库> show <提交>:<契约路径>` 读取精确 Git 对象，不读取后端工作区文件；不设置时则读取完整提交对应的 GitHub Raw 地址。`pnpm api:check` 会在系统临时目录重新生成派生文件并只读比较仓库内容，不访问网络，也不会先覆盖受管文件。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。API 模块通过 `src/api/contract.ts` 引用生成类型，逐步改用 operationId 请求门面，不手工复制 DTO、URL 或 HTTP 方法；密码、公告策略和编译期权限码同样从 OpenAPI 生成，不复制限制常量、正则或权限字符串联合类型。套餐、租户上下文和数据放置当前使用的本地窄 DTO 只用于等待后端 OpenAPI 稳定，契约可生成后必须切换生成类型并删除临时定义。
 
 ### 预览构建结果
 
@@ -172,8 +176,9 @@ import { usePermission } from '@/hooks/usePermission'
 
 ### 权限控制体系
 
-- **路由权限**: 后端菜单树驱动动态路由注册，无权限页面不可达
-- **按钮权限**: `v-perm` 指令实现按钮级显隐控制
+- **会话快照**: 登录、刷新和 `GET /auth/context` 返回相同的完整 `SessionContext`，角色、权限、能力、业务数据状态和菜单原子应用，校验失败时 fail-closed
+- **路由权限**: 后端菜单、顶层权限、本地 `route_key` 白名单和 feature manifest 的 capability/variant 共同决定动态路由，无权限页面不可达
+- **按钮权限**: `v-perm` 指令实现按钮级显隐；业务数据非 `active` 时只禁用 manifest 标记的业务写操作，系统管理仍可用
 - **角色权限**: 支持超级管理员通配符（`*:*:*`）与精确权限匹配
 
 ### 请求封装
@@ -181,12 +186,21 @@ import { usePermission } from '@/hooks/usePermission'
 - **Token 管理**: Bearer Token 自动注入，401 时自动刷新并重放排队请求
 - **错误处理**: 统一 HTTP 状态码映射与业务错误码提示
 - **响应适配**: 拦截器统一处理业务响应包络与文件下载响应
+- **上下文收敛**: 读取 `X-Authorization-Epoch`、`X-Tenant-Runtime-Epoch`、`X-Tenant-Data-Generation`、`X-Tenant-Data-State`，任一变化都合并为一次 `/auth/context` 强一致刷新；`423`/`503` 保留 `Retry-After`
 
 ### 动态路由
 
-- 首页加载时从后端获取用户菜单树，动态注册 Vue Router 路由
+- 首次导航从登录/刷新携带的 `session_context` 或 `/auth/context` 读取同一快照，不再分开请求主体与当前菜单
 - 页面组件只能从本地 `pageRegistry.ts` 白名单解析，后端不能下发任意组件路径
+- capability 页面由 `src/features` manifests 聚合页面、稳定 `route_key`、权限、variant 和套餐配置编辑器；服务账号使用 `system.service_accounts`，运行时状态只取 `SessionContext`
 - 首次路由导航自动 replace，避免回退到登录页
+
+### 产品套餐与数据放置
+
+- `platform.product-plans` 管理套餐稳定 key 与独立版本时间线，租户套餐变更严格执行 preview 后 apply
+- `platform.data-targets` 只展示目标 key、隔离模式、kind、region、health、schema fingerprint 和连接池计数，不展示连接地址、账号、Secret 或 TLS 路径
+- 租户详情提供套餐与能力、数据放置与迁移、备份恢复点标签；迁移 apply 携带 `plan_hash`、`expected_placement_generation` 和 `Idempotency-Key`
+- 迁移只列服务端标记为 eligible 的目标，提交前再次输入完整 `tenant_id`；只轮询当前打开租户和进行中的任务，离开即停止
 
 ### 密码策略
 

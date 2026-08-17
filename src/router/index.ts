@@ -4,14 +4,14 @@ import {
   type RouteLocationRaw,
   type RouteRecordRaw,
 } from 'vue-router'
-import { getUserMenus } from '@/api/modules/menu'
 import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
+import { useTenantContextStore } from '@/app/tenant-context'
 import { useUserStore } from '@/stores/user'
-import { hasPermission } from '@/utils/permission'
 import { ROOT_LAYOUT_ROUTE_NAME } from './layout'
 import { createNavigationGuard } from './navigationGuard'
+import { canAccessRouteMeta } from './routeAccess'
 import { RuntimeRouteRegistry } from './runtimeRouteRegistry'
 import { constantRoutes } from './routes/constant'
 
@@ -30,7 +30,7 @@ declare module 'vue-router' {
     buttonPerms?: string[]
     requiresPermission?: boolean
     requiresMultiTenancy?: boolean
-    requiresServiceAccounts?: boolean
+    requiredCapabilities?: readonly string[]
   }
 }
 
@@ -48,25 +48,28 @@ interface RouteInstallation {
 }
 
 let routeGeneration = 0
+let installedGeneration = -1
 let routeInstallation: RouteInstallation | undefined
 let routeRefreshPromise: Promise<RouteRecordRaw[]> | undefined
 
 async function buildAccessibleRoutes(
   generation: number,
-  options?: { skipAuthRefresh?: boolean },
 ): Promise<RouteRecordRaw[] | undefined> {
-  const menuRes = await getUserMenus(options)
+  const tenantContext = useTenantContextStore()
+  await tenantContext.ensureLoaded()
   if (generation !== routeGeneration) return undefined
-
   const permissionStore = usePermissionStore()
-  const userStore = useUserStore()
-  const runtimeCapabilities = useRuntimeCapabilitiesStore()
-  return permissionStore.generateRoutes(
-    menuRes.data ?? [],
-    userStore.permissions,
-    userStore.roles,
-    runtimeCapabilities.serviceAccountsEnabled,
-  )
+  const context = tenantContext.context
+  if (!context) return undefined
+  if (!permissionStore.isRoutesLoaded) {
+    permissionStore.generateRoutes(
+      context.menus,
+      context.permissions,
+      context.roles,
+      tenantContext.capabilityCodes,
+    )
+  }
+  return permissionStore.routes
 }
 
 /**
@@ -75,17 +78,21 @@ async function buildAccessibleRoutes(
 export function ensureAccessibleRoutes(
   options?: { skipAuthRefresh?: boolean },
 ): Promise<RouteRecordRaw[]> {
+  void options
   const permissionStore = usePermissionStore()
-  if (permissionStore.isRoutesLoaded) return Promise.resolve(permissionStore.routes)
+  if (permissionStore.isRoutesLoaded && installedGeneration === routeGeneration) {
+    return Promise.resolve(permissionStore.routes)
+  }
 
   const generation = routeGeneration
   if (routeInstallation?.generation === generation) return routeInstallation.promise
 
   const promise = (async () => {
     try {
-      const routes = await buildAccessibleRoutes(generation, options)
+      const routes = await buildAccessibleRoutes(generation)
       if (!routes || generation !== routeGeneration) return []
       runtimeRouteRegistry.add(ROOT_LAYOUT_ROUTE_NAME, routes)
+      installedGeneration = generation
       return routes
     }
     catch (error) {
@@ -107,6 +114,7 @@ export function ensureAccessibleRoutes(
 
 export function resetDynamicRoutes(): void {
   routeGeneration += 1
+  installedGeneration = -1
   runtimeRouteRegistry.reset()
 }
 
@@ -150,13 +158,13 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
 
   const user = useUserStore()
   const runtimeCapabilities = useRuntimeCapabilitiesStore()
-  const accessible = resolved.matched.every((record) => {
-    if (record.meta.requiresMultiTenancy && !runtimeCapabilities.multiTenancyEnabled) return false
-    if (!record.meta.requiresPermission) return true
-    const permission = record.meta.permission
-    return typeof permission === 'string'
-      && hasPermission(user.permissions, permission, user.roles)
-  })
+  const tenantContext = useTenantContextStore()
+  const accessible = resolved.matched.every(record => canAccessRouteMeta(record.meta, {
+    capabilities: tenantContext.capabilityCodes,
+    multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
+    permissions: user.permissions,
+    roles: user.roles,
+  }))
   return accessible ? resolved.fullPath : fallback
 }
 
@@ -165,6 +173,7 @@ const navigationGuard = createNavigationGuard({
   getUser: useUserStore,
   getPermissionState: usePermissionStore,
   getRuntimeCapabilities: useRuntimeCapabilitiesStore,
+  getTenantContext: useTenantContextStore,
   ensureAccessibleRoutes,
   clearSession,
   isKnownRoute: (path) => {

@@ -18,6 +18,7 @@ import {
 } from '@/api/modules/tenant'
 import { usePermission } from '@/hooks/usePermission'
 import { requireOperationData } from '@/shared/http/client'
+import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import {
   invalidateTenantResource,
   queryClient,
@@ -42,7 +43,7 @@ export interface TenantCapacityFilterState {
 }
 
 type SaveTenantCommand =
-  | { kind: 'create'; data: CreateTenantPayload }
+  | { kind: 'create'; data: CreateTenantPayload, idempotencyKey: string }
   | { kind: 'update'; tenantId: string; data: UpdateTenantPayload }
 
 type TenantStatusCommand = { tenantId: string; status: TenantStatus }
@@ -110,6 +111,8 @@ export function useTenantCapacityManagement() {
   const filters = reactive<TenantCapacityFilterState>(emptyFilters())
   const appliedFilters = ref<TenantCapacityFilterState>(emptyFilters())
   const selectedTenantId = ref<string | null>(null)
+  let pendingCreateIdempotencyKey: string | undefined
+  let pendingCreateIntentFingerprint: string | undefined
 
   const canViewUsage = computed(() => hasPermission('tenant:usage:list'))
   const canListTenants = computed(() => hasPermission('tenant:list'))
@@ -189,7 +192,7 @@ export function useTenantCapacityManagement() {
     {
       mutationFn: async command => {
         const response = command.kind === 'create'
-          ? await createTenant(command.data)
+          ? await createTenant(command.data, command.idempotencyKey)
           : await updateTenant(command.tenantId, command.data)
         return requireOperationData(response)
       },
@@ -291,9 +294,32 @@ export function useTenantCapacityManagement() {
   }
 
   async function createTenantRecord(data: CreateTenantPayload): Promise<Tenant> {
-    const tenant = await saveMutation.mutateAsync({ kind: 'create', data })
-    await reconcileTenant(tenant.tenant_id)
-    return tenant
+    const intentFingerprint = createTenantIntentFingerprint(data)
+    const idempotencyKey = pendingCreateIntentFingerprint === intentFingerprint
+      ? pendingCreateIdempotencyKey ?? createIdempotencyKey('tenant-provision')
+      : createIdempotencyKey('tenant-provision')
+    try {
+      const tenant = await saveMutation.mutateAsync({
+        kind: 'create',
+        data,
+        idempotencyKey,
+      })
+      pendingCreateIdempotencyKey = undefined
+      pendingCreateIntentFingerprint = undefined
+      await reconcileTenant(tenant.tenant_id)
+      return tenant
+    }
+    catch (error) {
+      // 网络中断或 5xx 时服务端事务可能已经提交；同一用户意图必须复用原键。
+      // 若用户随后修改请求，服务端会以 409 拒绝不同载荷，下一次提交再生成新键。
+      pendingCreateIdempotencyKey = shouldReuseIdempotencyKey(error)
+        ? idempotencyKey
+        : undefined
+      pendingCreateIntentFingerprint = pendingCreateIdempotencyKey
+        ? intentFingerprint
+        : undefined
+      throw error
+    }
   }
 
   async function updateTenantRecord(
@@ -366,4 +392,22 @@ export function useTenantCapacityManagement() {
     toggleTenantStatus,
     updateTenantRecord,
   }
+}
+
+function createTenantIntentFingerprint(data: CreateTenantPayload): string {
+  // 密码不写入持久存储，也不生成可离线猜测的快速摘要。若只有密码变化，复用旧键
+  // 会由服务端 Argon2 快照安全地返回 409，随后下一次提交生成新意图键。
+  return JSON.stringify({
+    tenant_id: data.tenant_id,
+    name: data.name,
+    domain: data.domain ?? null,
+    expire_at: data.expire_at ?? null,
+    max_users: data.max_users ?? null,
+    max_roles: data.max_roles ?? null,
+    max_storage_mb: data.max_storage_mb ?? null,
+    max_requests_per_min: data.max_requests_per_min ?? null,
+    admin_username: data.admin_username,
+    plan_version_id: data.plan_version_id,
+    data_target_key: data.data_target_key,
+  })
 }

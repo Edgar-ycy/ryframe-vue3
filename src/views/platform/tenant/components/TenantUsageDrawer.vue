@@ -9,109 +9,146 @@
   >
     <div v-loading="loading" class="drawer-content" aria-live="polite">
       <template v-if="tenant">
-        <header class="tenant-heading">
-          <div>
-            <h2>{{ tenant.name }}</h2>
-            <p>{{ tenant.tenant_id }}</p>
-          </div>
-          <div class="tenant-heading__tags">
-            <el-tag :type="tenant.status === 'enabled' ? 'success' : 'danger'">
-              {{ statusLabel(tenant.status) }}
-            </el-tag>
-            <el-tag :type="expirationType(tenant.expiration_status)" effect="plain">
-              {{ expirationLabel(tenant.expiration_status) }}
-            </el-tag>
-            <el-tag v-if="tenant.capacity_status" :type="capacityType(tenant.capacity_status)" effect="plain">
-              {{ capacityLabel(tenant.capacity_status) }}
-            </el-tag>
-          </div>
-        </header>
+        <el-tabs v-model="activeTab">
+          <el-tab-pane :label="t('tenantCapacity.capacityTab')" name="capacity">
+            <header class="tenant-heading">
+              <div>
+                <h2>{{ tenant.name }}</h2>
+                <p>{{ tenant.tenant_id }}</p>
+              </div>
+              <div class="tenant-heading__tags">
+                <el-tag :type="tenantStatusType(tenant.status)">
+                  {{ statusLabel(tenant.status) }}
+                </el-tag>
+                <el-tag :type="expirationType(tenant.expiration_status)" effect="plain">
+                  {{ expirationLabel(tenant.expiration_status) }}
+                </el-tag>
+                <el-tag v-if="tenant.capacity_status" :type="capacityType(tenant.capacity_status)" effect="plain">
+                  {{ capacityLabel(tenant.capacity_status) }}
+                </el-tag>
+              </div>
+            </header>
 
-        <p class="drawer-hint">{{ t('tenantCapacity.detailHint') }}</p>
+            <p class="drawer-hint">{{ t('tenantCapacity.detailHint') }}</p>
 
-        <div class="drawer-actions">
-          <el-button icon="Refresh" :loading="refreshing" @click="emit('refresh')">
-            {{ t('tenantCapacity.refresh') }}
-          </el-button>
-          <el-button v-perm="'tenant:edit'" type="primary" icon="Edit" @click="emit('edit', tenant)">
-            {{ t('tenantCapacity.edit') }}
-          </el-button>
-        </div>
-
-        <section class="drawer-section" :aria-label="t('tenantCapacity.basicInformation')">
-          <h3>{{ t('tenantCapacity.basicInformation') }}</h3>
-          <dl class="details-grid">
-            <div><dt>{{ t('tenantCapacity.domain') }}</dt><dd>{{ tenant.domain || t('tenantCapacity.notAvailable') }}</dd></div>
-            <div><dt>{{ t('tenantCapacity.expireAt') }}</dt><dd>{{ formatDate(tenant.expire_at) }}</dd></div>
-            <div><dt>{{ t('tenantCapacity.status') }}</dt><dd>{{ statusLabel(tenant.status) }}</dd></div>
-            <div><dt>{{ t('tenantCapacity.capacityStatus') }}</dt><dd>{{ tenant.capacity_status ? capacityLabel(tenant.capacity_status) : t('tenantCapacity.capacityUnavailable') }}</dd></div>
-          </dl>
-        </section>
-
-        <section class="drawer-section" :aria-label="t('tenantCapacity.quotaConfiguration')">
-          <h3>{{ t('tenantCapacity.quotaConfiguration') }}</h3>
-          <dl class="details-grid">
-            <div><dt>{{ t('tenantCapacity.maxUsers') }}</dt><dd>{{ quotaLimit(tenant.max_users) }}</dd></div>
-            <div><dt>{{ t('tenantCapacity.maxRoles') }}</dt><dd>{{ quotaLimit(tenant.max_roles) }}</dd></div>
-            <div><dt>{{ t('tenantCapacity.maxStorage') }}</dt><dd>{{ storageLimit(tenant.max_storage_mb) }}</dd></div>
-            <div><dt>{{ t('tenantCapacity.maxRequests') }}</dt><dd>{{ quotaLimit(tenant.max_requests_per_min) }}</dd></div>
-          </dl>
-        </section>
-
-        <template v-if="tenant.usage">
-          <section class="drawer-section" :aria-label="t('tenantCapacity.quotaOverview')">
-            <div class="section-heading">
-              <h3>{{ t('tenantCapacity.quotaOverview') }}</h3>
-              <span>{{ t('tenantCapacity.calculatedAt') }}: {{ formatDate(tenant.usage.calculated_at) }}</span>
+            <div class="drawer-actions">
+              <el-button icon="Refresh" :loading="refreshing" @click="emit('refresh')">
+                {{ t('tenantCapacity.refresh') }}
+              </el-button>
+              <el-button v-perm="'tenant:edit'" type="primary" icon="Edit" :disabled="!isMutableStatus(tenant.status)" @click="emit('edit', tenant)">
+                {{ t('tenantCapacity.edit') }}
+              </el-button>
             </div>
-            <div class="quota-grid">
-              <TenantQuotaMeter :label="t('tenantCapacity.users')" :quota="tenant.usage.users" />
-              <TenantQuotaMeter :label="t('tenantCapacity.roles')" :quota="tenant.usage.roles" />
-              <TenantQuotaMeter :label="t('tenantCapacity.storage')" :quota="tenant.usage.storage" unit="storage" />
-            </div>
-          </section>
 
-          <section class="drawer-section" :aria-label="t('tenantCapacity.requestWindow')">
-            <h3>{{ t('tenantCapacity.requestWindow') }}</h3>
-            <p class="section-description">{{ t('tenantCapacity.currentWindowHint') }}</p>
+            <section class="drawer-section" :aria-label="t('tenantCapacity.basicInformation')">
+              <h3>{{ t('tenantCapacity.basicInformation') }}</h3>
+              <dl class="details-grid">
+                <div><dt>{{ t('tenantCapacity.domain') }}</dt><dd>{{ tenant.domain || t('tenantCapacity.notAvailable') }}</dd></div>
+                <div><dt>{{ t('tenantCapacity.expireAt') }}</dt><dd>{{ formatDate(tenant.expire_at) }}</dd></div>
+                <div><dt>{{ t('tenantCapacity.status') }}</dt><dd>{{ statusLabel(tenant.status) }}</dd></div>
+                <div><dt>{{ t('tenantCapacity.capacityStatus') }}</dt><dd>{{ tenant.capacity_status ? capacityLabel(tenant.capacity_status) : t('tenantCapacity.capacityUnavailable') }}</dd></div>
+              </dl>
+            </section>
+
+            <section class="drawer-section" :aria-label="t('tenantCapacity.quotaConfiguration')">
+              <h3>{{ t('tenantCapacity.quotaConfiguration') }}</h3>
+              <dl class="details-grid">
+                <div><dt>{{ t('tenantCapacity.maxUsers') }}</dt><dd>{{ quotaLimit(tenant.max_users) }}</dd></div>
+                <div><dt>{{ t('tenantCapacity.maxRoles') }}</dt><dd>{{ quotaLimit(tenant.max_roles) }}</dd></div>
+                <div><dt>{{ t('tenantCapacity.maxStorage') }}</dt><dd>{{ storageLimit(tenant.max_storage_mb) }}</dd></div>
+                <div><dt>{{ t('tenantCapacity.maxRequests') }}</dt><dd>{{ quotaLimit(tenant.max_requests_per_min) }}</dd></div>
+              </dl>
+            </section>
+
+            <template v-if="tenant.usage">
+              <section class="drawer-section" :aria-label="t('tenantCapacity.quotaOverview')">
+                <div class="section-heading">
+                  <h3>{{ t('tenantCapacity.quotaOverview') }}</h3>
+                  <span>{{ t('tenantCapacity.calculatedAt') }}: {{ formatDate(tenant.usage.calculated_at) }}</span>
+                </div>
+                <div class="quota-grid">
+                  <TenantQuotaMeter :label="t('tenantCapacity.users')" :quota="tenant.usage.users" />
+                  <TenantQuotaMeter :label="t('tenantCapacity.roles')" :quota="tenant.usage.roles" />
+                  <TenantQuotaMeter :label="t('tenantCapacity.storage')" :quota="tenant.usage.storage" unit="storage" />
+                </div>
+              </section>
+
+              <section class="drawer-section" :aria-label="t('tenantCapacity.requestWindow')">
+                <h3>{{ t('tenantCapacity.requestWindow') }}</h3>
+                <p class="section-description">{{ t('tenantCapacity.currentWindowHint') }}</p>
+                <el-alert
+                  v-if="tenant.usage.request_window.status === 'unknown'"
+                  :title="t('tenantCapacity.currentWindowUnknown')"
+                  type="warning"
+                  show-icon
+                  :closable="false"
+                />
+                <template v-else>
+                  <TenantQuotaMeter
+                    :label="t('tenantCapacity.requestWindow')"
+                    :quota="requestQuota(tenant.usage.request_window)"
+                  />
+                  <p v-if="tenant.usage.request_window.remaining_secs != null" class="window-remaining">
+                    {{ t('tenantCapacity.currentWindowRemaining', { seconds: tenant.usage.request_window.remaining_secs }) }}
+                  </p>
+                </template>
+              </section>
+
+              <section class="drawer-section" :aria-label="t('tenantCapacity.auxiliaryStatus')">
+                <h3>{{ t('tenantCapacity.auxiliaryStatus') }}</h3>
+                <dl class="auxiliary-grid">
+                  <div><dt>{{ t('tenantCapacity.pendingJobs') }}</dt><dd>{{ tenant.usage.auxiliary.pending_jobs }}</dd></div>
+                  <div><dt>{{ t('tenantCapacity.runningJobs') }}</dt><dd>{{ tenant.usage.auxiliary.running_jobs }}</dd></div>
+                  <div><dt>{{ t('tenantCapacity.deadJobs') }}</dt><dd>{{ tenant.usage.auxiliary.dead_jobs }}</dd></div>
+                  <div><dt>{{ t('tenantCapacity.enabledSchedules') }}</dt><dd>{{ tenant.usage.auxiliary.enabled_schedules }}</dd></div>
+                  <div><dt>{{ t('tenantCapacity.activeImports') }}</dt><dd>{{ tenant.usage.auxiliary.active_user_imports }}</dd></div>
+                  <div><dt>{{ t('tenantCapacity.cronStatus') }}</dt><dd>{{ tenant.usage.auxiliary.cron_enabled ? t('tenantCapacity.cronEnabled') : t('tenantCapacity.cronDisabled') }}</dd></div>
+                </dl>
+              </section>
+            </template>
+
             <el-alert
-              v-if="tenant.usage.request_window.status === 'unknown'"
-              :title="t('tenantCapacity.currentWindowUnknown')"
-              type="warning"
+              v-else
+              :title="t('tenantCapacity.usagePermissionHint')"
+              type="info"
               show-icon
               :closable="false"
             />
-            <template v-else>
-              <TenantQuotaMeter
-                :label="t('tenantCapacity.requestWindow')"
-                :quota="requestQuota(tenant.usage.request_window)"
-              />
-              <p v-if="tenant.usage.request_window.remaining_secs != null" class="window-remaining">
-                {{ t('tenantCapacity.currentWindowRemaining', { seconds: tenant.usage.request_window.remaining_secs }) }}
-              </p>
-            </template>
-          </section>
-
-          <section class="drawer-section" :aria-label="t('tenantCapacity.auxiliaryStatus')">
-            <h3>{{ t('tenantCapacity.auxiliaryStatus') }}</h3>
-            <dl class="auxiliary-grid">
-              <div><dt>{{ t('tenantCapacity.pendingJobs') }}</dt><dd>{{ tenant.usage.auxiliary.pending_jobs }}</dd></div>
-              <div><dt>{{ t('tenantCapacity.runningJobs') }}</dt><dd>{{ tenant.usage.auxiliary.running_jobs }}</dd></div>
-              <div><dt>{{ t('tenantCapacity.deadJobs') }}</dt><dd>{{ tenant.usage.auxiliary.dead_jobs }}</dd></div>
-              <div><dt>{{ t('tenantCapacity.enabledSchedules') }}</dt><dd>{{ tenant.usage.auxiliary.enabled_schedules }}</dd></div>
-              <div><dt>{{ t('tenantCapacity.activeImports') }}</dt><dd>{{ tenant.usage.auxiliary.active_user_imports }}</dd></div>
-              <div><dt>{{ t('tenantCapacity.cronStatus') }}</dt><dd>{{ tenant.usage.auxiliary.cron_enabled ? t('tenantCapacity.cronEnabled') : t('tenantCapacity.cronDisabled') }}</dd></div>
-            </dl>
-          </section>
-        </template>
-
-        <el-alert
-          v-else
-          :title="t('tenantCapacity.usagePermissionHint')"
-          type="info"
-          show-icon
-          :closable="false"
-        />
+          </el-tab-pane>
+          <el-tab-pane
+            v-if="canViewProduct"
+            :label="t('productPlans.tenantTab')"
+            name="product"
+            lazy
+          >
+            <TenantProductContextPanel
+              :active="visible && activeTab === 'product'"
+              :tenant-id="tenant.tenant_id"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            v-if="canViewTenantData"
+            :label="t('tenantData.placementTab')"
+            name="placement"
+            lazy
+          >
+            <TenantDataPlacementPanel
+              :active="visible && activeTab === 'placement'"
+              :tenant-id="tenant.tenant_id"
+            />
+          </el-tab-pane>
+          <el-tab-pane
+            v-if="canViewBackups"
+            :label="t('tenantData.backupTab')"
+            name="backups"
+            lazy
+          >
+            <TenantBackupPointsPanel
+              :active="visible && activeTab === 'backups'"
+              :tenant-id="tenant.tenant_id"
+            />
+          </el-tab-pane>
+        </el-tabs>
       </template>
       <el-empty v-else-if="!loading" :description="t('tenantCapacity.empty')" />
     </div>
@@ -127,7 +164,16 @@ import type {
   TenantRequestWindowUsage,
 } from '@/api/modules/tenant'
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
+import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
+import { TENANT_DATA_PERMISSIONS } from '@/features/tenant-data/permissions'
+import { installProductPlanMessages } from '@/i18n/catalog/product-plans'
+import { installTenantDataMessages } from '@/i18n/catalog/tenant-data'
+import { useUserStore } from '@/stores/user'
+import { hasPermission } from '@/utils/permission'
 import TenantQuotaMeter from './TenantQuotaMeter.vue'
+import TenantBackupPointsPanel from './TenantBackupPointsPanel.vue'
+import TenantDataPlacementPanel from './TenantDataPlacementPanel.vue'
+import TenantProductContextPanel from './TenantProductContextPanel.vue'
 
 defineProps<{
   tenant?: TenantCapacity
@@ -143,13 +189,41 @@ const emit = defineEmits<{
 }>()
 
 const visible = defineModel<boolean>({ required: true })
+installProductPlanMessages()
+installTenantDataMessages()
 const { t } = useI18n()
+const userStore = useUserStore()
+const activeTab = ref<'capacity' | 'product' | 'placement' | 'backups'>('capacity')
+const canViewProduct = computed(() => hasPermission(
+  userStore.permissions,
+  TENANT_PRODUCT_PERMISSIONS.view,
+  userStore.roles,
+))
+const canViewTenantData = computed(() => hasPermission(
+  userStore.permissions,
+  [TENANT_DATA_PERMISSIONS.placementView, TENANT_DATA_PERMISSIONS.migrationList],
+  userStore.roles,
+))
+const canViewBackups = computed(() => hasPermission(
+  userStore.permissions,
+  TENANT_DATA_PERMISSIONS.backupList,
+  userStore.roles,
+))
+
+watch([activeTab, canViewProduct, canViewTenantData, canViewBackups], () => {
+  const allowed = activeTab.value === 'capacity'
+    || (activeTab.value === 'product' && canViewProduct.value)
+    || (activeTab.value === 'placement' && canViewTenantData.value)
+    || (activeTab.value === 'backups' && canViewBackups.value)
+  if (!allowed) activeTab.value = 'capacity'
+})
 
 function handleOpen(): void {
   emit('open')
 }
 
 function handleClosed(): void {
+  activeTab.value = 'capacity'
   emit('closed')
 }
 
@@ -182,7 +256,23 @@ function expirationLabel(status: string): string {
 }
 
 function statusLabel(status: string): string {
-  return status === 'enabled' ? t('tenantCapacity.statusEnabled') : t('tenantCapacity.statusDisabled')
+  const labels: Record<string, string> = {
+    enabled: 'statusEnabled',
+    disabled: 'statusDisabled',
+    provisioning: 'statusProvisioning',
+    provisioning_failed: 'statusProvisioningFailed',
+  }
+  return t(`tenantCapacity.${labels[status] ?? 'statusUnknown'}`)
+}
+
+function isMutableStatus(status: string): boolean {
+  return status === 'enabled' || status === 'disabled'
+}
+
+function tenantStatusType(status: string): TagProps['type'] {
+  if (status === 'enabled') return 'success'
+  if (status === 'disabled' || status === 'provisioning_failed') return 'danger'
+  return 'warning'
 }
 
 function requestQuota(request: TenantRequestWindowUsage): TenantQuotaUsage {

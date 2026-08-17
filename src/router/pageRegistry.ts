@@ -1,8 +1,13 @@
 import type { RouteComponentLoader } from '@/router/namedRouteComponent'
+import {
+  featureMenuPageRegistry,
+  featurePermissionRouteKeys,
+} from '@/features/registry'
 
 export interface MenuPageRegistryEntry {
   path: string
   component?: RouteComponentLoader
+  requiredCapabilities?: readonly string[]
 }
 
 export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
@@ -11,6 +16,7 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
   system: { path: '/system' },
   monitor: { path: '/monitor' },
   tools: { path: '/tools' },
+  platform: { path: '/platform' },
 
   'system.user': { path: '/system/user', component: () => import('@/views/system/user/index.vue') },
   'system.role': { path: '/system/role', component: () => import('@/views/system/role/index.vue') },
@@ -25,7 +31,20 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
   'system.logininfor': { path: '/system/logininfor', component: () => import('@/views/monitor/loginlog/index.vue') },
   'system.perm': { path: '/system/permission', component: () => import('@/views/system/permission/index.vue') },
   'system.authorization-diagnostics': { path: '/system/authorization-diagnostics', component: () => import('@/views/system/authorization-diagnostics/index.vue') },
-  'system.service-accounts': { path: '/system/service-accounts', component: () => import('@/views/system/service-accounts/index.vue') },
+  ...featureMenuPageRegistry,
+
+  'platform.product-plans': {
+    path: '/platform/product-plans',
+    component: () => import('@/views/platform/product-plans/index.vue'),
+  },
+  'platform.data-targets': {
+    path: '/platform/data-targets',
+    component: () => import('@/views/platform/data-targets/index.vue'),
+  },
+  'platform.tenant': {
+    path: '/platform/tenants',
+    component: () => import('@/views/platform/tenant/index.vue'),
+  },
 
   'monitor.overview': { path: '/monitor/overview', component: () => import('@/views/monitor/overview/index.vue') },
   'monitor.runtime': { path: '/monitor/runtime', component: () => import('@/views/monitor/runtime/index.vue') },
@@ -58,7 +77,10 @@ export const permissionRouteKeys: Readonly<Record<string, string>> = Object.free
   'system:logininfor:list': 'system.logininfor',
   'system:perm:list': 'system.perm',
   'system:authorization-diagnostic:list': 'system.authorization-diagnostics',
-  'system:service-account:list': 'system.service-accounts',
+  ...featurePermissionRouteKeys,
+  'platform:product-plan:list': 'platform.product-plans',
+  'tenant:data-placement:view': 'platform.data-targets',
+  'tenant:list': 'platform.tenant',
   'monitor:overview:list': 'monitor.overview',
   'monitor:runtime:list': 'monitor.runtime',
   'monitor:online:list': 'monitor.online',

@@ -23,8 +23,9 @@ import {
   createIdentityOperationScope,
   type IdentityOperationGuard,
 } from '@/shared/query/createIdentityOperationScope'
+import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
+import { useTenantContextStore } from '@/app/tenant-context'
 import { useUserStore } from '@/stores/user'
-import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import {
   SERVICE_ACCESS_AUDITS_RESOURCE,
   SERVICE_ACCOUNTS_RESOURCE,
@@ -64,7 +65,7 @@ export function copyServiceAccountQuery<T extends { page?: number, page_size?: n
 /** 服务账号管理的身份、权限、Query Key 与服务端 Query 上下文。 */
 export function useServiceAccountContext() {
   const userStore = useUserStore()
-  const runtimeCapabilities = useRuntimeCapabilitiesStore()
+  const tenantContext = useTenantContextStore()
   const { hasPermission } = usePermission()
   const pageActive = ref(true)
   const queryParams = reactive<ServiceResourcePageState>({
@@ -88,6 +89,9 @@ export function useServiceAccountContext() {
   })
   const selectedAccount = ref<ServiceAccount | null>(null)
   const roleIds = ref<readonly string[]>([])
+  const featureAvailable = computed(() => (
+    tenantContext.hasCapability(SERVICE_ACCOUNTS_CAPABILITY)
+  ))
 
   const canListAccounts = computed(() => hasPermission('system:service-account:list'))
   const canAddAccount = computed(() => hasPermission('system:service-account:add'))
@@ -244,7 +248,7 @@ export function useServiceAccountContext() {
       pageActive.value
       && currentIdentity() !== undefined
       && canListAccounts.value
-      && runtimeCapabilities.serviceAccountsEnabled
+      && featureAvailable.value
     )),
     queryFn: async ({ signal }) => requireOperationData(
       await listServiceAccounts(copyServiceAccountQuery(activeQueryParams), signal),
@@ -264,7 +268,7 @@ export function useServiceAccountContext() {
       pageActive.value
       && currentIdentity() !== undefined
       && canListAccounts.value
-      && runtimeCapabilities.serviceAccountsEnabled
+      && featureAvailable.value
       && selectedAccount.value !== null
     )),
     queryFn: async ({ signal }) => {
@@ -440,7 +444,7 @@ export function useServiceAccountContext() {
     requireOperationContext,
     roleIds,
     selectedAccount,
-    serviceAccountsEnabled: computed(() => runtimeCapabilities.serviceAccountsEnabled),
+    featureAvailable,
     updateAccountPage,
   }
 }

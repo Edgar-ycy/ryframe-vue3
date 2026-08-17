@@ -3,6 +3,7 @@ import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
 import { constantRoutes } from '@/router/routes/constant'
 import { getMenuPage } from '@/router/pageRegistry'
 import { withRouteComponentName } from '@/router/namedRouteComponent'
+import { hasRequiredCapabilities } from '@/router/routeAccess'
 import { hasPermission } from '@/utils/permission'
 
 const SKIP_PATHS = new Set([
@@ -19,6 +20,7 @@ const SKIP_PATHS = new Set([
 
 export function buildRoutesFromMenuTree(
   nodes: readonly MenuTreeNode[],
+  capabilities: readonly string[],
   parentPath?: string,
 ): RouteRecordRaw[] {
   const routes: RouteRecordRaw[] = []
@@ -31,8 +33,9 @@ export function buildRoutesFromMenuTree(
 
     const page = getMenuPage(node.route_key)
     if (page && SKIP_PATHS.has(normalizePath(page.path))) continue
+    if (!hasRequiredCapabilities(capabilities, page?.requiredCapabilities)) continue
 
-    const route = nodeToRoute(node, parentPath)
+    const route = nodeToRoute(node, capabilities, parentPath)
     if (route) routes.push(route)
   }
 
@@ -43,11 +46,11 @@ export function buildAccessibleMenus(
   routes: readonly RouteRecordRaw[],
   permissions: readonly string[],
   roles: readonly string[],
-  serviceAccountsEnabled = true,
+  capabilities: readonly string[],
 ): RouteRecordRaw[] {
   return [
     ...getConstantMenus(),
-    ...filterAccessibleRoutes(routes, permissions, roles, serviceAccountsEnabled),
+    ...filterAccessibleRoutes(routes, permissions, roles, capabilities),
   ]
 }
 
@@ -82,19 +85,27 @@ function iconPascalCase(icon: string): string {
     .join('')
 }
 
-function nodeToRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw | null {
+function nodeToRoute(
+  node: MenuTreeNode,
+  capabilities: readonly string[],
+  parentPath?: string,
+): RouteRecordRaw | null {
   const type = getMenuType(node)
-  if (type === 'M') return buildDirectoryRoute(node)
+  if (type === 'M') return buildDirectoryRoute(node, capabilities)
   if (type === 'C') return buildMenuRoute(node, parentPath)
   return null
 }
 
-function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw {
+function buildDirectoryRoute(
+  node: MenuTreeNode,
+  capabilities: readonly string[],
+): RouteRecordRaw | null {
   const page = getMenuPage(node.route_key)
   const directoryPath = normalizePath(page?.path || `/menu-${node.id}`)
   const children = node.children?.length
-    ? buildRoutesFromMenuTree(node.children, directoryPath)
+    ? buildRoutesFromMenuTree(node.children, capabilities, directoryPath)
     : []
+  if (node.children?.length && children.length === 0) return null
   const firstChildPath = children.find(child => child.meta?.hidden !== true)?.path
   const redirect = firstChildPath
     ? resolveChildPath(directoryPath, String(firstChildPath))
@@ -112,6 +123,7 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw {
       sort: node.sort,
       permission: node.perm_code || undefined,
       requiresPermission: Boolean(node.perm_code),
+      requiredCapabilities: page?.requiredCapabilities,
     },
     children,
   }
@@ -138,7 +150,7 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
       sort: node.sort,
       permission: node.perm_code || undefined,
       requiresPermission: true,
-      requiresServiceAccounts: node.route_key === 'system.service-accounts',
+      requiredCapabilities: page.requiredCapabilities,
     },
   }
 }
@@ -163,14 +175,14 @@ function filterAccessibleRoutes(
   routes: readonly RouteRecordRaw[],
   permissions: readonly string[],
   roles: readonly string[],
-  serviceAccountsEnabled: boolean,
+  capabilities: readonly string[],
 ): RouteRecordRaw[] {
   const result: RouteRecordRaw[] = []
 
   for (const route of routes) {
     if (route.meta?.hidden) continue
 
-    if (route.meta?.requiresServiceAccounts && !serviceAccountsEnabled) continue
+    if (!hasRequiredCapabilities(capabilities, route.meta?.requiredCapabilities)) continue
 
     const required = route.meta?.permission
     if (
@@ -181,7 +193,7 @@ function filterAccessibleRoutes(
     }
 
     const children = route.children
-      ? filterAccessibleRoutes(route.children, permissions, roles, serviceAccountsEnabled)
+      ? filterAccessibleRoutes(route.children, permissions, roles, capabilities)
       : []
     if (route.meta?.alwaysShow && route.children?.length && children.length === 0) continue
 

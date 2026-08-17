@@ -1,5 +1,6 @@
 import { ElMessage } from 'element-plus'
-import { logout as logoutApi, type UserInfo } from '@/api/modules/auth'
+import { logout as logoutApi } from '@/api/modules/auth'
+import type { SessionContext } from '@/api/modules/sessionContext'
 import { translate } from '@/i18n'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
 import {
@@ -8,13 +9,14 @@ import {
 } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useTagsViewStore } from '@/stores/tagsView'
+import { useTenantContextStore } from '@/app/tenant-context'
+import {
+  observeTenantContext,
+  resetTenantContextObservation,
+  synchronizeTenantContextUi,
+} from '@/app/tenant-context/contextRefresh'
 import { useUserStore } from '@/stores/user'
 import { getTenantId } from '@/utils/auth'
-import {
-  observeAuthorizationEpoch,
-  resetAuthorizationObservation,
-  synchronizeAuthorizationUi,
-} from './authorization'
 import {
   broadcastAuthenticated,
   broadcastLogout,
@@ -42,10 +44,10 @@ export function installSessionCoordinator(sessionRuntime: SessionRuntime): void 
   setSessionRuntime(sessionRuntime)
   installSessionChannel({
     isTerminating: isSessionTerminating,
-    onAuthenticated: (accessToken, userInfo) => {
-      const scopeChanged = applyAuthenticatedSession(accessToken, userInfo)
+    onAuthenticated: (accessToken, sessionContext) => {
+      const scopeChanged = applyAuthenticatedSession(accessToken, sessionContext)
       const synchronization = scopeChanged
-        ? synchronizeAuthorizationUi({ skipAuthRefresh: true })
+        ? synchronizeTenantContextUi({ skipAuthRefresh: true, refreshContext: false })
         : ensureRoutesAfterAuthentication(true)
       void synchronization
         .catch(async (error: unknown) => {
@@ -62,18 +64,18 @@ export function installSessionCoordinator(sessionRuntime: SessionRuntime): void 
   configureHttpSession({
     getAccessToken: () => useUserStore().token || null,
     getTenantId,
-    observeAuthorizationEpoch,
+    observeTenantContext,
     refreshAccessToken,
     handleRefreshFailure,
   })
   configureServerStateErrorReporter(reportError)
 }
 
-export function publishAuthenticatedSession(accessToken: string, userInfo: UserInfo): void {
-  applyAuthenticatedSession(accessToken, userInfo)
+export function publishAuthenticatedSession(accessToken: string, sessionContext: SessionContext): void {
+  applyAuthenticatedSession(accessToken, sessionContext)
   invalidateCsrfToken()
   const operation = startLocalRefreshOperation()
-  broadcastAuthenticated(operation, accessToken, userInfo)
+  broadcastAuthenticated(operation, accessToken, sessionContext)
 }
 
 export function initializeSession(): Promise<void> {
@@ -145,8 +147,11 @@ function reportError(error: HttpError): void {
     ElMessage.error(error.message || translate('shell.session.notFound'))
     return
   }
-  if (error.status === 503) {
-    ElMessage.error(translate('shell.session.serviceUnavailable'))
+  if (error.status === 423 || error.status === 503) {
+    const fallback = error.status === 423
+      ? translate('shell.session.resourceLocked')
+      : translate('shell.session.serviceUnavailable')
+    ElMessage.error(error.message || fallback)
     return
   }
   if (error.status && error.status >= 500) {
@@ -162,8 +167,9 @@ export function clearSession(): Promise<void> {
     invalidateSessionChannelOperations()
     const pending = Promise.resolve()
       .then(() => {
-        resetAuthorizationObservation()
+        resetTenantContextObservation()
         clearServerState()
+        useTenantContextStore().reset()
         useUserStore().resetState()
         usePermissionStore().resetRoutes()
         useTagsViewStore().closeAllViews()

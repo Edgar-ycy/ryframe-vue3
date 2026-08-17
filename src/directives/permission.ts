@@ -1,4 +1,6 @@
 import type { Directive } from 'vue'
+import { useTenantContextStore } from '@/app/tenant-context'
+import { canExecuteFeaturePermission } from '@/features/businessDataAccess'
 import { useUserStore } from '@/stores/user'
 import { hasPermission, type PermissionValue } from '@/utils/permission'
 
@@ -8,7 +10,8 @@ interface PermissionDirectiveState {
   initialAriaHidden: string | null
   initialInert: boolean
   initialDisabled?: boolean
-  unsubscribe: () => void
+  unsubscribeUser: () => void
+  unsubscribeTenantContext: () => void
 }
 
 const states = new WeakMap<HTMLElement, PermissionDirectiveState>()
@@ -27,7 +30,11 @@ function removeAttribute(el: HTMLElement, name: string): void {
 
 function updateVisibility(el: HTMLElement, state: PermissionDirectiveState): void {
   const userStore = useUserStore()
-  const allowed = !state.value || hasPermission(userStore.permissions, state.value, userStore.roles)
+  const allowed = hasExecutablePermission(
+    state.value,
+    userStore.permissions,
+    userStore.roles,
+  )
   const controlled = el as HTMLElement & { inert?: boolean; disabled?: boolean }
 
   if (allowed) {
@@ -46,9 +53,23 @@ function updateVisibility(el: HTMLElement, state: PermissionDirectiveState): voi
   if (state.initialDisabled !== undefined) controlled.disabled = true
 }
 
+function hasExecutablePermission(
+  required: PermissionValue,
+  permissions: readonly string[],
+  roles: readonly string[],
+): boolean {
+  if (!required || required.length === 0) return true
+  const values = Array.isArray(required) ? required : [required]
+  return values.some(permission => (
+    hasPermission(permissions, permission, roles)
+    && canExecuteFeaturePermission(permission)
+  ))
+}
+
 const permissionDirective: Directive<HTMLElement, PermissionValue> = {
   mounted(el, binding) {
     const userStore = useUserStore()
+    const tenantContext = useTenantContextStore()
     const controlled = el as HTMLElement & { inert?: boolean; disabled?: boolean }
     const state: PermissionDirectiveState = {
       value: binding.value,
@@ -56,9 +77,17 @@ const permissionDirective: Directive<HTMLElement, PermissionValue> = {
       initialAriaHidden: attribute(el, 'aria-hidden'),
       initialInert: controlled.inert === true,
       initialDisabled: typeof controlled.disabled === 'boolean' ? controlled.disabled : undefined,
-      unsubscribe: () => undefined,
+      unsubscribeUser: () => undefined,
+      unsubscribeTenantContext: () => undefined,
     }
-    state.unsubscribe = userStore.$subscribe(() => updateVisibility(el, state), { flush: 'sync' })
+    state.unsubscribeUser = userStore.$subscribe(
+      () => updateVisibility(el, state),
+      { flush: 'sync' },
+    )
+    state.unsubscribeTenantContext = tenantContext.$subscribe(
+      () => updateVisibility(el, state),
+      { flush: 'sync' },
+    )
     states.set(el, state)
     updateVisibility(el, state)
   },
@@ -72,7 +101,8 @@ const permissionDirective: Directive<HTMLElement, PermissionValue> = {
 
   beforeUnmount(el) {
     const state = states.get(el)
-    state?.unsubscribe()
+    state?.unsubscribeUser()
+    state?.unsubscribeTenantContext()
     states.delete(el)
   },
 }

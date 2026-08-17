@@ -15,6 +15,7 @@
       <Navbar />
       <!-- 标签页 -->
       <TagsView v-if="settingsStore.tagsView" />
+      <TenantBusinessDataBanner />
       <!-- 主内容区 -->
       <AppMain />
     </div>
@@ -30,6 +31,7 @@ import Sidebar from './Sidebar/index.vue'
 import Navbar from './Navbar/index.vue'
 import TagsView from './TagsView/index.vue'
 import AppMain from './AppMain/index.vue'
+import TenantBusinessDataBanner from './TenantBusinessDataBanner.vue'
 
 const appStore = useAppStore()
 const settingsStore = useSettingsStore()

@@ -1,4 +1,4 @@
-import type { UserInfo } from '@/api/modules/auth'
+import type { SessionContext } from '@/api/modules/sessionContext'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import {
@@ -30,7 +30,7 @@ interface RemoteRefreshWaiter {
 
 interface SessionChannelHandlers {
   isTerminating(): boolean
-  onAuthenticated(accessToken: string, userInfo: UserInfo): void
+  onAuthenticated(accessToken: string, sessionContext: SessionContext): void
   onRefreshFailed(status?: number): void
   onLogout(): void
 }
@@ -81,7 +81,7 @@ function handleSessionMessage(message: SessionMessage): void {
   if (message.type === 'authenticated') {
     if (!matchesCurrentRemoteRefresh(message)) return
     remoteRefreshOperation!.pending = false
-    handlers?.onAuthenticated(message.accessToken, message.userInfo)
+    handlers?.onAuthenticated(message.accessToken, message.sessionContext)
     settleRemoteRefreshWaiters(message.operationId, waiter => waiter.resolve(message.accessToken))
     return
   }
@@ -234,13 +234,13 @@ export function startLocalRefreshOperation(): RefreshOperation {
 export function broadcastAuthenticated(
   operation: RefreshOperation,
   accessToken: string,
-  userInfo: UserInfo,
+  sessionContext: SessionContext,
 ): void {
   postMessage({
     type: 'authenticated',
     ...operation,
     accessToken,
-    userInfo,
+    sessionContext,
   })
 }
 

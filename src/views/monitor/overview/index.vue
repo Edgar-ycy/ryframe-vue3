@@ -220,7 +220,7 @@ async function loadSnapshot(force: boolean): Promise<void> {
   try {
     snapshot.value = await fetchOverviewSnapshot(userStore.tenantId, force)
     await nextTick()
-    renderJobChart()
+    renderCharts()
   }
   catch (error) {
     snapshotError.value = error instanceof Error ? error.message : String(error)

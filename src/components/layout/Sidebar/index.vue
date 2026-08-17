@@ -37,43 +37,24 @@
             <template #title>{{ translateNavigationTitle(leafMeta(menu).title) }}</template>
           </el-menu-item>
         </template>
-        <el-menu-item v-if="canManageTenants" index="/platform/tenants">
-          <el-icon><OfficeBuilding /></el-icon>
-          <template #title>{{ t('navigation.tenant') }}</template>
-        </el-menu-item>
       </el-menu>
     </el-scrollbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { OfficeBuilding } from '@element-plus/icons-vue'
-import { useI18n } from 'vue-i18n'
 import type { RouteMeta, RouteRecordRaw } from 'vue-router'
-import { usePermission } from '@/hooks/usePermission'
 import { translateNavigationTitle } from '@/i18n'
 import { resolveElementIcon } from '@/shared/ui/icons'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
 import { useSettingsStore } from '@/stores/settings'
-import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
-import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
 const permissionStore = usePermissionStore()
 const settingsStore = useSettingsStore()
-const runtimeCapabilities = useRuntimeCapabilitiesStore()
-const userStore = useUserStore()
-const { hasPermission, isAdmin } = usePermission()
-const { t } = useI18n()
-
-const canManageTenants = computed(() =>
-  runtimeCapabilities.multiTenancyEnabled
-  && userStore.tenantId === 'system'
-  && (isAdmin() || hasPermission('tenant:list')),
-)
 
 function handleMenuSelect(indexPath: string): void {
   const target = router.resolve(indexPath)

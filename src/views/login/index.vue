@@ -15,6 +15,7 @@
             :placeholder="t('account.tenantId')"
             prefix-icon="OfficeBuilding"
             autocomplete="organization"
+            @blur="syncCaptchaForTenant"
           />
         </el-form-item>
         <el-form-item prop="username">
@@ -34,31 +35,43 @@
           />
         </el-form-item>
         <el-form-item v-if="captchaEnabled" prop="captcha_code">
-          <div style="display:flex;gap:8px">
-            <el-input
-              v-model="loginForm.captcha_code"
-              :placeholder="t('account.captcha')"
-              prefix-icon="Picture"
-              maxlength="4"
-              style="flex:1"
-            />
-            <button
-              type="button"
-              class="captcha-refresh"
-              :aria-label="t('account.refreshCaptcha')"
-              :title="t('account.refreshCaptcha')"
-              @click="refreshCaptcha"
-            >
-              <img
-                v-if="captchaImage"
-                :src="captchaImage"
-                :alt="t('account.captcha')"
-                style="width:100%;height:100%;border-radius:4px"
+          <div class="captcha-control">
+            <div class="captcha-field">
+              <el-input
+                v-model="loginForm.captcha_code"
+                class="captcha-input"
+                :placeholder="t('account.captcha')"
+                prefix-icon="Picture"
+                maxlength="4"
+                autocomplete="one-time-code"
+                autocapitalize="characters"
+                spellcheck="false"
+                :disabled="captchaRefreshing"
+                @input="normalizeCaptchaCode"
+              />
+              <button
+                type="button"
+                class="captcha-refresh"
+                :aria-label="t('account.refreshCaptcha')"
+                :aria-busy="captchaRefreshing"
+                :disabled="captchaRefreshing"
+                :title="t('account.refreshCaptcha')"
+                @click="refreshCaptcha"
               >
-              <span v-else class="captcha-placeholder">
-                {{ t('account.captchaLoading') }}
-              </span>
-            </button>
+                <img
+                  v-if="captchaImage"
+                  :src="captchaImage"
+                  :alt="t('account.captcha')"
+                  class="captcha-image"
+                >
+                <span v-else class="captcha-placeholder">
+                  {{ captchaLoadFailed ? t('account.captchaLoadFailed') : t('account.captchaLoading') }}
+                </span>
+              </button>
+            </div>
+            <p class="captcha-hint" aria-live="polite">
+              {{ t('account.captchaHint') }}
+            </p>
           </div>
         </el-form-item>
         <el-form-item>
@@ -120,35 +133,96 @@ const loginRules = computed<FormRules>(() => {
 const captchaEnabled = ref(false)
 const captchaImage = ref('')
 const captchaId = ref('')
+const captchaRefreshing = ref(false)
+const captchaLoadFailed = ref(false)
+const captchaTenantId = ref('')
+let captchaRequestVersion = 0
 
-async function loadCaptchaConfig() {
+function resolveCaptchaTenantId(): string {
+  return runtimeCapabilities.multiTenancyEnabled
+    ? loginForm.value.tenant_id.trim()
+    : DEFAULT_TENANT_ID
+}
+
+function resetCaptcha(): void {
+  captchaId.value = ''
+  captchaImage.value = ''
+  loginForm.value.captcha_code = ''
+}
+
+function normalizeCaptchaCode(value: string): void {
+  loginForm.value.captcha_code = value.replaceAll(/\s/gu, '').toUpperCase()
+}
+
+async function syncCaptchaForTenant(): Promise<boolean> {
+  const tenantId = resolveCaptchaTenantId()
+  if (runtimeCapabilities.multiTenancyEnabled && !isValidTenantId(tenantId)) return false
+  if (captchaRefreshing.value) return false
+  if (captchaTenantId.value === tenantId && (captchaImage.value || !captchaEnabled.value)) return true
+
+  const requestVersion = ++captchaRequestVersion
+  captchaRefreshing.value = true
+  captchaLoadFailed.value = false
   try {
-    const res = await getCaptchaConfig()
-    captchaEnabled.value = res.data?.captcha_enabled === true
+    try {
+      const res = await getCaptchaConfig(tenantId)
+      if (requestVersion !== captchaRequestVersion) return false
+      captchaEnabled.value = res.data?.captcha_enabled === true
+    } catch {
+      if (requestVersion !== captchaRequestVersion) return false
+      captchaEnabled.value = true
+    }
+    captchaTenantId.value = tenantId
+    resetCaptcha()
+    if (!captchaEnabled.value) return true
+
+    const res = await getCaptcha(tenantId)
+    if (requestVersion !== captchaRequestVersion) return false
+    if (!res.data) throw new Error(t('account.captchaResponseMissing'))
+    captchaId.value = res.data.captcha_id
+    captchaImage.value = res.data.image_base64
+    return true
   } catch {
-    captchaEnabled.value = true
+    if (requestVersion === captchaRequestVersion) {
+      resetCaptcha()
+      captchaLoadFailed.value = true
+    }
+    return false
+  } finally {
+    if (requestVersion === captchaRequestVersion) captchaRefreshing.value = false
   }
 }
 
-async function refreshCaptcha() {
-  try {
-    const res = await getCaptcha()
-    if (!res.data) throw new Error(t('account.captchaResponseMissing'))
-    const data = res.data
-    captchaId.value = data.captcha_id
-    captchaImage.value = data.image_base64
-    loginForm.value.captcha_code = ''
-  } catch {
-    captchaImage.value = ''
+async function refreshCaptcha(): Promise<void> {
+  const tenantId = resolveCaptchaTenantId()
+  if (captchaTenantId.value !== tenantId) {
+    await syncCaptchaForTenant()
+    return
   }
+  captchaTenantId.value = ''
+  await syncCaptchaForTenant()
 }
 
 const handleLogin = async () => {
   if (loading.value) return
   loading.value = true
   try {
+    const tenantId = resolveCaptchaTenantId()
+    if (
+      captchaTenantId.value !== tenantId
+      && (!runtimeCapabilities.multiTenancyEnabled || isValidTenantId(tenantId))
+    ) {
+      const synchronized = await syncCaptchaForTenant()
+      if (!synchronized) return
+    }
     const valid = await loginFormRef.value?.validate().catch(() => false)
     if (!valid) return
+
+    if (captchaEnabled.value && (captchaRefreshing.value || !captchaId.value || !captchaImage.value)) {
+      const refreshed = await syncCaptchaForTenant()
+      ElMessage.warning(refreshed ? t('account.captchaRefreshed') : t('account.captchaLoadFailed'))
+      return
+    }
 
     await userStore.login(
       loginForm.value.username,
@@ -174,10 +248,7 @@ const handleLogin = async () => {
 }
 
 onMounted(async () => {
-  await loadCaptchaConfig()
-  if (captchaEnabled.value) {
-    await refreshCaptcha()
-  }
+  await syncCaptchaForTenant()
 })
 </script>
 
@@ -215,23 +286,61 @@ onMounted(async () => {
   justify-content: center;
   color: var(--color-text-secondary);
   font-size: 12px;
+  line-height: 1.35;
+  padding: 0 8px;
+  text-align: center;
   border-radius: 4px;
 }
 
+.captcha-control {
+  width: 100%;
+}
+
+.captcha-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.captcha-input {
+  min-width: 0;
+  flex: 1;
+}
+
 .captcha-refresh {
-  width: 120px;
-  height: 40px;
+  width: 160px;
+  height: 56px;
   flex-shrink: 0;
   padding: 0;
-  border: 0;
+  overflow: hidden;
+  border: 1px solid var(--el-border-color);
   border-radius: 4px;
-  background: transparent;
+  background: var(--el-fill-color-light);
   cursor: pointer;
+}
+
+.captcha-refresh:disabled {
+  cursor: wait;
+}
+
+.captcha-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .captcha-refresh:focus-visible {
   outline: 2px solid var(--el-color-primary);
   outline-offset: 2px;
+}
+
+.captcha-hint {
+  margin: 8px 0 0;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 @media (width <= 480px) {
@@ -242,6 +351,11 @@ onMounted(async () => {
   .login-title {
     margin-bottom: 22px;
     font-size: 20px;
+  }
+
+  .captcha-refresh {
+    width: 132px;
+    height: 46px;
   }
 }
 </style>

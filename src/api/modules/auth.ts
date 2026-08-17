@@ -86,12 +86,17 @@ export function completePasswordReset(data: CompletePasswordResetParams) {
 
 // ========== 验证码 ==========
 
-/** 生成验证码 */
-export function getCaptcha(params?: OperationQuery<'get_auth_captcha_generate'>) {
+/** 生成指定租户的验证码 */
+export function getCaptcha(
+  tenantId: string,
+  params?: OperationQuery<'get_auth_captcha_generate'>,
+) {
   return request<OperationData<'get_auth_captcha_generate'>>({
     url: '/auth/captcha/generate',
     method: 'get',
     params,
+    headers: { 'X-Tenant-Id': tenantId },
+    skipTenantHeader: true,
   })
 }
 
@@ -104,11 +109,13 @@ export function verifyCaptcha(data: OperationJsonBody<'post_auth_captcha_verify'
   })
 }
 
-/** 查询验证码开关状态（公开接口） */
-export function getCaptchaConfig() {
+/** 查询指定租户的验证码开关状态（公开接口） */
+export function getCaptchaConfig(tenantId: string) {
   return request<OperationData<'get_auth_captcha_config'>>({
     url: '/auth/captcha/config',
     method: 'get',
+    headers: { 'X-Tenant-Id': tenantId },
+    skipTenantHeader: true,
   })
 }
 

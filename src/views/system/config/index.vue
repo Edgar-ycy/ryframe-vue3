@@ -20,7 +20,16 @@
         <div class="card-header">
           <span>{{ t('system.config.list') }}</span>
           <div>
-            <el-button v-perm="'system:config:export'" icon="Download" :loading="exportLoading" @click="handleExport">{{ t('system.common.export') }}</el-button>
+            <el-button
+              v-perm="'system:config:export'"
+              icon="Download"
+              :loading="exportLoading"
+              :disabled="!canExport"
+              :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
+              @click="handleExport"
+            >
+              {{ t('system.common.export') }}
+            </el-button>
             <el-button v-perm="'system:config:add'" type="primary" icon="Plus" @click="handleAdd">{{ t('system.common.add') }}</el-button>
           </div>
         </div>
@@ -111,6 +120,7 @@ import {
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { refreshShellSettings } from '@/app/settings/shellSettingsQuery'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -120,41 +130,72 @@ const { t } = useI18n()
 const userStore = useUserStore()
 const authenticated = () => userStore.sessionStatus === 'authenticated'
 
-const queryParams = ref<ConfigQuery>({ page: 1, page_size: 10, name: '', key: '' })
-const activeQueryParams = ref<ConfigQuery>({ ...queryParams.value })
+const {
+  appliedQuery: appliedQueryParams,
+  applyDraft,
+  clearSuccessfulQuery,
+  draftQuery: queryParams,
+  hasSuccessfulQuery: canExport,
+  lastSuccessfulQuery,
+  refreshApplied,
+  runAppliedQuery,
+} = useAppliedListQuery<ConfigQuery>({ page: 1, page_size: 10, name: '', key: '' })
 const { pending: exportLoading, submitExport } = useExportJobRequest()
+
+watch(
+  () => [userStore.tenantId, userStore.userId] as const,
+  () => clearSuccessfulQuery(),
+  { flush: 'sync' },
+)
+
 const configsQuery = useTenantQuery<PageResponse<ConfigRecord>>(
   () => userStore.tenantId,
   authenticated,
   'configs',
-  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-  async signal => {
-    const response = await listConfig({ ...activeQueryParams.value }, signal)
-    return response.data ?? emptyPageResponse<ConfigRecord>(activeQueryParams.value)
-  },
+  () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
+  signal => runAppliedQuery(signal, async (query, requestSignal) => {
+    const params = { ...query }
+    const response = await listConfig(params, requestSignal)
+    return response.data ?? emptyPageResponse<ConfigRecord>(params)
+  }),
 )
 const tableResponse = configsQuery.data
 const loading = configsQuery.isFetching
 
-function handleExport() {
-  const filters = { ...activeQueryParams.value }
-  return submitExport(
+async function handleExport(): Promise<void> {
+  const successfulQuery = lastSuccessfulQuery.value
+  if (!successfulQuery) {
+    ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
+    return
+  }
+  const filters = { ...successfulQuery }
+  await submitExport(
     `configs:${JSON.stringify(filters)}`,
     (idempotencyKey, signal) => exportConfig(filters, idempotencyKey, signal),
   )
 }
 
-async function fetchData() {
-  const nextParams = { ...queryParams.value }
-  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
-    activeQueryParams.value = nextParams
-    return
-  }
-  await configsQuery.refetch({ throwOnError: true })
+async function fetchData(): Promise<void> {
+  if (applyDraft()) return
+  await refreshData()
 }
 
 function handleSearch() { queryParams.value.page = 1; void fetchData() }
-function handleReset() { queryParams.value.name = ''; queryParams.value.key = ''; handleSearch() }
+function handleReset() {
+  queryParams.value = {
+    page: 1,
+    page_size: queryParams.value.page_size,
+    name: '',
+    key: '',
+  }
+  void fetchData()
+}
+
+async function refreshData(): Promise<void> {
+  await refreshApplied(async () => {
+    await configsQuery.refetch({ throwOnError: true })
+  })
+}
 
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
@@ -292,7 +333,7 @@ async function handleSubmit() {
     })
   }
   dialog.value.visible = false
-  await configsQuery.refetch({ throwOnError: true })
+  await refreshData()
 }
 
 async function handleDelete(row: ConfigRecord) {
@@ -304,7 +345,7 @@ async function handleDelete(row: ConfigRecord) {
   )
   if (!confirmed) return
   await deleteMutation.mutateAsync(row)
-  await configsQuery.refetch({ throwOnError: true })
+  await refreshData()
 }
 </script>
 

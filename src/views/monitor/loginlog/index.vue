@@ -18,7 +18,7 @@
             :range-separator="t('monitor.loginLog.rangeSeparator')"
             :start-placeholder="t('monitor.loginLog.startTime')"
             :end-placeholder="t('monitor.loginLog.endTime')"
-            value-format="YYYY-MM-DDTHH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
             style="width:340px"
           />
         </el-form-item>
@@ -33,7 +33,16 @@
       <template #header>
         <div class="card-header">
           <span>{{ t('monitor.loginLog.title') }}</span>
-          <el-button v-perm="'system:logininfor:export'" icon="Download" :loading="exportLoading" @click="handleExport">{{ t('monitor.loginLog.export') }}</el-button>
+          <el-button
+            v-perm="'system:logininfor:export'"
+            icon="Download"
+            :loading="exportLoading"
+            :disabled="!canExport"
+            :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
+            @click="handleExport"
+          >
+            {{ t('monitor.loginLog.export') }}
+          </el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="loginLogPage?.items ?? []" border stripe>
@@ -103,6 +112,7 @@ import {
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
+import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -112,33 +122,58 @@ const userStore = useUserStore()
 const pageActive = ref(true)
 const { pending: exportLoading, submitExport } = useExportJobRequest()
 
-const queryParams = ref<LoginLogQuery>({
-  page: 1, page_size: 10, user_name: '', status: '', begin_time: '', end_time: '',
+const {
+  appliedQuery: appliedQueryParams,
+  applyDraft,
+  clearSuccessfulQuery,
+  draftQuery: queryParams,
+  hasSuccessfulQuery: canExport,
+  lastSuccessfulQuery,
+  refreshApplied,
+  runAppliedQuery,
+} = useAppliedListQuery<LoginLogQuery>({
+  page: 1,
+  page_size: 10,
+  user_name: '',
+  status: '',
+  begin_time: '',
+  end_time: '',
 })
-const activeQueryParams = ref<LoginLogQuery>({ ...queryParams.value })
+
+watch(
+  () => [userStore.tenantId, userStore.userId] as const,
+  () => clearSuccessfulQuery(),
+  { flush: 'sync' },
+)
 
 const loginLogsQuery = useTenantQuery<PageResponse<LoginLogRecord>>(
   () => userStore.tenantId,
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-login-logs',
-  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-  async signal => {
-    const response = await listLoginLog({ ...activeQueryParams.value }, signal)
-    return response.data ?? emptyPageResponse<LoginLogRecord>(activeQueryParams.value)
-  },
+  () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
+  signal => runAppliedQuery(signal, async (query, requestSignal) => {
+    const params = { ...query }
+    const response = await listLoginLog(params, requestSignal)
+    return response.data ?? emptyPageResponse<LoginLogRecord>(params)
+  }),
 )
 
 const loading = loginLogsQuery.isFetching
 const loginLogPage = loginLogsQuery.data
 
-function handleExport() {
-  const filters = {
-    name: activeQueryParams.value.user_name,
-    status: activeQueryParams.value.status,
-    begin_time: activeQueryParams.value.begin_time,
-    end_time: activeQueryParams.value.end_time,
+async function handleExport(): Promise<void> {
+  const successfulQuery = lastSuccessfulQuery.value
+  if (!successfulQuery) {
+    ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
+    return
   }
-  return submitExport(
+  const filters = {
+    user_name: successfulQuery.user_name,
+    status: successfulQuery.status,
+    begin_time: successfulQuery.begin_time,
+    end_time: successfulQuery.end_time,
+  }
+  await submitExport(
     `loginlogs:${JSON.stringify(filters)}`,
     (idempotencyKey, signal) => exportLoginLog(filters, idempotencyKey, signal),
   )
@@ -147,12 +182,14 @@ function handleExport() {
 async function fetchData(): Promise<void> {
   queryParams.value.begin_time = dateRange.value[0] ?? ''
   queryParams.value.end_time = dateRange.value[1] ?? ''
-  const nextParams = { ...queryParams.value }
-  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
-    activeQueryParams.value = nextParams
-    return
-  }
-  await loginLogsQuery.refetch({ throwOnError: true })
+  if (applyDraft()) return
+  await refreshData()
+}
+
+async function refreshData(): Promise<void> {
+  await refreshApplied(async () => {
+    await loginLogsQuery.refetch({ throwOnError: true })
+  })
 }
 
 function handleSearch(): void {
@@ -180,5 +217,5 @@ function handleDetail(row: LoginLogRecord): void {
   detailVisible.value = true
 }
 
-useKeepAlivePageActive(pageActive, () => loginLogsQuery.refetch())
+useKeepAlivePageActive(pageActive, refreshData)
 </script>

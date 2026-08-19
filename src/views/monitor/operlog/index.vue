@@ -18,7 +18,7 @@
             :range-separator="t('monitor.operationLog.rangeSeparator')"
             :start-placeholder="t('monitor.operationLog.startTime')"
             :end-placeholder="t('monitor.operationLog.endTime')"
-            value-format="YYYY-MM-DDTHH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
             style="width:340px"
           />
         </el-form-item>
@@ -33,7 +33,16 @@
       <template #header>
         <div class="card-header">
           <span>{{ t('monitor.operationLog.title') }}</span>
-          <el-button v-perm="'system:operlog:export'" icon="Download" :loading="exportLoading" @click="handleExport">{{ t('monitor.operationLog.export') }}</el-button>
+          <el-button
+            v-perm="'system:operlog:export'"
+            icon="Download"
+            :loading="exportLoading"
+            :disabled="!canExport"
+            :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
+            @click="handleExport"
+          >
+            {{ t('monitor.operationLog.export') }}
+          </el-button>
         </div>
       </template>
       <el-table v-loading="loading" :data="operationLogPage?.items ?? []" border stripe>
@@ -110,6 +119,7 @@ import {
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
+import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -119,33 +129,58 @@ const userStore = useUserStore()
 const pageActive = ref(true)
 const { pending: exportLoading, submitExport } = useExportJobRequest()
 
-const queryParams = ref<OperLogQuery>({
-  page: 1, page_size: 10, oper_name: '', status: '', begin_time: '', end_time: '',
+const {
+  appliedQuery: appliedQueryParams,
+  applyDraft,
+  clearSuccessfulQuery,
+  draftQuery: queryParams,
+  hasSuccessfulQuery: canExport,
+  lastSuccessfulQuery,
+  refreshApplied,
+  runAppliedQuery,
+} = useAppliedListQuery<OperLogQuery>({
+  page: 1,
+  page_size: 10,
+  oper_name: '',
+  status: '',
+  begin_time: '',
+  end_time: '',
 })
-const activeQueryParams = ref<OperLogQuery>({ ...queryParams.value })
+
+watch(
+  () => [userStore.tenantId, userStore.userId] as const,
+  () => clearSuccessfulQuery(),
+  { flush: 'sync' },
+)
 
 const operationLogsQuery = useTenantQuery<PageResponse<OperLogRecord>>(
   () => userStore.tenantId,
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-operation-logs',
-  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-  async signal => {
-    const response = await listOperLog({ ...activeQueryParams.value }, signal)
-    return response.data ?? emptyPageResponse<OperLogRecord>(activeQueryParams.value)
-  },
+  () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
+  signal => runAppliedQuery(signal, async (query, requestSignal) => {
+    const params = { ...query }
+    const response = await listOperLog(params, requestSignal)
+    return response.data ?? emptyPageResponse<OperLogRecord>(params)
+  }),
 )
 
 const loading = operationLogsQuery.isFetching
 const operationLogPage = operationLogsQuery.data
 
-function handleExport() {
-  const filters = {
-    name: activeQueryParams.value.oper_name,
-    status: activeQueryParams.value.status,
-    begin_time: activeQueryParams.value.begin_time,
-    end_time: activeQueryParams.value.end_time,
+async function handleExport(): Promise<void> {
+  const successfulQuery = lastSuccessfulQuery.value
+  if (!successfulQuery) {
+    ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
+    return
   }
-  return submitExport(
+  const filters = {
+    oper_name: successfulQuery.oper_name,
+    status: successfulQuery.status,
+    begin_time: successfulQuery.begin_time,
+    end_time: successfulQuery.end_time,
+  }
+  await submitExport(
     `operlogs:${JSON.stringify(filters)}`,
     (idempotencyKey, signal) => exportOperLog(filters, idempotencyKey, signal),
   )
@@ -154,12 +189,14 @@ function handleExport() {
 async function fetchData(): Promise<void> {
   queryParams.value.begin_time = dateRange.value[0] ?? ''
   queryParams.value.end_time = dateRange.value[1] ?? ''
-  const nextParams = { ...queryParams.value }
-  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
-    activeQueryParams.value = nextParams
-    return
-  }
-  await operationLogsQuery.refetch({ throwOnError: true })
+  if (applyDraft()) return
+  await refreshData()
+}
+
+async function refreshData(): Promise<void> {
+  await refreshApplied(async () => {
+    await operationLogsQuery.refetch({ throwOnError: true })
+  })
 }
 
 function handleSearch(): void {
@@ -187,5 +224,5 @@ function handleDetail(row: OperLogRecord): void {
   detailVisible.value = true
 }
 
-useKeepAlivePageActive(pageActive, () => operationLogsQuery.refetch())
+useKeepAlivePageActive(pageActive, refreshData)
 </script>

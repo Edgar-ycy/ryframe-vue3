@@ -36,13 +36,17 @@ describe('列表成功筛选快照', () => {
 
   it('刷新已应用条件时不会读取未提交草稿', async () => {
     const state = useAppliedListQuery<TestQuery>({ keyword: '已应用', page: 1 })
+    const controller = new AbortController()
     const refresh = vi.fn(async () => '已刷新')
+
+    await state.runAppliedQuery(controller.signal, async () => '首次成功')
 
     state.draftQuery.value.keyword = '未提交草稿'
 
     await expect(state.refreshApplied(refresh)).resolves.toBe('已刷新')
     expect(refresh).toHaveBeenCalledOnce()
     expect(state.appliedQuery.value).toEqual({ keyword: '已应用', page: 1 })
+    expect(state.lastSuccessfulQuery.value).toEqual({ keyword: '已应用', page: 1 })
   })
 
   it('失败请求保留最后一次成功快照', async () => {

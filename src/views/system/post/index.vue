@@ -26,7 +26,16 @@
         <div class="card-header">
           <span>{{ t('system.post.list') }}</span>
           <div>
-            <el-button v-perm="'system:post:export'" icon="Download" :loading="exportLoading" @click="handleExport">{{ t('system.common.export') }}</el-button>
+            <el-button
+              v-perm="'system:post:export'"
+              icon="Download"
+              :loading="exportLoading"
+              :disabled="!canExport"
+              :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
+              @click="handleExport"
+            >
+              {{ t('system.common.export') }}
+            </el-button>
             <el-button v-perm="'system:post:add'" type="primary" icon="Plus" @click="handleAdd">{{ t('system.common.add') }}</el-button>
           </div>
         </div>
@@ -110,6 +119,7 @@ import {
 } from '@/api/modules/post'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -117,43 +127,81 @@ import { confirmAction } from '@/utils/confirmAction'
 
 const { t } = useI18n()
 
-const queryParams = ref<PostQuery>({ page: 1, page_size: 10, name: '', code: '', status: '' })
-const activeQueryParams = ref<PostQuery>({ ...queryParams.value })
+const {
+  appliedQuery: appliedQueryParams,
+  applyDraft,
+  clearSuccessfulQuery,
+  draftQuery: queryParams,
+  hasSuccessfulQuery: canExport,
+  lastSuccessfulQuery,
+  refreshApplied,
+  runAppliedQuery,
+} = useAppliedListQuery<PostQuery>({
+  page: 1,
+  page_size: 10,
+  name: '',
+  code: '',
+  status: '',
+})
 const userStore = useUserStore()
 const authenticated = () => userStore.sessionStatus === 'authenticated'
+
+watch(
+  () => [userStore.tenantId, userStore.userId] as const,
+  () => clearSuccessfulQuery(),
+  { flush: 'sync' },
+)
+
 const postsQuery = useTenantQuery<PageResponse<PostRecord>>(
   () => userStore.tenantId,
   authenticated,
   'posts',
-  () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-  async signal => {
-    const response = await listPost({ ...activeQueryParams.value }, signal)
-    return response.data ?? emptyPageResponse<PostRecord>(activeQueryParams.value)
-  },
+  () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
+  signal => runAppliedQuery(signal, async (query, requestSignal) => {
+    const params = { ...query }
+    const response = await listPost(params, requestSignal)
+    return response.data ?? emptyPageResponse<PostRecord>(params)
+  }),
 )
 const loading = postsQuery.isFetching
 const tableResponse = postsQuery.data
 const { pending: exportLoading, submitExport } = useExportJobRequest()
 
-function handleExport() {
-  const filters = { ...activeQueryParams.value }
-  return submitExport(
+async function handleExport(): Promise<void> {
+  const successfulQuery = lastSuccessfulQuery.value
+  if (!successfulQuery) {
+    ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
+    return
+  }
+  const filters = { ...successfulQuery }
+  await submitExport(
     `posts:${JSON.stringify(filters)}`,
     (idempotencyKey, signal) => exportPost(filters, idempotencyKey, signal),
   )
 }
 
-async function fetchData() {
-  const nextParams = { ...queryParams.value }
-  if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
-    activeQueryParams.value = nextParams
-    return
-  }
-  await postsQuery.refetch({ throwOnError: true })
+async function fetchData(): Promise<void> {
+  if (applyDraft()) return
+  await refreshData()
 }
 
 function handleSearch() { queryParams.value.page = 1; void fetchData() }
-function handleReset() { queryParams.value.name = ''; queryParams.value.code = ''; queryParams.value.status = ''; handleSearch() }
+function handleReset() {
+  queryParams.value = {
+    page: 1,
+    page_size: queryParams.value.page_size,
+    name: '',
+    code: '',
+    status: '',
+  }
+  void fetchData()
+}
+
+async function refreshData(): Promise<void> {
+  await refreshApplied(async () => {
+    await postsQuery.refetch({ throwOnError: true })
+  })
+}
 
 const dialog = ref({ visible: false, title: '', isEdit: false })
 const formRef = ref<FormInstance>()
@@ -270,7 +318,7 @@ async function handleSubmit() {
     })
   }
   dialog.value.visible = false
-  await postsQuery.refetch({ throwOnError: true })
+  await refreshData()
 }
 
 async function handleDelete(row: PostRecord) {
@@ -283,7 +331,7 @@ async function handleDelete(row: PostRecord) {
   if (!confirmed) return
 
   await deleteMutation.mutateAsync(row)
-  await postsQuery.refetch({ throwOnError: true })
+  await refreshData()
 }
 
 </script>

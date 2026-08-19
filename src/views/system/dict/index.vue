@@ -12,6 +12,8 @@
                   size="small"
                   icon="Download"
                   :loading="exportLoading"
+                  :disabled="!canExport"
+                  :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
                   @click="handleExport"
                 >
                   {{ t('system.common.export') }}
@@ -28,6 +30,49 @@
               </div>
             </div>
           </template>
+
+          <el-form :model="typePage" inline class="dict-filter">
+            <el-form-item :label="t('system.dict.name')">
+              <el-input
+                v-model="typePage.name"
+                :placeholder="t('system.dict.enterName')"
+                clearable
+                @keyup.enter="handleSearch"
+              />
+            </el-form-item>
+            <el-form-item :label="t('system.dict.code')">
+              <el-input
+                v-model="typePage.code"
+                :placeholder="t('system.dict.enterCode')"
+                clearable
+                @keyup.enter="handleSearch"
+              />
+            </el-form-item>
+            <el-form-item :label="t('system.common.status')">
+              <el-select
+                v-model="typePage.status"
+                :placeholder="t('system.common.status')"
+                clearable
+                style="width: 120px"
+              >
+                <el-option :label="t('system.common.normal')" value="1" />
+                <el-option :label="t('system.common.disabled')" value="0" />
+              </el-select>
+            </el-form-item>
+            <el-form-item>
+              <el-button
+                v-perm="'system:dict:list'"
+                type="primary"
+                icon="Search"
+                @click="handleSearch"
+              >
+                {{ t('system.common.search') }}
+              </el-button>
+              <el-button v-perm="'system:dict:list'" icon="Refresh" @click="handleReset">
+                {{ t('system.common.reset') }}
+              </el-button>
+            </el-form-item>
+          </el-form>
 
           <el-table
             v-loading="typeLoading"
@@ -81,6 +126,7 @@
             size="small"
             background
             class="dict-pagination"
+            @change="fetchTypeList"
           />
         </el-card>
       </div>
@@ -171,6 +217,7 @@ import { useDictManagement } from './composables/useDictManagement'
 const { t } = useI18n()
 
 const {
+  canExport,
   currentType,
   dataDialogVisible,
   dataList,
@@ -180,6 +227,7 @@ const {
   editingData,
   editingType,
   exportLoading,
+  fetchTypeList,
   handleAddData,
   handleAddType,
   handleDataSaved,
@@ -188,6 +236,8 @@ const {
   handleEditData,
   handleEditType,
   handleExport,
+  handleReset,
+  handleSearch,
   handleTypeClick,
   handleTypeSaved,
   typeDialogVisible,
@@ -207,6 +257,14 @@ const {
 
 .dict-panel {
   min-width: 0;
+}
+
+.dict-filter {
+  padding-bottom: 4px;
+
+  :deep(.el-form-item) {
+    margin-bottom: 12px;
+  }
 }
 
 .dict-pagination {

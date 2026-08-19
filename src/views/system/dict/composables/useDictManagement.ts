@@ -11,13 +11,29 @@ import {
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
 export function useDictManagement() {
-  const typePage = ref<DictTypeQuery>({ page: 1, page_size: 10 })
+  const {
+    appliedQuery: appliedTypeQuery,
+    applyDraft,
+    clearSuccessfulQuery,
+    draftQuery: typePage,
+    hasSuccessfulQuery: canExport,
+    lastSuccessfulQuery,
+    refreshApplied,
+    runAppliedQuery,
+  } = useAppliedListQuery<DictTypeQuery>({
+    page: 1,
+    page_size: 10,
+    name: '',
+    code: '',
+    status: '',
+  })
   const currentTypeId = ref<Id | null>(null)
   const typeDialogVisible = ref(false)
   const editingType = ref<DictTypeRecord | null>(null)
@@ -28,15 +44,25 @@ export function useDictManagement() {
   const { pending: exportLoading, submitExport } = useExportJobRequest()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
 
+  watch(
+    () => [userStore.tenantId, userStore.userId] as const,
+    () => {
+      clearSuccessfulQuery()
+      clearCurrentType()
+    },
+    { flush: 'sync' },
+  )
+
   const typesQuery = useTenantQuery<PageResponse<DictTypeRecord>>(
     () => userStore.tenantId,
     authenticated,
     'dict-types',
-    () => ({ scope: 'list', filters: { ...typePage.value } }),
-    async signal => {
-      const response = await listDictType({ ...typePage.value }, signal)
-      return response.data ?? emptyPageResponse<DictTypeRecord>(typePage.value)
-    },
+    () => ({ scope: 'list', filters: { ...appliedTypeQuery.value } }),
+    signal => runAppliedQuery(signal, async (query, requestSignal) => {
+      const params = { ...query }
+      const response = await listDictType(params, requestSignal)
+      return response.data ?? emptyPageResponse<DictTypeRecord>(params)
+    }),
   )
   const typePageResponse = typesQuery.data
   const currentType = computed<DictTypeRecord | null>({
@@ -107,7 +133,14 @@ export function useDictManagement() {
   }
 
   async function fetchTypeList(): Promise<void> {
-    await typesQuery.refetch({ throwOnError: true })
+    if (applyDraft()) return
+    await refreshTypeList()
+  }
+
+  async function refreshTypeList(): Promise<void> {
+    await refreshApplied(async () => {
+      await typesQuery.refetch({ throwOnError: true })
+    })
   }
 
   async function fetchDataList(): Promise<void> {
@@ -115,12 +148,33 @@ export function useDictManagement() {
     await dataQuery.refetch({ throwOnError: true })
   }
 
-  function handleExport(): Promise<void> {
-    const filters = { ...typePage.value }
-    return submitExport(
+  async function handleExport(): Promise<void> {
+    const successfulQuery = lastSuccessfulQuery.value
+    if (!successfulQuery) {
+      ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
+      return
+    }
+    const filters = { ...successfulQuery }
+    await submitExport(
       `dict-types:${JSON.stringify(filters)}`,
       (idempotencyKey, signal) => exportDictType(filters, idempotencyKey, signal),
-    ).then(() => undefined)
+    )
+  }
+
+  function handleSearch(): void {
+    typePage.value.page = 1
+    void fetchTypeList()
+  }
+
+  function handleReset(): void {
+    typePage.value = {
+      page: 1,
+      page_size: typePage.value.page_size,
+      name: '',
+      code: '',
+      status: '',
+    }
+    void fetchTypeList()
   }
 
   async function handleTypeClick(dictType: DictTypeRecord): Promise<void> {
@@ -140,7 +194,7 @@ export function useDictManagement() {
   }
 
   async function handleTypeSaved(): Promise<void> {
-    await fetchTypeList()
+    await refreshTypeList()
   }
 
   async function handleDeleteType(dictType: DictTypeRecord): Promise<void> {
@@ -157,10 +211,7 @@ export function useDictManagement() {
 
     await deleteTypeMutation.mutateAsync(dictType)
     if (currentType.value?.id === dictType.id) clearCurrentType()
-    if ((typePageResponse.value?.items.length ?? 0) === 1 && (typePage.value.page ?? 1) > 1) {
-      typePage.value.page = (typePage.value.page ?? 1) - 1
-    }
-    await fetchTypeList()
+    await refreshTypeList()
   }
 
   function handleAddData(): void {
@@ -195,6 +246,7 @@ export function useDictManagement() {
   }
 
   return {
+    canExport,
     currentType,
     dataDialogVisible,
     dataList,
@@ -213,6 +265,8 @@ export function useDictManagement() {
     handleEditData,
     handleEditType,
     handleExport,
+    handleReset,
+    handleSearch,
     handleTypeClick,
     handleTypeSaved,
     typeDialogVisible,

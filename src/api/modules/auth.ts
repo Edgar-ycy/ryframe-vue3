@@ -1,9 +1,20 @@
-import request, { rawRequest } from '@/shared/http/client'
-import { requestOperation } from '@/api/operationRequest'
+import { requestMultipartOperation, requestOperation } from '@/api/operationRequest'
 import {
   delete_auth_sessions_by_sid,
+  get_auth_captcha_config,
+  get_auth_captcha_generate,
+  get_auth_csrf,
+  get_auth_profile,
   get_auth_sessions,
+  post_auth_captcha_verify,
+  post_auth_login,
+  post_auth_logout,
+  post_auth_password_reset_complete,
+  post_auth_refresh,
   post_auth_sessions_revoke_others,
+  put_auth_profile,
+  put_auth_profile_avatar,
+  put_auth_profile_password,
 } from '@/api/generated/operations'
 import type {
   ApiSchema,
@@ -27,18 +38,15 @@ export type RevokeOtherSessionsResult = OperationData<'post_auth_sessions_revoke
 
 /** 登录 */
 export function getCsrfChallenge() {
-  return rawRequest<CsrfChallenge>({
-    url: '/auth/csrf',
-    method: 'get',
+  return requestOperation(get_auth_csrf, {
+    transport: 'raw',
     skipAuthRefresh: true,
     skipTenantHeader: true,
   })
 }
 
 export function login(data: LoginParams, tenantId: string, csrfToken: string) {
-  return request<LoginResult>({
-    url: '/auth/login',
-    method: 'post',
+  return requestOperation(post_auth_login, {
     data,
     headers: {
       'X-Tenant-Id': tenantId,
@@ -50,13 +58,12 @@ export function login(data: LoginParams, tenantId: string, csrfToken: string) {
 
 /** 登出 */
 export function logout(csrfToken: string, accessToken?: string) {
-  return rawRequest({
-    url: '/auth/logout',
-    method: 'post',
+  return requestOperation(post_auth_logout, {
     headers: {
       'X-CSRF-Token': csrfToken,
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
+    transport: 'raw',
     skipAuthRefresh: true,
     skipTenantHeader: true,
   })
@@ -64,10 +71,9 @@ export function logout(csrfToken: string, accessToken?: string) {
 
 /** 刷新令牌 */
 export function refreshToken(csrfToken: string) {
-  return rawRequest<LoginResult>({
-    url: '/auth/refresh',
-    method: 'post',
+  return requestOperation(post_auth_refresh, {
     headers: { 'X-CSRF-Token': csrfToken },
+    transport: 'raw',
     skipAuthRefresh: true,
     skipTenantHeader: true,
   })
@@ -75,9 +81,7 @@ export function refreshToken(csrfToken: string) {
 
 /** 完成密码重置 */
 export function completePasswordReset(data: CompletePasswordResetParams) {
-  return request({
-    url: '/auth/password-reset/complete',
-    method: 'post',
+  return requestOperation(post_auth_password_reset_complete, {
     data,
     headers: { 'X-Tenant-Id': data.tenant_id },
     skipAuthRefresh: true,
@@ -91,9 +95,7 @@ export function getCaptcha(
   tenantId: string,
   params?: OperationQuery<'get_auth_captcha_generate'>,
 ) {
-  return request<OperationData<'get_auth_captcha_generate'>>({
-    url: '/auth/captcha/generate',
-    method: 'get',
+  return requestOperation(get_auth_captcha_generate, {
     params,
     headers: { 'X-Tenant-Id': tenantId },
     skipTenantHeader: true,
@@ -102,18 +104,12 @@ export function getCaptcha(
 
 /** 校验验证码 */
 export function verifyCaptcha(data: OperationJsonBody<'post_auth_captcha_verify'>) {
-  return request<OperationData<'post_auth_captcha_verify'>>({
-    url: '/auth/captcha/verify',
-    method: 'post',
-    data,
-  })
+  return requestOperation(post_auth_captcha_verify, { data })
 }
 
 /** 查询指定租户的验证码开关状态（公开接口） */
 export function getCaptchaConfig(tenantId: string) {
-  return request<OperationData<'get_auth_captcha_config'>>({
-    url: '/auth/captcha/config',
-    method: 'get',
+  return requestOperation(get_auth_captcha_config, {
     headers: { 'X-Tenant-Id': tenantId },
     skipTenantHeader: true,
   })
@@ -123,36 +119,22 @@ export function getCaptchaConfig(tenantId: string) {
 
 /** 获取个人信息 */
 export function getProfile(signal?: AbortSignal) {
-  return request<ProfileInfo>({
-    url: '/auth/profile',
-    method: 'get',
-    signal,
-  })
+  return requestOperation(get_auth_profile, { signal })
 }
 
 /** 更新个人信息 */
 export function updateProfile(data: ProfileUpdateParams) {
-  return request({
-    url: '/auth/profile',
-    method: 'put',
-    data,
-  })
+  return requestOperation(put_auth_profile, { data })
 }
 
 /** 修改密码 */
 export function changePassword(data: PasswordChangeParams) {
-  return request({
-    url: '/auth/profile/password',
-    method: 'put',
-    data,
-  })
+  return requestOperation(put_auth_profile_password, { data })
 }
 
 /** 更新头像（FormData 直接传文件，不设 Content-Type，浏览器自动加 boundary；后端返回 avatar_url） */
 export function updateAvatar(data: FormData) {
-  return request<OperationData<'put_auth_profile_avatar'>>({
-    url: '/auth/profile/avatar',
-    method: 'put',
+  return requestMultipartOperation(put_auth_profile_avatar, {
     data,
     timeout: 120000,
   })

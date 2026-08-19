@@ -1,18 +1,4 @@
 {
-  "src/api/modules/auth.ts": {
-    "directImports": ["rawRequest", "request"],
-    "directCalls": { "rawRequest": 3, "request": 9 },
-    "pathLiterals": 12,
-    "urlProperties": 12,
-    "methodProperties": 12
-  },
-  "src/api/modules/common.ts": {
-    "directImports": ["request", "requestBlob"],
-    "directCalls": { "request": 3, "requestBlob": 1 },
-    "pathLiterals": 5,
-    "urlProperties": 4,
-    "methodProperties": 4
-  },
   "src/api/modules/exportJob.ts": {
     "directImports": ["request", "requestBlob"],
     "directCalls": { "request": 4, "requestBlob": 1 },

@@ -1,236 +1,77 @@
 # RyFrame Vue3
 
-现代化企业级后台管理系统前端，基于 Vue 3 + TypeScript + Element Plus 构建。前端与 Rust 后端分别使用独立 Git 仓库和 CI，通过 HTTP API 契约协作；两仓维护同名稳定标签，项目级源码 Release 由后端统一发布。
-
-## 技术栈
-
-| 类别 | 技术 | 版本 |
-|------|------|------|
-| 语言 | TypeScript | ^6.0 |
-| 框架 | Vue 3 | ^3.5 |
-| 构建工具 | Vite | ^8.0 |
-| UI 组件库 | Element Plus | ^2.14 |
-| 状态管理 | Pinia | ^3.0 |
-| 服务端状态 | TanStack Vue Query | ^5.101 |
-| 数据可视化 | Apache ECharts | 6.1 |
-| 路由 | Vue Router | ^5.1 |
-| HTTP 请求 | Axios | ^1.17 |
-| CSS 预处理 | Sass | ^1.101 |
-
-## 功能模块
-
-- **Dashboard**: 首页工作台，关键指标与快捷入口
-- **系统管理**: 用户管理、异步用户导入、权限诊断、角色管理（菜单/权限/数据权限分配）、菜单管理、部门管理、岗位管理、字典管理、参数配置、通知公告
-- **系统监控**: 运维总览、数据保留、后台任务、定时任务、在线用户、服务监控、操作日志、登录日志
-- **首页活动图**: 仅在当前用户具有运维总览权限时异步加载，复用租户级趋势缓存，不增加无权限用户首屏体积
-- **个人中心**: 个人信息编辑、密码修改、头像更新
-- **消息中心**: 按租户和用户隔离的持久收件箱、未读计数、实时投递与补拉
-- **产品套餐与能力**: 套餐版本生命周期、租户套餐变更预览/应用、通用 capability/variant 功能裁剪
-- **数据放置**: 安全数据目标目录、租户放置与迁移、迁移状态动作和备份恢复点
-- **权限控制**: 按钮级权限指令、角色权限、会话菜单与 feature manifest 共同驱动的动态路由
-
-## 项目结构
-
-```text
-ryframe-vue3/
-├── openapi/openapi.json   # 后端 OpenAPI 契约快照
-├── src/
-│   ├── app/session/        # Token 刷新、退出和会话协调
-│   ├── app/messages/       # 消息查询、mutation 与 WebSocket 传输
-│   ├── app/tenant-context/ # 会话上下文、能力判断和强一致刷新
-│   ├── features/           # 功能清单、能力映射和领域共享规则
-│   ├── shared/             # 运行时配置、HTTP 基础层和生成式安全策略
-│   ├── api/contract.ts     # 生成契约的稳定类型入口
-│   ├── api/generated/      # OpenAPI 生成类型，禁止手工修改
-│   ├── api/modules/        # 业务 API 请求函数和语义类型
-│   ├── router/             # 守卫、动态路由、页面白名单和常量路由
-│   ├── stores/             # Pinia 客户端跨页面状态与连接状态
-│   ├── components/         # 布局和可复用组件
-│   ├── directives/         # 权限和交互指令
-│   ├── hooks/              # 组合式逻辑
-│   ├── styles/             # 全局样式和设计 token
-│   ├── utils/              # 无状态工具
-│   ├── views/              # 页面编排
-│   ├── App.vue
-│   └── main.ts
-├── scripts/                # 源码、架构和 API 契约检查
-├── ARCHITECTURE.md
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
-```
+RyFrame 的 Vue 3 管理端，使用 TypeScript、Vite、Element Plus、Pinia 和 TanStack Query。前后端是两个独立仓库，通过提交到 Git 的 OpenAPI 契约协作，并使用相同版本号和标签发布。
 
 ## 快速开始
 
-### 环境要求
-
-- **Node.js** 24.15.0（默认版本，见 `.node-version`）；CI 额外验证 22.22.2 兼容性
-- **pnpm** 11.20.0（以 `packageManager` 字段为准，推荐通过 Corepack 使用）
-
-### 安装依赖
+环境版本以 `.node-version` 和 `package.json#packageManager` 为准。
 
 ```bash
-pnpm install
-```
-
-### 启动开发服务器
-
-```bash
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-开发服务器默认仅监听 `http://127.0.0.1:5173`，支持热模块替换（HMR）。可通过 `VITE_APP_DEV_HOST` 和 `VITE_APP_DEV_PORT` 覆盖。
+开发服务器默认监听 `http://127.0.0.1:5173`，并将 `/api` 代理到 `VITE_APP_PROXY_TARGET`。
 
-### 构建生产版本
-
-```bash
-pnpm build
-```
-
-构建产物输出至 `dist/` 目录。
-
-部署环境从稳定标签源码构建时，应嵌入当前完整提交 SHA：
+## 常用命令
 
 ```bash
-test -z "$(git status --porcelain)"
-VITE_APP_BUILD_COMMIT="$(git rev-parse HEAD)" pnpm build
+pnpm check          # 完整质量门禁
+pnpm test:unit      # 确定性单元与组件测试
+pnpm api:check      # 本地契约、生成物和 operation 使用检查
+pnpm build          # 生产构建
 ```
 
-该构建会在 `dist/build-identity.json` 中记录提交身份，供部署验收确认线上产物确实来自目标标签。GitHub 稳定 Release 不上传 `dist`，只保留平台自动生成的源码 ZIP/TAR。
-
-### 完整工程检查
+定时 CI 还会执行生产依赖审计、OSV 扫描、许可证策略检查和 CycloneDX SBOM 生成。本地可单独运行：
 
 ```bash
-pnpm check
+pnpm check:supply-chain-policy
+pnpm sbom:generate -- --output artifacts/ryframe-vue3.cdx.json
 ```
 
-该命令依次执行工作流、依赖策略、本地 OpenAPI 来源与生成物、菜单 `route_key` 集合、密码和公告策略、ESLint、Stylelint、Vue TSC、生产构建和体积预算；任何警告都会使检查失败。
+## API 契约
 
-日常 push、pull request 和手动触发使用单个 Node 24 主质量作业；每周定时任务仅使用 Node 22.22.2 验证安装、类型检查和生产构建兼容性。
+`openapi/openapi.json` 和 `openapi/source.json` 固定后端仓库、完整提交 SHA 与内容摘要。`src/api/generated/` 只能由脚本生成，禁止手工修改。
 
-前端仓库不创建 Release 或 Nightly，也不发布构建产物、镜像、SBOM 或签名。前端只推送与后端一致的稳定 annotated tag，由后端联合门禁创建纯源码项目 Release。
-
-### 同步 API 契约
-
-后端接口变更后，应先提交最终后端契约并取得真实的 40 位提交 SHA，再从该提交对应的后端仓库快照生成前端类型：
+后端契约提交稳定后执行：
 
 ```powershell
 $env:RYFRAME_BACKEND_REPOSITORY='Edgar-ycy/ryframe'
 $env:RYFRAME_BACKEND_COMMIT='<后端完整 40 位提交 SHA>'
-$env:RYFRAME_BACKEND_WORKTREE='..'
+$env:RYFRAME_BACKEND_WORKTREE='..\ryframe'
 pnpm api:sync
 ```
 
-设置 `RYFRAME_BACKEND_WORKTREE` 后，同步脚本只会通过 `git -C <后端仓库> show <提交>:<契约路径>` 读取精确 Git 对象，不读取后端工作区文件；不设置时则读取完整提交对应的 GitHub Raw 地址。`pnpm api:check` 会在系统临时目录重新生成派生文件并只读比较仓库内容，不访问网络，也不会先覆盖受管文件。`pnpm api:check:upstream` 会按 `openapi/source.json` 中记录的后端仓库与完整提交 SHA 验证上游契约；不会读取浮动分支。API 模块通过 `src/api/contract.ts` 引用生成类型，逐步改用 operationId 请求门面，不手工复制 DTO、URL 或 HTTP 方法；密码、公告策略和编译期权限码同样从 OpenAPI 生成，不复制限制常量、正则或权限字符串联合类型。套餐、租户上下文和数据放置当前使用的本地窄 DTO 只用于等待后端 OpenAPI 稳定，契约可生成后必须切换生成类型并删除临时定义。
+设置 `RYFRAME_BACKEND_WORKTREE` 时，同步脚本从指定 Git 对象读取契约，不读取后端未提交文件。API 模块必须使用生成的 operation descriptor，不得手写 URL、HTTP method 或重复 DTO。
 
-### 预览构建结果
+## 运行配置
 
-```bash
-pnpm preview
-```
+| 变量 | 用途 |
+| --- | --- |
+| `VITE_APP_TITLE` | 浏览器标题 |
+| `VITE_APP_API_ORIGIN` | 生产 API 的绝对 HTTPS origin |
+| `VITE_APP_PROXY_TARGET` | 本地代理目标，默认 `http://localhost:8080` |
+| `VITE_APP_DEV_HOST` | 开发监听地址，默认 `127.0.0.1` |
+| `VITE_APP_DEV_PORT` | 开发端口，默认 `5173` |
+| `VITE_APP_BUILD_COMMIT` | 部署对应的完整前端提交 SHA |
 
-## 配置说明
+API 版本前缀来自 OpenAPI 扩展，不通过环境变量重复配置。生产环境配置放入被忽略的 `.env.production`，不得提交秘密。
 
-### 环境变量
+## 关键约束
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `VITE_APP_TITLE` | 应用标题（显示在浏览器标签页） | `RyFrame 管理后台` |
-| `VITE_APP_API_ORIGIN` | 可选 API origin；生产跨域部署必须使用 API 子域的绝对 HTTPS origin，不能包含路径 | `https://api.example.com` |
-| `VITE_APP_BUILD_COMMIT` | 部署构建对应的完整 40 位 Git 提交 SHA | `0123456789abcdef0123456789abcdef01234567` |
-| `VITE_APP_PROXY_TARGET` | 开发服务器代理的后端地址 | `http://localhost:8080` |
-| `VITE_APP_DEV_HOST` | 开发服务器监听地址 | 默认 `127.0.0.1` |
-| `VITE_APP_DEV_PORT` | 开发服务器监听端口 | 默认 `5173` |
+- 登录、刷新和 `/auth/context` 使用同一份 `SessionContext`，失败时关闭访问。
+- 动态路由同时受服务端菜单、权限、能力和本地页面注册表约束。
+- 服务端数据进入 TanStack Query；Pinia 只保存客户端和跨页面状态。
+- 列表导出使用最后一次成功应用的筛选快照，覆盖全部匹配分页；空筛选必须确认。
+- 导出终态记录可单删或批删，服务端受理后才更新缓存，并通过跨标签事件收敛状态。
+- 所有 ID 都按字符串处理；有限状态使用联合类型，业务代码禁止 `any`。
+- 新增接口、字段、权限、菜单或页面能力时，必须同步验证前后端契约。
 
-API 版本前缀不再由环境变量维护，而是由后端 OpenAPI 的 `x-ryframe-api-prefix` 生成。开发环境未配置 `VITE_APP_API_ORIGIN` 时使用当前页面 origin 并经过 Vite 代理；生产部署从已提交的 `.env.production.example` 复制为被忽略的 `.env.production`，再填写实际 API 子域 origin。
+## 发布
 
-### API 代理
+前后端联调和 CI 均通过后，先固定最终后端提交并同步前端契约，再推送两个仓库的同名 annotated tag。远程标签不得移动；前端不单独创建不同版本的 Release。
 
-开发环境下，Vite 开发服务器会将 `/api` 开头的请求代理到后端服务。代理目标在 `vite.config.ts` 中配置：
-
-```ts
-const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
-
-server: {
-  host: env.VITE_APP_DEV_HOST || '127.0.0.1',
-  port: Number(env.VITE_APP_DEV_PORT || '5173'),
-  proxy: {
-    '/api': {
-      target: proxyTarget,
-      changeOrigin: true,
-    },
-  },
-},
-```
-
-### 路径别名
-
-`@` 映射到 `src/` 目录，可在项目中直接使用：
-
-```ts
-import { usePermission } from '@/hooks/usePermission'
-```
-
-## 核心特性
-
-### 权限控制体系
-
-- **会话快照**: 登录、刷新和 `GET /auth/context` 返回相同的完整 `SessionContext`，角色、权限、能力、业务数据状态和菜单原子应用，校验失败时 fail-closed
-- **路由权限**: 后端菜单、顶层权限、本地 `route_key` 白名单和 feature manifest 的 capability/variant 共同决定动态路由，无权限页面不可达
-- **按钮权限**: `v-perm` 指令实现按钮级显隐；业务数据非 `active` 时只禁用 manifest 标记的业务写操作，系统管理仍可用
-- **角色权限**: 支持超级管理员通配符（`*:*:*`）与精确权限匹配
-
-### 请求封装
-
-- **Token 管理**: Bearer Token 自动注入，401 时自动刷新并重放排队请求
-- **错误处理**: 统一 HTTP 状态码映射与业务错误码提示
-- **响应适配**: 拦截器统一处理业务响应包络与文件下载响应
-- **上下文收敛**: 读取 `X-Authorization-Epoch`、`X-Tenant-Runtime-Epoch`、`X-Tenant-Data-Generation`、`X-Tenant-Data-State`，任一变化都合并为一次 `/auth/context` 强一致刷新；`423`/`503` 保留 `Retry-After`
-
-### 动态路由
-
-- 首次导航从登录/刷新携带的 `session_context` 或 `/auth/context` 读取同一快照，不再分开请求主体与当前菜单
-- 页面组件只能从本地 `pageRegistry.ts` 白名单解析，后端不能下发任意组件路径
-- capability 页面由 `src/features` manifests 聚合页面、稳定 `route_key`、权限、variant 和套餐配置编辑器；服务账号使用 `system.service_accounts`，运行时状态只取 `SessionContext`
-- 首次路由导航自动 replace，避免回退到登录页
-
-### 产品套餐与数据放置
-
-- `platform.product-plans` 管理套餐稳定 key 与独立版本时间线，租户套餐变更严格执行 preview 后 apply
-- `platform.data-targets` 只展示目标 key、隔离模式、kind、region、health、schema fingerprint 和连接池计数，不展示连接地址、账号、Secret 或 TLS 路径
-- 租户详情提供套餐与能力、数据放置与迁移、备份恢复点标签；迁移 apply 携带 `plan_hash`、`expected_placement_generation` 和 `Idempotency-Key`
-- 迁移只列服务端标记为 eligible 的目标，提交前再次输入完整 `tenant_id`；只轮询当前打开租户和进行中的任务，离开即停止
-
-### 密码策略
-
-- 个人修改、密码重置和租户管理员初始密码共用后端 OpenAPI 发布的策略
-- 契约派生生成器生成只读策略配置，页面只调用统一验证器
-- 密码修改成功后清理旧会话并返回登录页
-
-## 与后端对接
-
-本项目为前后端分离架构的前端部分，需搭配后端 API 服务使用。
-
-> 🔗 **配套后端**: [RyFrame](https://github.com/Edgar-ycy/ryframe) — 基于 Rust + Axum 的现代化企业级后端框架，提供完整的认证授权、系统管理、监控运维等 API 服务。
-
-后端 API 采用 RESTful 风格，统一响应格式：
-
-```json
-{
-  "code": 200,
-  "message": "操作成功",
-  "data": {},
-  "request_id": "019c1234-5678-7abc-8def-0123456789ab",
-  "error_key": null,
-  "details": null
-}
-```
-
-分页接口的数据区包含 `items`、`page`、`page_size` 和 `total` 等字段。角色选择使用后端受限的 `/options` 候选接口，支持远程前缀搜索和请求取消；导出接口只发送业务筛选字段。
-
-## 文档
-
-- [架构与演进指南](ARCHITECTURE.md)：当前前端架构、主要耦合问题、目标依赖方向和分阶段改造计划。
+架构边界和开发规则见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## License
 

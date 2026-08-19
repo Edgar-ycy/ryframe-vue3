@@ -1,7 +1,7 @@
 {
   "name": "ryframe-vue3",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.10.0",
   "type": "module",
   "packageManager": "pnpm@11.20.0",
   "engines": {

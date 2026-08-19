@@ -59,18 +59,38 @@ export function removeExportJob(
   identity: ExportJobIdentity,
   jobId: string,
 ): void {
+  removeExportJobs(client, identity, [jobId])
+}
+
+/** 一次清理已删除任务的列表和详情缓存，避免批量删除反复改写同一列表。 */
+export function removeExportJobs(
+  client: QueryClient,
+  identity: ExportJobIdentity,
+  jobIds: readonly string[],
+): void {
+  const ids = new Set(jobIds)
+  if (ids.size === 0) return
   client.setQueryData<ExportJob[]>(
     exportJobListQueryKey(identity.tenantId, identity.userId),
-    current => current?.filter(item => item.id !== jobId),
+    current => current?.filter(item => !ids.has(item.id)),
   )
-  client.removeQueries({
-    queryKey: exportJobDetailQueryKey(identity.tenantId, identity.userId, jobId),
-    exact: true,
-  })
+  for (const jobId of ids) {
+    client.removeQueries({
+      queryKey: exportJobDetailQueryKey(identity.tenantId, identity.userId, jobId),
+      exact: true,
+    })
+  }
 }
 
 export function isActiveExportJob(job: ExportJob): boolean {
   return job.status === 'queued' || job.status === 'running'
+}
+
+export function isTerminalExportJob(job: ExportJob): boolean {
+  return job.status === 'succeeded'
+    || job.status === 'failed'
+    || job.status === 'cancelled'
+    || job.status === 'expired'
 }
 
 export function isUnreadExportNotification(job: ExportJob): boolean {

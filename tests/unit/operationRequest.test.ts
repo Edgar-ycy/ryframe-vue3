@@ -26,6 +26,7 @@ import { exportConfig } from '@/api/modules/config'
 import { exportDictType } from '@/api/modules/dict'
 import {
   cancelExportJob,
+  deleteExportJobs,
   downloadExportJob,
   getExportJob,
   listExportJobs,
@@ -300,12 +301,19 @@ describe('operation 请求传输模式', () => {
     await listExportJobs()
     await getExportJob('job/1')
     await cancelExportJob('job/1')
+    await deleteExportJobs(['job-2', 'job-1'], 'delete-key')
     const downloaded = await downloadExportJob('job/1')
 
     expect(httpClient.request.mock.calls.map(([config]) => config)).toEqual([
       { method: 'get', url: '/common/jobs' },
       { method: 'get', url: '/common/jobs/job%2F1' },
       { data: {}, method: 'post', url: '/common/jobs/job%2F1/cancel' },
+      {
+        data: { ids: ['job-2', 'job-1'] },
+        headers: { 'Idempotency-Key': 'delete-key' },
+        method: 'post',
+        url: '/common/jobs/deletions',
+      },
     ])
     expect(downloaded).toBe(artifact)
     expect(httpClient.requestBlob).toHaveBeenCalledWith({

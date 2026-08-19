@@ -24,20 +24,33 @@
           <el-option :label="t('exportCenter.allResources')" value="" />
           <el-option v-for="resource in RESOURCE_OPTIONS" :key="resource" :label="resourceLabel(resource)" :value="resource" />
         </el-select>
+        <el-button
+          type="danger"
+          plain
+          :loading="deletingJobIds.length > 0"
+          :disabled="selectedJobIds.length === 0 || deletingJobIds.length > 0"
+          @click="handleBatchDelete"
+        >
+          {{ t('exportCenter.deleteSelected', { count: selectedJobIds.length }) }}
+        </el-button>
       </div>
 
       <ExportJobList
+        v-model:selected-job-ids="selectedJobIds"
         :cancelling-job-id="cancellingJobId"
+        :deleting-job-ids="deletingJobIds"
         :downloading-job-id="downloadingJobId"
         :jobs="jobs"
         :loading="loading"
         :visible-jobs="visibleJobs()"
         :can-cancel="canCancel"
+        :can-delete="canDelete"
         :display-name="displayName"
         :is-download-unavailable="isDownloadUnavailable"
         :resource-label="resourceLabel"
         :status-label="statusLabel"
         @cancel="handleCancel"
+        @delete="handleDelete"
         @download="handleDownload"
         @error="showError"
       />
@@ -69,12 +82,21 @@ const { t } = useI18n()
 const pageActive = ref(true)
 const statusFilter = ref('')
 const resourceFilter = ref('')
+const selectedJobIds = ref<string[]>([])
 const errorDialogVisible = ref(false)
 const selectedErrorJob = ref<ExportJob>()
 
 const { jobs, loading, error, refresh } = useExportJobList(() => pageActive.value)
 const { markVisibleNotificationsRead } = useExportNotificationState(() => pageActive.value)
-const { cancelJob, cancellingJobId, downloadJob, downloadingJobId } = useExportJobActions()
+const {
+  cancelJob,
+  cancellingJobId,
+  deleteJobs,
+  deletingJobIds,
+  downloadJob,
+  downloadingJobId,
+  isJobActionBusy,
+} = useExportJobActions()
 
 useKeepAlivePageActive(pageActive, handleRefresh)
 
@@ -84,6 +106,15 @@ onMounted(() => {
 
 const STATUS_OPTIONS = ['queued', 'running', 'succeeded', 'failed', 'cancelled', 'expired'] as const
 const RESOURCE_OPTIONS = ['users', 'roles', 'posts', 'configs', 'dict-types', 'operlogs', 'loginlogs'] as const
+const TERMINAL_STATUSES = new Set(['succeeded', 'failed', 'cancelled', 'expired'])
+
+watch([jobs, statusFilter, resourceFilter], () => {
+  const visibleTerminalIds = new Set(
+    visibleJobs().filter(job => canDelete(job.status)).map(job => job.id),
+  )
+  const selected = selectedJobIds.value.filter(id => visibleTerminalIds.has(id))
+  if (selected.length !== selectedJobIds.value.length) selectedJobIds.value = selected
+}, { flush: 'sync' })
 
 function visibleJobs(): ExportJob[] {
   return (jobs.value ?? []).filter(job => (
@@ -112,6 +143,10 @@ function canCancel(status: string): boolean {
   return status === 'queued' || status === 'running'
 }
 
+function canDelete(status: string): boolean {
+  return TERMINAL_STATUSES.has(status)
+}
+
 function isDownloadUnavailable(job: ExportJob): boolean {
   return isExportDownloadExpired(job)
 }
@@ -127,7 +162,7 @@ function showError(job: ExportJob): void {
 }
 
 async function handleCancel(job: ExportJob): Promise<void> {
-  if (!canCancel(job.status) || cancellingJobId.value) return
+  if (!canCancel(job.status) || cancellingJobId.value || isJobActionBusy(job.id)) return
   const confirmed = await confirmAction(
     t('exportCenter.cancelConfirm', { name: displayName(job) }),
     t('exportCenter.cancelConfirmTitle'),
@@ -149,7 +184,12 @@ async function handleCancel(job: ExportJob): Promise<void> {
 }
 
 async function handleDownload(job: ExportJob): Promise<void> {
-  if (job.status !== 'succeeded' || isDownloadUnavailable(job) || downloadingJobId.value) return
+  if (
+    job.status !== 'succeeded'
+    || isDownloadUnavailable(job)
+    || downloadingJobId.value
+    || isJobActionBusy(job.id)
+  ) return
   try {
     await downloadJob(job)
   }
@@ -168,6 +208,54 @@ async function handleDownload(job: ExportJob): Promise<void> {
     else {
       ElMessage.error(t('exportCenter.downloadFailed'))
     }
+  }
+}
+
+async function handleDelete(job: ExportJob): Promise<void> {
+  await handleDeleteJobs([job])
+}
+
+async function handleBatchDelete(): Promise<void> {
+  const selected = new Set(selectedJobIds.value)
+  await handleDeleteJobs(
+    visibleJobs().filter(job => selected.has(job.id) && canDelete(job.status)),
+  )
+}
+
+async function handleDeleteJobs(selectedJobs: readonly ExportJob[]): Promise<void> {
+  if (
+    selectedJobs.length === 0
+    || selectedJobs.length > 100
+    || deletingJobIds.value.length > 0
+    || selectedJobs.some(job => !canDelete(job.status) || isJobActionBusy(job.id))
+  ) return
+  const message = selectedJobs.length === 1
+    ? t('exportCenter.deleteConfirm', { name: displayName(selectedJobs[0]!) })
+    : t('exportCenter.deleteBatchConfirm', { count: selectedJobs.length })
+  const confirmed = await confirmAction(
+    message,
+    t('exportCenter.deleteConfirmTitle'),
+    { type: 'warning', confirmButtonText: t('exportCenter.delete') },
+  )
+  if (!confirmed || deletingJobIds.value.length > 0) return
+  try {
+    const accepted = await deleteJobs(selectedJobs.map(job => job.id))
+    const removed = new Set(accepted.accepted_ids)
+    selectedJobIds.value = selectedJobIds.value.filter(id => !removed.has(id))
+    ElMessage.success(t(
+      accepted.accepted_count === 1
+        ? 'exportCenter.deleteSuccess'
+        : 'exportCenter.deleteBatchSuccess',
+      { count: accepted.accepted_count },
+    ))
+  }
+  catch (actionError) {
+    if (actionError instanceof HttpError && actionError.status === 409) {
+      await refreshAfterAction()
+      ElMessage.warning(t('exportCenter.deleteConflict'))
+      return
+    }
+    ElMessage.error(t('exportCenter.deleteFailed'))
   }
 }
 

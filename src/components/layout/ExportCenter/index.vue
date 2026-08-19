@@ -24,10 +24,12 @@
     :loading="listLoading"
     :error="listError"
     :cancelling-job-id="cancellingJobId"
+    :deleting-job-ids="deletingJobIds"
     :downloading-job-id="downloadingJobId"
     @drawer-open="handleDrawerOpen"
     @refresh="refreshJobs"
     @cancel="cancel"
+    @delete="remove"
     @download="download"
     @view-all="viewAll"
   />
@@ -42,6 +44,7 @@ import { CircleCheckFilled, Download, WarningFilled } from '@element-plus/icons-
 import { useI18n } from 'vue-i18n'
 import type { ExportJob } from '@/api/modules/exportJob'
 import { exportJobDisplayName } from '@/app/exports/exportJobPresentation'
+import { isTerminalExportJob } from '@/app/exports/exportJobCache'
 import { useExportJobTracker } from '@/app/exports/useExportJobs'
 import { HttpError } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
@@ -66,6 +69,8 @@ const {
   markVisibleNotificationsRead,
   cancelJob,
   cancellingJobId,
+  deleteJobs,
+  deletingJobIds,
   downloadJob,
   downloadingJobId,
   startTracking,
@@ -234,6 +239,28 @@ async function download(job: ExportJob): Promise<void> {
     else {
       ElMessage.error(t('exportCenter.downloadFailed'))
     }
+  }
+}
+
+async function remove(job: ExportJob): Promise<void> {
+  if (!isTerminalExportJob(job) || deletingJobIds.value.length > 0) return
+  if (!await confirmAction(
+    t('exportCenter.deleteConfirm', { name: exportJobDisplayName(job) }),
+    t('exportCenter.deleteConfirmTitle'),
+    { type: 'warning', confirmButtonText: t('exportCenter.delete') },
+  )) return
+
+  try {
+    await deleteJobs([job.id])
+    ElMessage.success(t('exportCenter.deleteSuccess'))
+  }
+  catch (error) {
+    if (error instanceof HttpError && error.status === 409) {
+      await refreshJobs()
+      ElMessage.warning(t('exportCenter.deleteConflict'))
+      return
+    }
+    ElMessage.error(t('exportCenter.deleteFailed'))
   }
 }
 

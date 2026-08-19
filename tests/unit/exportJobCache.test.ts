@@ -7,11 +7,13 @@ import {
   exportJobListQueryKey,
   exportJobUnreadQueryKey,
   isActiveExportJob,
+  isTerminalExportJob,
   isUnreadExportNotification,
   markExportNotificationsReadInCache,
   mergeExportJob,
   prependExportJob,
   removeExportJob,
+  removeExportJobs,
 } from '@/app/exports/exportJobCache'
 
 const identity = { tenantId: 'tenant-a', userId: 'user-a' }
@@ -26,6 +28,8 @@ function exportJob(
     resource: 'users',
     status,
     created_at: '2026-08-20T00:00:00.000Z',
+    matched_rows: 0,
+    snapshot_at: '2026-08-20T00:00:00.000Z',
     updated_at: '2026-08-20T00:00:00.000Z',
     ...overrides,
   }
@@ -102,6 +106,25 @@ describe('导出任务缓存', () => {
       .toBeUndefined()
   })
 
+  it('批量删除只改写一次列表并清理全部详情', () => {
+    const jobs = [exportJob('job-1'), exportJob('job-2'), exportJob('job-3')]
+    client.setQueryData(exportJobListQueryKey('tenant-a', 'user-a'), jobs)
+    for (const job of jobs) {
+      client.setQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', job.id), job)
+    }
+
+    removeExportJobs(client, identity, ['job-3', 'job-1', 'job-1'])
+
+    expect(client.getQueryData<ExportJob[]>(exportJobListQueryKey('tenant-a', 'user-a')))
+      .toEqual([jobs[1]])
+    expect(client.getQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-1')))
+      .toBeUndefined()
+    expect(client.getQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-2')))
+      .toEqual(jobs[1])
+    expect(client.getQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-3')))
+      .toBeUndefined()
+  })
+
   it('只把成功或失败且尚未阅读的通知标记为已读', () => {
     const succeeded = exportJob('job-1', 'succeeded')
     const failed = exportJob('job-2', 'failed')
@@ -136,6 +159,11 @@ describe('导出任务缓存', () => {
     expect(isActiveExportJob(exportJob('queued', 'queued'))).toBe(true)
     expect(isActiveExportJob(exportJob('running', 'running'))).toBe(true)
     expect(isActiveExportJob(exportJob('succeeded', 'succeeded'))).toBe(false)
+    expect(isTerminalExportJob(exportJob('succeeded', 'succeeded'))).toBe(true)
+    expect(isTerminalExportJob(exportJob('failed', 'failed'))).toBe(true)
+    expect(isTerminalExportJob(exportJob('cancelled', 'cancelled'))).toBe(true)
+    expect(isTerminalExportJob(exportJob('expired', 'expired'))).toBe(true)
+    expect(isTerminalExportJob(exportJob('running', 'running'))).toBe(false)
     expect(isUnreadExportNotification(exportJob('failed', 'failed'))).toBe(true)
     expect(isUnreadExportNotification(exportJob('read', 'succeeded', {
       notification_read_at: '2026-08-20T00:00:00.000Z',

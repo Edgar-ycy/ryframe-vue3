@@ -16,6 +16,7 @@ import {
   markExportNotificationsReadInCache,
   mergeExportJob,
   removeExportJob,
+  removeExportJobs,
   type ExportJobIdentity,
 } from '../exportJobCache'
 import { useExportJobActions } from './actions'
@@ -221,6 +222,11 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     if (event.type === 'notifications-read') {
       markExportNotificationsReadInCache(queryClient, identity, event.jobIds, event.readAt)
       void notifications.refreshUnread().catch(() => undefined)
+      return
+    }
+    if (event.type === 'deleted') {
+      removeExportJobs(queryClient, identity, event.jobIds)
+      void Promise.allSettled([list.refresh(), notifications.refreshUnread()])
       return
     }
     const controller = new AbortController()

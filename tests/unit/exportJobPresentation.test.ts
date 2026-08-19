@@ -16,6 +16,8 @@ function exportJob(overrides: Partial<ExportJob> = {}): ExportJob {
     resource: 'users',
     status: 'queued',
     created_at: '2026-08-20T00:00:00.000Z',
+    matched_rows: 0,
+    snapshot_at: '2026-08-20T00:00:00.000Z',
     updated_at: '2026-08-20T00:00:00.000Z',
     ...overrides,
   }

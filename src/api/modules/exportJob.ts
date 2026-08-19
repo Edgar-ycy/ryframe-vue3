@@ -6,10 +6,13 @@ import {
   get_common_jobs_by_id_download,
   get_common_jobs_notifications_unread_count,
   post_common_jobs_by_id_cancel,
+  post_common_jobs_deletions,
   post_common_jobs_notifications_read,
 } from '@/api/generated/operations'
 
 export type ExportJob = ApiSchema<'ExportJobVo'>
+export type ExportDeletionAccepted = ApiSchema<'ExportDeletionAcceptedDto'>
+export type DeleteExportJobsInput = OperationJsonBody<'post_common_jobs_deletions'>
 export type MarkExportNotificationsReadInput =
   OperationJsonBody<'post_common_jobs_notifications_read'>
 
@@ -47,4 +50,17 @@ export function downloadExportJob(id: string, signal?: AbortSignal) {
 /** 取消仍在排队或执行中的导出任务。 */
 export function cancelExportJob(id: string, signal?: AbortSignal) {
   return requestOperation(post_common_jobs_by_id_cancel, { path: { id }, data: {}, signal })
+}
+
+/** 永久删除当前申请人的终态导出记录和结果文件。 */
+export function deleteExportJobs(
+  ids: DeleteExportJobsInput['ids'],
+  idempotencyKey: string,
+  signal?: AbortSignal,
+) {
+  return requestOperation(post_common_jobs_deletions, {
+    data: { ids },
+    headers: { 'Idempotency-Key': idempotencyKey },
+    signal,
+  })
 }

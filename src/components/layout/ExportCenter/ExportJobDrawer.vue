@@ -84,7 +84,7 @@
               link
               type="danger"
               :loading="cancellingJobId === job.id"
-              :disabled="Boolean(cancellingJobId)"
+              :disabled="Boolean(cancellingJobId) || downloadingJobId === job.id || deletingJobIds.includes(job.id)"
               @click="emit('cancel', job)"
             >
               {{ t('exportCenter.cancel') }}
@@ -94,10 +94,20 @@
               link
               type="primary"
               :loading="downloadingJobId === job.id"
-              :disabled="Boolean(downloadingJobId) || isExportDownloadExpired(job)"
+              :disabled="Boolean(downloadingJobId) || cancellingJobId === job.id || deletingJobIds.includes(job.id) || isExportDownloadExpired(job)"
               @click="emit('download', job)"
             >
               {{ isExportDownloadExpired(job) ? t('exportCenter.expired') : t('exportCenter.download') }}
+            </el-button>
+            <el-button
+              v-if="isTerminalExportJob(job)"
+              link
+              type="danger"
+              :loading="deletingJobIds.includes(job.id)"
+              :disabled="deletingJobIds.length > 0 || cancellingJobId === job.id || downloadingJobId === job.id"
+              @click="emit('delete', job)"
+            >
+              {{ t('exportCenter.delete') }}
             </el-button>
           </div>
         </article>
@@ -125,13 +135,14 @@ import {
   formatExportFileSize,
   isExportDownloadExpired,
 } from '@/app/exports/exportJobPresentation'
-import { isUnreadExportNotification } from '@/app/exports/exportJobCache'
+import { isTerminalExportJob, isUnreadExportNotification } from '@/app/exports/exportJobCache'
 
 defineProps<{
   jobs: ExportJob[]
   loading: boolean
   error: unknown
   cancellingJobId?: string
+  deletingJobIds: readonly string[]
   downloadingJobId?: string
 }>()
 
@@ -139,6 +150,7 @@ const emit = defineEmits<{
   'drawer-open': []
   refresh: []
   cancel: [job: ExportJob]
+  delete: [job: ExportJob]
   download: [job: ExportJob]
   'view-all': []
 }>()

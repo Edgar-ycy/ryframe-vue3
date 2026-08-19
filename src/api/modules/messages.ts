@@ -1,12 +1,19 @@
-import request from '@/shared/http/client'
+import { requestOperation } from '@/api/operationRequest'
+import {
+  get_system_messages,
+  get_system_messages_unread_count,
+  post_auth_ws_ticket,
+  post_system_messages_ack,
+  post_system_messages_delete,
+  put_system_messages_by_id_read,
+  put_system_messages_read_all,
+} from '@/api/generated/operations'
 import type {
   ApiSchema,
   OperationData,
   OperationJsonBody,
   OperationQuery,
 } from '@/api/contract'
-
-const BASE = '/system/messages'
 
 export type MessageRecord = ApiSchema<'MessageVo'>
 export type MessageInboxQuery = OperationQuery<'get_system_messages'>
@@ -17,45 +24,35 @@ export type WebSocketTicket = OperationData<'post_auth_ws_ticket'>
 
 /** 获取当前用户的消息收件箱。 */
 export function listMessages(params: MessageInboxQuery, signal: AbortSignal) {
-  return request<MessageInboxPage>({ url: BASE, method: 'get', params, signal })
+  return requestOperation(get_system_messages, { params, signal })
 }
 
 /** 获取服务端权威的未读消息数量。 */
 export function getUnreadMessageCount(signal: AbortSignal) {
-  return request<OperationData<'get_system_messages_unread_count'>>({
-    url: `${BASE}/unread-count`, method: 'get', signal,
-  })
+  return requestOperation(get_system_messages_unread_count, { signal })
 }
 
 /** 批量确认消息已被客户端接收。 */
 export function acknowledgeMessages(ids: AcknowledgeMessagesInput['ids']) {
-  return request<OperationData<'post_system_messages_ack'>>({
-    url: `${BASE}/ack`, method: 'post', data: { ids },
-  })
+  return requestOperation(post_system_messages_ack, { data: { ids } })
 }
 
 /** 软删除当前用户收件箱中的消息，不影响其他收件人。 */
 export function deleteMessages(ids: DeleteMessagesInput['ids']) {
-  return request<OperationData<'post_system_messages_delete'>>({
-    url: `${BASE}/delete`, method: 'post', data: { ids },
-  })
+  return requestOperation(post_system_messages_delete, { data: { ids } })
 }
 
 /** 将单条消息标记为已读。 */
 export function markMessageRead(id: string) {
-  return request<void>({
-    url: `${BASE}/${encodeURIComponent(id)}/read`, method: 'put',
-  })
+  return requestOperation(put_system_messages_by_id_read, { path: { id } })
 }
 
 /** 将当前用户的全部未读消息标记为已读。 */
 export function markAllMessagesRead() {
-  return request<OperationData<'put_system_messages_read_all'>>({
-    url: `${BASE}/read-all`, method: 'put',
-  })
+  return requestOperation(put_system_messages_read_all, {})
 }
 
 /** 申请仅能消费一次的短期 WebSocket 票据。 */
 export function getMessageWebSocketTicket() {
-  return request<WebSocketTicket>({ url: '/auth/ws-ticket', method: 'post' })
+  return requestOperation(post_auth_ws_ticket, {})
 }

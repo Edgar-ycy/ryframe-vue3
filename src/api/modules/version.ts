@@ -1,15 +1,10 @@
-import { rawRequest } from '@/shared/http/client'
+import { requestOperation } from '@/api/operationRequest'
+import { get_version } from '@/api/generated/operations'
+import type { OperationData } from '@/api/contract'
 
-export interface ApiVersionInfo {
-  multi_tenancy_enabled: boolean
-}
+export type ApiVersionInfo = OperationData<'get_version'>
 
 /** 获取无需认证的服务端运行能力。 */
 export function getApiVersion() {
-  return rawRequest<ApiVersionInfo>({
-    url: '/version',
-    method: 'get',
-    skipAuthRefresh: true,
-    skipTenantHeader: true,
-  })
+  return requestOperation(get_version, { transport: 'raw' })
 }

@@ -9,7 +9,7 @@ import type {
   OperationQuery,
 } from './contract'
 import type { OperationDescriptor, OperationId } from './generated/operations'
-import request, { requestBlob } from '@/shared/http/client'
+import request, { rawRequest, requestBlob } from '@/shared/http/client'
 
 type JsonOperationId = {
   [Name in OperationId]: [OperationJsonResponse<Name>] extends [never] ? never : Name
@@ -23,8 +23,14 @@ type MultipartOperationId = {
 
 type RequestTransportOptions = Omit<
   AxiosRequestConfig,
-  'baseURL' | 'data' | 'method' | 'params' | 'url'
+  'baseURL' | 'data' | 'method' | 'params' | 'transport' | 'url'
 >
+
+export type OperationTransport = 'session' | 'raw'
+
+type JsonRequestTransportOptions = RequestTransportOptions & {
+  transport?: OperationTransport
+}
 
 type PathOptions<Name extends OperationId> = [OperationPath<Name>] extends [never]
   ? { path?: never }
@@ -38,7 +44,7 @@ type BodyOptions<Name extends OperationId> = [OperationJsonBody<Name>] extends [
   ? { data?: never }
   : { data: OperationJsonBody<Name> }
 
-export type OperationRequestOptions<Name extends JsonOperationId> = RequestTransportOptions
+export type OperationRequestOptions<Name extends JsonOperationId> = JsonRequestTransportOptions
   & PathOptions<Name>
   & QueryOptions<Name>
   & BodyOptions<Name>
@@ -77,8 +83,9 @@ export async function requestOperation<Name extends JsonOperationId>(
     path: pathParameters,
     params,
     data,
+    transport = 'session',
     ...transportOptions
-  } = options as RequestTransportOptions & {
+  } = options as JsonRequestTransportOptions & {
     path?: Record<string, unknown>
     params?: unknown
     data?: unknown
@@ -90,7 +97,9 @@ export async function requestOperation<Name extends JsonOperationId>(
   }
   if (params !== undefined) config.params = params
   if (data !== undefined) config.data = data
-  return request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
+  return transport === 'raw'
+    ? rawRequest<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
+    : request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
 }
 
 /** 使用 OpenAPI operationId 发送 multipart 请求，避免业务模块重复维护方法和路径。 */

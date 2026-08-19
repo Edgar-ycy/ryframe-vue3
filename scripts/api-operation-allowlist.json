@@ -20,13 +20,6 @@
     "urlProperties": 5,
     "methodProperties": 5
   },
-  "src/api/modules/messages.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 7 },
-    "pathLiterals": 7,
-    "urlProperties": 7,
-    "methodProperties": 7
-  },
   "src/api/modules/monitor.ts": {
     "directImports": ["request", "requestText"],
     "directCalls": { "request": 9, "requestText": 1 },
@@ -47,12 +40,5 @@
     "pathLiterals": 11,
     "urlProperties": 11,
     "methodProperties": 11
-  },
-  "src/api/modules/version.ts": {
-    "directImports": ["rawRequest"],
-    "directCalls": { "rawRequest": 1 },
-    "pathLiterals": 1,
-    "urlProperties": 1,
-    "methodProperties": 1
   }
 }

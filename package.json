@@ -13,6 +13,7 @@
     "lint:styles": "stylelint \"src/**/*.{css,scss,vue}\" --max-warnings=0",
     "check:workflows": "node scripts/check-workflows.mjs",
     "check:dependencies": "node scripts/check-prerelease-dependencies.mjs",
+    "check:supply-chain-policy": "node scripts/check-supply-chain-policy.mjs",
     "check:source-size": "node scripts/check-source-size.mjs",
     "check:contract": "node scripts/check-api-contract.mjs",
     "check:api-operations": "node scripts/check-api-operation-usage.mjs",
@@ -25,9 +26,11 @@
     "typecheck": "vue-tsc --noEmit",
     "test": "pnpm test:unit",
     "test:unit": "vitest run --config vitest.config.ts",
+    "test:policies": "node --test scripts/tests/*.test.mjs",
+    "sbom:generate": "node scripts/generate-sbom.mjs",
     "build": "vite build",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
-    "check": "pnpm check:workflows && pnpm check:dependencies && pnpm check:source-size && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:unit && pnpm build && pnpm check:bundle",
+    "check": "pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:unit && pnpm build && pnpm check:bundle",
     "preview": "vite preview"
   },
   "dependencies": {

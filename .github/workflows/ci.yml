@@ -50,6 +50,9 @@ jobs:
       - name: Reject prerelease dependencies
         run: pnpm check:dependencies
 
+      - name: Test supply-chain policies
+        run: pnpm test:policies
+
       - name: Enforce source size limits
         run: pnpm check:source-size
 
@@ -102,3 +105,53 @@ jobs:
 
       - name: Production build
         run: pnpm build
+
+  supply-chain:
+    name: Supply Chain and SBOM
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Setup default Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
+
+      - name: Check dependency licenses
+        run: pnpm check:supply-chain-policy
+
+      - name: Generate CycloneDX SBOM
+        run: pnpm sbom:generate -- --output "${RUNNER_TEMP}/ryframe-vue3.cdx.json"
+
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ryframe-vue3-cyclonedx
+          path: ${{ runner.temp }}/ryframe-vue3.cdx.json
+          if-no-files-found: error
+          retention-days: 14
+
+  osv-scan:
+    name: OSV Vulnerability Scan
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@0c58c542420dfd23fcac08dd9c8ca3cca9c36f1a
+    with:
+      scan-args: |-
+        --include-git-root
+        -r
+        ./

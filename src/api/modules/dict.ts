@@ -1,11 +1,19 @@
-import request from '@/shared/http/client'
-import { requestExportJob } from './exportJob'
+import { requestOperation } from '@/api/operationRequest'
+import {
+  delete_system_dict_data_by_id,
+  delete_system_dict_types_by_id,
+  get_system_dict_data,
+  get_system_dict_types,
+  post_system_dict_data,
+  post_system_dict_types,
+  post_system_dict_types_exports,
+  put_system_dict_data_by_id,
+  put_system_dict_types_by_id,
+} from '@/api/generated/operations'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
+import { stripPagination, type Id } from '@/shared/http/types'
 
 // ========== 字典类型 ==========
-
-const DICT_TYPE_BASE = '/system/dict/types'
 
 export type DictTypeQuery = OperationQuery<'get_system_dict_types'>
 type DictTypeExportQuery = Omit<DictTypeQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_dict_types_exports'>
@@ -15,12 +23,7 @@ export type DictTypeRecord = ApiSchema<'DictTypeVo'>
 
 /** 字典类型分页列表 */
 export function listDictType(params: DictTypeQuery, signal?: AbortSignal) {
-  return request<PageResponse<DictTypeRecord>>({
-    url: DICT_TYPE_BASE,
-    method: 'get',
-    params,
-    signal,
-  })
+  return requestOperation(get_system_dict_types, { params, signal })
 }
 
 /** 导出字典类型 */
@@ -29,32 +32,29 @@ export function exportDictType(
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestExportJob(
-    `${DICT_TYPE_BASE}/exports`,
-    stripPagination(params),
-    idempotencyKey,
+  return requestOperation(post_system_dict_types_exports, {
+    data: stripPagination(params),
+    headers: { 'Idempotency-Key': idempotencyKey },
     signal,
-  )
+  })
 }
 
 /** 创建字典类型 */
 export function createDictType(data: DictTypeCreateInput) {
-  return request<DictTypeRecord>({ url: DICT_TYPE_BASE, method: 'post', data })
+  return requestOperation(post_system_dict_types, { data })
 }
 
 /** 更新字典类型 */
 export function updateDictType(id: Id, data: DictTypeUpdateInput) {
-  return request<DictTypeRecord>({ url: `${DICT_TYPE_BASE}/${id}`, method: 'put', data })
+  return requestOperation(put_system_dict_types_by_id, { path: { id }, data })
 }
 
 /** 删除字典类型 */
 export function deleteDictType(id: Id) {
-  return request<void>({ url: `${DICT_TYPE_BASE}/${id}`, method: 'delete' })
+  return requestOperation(delete_system_dict_types_by_id, { path: { id } })
 }
 
 // ========== 字典数据 ==========
-
-const DICT_DATA_BASE = '/system/dict/data'
 
 export type DictDataQuery = OperationQuery<'get_system_dict_data'>
 export type DictDataCreateInput = OperationJsonBody<'post_system_dict_data'>
@@ -63,20 +63,20 @@ export type DictDataRecord = ApiSchema<'DictDataVo'>
 
 /** 字典数据列表(按type_code查询) */
 export function listDictData(params: DictDataQuery, signal?: AbortSignal) {
-  return request<DictDataRecord[]>({ url: DICT_DATA_BASE, method: 'get', params, signal })
+  return requestOperation(get_system_dict_data, { params, signal })
 }
 
 /** 创建字典数据 */
 export function createDictData(data: DictDataCreateInput) {
-  return request<DictDataRecord>({ url: DICT_DATA_BASE, method: 'post', data })
+  return requestOperation(post_system_dict_data, { data })
 }
 
 /** 更新字典数据 */
 export function updateDictData(id: Id, data: DictDataUpdateInput) {
-  return request<DictDataRecord>({ url: `${DICT_DATA_BASE}/${id}`, method: 'put', data })
+  return requestOperation(put_system_dict_data_by_id, { path: { id }, data })
 }
 
 /** 删除字典数据 */
 export function deleteDictData(id: Id) {
-  return request<void>({ url: `${DICT_DATA_BASE}/${id}`, method: 'delete' })
+  return requestOperation(delete_system_dict_data_by_id, { path: { id } })
 }

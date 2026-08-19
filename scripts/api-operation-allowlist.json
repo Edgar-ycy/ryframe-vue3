@@ -13,20 +13,6 @@
     "urlProperties": 4,
     "methodProperties": 4
   },
-  "src/api/modules/dept.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 6 },
-    "pathLiterals": 5,
-    "urlProperties": 6,
-    "methodProperties": 6
-  },
-  "src/api/modules/dict.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 8 },
-    "pathLiterals": 7,
-    "urlProperties": 8,
-    "methodProperties": 8
-  },
   "src/api/modules/exportJob.ts": {
     "directImports": ["request", "requestBlob"],
     "directCalls": { "request": 4, "requestBlob": 1 },
@@ -47,13 +33,6 @@
     "pathLiterals": 12,
     "urlProperties": 10,
     "methodProperties": 10
-  },
-  "src/api/modules/permission.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 7 },
-    "pathLiterals": 8,
-    "urlProperties": 7,
-    "methodProperties": 7
   },
   "src/api/modules/tools.ts": {
     "directImports": ["request", "requestBlob"],

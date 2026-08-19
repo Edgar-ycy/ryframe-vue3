@@ -1,9 +1,15 @@
-import request from '@/shared/http/client'
+import { requestOperation } from '@/api/operationRequest'
+import {
+  delete_system_perms_by_id,
+  get_system_perms_by_id,
+  get_system_perms_tree,
+  get_system_roles_by_id_permissions,
+  post_system_perms,
+  post_system_perms_sync,
+  put_system_perms_by_id,
+} from '@/api/generated/operations'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import type { Id } from '@/shared/http/types'
-
-const BASE = '/system/perms'
-const ROLE_BASE = '/system/roles'
 
 export type PermissionType = ApiSchema<'PermissionType'>
 export type PermissionTreeNode = Omit<
@@ -23,57 +29,33 @@ export function getPermissionTree(
   params?: OperationQuery<'get_system_perms_tree'>,
   signal?: AbortSignal,
 ) {
-  return request<PermissionTreeNode[]>({
-    url: `${BASE}/tree`,
-    method: 'get',
-    params,
-    signal,
-  })
+  return requestOperation(get_system_perms_tree, { params, signal })
 }
 
 export function getPermission(id: Id, signal?: AbortSignal) {
-  return request<PermissionRecord>({
-    url: `${BASE}/${id}`,
-    method: 'get',
-    signal,
-  })
+  return requestOperation(get_system_perms_by_id, { path: { id }, signal })
 }
 
 export function createPermission(data: PermissionForm) {
-  return request<PermissionRecord>({
-    url: BASE,
-    method: 'post',
-    data,
-  })
+  return requestOperation(post_system_perms, { data })
 }
 
 export function updatePermission(id: Id, data: PermissionForm) {
   const body: OperationJsonBody<'put_system_perms_by_id'> = data
-  return request<PermissionRecord>({
-    url: `${BASE}/${id}`,
-    method: 'put',
-    data: body,
-  })
+  return requestOperation(put_system_perms_by_id, { path: { id }, data: body })
 }
 
 export function deletePermission(id: Id) {
-  return request({
-    url: `${BASE}/${id}`,
-    method: 'delete',
-  })
+  return requestOperation(delete_system_perms_by_id, { path: { id } })
 }
 
 export function syncApiPermissions() {
-  return request<PermissionSyncReport>({
-    url: `${BASE}/sync`,
-    method: 'post',
-  })
+  return requestOperation(post_system_perms_sync, {})
 }
 
 export function getRolePermissions(roleId: Id, signal?: AbortSignal) {
-  return request<string[]>({
-    url: `${ROLE_BASE}/${roleId}/permissions`,
-    method: 'get',
+  return requestOperation(get_system_roles_by_id_permissions, {
+    path: { id: roleId },
     signal,
   })
 }

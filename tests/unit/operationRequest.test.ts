@@ -25,6 +25,12 @@ import { downloadFile, uploadFile } from '@/api/modules/common'
 import { getApiVersion } from '@/api/modules/version'
 import { getMetrics } from '@/api/modules/monitor'
 import {
+  batchDeleteUser,
+  createUser,
+  downloadImportTemplate,
+  replaceUserRoles,
+} from '@/api/modules/user'
+import {
   requestBlobOperation,
   requestMultipartOperation,
   requestOperation,
@@ -184,6 +190,37 @@ describe('operation 请求传输模式', () => {
     expect(httpClient.requestText).toHaveBeenNthCalledWith(2, {
       method: 'get',
       url: '/monitor/metrics',
+    })
+  })
+
+  it('用户 operation 保留角色与批量标识参数', async () => {
+    httpClient.request.mockResolvedValue(versionResponse)
+    const template = new Blob(['template'])
+    httpClient.requestBlob.mockResolvedValue(template)
+
+    await createUser({ username: 'alice', nickname: 'Alice', role_ids: ['9'] })
+    await replaceUserRoles('7', ['9', '10'])
+    await batchDeleteUser(['7', '8'])
+    const downloaded = await downloadImportTemplate()
+
+    expect(httpClient.request).toHaveBeenNthCalledWith(1, {
+      data: { username: 'alice', nickname: 'Alice', role_ids: ['9'] },
+      method: 'post',
+      url: '/system/users',
+    })
+    expect(httpClient.request).toHaveBeenNthCalledWith(2, {
+      data: { role_ids: ['9', '10'] },
+      method: 'put',
+      url: '/system/users/7/roles',
+    })
+    expect(httpClient.request).toHaveBeenNthCalledWith(3, {
+      method: 'delete',
+      url: '/system/users/batch/7%2C8',
+    })
+    expect(downloaded).toBe(template)
+    expect(httpClient.requestBlob).toHaveBeenCalledWith({
+      method: 'get',
+      url: '/system/users/import-template',
     })
   })
 })

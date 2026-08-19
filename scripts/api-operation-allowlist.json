@@ -14,10 +14,10 @@
     "methodProperties": 0
   },
   "src/api/modules/user.ts": {
-    "directImports": ["request", "requestBlob"],
-    "directCalls": { "request": 10, "requestBlob": 1 },
-    "pathLiterals": 11,
-    "urlProperties": 11,
-    "methodProperties": 11
+    "directImports": [],
+    "directCalls": {},
+    "pathLiterals": 2,
+    "urlProperties": 0,
+    "methodProperties": 0
   }
 }

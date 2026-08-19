@@ -3,6 +3,9 @@ export const exportJobMessages = {
     exportCenter: {
       title: '我的导出任务',
       submitted: '已加入导出队列，完成后会在“我的导出任务”提醒你。',
+      exportAllConfirmTitle: '确认导出全部数据',
+      exportAllConfirmMessage: '当前已应用筛选为空，将导出你有权查看的全部匹配数据。数据量可能较大，是否继续？',
+      exportAllConfirmButton: '继续导出',
       myExports: '我的导出',
       open: '打开导出任务中心',
       openWithUnread: '打开导出任务中心，{count} 条未读提醒',
@@ -71,6 +74,9 @@ export const exportJobMessages = {
     exportCenter: {
       title: 'My export jobs',
       submitted: 'Added to the export queue. My export jobs will notify you when it finishes.',
+      exportAllConfirmTitle: 'Export all matching data?',
+      exportAllConfirmMessage: 'No applied filters are active. This will export all matching data you are allowed to view and may include many rows. Continue?',
+      exportAllConfirmButton: 'Continue export',
       myExports: 'My exports',
       open: 'Open export job center',
       openWithUnread: 'Open export job center, {count} unread notifications',

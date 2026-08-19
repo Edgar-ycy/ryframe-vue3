@@ -9,6 +9,7 @@ import {
   type UserStatus,
 } from '@/api/modules/user'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
+import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
@@ -166,10 +167,17 @@ export function useUserManagement() {
       ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
       return
     }
-    const filters = { ...successfulQuery }
+    const intent = normalizeExportIntent('users', successfulQuery)
+    if (!(await confirmExportIntent(intent))) return
+
     await submitExport(
-      `users:${JSON.stringify(filters)}`,
-      (idempotencyKey, signal) => exportUser(filters, idempotencyKey, signal),
+      intent.signature,
+      (idempotencyKey, signal) => exportUser(
+        intent.filter,
+        idempotencyKey,
+        signal,
+        intent.isEmpty,
+      ),
     )
   }
 

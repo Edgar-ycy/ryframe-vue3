@@ -117,6 +117,7 @@ import {
   type PostRecord,
   type PostUpdateInput,
 } from '@/api/modules/post'
+import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
@@ -173,10 +174,17 @@ async function handleExport(): Promise<void> {
     ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
     return
   }
-  const filters = { ...successfulQuery }
+  const intent = normalizeExportIntent('posts', successfulQuery)
+  if (!(await confirmExportIntent(intent))) return
+
   await submitExport(
-    `posts:${JSON.stringify(filters)}`,
-    (idempotencyKey, signal) => exportPost(filters, idempotencyKey, signal),
+    intent.signature,
+    (idempotencyKey, signal) => exportPost(
+      intent.filter,
+      idempotencyKey,
+      signal,
+      intent.isEmpty,
+    ),
   )
 }
 

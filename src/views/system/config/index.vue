@@ -117,6 +117,7 @@ import {
   type ConfigRecord,
   type ConfigUpdateInput,
 } from '@/api/modules/config'
+import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { refreshShellSettings } from '@/app/settings/shellSettingsQuery'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
@@ -168,10 +169,17 @@ async function handleExport(): Promise<void> {
     ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
     return
   }
-  const filters = { ...successfulQuery }
+  const intent = normalizeExportIntent('configs', successfulQuery)
+  if (!(await confirmExportIntent(intent))) return
+
   await submitExport(
-    `configs:${JSON.stringify(filters)}`,
-    (idempotencyKey, signal) => exportConfig(filters, idempotencyKey, signal),
+    intent.signature,
+    (idempotencyKey, signal) => exportConfig(
+      intent.filter,
+      idempotencyKey,
+      signal,
+      intent.isEmpty,
+    ),
   )
 }
 

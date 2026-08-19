@@ -116,6 +116,7 @@ import {
   type OperLogQuery,
   type OperLogRecord,
 } from '@/api/modules/monitor'
+import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
@@ -174,15 +175,17 @@ async function handleExport(): Promise<void> {
     ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
     return
   }
-  const filters = {
-    oper_name: successfulQuery.oper_name,
-    status: successfulQuery.status,
-    begin_time: successfulQuery.begin_time,
-    end_time: successfulQuery.end_time,
-  }
+  const intent = normalizeExportIntent('operlogs', successfulQuery)
+  if (!(await confirmExportIntent(intent))) return
+
   await submitExport(
-    `operlogs:${JSON.stringify(filters)}`,
-    (idempotencyKey, signal) => exportOperLog(filters, idempotencyKey, signal),
+    intent.signature,
+    (idempotencyKey, signal) => exportOperLog(
+      intent.filter,
+      idempotencyKey,
+      signal,
+      intent.isEmpty,
+    ),
   )
 }
 

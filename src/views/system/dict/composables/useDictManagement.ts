@@ -8,6 +8,7 @@ import {
   type DictTypeQuery,
   type DictTypeRecord,
 } from '@/api/modules/dict'
+import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
@@ -154,10 +155,17 @@ export function useDictManagement() {
       ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
       return
     }
-    const filters = { ...successfulQuery }
+    const intent = normalizeExportIntent('dict-types', successfulQuery)
+    if (!(await confirmExportIntent(intent))) return
+
     await submitExport(
-      `dict-types:${JSON.stringify(filters)}`,
-      (idempotencyKey, signal) => exportDictType(filters, idempotencyKey, signal),
+      intent.signature,
+      (idempotencyKey, signal) => exportDictType(
+        intent.filter,
+        idempotencyKey,
+        signal,
+        intent.isEmpty,
+      ),
     )
   }
 

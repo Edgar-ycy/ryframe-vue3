@@ -109,6 +109,7 @@ import {
   type LoginLogQuery,
   type LoginLogRecord,
 } from '@/api/modules/monitor'
+import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
@@ -167,15 +168,17 @@ async function handleExport(): Promise<void> {
     ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
     return
   }
-  const filters = {
-    user_name: successfulQuery.user_name,
-    status: successfulQuery.status,
-    begin_time: successfulQuery.begin_time,
-    end_time: successfulQuery.end_time,
-  }
+  const intent = normalizeExportIntent('loginlogs', successfulQuery)
+  if (!(await confirmExportIntent(intent))) return
+
   await submitExport(
-    `loginlogs:${JSON.stringify(filters)}`,
-    (idempotencyKey, signal) => exportLoginLog(filters, idempotencyKey, signal),
+    intent.signature,
+    (idempotencyKey, signal) => exportLoginLog(
+      intent.filter,
+      idempotencyKey,
+      signal,
+      intent.isEmpty,
+    ),
   )
 }
 

@@ -14,6 +14,7 @@ import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { confirmAction } from '@/utils/confirmAction'
@@ -34,8 +35,16 @@ interface StatusCommand {
 export function useUserManagement() {
   const selectedDeptId = ref<Id>()
   const selectedDeptName = ref('')
-  const queryParams = ref<UserQuery>({ page: 1, page_size: 10 })
-  const activeQueryParams = ref<UserQuery>({ ...queryParams.value })
+  const {
+    appliedQuery: appliedQueryParams,
+    applyDraft,
+    clearSuccessfulQuery,
+    draftQuery: queryParams,
+    hasSuccessfulQuery: canExport,
+    lastSuccessfulQuery,
+    refreshApplied,
+    runAppliedQuery,
+  } = useAppliedListQuery<UserQuery>({ page: 1, page_size: 10 })
 
   const userDialogVisible = ref(false)
   const editingUser = ref<UserRecord | null>(null)
@@ -49,15 +58,22 @@ export function useUserManagement() {
   const { pending: exportLoading, submitExport } = useExportJobRequest()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
 
+  watch(
+    () => [userStore.tenantId, userStore.userId] as const,
+    () => clearSuccessfulQuery(),
+    { flush: 'sync' },
+  )
+
   const usersQuery = useTenantQuery<PageResponse<UserRecord>>(
     () => userStore.tenantId,
     authenticated,
     'users',
-    () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-    async signal => {
-      const response = await listUser({ ...activeQueryParams.value }, signal)
-      return response.data ?? emptyPageResponse<UserRecord>(activeQueryParams.value)
-    },
+    () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
+    signal => runAppliedQuery(signal, async (query, requestSignal) => {
+      const params = { ...query }
+      const response = await listUser(params, requestSignal)
+      return response.data ?? emptyPageResponse<UserRecord>(params)
+    }),
   )
   const departmentsQuery = useTenantQuery<DeptNode[]>(
     () => userStore.tenantId,
@@ -111,12 +127,14 @@ export function useUserManagement() {
   ))
 
   async function fetchData(): Promise<void> {
-    const nextParams = { ...queryParams.value }
-    if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
-      activeQueryParams.value = nextParams
-      return
-    }
-    await usersQuery.refetch({ throwOnError: true })
+    if (applyDraft()) return
+    await refreshData()
+  }
+
+  async function refreshData(): Promise<void> {
+    await refreshApplied(async () => {
+      await usersQuery.refetch({ throwOnError: true })
+    })
   }
 
   function handleSearch(): void {
@@ -142,12 +160,17 @@ export function useUserManagement() {
     handleDeptSelect({ name: '' })
   }
 
-  function handleExport(): Promise<void> {
-    const filters = { ...activeQueryParams.value }
-    return submitExport(
+  async function handleExport(): Promise<void> {
+    const successfulQuery = lastSuccessfulQuery.value
+    if (!successfulQuery) {
+      ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
+      return
+    }
+    const filters = { ...successfulQuery }
+    await submitExport(
       `users:${JSON.stringify(filters)}`,
       (idempotencyKey, signal) => exportUser(filters, idempotencyKey, signal),
-    ).then(() => undefined)
+    )
   }
 
   function isManageableStatus(status: UserStatus): status is UserManageableStatus {
@@ -188,7 +211,7 @@ export function useUserManagement() {
     }
 
     await statusMutation.mutateAsync({ action, previousStatus, row, status })
-    await usersQuery.refetch({ throwOnError: true })
+    await refreshData()
   }
 
   function handleAdd(): void {
@@ -217,7 +240,7 @@ export function useUserManagement() {
     if (!confirmed) return
 
     await deleteMutation.mutateAsync(user)
-    await usersQuery.refetch({ throwOnError: true })
+    await refreshData()
   }
 
   function handleResetPassword(user: UserRecord): void {
@@ -226,6 +249,7 @@ export function useUserManagement() {
   }
 
   return {
+    canExport,
     clearDeptFilter,
     deletingId,
     deptTree,
@@ -249,6 +273,7 @@ export function useUserManagement() {
     passwordDialogVisible,
     passwordResetUserId,
     queryParams,
+    refreshData,
     roleDialogVisible,
     roleEditingUser,
     selectedDeptId,

@@ -11,20 +11,30 @@ import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
 export function useRoleManagement() {
-  const queryParams = ref<RoleQuery>({
+  const initialQuery: RoleQuery = {
     page: 1,
     page_size: 10,
     name: '',
     code: '',
     status: '',
-  })
-  const activeQueryParams = ref<RoleQuery>({ ...queryParams.value })
+  }
+  const {
+    appliedQuery: appliedQueryParams,
+    applyDraft,
+    clearSuccessfulQuery,
+    draftQuery: queryParams,
+    hasSuccessfulQuery: canExport,
+    lastSuccessfulQuery,
+    refreshApplied,
+    runAppliedQuery,
+  } = useAppliedListQuery(initialQuery)
 
   const roleDialogVisible = ref(false)
   const editingRole = ref<RoleRecord | null>(null)
@@ -38,15 +48,22 @@ export function useRoleManagement() {
   const { pending: exportLoading, submitExport } = useExportJobRequest()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
 
+  watch(
+    () => [userStore.tenantId, userStore.userId] as const,
+    () => clearSuccessfulQuery(),
+    { flush: 'sync' },
+  )
+
   const rolesQuery = useTenantQuery<PageResponse<RoleRecord>>(
     () => userStore.tenantId,
     authenticated,
     'roles',
-    () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-    async signal => {
-      const response = await listRole({ ...activeQueryParams.value }, signal)
-      return response.data ?? emptyPageResponse<RoleRecord>(activeQueryParams.value)
-    },
+    () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
+    signal => runAppliedQuery(signal, async (query, requestSignal) => {
+      const params = { ...query }
+      const response = await listRole(params, requestSignal)
+      return response.data ?? emptyPageResponse<RoleRecord>(params)
+    }),
   )
   const departmentsQuery = useTenantQuery<DeptNode[]>(
     () => userStore.tenantId,
@@ -91,12 +108,14 @@ export function useRoleManagement() {
   ))
 
   async function fetchData(): Promise<void> {
-    const nextParams = { ...queryParams.value }
-    if (JSON.stringify(nextParams) !== JSON.stringify(activeQueryParams.value)) {
-      activeQueryParams.value = nextParams
-      return
-    }
-    await rolesQuery.refetch({ throwOnError: true })
+    if (applyDraft()) return
+    await refreshData()
+  }
+
+  async function refreshData(): Promise<void> {
+    await refreshApplied(async () => {
+      await rolesQuery.refetch({ throwOnError: true })
+    })
   }
 
   function handleSearch(): void {
@@ -115,12 +134,17 @@ export function useRoleManagement() {
     void fetchData()
   }
 
-  function handleExport(): Promise<void> {
-    const filters = { ...activeQueryParams.value }
-    return submitExport(
+  async function handleExport(): Promise<void> {
+    const successfulQuery = lastSuccessfulQuery.value
+    if (!successfulQuery) {
+      ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
+      return
+    }
+    const filters = { ...successfulQuery }
+    await submitExport(
       `roles:${JSON.stringify(filters)}`,
       (idempotencyKey, signal) => exportRole(filters, idempotencyKey, signal),
-    ).then(() => undefined)
+    )
   }
 
   function isProtectedRole(role: RoleRecord): boolean {
@@ -169,10 +193,11 @@ export function useRoleManagement() {
     if (!confirmed) return
 
     await deleteMutation.mutateAsync(role)
-    await rolesQuery.refetch({ throwOnError: true })
+    await refreshData()
   }
 
   return {
+    canExport,
     dataScopeDialogVisible,
     dataScopeRole,
     deletingId,
@@ -194,6 +219,7 @@ export function useRoleManagement() {
     permissionRole,
     permissionTree,
     queryParams,
+    refreshData,
     roleDialogVisible,
     tableResponse,
   }

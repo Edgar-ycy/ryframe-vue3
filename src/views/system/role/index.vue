@@ -44,6 +44,8 @@
               v-perm="'system:role:export'"
               icon="Download"
               :loading="exportLoading"
+              :disabled="!canExport"
+              :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
               @click="handleExport"
             >
               {{ t('system.common.export') }}
@@ -142,19 +144,19 @@
     <RoleFormDialog
       v-model="roleDialogVisible"
       :role="editingRole"
-      @saved="fetchData"
+      @saved="refreshData"
     />
     <RolePermissionDialog
       v-model="permissionDialogVisible"
       :role="permissionRole"
       :permission-tree="permissionTree ?? []"
-      @saved="fetchData"
+      @saved="refreshData"
     />
     <RoleDataScopeDialog
       v-model="dataScopeDialogVisible"
       :role="dataScopeRole"
       :dept-tree="deptTree ?? []"
-      @saved="fetchData"
+      @saved="refreshData"
     />
   </div>
 </template>
@@ -169,6 +171,7 @@ import { useRoleManagement } from './composables/useRoleManagement'
 const { t } = useI18n()
 
 const {
+  canExport,
   dataScopeDialogVisible,
   dataScopeRole,
   deletingId,
@@ -190,6 +193,7 @@ const {
   permissionRole,
   permissionTree,
   queryParams,
+  refreshData,
   roleDialogVisible,
   tableResponse,
 } = useRoleManagement()

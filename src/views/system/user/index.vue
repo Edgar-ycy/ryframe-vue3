@@ -98,6 +98,8 @@
                 v-perm="'system:user:export'"
                 icon="Download"
                 :loading="exportLoading"
+                :disabled="!canExport"
+                :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
                 @click="handleExport"
               >
                 {{ t('system.common.export') }}
@@ -201,14 +203,14 @@
       v-model="userDialogVisible"
       :user="editingUser"
       :dept-tree="deptTree ?? []"
-      @saved="fetchData"
+      @saved="refreshData"
     />
     <UserRoleDialog
       v-model="roleDialogVisible"
       :user="roleEditingUser"
       :current-user-id="userStore.userId"
       :current-user-is-super="userStore.isSuper"
-      @saved="fetchData"
+      @saved="refreshData"
     />
     <PasswordResetDialog v-model="passwordDialogVisible" :user-id="passwordResetUserId" />
     <UserImportDialog v-model="importDialogVisible" :loading="importLoading" @submit="submitImport" />
@@ -233,6 +235,7 @@ import { useUserImportManagement } from './composables/useUserImportManagement'
 installPlatformOperationsMessages()
 const { t } = useI18n()
 const {
+  canExport,
   clearDeptFilter,
   deletingId,
   deptTree,
@@ -256,6 +259,7 @@ const {
   passwordDialogVisible,
   passwordResetUserId,
   queryParams,
+  refreshData,
   roleDialogVisible,
   roleEditingUser,
   selectedDeptId,
@@ -277,7 +281,7 @@ const {
   openImport,
   submitImport,
   templateLoading,
-} = useUserImportManagement(fetchData)
+} = useUserImportManagement(refreshData)
 </script>
 
 <style scoped lang="scss">

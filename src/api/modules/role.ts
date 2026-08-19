@@ -18,7 +18,7 @@ export type RoleDataScope = '1' | '2' | '3' | '4' | '5'
 
 export type RoleQuery = OperationQuery<'get_system_roles'>
 export type RoleOptionQuery = OperationQuery<'get_system_roles_options'>
-type RoleExportQuery = Omit<RoleQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_roles_exports'>
+type RoleExportQuery = OperationJsonBody<'post_system_roles_exports'>['filter']
 export type RoleCreateInput = Omit<OperationJsonBody<'post_system_roles'>, 'data_scope'> & {
   data_scope?: RoleDataScope
 }
@@ -58,9 +58,13 @@ export function exportRole(
   params: RoleExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
+  confirmAll = false,
 ) {
   return requestOperation(post_system_roles_exports, {
-    data: stripPagination(params),
+    data: {
+      filter: stripPagination(params) ?? {},
+      confirm_all: confirmAll,
+    },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
   })

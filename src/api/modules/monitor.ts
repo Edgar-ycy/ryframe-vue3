@@ -1,4 +1,3 @@
-import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { requestOperation, requestTextOperation } from '@/api/operationRequest'
 import {
@@ -29,6 +28,8 @@ import {
   post_monitor_schedules,
   post_monitor_schedules_by_id_run,
   post_monitor_schedules_preview,
+  post_system_loginlogs_exports,
+  post_system_operlogs_exports,
   put_monitor_schedules_by_id,
   put_monitor_schedules_by_id_status,
 } from '@/api/generated/operations'
@@ -77,13 +78,7 @@ export function getMetrics(signal?: AbortSignal) {
 export type OperLogQuery = OperationQuery<'get_system_operlogs'>
 export type OperLogRecord = ApiSchema<'OperLogVo'>
 
-type LogExportFilters = {
-  name?: string
-  status?: string
-  begin_time?: string
-  end_time?: string
-}
-type OperLogExportQuery = LogExportFilters & OperationJsonBody<'post_system_operlogs_exports'>
+type OperLogExportQuery = OperationJsonBody<'post_system_operlogs_exports'>['filter']
 
 /** 分页获取操作日志。 */
 export function listOperLog(params: OperLogQuery, signal?: AbortSignal) {
@@ -95,19 +90,22 @@ export function exportOperLog(
   params: OperLogExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
+  confirmAll = false,
 ) {
-  return requestExportJob(
-    '/system/operlogs/exports',
-    stripPagination(params),
-    idempotencyKey,
+  return requestOperation(post_system_operlogs_exports, {
+    data: {
+      filter: stripPagination(params) ?? {},
+      confirm_all: confirmAll,
+    },
+    headers: { 'Idempotency-Key': idempotencyKey },
     signal,
-  )
+  })
 }
 
 // ========== 登录日志 (/system/loginlogs) ==========
 
 export type LoginLogQuery = OperationQuery<'get_system_loginlogs'>
-type LoginLogExportQuery = LogExportFilters & OperationJsonBody<'post_system_loginlogs_exports'>
+type LoginLogExportQuery = OperationJsonBody<'post_system_loginlogs_exports'>['filter']
 export type LoginLogRecord = ApiSchema<'LoginInfoVo'>
 
 /** 分页获取登录日志。 */
@@ -120,13 +118,16 @@ export function exportLoginLog(
   params: LoginLogExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
+  confirmAll = false,
 ) {
-  return requestExportJob(
-    '/system/loginlogs/exports',
-    stripPagination(params),
-    idempotencyKey,
+  return requestOperation(post_system_loginlogs_exports, {
+    data: {
+      filter: stripPagination(params) ?? {},
+      confirm_all: confirmAll,
+    },
+    headers: { 'Idempotency-Key': idempotencyKey },
     signal,
-  )
+  })
 }
 
 // ========== 在线用户 (/system/online) ==========

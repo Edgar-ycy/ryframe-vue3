@@ -11,7 +11,7 @@ import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contrac
 import { stripPagination, type Id } from '@/shared/http/types'
 
 export type PostQuery = OperationQuery<'get_system_posts'>
-type PostExportQuery = Omit<PostQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_posts_exports'>
+type PostExportQuery = OperationJsonBody<'post_system_posts_exports'>['filter']
 export type PostCreateInput = OperationJsonBody<'post_system_posts'>
 export type PostUpdateInput = OperationJsonBody<'put_system_posts_by_id'>
 export type PostRecord = ApiSchema<'PostVo'>
@@ -23,9 +23,13 @@ export function exportPost(
   params: PostExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
+  confirmAll = false,
 ) {
   return requestOperation(post_system_posts_exports, {
-    data: stripPagination(params),
+    data: {
+      filter: stripPagination(params) ?? {},
+      confirm_all: confirmAll,
+    },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
   })

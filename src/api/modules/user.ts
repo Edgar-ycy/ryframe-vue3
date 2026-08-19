@@ -1,4 +1,3 @@
-import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { requestBlobOperation, requestOperation } from '@/api/operationRequest'
 import {
@@ -10,13 +9,12 @@ import {
   get_system_users_options,
   post_system_users,
   post_system_users_by_id_password_reset_requests,
+  post_system_users_exports,
   put_system_users_by_id,
   put_system_users_by_id_roles,
   put_system_users_by_id_status,
 } from '@/api/generated/operations'
 import { stripPagination, type ApiResponse, type Id, type PageResponse } from '@/shared/http/types'
-
-const BASE = '/system/users'
 
 export type UserManageableStatus = '0' | '1'
 export type UserStatus = UserManageableStatus | 'pending_activation'
@@ -25,7 +23,7 @@ export type UserQuery = Omit<OperationQuery<'get_system_users'>, 'status'> & {
   status?: UserStatus
 }
 export type UserOptionQuery = OperationQuery<'get_system_users_options'>
-type UserExportQuery = Omit<UserQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_users_exports'>
+type UserExportQuery = OperationJsonBody<'post_system_users_exports'>['filter']
 export type UserCreateInput = OperationJsonBody<'post_system_users'> & {
   role_ids: Id[]
 }
@@ -115,8 +113,16 @@ export function exportUser(
   params: UserExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
+  confirmAll = false,
 ) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params), idempotencyKey, signal)
+  return requestOperation(post_system_users_exports, {
+    data: {
+      filter: stripPagination(params) ?? {},
+      confirm_all: confirmAll,
+    },
+    headers: { 'Idempotency-Key': idempotencyKey },
+    signal,
+  })
 }
 
 /** 下载导入模板 */

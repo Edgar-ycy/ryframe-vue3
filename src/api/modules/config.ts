@@ -13,7 +13,7 @@ import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contrac
 import { stripPagination, type Id } from '@/shared/http/types'
 
 export type ConfigQuery = OperationQuery<'get_system_configs'>
-type ConfigExportQuery = Omit<ConfigQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_configs_exports'>
+type ConfigExportQuery = OperationJsonBody<'post_system_configs_exports'>['filter']
 export type ConfigCreateInput = OperationJsonBody<'post_system_configs'>
 export type ConfigUpdateInput = OperationJsonBody<'put_system_configs_by_id'>
 export type ConfigRecord = ApiSchema<'ConfigVo'>
@@ -25,9 +25,13 @@ export function exportConfig(
   params: ConfigExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
+  confirmAll = false,
 ) {
   return requestOperation(post_system_configs_exports, {
-    data: stripPagination(params),
+    data: {
+      filter: stripPagination(params) ?? {},
+      confirm_all: confirmAll,
+    },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
   })

@@ -22,12 +22,23 @@ import {
 } from '@/api/generated/operations'
 import { getCsrfChallenge, login, logout } from '@/api/modules/auth'
 import { downloadFile, uploadFile } from '@/api/modules/common'
+import { exportConfig } from '@/api/modules/config'
+import { exportDictType } from '@/api/modules/dict'
+import {
+  cancelExportJob,
+  downloadExportJob,
+  getExportJob,
+  listExportJobs,
+} from '@/api/modules/exportJob'
+import { exportLoginLog, exportOperLog, getMetrics } from '@/api/modules/monitor'
+import { exportPost } from '@/api/modules/post'
+import { exportRole } from '@/api/modules/role'
 import { getApiVersion } from '@/api/modules/version'
-import { getMetrics } from '@/api/modules/monitor'
 import {
   batchDeleteUser,
   createUser,
   downloadImportTemplate,
+  exportUser,
   replaceUserRoles,
 } from '@/api/modules/user'
 import {
@@ -221,6 +232,85 @@ describe('operation 请求传输模式', () => {
     expect(httpClient.requestBlob).toHaveBeenCalledWith({
       method: 'get',
       url: '/system/users/import-template',
+    })
+  })
+
+  it('七类导出使用严格筛选包络和 operation 路径', async () => {
+    httpClient.request.mockResolvedValue(versionResponse)
+
+    await exportUser({ username: 'alice' }, 'user-key')
+    await exportRole({ name: 'operator' }, 'role-key')
+    await exportPost({ status: '1' }, 'post-key')
+    await exportConfig(undefined, 'config-key', undefined, true)
+    await exportDictType({ code: 'sys_user_sex' }, 'dict-key')
+    await exportOperLog({ oper_name: 'alice' }, 'oper-key')
+    await exportLoginLog({ user_name: 'alice' }, 'login-key')
+
+    expect(httpClient.request.mock.calls.map(([config]) => config)).toEqual([
+      {
+        data: { filter: { username: 'alice' }, confirm_all: false },
+        headers: { 'Idempotency-Key': 'user-key' },
+        method: 'post',
+        url: '/system/users/exports',
+      },
+      {
+        data: { filter: { name: 'operator' }, confirm_all: false },
+        headers: { 'Idempotency-Key': 'role-key' },
+        method: 'post',
+        url: '/system/roles/exports',
+      },
+      {
+        data: { filter: { status: '1' }, confirm_all: false },
+        headers: { 'Idempotency-Key': 'post-key' },
+        method: 'post',
+        url: '/system/posts/exports',
+      },
+      {
+        data: { filter: {}, confirm_all: true },
+        headers: { 'Idempotency-Key': 'config-key' },
+        method: 'post',
+        url: '/system/configs/exports',
+      },
+      {
+        data: { filter: { code: 'sys_user_sex' }, confirm_all: false },
+        headers: { 'Idempotency-Key': 'dict-key' },
+        method: 'post',
+        url: '/system/dict/types/exports',
+      },
+      {
+        data: { filter: { oper_name: 'alice' }, confirm_all: false },
+        headers: { 'Idempotency-Key': 'oper-key' },
+        method: 'post',
+        url: '/system/operlogs/exports',
+      },
+      {
+        data: { filter: { user_name: 'alice' }, confirm_all: false },
+        headers: { 'Idempotency-Key': 'login-key' },
+        method: 'post',
+        url: '/system/loginlogs/exports',
+      },
+    ])
+  })
+
+  it('导出任务操作使用 descriptor 路径', async () => {
+    httpClient.request.mockResolvedValue(versionResponse)
+    const artifact = new Blob(['export'])
+    httpClient.requestBlob.mockResolvedValue(artifact)
+
+    await listExportJobs()
+    await getExportJob('job/1')
+    await cancelExportJob('job/1')
+    const downloaded = await downloadExportJob('job/1')
+
+    expect(httpClient.request.mock.calls.map(([config]) => config)).toEqual([
+      { method: 'get', url: '/common/jobs' },
+      { method: 'get', url: '/common/jobs/job%2F1' },
+      { data: {}, method: 'post', url: '/common/jobs/job%2F1/cancel' },
+    ])
+    expect(downloaded).toBe(artifact)
+    expect(httpClient.requestBlob).toHaveBeenCalledWith({
+      method: 'get',
+      url: '/common/jobs/job%2F1/download',
     })
   })
 })

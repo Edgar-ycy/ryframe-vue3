@@ -5914,6 +5914,15 @@ export interface components {
         };
         /** @enum {string} */
         ConcurrencyPolicyDto: "forbid" | "allow";
+        /** @description 参数配置导出的筛选条件。 */
+        ConfigExportFilterDto: {
+            key?: string | null;
+            name?: string | null;
+        };
+        ConfigExportRequestDto: {
+            confirm_all: boolean;
+            filter: components["schemas"]["ConfigExportFilterDto"];
+        };
         /** @description 参数配置响应。 */
         ConfigVo: {
             /** Format: date-time */
@@ -6270,6 +6279,16 @@ export interface components {
             label: string;
             value: string;
         };
+        /** @description 字典类型导出的筛选条件。 */
+        DictTypeExportFilterDto: {
+            code?: string | null;
+            name?: string | null;
+            status?: string | null;
+        };
+        DictTypeExportRequestDto: {
+            confirm_all: boolean;
+            filter: components["schemas"]["DictTypeExportFilterDto"];
+        };
         /** @description 字典类型响应。 */
         DictTypeVo: {
             code: string;
@@ -6322,12 +6341,6 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        /**
-         * @description 资源导出的筛选条件快照。
-         *
-         *     各资源沿用其列表接口的筛选字段，服务端会按资源类型严格反序列化并校验。
-         */
-        ExportRequestDto: unknown;
         FileUploadForm: {
             file: number[];
         };
@@ -6393,6 +6406,17 @@ export interface components {
             os?: string | null;
             status: string;
             user_name: string;
+        };
+        /** @description 登录日志导出的筛选条件。 */
+        LoginLogExportFilterDto: {
+            begin_time?: string | null;
+            end_time?: string | null;
+            status?: string | null;
+            user_name?: string | null;
+        };
+        LoginLogExportRequestDto: {
+            confirm_all: boolean;
+            filter: components["schemas"]["LoginLogExportFilterDto"];
         };
         LoginLogPageQuery: {
             begin_time?: string | null;
@@ -6706,6 +6730,17 @@ export interface components {
             os?: string | null;
             sid: string;
             username: string;
+        };
+        /** @description 操作日志导出的筛选条件。 */
+        OperLogExportFilterDto: {
+            begin_time?: string | null;
+            end_time?: string | null;
+            oper_name?: string | null;
+            status?: string | null;
+        };
+        OperLogExportRequestDto: {
+            confirm_all: boolean;
+            filter: components["schemas"]["OperLogExportFilterDto"];
         };
         OperLogPageQuery: {
             begin_time?: string | null;
@@ -7628,6 +7663,16 @@ export interface components {
             sort: number;
             status: string;
         };
+        /** @description 岗位导出的筛选条件。 */
+        PostExportFilterDto: {
+            code?: string | null;
+            name?: string | null;
+            status?: string | null;
+        };
+        PostExportRequestDto: {
+            confirm_all: boolean;
+            filter: components["schemas"]["PostExportFilterDto"];
+        };
         /** @description 岗位响应。 */
         PostVo: {
             code: string;
@@ -7826,6 +7871,16 @@ export interface components {
             /** Format: int32 */
             is_super: number;
             name: string;
+        };
+        /** @description 角色导出的筛选条件。 */
+        RoleExportFilterDto: {
+            code?: string | null;
+            name?: string | null;
+            status?: string | null;
+        };
+        RoleExportRequestDto: {
+            confirm_all: boolean;
+            filter: components["schemas"]["RoleExportFilterDto"];
         };
         /** @description 角色响应。 */
         RoleVo: {
@@ -8504,13 +8559,17 @@ export interface components {
         UserDetailVo: components["schemas"]["UserVo"] & {
             roles: components["schemas"]["RoleBriefVo"][];
         };
-        /** @description 创建异步用户导出任务的筛选条件。 */
-        UserExportRequestDto: {
-            /** @description Snowflake ID 统一使用字符串传输，避免 JavaScript 精度丢失。 */
+        /** @description 用户导出的筛选条件。 */
+        UserExportFilterDto: {
+            /** @description Snowflake ID 使用字符串传输，避免 JavaScript 精度丢失。 */
             dept_id?: string | null;
             phone?: string | null;
             status?: string | null;
             username?: string | null;
+        };
+        UserExportRequestDto: {
+            confirm_all: boolean;
+            filter: components["schemas"]["UserExportFilterDto"];
         };
         UserImportJobVo: {
             cancel_requested: boolean;
@@ -14774,7 +14833,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExportRequestDto"];
+                "application/json": components["schemas"]["ConfigExportRequestDto"];
             };
         };
         responses: {
@@ -15352,7 +15411,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExportRequestDto"];
+                "application/json": components["schemas"]["DictTypeExportRequestDto"];
             };
         };
         responses: {
@@ -15491,7 +15550,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExportRequestDto"];
+                "application/json": components["schemas"]["LoginLogExportRequestDto"];
             };
         };
         responses: {
@@ -16266,7 +16325,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExportRequestDto"];
+                "application/json": components["schemas"]["OperLogExportRequestDto"];
             };
         };
         responses: {
@@ -16556,7 +16615,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExportRequestDto"];
+                "application/json": components["schemas"]["PostExportRequestDto"];
             };
         };
         responses: {
@@ -16786,7 +16845,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExportRequestDto"];
+                "application/json": components["schemas"]["RoleExportRequestDto"];
             };
         };
         responses: {

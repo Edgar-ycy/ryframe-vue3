@@ -16,7 +16,7 @@ import { stripPagination, type Id } from '@/shared/http/types'
 // ========== 字典类型 ==========
 
 export type DictTypeQuery = OperationQuery<'get_system_dict_types'>
-type DictTypeExportQuery = Omit<DictTypeQuery, 'page' | 'page_size'> & OperationJsonBody<'post_system_dict_types_exports'>
+type DictTypeExportQuery = OperationJsonBody<'post_system_dict_types_exports'>['filter']
 export type DictTypeCreateInput = OperationJsonBody<'post_system_dict_types'>
 export type DictTypeUpdateInput = OperationJsonBody<'put_system_dict_types_by_id'>
 export type DictTypeRecord = ApiSchema<'DictTypeVo'>
@@ -31,9 +31,13 @@ export function exportDictType(
   params: DictTypeExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
+  confirmAll = false,
 ) {
   return requestOperation(post_system_dict_types_exports, {
-    data: stripPagination(params),
+    data: {
+      filter: stripPagination(params) ?? {},
+      confirm_all: confirmAll,
+    },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
   })

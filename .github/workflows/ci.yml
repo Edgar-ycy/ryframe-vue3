@@ -53,7 +53,7 @@ jobs:
       - name: Enforce source size limits
         run: pnpm check:source-size
 
-      - name: Check local and exact upstream API contract
+      - name: Check local and exact upstream API contract and operation usage
         run: pnpm api:check:upstream
 
       - name: TypeScript type check
@@ -63,6 +63,9 @@ jobs:
         run: |
           pnpm lint
           pnpm lint:styles
+
+      - name: Run deterministic unit tests
+        run: pnpm test:unit
 
       - name: Build production bundle
         run: pnpm build
@@ -93,6 +96,9 @@ jobs:
 
       - name: TypeScript type check
         run: pnpm typecheck
+
+      - name: Run deterministic unit tests
+        run: pnpm test:unit
 
       - name: Production build
         run: pnpm build

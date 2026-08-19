@@ -21,9 +21,11 @@
     "api:check": "node scripts/sync-api-contract.mjs --verify-local && pnpm check:contract && node scripts/generate-api-artifacts.mjs --check && pnpm check:api-operations",
     "api:check:upstream": "pnpm api:check && node scripts/sync-api-contract.mjs --verify-upstream",
     "typecheck": "vue-tsc --noEmit",
+    "test": "pnpm test:unit",
+    "test:unit": "vitest run --config vitest.config.ts",
     "build": "vite build",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
-    "check": "pnpm check:workflows && pnpm check:dependencies && pnpm check:source-size && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm build && pnpm check:bundle",
+    "check": "pnpm check:workflows && pnpm check:dependencies && pnpm check:source-size && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:unit && pnpm build && pnpm check:bundle",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -58,6 +60,7 @@
     "unplugin-element-plus": "^0.11.2",
     "unplugin-vue-components": "^32.1.0",
     "vite": "^8.1.5",
+    "vitest": "^4.1.10",
     "vue-tsc": "^3.3.8",
     "yaml": "^2.9.0"
   }

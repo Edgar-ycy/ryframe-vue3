@@ -28,6 +28,12 @@ type JsonContent<Response> = Response extends {
   ? Body
   : never
 
+type TextContent<Response> = Response extends {
+  content: { 'text/plain': infer Body }
+}
+  ? Body
+  : never
+
 type ResponseAt<Responses, Status extends PropertyKey> = Status extends keyof Responses
   ? Responses[Status]
   : never
@@ -35,6 +41,15 @@ type ResponseAt<Responses, Status extends PropertyKey> = Status extends keyof Re
 export type OperationJsonResponse<Name extends keyof operations> =
   ApiOperation<Name> extends { responses: infer Responses }
     ? JsonContent<
+      | ResponseAt<Responses, 200>
+      | ResponseAt<Responses, 201>
+      | ResponseAt<Responses, 202>
+    >
+    : never
+
+export type OperationTextResponse<Name extends keyof operations> =
+  ApiOperation<Name> extends { responses: infer Responses }
+    ? TextContent<
       | ResponseAt<Responses, 200>
       | ResponseAt<Responses, 201>
       | ResponseAt<Responses, 202>

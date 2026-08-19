@@ -7,9 +7,10 @@ import type {
   OperationJsonResponse,
   OperationPath,
   OperationQuery,
+  OperationTextResponse,
 } from './contract'
 import type { OperationDescriptor, OperationId } from './generated/operations'
-import request, { rawRequest, requestBlob } from '@/shared/http/client'
+import request, { rawRequest, requestBlob, requestText } from '@/shared/http/client'
 
 type JsonOperationId = {
   [Name in OperationId]: [OperationJsonResponse<Name>] extends [never] ? never : Name
@@ -19,6 +20,10 @@ type MultipartOperationId = {
   [Name in OperationId]: ApiOperation<Name> extends {
     requestBody: { content: { 'multipart/form-data': unknown } }
   } ? Name : never
+}[OperationId]
+
+type TextOperationId = {
+  [Name in OperationId]: [OperationTextResponse<Name>] extends [never] ? never : Name
 }[OperationId]
 
 type RequestTransportOptions = Omit<
@@ -56,6 +61,10 @@ export type MultipartOperationRequestOptions<Name extends MultipartOperationId> 
   & { data: FormData }
 
 export type BlobOperationRequestOptions<Name extends OperationId> = RequestTransportOptions
+  & PathOptions<Name>
+  & QueryOptions<Name>
+
+export type TextOperationRequestOptions<Name extends TextOperationId> = RequestTransportOptions
   & PathOptions<Name>
   & QueryOptions<Name>
 
@@ -147,4 +156,26 @@ export async function requestBlobOperation<Name extends OperationId>(
   }
   if (params !== undefined) config.params = params
   return requestBlob(config)
+}
+
+/** 使用 OpenAPI operationId 获取文本响应。 */
+export async function requestTextOperation<Name extends TextOperationId>(
+  operation: OperationDescriptor<Name>,
+  options: TextOperationRequestOptions<Name>,
+): Promise<OperationTextResponse<Name>> {
+  const {
+    path: pathParameters,
+    params,
+    ...transportOptions
+  } = options as RequestTransportOptions & {
+    path?: Record<string, unknown>
+    params?: unknown
+  }
+  const config: AxiosRequestConfig = {
+    ...transportOptions,
+    method: operation.method,
+    url: resolveOperationPath(operation.path, pathParameters),
+  }
+  if (params !== undefined) config.params = params
+  return requestText(config) as Promise<OperationTextResponse<Name>>
 }

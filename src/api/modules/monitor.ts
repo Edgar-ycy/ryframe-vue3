@@ -1,19 +1,28 @@
-import request, { requestText } from '@/shared/http/client'
 import { requestExportJob } from './exportJob'
 import type { ApiSchema, OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { requestOperation } from '@/api/operationRequest'
+import { requestOperation, requestTextOperation } from '@/api/operationRequest'
 import {
+  delete_system_online_by_sid,
   delete_monitor_schedules_by_id,
+  get_monitor_cache,
+  get_monitor_cache_commands,
+  get_monitor_db_pool,
   get_monitor_jobs,
   get_monitor_jobs_stats,
+  get_monitor_metrics,
   get_monitor_overview,
   get_monitor_overview_trends,
   get_monitor_retention,
   get_monitor_retention_runs,
+  get_monitor_runtime,
   get_monitor_schedules,
   get_monitor_schedules_by_id,
   get_monitor_schedules_by_id_executions,
   get_monitor_schedules_targets,
+  get_monitor_server,
+  get_system_loginlogs,
+  get_system_online,
+  get_system_operlogs,
   post_monitor_jobs_by_id_retry,
   post_monitor_retention_preview,
   post_monitor_retention_run,
@@ -23,7 +32,7 @@ import {
   put_monitor_schedules_by_id,
   put_monitor_schedules_by_id_status,
 } from '@/api/generated/operations'
-import { stripPagination, type PageResponse } from '@/shared/http/types'
+import { stripPagination } from '@/shared/http/types'
 
 // ========== 服务器监控 (/monitor) ==========
 
@@ -35,36 +44,32 @@ export type RuntimeStatus = ApiSchema<'RuntimeStatus'>
 
 /** 获取服务器信息。 */
 export function getServerInfo(signal?: AbortSignal) {
-  return request<ServerInfo>({ url: '/monitor/server', method: 'get', signal })
+  return requestOperation(get_monitor_server, { signal })
 }
 
 /** 获取缓存统计。 */
 export function getCacheInfo(signal?: AbortSignal) {
-  return request<CacheInfo>({ url: '/monitor/cache', method: 'get', signal })
+  return requestOperation(get_monitor_cache, { signal })
 }
 
 /** 获取 Redis 命令统计。 */
 export function getCacheCommands(signal?: AbortSignal) {
-  return request<CacheCommandStats>({
-    url: '/monitor/cache/commands',
-    method: 'get',
-    signal,
-  })
+  return requestOperation(get_monitor_cache_commands, { signal })
 }
 
 /** 获取数据库连接池状态。 */
 export function getDbPool(signal?: AbortSignal) {
-  return request<DbPoolInfo>({ url: '/monitor/db-pool', method: 'get', signal })
+  return requestOperation(get_monitor_db_pool, { signal })
 }
 
 /** 获取主应用运行时组件状态。 */
 export function getRuntimeStatus(signal?: AbortSignal) {
-  return request<RuntimeStatus>({ url: '/monitor/runtime', method: 'get', signal })
+  return requestOperation(get_monitor_runtime, { signal })
 }
 
 /** 获取 Prometheus 指标文本。 */
 export function getMetrics(signal?: AbortSignal) {
-  return requestText({ url: '/monitor/metrics', method: 'get', signal })
+  return requestTextOperation(get_monitor_metrics, { signal })
 }
 
 // ========== 操作日志 (/system/operlogs) ==========
@@ -82,12 +87,7 @@ type OperLogExportQuery = LogExportFilters & OperationJsonBody<'post_system_oper
 
 /** 分页获取操作日志。 */
 export function listOperLog(params: OperLogQuery, signal?: AbortSignal) {
-  return request<PageResponse<OperLogRecord>>({
-    url: '/system/operlogs',
-    method: 'get',
-    params,
-    signal,
-  })
+  return requestOperation(get_system_operlogs, { params, signal })
 }
 
 /** 导出操作日志。 */
@@ -112,12 +112,7 @@ export type LoginLogRecord = ApiSchema<'LoginInfoVo'>
 
 /** 分页获取登录日志。 */
 export function listLoginLog(params: LoginLogQuery, signal?: AbortSignal) {
-  return request<PageResponse<LoginLogRecord>>({
-    url: '/system/loginlogs',
-    method: 'get',
-    params,
-    signal,
-  })
+  return requestOperation(get_system_loginlogs, { params, signal })
 }
 
 /** 导出登录日志。 */
@@ -141,17 +136,12 @@ export type OnlineUserRecord = ApiSchema<'OnlineUserVo'>
 
 /** 分页获取在线用户。 */
 export function listOnlineUser(params: OnlineUserQuery, signal?: AbortSignal) {
-  return request<PageResponse<OnlineUserRecord>>({
-    url: '/system/online',
-    method: 'get',
-    params,
-    signal,
-  })
+  return requestOperation(get_system_online, { params, signal })
 }
 
 /** 强制指定会话下线。 */
 export function forceLogout(sid: string) {
-  return request({ url: `/system/online/${encodeURIComponent(sid)}`, method: 'delete' })
+  return requestOperation(delete_system_online_by_sid, { path: { sid } })
 }
 
 // ========== 后台任务 (/monitor/jobs) ==========

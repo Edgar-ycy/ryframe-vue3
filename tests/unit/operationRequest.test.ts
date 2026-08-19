@@ -4,26 +4,31 @@ const httpClient = vi.hoisted(() => ({
   request: vi.fn<(config: unknown) => Promise<unknown>>(),
   rawRequest: vi.fn<(config: unknown) => Promise<unknown>>(),
   requestBlob: vi.fn<(config: unknown) => Promise<Blob>>(),
+  requestText: vi.fn<(config: unknown) => Promise<string>>(),
 }))
 
 vi.mock('@/shared/http/client', () => ({
   default: httpClient.request,
   rawRequest: httpClient.rawRequest,
   requestBlob: httpClient.requestBlob,
+  requestText: httpClient.requestText,
 }))
 
 import {
   get_common_file_download,
+  get_monitor_metrics,
   get_version,
   post_common_upload,
 } from '@/api/generated/operations'
 import { getCsrfChallenge, login, logout } from '@/api/modules/auth'
 import { downloadFile, uploadFile } from '@/api/modules/common'
 import { getApiVersion } from '@/api/modules/version'
+import { getMetrics } from '@/api/modules/monitor'
 import {
   requestBlobOperation,
   requestMultipartOperation,
   requestOperation,
+  requestTextOperation,
 } from '@/api/operationRequest'
 
 const versionResponse = {
@@ -51,6 +56,7 @@ beforeEach(() => {
   httpClient.request.mockReset()
   httpClient.rawRequest.mockReset()
   httpClient.requestBlob.mockReset()
+  httpClient.requestText.mockReset()
 })
 
 describe('operation 请求传输模式', () => {
@@ -159,6 +165,25 @@ describe('operation 请求传输模式', () => {
       method: 'get',
       params: { path: 'reports/users.xlsx', bucket: 'private' },
       url: '/common/file/download',
+    })
+  })
+
+  it('文本 operation 使用 descriptor 且保留请求配置', async () => {
+    httpClient.requestText.mockResolvedValue('# HELP ryframe_up 进程状态')
+
+    const direct = await requestTextOperation(get_monitor_metrics, { timeout: 5000 })
+    const publicResult = await getMetrics()
+
+    expect(direct).toBe('# HELP ryframe_up 进程状态')
+    expect(publicResult).toBe('# HELP ryframe_up 进程状态')
+    expect(httpClient.requestText).toHaveBeenNthCalledWith(1, {
+      method: 'get',
+      timeout: 5000,
+      url: '/monitor/metrics',
+    })
+    expect(httpClient.requestText).toHaveBeenNthCalledWith(2, {
+      method: 'get',
+      url: '/monitor/metrics',
     })
   })
 })

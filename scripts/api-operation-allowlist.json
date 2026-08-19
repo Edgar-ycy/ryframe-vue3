@@ -7,11 +7,11 @@
     "methodProperties": 5
   },
   "src/api/modules/monitor.ts": {
-    "directImports": ["request", "requestText"],
-    "directCalls": { "request": 9, "requestText": 1 },
-    "pathLiterals": 12,
-    "urlProperties": 10,
-    "methodProperties": 10
+    "directImports": [],
+    "directCalls": {},
+    "pathLiterals": 2,
+    "urlProperties": 0,
+    "methodProperties": 0
   },
   "src/api/modules/user.ts": {
     "directImports": ["request", "requestBlob"],

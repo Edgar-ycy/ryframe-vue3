@@ -15,7 +15,6 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
 
   system: { path: '/system' },
   monitor: { path: '/monitor' },
-  tools: { path: '/tools' },
   platform: { path: '/platform' },
 
   'system.user': { path: '/system/user', component: () => import('@/views/system/user/index.vue') },
@@ -55,8 +54,6 @@ export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
   'monitor.jobs': { path: '/monitor/jobs', component: () => import('@/views/monitor/jobs/index.vue') },
   'monitor.schedules': { path: '/monitor/schedules', component: () => import('@/views/monitor/schedules/index.vue') },
   'monitor.retention': { path: '/monitor/retention', component: () => import('@/views/monitor/retention/index.vue') },
-
-  'tools.gen': { path: '/tools/gen', component: () => import('@/views/tools/gen/index.vue') },
 }
 
 export function getMenuPage(routeKey?: string | null): MenuPageRegistryEntry | undefined {
@@ -90,7 +87,6 @@ export const permissionRouteKeys: Readonly<Record<string, string>> = Object.free
   'monitor:job:list': 'monitor.jobs',
   'monitor:schedule:list': 'monitor.schedules',
   'monitor:retention:list': 'monitor.retention',
-  'tools:gen:list': 'tools.gen',
 })
 
 export function getRouteKeyByPermissionCode(permissionCode?: string | null): string | undefined {

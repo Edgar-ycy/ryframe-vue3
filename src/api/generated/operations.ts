@@ -122,7 +122,6 @@ export type OperationId =
   | "get_system_users_by_id"
   | "get_system_users_import_template"
   | "get_system_users_options"
-  | "get_tools_gen_tables"
   | "get_version"
   | "post_auth_captcha_verify"
   | "post_auth_login"
@@ -187,9 +186,6 @@ export type OperationId =
   | "post_system_users"
   | "post_system_users_by_id_password_reset_requests"
   | "post_system_users_exports"
-  | "post_tools_gen_download"
-  | "post_tools_gen_generate"
-  | "post_tools_gen_preview"
   | "put_auth_profile"
   | "put_auth_profile_avatar"
   | "put_auth_profile_password"
@@ -461,8 +457,6 @@ export const get_system_users_import_template = {"operationId":"get_system_users
 
 export const get_system_users_options = {"operationId":"get_system_users_options","method":"get","path":"/system/users/options"} as const satisfies OperationDescriptor<"get_system_users_options">
 
-export const get_tools_gen_tables = {"operationId":"get_tools_gen_tables","method":"get","path":"/tools/gen/tables"} as const satisfies OperationDescriptor<"get_tools_gen_tables">
-
 export const get_version = {"operationId":"get_version","method":"get","path":"/version"} as const satisfies OperationDescriptor<"get_version">
 
 export const post_auth_captcha_verify = {"operationId":"post_auth_captcha_verify","method":"post","path":"/auth/captcha/verify"} as const satisfies OperationDescriptor<"post_auth_captcha_verify">
@@ -590,12 +584,6 @@ export const post_system_users = {"operationId":"post_system_users","method":"po
 export const post_system_users_by_id_password_reset_requests = {"operationId":"post_system_users_by_id_password_reset_requests","method":"post","path":"/system/users/{id}/password-reset-requests"} as const satisfies OperationDescriptor<"post_system_users_by_id_password_reset_requests">
 
 export const post_system_users_exports = {"operationId":"post_system_users_exports","method":"post","path":"/system/users/exports"} as const satisfies OperationDescriptor<"post_system_users_exports">
-
-export const post_tools_gen_download = {"operationId":"post_tools_gen_download","method":"post","path":"/tools/gen/download"} as const satisfies OperationDescriptor<"post_tools_gen_download">
-
-export const post_tools_gen_generate = {"operationId":"post_tools_gen_generate","method":"post","path":"/tools/gen/generate"} as const satisfies OperationDescriptor<"post_tools_gen_generate">
-
-export const post_tools_gen_preview = {"operationId":"post_tools_gen_preview","method":"post","path":"/tools/gen/preview"} as const satisfies OperationDescriptor<"post_tools_gen_preview">
 
 export const put_auth_profile = {"operationId":"put_auth_profile","method":"put","path":"/auth/profile"} as const satisfies OperationDescriptor<"put_auth_profile">
 

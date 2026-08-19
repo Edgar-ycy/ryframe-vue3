@@ -2723,74 +2723,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/tools/gen/download": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** 打包 zip 下载 */
-        post: operations["post_tools_gen_download"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/tools/gen/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** 写入磁盘 */
-        post: operations["post_tools_gen_generate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/tools/gen/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** 预览生成内容 */
-        post: operations["post_tools_gen_preview"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/tools/gen/tables": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 列出数据库表 */
-        get: operations["get_tools_gen_tables"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/version": {
         parameters: {
             query?: never;
@@ -3130,16 +3062,6 @@ export interface components {
             /** Format: int32 */
             code: number;
             data: components["schemas"]["PageData_ServiceDelegationVo"];
-            details?: unknown;
-            error_key?: string | null;
-            message: string;
-            request_id: string;
-        };
-        /** @description 统一分页 API 响应结构。 */
-        ApiPageResponse_TableInfo: {
-            /** Format: int32 */
-            code: number;
-            data: components["schemas"]["PageData_TableInfo"];
             details?: unknown;
             error_key?: string | null;
             message: string;
@@ -5227,26 +5149,6 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_GeneratedFile: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                content: string;
-                path: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
         ApiResponse_Vec_MenuTreeNode: {
             /**
              * Format: int32
@@ -5608,27 +5510,6 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
-        ApiResponse_WriteReport: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            /** @description 代码生成写入报告。 */
-            data?: {
-                skipped: string[];
-                written: string[];
-            };
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
         ApiResponse_u64: {
             /**
              * Format: int32
@@ -5654,7 +5535,6 @@ export interface components {
             openapi: string;
             swagger: string;
             system: string;
-            tools: string;
         };
         /** @description API 版本与构建信息。 */
         ApiVersionInfo: {
@@ -6025,17 +5905,6 @@ export interface components {
         ChangePasswordRequest: {
             new_password: string;
             old_password: string;
-        };
-        /** @description 数据库列结构响应。 */
-        ColumnInfo: {
-            comment?: string | null;
-            data_type: string;
-            is_auto_increment: boolean;
-            is_nullable: boolean;
-            is_primary_key: boolean;
-            is_unique: boolean;
-            name: string;
-            rust_type: string;
         };
         CompletePasswordResetRequest: {
             new_password: string;
@@ -6461,44 +6330,6 @@ export interface components {
         ExportRequestDto: unknown;
         FileUploadForm: {
             file: number[];
-        };
-        ForeignKeyInfo: {
-            columns: string[];
-            name: string;
-            referenced_columns: string[];
-            referenced_table: string;
-        };
-        GenerateOptionsDto: {
-            dto_dir?: string | null;
-            entity_dir?: string | null;
-            generate_comments?: boolean;
-            generate_dto?: boolean | null;
-            generate_entity?: boolean | null;
-            generate_handler?: boolean | null;
-            generate_repository?: boolean | null;
-            generate_service?: boolean | null;
-            handler_dir?: string | null;
-            overwrite?: boolean;
-            repository_dir?: string | null;
-            service_dir?: string | null;
-            table_prefixes?: string[];
-            tables: string[];
-        };
-        GenerateRequestDto: {
-            options: components["schemas"]["GenerateOptionsDto"];
-            /** @description 后端服务所在机器上的代码输出根目录。 */
-            output_dir: string;
-        };
-        /** @description 代码生成预览文件。 */
-        GeneratedFile: {
-            content: string;
-            path: string;
-        };
-        IndexInfo: {
-            columns: string[];
-            index_type: string;
-            name: string;
-            unique: boolean;
         };
         JobScheduleExecutionVo: {
             background_job_id?: string | null;
@@ -7532,28 +7363,6 @@ export interface components {
             total_pages: number;
         };
         /** @description 分页接口的业务数据。 */
-        PageData_TableInfo: {
-            items: {
-                columns: components["schemas"]["ColumnInfo"][];
-                comment?: string | null;
-                foreign_key_dependencies: string[];
-                foreign_keys: components["schemas"]["ForeignKeyInfo"][];
-                indexes: components["schemas"]["IndexInfo"][];
-                schema_canonical: string;
-                table_name: string;
-            }[];
-            /** Format: int64 */
-            max_page_size: number;
-            /** Format: int64 */
-            page: number;
-            /** Format: int64 */
-            page_size: number;
-            /** Format: int64 */
-            total: number;
-            /** Format: int64 */
-            total_pages: number;
-        };
-        /** @description 分页接口的业务数据。 */
         PageData_TenantCapacityVo: {
             items: {
                 /** @description 调用者没有 `tenant:usage:list` 权限时为 `None`。 */
@@ -8302,16 +8111,6 @@ export interface components {
             tenant_name: string;
             username: string;
         };
-        /** @description 数据库表结构响应。 */
-        TableInfo: {
-            columns: components["schemas"]["ColumnInfo"][];
-            comment?: string | null;
-            foreign_key_dependencies: string[];
-            foreign_keys: components["schemas"]["ForeignKeyInfo"][];
-            indexes: components["schemas"]["IndexInfo"][];
-            schema_canonical: string;
-            table_name: string;
-        };
         /** @description 租户后台运行状态汇总。 */
         TenantAuxiliaryUsageVo: {
             /** Format: int64 */
@@ -8825,11 +8624,6 @@ export interface components {
             /** Format: int64 */
             expires_in: number;
             ticket: string;
-        };
-        /** @description 代码生成写入报告。 */
-        WriteReport: {
-            skipped: string[];
-            written: string[];
         };
     };
     responses: never;
@@ -19329,137 +19123,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiEmptyResponse"];
-                };
-            };
-        };
-    };
-    post_tools_gen_download: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerateOptionsDto"];
-            };
-        };
-        responses: {
-            /** @description 下载生成代码 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/zip": number[];
-                };
-            };
-        };
-    };
-    post_tools_gen_generate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerateRequestDto"];
-            };
-        };
-        responses: {
-            /** @description 代码生成报告 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_WriteReport"];
-                };
-            };
-        };
-    };
-    post_tools_gen_preview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerateOptionsDto"];
-            };
-        };
-        responses: {
-            /** @description 生成结果预览 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_GeneratedFile"];
-                };
-            };
-        };
-    };
-    get_tools_gen_tables: {
-        parameters: {
-            query?: {
-                /** @description 页码，从 1 开始。 */
-                page?: number;
-                /** @description 每页记录数，受 `pagination.max_page_size` 限制（默认值为 100）。 */
-                page_size?: number;
-                table_name?: string;
-                table_comment?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 数据库表列表 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiPageResponse_TableInfo"];
                 };
             };
         };

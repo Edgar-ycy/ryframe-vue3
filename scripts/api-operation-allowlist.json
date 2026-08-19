@@ -13,13 +13,6 @@
     "urlProperties": 10,
     "methodProperties": 10
   },
-  "src/api/modules/tools.ts": {
-    "directImports": ["request", "requestBlob"],
-    "directCalls": { "request": 3, "requestBlob": 1 },
-    "pathLiterals": 5,
-    "urlProperties": 4,
-    "methodProperties": 4
-  },
   "src/api/modules/user.ts": {
     "directImports": ["request", "requestBlob"],
     "directCalls": { "request": 10, "requestBlob": 1 },

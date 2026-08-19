@@ -39,7 +39,6 @@ const versionResponse = {
       openapi: '/openapi.json',
       swagger: '/swagger-ui',
       system: '/system',
-      tools: '/tools',
     },
     multi_tenancy_enabled: true,
     name: 'RyFrame',

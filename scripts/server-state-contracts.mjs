@@ -35,7 +35,6 @@ export const serverStateContracts = new Map([
   ['src/views/system/user/components/UserRoleDialog.vue', ['useTenantQuery', 'useTenantMutation']],
   ['src/views/system/user/composables/useRoleOptions.ts', ['useTenantQuery']],
   ['src/views/system/user/composables/useUserManagement.ts', ['useTenantQuery', 'useTenantMutation']],
-  ['src/views/tools/gen/useGeneratorManagement.ts', ['useTenantQuery', 'useTenantMutation']],
 ])
 
 export const serverStateInventoryRoots = [

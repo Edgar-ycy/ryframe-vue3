@@ -105,9 +105,7 @@ export const permissionCatalog = [
   "tenant:product:assign",
   "tenant:product:view",
   "tenant:status",
-  "tenant:usage:list",
-  "tools:gen:add",
-  "tools:gen:list"
+  "tenant:usage:list"
 ] as const
 
 export type PermissionCode = typeof permissionCatalog[number]

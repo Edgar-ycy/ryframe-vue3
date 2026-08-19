@@ -698,7 +698,6 @@ const requiredQueryOperationIds = new Set([
   'get_system_user_imports',
   'get_system_user_imports_by_id_rows',
   'get_system_users_options',
-  'get_tools_gen_tables',
 ])
 const c1PaginatedOperationIds = new Set([
   'get_agent_v1_directory_departments',
@@ -731,7 +730,6 @@ const c1PaginatedOperationIds = new Set([
   'get_system_user_imports',
   'get_system_user_imports_by_id_rows',
   'get_system_users',
-  'get_tools_gen_tables',
 ])
 const c1OptionOperationContracts = new Map([
   ['get_system_roles_options', '/api/v1/system/roles/options'],
@@ -927,8 +925,8 @@ function validateC1QueryParameter(operationId, parameters, parameterName, expect
 }
 
 function validateC1QueryContracts() {
-  if (c1PaginatedOperationIds.size !== 31) {
-    errors.push(`C1 pagination manifest must contain 31 operationIds, found ${c1PaginatedOperationIds.size}`)
+  if (c1PaginatedOperationIds.size !== 30) {
+    errors.push(`C1 pagination manifest must contain 30 operationIds, found ${c1PaginatedOperationIds.size}`)
   }
   if (c1OptionOperationContracts.size !== 2) {
     errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)

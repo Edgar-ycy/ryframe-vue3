@@ -13,13 +13,6 @@
     "urlProperties": 4,
     "methodProperties": 4
   },
-  "src/api/modules/config.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 7 },
-    "pathLiterals": 7,
-    "urlProperties": 7,
-    "methodProperties": 7
-  },
   "src/api/modules/dept.ts": {
     "directImports": ["request"],
     "directCalls": { "request": 6 },
@@ -41,13 +34,6 @@
     "urlProperties": 5,
     "methodProperties": 5
   },
-  "src/api/modules/menu.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 6 },
-    "pathLiterals": 5,
-    "urlProperties": 6,
-    "methodProperties": 6
-  },
   "src/api/modules/messages.ts": {
     "directImports": ["request"],
     "directCalls": { "request": 7 },
@@ -68,20 +54,6 @@
     "pathLiterals": 8,
     "urlProperties": 7,
     "methodProperties": 7
-  },
-  "src/api/modules/post.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 5 },
-    "pathLiterals": 5,
-    "urlProperties": 5,
-    "methodProperties": 5
-  },
-  "src/api/modules/role.ts": {
-    "directImports": ["request"],
-    "directCalls": { "request": 9 },
-    "pathLiterals": 9,
-    "urlProperties": 9,
-    "methodProperties": 9
   },
   "src/api/modules/tools.ts": {
     "directImports": ["request", "requestBlob"],

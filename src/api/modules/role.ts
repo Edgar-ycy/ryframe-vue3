@@ -1,9 +1,18 @@
-import request from '@/shared/http/client'
-import { requestExportJob } from './exportJob'
+import { requestOperation } from '@/api/operationRequest'
+import {
+  delete_system_roles_batch_by_ids,
+  delete_system_roles_by_id,
+  get_system_roles,
+  get_system_roles_by_id,
+  get_system_roles_options,
+  post_system_roles,
+  post_system_roles_exports,
+  put_system_roles_by_id,
+  put_system_roles_by_id_data_scope,
+  put_system_roles_by_id_permissions,
+} from '@/api/generated/operations'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { stripPagination, type Id, type PageResponse } from '@/shared/http/types'
-
-const BASE = '/system/roles'
+import { stripPagination, type Id } from '@/shared/http/types'
 
 export type RoleDataScope = '1' | '2' | '3' | '4' | '5'
 
@@ -22,41 +31,82 @@ export type ReplaceRoleDataScopeInput = {
   dept_ids: Id[]
 }
 
-export function listRole(params: RoleQuery, signal?: AbortSignal) {
-  return request<PageResponse<RoleRecord>>({ url: BASE, method: 'get', params, signal })
+function isRoleDataScope(value: string): value is RoleDataScope {
+  return value === '1' || value === '2' || value === '3' || value === '4' || value === '5'
+}
+
+function toRoleRecord(value: ApiSchema<'RoleVo'>): RoleRecord {
+  if (!isRoleDataScope(value.data_scope)) {
+    throw new TypeError(`服务端返回了未知的角色数据范围：${value.data_scope}`)
+  }
+  return { ...value, data_scope: value.data_scope }
+}
+
+export async function listRole(params: RoleQuery, signal?: AbortSignal) {
+  const response = await requestOperation(get_system_roles, { params, signal })
+  return {
+    ...response,
+    data: response.data
+      ? { ...response.data, items: response.data.items.map(toRoleRecord) }
+      : undefined,
+  }
 }
 export function listRoleOptions(params?: RoleOptionQuery, signal?: AbortSignal) {
-  return request<ApiSchema<'OptionList'>>({ url: `${BASE}/options`, method: 'get', params, signal })
+  return requestOperation(get_system_roles_options, { params, signal })
 }
 export function exportRole(
   params: RoleExportQuery | undefined,
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestExportJob(`${BASE}/exports`, stripPagination(params), idempotencyKey, signal)
+  return requestOperation(post_system_roles_exports, {
+    data: stripPagination(params),
+    headers: { 'Idempotency-Key': idempotencyKey },
+    signal,
+  })
 }
-export function getRole(id: Id, signal?: AbortSignal) {
-  return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'get', signal })
+export async function getRole(id: Id, signal?: AbortSignal) {
+  const response = await requestOperation(get_system_roles_by_id, { path: { id }, signal })
+  return {
+    ...response,
+    data: response.data ? toRoleRecord(response.data) : undefined,
+  }
 }
-export function createRole(data: RoleCreateInput)    { return request<RoleRecord>({ url: BASE, method: 'post', data }) }
-export function updateRole(id: Id, data: RoleUpdateInput) { return request<RoleRecord>({ url: `${BASE}/${id}`, method: 'put', data }) }
-export function deleteRole(id: Id)        { return request<void>({ url: `${BASE}/${id}`, method: 'delete' }) }
-export function batchDeleteRole(ids: Id[]) { return request<void>({ url: `${BASE}/batch/${ids.join(',')}`, method: 'delete' }) }
+export async function createRole(data: RoleCreateInput) {
+  const response = await requestOperation(post_system_roles, { data })
+  return {
+    ...response,
+    data: response.data ? toRoleRecord(response.data) : undefined,
+  }
+}
+export async function updateRole(id: Id, data: RoleUpdateInput) {
+  const response = await requestOperation(put_system_roles_by_id, { path: { id }, data })
+  return {
+    ...response,
+    data: response.data ? toRoleRecord(response.data) : undefined,
+  }
+}
+export function deleteRole(id: Id) {
+  return requestOperation(delete_system_roles_by_id, { path: { id } })
+}
+export function batchDeleteRole(ids: Id[]) {
+  return requestOperation(delete_system_roles_batch_by_ids, {
+    path: { ids: ids.join(',') },
+  })
+}
 
 /** 分配权限 */
 export function replaceRolePermissions(roleId: Id, permIds: Id[]) {
-  return request({
-    url: `${BASE}/${roleId}/permissions`,
-    method: 'put',
+  return requestOperation(put_system_roles_by_id_permissions, {
+    path: { id: roleId },
     data: { perm_ids: permIds.map(String) },
   })
 }
 
 /** 原子替换数据范围和自定义部门。 */
 export function replaceRoleDataScope(roleId: Id, data: ReplaceRoleDataScopeInput) {
-  return request({
-    url: `${BASE}/${roleId}/data-scope`,
-    method: 'put',
+  return requestOperation(put_system_roles_by_id_data_scope, {
+    path: { id: roleId },
     data: {
       data_scope: data.data_scope,
       dept_ids: data.dept_ids.map(String),

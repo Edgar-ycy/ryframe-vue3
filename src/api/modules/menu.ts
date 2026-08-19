@@ -1,6 +1,14 @@
-import request from '@/shared/http/client'
+import { requestOperation } from '@/api/operationRequest'
+import {
+  delete_system_menus_by_id,
+  get_system_menus,
+  get_system_menus_by_id,
+  get_system_menus_tree,
+  post_system_menus,
+  put_system_menus_by_id,
+} from '@/api/generated/operations'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import type { Id, PageResponse } from '@/shared/http/types'
+import type { Id } from '@/shared/http/types'
 
 export type MenuType = ApiSchema<'MenuType'>
 export type MenuTreeNode = Omit<ApiSchema<'MenuTreeNode'>, 'children' | 'menu_type'> & {
@@ -9,32 +17,30 @@ export type MenuTreeNode = Omit<ApiSchema<'MenuTreeNode'>, 'children' | 'menu_ty
 }
 export type MenuRecord = ApiSchema<'MenuVo'>
 
-const BASE = '/system/menus'
-
 export type MenuQuery = OperationQuery<'get_system_menus'>
 export type MenuCreateInput = OperationJsonBody<'post_system_menus'>
 export type MenuUpdateInput = OperationJsonBody<'put_system_menus_by_id'>
 
 export function getMenuTree(signal?: AbortSignal) {
-  return request<MenuTreeNode[]>({ url: `${BASE}/tree`, method: 'get', signal })
+  return requestOperation(get_system_menus_tree, { signal })
 }
 
 export function listMenu(params?: MenuQuery, signal?: AbortSignal) {
-  return request<PageResponse<MenuRecord>>({ url: BASE, method: 'get', params, signal })
+  return requestOperation(get_system_menus, { params, signal })
 }
 
 export function getMenu(id: Id, signal?: AbortSignal) {
-  return request<MenuRecord>({ url: `${BASE}/${id}`, method: 'get', signal })
+  return requestOperation(get_system_menus_by_id, { path: { id }, signal })
 }
 
 export function createMenu(data: MenuCreateInput) {
-  return request<MenuRecord>({ url: BASE, method: 'post', data })
+  return requestOperation(post_system_menus, { data })
 }
 
 export function updateMenu(id: Id, data: MenuUpdateInput) {
-  return request<MenuRecord>({ url: `${BASE}/${id}`, method: 'put', data })
+  return requestOperation(put_system_menus_by_id, { path: { id }, data })
 }
 
 export function deleteMenu(id: Id) {
-  return request<void>({ url: `${BASE}/${id}`, method: 'delete' })
+  return requestOperation(delete_system_menus_by_id, { path: { id } })
 }

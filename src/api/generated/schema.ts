@@ -425,6 +425,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/common/jobs/deletions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 永久删除当前用户的一批终态导出记录及结果文件。 */
+        post: operations["post_common_jobs_deletions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/common/jobs/notifications/read": {
         parameters: {
             query?: never;
@@ -3756,6 +3773,30 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_ExportDeletionAcceptedDto: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 服务端已受理的导出记录删除结果。 */
+            data?: {
+                /** Format: int64 */
+                accepted_count: number;
+                accepted_ids: string[];
+                /** Format: int64 */
+                removed_unread_count: number;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_ExportJobVo: {
             /**
              * Format: int32
@@ -3775,10 +3816,14 @@ export interface components {
                 /** Format: int64 */
                 file_size?: number | null;
                 id: string;
+                /** Format: int64 */
+                matched_rows: number;
                 /** Format: date-time */
                 notification_read_at?: string | null;
                 resource: string;
                 result_file_name?: string | null;
+                /** Format: date-time */
+                snapshot_at: string;
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
@@ -5131,10 +5176,14 @@ export interface components {
                 /** Format: int64 */
                 file_size?: number | null;
                 id: string;
+                /** Format: int64 */
+                matched_rows: number;
                 /** Format: date-time */
                 notification_read_at?: string | null;
                 resource: string;
                 result_file_name?: string | null;
+                /** Format: date-time */
+                snapshot_at: string;
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
@@ -6236,6 +6285,10 @@ export interface components {
             status: string;
             timestamp: string;
         };
+        /** @description 单删与批删共用的导出记录删除命令。 */
+        DeleteExportJobsDto: {
+            ids: string[];
+        };
         /** @description 批量删除消息请求。 */
         DeleteMessagesDto: {
             ids: string[];
@@ -6320,6 +6373,14 @@ export interface components {
         };
         /** @description 不携带业务字段的写操作请求体。 */
         EmptyRequestDto: Record<string, never>;
+        /** @description 服务端已受理的导出记录删除结果。 */
+        ExportDeletionAcceptedDto: {
+            /** Format: int64 */
+            accepted_count: number;
+            accepted_ids: string[];
+            /** Format: int64 */
+            removed_unread_count: number;
+        };
         /** @description 导出任务响应。 */
         ExportJobVo: {
             /** Format: date-time */
@@ -6333,10 +6394,14 @@ export interface components {
             /** Format: int64 */
             file_size?: number | null;
             id: string;
+            /** Format: int64 */
+            matched_rows: number;
             /** Format: date-time */
             notification_read_at?: string | null;
             resource: string;
             result_file_name?: string | null;
+            /** Format: date-time */
+            snapshot_at: string;
             status: string;
             /** Format: date-time */
             updated_at: string;
@@ -9954,6 +10019,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponse_Vec_ExportJobVo"];
                 };
+            };
+        };
+    };
+    post_common_jobs_deletions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 必填幂等键 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteExportJobsDto"];
+            };
+        };
+        responses: {
+            /** @description 导出记录删除已受理 */
+            202: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ExportDeletionAcceptedDto"];
+                };
+            };
+            /** @description 任一任务不存在或不属于当前用户 */
+            404: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 任一任务仍在排队、执行或持有活动租约 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

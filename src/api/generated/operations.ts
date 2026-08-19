@@ -131,6 +131,7 @@ export type OperationId =
   | "post_auth_sessions_revoke_others"
   | "post_auth_ws_ticket"
   | "post_common_jobs_by_id_cancel"
+  | "post_common_jobs_deletions"
   | "post_common_jobs_notifications_read"
   | "post_common_upload"
   | "post_common_upload_avatar"
@@ -474,6 +475,8 @@ export const post_auth_sessions_revoke_others = {"operationId":"post_auth_sessio
 export const post_auth_ws_ticket = {"operationId":"post_auth_ws_ticket","method":"post","path":"/auth/ws-ticket"} as const satisfies OperationDescriptor<"post_auth_ws_ticket">
 
 export const post_common_jobs_by_id_cancel = {"operationId":"post_common_jobs_by_id_cancel","method":"post","path":"/common/jobs/{id}/cancel"} as const satisfies OperationDescriptor<"post_common_jobs_by_id_cancel">
+
+export const post_common_jobs_deletions = {"operationId":"post_common_jobs_deletions","method":"post","path":"/common/jobs/deletions"} as const satisfies OperationDescriptor<"post_common_jobs_deletions">
 
 export const post_common_jobs_notifications_read = {"operationId":"post_common_jobs_notifications_read","method":"post","path":"/common/jobs/notifications/read"} as const satisfies OperationDescriptor<"post_common_jobs_notifications_read">
 

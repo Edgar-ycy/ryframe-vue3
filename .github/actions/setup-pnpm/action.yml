@@ -1,11 +1,18 @@
 name: Setup pnpm
 description: Install the pnpm version declared by package.json without installer bootstrapping
 
+inputs:
+  working-directory:
+    description: Directory containing package.json
+    required: false
+    default: .
+
 runs:
   using: composite
   steps:
     - name: Install declared pnpm version
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: |
         set -euo pipefail
         pnpm_version="$(

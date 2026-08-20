@@ -4628,6 +4628,8 @@ export interface components {
                 authorization_epoch: string;
                 business_data: components["schemas"]["TenantBusinessDataContextVo"];
                 capabilities: components["schemas"]["SessionCapabilityVo"][];
+                /** @description 仅由后端权威角色标记确定，客户端不得从角色编码或名称推断。 */
+                is_super_admin: boolean;
                 menus: components["schemas"]["MenuTreeNode"][];
                 permissions: string[];
                 roles: string[];
@@ -7947,6 +7949,11 @@ export interface components {
             confirm_all: boolean;
             filter: components["schemas"]["RoleExportFilterDto"];
         };
+        /**
+         * @description 角色选项的使用场景。
+         * @enum {string}
+         */
+        RoleOptionPurposeDto: "user_assignment" | "service_account_assignment";
         /** @description 角色响应。 */
         RoleVo: {
             code: string;
@@ -8207,6 +8214,8 @@ export interface components {
             authorization_epoch: string;
             business_data: components["schemas"]["TenantBusinessDataContextVo"];
             capabilities: components["schemas"]["SessionCapabilityVo"][];
+            /** @description 仅由后端权威角色标记确定，客户端不得从角色编码或名称推断。 */
+            is_super_admin: boolean;
             menus: components["schemas"]["MenuTreeNode"][];
             permissions: string[];
             roles: string[];
@@ -17000,7 +17009,9 @@ export interface operations {
     };
     get_system_roles_options: {
         parameters: {
-            query?: {
+            query: {
+                /** @description 角色选项的使用场景。 */
+                purpose: components["schemas"]["RoleOptionPurposeDto"];
                 /** @description 按名称或稳定编码做前缀搜索；首尾空白会被移除。 */
                 q?: string;
                 /** @description 返回上限；省略时使用服务端默认分页大小。 */

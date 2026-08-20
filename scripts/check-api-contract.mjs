@@ -924,6 +924,22 @@ function validateC1QueryParameter(operationId, parameters, parameterName, expect
   }
 }
 
+function validateRoleOptionPurpose(operationId, parameters) {
+  const parameter = parameters.get('purpose')
+  if (!parameter) {
+    errors.push(`${operationId}: required role option purpose is missing`)
+    return
+  }
+  if (parameter.required !== true) {
+    errors.push(`${operationId}.purpose: parameter must remain required`)
+  }
+  const schema = resolveLocalReference(parameter.schema, `${operationId}.purpose.schema`)
+  if (schema?.type !== 'string'
+    || !isDeepStrictEqual(schema.enum, ['user_assignment', 'service_account_assignment'])) {
+    errors.push(`${operationId}.purpose: role option purpose enum is invalid`)
+  }
+}
+
 function validateC1QueryContracts() {
   if (c1PaginatedOperationIds.size !== 30) {
     errors.push(`C1 pagination manifest must contain 30 operationIds, found ${c1PaginatedOperationIds.size}`)
@@ -964,12 +980,15 @@ function validateC1QueryContracts() {
       errors.push(`${operationId}: options operation must remain GET ${expectedPath}`)
     }
     const parameters = queryParametersFor(operationId, entry)
-    if (!isDeepStrictEqual([...parameters.keys()].sort(), ['limit', 'q'])) {
-      errors.push(`${operationId}: options query parameters must be exactly q and limit`)
+    const isRoleOptions = operationId === 'get_system_roles_options'
+    const expectedNames = isRoleOptions ? ['limit', 'purpose', 'q'] : ['limit', 'q']
+    if (!isDeepStrictEqual([...parameters.keys()].sort(), expectedNames)) {
+      errors.push(`${operationId}: options query parameters do not match the exact manifest`)
     }
     for (const [parameterName, expectedSchema] of c1OptionParameterContracts) {
       validateC1QueryParameter(operationId, parameters, parameterName, expectedSchema)
     }
+    if (isRoleOptions) validateRoleOptionPurpose(operationId, parameters)
   }
 
   // 新增分页或 options 操作不能绕过按 operationId 维护的精确清单。

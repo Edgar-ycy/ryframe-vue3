@@ -23,6 +23,7 @@ export function useRoleOptions(
     return {
       q: debouncedSearchText.value || undefined,
       limit: ROLE_OPTION_LIMIT,
+      purpose: 'user_assignment' as const,
     }
   }
 

@@ -94,6 +94,7 @@ export const permissionCatalog = [
   "system:user:list",
   "system:user:remove",
   "tenant:add",
+  "tenant:capability:override",
   "tenant:data-backup:list",
   "tenant:data-migration:cancel",
   "tenant:data-migration:create",

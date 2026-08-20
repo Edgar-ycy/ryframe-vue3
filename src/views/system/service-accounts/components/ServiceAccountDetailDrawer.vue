@@ -165,7 +165,6 @@ import { listRoleOptions } from '@/api/modules/role'
 import type { SelectOption } from '@/api/modules/option'
 import type { ServiceAccount, ServiceCredential } from '@/api/modules/serviceAccount'
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
-import { SUPER_ADMIN_ROLE_CODE } from '../presentation'
 
 const props = defineProps<{
   account: ServiceAccount | null
@@ -199,9 +198,7 @@ let roleSearchGeneration = 0
 let roleIdsSnapshot = ''
 let roleSearchController: AbortController | undefined
 
-const standardRoleOptions = computed(() => roleOptions.value.filter(option => (
-  !option.disabled && option.description !== SUPER_ADMIN_ROLE_CODE
-)))
+const standardRoleOptions = computed(() => roleOptions.value.filter(option => !option.disabled))
 
 function initializeTab(): void {
   if (props.canManageRoles) activeTab.value = 'roles'
@@ -242,7 +239,11 @@ async function searchRoles(value: string): Promise<void> {
   rolesLoading.value = true
   try {
     const response = await listRoleOptions(
-      { q: value.trim() || undefined, limit: 50 },
+      {
+        q: value.trim() || undefined,
+        limit: 50,
+        purpose: 'service_account_assignment',
+      },
       controller.signal,
     )
     if (!controller.signal.aborted && generation === roleSearchGeneration) {

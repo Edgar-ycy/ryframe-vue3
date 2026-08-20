@@ -8,21 +8,16 @@ import {
 export function usePermission() {
   const userStore = useUserStore()
 
-  const isAdmin = () => {
-    return userStore.roles.includes('admin')
-      || checkPermission(userStore.permissions, '*:*:*', userStore.roles)
-  }
+  const isSuperAdmin = (): boolean => userStore.isSuperAdmin
 
   const hasPermission = (perm: PermissionCode): boolean =>
-    checkPermission(userStore.permissions, perm, userStore.roles)
+    checkPermission(userStore.permissions, perm)
 
   const hasAnyPermission = (...perms: PermissionCode[]): boolean =>
-    checkPermission(userStore.permissions, perms, userStore.roles)
+    checkPermission(userStore.permissions, perms)
 
   const hasAllPermissions = (...perms: PermissionCode[]): boolean =>
-    checkAllPermissions(userStore.permissions, perms, userStore.roles)
+    checkAllPermissions(userStore.permissions, perms)
 
-  const hasRole = (role: string): boolean => userStore.roles.includes(role)
-
-  return { isAdmin, hasPermission, hasAnyPermission, hasAllPermissions, hasRole }
+  return { isSuperAdmin, hasPermission, hasAnyPermission, hasAllPermissions }
 }

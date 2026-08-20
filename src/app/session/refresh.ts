@@ -1,4 +1,5 @@
 import { refreshToken as refreshTokenApi } from '@/api/modules/auth'
+import { isSessionContext } from '@/api/modules/sessionContext'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
@@ -111,7 +112,7 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
     const response = await refreshTokenApi(challenge)
     assertSessionEpoch(refreshEpoch)
     const auth = response.data
-    if (!auth?.access_token || !auth.session_context) {
+    if (!auth?.access_token || !isSessionContext(auth.session_context)) {
       throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
         status: 401,
         kind: 'invalid_response',

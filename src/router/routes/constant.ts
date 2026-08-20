@@ -78,6 +78,15 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { title: '服务暂不可用', hidden: true },
   },
   {
+    path: '/feature-unavailable',
+    name: 'FeatureUnavailable',
+    component: withRouteComponentName(
+      'FeatureUnavailable',
+      () => import('@/views/error/feature-unavailable.vue'),
+    ),
+    meta: { title: '功能不可用', hidden: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/404',
     meta: { hidden: true },

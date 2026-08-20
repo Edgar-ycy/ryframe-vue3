@@ -205,7 +205,6 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 const canView = computed(() => hasPermission(
   userStore.permissions,
   TENANT_DATA_PERMISSIONS.placementView,
-  userStore.roles,
 ))
 
 const targetsQuery = useTenantQuery<DataTargetPage>(

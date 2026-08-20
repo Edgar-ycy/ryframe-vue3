@@ -112,6 +112,7 @@
 </template>
 
 <script setup lang="ts">
+import type { PermissionCode } from '@/api/generated/permissions'
 import { useI18n } from 'vue-i18n'
 import {
   getTenantDataPlacement,
@@ -136,7 +137,7 @@ const userStore = useUserStore()
 const migrationVisible = ref(false)
 const detailVisible = ref(false)
 const selectedMigrationId = ref<string>()
-const can = (permission: string) => hasPermission(userStore.permissions, permission, userStore.roles)
+const can = (permission: PermissionCode) => hasPermission(userStore.permissions, permission)
 const canViewPlacement = computed(() => can(TENANT_DATA_PERMISSIONS.placementView))
 const canListMigrations = computed(() => can(TENANT_DATA_PERMISSIONS.migrationList))
 const canCreate = computed(() => can(TENANT_DATA_PERMISSIONS.migrationCreate))

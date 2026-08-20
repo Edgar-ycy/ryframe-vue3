@@ -1,3 +1,4 @@
+import type { PermissionCode } from '@/api/generated/permissions'
 import type { RouteComponentLoader } from '@/router/namedRouteComponent'
 
 export type CapabilityCode = string
@@ -11,13 +12,13 @@ export type CapabilityCode = string
 export interface FeatureManifest {
   capabilityCode: CapabilityCode
   routeKey: string
-  permissionCode: string
+  permissionCode: PermissionCode
   path: string
   page: RouteComponentLoader
   allowedVariants: readonly string[]
   planConfigEditor: RouteComponentLoader
   /** 业务数据不可写期间应禁用的写权限；系统管理权限不得放入此集合。 */
-  businessWritePermissions: readonly string[]
+  businessWritePermissions: readonly PermissionCode[]
 }
 
 /** 保留 capability、variant 与 route_key 的字面量类型。 */

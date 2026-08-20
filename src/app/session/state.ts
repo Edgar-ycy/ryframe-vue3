@@ -85,6 +85,7 @@ function hasAuthenticatedScopeChanged(
   if (userStore.sessionStatus !== 'authenticated' || userStore.userId === '') return false
   return String(userStore.userId) !== String(userInfo.id)
     || userStore.tenantId !== userInfo.tenant_id
+    || userStore.isSuperAdmin !== context.is_super_admin
     || accessFingerprint(userStore.roles) !== accessFingerprint(context.roles)
     || accessFingerprint(userStore.permissions) !== accessFingerprint(context.permissions)
     || tenantContext.authorizationEpoch !== context.authorization_epoch
@@ -95,6 +96,6 @@ function hasAuthenticatedScopeChanged(
     || JSON.stringify(tenantContext.context?.menus ?? []) !== JSON.stringify(context.menus)
 }
 
-function accessFingerprint(values: string[]): string {
+function accessFingerprint(values: readonly string[]): string {
   return [...values].sort().join('\u0000')
 }

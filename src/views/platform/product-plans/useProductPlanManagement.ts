@@ -4,6 +4,7 @@ import type {
   ProductPlanVersion,
   ProductPlanVersionInput,
 } from '@/api/modules/productPlan'
+import type { PermissionCode } from '@/api/generated/permissions'
 import {
   createProductPlan,
   createProductPlanVersion,
@@ -33,10 +34,9 @@ export function useProductPlanManagement() {
   const page = ref(1)
   const pageSize = ref(20)
   const selectedPlan = ref<ProductPlan>()
-  const can = (permission: string) => hasPermission(
+  const can = (permission: PermissionCode) => hasPermission(
     userStore.permissions,
     permission,
-    userStore.roles,
   )
   const canList = computed(() => can(PRODUCT_PLAN_PERMISSIONS.list))
   const queryEnabled = computed(() => (

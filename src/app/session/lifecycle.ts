@@ -51,9 +51,13 @@ export function installSessionCoordinator(sessionRuntime: SessionRuntime): void 
         : ensureRoutesAfterAuthentication(true)
       void synchronization
         .catch(async (error: unknown) => {
-          if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
-            await handleRefreshFailure(error)
-          }
+          const httpError = error instanceof HttpError
+            ? error
+            : new HttpError(translate('shell.session.authUnavailable'), {
+                kind: 'unknown',
+                cause: error,
+              })
+          await handleRefreshFailure(httpError)
         })
     },
     onRefreshFailed: () => undefined,
@@ -96,7 +100,8 @@ export function initializeSession(): Promise<void> {
           await clearSession()
         }
         else {
-          // 临时依赖或传输故障保留内存凭据，便于后续恢复。
+          failClosedAuthorizationProjection()
+          // 临时依赖或传输故障保留凭据以便重试，但绝不保留旧授权投影。
           useUserStore().sessionStatus = 'unavailable'
         }
       })
@@ -129,9 +134,21 @@ async function handleRefreshFailure(error: HttpError): Promise<void> {
     return
   }
 
-  // 非鉴权故障允许原会话稍后恢复。
+  failClosedAuthorizationProjection()
+  // 非鉴权故障允许原会话稍后恢复，但旧授权投影必须立即失效。
   useUserStore().sessionStatus = 'unavailable'
   ElMessage.error(translate('shell.session.authUnavailable'))
+  const runtime = getSessionRuntime()
+  if (runtime?.router.currentRoute.value.path !== '/503') {
+    await runtime?.router.replace('/503')
+  }
+}
+
+function failClosedAuthorizationProjection(): void {
+  clearServerState()
+  useTenantContextStore().failClosed()
+  useTagsViewStore().closeAllViews()
+  getSessionRuntime()?.resetDynamicRoutes()
 }
 
 function reportError(error: HttpError): void {

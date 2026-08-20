@@ -4,6 +4,7 @@ import {
   type RouteLocationRaw,
   type RouteRecordRaw,
 } from 'vue-router'
+import type { PermissionCode } from '@/api/generated/permissions'
 import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
@@ -11,7 +12,7 @@ import { useTenantContextStore } from '@/app/tenant-context'
 import { useUserStore } from '@/stores/user'
 import { ROOT_LAYOUT_ROUTE_NAME } from './layout'
 import { createNavigationGuard } from './navigationGuard'
-import { canAccessRouteMeta } from './routeAccess'
+import { matchedRouteAccessResult } from './routeAccess'
 import { RuntimeRouteRegistry } from './runtimeRouteRegistry'
 import { constantRoutes } from './routes/constant'
 
@@ -22,12 +23,12 @@ declare module 'vue-router' {
     hidden?: boolean
     affix?: boolean
     alwaysShow?: boolean
-    permission?: string
+    permission?: PermissionCode
     activeMenu?: string
     noCache?: boolean
     sort?: number
     isFrame?: boolean
-    buttonPerms?: string[]
+    buttonPerms?: readonly PermissionCode[]
     requiresPermission?: boolean
     requiresMultiTenancy?: boolean
     requiredCapabilities?: readonly string[]
@@ -65,7 +66,6 @@ async function buildAccessibleRoutes(
     permissionStore.generateRoutes(
       context.menus,
       context.permissions,
-      context.roles,
       tenantContext.capabilityCodes,
     )
   }
@@ -149,7 +149,15 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
     return fallback
   }
 
-  const blockedPaths = new Set(['/login', '/reset-password', '/401', '/403', '/404', '/503'])
+  const blockedPaths = new Set([
+    '/login',
+    '/reset-password',
+    '/401',
+    '/403',
+    '/404',
+    '/503',
+    '/feature-unavailable',
+  ])
   if (
     blockedPaths.has(resolved.path)
     || resolved.matched.length === 0
@@ -159,13 +167,12 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
   const user = useUserStore()
   const runtimeCapabilities = useRuntimeCapabilitiesStore()
   const tenantContext = useTenantContextStore()
-  const accessible = resolved.matched.every(record => canAccessRouteMeta(record.meta, {
+  const access = matchedRouteAccessResult(resolved.matched.map(record => record.meta), {
     capabilities: tenantContext.capabilityCodes,
     multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
     permissions: user.permissions,
-    roles: user.roles,
-  }))
-  return accessible ? resolved.fullPath : fallback
+  })
+  return access === 'allowed' ? resolved.fullPath : fallback
 }
 
 const navigationGuard = createNavigationGuard({

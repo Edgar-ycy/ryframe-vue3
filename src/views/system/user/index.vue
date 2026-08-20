@@ -209,7 +209,7 @@
       v-model="roleDialogVisible"
       :user="roleEditingUser"
       :current-user-id="userStore.userId"
-      :current-user-is-super="userStore.isSuper"
+      :current-user-is-super="userStore.isSuperAdmin"
       @saved="refreshData"
     />
     <PasswordResetDialog v-model="passwordDialogVisible" :user-id="passwordResetUserId" />

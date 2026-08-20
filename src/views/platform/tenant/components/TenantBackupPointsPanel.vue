@@ -95,7 +95,6 @@ const userStore = useUserStore()
 const canView = computed(() => hasPermission(
   userStore.permissions,
   TENANT_DATA_PERMISSIONS.backupList,
-  userStore.roles,
 ))
 
 const placementQuery = useTenantQuery<TenantDataPlacement>(

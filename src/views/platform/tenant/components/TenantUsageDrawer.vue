@@ -197,17 +197,14 @@ const activeTab = ref<'capacity' | 'product' | 'placement' | 'backups'>('capacit
 const canViewProduct = computed(() => hasPermission(
   userStore.permissions,
   TENANT_PRODUCT_PERMISSIONS.view,
-  userStore.roles,
 ))
 const canViewTenantData = computed(() => hasPermission(
   userStore.permissions,
   [TENANT_DATA_PERMISSIONS.placementView, TENANT_DATA_PERMISSIONS.migrationList],
-  userStore.roles,
 ))
 const canViewBackups = computed(() => hasPermission(
   userStore.permissions,
   TENANT_DATA_PERMISSIONS.backupList,
-  userStore.roles,
 ))
 
 watch([activeTab, canViewProduct, canViewTenantData, canViewBackups], () => {

@@ -1,6 +1,12 @@
 import type { Router } from 'vue-router'
 import type { TenantBusinessState } from '@/api/modules/sessionContext'
-import { canAccessRouteMeta } from '@/router/routeAccess'
+import {
+  accessResultPath,
+  matchedRouteAccessResult,
+  registeredPageAccessResult,
+  type RouteAccessContext,
+  type RouteAccessResult,
+} from '@/router/routeAccess'
 import type { TenantContextObservation } from '@/shared/http/session'
 import { invalidateTenantServerState } from '@/shared/query/client'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
@@ -149,39 +155,45 @@ async function performTenantContextUiSynchronization(
 
   pruneInaccessibleViews(runtime.router)
   const currentPath = runtime.router.currentRoute.value.fullPath
-  if (!isAccessiblePath(runtime.router, currentPath)) await runtime.router.replace('/403')
+  const accessResult = pathAccessResult(runtime.router, currentPath)
+  const replacement = accessResultPath(accessResult)
+  if (replacement) await runtime.router.replace(replacement)
   await invalidateTenantServerState(tenantId)
 }
 
 function pruneInaccessibleViews(router: Router): void {
   const tags = useTagsViewStore()
   for (const view of [...tags.visitedViews]) {
-    if (!isAccessiblePath(router, view.path)) tags.removeView(view)
+    if (pathAccessResult(router, view.path) !== 'allowed') tags.removeView(view)
   }
 }
 
-function isAccessiblePath(router: Router, path: string): boolean {
+function pathAccessResult(router: Router, path: string): RouteAccessResult {
+  const context = currentRouteAccessContext()
   let resolved: ReturnType<Router['resolve']>
   try {
     resolved = router.resolve(path)
   }
   catch {
-    return false
+    return registeredPageAccessResult(path, context)
   }
   if (
     resolved.matched.length === 0
     || resolved.matched.some(record => record.path === '/:pathMatch(.*)*')
-  ) return false
+  ) return registeredPageAccessResult(path, context)
 
+  return matchedRouteAccessResult(resolved.matched.map(record => record.meta), context)
+}
+
+function currentRouteAccessContext(): RouteAccessContext {
   const user = useUserStore()
   const runtimeCapabilities = useRuntimeCapabilitiesStore()
   const tenantContext = useTenantContextStore()
-  return resolved.matched.every(record => canAccessRouteMeta(record.meta, {
+  return {
     capabilities: tenantContext.capabilityCodes,
     multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
     permissions: user.permissions,
-    roles: user.roles,
-  }))
+  }
 }
 
 function isSameIdentity(tenantId: string, userId: string): boolean {

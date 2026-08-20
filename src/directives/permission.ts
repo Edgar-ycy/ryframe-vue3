@@ -33,7 +33,6 @@ function updateVisibility(el: HTMLElement, state: PermissionDirectiveState): voi
   const allowed = hasExecutablePermission(
     state.value,
     userStore.permissions,
-    userStore.roles,
   )
   const controlled = el as HTMLElement & { inert?: boolean; disabled?: boolean }
 
@@ -56,12 +55,11 @@ function updateVisibility(el: HTMLElement, state: PermissionDirectiveState): voi
 function hasExecutablePermission(
   required: PermissionValue,
   permissions: readonly string[],
-  roles: readonly string[],
 ): boolean {
   if (!required || required.length === 0) return true
   const values = Array.isArray(required) ? required : [required]
   return values.some(permission => (
-    hasPermission(permissions, permission, roles)
+    hasPermission(permissions, permission)
     && canExecuteFeaturePermission(permission)
   ))
 }

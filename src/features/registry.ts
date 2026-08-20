@@ -1,4 +1,5 @@
 import type { MenuPageRegistryEntry } from '@/router/pageRegistry'
+import type { PermissionCode } from '@/api/generated/permissions'
 import { serviceAccountsFeature } from '@/features/service-accounts/manifest'
 
 export const featureManifests = [serviceAccountsFeature] as const
@@ -16,13 +17,13 @@ export const featureMenuPageRegistry = Object.fromEntries(
 
 export const featurePermissionRouteKeys = Object.fromEntries(
   featureManifests.map((feature) => [feature.permissionCode, feature.routeKey]),
-) as Readonly<Record<string, string>>
+) as Readonly<Partial<Record<PermissionCode, string>>>
 
-const businessWritePermissions = new Set(
-  featureManifests.flatMap<string>(feature => [...feature.businessWritePermissions]),
+const businessWritePermissions = new Set<PermissionCode>(
+  featureManifests.flatMap(feature => [...feature.businessWritePermissions]),
 )
 
-export function isBusinessWritePermission(permissionCode: string): boolean {
+export function isBusinessWritePermission(permissionCode: PermissionCode): boolean {
   return businessWritePermissions.has(permissionCode)
 }
 

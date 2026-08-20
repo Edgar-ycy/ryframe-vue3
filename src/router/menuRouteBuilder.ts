@@ -1,4 +1,8 @@
 import type { RouteRecordRaw } from 'vue-router'
+import {
+  isPermissionCode,
+  type PermissionCode,
+} from '@/api/generated/permissions'
 import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
 import { constantRoutes } from '@/router/routes/constant'
 import { getMenuPage } from '@/router/pageRegistry'
@@ -14,13 +18,13 @@ const SKIP_PATHS = new Set([
   '/401',
   '/403',
   '/503',
+  '/feature-unavailable',
   '/redirect',
   '/profile',
 ])
 
 export function buildRoutesFromMenuTree(
   nodes: readonly MenuTreeNode[],
-  capabilities: readonly string[],
   parentPath?: string,
 ): RouteRecordRaw[] {
   const routes: RouteRecordRaw[] = []
@@ -33,9 +37,7 @@ export function buildRoutesFromMenuTree(
 
     const page = getMenuPage(node.route_key)
     if (page && SKIP_PATHS.has(normalizePath(page.path))) continue
-    if (!hasRequiredCapabilities(capabilities, page?.requiredCapabilities)) continue
-
-    const route = nodeToRoute(node, capabilities, parentPath)
+    const route = nodeToRoute(node, parentPath)
     if (route) routes.push(route)
   }
 
@@ -45,12 +47,11 @@ export function buildRoutesFromMenuTree(
 export function buildAccessibleMenus(
   routes: readonly RouteRecordRaw[],
   permissions: readonly string[],
-  roles: readonly string[],
   capabilities: readonly string[],
 ): RouteRecordRaw[] {
   return [
     ...getConstantMenus(),
-    ...filterAccessibleRoutes(routes, permissions, roles, capabilities),
+    ...filterAccessibleRoutes(routes, permissions, capabilities),
   ]
 }
 
@@ -87,23 +88,19 @@ function iconPascalCase(icon: string): string {
 
 function nodeToRoute(
   node: MenuTreeNode,
-  capabilities: readonly string[],
   parentPath?: string,
 ): RouteRecordRaw | null {
   const type = getMenuType(node)
-  if (type === 'M') return buildDirectoryRoute(node, capabilities)
+  if (type === 'M') return buildDirectoryRoute(node)
   if (type === 'C') return buildMenuRoute(node, parentPath)
   return null
 }
 
-function buildDirectoryRoute(
-  node: MenuTreeNode,
-  capabilities: readonly string[],
-): RouteRecordRaw | null {
+function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw | null {
   const page = getMenuPage(node.route_key)
   const directoryPath = normalizePath(page?.path || `/menu-${node.id}`)
   const children = node.children?.length
-    ? buildRoutesFromMenuTree(node.children, capabilities, directoryPath)
+    ? buildRoutesFromMenuTree(node.children, directoryPath)
     : []
   if (node.children?.length && children.length === 0) return null
   const firstChildPath = children.find(child => child.meta?.hidden !== true)?.path
@@ -111,6 +108,7 @@ function buildDirectoryRoute(
     ? resolveChildPath(directoryPath, String(firstChildPath))
     : directoryPath
 
+  const permission = menuPermissionCode(node)
   return {
     path: directoryPath,
     name: getRouteName(node),
@@ -121,7 +119,7 @@ function buildDirectoryRoute(
       hidden: !isNodeVisible(node),
       alwaysShow: true,
       sort: node.sort,
-      permission: node.perm_code || undefined,
+      permission,
       requiresPermission: Boolean(node.perm_code),
       requiredCapabilities: page?.requiredCapabilities,
     },
@@ -139,6 +137,7 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
     routePath = routePath.slice(parentPath.length).replace(/^\//, '') || routePath
   }
 
+  const permission = menuPermissionCode(node)
   return {
     path: routePath,
     name: routeName,
@@ -148,11 +147,16 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw
       icon: iconPascalCase(node.icon || '') || undefined,
       hidden: !isNodeVisible(node),
       sort: node.sort,
-      permission: node.perm_code || undefined,
+      permission,
       requiresPermission: true,
       requiredCapabilities: page.requiredCapabilities,
     },
   }
+}
+
+function menuPermissionCode(node: MenuTreeNode): PermissionCode | undefined {
+  const permission = node.perm_code?.trim()
+  return permission && isPermissionCode(permission) ? permission : undefined
 }
 
 function normalizePath(path?: string): string {
@@ -174,7 +178,6 @@ function getRouteName(node: MenuTreeNode): string {
 function filterAccessibleRoutes(
   routes: readonly RouteRecordRaw[],
   permissions: readonly string[],
-  roles: readonly string[],
   capabilities: readonly string[],
 ): RouteRecordRaw[] {
   const result: RouteRecordRaw[] = []
@@ -187,13 +190,17 @@ function filterAccessibleRoutes(
     const required = route.meta?.permission
     if (
       route.meta?.requiresPermission
-      && (typeof required !== 'string' || !hasPermission(permissions, required, roles))
+      && (
+        typeof required !== 'string'
+        || !isPermissionCode(required)
+        || !hasPermission(permissions, required)
+      )
     ) {
       continue
     }
 
     const children = route.children
-      ? filterAccessibleRoutes(route.children, permissions, roles, capabilities)
+      ? filterAccessibleRoutes(route.children, permissions, capabilities)
       : []
     if (route.meta?.alwaysShow && route.children?.length && children.length === 0) continue
 

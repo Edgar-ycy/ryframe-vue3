@@ -81,6 +81,9 @@ export const useTenantContextStore = defineStore('tenant-context', {
         .then((response) => {
           const context = requireOperationData(response)
           if (generation !== loadGeneration || authenticatedIdentity() !== identity) return
+          if (!isSessionContext(context)) {
+            throw new HttpError('会话上下文响应无效', { kind: 'invalid_response' })
+          }
           if (contextIdentity(context) !== identity) {
             throw new HttpError('会话上下文与当前登录身份不一致', {
               kind: 'invalid_response',
@@ -125,12 +128,14 @@ export const useTenantContextStore = defineStore('tenant-context', {
       }
 
       // 先在局部变量中完成所有可失败的路由构建，避免留下半套授权状态。
-      const routes = buildRoutesFromMenuTree(context.menus, codes)
-      const menus = buildAccessibleMenus(routes, context.permissions, context.roles, codes)
+      const routes = buildRoutesFromMenuTree(context.menus)
+      const menus = buildAccessibleMenus(routes, context.permissions, codes)
 
       const user = useUserStore()
       const permissions = usePermissionStore()
-      user.applyUserInfo(userInfo)
+      // 跨身份或授权快照切换期间先关闭能力门禁，避免两个 Pinia store 短暂混用新旧投影。
+      this.status = 'loading'
+      user.applyUserInfo(userInfo, context.is_super_admin)
       this.$patch((state) => {
         state.status = 'loaded'
         state.identity = contextIdentity(context)
@@ -152,8 +157,11 @@ export const useTenantContextStore = defineStore('tenant-context', {
       const user = useUserStore()
       // 保留已认证身份与 access token 以便用户重试上下文加载，但绝不能继续
       // 使用上一个快照中的 RBAC 投影。按钮、导航与后续路由判定都会立即失权。
-      user.roles = []
-      user.permissions = []
+      user.$patch({
+        isSuperAdmin: false,
+        permissions: [],
+        roles: [],
+      })
       usePermissionStore().resetRoutes()
     },
 

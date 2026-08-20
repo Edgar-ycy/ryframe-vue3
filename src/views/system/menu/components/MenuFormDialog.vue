@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { isPermissionCode } from '@/api/generated/permissions'
 import {
   createMenu,
   updateMenu,
@@ -187,8 +188,11 @@ function resetForm(): void {
 
 function handlePermissionChange(permissionId?: Id): void {
   const selected = props.permissionOptions.find(option => option.id === permissionId)
+  const permissionCode = selected?.code
   form.value.route_key = form.value.menu_type === 'C'
-    ? (getRouteKeyByPermissionCode(selected?.code) ?? '')
+    && permissionCode
+    && isPermissionCode(permissionCode)
+    ? (getRouteKeyByPermissionCode(permissionCode) ?? '')
     : ''
 }
 

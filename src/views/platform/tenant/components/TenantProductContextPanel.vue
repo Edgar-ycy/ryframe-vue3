@@ -63,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+import type { PermissionCode } from '@/api/generated/permissions'
 import { useI18n } from 'vue-i18n'
 import { getTenantProductContext, type TenantProductContext } from '@/api/modules/productPlan'
 import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
@@ -78,7 +79,7 @@ installProductPlanMessages()
 const { t } = useI18n()
 const userStore = useUserStore()
 const changeVisible = ref(false)
-const can = (permission: string) => hasPermission(userStore.permissions, permission, userStore.roles)
+const can = (permission: PermissionCode) => hasPermission(userStore.permissions, permission)
 const canView = computed(() => can(TENANT_PRODUCT_PERMISSIONS.view))
 const canAssign = computed(() => can(TENANT_PRODUCT_PERMISSIONS.assign))
 const canOverride = computed(() => can(TENANT_PRODUCT_PERMISSIONS.override))

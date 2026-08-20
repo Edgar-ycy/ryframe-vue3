@@ -7,9 +7,6 @@ import type {
 
 export type ServiceResourceTagType = 'success' | 'warning' | 'danger' | 'info'
 
-/** 与后端唯一超级管理员角色稳定代码保持一致；服务端仍执行最终拒绝。 */
-export const SUPER_ADMIN_ROLE_CODE = 'admin'
-
 export function serviceAccountStatusType(
   status: ServiceAccount['status'],
 ): ServiceResourceTagType {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { isPermissionCode } from '@/api/generated/permissions'
 
 import {
   getMenuPage,
-  getRouteKeyByPermissionCode,
   menuPageRegistry,
 } from '@/router/pageRegistry'
 
@@ -14,6 +14,6 @@ describe('菜单页面注册表', () => {
   })
 
   it('不再把旧生成器权限映射到前端页面', () => {
-    expect(getRouteKeyByPermissionCode('tools:gen:list')).toBeUndefined()
+    expect(isPermissionCode('tools:gen:list')).toBe(false)
   })
 })

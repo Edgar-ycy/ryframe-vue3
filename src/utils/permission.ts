@@ -1,7 +1,6 @@
 import type { PermissionCode } from '@/api/generated/permissions'
 
 export type PermissionValue = PermissionCode | readonly PermissionCode[]
-type RuntimePermissionValue = string | readonly string[]
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
@@ -15,7 +14,7 @@ function wildcardToRegExp(pattern: string): RegExp {
   return new RegExp(`^${source}$`)
 }
 
-export function matchPermission(owned: string, required: string): boolean {
+export function matchPermission(owned: string, required: PermissionCode): boolean {
   if (!owned || !required) return false
   if (owned === '*') return false
   if (owned === '*:*:*' || owned === required) return true
@@ -25,11 +24,9 @@ export function matchPermission(owned: string, required: string): boolean {
 
 export function hasPermission(
   permissions: readonly string[],
-  required: RuntimePermissionValue,
-  roles: readonly string[] = [],
+  required: PermissionValue,
 ): boolean {
   if (!required || required.length === 0) return true
-  if (roles.includes('admin')) return true
 
   const requiredList = Array.isArray(required) ? required : [required]
   return requiredList.some(perm =>
@@ -39,10 +36,8 @@ export function hasPermission(
 
 export function hasAllPermissions(
   permissions: readonly string[],
-  required: readonly string[],
-  roles: readonly string[] = [],
+  required: readonly PermissionCode[],
 ): boolean {
   if (!required.length) return true
-  if (roles.includes('admin')) return true
-  return required.every(perm => hasPermission(permissions, perm, roles))
+  return required.every(perm => hasPermission(permissions, perm))
 }

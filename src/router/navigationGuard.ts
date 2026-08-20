@@ -1,6 +1,12 @@
 import type { RouteLocationRaw, RouteMeta } from 'vue-router'
 import { HttpError } from '@/shared/http/client'
-import { canAccessRouteMeta } from '@/router/routeAccess'
+import {
+  accessResultPath,
+  CAPABILITY_UNAVAILABLE_PATH,
+  registeredPageAccessResult,
+  routeMetaAccessResult,
+  type RouteAccessContext,
+} from '@/router/routeAccess'
 
 export interface NavigationTarget {
   path: string
@@ -13,7 +19,6 @@ export interface NavigationUser {
   token: string
   sessionStatus: 'initializing' | 'authenticated' | 'anonymous' | 'unavailable'
   permissions: string[]
-  roles: string[]
 }
 
 export interface NavigationPermissionState {
@@ -42,7 +47,7 @@ export interface NavigationGuardDependencies {
   resolveReplacement(path: string): RouteLocationRaw
 }
 
-const authenticatedErrorPaths = new Set(['/403', '/503'])
+const authenticatedErrorPaths = new Set(['/403', '/503', CAPABILITY_UNAVAILABLE_PATH])
 const publicPaths = new Set(['/login', '/reset-password'])
 
 export function createNavigationGuard(dependencies: NavigationGuardDependencies) {
@@ -93,19 +98,35 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
     if (
       target.path === '/404'
       && target.redirectedFrom
-      && dependencies.isKnownRoute(originalPath)
     ) {
-      return dependencies.resolveReplacement(originalPath)
+      const result = registeredPageAccessResult(
+        originalPath,
+        routeAccessContext(
+          user,
+          runtimeCapabilities.multiTenancyEnabled,
+          dependencies.getTenantContext().capabilityCodes,
+        ),
+      )
+      if (result === 'allowed') {
+        return dependencies.isKnownRoute(originalPath)
+          ? dependencies.resolveReplacement(originalPath)
+          : { path: '/503', replace: true }
+      }
+      if (result === 'unknown') return true
+      const replacement = accessResultPath(result)
+      return replacement ? { path: replacement, replace: true } : true
     }
 
-    return canAccessRoute(
-      user,
-      target,
-      runtimeCapabilities.multiTenancyEnabled,
-      dependencies.getTenantContext().capabilityCodes,
+    const result = routeMetaAccessResult(
+      target.meta,
+      routeAccessContext(
+        user,
+        runtimeCapabilities.multiTenancyEnabled,
+        dependencies.getTenantContext().capabilityCodes,
+      ),
     )
-      ? true
-      : { path: '/403', replace: true }
+    const replacement = accessResultPath(result)
+    return replacement ? { path: replacement, replace: true } : true
   }
 }
 
@@ -113,16 +134,14 @@ function getOriginalFullPath(target: NavigationTarget): string {
   return target.redirectedFrom?.fullPath || target.fullPath || target.path || '/'
 }
 
-function canAccessRoute(
+function routeAccessContext(
   user: NavigationUser,
-  target: NavigationTarget,
   multiTenancyEnabled: boolean,
   capabilities: readonly string[],
-): boolean {
-  return canAccessRouteMeta(target.meta, {
+): RouteAccessContext {
+  return {
     capabilities,
     multiTenancyEnabled,
     permissions: user.permissions,
-    roles: user.roles,
-  })
+  }
 }

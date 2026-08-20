@@ -44,7 +44,7 @@ export function useRoleManagement() {
   const dataScopeDialogVisible = ref(false)
   const dataScopeRole = ref<RoleRecord | null>(null)
 
-  const { isAdmin } = usePermission()
+  const { isSuperAdmin } = usePermission()
   const userStore = useUserStore()
   const { pending: exportLoading, submitExport } = useExportJobRequest()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
@@ -156,7 +156,7 @@ export function useRoleManagement() {
   }
 
   function isProtectedRole(role: RoleRecord): boolean {
-    return (role.is_super === 1 || role.code === 'admin') && !isAdmin()
+    return role.is_super === 1 && !isSuperAdmin()
   }
 
   function guardRole(role: RoleRecord): boolean {

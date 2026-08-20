@@ -20,11 +20,10 @@ export const usePermissionStore = defineStore('permission', {
     generateRoutes(
       menuTree: MenuTreeNode[],
       permissions: string[],
-      roles: string[],
       capabilities: string[],
     ) {
-      const routes = buildRoutesFromMenuTree(menuTree, capabilities)
-      const menus = buildAccessibleMenus(routes, permissions, roles, capabilities)
+      const routes = buildRoutesFromMenuTree(menuTree)
+      const menus = buildAccessibleMenus(routes, permissions, capabilities)
       this.applyGeneratedRoutes(routes, menus)
       return routes
     },

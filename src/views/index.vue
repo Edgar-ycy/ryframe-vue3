@@ -85,7 +85,7 @@ const router = useRouter()
 const permissionStore = usePermissionStore()
 const runtimeCapabilities = useRuntimeCapabilitiesStore()
 const userStore = useUserStore()
-const { hasPermission, isAdmin } = usePermission()
+const { hasPermission } = usePermission()
 const { t } = useI18n()
 const TenantActivityChart = defineAsyncComponent(
   () => import('@/views/dashboard/TenantActivityChart.vue'),
@@ -94,7 +94,7 @@ const TenantActivityChart = defineAsyncComponent(
 const canManageTenants = computed(() =>
   runtimeCapabilities.multiTenancyEnabled
   && userStore.tenantId === 'system'
-  && (isAdmin() || hasPermission('tenant:list')),
+  && hasPermission('tenant:list'),
 )
 
 const allLinks = computed<DashboardLink[]>(() => {

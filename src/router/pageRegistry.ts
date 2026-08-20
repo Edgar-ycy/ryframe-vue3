@@ -1,5 +1,9 @@
 import type { RouteComponentLoader } from '@/router/namedRouteComponent'
 import {
+  isPermissionCode,
+  type PermissionCode,
+} from '@/api/generated/permissions'
+import {
   featureMenuPageRegistry,
   featurePermissionRouteKeys,
 } from '@/features/registry'
@@ -8,6 +12,11 @@ export interface MenuPageRegistryEntry {
   path: string
   component?: RouteComponentLoader
   requiredCapabilities?: readonly string[]
+}
+
+export interface RegisteredMenuPage extends MenuPageRegistryEntry {
+  routeKey: string
+  permission?: PermissionCode
 }
 
 export const menuPageRegistry: Record<string, MenuPageRegistryEntry> = {
@@ -60,7 +69,7 @@ export function getMenuPage(routeKey?: string | null): MenuPageRegistryEntry | u
   return routeKey ? menuPageRegistry[routeKey] : undefined
 }
 
-export const permissionRouteKeys: Readonly<Record<string, string>> = Object.freeze({
+export const permissionRouteKeys: Readonly<Partial<Record<PermissionCode, string>>> = Object.freeze({
   'system:user:list': 'system.user',
   'system:role:list': 'system.role',
   'system:menu:list': 'system.menu',
@@ -89,6 +98,31 @@ export const permissionRouteKeys: Readonly<Record<string, string>> = Object.free
   'monitor:retention:list': 'monitor.retention',
 })
 
-export function getRouteKeyByPermissionCode(permissionCode?: string | null): string | undefined {
+export function getRouteKeyByPermissionCode(permissionCode?: PermissionCode | null): string | undefined {
   return permissionCode ? permissionRouteKeys[permissionCode] : undefined
+}
+
+export function getMenuPageByPath(path: string): RegisteredMenuPage | undefined {
+  const normalized = normalizePagePath(path)
+  for (const [routeKey, page] of Object.entries(menuPageRegistry)) {
+    if (normalizePagePath(page.path) !== normalized) continue
+    return {
+      ...page,
+      permission: permissionForRouteKey(routeKey),
+      routeKey,
+    }
+  }
+  return undefined
+}
+
+function permissionForRouteKey(routeKey: string): PermissionCode | undefined {
+  for (const [permission, mappedRouteKey] of Object.entries(permissionRouteKeys)) {
+    if (mappedRouteKey === routeKey && isPermissionCode(permission)) return permission
+  }
+  return undefined
+}
+
+function normalizePagePath(value: string): string {
+  const path = value.split(/[?#]/u, 1)[0]?.replace(/\/+$/u, '') || '/'
+  return path.startsWith('/') ? path : `/${path}`
 }

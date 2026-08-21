@@ -40,7 +40,7 @@ function envelope(data: unknown, code = 200) {
 
 async function fulfillJson(route: Route, data: unknown, status = 200): Promise<void> {
   await route.fulfill({
-    body: JSON.stringify(envelope(data, status >= 400 ? status : 200)),
+    body: JSON.stringify(envelope(data, status)),
     contentType: 'application/json',
     status,
   })

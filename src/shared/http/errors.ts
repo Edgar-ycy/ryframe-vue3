@@ -178,7 +178,10 @@ export function parseEnvelope<T>(response: AxiosResponse<ApiResponse<T>>): ApiRe
     })
     throw error
   }
-  if (envelope.code !== 200) {
+  const isSuccessfulStatus = response.status >= 200
+    && response.status < 300
+    && envelope.code === response.status
+  if (!isSuccessfulStatus) {
     const error = new HttpError(
       translatedErrorMessage(envelope, translate('shell.http.requestFailed')),
       {

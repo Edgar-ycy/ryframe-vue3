@@ -9,7 +9,6 @@ interface PermissionDirectiveState {
   initialHidden: boolean
   initialAriaHidden: string | null
   initialInert: boolean
-  initialDisabled?: boolean
   unsubscribeUser: () => void
   unsubscribeTenantContext: () => void
 }
@@ -34,14 +33,13 @@ function updateVisibility(el: HTMLElement, state: PermissionDirectiveState): voi
     state.value,
     userStore.permissions,
   )
-  const controlled = el as HTMLElement & { inert?: boolean; disabled?: boolean }
+  const controlled = el as HTMLElement & { inert?: boolean }
 
   if (allowed) {
     el.hidden = state.initialHidden
     if (state.initialAriaHidden === null) removeAttribute(el, 'aria-hidden')
     else setAttribute(el, 'aria-hidden', state.initialAriaHidden)
     controlled.inert = state.initialInert
-    if (state.initialDisabled !== undefined) controlled.disabled = state.initialDisabled
     return
   }
 
@@ -49,7 +47,6 @@ function updateVisibility(el: HTMLElement, state: PermissionDirectiveState): voi
   el.hidden = true
   setAttribute(el, 'aria-hidden', 'true')
   controlled.inert = true
-  if (state.initialDisabled !== undefined) controlled.disabled = true
 }
 
 function hasExecutablePermission(
@@ -68,13 +65,12 @@ const permissionDirective: Directive<HTMLElement, PermissionValue> = {
   mounted(el, binding) {
     const userStore = useUserStore()
     const tenantContext = useTenantContextStore()
-    const controlled = el as HTMLElement & { inert?: boolean; disabled?: boolean }
+    const controlled = el as HTMLElement & { inert?: boolean }
     const state: PermissionDirectiveState = {
       value: binding.value,
       initialHidden: el.hidden === true,
       initialAriaHidden: attribute(el, 'aria-hidden'),
       initialInert: controlled.inert === true,
-      initialDisabled: typeof controlled.disabled === 'boolean' ? controlled.disabled : undefined,
       unsubscribeUser: () => undefined,
       unsubscribeTenantContext: () => undefined,
     }

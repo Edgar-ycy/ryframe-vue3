@@ -27,6 +27,8 @@ function exportJob(id: string, status: string, resultFileName: string): ExportJo
 
 describe('导出任务列表组件', () => {
   it('移动卡片只允许选择终态任务，并展示单条删除', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'zh-CN'
     const jobs = [
       exportJob('done', 'succeeded', '完成.xlsx'),
       exportJob('active', 'running', '执行中.xlsx'),
@@ -55,7 +57,13 @@ describe('导出任务列表组件', () => {
     app.component('ElTag', PassThrough)
     app.directive('loading', {})
 
-    const html = await renderToString(app)
+    let html: string
+    try {
+      html = await renderToString(app)
+    }
+    finally {
+      i18n.global.locale.value = previousLocale
+    }
 
     expect(html.match(/aria-label="选择导出记录/g)).toHaveLength(1)
     expect(html).toContain('删除')

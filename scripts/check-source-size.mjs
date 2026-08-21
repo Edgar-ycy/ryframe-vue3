@@ -5,9 +5,37 @@ import { fileURLToPath } from 'node:url'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const sourceRoot = join(root, 'src')
 const excludedPrefixes = ['src/api/generated/', 'src/i18n/catalog/']
+const excludedDocumentDirectories = new Set([
+  '.git',
+  '.github',
+  '.local-tests',
+  'coverage',
+  'dist',
+  'node_modules',
+])
+const documentLimits = new Map([
+  ['ARCHITECTURE.md', 160],
+  ['README.md', 120],
+])
 const limits = {
   composable: 500,
   viewOrStyle: 700,
+}
+
+async function collectMarkdownFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true })
+  const files = []
+  for (const entry of entries) {
+    if (entry.isDirectory() && excludedDocumentDirectories.has(entry.name)) continue
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...await collectMarkdownFiles(path))
+    }
+    else if (entry.isFile() && extname(entry.name).toLowerCase() === '.md') {
+      files.push(path)
+    }
+  }
+  return files
 }
 
 async function collectFiles(directory) {
@@ -62,10 +90,31 @@ for (const path of files.sort()) {
   if (lines > limit) violations.push({ limit, lines, path: normalizedRelative(path) })
 }
 
+const documentFiles = await collectMarkdownFiles(root)
+const documentNames = documentFiles.map(normalizedRelative).sort()
+const expectedDocumentNames = [...documentLimits.keys()].sort()
+if (JSON.stringify(documentNames) !== JSON.stringify(expectedDocumentNames)) {
+  violations.push({
+    limit: expectedDocumentNames.join('、'),
+    lines: documentNames.join('、') || '无',
+    path: '人工文档清单',
+  })
+}
+
+for (const [path, limit] of documentLimits) {
+  const lines = lineCount(await readFile(join(root, path), 'utf8'))
+  if (lines > limit) violations.push({ limit, lines, path })
+}
+
 if (violations.length > 0) {
   console.error('源码规模检查失败：')
-  for (const violation of violations.sort((left, right) => right.lines - left.lines)) {
-    console.error(`  ${violation.lines} 行（上限 ${violation.limit}） ${violation.path}`)
+  for (const violation of violations) {
+    if (violation.path === '人工文档清单') {
+      console.error(`  人工文档应仅为 ${violation.limit}，当前为 ${violation.lines}`)
+    }
+    else {
+      console.error(`  ${violation.lines} 行（上限 ${violation.limit}） ${violation.path}`)
+    }
   }
   process.exitCode = 1
 }

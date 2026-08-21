@@ -106,6 +106,6 @@ TanStack Query 保存按租户、主体和查询参数隔离的服务端状态�
 
 ## 质量门禁
 
-`pnpm check` 覆盖工作流、依赖策略、契约与生成物、源码规模、Lint、类型、确定性测试、生产构建和体积预算。定时 CI 额外执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
+`pnpm check` 覆盖工作流、依赖策略、契约与生成物、源码规模、Lint、类型、确定性测试、生产构建和体积预算。CI 另用 Chrome smoke 测试验证登录、筛选导出、下载和记录删除；定时任务执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
 
 交付前还要在真实 Chrome 完成受影响流程，检查网络请求与控制台；本次改动不得引入错误或警告。

@@ -18,6 +18,7 @@ pnpm dev
 ```bash
 pnpm check          # 完整质量门禁
 pnpm test:unit      # 确定性单元与组件测试
+pnpm test:browser-smoke # Chrome 关键流程 smoke 测试
 pnpm api:check      # 本地契约、生成物和 operation 使用检查
 pnpm build          # 生产构建
 ```

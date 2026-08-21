@@ -1,4 +1,5 @@
 import { accountMessages } from './catalog/account'
+import { navigationRouteTitleKeys } from '@/api/generated/menuRoutes'
 import { exportJobMessages } from './catalog/export-jobs'
 import { monitorToolsMessages } from './catalog/monitor-tools'
 import { monitorJobsMessages } from './catalog/monitor-jobs'
@@ -58,6 +59,7 @@ export const messages = {
       permission: '权限管理',
       monitor: '监控管理',
       systemMonitor: '系统监控',
+      platform: '平台管理',
       operlog: '操作日志',
       loginlog: '登录日志',
       online: '在线用户',
@@ -231,6 +233,7 @@ export const messages = {
       permission: 'Permissions',
       monitor: 'Monitoring',
       systemMonitor: 'Monitoring',
+      platform: 'Platform management',
       operlog: 'Operation logs',
       loginlog: 'Sign-in logs',
       online: 'Online users',
@@ -363,46 +366,18 @@ export const messages = {
   },
 } as const
 
-export const navigationTitleKeys: Record<string, string> = {
-  '首页': 'dashboard',
+export const navigationTitleKeys: Readonly<Record<string, string>> = Object.freeze({
+  ...navigationRouteTitleKeys,
   '登录': 'login',
   '重置密码': 'resetPassword',
   '个人中心': 'profile',
   '我的导出': 'exports',
-  '系统管理': 'system',
-  '用户管理': 'user',
-  '角色管理': 'role',
-  '菜单管理': 'menu',
-  '部门管理': 'dept',
-  '岗位管理': 'post',
-  '字典管理': 'dict',
-  '参数设置': 'config',
-  '配置迁移': 'configTransfer',
-  '通知公告': 'notice',
-  '权限管理': 'permission',
   '监控管理': 'monitor',
-  '系统监控': 'systemMonitor',
-  '操作日志': 'operlog',
-  '登录日志': 'loginlog',
-  '在线用户': 'online',
-  '服务监控': 'server',
-  '缓存监控': 'cache',
   '运行监控': 'runtime',
-  '运行时监控': 'runtimeMonitor',
   '数据库连接池': 'dbPool',
-  '连接池监控': 'dbPoolMonitor',
-  '后台任务': 'jobs',
-  '定时任务': 'schedules',
-  '运维总览': 'overview',
-  '数据保留': 'retention',
-  '权限诊断': 'authorizationDiagnostics',
-  '服务账号': 'serviceAccounts',
-  '产品套餐': 'productPlans',
-  '数据目标': 'dataTargets',
-  '租户管理': 'tenant',
   '重定向': 'redirect',
   '无权限': 'unauthorized',
   '禁止访问': 'forbidden',
   '页面不存在': 'notFound',
   '服务器错误': 'serverError',
-}
+})

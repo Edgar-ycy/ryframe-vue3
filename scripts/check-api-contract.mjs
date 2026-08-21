@@ -302,7 +302,7 @@ if (!menuRouteExtension || typeof menuRouteExtension !== 'object') {
   errors.push('OpenAPI is missing x-ryframe-menu-routes')
 }
 else {
-  if (menuRouteExtension.version !== 1) {
+  if (menuRouteExtension.version !== 2) {
     errors.push(`unsupported menu route contract version: ${menuRouteExtension.version}`)
   }
   if (!Array.isArray(menuRouteExtension.routes)) {
@@ -311,6 +311,8 @@ else {
   else {
     for (const [index, route] of menuRouteExtension.routes.entries()) {
       const routeKey = route?.route_key
+      const name = route?.name
+      const titleKey = route?.title_key
       const menuType = route?.menu_type
       if (typeof routeKey !== 'string'
         || !/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/.test(routeKey)) {
@@ -320,6 +322,12 @@ else {
       if (!['M', 'C'].includes(menuType)) {
         errors.push(`menu route contract entry ${routeKey} has an invalid menu_type`)
         continue
+      }
+      if (typeof name !== 'string' || name.trim() !== name || name.length === 0) {
+        errors.push(`menu route contract entry ${routeKey} has an invalid name`)
+      }
+      if (typeof titleKey !== 'string' || !/^[A-Za-z][A-Za-z0-9]*$/.test(titleKey)) {
+        errors.push(`menu route contract entry ${routeKey} has an invalid title_key`)
       }
       if (contractRoutes.has(routeKey)) {
         errors.push(`menu route contract contains duplicate route_key ${routeKey}`)

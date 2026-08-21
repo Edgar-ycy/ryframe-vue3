@@ -11,6 +11,7 @@ export const generatedArtifactPaths = Object.freeze([
   'src/api/generated/schema.ts',
   'src/api/generated/operations.ts',
   'src/api/generated/permissions.ts',
+  'src/api/generated/menuRoutes.ts',
   'src/shared/security/passwordPolicy.generated.json',
   'src/shared/markdown/noticePolicy.generated.json',
   'src/shared/config/apiPrefix.generated.json',
@@ -106,6 +107,54 @@ export function isPermissionCode(value: string): value is PermissionCode {
 `
 }
 
+function requireMenuRouteCatalog(value, location) {
+  if (!value || typeof value !== 'object' || value.version !== 2 || !Array.isArray(value.routes)) {
+    throw new Error(`${location}: 菜单路由契约必须是 version=2 的对象`)
+  }
+  const routeKeys = new Set()
+  const titleKeys = new Set()
+  return value.routes.map((route, index) => {
+    const routeKey = route?.route_key
+    const defaultName = route?.name
+    const titleKey = route?.title_key
+    if (typeof routeKey !== 'string'
+      || !/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u.test(routeKey)) {
+      throw new Error(`${location}.routes[${index}]: route_key 无效`)
+    }
+    if (typeof defaultName !== 'string'
+      || defaultName.trim() !== defaultName
+      || defaultName.length === 0
+      || [...defaultName].length > 64) {
+      throw new Error(`${location}.routes[${index}]: name 无效`)
+    }
+    if (typeof titleKey !== 'string' || !/^[A-Za-z][A-Za-z0-9]*$/u.test(titleKey)) {
+      throw new Error(`${location}.routes[${index}]: title_key 无效`)
+    }
+    if (routeKeys.has(routeKey)) throw new Error(`${location}: route_key 重复：${routeKey}`)
+    if (titleKeys.has(titleKey)) throw new Error(`${location}: title_key 重复：${titleKey}`)
+    routeKeys.add(routeKey)
+    titleKeys.add(titleKey)
+    return { defaultName, routeKey, titleKey }
+  })
+}
+
+export function renderMenuRouteCatalog(document) {
+  const routes = requireMenuRouteCatalog(
+    document?.['x-ryframe-menu-routes'],
+    'openapi/openapi.json.x-ryframe-menu-routes',
+  )
+  const titleKeys = Object.fromEntries(routes.flatMap(route => [
+    [route.routeKey, route.titleKey],
+    [route.defaultName, route.titleKey],
+  ]))
+  return `${generatedHeader}export const menuRouteCatalog = ${JSON.stringify(routes, null, 2)} as const
+
+export type MenuRouteKey = typeof menuRouteCatalog[number]['routeKey']
+
+export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(titleKeys, null, 2)})
+`
+}
+
 export async function buildApiArtifacts(root) {
   const contractPath = path.join(root, 'openapi/openapi.json')
   const document = JSON.parse(await readFile(contractPath, 'utf8'))
@@ -116,6 +165,7 @@ export async function buildApiArtifacts(root) {
     ['src/api/generated/schema.ts', schema],
     ['src/api/generated/operations.ts', renderOperationManifest(document)],
     ['src/api/generated/permissions.ts', renderPermissionCatalog(document)],
+    ['src/api/generated/menuRoutes.ts', renderMenuRouteCatalog(document)],
     [
       'src/shared/security/passwordPolicy.generated.json',
       canonicalJson(document['x-ryframe-password-policy']),

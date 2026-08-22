@@ -28,7 +28,9 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="created_at" :label="t('system.common.createdAt')" />
+      <el-table-column :label="t('system.common.createdAt')" min-width="160">
+        <template #default="{ row }">{{ formatLocalizedDate(row.created_at) }}</template>
+      </el-table-column>
       <el-table-column :label="t('system.common.actions')" fixed="right" align="center">
         <template #default="{ row }">
           <el-button
@@ -72,6 +74,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { NoticeRecord } from '@/api/modules/notice'
+import { formatLocalizedDate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
 
 const props = defineProps<{

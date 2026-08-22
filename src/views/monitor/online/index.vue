@@ -25,7 +25,9 @@
         <el-table-column prop="login_location" :label="t('monitor.online.loginLocation')" show-overflow-tooltip />
         <el-table-column prop="browser" :label="t('monitor.online.browser')" show-overflow-tooltip />
         <el-table-column prop="os" :label="t('monitor.online.operatingSystem')" show-overflow-tooltip />
-        <el-table-column prop="login_time" :label="t('monitor.online.loginTime')" min-width="180" />
+        <el-table-column :label="t('monitor.online.loginTime')" min-width="180">
+          <template #default="{ row }">{{ formatLocalizedDate(row.login_time) }}</template>
+        </el-table-column>
         <el-table-column :label="t('monitor.online.operation')" fixed="right" align="center">
           <template #default="{ row }">
             <el-button
@@ -57,6 +59,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { formatLocalizedDate } from '@/i18n'
 import { useOnlineManagement } from './useOnlineManagement'
 
 const { t } = useI18n()

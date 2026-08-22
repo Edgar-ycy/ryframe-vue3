@@ -139,7 +139,9 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="created_at" :label="t('system.common.createdAt')" />
+          <el-table-column :label="t('system.common.createdAt')" min-width="160">
+            <template #default="{ row }">{{ formatLocalizedDate(row.created_at) }}</template>
+          </el-table-column>
           <el-table-column :label="t('system.common.actions')" min-width="330" fixed="right" align="center">
             <template #default="{ row }">
               <el-button
@@ -222,6 +224,7 @@
 import { ArrowRight } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { UserManageableStatus } from '@/api/modules/user'
+import { formatLocalizedDate } from '@/i18n'
 import { installPlatformOperationsMessages } from '@/i18n/catalog/platform-operations'
 import DepartmentTree from './components/DepartmentTree.vue'
 import PasswordResetDialog from './components/PasswordResetDialog.vue'

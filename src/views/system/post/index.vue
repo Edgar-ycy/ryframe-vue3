@@ -50,7 +50,9 @@
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">{{ row.status === '1' ? t('system.common.normal') : t('system.common.disabled') }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" :label="t('system.common.createdAt')" />
+        <el-table-column :label="t('system.common.createdAt')" min-width="160">
+          <template #default="{ row }">{{ formatLocalizedDate(row.created_at) }}</template>
+        </el-table-column>
         <el-table-column :label="t('system.common.actions')" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-perm="'system:post:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">{{ t('system.common.edit') }}</el-button>
@@ -119,6 +121,7 @@ import {
 } from '@/api/modules/post'
 import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
+import { formatLocalizedDate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'

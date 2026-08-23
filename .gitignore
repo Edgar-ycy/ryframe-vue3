@@ -15,6 +15,8 @@ coverage
 playwright-report
 test-results
 *.local
+openapi/candidate.json
+openapi/.xtask-contract.lock
 
 # 环境变量（不含基础 .env）
 .env.development

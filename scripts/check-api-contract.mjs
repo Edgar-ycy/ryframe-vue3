@@ -5,6 +5,7 @@ import ts from 'typescript'
 
 import { apiPrefixContractViolation } from './api-prefix-contract.mjs'
 import { apiVersionContractViolation } from './api-version-contract.mjs'
+import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 
 const contractPath = new URL('../openapi/openapi.json', import.meta.url)
@@ -37,6 +38,13 @@ if (apiVersionViolation) {
 
 try {
   requirePermissionCatalog(document['x-ryframe-permission-catalog'], 'openapi/openapi.json')
+}
+catch (error) {
+  errors.push(error instanceof Error ? error.message : String(error))
+}
+
+try {
+  requireCrudResourceCatalog(document['x-ryframe-crud-resources'], document)
 }
 catch (error) {
   errors.push(error instanceof Error ? error.message : String(error))

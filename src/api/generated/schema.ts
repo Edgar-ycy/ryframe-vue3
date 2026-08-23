@@ -2200,10 +2200,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 岗位列表分页查询 */
         get: operations["get_system_posts"];
         put?: never;
-        /** 创建岗位 */
         post: operations["post_system_posts"];
         delete?: never;
         options?: never;
@@ -2235,12 +2233,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 岗位详情 */
         get: operations["get_system_posts_by_id"];
-        /** 更新岗位 */
         put: operations["put_system_posts_by_id"];
         post?: never;
-        /** 删除岗位 */
         delete: operations["delete_system_posts_by_id"];
         options?: never;
         head?: never;
@@ -4278,7 +4273,6 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
-            /** @description 岗位响应。 */
             data?: {
                 code: string;
                 /** Format: date-time */
@@ -7740,7 +7734,15 @@ export interface components {
             confirm_all: boolean;
             filter: components["schemas"]["PostExportFilterDto"];
         };
-        /** @description 岗位响应。 */
+        PostListQuery: {
+            code?: string | null;
+            name?: string | null;
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+            status?: string | null;
+        };
         PostVo: {
             code: string;
             /** Format: date-time */
@@ -16674,12 +16676,7 @@ export interface operations {
     get_system_posts: {
         parameters: {
             query?: {
-                /** @description 页码，从 1 开始；未提供时由运行时 TOML 策略解析。 */
                 page?: number;
-                /**
-                 * @description 公共 API 仅接受 snake_case 形式的 `page_size`，并受
-                 *     `pagination.max_page_size` 限制（默认值为 100）。
-                 */
                 page_size?: number;
                 name?: string;
                 code?: string;
@@ -16691,7 +16688,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 岗位列表 */
+            /** @description 列表 */
             200: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -16788,7 +16785,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 岗位详情 */
+            /** @description 详情 */
             200: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */

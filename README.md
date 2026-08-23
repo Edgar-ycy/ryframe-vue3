@@ -34,16 +34,14 @@ pnpm sbom:generate -- --output artifacts/ryframe-vue3.cdx.json
 
 `openapi/openapi.json` 和 `openapi/source.json` 固定后端仓库、完整提交 SHA 与内容摘要。`src/api/generated/` 只能由脚本生成，禁止手工修改。
 
-后端契约提交稳定后执行：
+日常联调在后端仓库根目录同步未提交的候选契约；后端提交稳定后再固定正式来源：
 
 ```powershell
-$env:RYFRAME_BACKEND_REPOSITORY='Edgar-ycy/ryframe'
-$env:RYFRAME_BACKEND_COMMIT='<后端完整 40 位提交 SHA>'
-$env:RYFRAME_BACKEND_WORKTREE='..\ryframe'
-pnpm api:sync
+cargo api-sync
+cargo api-sync --commit HEAD
 ```
 
-设置 `RYFRAME_BACKEND_WORKTREE` 时，同步脚本从指定 Git 对象读取契约，不读取后端未提交文件。API 模块必须使用生成的 operation descriptor，不得手写 URL、HTTP method 或重复 DTO。
+`cargo api-sync` 会整组暂存、校验并安装 OpenAPI 与前端派生文件，任一步失败都会恢复原状态。无参数命令不修改正式来源元数据；`--commit` 只接受已提交的后端契约并固定完整 SHA。底层 `pnpm api:sync` 是仓库内部实现，不作为日常入口。API 模块必须使用生成的 operation descriptor，不得手写 URL、HTTP method 或重复 DTO。
 
 ## 运行配置
 

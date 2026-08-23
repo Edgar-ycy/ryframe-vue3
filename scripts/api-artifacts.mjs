@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import openapiTS, { astToString } from 'openapi-typescript'
 
 import { requireApiPrefixContract } from './api-prefix-contract.mjs'
+import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 
 export const generatedArtifactPaths = Object.freeze([
@@ -12,6 +13,7 @@ export const generatedArtifactPaths = Object.freeze([
   'src/api/generated/operations.ts',
   'src/api/generated/permissions.ts',
   'src/api/generated/menuRoutes.ts',
+  'src/api/generated/crudResources.ts',
   'src/shared/security/passwordPolicy.generated.json',
   'src/shared/markdown/noticePolicy.generated.json',
   'src/shared/config/apiPrefix.generated.json',
@@ -155,6 +157,34 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
 `
 }
 
+export function renderCrudResourceCatalog(document) {
+  const resources = requireCrudResourceCatalog(
+    document?.['x-ryframe-crud-resources'],
+    document,
+  )
+  const resourcesByName = resources
+    .map((resource, index) => `  ${JSON.stringify(resource.name)}: crudResourceCatalog[${index}],`)
+    .join('\n')
+  return `${generatedHeader}export const crudResourceCatalog = ${JSON.stringify(resources, null, 2)} as const
+
+export type CrudResourceDescriptor = typeof crudResourceCatalog[number]
+export type CrudResourceName = CrudResourceDescriptor['name']
+
+export const crudResourceCatalogByName = {
+${resourcesByName}
+} as const satisfies Readonly<Record<CrudResourceName, CrudResourceDescriptor>>
+
+export type CrudResourceDescriptorByName<Name extends CrudResourceName> =
+  typeof crudResourceCatalogByName[Name]
+
+export function findCrudResource<Name extends CrudResourceName>(
+  name: Name,
+): CrudResourceDescriptorByName<Name> {
+  return crudResourceCatalogByName[name]
+}
+`
+}
+
 export async function buildApiArtifacts(root) {
   const contractPath = path.join(root, 'openapi/openapi.json')
   const document = JSON.parse(await readFile(contractPath, 'utf8'))
@@ -166,6 +196,7 @@ export async function buildApiArtifacts(root) {
     ['src/api/generated/operations.ts', renderOperationManifest(document)],
     ['src/api/generated/permissions.ts', renderPermissionCatalog(document)],
     ['src/api/generated/menuRoutes.ts', renderMenuRouteCatalog(document)],
+    ['src/api/generated/crudResources.ts', renderCrudResourceCatalog(document)],
     [
       'src/shared/security/passwordPolicy.generated.json',
       canonicalJson(document['x-ryframe-password-policy']),

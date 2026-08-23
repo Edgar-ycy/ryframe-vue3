@@ -32,7 +32,8 @@ import {
   listExportJobs,
 } from '@/api/modules/exportJob'
 import { exportLoginLog, exportOperLog, getMetrics } from '@/api/modules/monitor'
-import { exportPost } from '@/api/modules/post'
+import * as postExtension from '@/api/modules/post'
+import * as generatedPostApi from '@/generated/resources/post/api'
 import { exportRole } from '@/api/modules/role'
 import { getApiVersion } from '@/api/modules/version'
 import {
@@ -78,6 +79,17 @@ beforeEach(() => {
 })
 
 describe('operation 请求传输模式', () => {
+  it('岗位 CRUD 与导出扩展保持独立模块边界', () => {
+    expect(Object.keys(postExtension)).toEqual(['exportPost'])
+    expect(Object.keys(generatedPostApi).sort()).toEqual([
+      'createPost',
+      'deletePost',
+      'getPost',
+      'listPost',
+      'updatePost',
+    ])
+  })
+
   it('默认使用带会话的请求传输', async () => {
     httpClient.request.mockResolvedValue(versionResponse)
 
@@ -241,7 +253,7 @@ describe('operation 请求传输模式', () => {
 
     await exportUser({ username: 'alice' }, 'user-key')
     await exportRole({ name: 'operator' }, 'role-key')
-    await exportPost({ status: '1' }, 'post-key')
+    await postExtension.exportPost({ status: '1' }, 'post-key')
     await exportConfig(undefined, 'config-key', undefined, true)
     await exportDictType({ code: 'sys_user_sex' }, 'dict-key')
     await exportOperLog({ oper_name: 'alice' }, 'oper-key')

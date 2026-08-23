@@ -30,6 +30,8 @@ pnpm check:supply-chain-policy
 pnpm sbom:generate -- --output artifacts/ryframe-vue3.cdx.json
 ```
 
+CI 复用 pnpm store 和固定 Playwright Chromium 缓存；Linux 运行完整浏览器门禁，Windows smoke 只运行类型检查与确定性单元测试。分支保护统一绑定稳定的 `Required` job。
+
 ## API 契约
 
 `openapi/openapi.json` 和 `openapi/source.json` 固定后端仓库、完整提交 SHA 与内容摘要。`src/api/generated/` 只能由脚本生成，禁止手工修改。

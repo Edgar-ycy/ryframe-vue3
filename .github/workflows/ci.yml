@@ -41,6 +41,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Restore Playwright Chromium
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
+        with:
+          path: ~/.cache/ms-playwright
+          key: v1-playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install browser for deterministic smoke tests
         run: pnpm exec playwright install --with-deps chromium
 
@@ -161,3 +167,70 @@ jobs:
         --include-git-root
         -r
         ./
+
+  windows-smoke:
+    name: Windows Smoke
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Setup default Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Windows 验证策略脚本、契约路径、类型和单元测试；浏览器 smoke 由 Linux 主门禁覆盖。
+      - name: Run Windows policy tests
+        run: pnpm test:policies
+
+      - name: Check Windows API contract paths
+        run: pnpm api:check
+
+      - name: Run Windows static smoke
+        run: pnpm typecheck && pnpm test:unit
+
+  # 分支保护只绑定这个稳定名称；事件不适用的 job 可以 skipped，失败和取消均拒绝。
+  required:
+    name: Required
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - node-22-compatibility
+      - supply-chain
+      - osv-scan
+      - windows-smoke
+    steps:
+      - name: 检出汇总规则
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Setup required-check Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: 汇总必须门禁
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHECK_RESULT: ${{ needs.check.result }}
+          NODE_22_RESULT: ${{ needs.node-22-compatibility.result }}
+          SUPPLY_CHAIN_RESULT: ${{ needs.supply-chain.result }}
+          OSV_RESULT: ${{ needs.osv-scan.result }}
+          WINDOWS_RESULT: ${{ needs.windows-smoke.result }}
+        run: >-
+          node scripts/check-required-jobs.mjs
+          --event "$EVENT_NAME"
+          --job "check=$CHECK_RESULT"
+          --job "node-22-compatibility=$NODE_22_RESULT"
+          --job "supply-chain=$SUPPLY_CHAIN_RESULT"
+          --job "osv-scan=$OSV_RESULT"
+          --job "windows-smoke=$WINDOWS_RESULT"

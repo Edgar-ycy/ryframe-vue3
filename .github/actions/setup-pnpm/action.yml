@@ -26,3 +26,23 @@ runs:
         npm install --global "pnpm@${pnpm_version}" \
           --no-audit --no-fund --no-update-notifier
         test "$(pnpm --version)" = "$pnpm_version"
+
+    - name: Configure deterministic pnpm store
+      id: store
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        store_path="$RUNNER_TEMP/pnpm-store"
+        pnpm config set store-dir "$store_path" --global
+        fingerprint="$(node -e "const{createHash}=require('node:crypto');const{readFileSync}=require('node:fs');const h=createHash('sha256');for(const p of ['package.json','pnpm-lock.yaml','pnpm-workspace.yaml'])h.update(readFileSync(p));process.stdout.write(h.digest('hex'))")"
+        echo "path=$store_path" >> "$GITHUB_OUTPUT"
+        echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+
+    - name: Restore pnpm store
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: v1-pnpm-${{ runner.os }}-${{ runner.arch }}-${{ steps.store.outputs.fingerprint }}
+        restore-keys: |
+          v1-pnpm-${{ runner.os }}-${{ runner.arch }}-

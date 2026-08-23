@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const sourceRoot = join(root, 'src')
+const scriptsRoot = join(root, 'scripts')
 const excludedPrefixes = ['src/api/generated/', 'src/i18n/catalog/']
 const excludedDocumentDirectories = new Set([
   '.git',
@@ -18,8 +19,9 @@ const documentLimits = new Map([
   ['README.md', 120],
 ])
 const limits = {
-  composable: 500,
-  viewOrStyle: 700,
+  composable: 400,
+  script: 500,
+  viewOrStyle: 600,
 }
 
 async function collectMarkdownFiles(directory) {
@@ -77,15 +79,29 @@ function sourceLimit(path) {
   return undefined
 }
 
-const files = await collectFiles(sourceRoot)
-const violations = []
-let scanned = 0
+function scriptLimit(path) {
+  return extname(path) === '.mjs' ? limits.script : undefined
+}
 
-for (const path of files.sort()) {
+const sourceFiles = await collectFiles(sourceRoot)
+const scriptFiles = await collectFiles(scriptsRoot)
+const violations = []
+let scannedSourceFiles = 0
+let scannedScriptFiles = 0
+
+for (const path of sourceFiles.sort()) {
   if (isExcluded(path)) continue
   const limit = sourceLimit(path)
   if (!limit) continue
-  scanned += 1
+  scannedSourceFiles += 1
+  const lines = lineCount(await readFile(path, 'utf8'))
+  if (lines > limit) violations.push({ limit, lines, path: normalizedRelative(path) })
+}
+
+for (const path of scriptFiles.sort()) {
+  const limit = scriptLimit(path)
+  if (!limit) continue
+  scannedScriptFiles += 1
   const lines = lineCount(await readFile(path, 'utf8'))
   if (lines > limit) violations.push({ limit, lines, path: normalizedRelative(path) })
 }
@@ -119,5 +135,8 @@ if (violations.length > 0) {
   process.exitCode = 1
 }
 else {
-  console.log(`源码规模检查通过（扫描 ${scanned} 个 Composable、Vue SFC 与 SCSS 文件）。`)
+  console.log(
+    `源码规模检查通过（扫描 ${scannedSourceFiles} 个 Composable、Vue SFC 与 SCSS 文件，`
+    + `${scannedScriptFiles} 个脚本模块）。`,
+  )
 }

@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test'
 
 const port = 4173
-const channel = process.env.PLAYWRIGHT_CHANNEL?.trim()
+const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
 
 export default defineConfig({
   testDir: 'tests/browser',

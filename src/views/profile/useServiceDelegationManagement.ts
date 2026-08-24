@@ -26,24 +26,16 @@ import { queryClient, tenantQueryKey } from '@/shared/query/client'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
 import { useTenantContextStore } from '@/app/tenant-context'
 import { useUserStore } from '@/stores/user'
+import {
+  PROFILE_SERVICE_DELEGATIONS_RESOURCE,
+  PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
+  QUERY_GC_TIME,
+  sameIdentity,
+  type ProfileDelegationIdentity,
+  type ProfileDelegationIdentityGuard,
+} from './serviceDelegationSupport'
 
-const PROFILE_SERVICE_DELEGATIONS_RESOURCE = 'profile-service-delegations'
-const PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE = 'profile-service-delegation-targets'
-const QUERY_GC_TIME = 10 * 60_000
-
-interface ProfileDelegationIdentity {
-  tenantId: string
-  userId: string
-}
-
-export type ProfileDelegationIdentityGuard = string
-
-function sameIdentity(
-  left: ProfileDelegationIdentity | undefined,
-  right: ProfileDelegationIdentity | undefined,
-): boolean {
-  return left?.tenantId === right?.tenantId && left?.userId === right?.userId
-}
+export type { ProfileDelegationIdentityGuard } from './serviceDelegationSupport'
 
 /** 个人中心服务委托管理；一次性 Token 仅作为创建调用的局部返回值存在。 */
 export function useServiceDelegationManagement() {

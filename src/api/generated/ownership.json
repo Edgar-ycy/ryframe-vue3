@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "generator": "scripts/generate-api-artifacts.mjs",
+  "files": [
+    "src/api/generated/crudResources.ts",
+    "src/api/generated/menuRoutes.ts",
+    "src/api/generated/operations.ts",
+    "src/api/generated/ownership.json",
+    "src/api/generated/permissions.ts",
+    "src/api/generated/schema/agent.ts",
+    "src/api/generated/schema/core.ts",
+    "src/api/generated/schema/index.ts",
+    "src/api/generated/schema/monitor.ts",
+    "src/api/generated/schema/platform.ts",
+    "src/api/generated/schema/system.ts",
+    "src/shared/config/apiPrefix.generated.json",
+    "src/shared/markdown/noticePolicy.generated.json",
+    "src/shared/security/passwordPolicy.generated.json"
+  ]
+}

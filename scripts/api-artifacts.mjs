@@ -1,15 +1,24 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 import openapiTS, { astToString } from 'openapi-typescript'
 
 import { requireApiPrefixContract } from './api-prefix-contract.mjs'
 import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
+import {
+  createSchemaDomainDocuments,
+  renderSchemaIndex,
+} from './openapi-schema-domains.mjs'
 
+export const ownershipManifestPath = 'src/api/generated/ownership.json'
 export const generatedArtifactPaths = Object.freeze([
-  'src/api/generated/schema.ts',
+  'src/api/generated/schema/core.ts',
+  'src/api/generated/schema/system.ts',
+  'src/api/generated/schema/platform.ts',
+  'src/api/generated/schema/monitor.ts',
+  'src/api/generated/schema/agent.ts',
+  'src/api/generated/schema/index.ts',
   'src/api/generated/operations.ts',
   'src/api/generated/permissions.ts',
   'src/api/generated/menuRoutes.ts',
@@ -17,6 +26,7 @@ export const generatedArtifactPaths = Object.freeze([
   'src/shared/security/passwordPolicy.generated.json',
   'src/shared/markdown/noticePolicy.generated.json',
   'src/shared/config/apiPrefix.generated.json',
+  'src/api/generated/ownership.json',
 ])
 
 const generatedHeader = `/**
@@ -188,11 +198,25 @@ export function findCrudResource<Name extends CrudResourceName>(
 export async function buildApiArtifacts(root) {
   const contractPath = path.join(root, 'openapi/openapi.json')
   const document = JSON.parse(await readFile(contractPath, 'utf8'))
-  const schema = generatedHeader
-    + astToString(await openapiTS(pathToFileURL(contractPath)))
+  const apiPrefix = requireApiPrefixContract(
+    document?.['x-ryframe-api-prefix'],
+    'openapi/openapi.json',
+  ).value
+  const domainDocuments = createSchemaDomainDocuments(document, apiPrefix)
+  const schemaArtifacts = []
+  for (const [domain, domainDocument] of domainDocuments) {
+    schemaArtifacts.push([
+      `src/api/generated/schema/${domain}.ts`,
+      generatedHeader + astToString(await openapiTS(domainDocument)),
+    ])
+  }
+  schemaArtifacts.push([
+    'src/api/generated/schema/index.ts',
+    renderSchemaIndex(generatedHeader),
+  ])
 
   return new Map([
-    ['src/api/generated/schema.ts', schema],
+    ...schemaArtifacts,
     ['src/api/generated/operations.ts', renderOperationManifest(document)],
     ['src/api/generated/permissions.ts', renderPermissionCatalog(document)],
     ['src/api/generated/menuRoutes.ts', renderMenuRouteCatalog(document)],
@@ -208,6 +232,14 @@ export async function buildApiArtifacts(root) {
     [
       'src/shared/config/apiPrefix.generated.json',
       canonicalJson(document['x-ryframe-api-prefix']),
+    ],
+    [
+      ownershipManifestPath,
+      canonicalJson({
+        version: 1,
+        generator: 'scripts/generate-api-artifacts.mjs',
+        files: [...generatedArtifactPaths].sort(compareText),
+      }),
     ],
   ])
 }

@@ -34,7 +34,7 @@ runs:
       run: |
         set -euo pipefail
         store_path="$RUNNER_TEMP/pnpm-store"
-        pnpm config set store-dir "$store_path" --global
+        echo "npm_config_store_dir=$store_path" >> "$GITHUB_ENV"
         fingerprint="$(node -e "const{createHash}=require('node:crypto');const{readFileSync}=require('node:fs');const h=createHash('sha256');for(const p of ['package.json','pnpm-lock.yaml','pnpm-workspace.yaml'])h.update(readFileSync(p));process.stdout.write(h.digest('hex'))")"
         echo "path=$store_path" >> "$GITHUB_OUTPUT"
         echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"

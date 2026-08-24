@@ -4843,6 +4843,7 @@ export interface components {
             code: number;
             /** @description 用户详情响应。 */
             data?: components["schemas"]["UserVo"] & {
+                department?: null | components["schemas"]["DeptVo"];
                 roles: components["schemas"]["RoleBriefVo"][];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
@@ -8633,6 +8634,7 @@ export interface components {
         };
         /** @description 用户详情响应。 */
         UserDetailVo: components["schemas"]["UserVo"] & {
+            department?: null | components["schemas"]["DeptVo"];
             roles: components["schemas"]["RoleBriefVo"][];
         };
         /** @description 用户导出的筛选条件。 */

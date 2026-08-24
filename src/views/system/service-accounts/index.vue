@@ -147,7 +147,6 @@ import type {
   UpdateServiceAccountInput,
 } from '@/api/modules/serviceAccount'
 import OneTimeMaterialDialog from '@/components/common/OneTimeMaterialDialog.vue'
-import { installServiceAccountsMessages } from '@/i18n/catalog/service-accounts'
 import { confirmAction } from '@/utils/confirmAction'
 import IssueCredentialDialog from './components/IssueCredentialDialog.vue'
 import ServiceAccessAuditsPanel from './components/ServiceAccessAuditsPanel.vue'
@@ -157,7 +156,6 @@ import ServiceAccountList from './components/ServiceAccountList.vue'
 import ServiceDelegationsPanel from './components/ServiceDelegationsPanel.vue'
 import { useServiceAccountManagement } from './composables/useServiceAccountManagement'
 
-installServiceAccountsMessages()
 const { t } = useI18n()
 const activeTab = ref('accounts')
 const accountDialogVisible = ref(false)

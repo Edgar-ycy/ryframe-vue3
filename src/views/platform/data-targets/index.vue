@@ -186,13 +186,11 @@ import {
 import { TENANT_DATA_PERMISSIONS } from '@/features/tenant-data/permissions'
 import { healthTagType } from '@/features/tenant-data/presentation'
 import { formatLocalizedDate } from '@/i18n'
-import { installTenantDataMessages } from '@/i18n/catalog/tenant-data'
 import { requireOperationData } from '@/shared/http/client'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 
-installTenantDataMessages()
 const { t } = useI18n()
 const userStore = useUserStore()
 const keyword = ref('')

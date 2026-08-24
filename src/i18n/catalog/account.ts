@@ -176,3 +176,5 @@ export const accountMessages = {
     },
   },
 } as const
+
+export const messageCatalog = accountMessages

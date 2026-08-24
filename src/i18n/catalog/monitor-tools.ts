@@ -344,3 +344,5 @@ export const monitorToolsMessages = {
     },
   },
 } as const
+
+export const messageCatalog = monitorToolsMessages

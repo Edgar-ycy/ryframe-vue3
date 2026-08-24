@@ -1,5 +1,3 @@
-import { i18n } from '@/i18n'
-
 const zhOneTimeMaterial = {
   warning: '该安全材料只显示一次。关闭前请复制并保存到受控的密钥管理器。',
   memoryOnly: '页面只在当前对话框内临时保留该值，不会写入浏览器缓存或本地存储。',
@@ -251,12 +249,4 @@ export const serviceAccountsMessages = {
   },
 } as const
 
-let installed = false
-
-/** 在服务账号管理页首次加载时注册文案，避免未访问页面进入首屏资源。 */
-export function installServiceAccountsMessages(): void {
-  if (installed) return
-  i18n.global.mergeLocaleMessage('zh-CN', serviceAccountsMessages['zh-CN'])
-  i18n.global.mergeLocaleMessage('en-US', serviceAccountsMessages['en-US'])
-  installed = true
-}
+export const messageCatalog = serviceAccountsMessages

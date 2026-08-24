@@ -225,7 +225,6 @@ import { ArrowRight } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { UserManageableStatus } from '@/api/modules/user'
 import { formatLocalizedDate } from '@/i18n'
-import { installPlatformOperationsMessages } from '@/i18n/catalog/platform-operations'
 import DepartmentTree from './components/DepartmentTree.vue'
 import PasswordResetDialog from './components/PasswordResetDialog.vue'
 import UserFormDialog from './components/UserFormDialog.vue'
@@ -235,7 +234,6 @@ import UserImportHistoryDrawer from './components/UserImportHistoryDrawer.vue'
 import { useUserManagement } from './composables/useUserManagement'
 import { useUserImportManagement } from './composables/useUserImportManagement'
 
-installPlatformOperationsMessages()
 const { t } = useI18n()
 const {
   canExport,

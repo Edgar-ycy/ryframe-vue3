@@ -235,12 +235,10 @@ import { listUserOptions } from '@/api/modules/user'
 import type { SelectOptionList } from '@/api/modules/option'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { formatLocalizedDate } from '@/i18n'
-import { installPlatformOperationsMessages } from '@/i18n/catalog/platform-operations'
 import { requireOperationData } from '@/shared/http/client'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 
-installPlatformOperationsMessages()
 const { t } = useI18n()
 const userStore = useUserStore()
 const pageActive = ref(true)

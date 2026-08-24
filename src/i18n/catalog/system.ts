@@ -532,3 +532,5 @@ export const systemMessages = {
     },
   },
 } as const
+
+export const messageCatalog = systemMessages

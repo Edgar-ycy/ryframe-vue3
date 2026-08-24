@@ -1,5 +1,3 @@
-import { i18n } from '@/i18n'
-
 export const tenantDataMessages = {
   'zh-CN': {
     tenantData: {
@@ -265,11 +263,4 @@ export const tenantDataMessages = {
   },
 } as const
 
-let installed = false
-
-export function installTenantDataMessages(): void {
-  if (installed) return
-  i18n.global.mergeLocaleMessage('zh-CN', tenantDataMessages['zh-CN'])
-  i18n.global.mergeLocaleMessage('en-US', tenantDataMessages['en-US'])
-  installed = true
-}
+export const messageCatalog = tenantDataMessages

@@ -182,7 +182,6 @@ import {
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { formatLocalizedDate, formatOptionalLocalizedDate, getApplicationLocale } from '@/i18n'
-import { installPlatformOperationsMessages } from '@/i18n/catalog/platform-operations'
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
@@ -198,7 +197,6 @@ import {
   MONITOR_RETENTION_RUNS_RESOURCE,
 } from '../queryResources'
 
-installPlatformOperationsMessages()
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()

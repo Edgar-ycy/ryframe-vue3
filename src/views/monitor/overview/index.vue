@@ -114,7 +114,6 @@ import type { EChartsCoreOption } from 'echarts/core'
 import type { MonitorOverview, MonitorOverviewTrends, OverviewRange } from '@/api/modules/monitor'
 import EChartContainer from '@/components/charts/EChartContainer.vue'
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
-import { installPlatformOperationsMessages } from '@/i18n/catalog/platform-operations'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import {
@@ -131,7 +130,6 @@ interface ChartHandle {
   setOption: (option: EChartsCoreOption) => void
 }
 
-installPlatformOperationsMessages()
 const { t } = useI18n()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()

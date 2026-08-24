@@ -158,13 +158,11 @@ import type {
   ProductPlanVersionStatus,
 } from '@/api/modules/productPlan'
 import { formatOptionalLocalizedDate } from '@/i18n'
-import { installProductPlanMessages } from '@/i18n/catalog/product-plans'
 import { confirmAction } from '@/utils/confirmAction'
 import ProductPlanFormDialog from './components/ProductPlanFormDialog.vue'
 import ProductPlanVersionDialog from './components/ProductPlanVersionDialog.vue'
 import { useProductPlanManagement } from './useProductPlanManagement'
 
-installProductPlanMessages()
 const { t } = useI18n()
 const planDialogVisible = ref(false)
 const versionDialogVisible = ref(false)

@@ -3,9 +3,11 @@ import { menuRouteCatalog } from '@/api/generated/menuRoutes'
 import {
   getApplicationLocale,
   setApplicationLocale,
+  translate,
   translateNavigationTitle,
 } from '@/i18n'
-import { messages } from '@/i18n/messages'
+import { getMenuPage } from '@/router/pageRegistry'
+import { messageCatalogs, messages } from '@/i18n/messages'
 
 const originalLocale = getApplicationLocale()
 
@@ -32,5 +34,15 @@ describe('菜单国际化目录', () => {
 
   it('保留未知自定义菜单名称', () => {
     expect(translateNavigationTitle('业务自定义入口')).toBe('业务自定义入口')
+  })
+
+  it('页面加载器自动安装领域文案目录', async () => {
+    expect(messageCatalogs).toHaveLength(6)
+    await getMenuPage('system.service-accounts')?.component?.()
+    await getMenuPage('platform.data-targets')?.component?.()
+    setApplicationLocale('zh-CN')
+    expect(translate('serviceAccounts.title')).toBe('服务账号')
+    setApplicationLocale('en-US')
+    expect(translate('tenantData.targetsTitle')).toBe('Data targets')
   })
 })

@@ -1,5 +1,3 @@
-import { i18n } from '@/i18n'
-
 export const platformOperationsMessages = {
   'zh-CN': {
     monitor: {
@@ -278,12 +276,4 @@ export const platformOperationsMessages = {
   },
 } as const
 
-let installed = false
-
-/** 在相关异步页面首次加载时注册运维文案，避免未访问页面进入首屏资源。 */
-export function installPlatformOperationsMessages(): void {
-  if (installed) return
-  i18n.global.mergeLocaleMessage('zh-CN', platformOperationsMessages['zh-CN'])
-  i18n.global.mergeLocaleMessage('en-US', platformOperationsMessages['en-US'])
-  installed = true
-}
+export const messageCatalog = platformOperationsMessages

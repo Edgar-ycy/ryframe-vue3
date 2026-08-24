@@ -31,7 +31,6 @@ import { useI18n } from 'vue-i18n'
 import type { EChartsCoreOption } from 'echarts/core'
 import type { MonitorOverviewTrends } from '@/api/modules/monitor'
 import EChartContainer from '@/components/charts/EChartContainer.vue'
-import { installPlatformOperationsMessages } from '@/i18n/catalog/platform-operations'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import { activityChartOption } from '@/views/monitor/overview/chartOptions'
@@ -44,7 +43,6 @@ interface ChartHandle {
   setOption: (option: EChartsCoreOption) => void
 }
 
-installPlatformOperationsMessages()
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()

@@ -67,7 +67,6 @@ import type { PermissionCode } from '@/api/generated/permissions'
 import { useI18n } from 'vue-i18n'
 import { getTenantProductContext, type TenantProductContext } from '@/api/modules/productPlan'
 import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
-import { installProductPlanMessages } from '@/i18n/catalog/product-plans'
 import { requireOperationData } from '@/shared/http/client'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -75,7 +74,6 @@ import { hasPermission } from '@/utils/permission'
 import TenantProductChangeDialog from './TenantProductChangeDialog.vue'
 
 const props = defineProps<{ active: boolean, tenantId: string }>()
-installProductPlanMessages()
 const { t } = useI18n()
 const userStore = useUserStore()
 const changeVisible = ref(false)

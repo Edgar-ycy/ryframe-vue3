@@ -1,5 +1,3 @@
-import { i18n } from '@/i18n'
-
 export const tenantCapacityMessages = {
   'zh-CN': {
     tenantCapacity: {
@@ -239,12 +237,4 @@ export const tenantCapacityMessages = {
   },
 } as const
 
-let installed = false
-
-/** 在租户容量页首次加载时注册文案，避免未访问页面进入首屏资源。 */
-export function installTenantCapacityMessages(): void {
-  if (installed) return
-  i18n.global.mergeLocaleMessage('zh-CN', tenantCapacityMessages['zh-CN'])
-  i18n.global.mergeLocaleMessage('en-US', tenantCapacityMessages['en-US'])
-  installed = true
-}
+export const messageCatalog = tenantCapacityMessages

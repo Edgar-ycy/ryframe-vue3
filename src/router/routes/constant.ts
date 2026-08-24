@@ -1,6 +1,20 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { ROOT_LAYOUT_ROUTE_NAME } from '@/router/layout'
 import { withRouteComponentName } from '@/router/namedRouteComponent'
+import { withMessageCatalogs } from '@/i18n/lazyCatalog'
+
+const dashboardPage = withMessageCatalogs(
+  () => import('@/views/index.vue'),
+  [() => import('@/i18n/catalog/platform-operations').then(module => module.messageCatalog)],
+)
+
+const profilePage = withMessageCatalogs(
+  () => import('@/views/profile/index.vue'),
+  [
+    () => import('@/i18n/catalog/profile-sessions').then(module => module.messageCatalog),
+    () => import('@/i18n/catalog/profile-service-delegations').then(module => module.messageCatalog),
+  ],
+)
 
 export const constantRoutes: RouteRecordRaw[] = [
   {
@@ -27,13 +41,13 @@ export const constantRoutes: RouteRecordRaw[] = [
       {
         path: 'index',
         name: 'Index',
-        component: withRouteComponentName('Index', () => import('@/views/index.vue')),
+        component: withRouteComponentName('Index', dashboardPage),
         meta: { title: '首页', icon: 'HomeFilled', affix: true },
       },
       {
         path: 'profile',
         name: 'Profile',
-        component: withRouteComponentName('Profile', () => import('@/views/profile/index.vue')),
+        component: withRouteComponentName('Profile', profilePage),
         meta: { title: '个人中心', icon: 'User', hidden: true },
       },
       {

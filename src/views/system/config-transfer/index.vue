@@ -148,7 +148,6 @@
 import { useI18n } from 'vue-i18n'
 import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
 import { formatOptionalLocalizedDate } from '@/i18n'
-import { installTenantConfigTransferMessages } from '@/i18n/catalog/tenant-config-transfer'
 import ConfigPackagePanel from './components/ConfigPackagePanel.vue'
 import ConfigPackageUploadDialog from './components/ConfigPackageUploadDialog.vue'
 import ConfigTransferHistoryDrawer from './components/ConfigTransferHistoryDrawer.vue'
@@ -156,7 +155,6 @@ import ConfigTransferPlan from './components/ConfigTransferPlan.vue'
 import { useTenantConfigTransferManagement } from './composables/useTenantConfigTransferManagement'
 import { canDownloadTenantConfigPackage } from './presentation'
 
-installTenantConfigTransferMessages()
 const { t } = useI18n()
 const historyVisible = ref(false)
 const uploadVisible = ref(false)

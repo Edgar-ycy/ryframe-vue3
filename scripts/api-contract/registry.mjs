@@ -103,123 +103,78 @@ async function readFeatureRegistry(featuresPath, errors) {
   return entries
 }
 
-function readPermissionRouteKeys(source, featureEntries, pageRegistryPath, errors) {
-  const sourceFile = ts.createSourceFile(
-    pageRegistryPath.pathname,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  )
-  let registry
-  for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) continue
-    for (const declaration of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(declaration.name)
-        || declaration.name.text !== 'permissionRouteKeys'
-        || !declaration.initializer) continue
-      const initializer = declaration.initializer
-      if (ts.isCallExpression(initializer)
-        && initializer.arguments.length === 1
-        && ts.isObjectLiteralExpression(initializer.arguments[0])) {
-        registry = initializer.arguments[0]
-      }
-      else if (ts.isObjectLiteralExpression(initializer)) {
-        registry = initializer
-      }
-    }
-  }
-  if (!registry) {
-    errors.push('src/router/pageRegistry.ts: permissionRouteKeys object literal is missing')
-    return new Map()
-  }
-
+async function readPageManifestRegistry(rootPath, fileName, errors) {
   const entries = new Map()
-  for (const property of registry.properties) {
-    if (ts.isSpreadAssignment(property)
-      && ts.isIdentifier(property.expression)
-      && property.expression.text === 'featurePermissionRouteKeys') {
-      for (const [routeKey, feature] of featureEntries) {
-        if (entries.has(feature.permissionCode)) {
-          errors.push(`permissionRouteKeys contains duplicate permission ${feature.permissionCode}`)
+  const directories = await readdir(rootPath, { withFileTypes: true })
+  for (const directory of directories) {
+    if (!directory.isDirectory()) continue
+    const pagesPath = new URL(`./${directory.name}/${fileName}`, rootPath)
+    let source
+    try {
+      source = await readFile(pagesPath, 'utf8')
+    }
+    catch (error) {
+      if (error?.code === 'ENOENT') continue
+      throw error
+    }
+    const sourceFile = ts.createSourceFile(
+      pagesPath.pathname,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    )
+    for (const statement of sourceFile.statements) {
+      if (!ts.isVariableStatement(statement)) continue
+      for (const declaration of statement.declarationList.declarations) {
+        const initializer = declaration.initializer
+        if (!initializer
+          || !ts.isCallExpression(initializer)
+          || !ts.isIdentifier(initializer.expression)
+          || initializer.expression.text !== 'definePageManifest'
+          || initializer.arguments.length !== 1
+          || !ts.isObjectLiteralExpression(initializer.arguments[0])) continue
+        const pagesProperty = initializer.arguments[0].properties.find(
+          property => ts.isPropertyAssignment(property) && propertyName(property) === 'pages',
+        )
+        if (!pagesProperty
+          || !ts.isPropertyAssignment(pagesProperty)
+          || !ts.isArrayLiteralExpression(pagesProperty.initializer)) {
+          errors.push(`${pagesPath.pathname}: page manifest requires a static pages array`)
+          continue
         }
-        entries.set(feature.permissionCode, routeKey)
-      }
-      continue
-    }
-    if (!ts.isPropertyAssignment(property)) {
-      errors.push('permissionRouteKeys may only contain static entries or featurePermissionRouteKeys')
-      continue
-    }
-    const permissionCode = propertyName(property)
-    const routeKey = staticString(property.initializer)
-    if (!permissionCode || !routeKey) {
-      errors.push('permissionRouteKeys entries must use static string keys and values')
-      continue
-    }
-    if (entries.has(permissionCode)) {
-      errors.push(`permissionRouteKeys contains duplicate permission ${permissionCode}`)
-    }
-    entries.set(permissionCode, routeKey)
-  }
-  return entries
-}
-
-function readPageRegistry(source, featureEntries, pageRegistryPath, errors) {
-  const sourceFile = ts.createSourceFile(
-    pageRegistryPath.pathname,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  )
-  let registry
-  for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) continue
-    for (const declaration of statement.declarationList.declarations) {
-      if (ts.isIdentifier(declaration.name)
-        && declaration.name.text === 'menuPageRegistry'
-        && declaration.initializer
-        && ts.isObjectLiteralExpression(declaration.initializer)) {
-        registry = declaration.initializer
+        for (const page of pagesProperty.initializer.elements) {
+          if (!ts.isObjectLiteralExpression(page)) {
+            errors.push(`${pagesPath.pathname}: page entries must be object literals`)
+            continue
+          }
+          const fields = new Map()
+          for (const field of page.properties) {
+            if (ts.isPropertyAssignment(field)) fields.set(propertyName(field), field.initializer)
+          }
+          const routeKey = staticString(fields.get('routeKey'))
+          const routePath = staticString(fields.get('path'))
+          const permissionCode = fields.has('permissionCode')
+            ? staticString(fields.get('permissionCode'))
+            : null
+          if (!routeKey || !routePath?.startsWith('/') || (fields.has('permissionCode') && !permissionCode)) {
+            errors.push(
+              `${pagesPath.pathname}: page entry requires static routeKey, absolute path, `
+              + 'and an optional static permissionCode',
+            )
+            continue
+          }
+          if (entries.has(routeKey)) {
+            errors.push(`page manifests contain duplicate route_key ${routeKey}`)
+            continue
+          }
+          entries.set(routeKey, {
+            hasComponent: fields.has('page'),
+            permissionCode,
+          })
+        }
       }
     }
-  }
-  if (!registry) {
-    errors.push('src/router/pageRegistry.ts: menuPageRegistry object literal is missing')
-    return new Map()
-  }
-
-  const entries = new Map()
-  for (const property of registry.properties) {
-    if (ts.isSpreadAssignment(property)
-      && ts.isIdentifier(property.expression)
-      && property.expression.text === 'featureMenuPageRegistry') {
-      for (const [routeKey, entry] of featureEntries) entries.set(routeKey, entry)
-      continue
-    }
-    if (!ts.isPropertyAssignment(property)) {
-      errors.push('menuPageRegistry may only contain explicit entries or featureMenuPageRegistry')
-      continue
-    }
-    const routeKey = propertyName(property)
-    if (!routeKey || !ts.isObjectLiteralExpression(property.initializer)) {
-      errors.push('menuPageRegistry entries must use static keys and object literal values')
-      continue
-    }
-    if (entries.has(routeKey)) {
-      errors.push(`menuPageRegistry contains duplicate route_key ${routeKey}`)
-      continue
-    }
-    const fields = new Map()
-    for (const field of property.initializer.properties) {
-      if (ts.isPropertyAssignment(field)) fields.set(propertyName(field), field.initializer)
-    }
-    const routePath = fields.get('path')
-    if (!routePath || !ts.isStringLiteral(routePath) || !routePath.text.startsWith('/')) {
-      errors.push(`menuPageRegistry.${routeKey}: path must be a static absolute path`)
-    }
-    entries.set(routeKey, { hasComponent: fields.has('component') })
   }
   return entries
 }
@@ -229,17 +184,36 @@ export async function validatePageRegistryContract({
   document,
   errors,
   featuresPath,
-  pageRegistryPath,
 }) {
   const featureRegistry = await readFeatureRegistry(featuresPath, errors)
-  const pageRegistrySource = await readFile(pageRegistryPath, 'utf8')
-  const pageRegistry = readPageRegistry(pageRegistrySource, featureRegistry, pageRegistryPath, errors)
-  const permissionRouteKeys = readPermissionRouteKeys(
-    pageRegistrySource,
-    featureRegistry,
-    pageRegistryPath,
+  const pageRegistry = await readPageManifestRegistry(featuresPath, 'pages.ts', errors)
+  const resourceRegistry = await readPageManifestRegistry(
+    new URL('../generated/resources/', featuresPath),
+    'registration.ts',
     errors,
   )
+  for (const [routeKey, resource] of resourceRegistry) {
+    if (pageRegistry.has(routeKey)) {
+      errors.push(`domain and resource manifests contain duplicate route_key ${routeKey}`)
+      continue
+    }
+    pageRegistry.set(routeKey, resource)
+  }
+  for (const [routeKey, feature] of featureRegistry) {
+    if (pageRegistry.has(routeKey)) {
+      errors.push(`page and feature manifests contain duplicate route_key ${routeKey}`)
+      continue
+    }
+    pageRegistry.set(routeKey, feature)
+  }
+  const permissionRouteKeys = new Map()
+  for (const [routeKey, page] of pageRegistry) {
+    if (!page.permissionCode) continue
+    if (permissionRouteKeys.has(page.permissionCode)) {
+      errors.push(`page manifests contain duplicate permission ${page.permissionCode}`)
+    }
+    permissionRouteKeys.set(page.permissionCode, routeKey)
+  }
   const routePermissions = new Map()
   for (const [permissionCode, routeKey] of permissionRouteKeys) {
     if (!routePermissions.has(routeKey)) routePermissions.set(routeKey, [])

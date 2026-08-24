@@ -182,3 +182,5 @@ export const shellMessages = {
     },
   },
 } as const
+
+export const messageCatalog = shellMessages

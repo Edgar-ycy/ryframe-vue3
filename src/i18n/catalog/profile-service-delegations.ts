@@ -1,5 +1,3 @@
-import { i18n } from '@/i18n'
-
 export const profileServiceDelegationsMessages = {
   'zh-CN': {
     oneTimeMaterial: {
@@ -117,12 +115,4 @@ export const profileServiceDelegationsMessages = {
   },
 } as const
 
-let installed = false
-
-/** 在个人中心首次加载时注册服务委托文案，避免未访问页面进入首屏资源。 */
-export function installProfileServiceDelegationsMessages(): void {
-  if (installed) return
-  i18n.global.mergeLocaleMessage('zh-CN', profileServiceDelegationsMessages['zh-CN'])
-  i18n.global.mergeLocaleMessage('en-US', profileServiceDelegationsMessages['en-US'])
-  installed = true
-}
+export const messageCatalog = profileServiceDelegationsMessages

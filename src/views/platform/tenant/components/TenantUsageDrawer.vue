@@ -166,8 +166,6 @@ import type {
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
 import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
 import { TENANT_DATA_PERMISSIONS } from '@/features/tenant-data/permissions'
-import { installProductPlanMessages } from '@/i18n/catalog/product-plans'
-import { installTenantDataMessages } from '@/i18n/catalog/tenant-data'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import TenantQuotaMeter from './TenantQuotaMeter.vue'
@@ -189,8 +187,6 @@ const emit = defineEmits<{
 }>()
 
 const visible = defineModel<boolean>({ required: true })
-installProductPlanMessages()
-installTenantDataMessages()
 const { t } = useI18n()
 const userStore = useUserStore()
 const activeTab = ref<'capacity' | 'product' | 'placement' | 'backups'>('capacity')

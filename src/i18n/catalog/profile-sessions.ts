@@ -1,5 +1,3 @@
-import { i18n } from '@/i18n'
-
 export const profileSessionsMessages = {
   'zh-CN': {
     profile: {
@@ -77,12 +75,4 @@ export const profileSessionsMessages = {
   },
 } as const
 
-let installed = false
-
-/** 在个人中心首次加载时注册登录设备文案，避免未访问页面进入首屏资源。 */
-export function installProfileSessionsMessages(): void {
-  if (installed) return
-  i18n.global.mergeLocaleMessage('zh-CN', profileSessionsMessages['zh-CN'])
-  i18n.global.mergeLocaleMessage('en-US', profileSessionsMessages['en-US'])
-  installed = true
-}
+export const messageCatalog = profileSessionsMessages

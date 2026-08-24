@@ -452,3 +452,5 @@ export const monitorJobsMessages = {
     },
   },
 } as const
+
+export const messageCatalog = monitorJobsMessages

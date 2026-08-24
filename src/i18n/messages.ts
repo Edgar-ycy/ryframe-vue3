@@ -1,8 +1,8 @@
-import { accountMessages } from './catalog/account'
 import { navigationRouteTitleKeys } from '@/api/generated/menuRoutes'
+import { accountMessages } from './catalog/account'
 import { exportJobMessages } from './catalog/export-jobs'
-import { monitorToolsMessages } from './catalog/monitor-tools'
 import { monitorJobsMessages } from './catalog/monitor-jobs'
+import { monitorToolsMessages } from './catalog/monitor-tools'
 import { shellMessages } from './catalog/shell'
 import { systemMessages } from './catalog/system'
 

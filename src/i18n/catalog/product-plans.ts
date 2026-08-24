@@ -1,5 +1,3 @@
-import { i18n } from '@/i18n'
-
 export const productPlanMessages = {
   'zh-CN': {
     productPlans: {
@@ -193,11 +191,4 @@ export const productPlanMessages = {
   },
 } as const
 
-let installed = false
-
-export function installProductPlanMessages(): void {
-  if (installed) return
-  i18n.global.mergeLocaleMessage('zh-CN', productPlanMessages['zh-CN'])
-  i18n.global.mergeLocaleMessage('en-US', productPlanMessages['en-US'])
-  installed = true
-}
+export const messageCatalog = productPlanMessages

@@ -87,7 +87,6 @@ import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import type { CreateTenantPayload, TenantCapacity, UpdateTenantPayload } from '@/api/modules/tenant'
 import { formatLocalizedDate } from '@/i18n'
-import { installTenantCapacityMessages } from '@/i18n/catalog/tenant-capacity'
 import { confirmAction } from '@/utils/confirmAction'
 import TenantCapacityList from './components/TenantCapacityList.vue'
 import TenantFormDialog from './components/TenantFormDialog.vue'
@@ -95,7 +94,6 @@ import TenantUsageDrawer from './components/TenantUsageDrawer.vue'
 import { capacityStatusType } from './presentation'
 import { useTenantCapacityManagement } from './useTenantCapacityManagement'
 
-installTenantCapacityMessages()
 const { t } = useI18n()
 const formVisible = ref(false)
 const detailVisible = ref(false)

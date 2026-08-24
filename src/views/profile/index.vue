@@ -43,7 +43,6 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { installProfileSessionsMessages } from '@/i18n/catalog/profile-sessions'
 import ProfileAvatar from './components/ProfileAvatar.vue'
 import ProfileDetailsForm from './components/ProfileDetailsForm.vue'
 import ProfilePasswordForm from './components/ProfilePasswordForm.vue'
@@ -55,10 +54,7 @@ import { useProfileManagement } from './useProfileManagement'
 import { useServiceDelegationManagement } from './useServiceDelegationManagement'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
 import { useTenantContextStore } from '@/app/tenant-context'
-import { installProfileServiceDelegationsMessages } from '@/i18n/catalog/profile-service-delegations'
 
-installProfileSessionsMessages()
-installProfileServiceDelegationsMessages()
 const { t } = useI18n()
 const tenantContext = useTenantContextStore()
 const {

@@ -5,8 +5,6 @@ import {
   deleteExportJobs,
   downloadExportJob,
   getExportJob,
-  getUnreadExportNotificationCount,
-  listExportJobs,
   type ExportDeletionAccepted,
   type ExportJob,
 } from '@/api/modules/exportJob'
@@ -19,30 +17,19 @@ import { useUserStore } from '@/stores/user'
 import { publishExportJobEvent } from '../exportJobChannel'
 import {
   exportJobListQueryKey,
-  exportJobUnreadQueryKey,
   mergeExportJob,
   removeExportJob,
-  removeExportJobs,
   type ExportJobIdentity,
 } from '../exportJobCache'
 import { currentExportJobIdentity, sameExportJobIdentity } from './identity'
-
-const activeJobActions = new Set<string>()
-
-function jobActionKey(identity: ExportJobIdentity, jobId: string): string {
-  return `${identity.tenantId}\u0000${identity.userId}\u0000${jobId}`
-}
-
-function reserveJobActions(identity: ExportJobIdentity, jobIds: readonly string[]): boolean {
-  const keys = jobIds.map((jobId) => jobActionKey(identity, jobId))
-  if (keys.some((key) => activeJobActions.has(key))) return false
-  for (const key of keys) activeJobActions.add(key)
-  return true
-}
-
-function releaseJobActions(identity: ExportJobIdentity, jobIds: readonly string[]): void {
-  for (const jobId of jobIds) activeJobActions.delete(jobActionKey(identity, jobId))
-}
+import {
+  deletionRequestKey,
+  jobActionIsReserved,
+  normalizeDeletionIds,
+  releaseJobActions,
+  reserveJobActions,
+} from './actionSupport'
+import { applyAcceptedDeletion, refreshAfterDeletion } from './deletionReconciliation'
 
 export function useExportJobActions() {
   const user = useUserStore()
@@ -66,69 +53,14 @@ export function useExportJobActions() {
     return new HttpError(translate('shell.http.requestFailed'), { status: 409, kind: 'http' })
   }
 
-  function deletionRequestKey(identity: ExportJobIdentity, ids: readonly string[]): string {
-    return `${identity.tenantId}\u0000${identity.userId}\u0000${ids.join('\u0000')}`
-  }
-
-  function normalizeDeletionIds(jobIds: readonly string[]): string[] {
-    const ids = new Set<string>()
-    for (const jobId of jobIds) {
-      if (!jobId) throw new HttpError(translate('shell.http.requestFailed'), { status: 400 })
-      ids.add(jobId)
-    }
-    if (ids.size === 0 || ids.size > 100) {
-      throw new HttpError(translate('shell.http.requestFailed'), { status: 400 })
-    }
-    return Array.from(ids).sort()
-  }
-
   function isJobActionBusy(jobId: string): boolean {
     const identity = currentExportJobIdentity()
     return (
       cancellingJobId.value === jobId ||
       downloadingJobId.value === jobId ||
       deletingJobIds.value.includes(jobId) ||
-      (identity !== undefined && activeJobActions.has(jobActionKey(identity, jobId)))
+      (identity !== undefined && jobActionIsReserved(identity, jobId))
     )
-  }
-
-  async function refreshAfterDeletion(
-    identity: ExportJobIdentity,
-    signal: AbortSignal,
-  ): Promise<void> {
-    const [listResult, unreadResult] = await Promise.allSettled([
-      listExportJobs(signal).then((response) => requireOperationData(response)),
-      getUnreadExportNotificationCount(signal).then((response) => requireOperationData(response)),
-    ])
-    if (!identityStillCurrent(identity)) return
-    const listKey = exportJobListQueryKey(identity.tenantId, identity.userId)
-    const unreadKey = exportJobUnreadQueryKey(identity.tenantId, identity.userId)
-    if (listResult.status === 'fulfilled') queryClient.setQueryData(listKey, listResult.value)
-    else void queryClient.invalidateQueries({ queryKey: listKey, exact: true, refetchType: 'none' })
-    if (unreadResult.status === 'fulfilled') queryClient.setQueryData(unreadKey, unreadResult.value)
-    else
-      void queryClient.invalidateQueries({ queryKey: unreadKey, exact: true, refetchType: 'none' })
-  }
-
-  async function applyAcceptedDeletion(
-    identity: ExportJobIdentity,
-    accepted: ExportDeletionAccepted,
-    signal: AbortSignal,
-  ): Promise<void> {
-    removeExportJobs(queryClient, identity, accepted.accepted_ids)
-    if (accepted.removed_unread_count > 0) {
-      queryClient.setQueryData<number>(
-        exportJobUnreadQueryKey(identity.tenantId, identity.userId),
-        (current) =>
-          current === undefined ? undefined : Math.max(0, current - accepted.removed_unread_count),
-      )
-    }
-    publishExportJobEvent({
-      type: 'deleted',
-      ...identity,
-      jobIds: accepted.accepted_ids,
-    })
-    await refreshAfterDeletion(identity, signal)
   }
 
   async function reconcileAfterActionError(
@@ -224,7 +156,7 @@ export function useExportJobActions() {
   }
 
   async function deleteJobs(jobIds: readonly string[]): Promise<ExportDeletionAccepted> {
-    const ids = normalizeDeletionIds(jobIds)
+    const ids = normalizeDeletionIds(jobIds, translate('shell.http.requestFailed'))
     if (
       deletingJobIds.value.length > 0 ||
       ids.some((jobId) => cancellingJobId.value === jobId || downloadingJobId.value === jobId)

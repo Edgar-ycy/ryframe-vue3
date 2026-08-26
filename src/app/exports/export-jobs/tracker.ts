@@ -1,4 +1,4 @@
-import { getCurrentScope, onScopeDispose, ref, type MaybeRefOrGetter } from 'vue'
+import { getCurrentScope, onScopeDispose, ref } from 'vue'
 import { getExportJob, type ExportJob } from '@/api/modules/exportJob'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
@@ -18,19 +18,13 @@ import { useExportJobActions } from './actions'
 import { currentExportJobIdentity, sameExportJobIdentity, shouldEnableExportJobs } from './identity'
 import { useExportJobList } from './list'
 import { useExportNotificationState } from './notifications'
+import {
+  ACTIVE_REFRESH_INTERVAL_MS,
+  MAX_CONCURRENT_DETAILS,
+  type ExportJobTrackerOptions,
+} from './trackerModel'
 
-const ACTIVE_REFRESH_INTERVAL_MS = 5_000
-const MAX_CONCURRENT_DETAILS = 4
-
-export interface ExportJobTransition {
-  previous: ExportJob
-  current: ExportJob
-}
-
-export interface ExportJobTrackerOptions {
-  enabled?: MaybeRefOrGetter<boolean>
-  onTransition?: (previous: ExportJob, current: ExportJob) => void
-}
+export type { ExportJobTrackerOptions, ExportJobTransition } from './trackerModel'
 
 export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   const enabled = options.enabled ?? true

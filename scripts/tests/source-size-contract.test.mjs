@@ -9,13 +9,14 @@ import {
 } from '../source-size-contract.mjs'
 
 test('所有手写 TypeScript 都会获得规模上限', () => {
+  assert.equal(sourceLimits.test, 300)
   assert.equal(sourceLimit('src/stores/settings.ts'), sourceLimits.typescript)
   assert.equal(sourceLimit('src/components/table/render.tsx'), sourceLimits.typescript)
   assert.equal(sourceLimit('src/app/messages/messageSocket.ts'), sourceLimits.typescript)
   assert.equal(sourceLimit('src/views/system/user/composables/model.ts'), sourceLimits.composable)
   assert.equal(sourceLimit('src/views/profile/useProfileManagement.ts'), sourceLimits.composable)
   assert.equal(sourceLimit('src/hooks/useCellRenderer.tsx'), sourceLimits.composable)
-  assert.equal(sourceLimit('src/i18n/catalog/system.ts'), sourceLimits.catalog)
+  assert.equal(sourceLimit('src/i18n/catalog/system.ts'), sourceLimits.typescript)
   assert.equal(sourceLimit('tests/browser/export-flow.spec.ts'), sourceLimits.test)
   assert.equal(sourceLimit('vite.config.ts'), sourceLimits.typescript)
   assert.equal(sourceLimit('scripts/tooling.mts'), sourceLimits.typescript)

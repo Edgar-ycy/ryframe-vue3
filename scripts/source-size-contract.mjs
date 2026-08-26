@@ -1,11 +1,10 @@
 import { extname, posix } from 'node:path'
 
 export const sourceLimits = Object.freeze({
-  catalog: 600,
   composable: 300,
   script: 500,
   style: 300,
-  test: 650,
+  test: 300,
   typescript: 300,
   vue: 400,
 })
@@ -40,7 +39,6 @@ export function sourceLimit(path) {
   if (extension === '.vue') return sourceLimits.vue
   if (extension === '.css' || extension === '.scss') return sourceLimits.style
   if (!typescriptExtensions.has(extension)) return undefined
-  if (normalized.startsWith('src/i18n/catalog/')) return sourceLimits.catalog
   if (/^use.+\.[cm]?tsx?$/u.test(fileName) || normalized.includes('/composables/')) {
     return sourceLimits.composable
   }

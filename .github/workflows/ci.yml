@@ -132,7 +132,7 @@ jobs:
           path: |
             .local-tests/playwright/report
             .local-tests/playwright/results
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 14
 
   node-22-compatibility:

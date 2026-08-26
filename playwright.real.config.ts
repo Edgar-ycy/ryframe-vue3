@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test'
+import { mkdirSync } from 'node:fs'
 
 function readPort(): number {
   const port = Number(process.env.RYFRAME_E2E_FRONTEND_PORT?.trim() || '4174')
@@ -12,6 +13,12 @@ const port = readPort()
 const externalBaseUrl = process.env.RYFRAME_E2E_BASE_URL?.trim()
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
+const reportDirectory = '.local-tests/playwright-real/report'
+const resultsDirectory = '.local-tests/playwright-real/results'
+
+for (const directory of [reportDirectory, resultsDirectory]) {
+  mkdirSync(directory, { recursive: true })
+}
 
 export default defineConfig({
   testDir: 'tests/browser-real',
@@ -21,11 +28,8 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: [
-    ['line'],
-    ['html', { open: 'never', outputFolder: '.local-tests/playwright-real/report' }],
-  ],
-  outputDir: '.local-tests/playwright-real/results',
+  reporter: [['line'], ['html', { open: 'never', outputFolder: reportDirectory }]],
+  outputDir: resultsDirectory,
   use: {
     baseURL,
     ...(channel ? { channel } : {}),

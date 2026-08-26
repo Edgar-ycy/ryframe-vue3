@@ -4,11 +4,11 @@ import type { MenuPageRegistryEntry, PageManifest, PageManifestEntry } from '@/f
 import { withMessageCatalogs } from '@/i18n/lazyCatalog'
 
 interface FeatureModule {
-  featureManifest?: FeatureManifest
+  featureManifest: FeatureManifest
 }
 
 interface PageModule {
-  pageManifest?: PageManifest
+  pageManifest: PageManifest
 }
 
 const featureModules = import.meta.glob<FeatureModule>('./*/manifest.ts', { eager: true })
@@ -18,12 +18,12 @@ const resourcePageModules = import.meta.glob<PageModule>(
   { eager: true },
 )
 
-export const featureManifests = Object.values(featureModules).flatMap((module) =>
-  module.featureManifest ? [module.featureManifest] : [],
+export const featureManifests = Object.values(featureModules).map(
+  (module) => module.featureManifest,
 )
 
 const pageEntries = Object.values({ ...domainPageModules, ...resourcePageModules }).flatMap(
-  (module) => module.pageManifest?.pages ?? [],
+  (module) => module.pageManifest.pages,
 )
 
 function addPage(
@@ -53,17 +53,14 @@ for (const feature of featureManifests) {
     page: feature.page,
     catalogs: feature.catalogs,
   })
-  menuPages[feature.routeKey] = {
-    ...menuPages[feature.routeKey],
-    requiredCapabilities: [feature.capabilityCode],
-  }
+  menuPages[feature.routeKey].requiredCapabilities = [feature.capabilityCode]
 }
 
 export const registeredMenuPageRegistry = Object.freeze(menuPages)
 export const registeredPermissionRouteKeys = Object.freeze(permissionRoutes)
 
 const businessWritePermissions = new Set<PermissionCode>(
-  featureManifests.flatMap((feature) => [...feature.businessWritePermissions]),
+  featureManifests.flatMap((feature) => feature.businessWritePermissions),
 )
 
 export function isBusinessWritePermission(permissionCode: PermissionCode): boolean {

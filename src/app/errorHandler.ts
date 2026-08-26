@@ -51,7 +51,7 @@ function describeUnknownError(error: unknown): string {
   return String(error)
 }
 
-function reportUnhandled(error: unknown, context: ErrorContext): void {
+function reportUnhandled(error: unknown, context?: ErrorContext): void {
   // HTTP 错误由 Query 和会话层统一提示，避免同一个失败重复输出。
   if (error instanceof HttpError) return
   if (typeof error === 'object' && error !== null) {
@@ -68,7 +68,11 @@ function reportUnhandled(error: unknown, context: ErrorContext): void {
             stack: error.stack ? redact(error.stack) : undefined,
           }
         : { message: redact(describeUnknownError(error)) }
-    console.error('[RyFrame] 未捕获运行时错误', details, redactContext(context))
+    console.error(
+      '[RyFrame] 未捕获运行时错误',
+      details,
+      context ? redactContext(context) : undefined,
+    )
     return
   }
   console.error('[RyFrame] 未捕获运行时错误')
@@ -76,20 +80,24 @@ function reportUnhandled(error: unknown, context: ErrorContext): void {
 
 export function installGlobalErrorHandlers(app: App): void {
   app.config.errorHandler = (error, _instance, info) => {
-    reportUnhandled(error, { source: 'vue', info })
+    if (import.meta.env.DEV) reportUnhandled(error, { source: 'vue', info })
+    else reportUnhandled(error)
   }
 
   window.addEventListener('error', (event) => {
-    reportUnhandled(event.error ?? event.message, {
-      source: 'window.error',
-      file: event.filename || undefined,
-      line: event.lineno || undefined,
-      column: event.colno || undefined,
-    })
+    if (import.meta.env.DEV) {
+      reportUnhandled(event.error ?? event.message, {
+        source: 'window.error',
+        file: event.filename || undefined,
+        line: event.lineno || undefined,
+        column: event.colno || undefined,
+      })
+    } else reportUnhandled(event.error ?? event.message)
     event.preventDefault()
   })
   window.addEventListener('unhandledrejection', (event) => {
-    reportUnhandled(event.reason, { source: 'unhandledrejection' })
+    if (import.meta.env.DEV) reportUnhandled(event.reason, { source: 'unhandledrejection' })
+    else reportUnhandled(event.reason)
     event.preventDefault()
   })
 }

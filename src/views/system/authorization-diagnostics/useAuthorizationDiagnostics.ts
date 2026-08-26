@@ -59,7 +59,10 @@ export function useAuthorizationDiagnostics(t: Translate) {
     'user-options',
     () => ({ q: userSearch.value, limit: 50 }),
     async (signal) => {
-      const response = await listUserOptions({ q: userSearch.value || undefined, limit: 50 }, signal)
+      const response = await listUserOptions(
+        { q: userSearch.value || undefined, limit: 50 },
+        signal,
+      )
       return response.data ?? { items: [], has_more: false }
     },
     { refetchInterval: false },

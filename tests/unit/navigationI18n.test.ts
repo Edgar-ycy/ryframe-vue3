@@ -37,7 +37,7 @@ describe('菜单国际化目录', () => {
   })
 
   it('页面加载器自动安装领域文案目录', async () => {
-    expect(messageCatalogs).toHaveLength(6)
+    expect(messageCatalogs).toHaveLength(7)
     await getMenuPage('system.service-accounts')?.component?.()
     await getMenuPage('platform.data-targets')?.component?.()
     setApplicationLocale('zh-CN')

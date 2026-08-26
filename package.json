@@ -34,6 +34,7 @@
     "typecheck": "pnpm typecheck:app && pnpm typecheck:test",
     "test": "pnpm test:unit",
     "test:unit": "vitest run --config vitest.config.ts",
+    "test:targeted-coverage": "vitest run --config vitest.targeted.config.ts --coverage",
     "test:browser-smoke": "playwright test --config playwright.config.ts",
     "test:policies": "node --test scripts/tests/*.test.mjs",
     "sbom:generate": "node scripts/generate-sbom.mjs",
@@ -41,10 +42,10 @@
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "check:fast": "node scripts/run-fast-checks.mjs",
     "ci:static": "pnpm format:check && pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm check:imports && pnpm api:check:upstream && pnpm lint && pnpm lint:styles && pnpm typecheck",
-    "ci:unit": "pnpm test:unit",
+    "ci:unit": "pnpm test:unit && pnpm test:targeted-coverage",
     "ci:build": "pnpm build && pnpm check:bundle",
     "ci:browser": "pnpm test:browser-smoke",
-    "check": "pnpm format:check && pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm check:imports && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:unit && pnpm build && pnpm check:bundle",
+    "check": "pnpm format:check && pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm check:imports && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm ci:unit && pnpm build && pnpm check:bundle",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -66,6 +67,7 @@
     "@playwright/test": "1.62.0",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^25.9.3",
+    "@vitest/coverage-v8": "4.1.11",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/compiler-sfc": "^3.5.40",
     "eslint": "^9.39.5",

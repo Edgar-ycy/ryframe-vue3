@@ -98,7 +98,7 @@ test('真实后端完成登录、首页、岗位与租户基本流程', async ({
   await expectNoSeriousAccessibilityViolations(page, '真实租户容量页')
 
   const tenantSearchResponse = waitForApiResponse(page, 'GET', '/api/v1/platform/tenants/page')
-  await page.getByRole('button', { name: '搜索', exact: true }).click()
+  await page.locator('.filter-card').getByRole('button', { name: '查询', exact: true }).click()
   await expectSuccessfulResponse(await tenantSearchResponse)
 
   expect(authenticatedRefreshFailures).toEqual([])

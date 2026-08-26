@@ -7,6 +7,7 @@ pnpm-lock.yaml
 qodana.yaml
 src/api/generated/
 src/generated/
+src/i18n/catalog/
 src/auto-imports.d.ts
 src/components.d.ts
 src/shared/**/*.generated.json

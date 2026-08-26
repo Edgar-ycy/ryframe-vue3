@@ -25,8 +25,10 @@ export default defineConfig({
     include: [
       'tests/unit/cronBuilderModel.test.ts',
       'tests/unit/messageSocket.test.ts',
+      'tests/unit/messageSocketCodec.test.ts',
       'tests/unit/routeProjection.test.ts',
       'tests/unit/sessionContext.test.ts',
+      'tests/unit/sessionMessage.test.ts',
       'tests/unit/settings.test.ts',
     ],
     clearMocks: true,

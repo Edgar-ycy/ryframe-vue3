@@ -115,6 +115,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
       refetchOnMount: 'always',
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
+      meta: { errorMode: 'silent' },
     },
   )
 
@@ -133,6 +134,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
       refetchOnMount: 'always',
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
+      meta: { errorMode: 'silent' },
     },
   )
 
@@ -156,6 +158,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
       refetchOnMount: false,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
+      meta: { errorMode: 'silent' },
     },
   )
 

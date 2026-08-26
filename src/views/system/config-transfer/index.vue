@@ -148,6 +148,7 @@
 import { useI18n } from 'vue-i18n'
 import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
 import { formatOptionalLocalizedDate } from '@/i18n'
+import { HttpError } from '@/shared/http/client'
 import ConfigPackagePanel from './components/ConfigPackagePanel.vue'
 import ConfigPackageUploadDialog from './components/ConfigPackageUploadDialog.vue'
 import ConfigTransferHistoryDrawer from './components/ConfigTransferHistoryDrawer.vue'
@@ -207,6 +208,7 @@ function operationIs(kind: 'preview' | 'apply' | 'rollback'): boolean {
 }
 
 function showError(error: unknown): void {
+  if (error instanceof HttpError && error.kind === 'cancelled') return
   const message = error instanceof Error ? error.message : t('shell.http.requestFailed')
   ElMessage.error(message)
 }

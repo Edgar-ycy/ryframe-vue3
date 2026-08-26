@@ -37,6 +37,7 @@ export function useTenantCapacityCommands(
     () => queries.userStore.tenantId,
     TENANT_CAPACITY_PAGE_RESOURCE,
     {
+      meta: { errorMode: 'silent' },
       mutationFn: async command => requireOperationData(await (
         command.kind === 'create'
           ? createTenant(command.data, command.idempotencyKey)
@@ -48,6 +49,7 @@ export function useTenantCapacityCommands(
     () => queries.userStore.tenantId,
     TENANT_CAPACITY_PAGE_RESOURCE,
     {
+      meta: { errorMode: 'silent' },
       mutationFn: async command => {
         await updateTenantStatus(command.tenantId, command.status)
       },

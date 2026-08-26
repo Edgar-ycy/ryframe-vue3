@@ -37,6 +37,7 @@ export function useTenantConfigTransferCreationCommands(
     () => context.currentIdentity()?.tenantId,
     TENANT_CONFIG_PACKAGES_RESOURCE,
     {
+      meta: { errorMode: 'silent' },
       mutationFn: async command => requireOperationData(await createTenantConfigPackage(
         command.idempotencyKey,
         command.controller.signal,
@@ -47,6 +48,7 @@ export function useTenantConfigTransferCreationCommands(
     () => context.currentIdentity()?.tenantId,
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     {
+      meta: { errorMode: 'silent' },
       mutationFn: async command => {
         const response = command.kind === 'upload'
           ? await uploadTenantConfigTransfer(

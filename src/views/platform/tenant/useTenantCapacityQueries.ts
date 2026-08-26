@@ -72,6 +72,7 @@ export function useTenantCapacityQueries() {
       refetchInterval: false,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
+      meta: { errorMode: 'silent' },
     },
   )
 
@@ -93,6 +94,7 @@ export function useTenantCapacityQueries() {
       refetchInterval: false,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
+      meta: { errorMode: 'silent' },
     },
   )
 

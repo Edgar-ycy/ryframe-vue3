@@ -87,6 +87,7 @@ import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import type { CreateTenantPayload, TenantCapacity, UpdateTenantPayload } from '@/api/modules/tenant'
 import { formatLocalizedDate } from '@/i18n'
+import { HttpError } from '@/shared/http/client'
 import { confirmAction } from '@/utils/confirmAction'
 import TenantCapacityList from './components/TenantCapacityList.vue'
 import TenantFormDialog from './components/TenantFormDialog.vue'
@@ -236,6 +237,7 @@ async function handleRefreshDetail(): Promise<void> {
 }
 
 function showError(error: unknown): void {
+  if (error instanceof HttpError && error.kind === 'cancelled') return
   ElMessage.error(error instanceof Error ? error.message : t('shell.http.requestFailed'))
 }
 

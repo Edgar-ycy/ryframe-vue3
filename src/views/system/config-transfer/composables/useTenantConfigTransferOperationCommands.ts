@@ -36,6 +36,7 @@ export function useTenantConfigTransferOperationCommands(
     () => context.currentIdentity()?.tenantId,
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     {
+      meta: { errorMode: 'silent' },
       mutationFn: async command => {
         const { transfer } = command
         if (command.kind === 'preview') {

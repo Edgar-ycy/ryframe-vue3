@@ -227,7 +227,6 @@ import {
   listDataRetentionRuns,
   previewDataRetention,
   runDataRetention,
-  type DataRetentionPolicy,
   type DataRetentionPreview,
   type DataRetentionRunRecord,
 } from '@/api/modules/monitor'
@@ -247,6 +246,16 @@ import {
   MONITOR_RETENTION_RESOURCE,
   MONITOR_RETENTION_RUNS_RESOURCE,
 } from '../queryResources'
+import {
+  countEntries,
+  countSummary as summarizeCounts,
+  policyWindows,
+  retentionResourceKey,
+  retentionStatusKey,
+  retentionStatusTag,
+  retentionTriggerKey,
+  totalCount,
+} from './presentation'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -293,80 +302,25 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat(getApplicationLocale()).format(value)
 }
 
-function policyWindows(policy: DataRetentionPolicy) {
-  return [
-    { key: 'background_jobs', value: policy.background_job_succeeded_days, unit: 'days' },
-    { key: 'outbox_events', value: policy.outbox_published_days, unit: 'days' },
-    { key: 'schedule_executions', value: policy.schedule_execution_days, unit: 'days' },
-    { key: 'export_jobs', value: policy.export_job_history_days, unit: 'days' },
-    { key: 'operation_logs', value: policy.operation_log_days, unit: 'days' },
-    { key: 'login_logs', value: policy.login_log_days, unit: 'days' },
-    { key: 'user_imports', value: policy.user_import_history_days, unit: 'days' },
-    { key: 'user_import_artifacts', value: policy.user_import_artifact_hours, unit: 'hours' },
-    { key: 'retention_runs', value: policy.retention_run_days, unit: 'days' },
-  ]
-}
-
-const RESOURCE_KEYS: Record<string, string> = {
-  background_jobs: 'monitor.retention.resourceBackgroundJobs',
-  outbox_events: 'monitor.retention.resourceOutboxEvents',
-  schedule_executions: 'monitor.retention.resourceScheduleExecutions',
-  export_jobs: 'monitor.retention.resourceExportJobs',
-  operation_logs: 'monitor.retention.resourceOperationLogs',
-  login_logs: 'monitor.retention.resourceLoginLogs',
-  user_imports: 'monitor.retention.resourceUserImports',
-  user_import_artifacts: 'monitor.retention.resourceUserImportArtifacts',
-  retention_runs: 'monitor.retention.resourceRetentionRuns',
-}
-
 function resourceLabel(resource: string): string {
-  const key = RESOURCE_KEYS[resource]
+  const key = retentionResourceKey(resource)
   return key ? t(key) : resource
 }
 
-function countEntries(value: unknown): Array<[string, number]> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return []
-  return Object.entries(value).flatMap(([key, count]) =>
-    typeof count === 'number' && Number.isFinite(count) ? [[key, count] as [string, number]] : [],
-  )
-}
-
-function totalCount(value: unknown): number {
-  return countEntries(value).reduce((total, entry) => total + entry[1], 0)
-}
-
 function countSummary(value: unknown): string {
-  const entries = countEntries(value).filter((entry) => entry[1] > 0)
-  if (!entries.length) return '—'
-  return entries.map((entry) => `${resourceLabel(entry[0])} ${formatNumber(entry[1])}`).join('；')
+  return summarizeCounts(value, resourceLabel, formatNumber)
 }
 
 function triggerLabel(value: string): string {
-  return t(
-    value === 'scheduled'
-      ? 'monitor.retention.triggerScheduled'
-      : 'monitor.retention.triggerManual',
-  )
+  return t(retentionTriggerKey(value))
 }
 
 function statusLabel(value: string): string {
-  const key =
-    {
-      pending: 'statusPending',
-      running: 'statusRunning',
-      succeeded: 'statusSucceeded',
-      partial: 'statusPartial',
-      failed: 'statusFailed',
-    }[value] ?? 'statusFailed'
-  return t(`monitor.retention.${key}`)
+  return t(retentionStatusKey(value))
 }
 
 function statusTag(value: string): 'danger' | 'info' | 'primary' | 'success' | 'warning' {
-  if (value === 'succeeded') return 'success'
-  if (value === 'failed') return 'danger'
-  if (value === 'partial') return 'warning'
-  if (value === 'running') return 'primary'
-  return 'info'
+  return retentionStatusTag(value)
 }
 
 function cancelPreview(): void {

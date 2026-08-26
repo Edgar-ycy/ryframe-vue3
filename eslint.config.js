@@ -1,16 +1,12 @@
 import js from '@eslint/js'
+import eslintConfigPrettier from 'eslint-config-prettier'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
 
 export default tseslint.config(
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'src/auto-imports.d.ts',
-      'src/components.d.ts',
-    ],
+    ignores: ['dist/**', 'node_modules/**', 'src/auto-imports.d.ts', 'src/components.d.ts'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -46,40 +42,51 @@ export default tseslint.config(
   {
     files: ['src/shared/**/*.{ts,vue}'],
     rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [{
-          group: [
-            '@/app/**',
-            '@/api/**',
-            '@/components/**',
-            '@/router/**',
-            '@/stores/**',
-            '@/views/**',
-            'element-plus',
-            'element-plus/**',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/app/**',
+                '@/api/**',
+                '@/components/**',
+                '@/router/**',
+                '@/stores/**',
+                '@/views/**',
+                'element-plus',
+                'element-plus/**',
+              ],
+              message: 'shared 层只能依赖无业务状态的基础模块',
+            },
           ],
-          message: 'shared 层只能依赖无业务状态的基础模块',
-        }],
-      }],
+        },
+      ],
     },
   },
   {
     files: ['src/api/modules/**/*.ts'],
     rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [{
-          group: [
-            '@/app/**',
-            '@/components/**',
-            '@/router/**',
-            '@/stores/**',
-            '@/views/**',
-            'element-plus',
-            'element-plus/**',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/app/**',
+                '@/components/**',
+                '@/router/**',
+                '@/stores/**',
+                '@/views/**',
+                'element-plus',
+                'element-plus/**',
+              ],
+              message: 'API 模块只能描述传输契约，不能依赖 UI、路由或状态层',
+            },
           ],
-          message: 'API 模块只能描述传输契约，不能依赖 UI、路由或状态层',
-        }],
-      }],
+        },
+      ],
     },
   },
+  eslintConfigPrettier,
 )

@@ -1,10 +1,6 @@
 import type { PermissionCode } from '@/api/generated/permissions'
 import type { FeatureManifest } from '@/features/manifest'
-import type {
-  MenuPageRegistryEntry,
-  PageManifest,
-  PageManifestEntry,
-} from '@/features/pages'
+import type { MenuPageRegistryEntry, PageManifest, PageManifestEntry } from '@/features/pages'
 import { withMessageCatalogs } from '@/i18n/lazyCatalog'
 
 interface FeatureModule {
@@ -22,11 +18,13 @@ const resourcePageModules = import.meta.glob<PageModule>(
   { eager: true },
 )
 
-export const featureManifests = Object.values(featureModules)
-  .flatMap(module => module.featureManifest ? [module.featureManifest] : [])
+export const featureManifests = Object.values(featureModules).flatMap((module) =>
+  module.featureManifest ? [module.featureManifest] : [],
+)
 
-const pageEntries = Object.values({ ...domainPageModules, ...resourcePageModules })
-  .flatMap(module => module.pageManifest?.pages ?? [])
+const pageEntries = Object.values({ ...domainPageModules, ...resourcePageModules }).flatMap(
+  (module) => module.pageManifest?.pages ?? [],
+)
 
 function addPage(
   registry: Record<string, MenuPageRegistryEntry>,
@@ -65,7 +63,7 @@ export const registeredMenuPageRegistry = Object.freeze(menuPages)
 export const registeredPermissionRouteKeys = Object.freeze(permissionRoutes)
 
 const businessWritePermissions = new Set<PermissionCode>(
-  featureManifests.flatMap(feature => [...feature.businessWritePermissions]),
+  featureManifests.flatMap((feature) => [...feature.businessWritePermissions]),
 )
 
 export function isBusinessWritePermission(permissionCode: PermissionCode): boolean {
@@ -73,5 +71,5 @@ export function isBusinessWritePermission(permissionCode: PermissionCode): boole
 }
 
 export function findFeatureManifest(capabilityCode: string) {
-  return featureManifests.find(feature => feature.capabilityCode === capabilityCode)
+  return featureManifests.find((feature) => feature.capabilityCode === capabilityCode)
 }

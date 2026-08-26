@@ -1,9 +1,6 @@
 import type { RouteComponentLoader } from '@/shared/navigation/routeComponent'
 import { i18n } from '@/i18n'
-import type {
-  MessageCatalog,
-  MessageCatalogLoader,
-} from './catalog'
+import type { MessageCatalog, MessageCatalogLoader } from './catalog'
 
 const installedCatalogs = new WeakSet<MessageCatalog>()
 
@@ -21,10 +18,7 @@ export function withMessageCatalogs(
 ): RouteComponentLoader {
   if (!catalogs?.length) return page
   return async () => {
-    const [component, ...messages] = await Promise.all([
-      page(),
-      ...catalogs.map(load => load()),
-    ])
+    const [component, ...messages] = await Promise.all([page(), ...catalogs.map((load) => load())])
     for (const catalog of messages) installMessageCatalog(catalog)
     return component
   }

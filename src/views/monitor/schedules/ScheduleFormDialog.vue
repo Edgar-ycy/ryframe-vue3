@@ -35,7 +35,10 @@
             :disabled="!target.available"
           />
         </el-select>
-        <p v-if="selectedTarget() && !selectedTarget()?.available" class="form-hint form-hint--warning">
+        <p
+          v-if="selectedTarget() && !selectedTarget()?.available"
+          class="form-hint form-hint--warning"
+        >
           {{ t('monitor.schedules.unavailableTargetHint') }}
         </p>
       </el-form-item>
@@ -59,7 +62,12 @@
           class="form-control-wide"
           @update:model-value="updateTimezone"
         >
-          <el-option v-for="timezone in timezoneOptions" :key="timezone" :label="timezone" :value="timezone" />
+          <el-option
+            v-for="timezone in timezoneOptions"
+            :key="timezone"
+            :label="timezone"
+            :value="timezone"
+          />
         </el-select>
         <p class="form-hint">{{ t('monitor.schedules.timezoneHint') }}</p>
       </el-form-item>
@@ -143,7 +151,9 @@
         <el-table :data="preview.occurrences" border size="small" class="preview-table">
           <el-table-column type="index" :label="t('monitor.schedules.sequence')" width="72" />
           <el-table-column :label="t('monitor.schedules.scheduleTime')" min-width="190">
-            <template #default="{ row }">{{ formatScheduleTime(row.utc, preview.timezone) }}</template>
+            <template #default="{ row }">{{
+              formatScheduleTime(row.utc, preview.timezone)
+            }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.browserTime')" min-width="190">
             <template #default="{ row }">{{ formatLocalizedDate(row.utc) }}</template>
@@ -159,14 +169,20 @@
       </div>
 
       <div class="schedule-preview__actions">
-        <el-button :loading="previewLoading" :disabled="saving || !canPreview()" @click="runPreviewNow">
+        <el-button
+          :loading="previewLoading"
+          :disabled="saving || !canPreview()"
+          @click="runPreviewNow"
+        >
           {{ t('monitor.schedules.recalculatePreview') }}
         </el-button>
       </div>
     </section>
 
     <template #footer>
-      <el-button :disabled="saving" @click="visible = false">{{ t('monitor.schedules.cancel') }}</el-button>
+      <el-button :disabled="saving" @click="visible = false">{{
+        t('monitor.schedules.cancel')
+      }}</el-button>
       <el-button
         v-if="!hasValidPreview()"
         type="primary"
@@ -176,13 +192,7 @@
       >
         {{ t('monitor.schedules.previewAndContinue') }}
       </el-button>
-      <el-button
-        v-else
-        type="primary"
-        :loading="saving"
-        :disabled="!canSubmit()"
-        @click="submit"
-      >
+      <el-button v-else type="primary" :loading="saving" :disabled="!canSubmit()" @click="submit">
         {{ t('monitor.schedules.confirmSave') }}
       </el-button>
     </template>
@@ -261,25 +271,37 @@ const rules: FormRules<ScheduleFormModel> = {
     { required: true, message: t('monitor.schedules.nameRequired'), trigger: 'blur' },
     { validator: validateName, trigger: 'blur' },
   ],
-  handler_key: [{ required: true, message: t('monitor.schedules.targetRequired'), trigger: 'change' }],
-  cron_expression: [{ required: true, message: t('monitor.schedules.cronRequired'), trigger: 'blur' }],
-  timezone: [{ required: true, message: t('monitor.schedules.timezoneRequired'), trigger: 'change' }],
-  max_runtime_seconds: [{ required: true, message: t('monitor.schedules.runtimeRequired'), trigger: 'change' }],
+  handler_key: [
+    { required: true, message: t('monitor.schedules.targetRequired'), trigger: 'change' },
+  ],
+  cron_expression: [
+    { required: true, message: t('monitor.schedules.cronRequired'), trigger: 'blur' },
+  ],
+  timezone: [
+    { required: true, message: t('monitor.schedules.timezoneRequired'), trigger: 'change' },
+  ],
+  max_runtime_seconds: [
+    { required: true, message: t('monitor.schedules.runtimeRequired'), trigger: 'change' },
+  ],
 }
 
 function resetForm(schedule: JobScheduleRecord | undefined): void {
-  Object.assign(form, schedule
-    ? {
-        name: schedule.name,
-        handler_key: schedule.handler_key,
-        cron_expression: schedule.cron_expression,
-        timezone: schedule.timezone,
-        enabled: schedule.enabled,
-        misfire_policy: schedule.misfire_policy as ScheduleFormModel['misfire_policy'],
-        concurrency_policy: schedule.concurrency_policy as ScheduleFormModel['concurrency_policy'],
-        max_runtime_seconds: schedule.max_runtime_seconds,
-      }
-    : createDefaultScheduleForm(browserTimezone))
+  Object.assign(
+    form,
+    schedule
+      ? {
+          name: schedule.name,
+          handler_key: schedule.handler_key,
+          cron_expression: schedule.cron_expression,
+          timezone: schedule.timezone,
+          enabled: schedule.enabled,
+          misfire_policy: schedule.misfire_policy as ScheduleFormModel['misfire_policy'],
+          concurrency_policy:
+            schedule.concurrency_policy as ScheduleFormModel['concurrency_policy'],
+          max_runtime_seconds: schedule.max_runtime_seconds,
+        }
+      : createDefaultScheduleForm(browserTimezone),
+  )
   void nextTick(() => formRef.value?.clearValidate())
 }
 
@@ -319,17 +341,19 @@ function validateName(_rule: unknown, value: unknown, callback: (error?: Error) 
 }
 
 function selectedTarget(): ScheduleTargetRecord | undefined {
-  return props.targets.find(target => target.handler_key === form.handler_key)
+  return props.targets.find((target) => target.handler_key === form.handler_key)
 }
 
 function isFormComplete(): boolean {
   const target = selectedTarget()
-  return isValidScheduleName(form.name)
-    && Boolean(target?.available)
-    && canPreview()
-    && Number.isInteger(form.max_runtime_seconds)
-    && form.max_runtime_seconds >= 1
-    && form.max_runtime_seconds <= 86400
+  return (
+    isValidScheduleName(form.name) &&
+    Boolean(target?.available) &&
+    canPreview() &&
+    Number.isInteger(form.max_runtime_seconds) &&
+    form.max_runtime_seconds >= 1 &&
+    form.max_runtime_seconds <= 86400
+  )
 }
 
 function canSubmit(): boolean {
@@ -338,21 +362,22 @@ function canSubmit(): boolean {
 
 async function validateForm(): Promise<boolean> {
   try {
-    return await formRef.value?.validate() ?? false
-  }
-  catch {
+    return (await formRef.value?.validate()) ?? false
+  } catch {
     return false
   }
 }
 
 async function submit(): Promise<void> {
   if (props.saving || previewLoading.value) return
-  if (!await validateForm() || !isFormComplete()) return
+  if (!(await validateForm()) || !isFormComplete()) return
   if (!hasValidPreview()) {
-    const succeeded = await runPreview(JSON.stringify({
-      cron_expression: form.cron_expression.trim(),
-      timezone: form.timezone.trim(),
-    }))
+    const succeeded = await runPreview(
+      JSON.stringify({
+        cron_expression: form.cron_expression.trim(),
+        timezone: form.timezone.trim(),
+      }),
+    )
     if (succeeded) ElMessage.info(t('monitor.schedules.previewReviewBeforeSave'))
     return
   }
@@ -375,9 +400,7 @@ async function submit(): Promise<void> {
 
 function targetLabel(target: ScheduleTargetRecord): string {
   const targetName = props.targetName(target.handler_key)
-  return target.available
-    ? targetName
-    : `${targetName} (${t('monitor.schedules.unavailable')})`
+  return target.available ? targetName : `${targetName} (${t('monitor.schedules.unavailable')})`
 }
 </script>
 

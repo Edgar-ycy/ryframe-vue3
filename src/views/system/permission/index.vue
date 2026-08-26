@@ -61,13 +61,28 @@
         row-key="id"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
       >
-        <el-table-column prop="name" :label="t('system.permission.name')" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="code" :label="t('system.permission.code')" min-width="220" show-overflow-tooltip>
+        <el-table-column
+          prop="name"
+          :label="t('system.permission.name')"
+          min-width="160"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="code"
+          :label="t('system.permission.code')"
+          min-width="220"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
             <el-tag>{{ row.code }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="perm_type" :label="t('system.common.type')" width="90" align="center">
+        <el-table-column
+          prop="perm_type"
+          :label="t('system.common.type')"
+          width="90"
+          align="center"
+        >
           <template #default="{ row }">
             <el-tag :type="row.perm_type === 'api' ? 'info' : 'success'" size="small">
               {{ row.perm_type === 'api' ? t('system.common.api') : t('system.common.menu') }}
@@ -82,7 +97,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="t('system.common.actions')" width="210" fixed="right" align="center">
+        <el-table-column
+          :label="t('system.common.actions')"
+          width="210"
+          fixed="right"
+          align="center"
+        >
           <template #default="{ row }">
             <el-button
               v-perm="'system:perm:add'"

@@ -1,8 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import {
-  isPermissionCode,
-  type PermissionCode,
-} from '@/api/generated/permissions'
+import { isPermissionCode, type PermissionCode } from '@/api/generated/permissions'
 import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
 import { getMenuPage } from '@/features/pageRegistry'
 import { hasRequiredCapabilities } from '@/shared/navigation/capabilityAccess'
@@ -14,7 +11,7 @@ let constantMenuRoutes: readonly RouteRecordRaw[] = []
 export function installRouteProjection(options: {
   constantRoutes: readonly RouteRecordRaw[]
 }): void {
-  const layoutRoute = options.constantRoutes.find(route => route.path === '/' && route.children)
+  const layoutRoute = options.constantRoutes.find((route) => route.path === '/' && route.children)
   constantMenuRoutes = layoutRoute?.children ?? []
 }
 
@@ -57,16 +54,13 @@ export function buildAccessibleMenus(
   permissions: readonly string[],
   capabilities: readonly string[],
 ): RouteRecordRaw[] {
-  return [
-    ...getConstantMenus(),
-    ...filterAccessibleRoutes(routes, permissions, capabilities),
-  ]
+  return [...getConstantMenus(), ...filterAccessibleRoutes(routes, permissions, capabilities)]
 }
 
 function getConstantMenus(): RouteRecordRaw[] {
   return constantMenuRoutes
-    .filter(child => !child.meta?.hidden)
-    .map(child => ({
+    .filter((child) => !child.meta?.hidden)
+    .map((child) => ({
       ...child,
       path: `/${String(child.path).replace(/^\/+/, '')}`,
     }))
@@ -88,14 +82,11 @@ function iconPascalCase(icon: string): string {
   return icon
     .split(/[-_]/)
     .filter(Boolean)
-    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join('')
 }
 
-function nodeToRoute(
-  node: MenuTreeNode,
-  parentPath?: string,
-): RouteRecordRaw | null {
+function nodeToRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw | null {
   const type = getMenuType(node)
   if (type === 'M') return buildDirectoryRoute(node)
   if (type === 'C') return buildMenuRoute(node, parentPath)
@@ -109,7 +100,7 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw | null {
     ? buildRoutesFromMenuTree(node.children, directoryPath)
     : []
   if (node.children?.length && children.length === 0) return null
-  const firstChildPath = children.find(child => child.meta?.hidden !== true)?.path
+  const firstChildPath = children.find((child) => child.meta?.hidden !== true)?.path
   const redirect = firstChildPath
     ? resolveChildPath(directoryPath, String(firstChildPath))
     : directoryPath
@@ -195,12 +186,10 @@ function filterAccessibleRoutes(
 
     const required = route.meta?.permission
     if (
-      route.meta?.requiresPermission
-      && (
-        typeof required !== 'string'
-        || !isPermissionCode(required)
-        || !hasPermission(permissions, required)
-      )
+      route.meta?.requiresPermission &&
+      (typeof required !== 'string' ||
+        !isPermissionCode(required) ||
+        !hasPermission(permissions, required))
     ) {
       continue
     }

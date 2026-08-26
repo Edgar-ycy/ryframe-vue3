@@ -37,7 +37,11 @@
         </el-table-column>
         <el-table-column :label="t('exportCenter.status')" width="112" align="center">
           <template #default="{ row }">
-            <el-tag :type="exportJobStatusTag(row.status)" size="small" :aria-label="t('exportCenter.ariaStatus', { status: statusLabel(row.status) })">
+            <el-tag
+              :type="exportJobStatusTag(row.status)"
+              size="small"
+              :aria-label="t('exportCenter.ariaStatus', { status: statusLabel(row.status) })"
+            >
               <span v-if="row.status === 'running'" class="running-dot" aria-hidden="true" />
               {{ statusLabel(row.status) }}
             </el-tag>
@@ -50,7 +54,9 @@
           <template #default="{ row }">{{ formatOptionalLocalizedDate(row.created_at) }}</template>
         </el-table-column>
         <el-table-column :label="t('exportCenter.completedAt')" min-width="165">
-          <template #default="{ row }">{{ formatOptionalLocalizedDate(row.completed_at) }}</template>
+          <template #default="{ row }">{{
+            formatOptionalLocalizedDate(row.completed_at)
+          }}</template>
         </el-table-column>
         <el-table-column :label="t('exportCenter.expiresAt')" min-width="165">
           <template #default="{ row }">{{ formatOptionalLocalizedDate(row.expires_at) }}</template>
@@ -63,15 +69,28 @@
             <span v-else>{{ t('exportCenter.noError') }}</span>
           </template>
         </el-table-column>
-        <el-table-column :label="t('exportCenter.operation')" width="220" fixed="right" align="center">
+        <el-table-column
+          :label="t('exportCenter.operation')"
+          width="220"
+          fixed="right"
+          align="center"
+        >
           <template #default="{ row }">
-            <div class="row-actions" role="group" :aria-label="t('exportCenter.ariaActions', { name: displayName(row) })">
+            <div
+              class="row-actions"
+              role="group"
+              :aria-label="t('exportCenter.ariaActions', { name: displayName(row) })"
+            >
               <el-button
                 v-if="canCancel(row.status)"
                 type="danger"
                 link
                 :loading="cancellingJobId === row.id"
-                :disabled="Boolean(cancellingJobId) || downloadingJobId === row.id || deletingJobIds.includes(row.id)"
+                :disabled="
+                  Boolean(cancellingJobId) ||
+                  downloadingJobId === row.id ||
+                  deletingJobIds.includes(row.id)
+                "
                 @click="emit('cancel', row)"
               >
                 {{ t('exportCenter.cancel') }}
@@ -81,23 +100,45 @@
                 type="primary"
                 link
                 :loading="downloadingJobId === row.id"
-                :disabled="isDownloadUnavailable(row) || Boolean(downloadingJobId) || cancellingJobId === row.id || deletingJobIds.includes(row.id)"
-                :title="isDownloadUnavailable(row) ? t('exportCenter.downloadExpired') : t('exportCenter.download')"
+                :disabled="
+                  isDownloadUnavailable(row) ||
+                  Boolean(downloadingJobId) ||
+                  cancellingJobId === row.id ||
+                  deletingJobIds.includes(row.id)
+                "
+                :title="
+                  isDownloadUnavailable(row)
+                    ? t('exportCenter.downloadExpired')
+                    : t('exportCenter.download')
+                "
                 @click="emit('download', row)"
               >
-                {{ isDownloadUnavailable(row) ? t('exportCenter.expired') : t('exportCenter.download') }}
+                {{
+                  isDownloadUnavailable(row)
+                    ? t('exportCenter.expired')
+                    : t('exportCenter.download')
+                }}
               </el-button>
               <el-button
                 v-if="canDelete(row.status)"
                 type="danger"
                 link
                 :loading="deletingJobIds.includes(row.id)"
-                :disabled="deletingJobIds.length > 0 || cancellingJobId === row.id || downloadingJobId === row.id"
+                :disabled="
+                  deletingJobIds.length > 0 ||
+                  cancellingJobId === row.id ||
+                  downloadingJobId === row.id
+                "
                 @click="emit('delete', row)"
               >
                 {{ t('exportCenter.delete') }}
               </el-button>
-              <span v-if="!canCancel(row.status) && row.status !== 'succeeded' && !canDelete(row.status)">—</span>
+              <span
+                v-if="
+                  !canCancel(row.status) && row.status !== 'succeeded' && !canDelete(row.status)
+                "
+                >—</span
+              >
             </div>
           </template>
         </el-table-column>
@@ -106,7 +147,10 @@
   </div>
 
   <div v-loading="loading" class="exports-mobile" :aria-label="t('exportCenter.title')">
-    <el-empty v-if="visibleJobs.length === 0" :description="t(jobs?.length ? 'exportCenter.filtersEmpty' : 'exportCenter.empty')" />
+    <el-empty
+      v-if="visibleJobs.length === 0"
+      :description="t(jobs?.length ? 'exportCenter.filtersEmpty' : 'exportCenter.empty')"
+    />
     <div v-if="terminalVisibleIds().length > 0" class="exports-mobile__selection">
       <el-checkbox
         :model-value="allTerminalSelected()"
@@ -135,25 +179,70 @@
         </el-tag>
       </div>
       <dl class="export-card__details">
-        <div><dt>{{ t('exportCenter.resource') }}</dt><dd>{{ resourceLabel(job.resource) }}</dd></div>
-        <div><dt>{{ t('exportCenter.fileSize') }}</dt><dd>{{ formatExportFileSize(job.file_size) }}</dd></div>
-        <div><dt>{{ t('exportCenter.createdAt') }}</dt><dd>{{ formatOptionalLocalizedDate(job.created_at) }}</dd></div>
-        <div><dt>{{ t('exportCenter.completedAt') }}</dt><dd>{{ formatOptionalLocalizedDate(job.completed_at) }}</dd></div>
-        <div><dt>{{ t('exportCenter.expiresAt') }}</dt><dd>{{ formatOptionalLocalizedDate(job.expires_at) }}</dd></div>
+        <div>
+          <dt>{{ t('exportCenter.resource') }}</dt>
+          <dd>{{ resourceLabel(job.resource) }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('exportCenter.fileSize') }}</dt>
+          <dd>{{ formatExportFileSize(job.file_size) }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('exportCenter.createdAt') }}</dt>
+          <dd>{{ formatOptionalLocalizedDate(job.created_at) }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('exportCenter.completedAt') }}</dt>
+          <dd>{{ formatOptionalLocalizedDate(job.completed_at) }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('exportCenter.expiresAt') }}</dt>
+          <dd>{{ formatOptionalLocalizedDate(job.expires_at) }}</dd>
+        </div>
       </dl>
-      <button v-if="job.error_message" type="button" class="export-card__error" @click="emit('error', job)">
+      <button
+        v-if="job.error_message"
+        type="button"
+        class="export-card__error"
+        @click="emit('error', job)"
+      >
         {{ job.error_message }}
       </button>
-      <div v-if="canCancel(job.status) || job.status === 'succeeded' || canDelete(job.status)" class="export-card__actions" role="group" :aria-label="t('exportCenter.ariaActions', { name: displayName(job) })">
-        <el-button v-if="canCancel(job.status)" type="danger" plain :loading="cancellingJobId === job.id" :disabled="Boolean(cancellingJobId) || downloadingJobId === job.id || deletingJobIds.includes(job.id)" @click="emit('cancel', job)">
+      <div
+        v-if="canCancel(job.status) || job.status === 'succeeded' || canDelete(job.status)"
+        class="export-card__actions"
+        role="group"
+        :aria-label="t('exportCenter.ariaActions', { name: displayName(job) })"
+      >
+        <el-button
+          v-if="canCancel(job.status)"
+          type="danger"
+          plain
+          :loading="cancellingJobId === job.id"
+          :disabled="
+            Boolean(cancellingJobId) ||
+            downloadingJobId === job.id ||
+            deletingJobIds.includes(job.id)
+          "
+          @click="emit('cancel', job)"
+        >
           {{ t('exportCenter.cancel') }}
         </el-button>
         <el-button
           v-if="job.status === 'succeeded'"
           type="primary"
           :loading="downloadingJobId === job.id"
-          :disabled="isDownloadUnavailable(job) || Boolean(downloadingJobId) || cancellingJobId === job.id || deletingJobIds.includes(job.id)"
-          :title="isDownloadUnavailable(job) ? t('exportCenter.downloadExpired') : t('exportCenter.download')"
+          :disabled="
+            isDownloadUnavailable(job) ||
+            Boolean(downloadingJobId) ||
+            cancellingJobId === job.id ||
+            deletingJobIds.includes(job.id)
+          "
+          :title="
+            isDownloadUnavailable(job)
+              ? t('exportCenter.downloadExpired')
+              : t('exportCenter.download')
+          "
           @click="emit('download', job)"
         >
           {{ isDownloadUnavailable(job) ? t('exportCenter.expired') : t('exportCenter.download') }}
@@ -162,7 +251,9 @@
           v-if="canDelete(job.status)"
           type="danger"
           :loading="deletingJobIds.includes(job.id)"
-          :disabled="deletingJobIds.length > 0 || cancellingJobId === job.id || downloadingJobId === job.id"
+          :disabled="
+            deletingJobIds.length > 0 || cancellingJobId === job.id || downloadingJobId === job.id
+          "
           @click="emit('delete', job)"
         >
           {{ t('exportCenter.delete') }}
@@ -205,17 +296,17 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 function terminalVisibleIds(): string[] {
-  return props.visibleJobs.filter(job => props.canDelete(job.status)).map(job => job.id)
+  return props.visibleJobs.filter((job) => props.canDelete(job.status)).map((job) => job.id)
 }
 
 function allTerminalSelected(): boolean {
   const ids = terminalVisibleIds()
-  return ids.length > 0 && ids.every(id => props.selectedJobIds.includes(id))
+  return ids.length > 0 && ids.every((id) => props.selectedJobIds.includes(id))
 }
 
 function someTerminalSelected(): boolean {
   const ids = terminalVisibleIds()
-  const selectedCount = ids.filter(id => props.selectedJobIds.includes(id)).length
+  const selectedCount = ids.filter((id) => props.selectedJobIds.includes(id)).length
   return selectedCount > 0 && selectedCount < ids.length
 }
 
@@ -226,7 +317,10 @@ function toggleJobSelection(jobId: string, checked: unknown): void {
     }
     return
   }
-  emit('update:selectedJobIds', props.selectedJobIds.filter(id => id !== jobId))
+  emit(
+    'update:selectedJobIds',
+    props.selectedJobIds.filter((id) => id !== jobId),
+  )
 }
 
 function toggleVisibleSelection(checked: unknown): void {
@@ -237,7 +331,10 @@ function toggleVisibleSelection(checked: unknown): void {
     emit('update:selectedJobIds', Array.from(ids))
     return
   }
-  emit('update:selectedJobIds', props.selectedJobIds.filter(id => !visibleIds.has(id)))
+  emit(
+    'update:selectedJobIds',
+    props.selectedJobIds.filter((id) => !visibleIds.has(id)),
+  )
 }
 </script>
 

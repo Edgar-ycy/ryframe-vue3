@@ -1,6 +1,13 @@
 <template>
   <div v-loading="loading && !poolInfo" class="page-container monitor-page">
-    <el-alert v-if="error?.message" :title="error?.message ?? ''" type="error" show-icon :closable="false" class="monitor-page__alert" />
+    <el-alert
+      v-if="error?.message"
+      :title="error?.message ?? ''"
+      type="error"
+      show-icon
+      :closable="false"
+      class="monitor-page__alert"
+    />
     <el-row :gutter="12">
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="never" class="monitor-metric-card monitor-metric-card--compact">
@@ -30,7 +37,9 @@
             <el-icon><Clock /></el-icon>
             <span>{{ t('monitor.dbPool.checkTime') }}</span>
           </div>
-          <div class="monitor-metric-value monitor-metric-value--time">{{ formatOptionalLocalizedDate(poolInfo?.timestamp) }}</div>
+          <div class="monitor-metric-value monitor-metric-value--time">
+            {{ formatOptionalLocalizedDate(poolInfo?.timestamp) }}
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -39,7 +48,13 @@
       <template #header>
         <div class="card-header">
           <span>{{ t('monitor.dbPool.title') }}</span>
-          <el-button v-perm="'monitor:db-pool:list'" :loading="loading" icon="Refresh" @click="fetchData">{{ t('monitor.dbPool.refresh') }}</el-button>
+          <el-button
+            v-perm="'monitor:db-pool:list'"
+            :loading="loading"
+            icon="Refresh"
+            @click="fetchData"
+            >{{ t('monitor.dbPool.refresh') }}</el-button
+          >
         </div>
       </template>
 
@@ -77,7 +92,7 @@ const poolQuery = useTenantQuery<DbPoolInfo | null>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-db-pool',
   () => ({ scope: 'status' }),
-  async signal => {
+  async (signal) => {
     const response = await getDbPool(signal)
     return response.data ?? null
   },

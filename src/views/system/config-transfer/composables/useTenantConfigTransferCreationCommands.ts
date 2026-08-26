@@ -23,10 +23,7 @@ interface PackageCommand {
 type CreateTransferCommand = {
   controller: AbortController
   idempotencyKey: string
-} & (
-  | { kind: 'from-package', bundleId: string }
-  | { kind: 'upload', file: File }
-)
+} & ({ kind: 'from-package'; bundleId: string } | { kind: 'upload'; file: File })
 
 /** 配置包导出、从配置包创建和上传创建迁移的命令。 */
 export function useTenantConfigTransferCreationCommands(
@@ -38,10 +35,10 @@ export function useTenantConfigTransferCreationCommands(
     TENANT_CONFIG_PACKAGES_RESOURCE,
     {
       meta: { errorMode: 'silent' },
-      mutationFn: async command => requireOperationData(await createTenantConfigPackage(
-        command.idempotencyKey,
-        command.controller.signal,
-      )),
+      mutationFn: async (command) =>
+        requireOperationData(
+          await createTenantConfigPackage(command.idempotencyKey, command.controller.signal),
+        ),
     },
   )
   const createTransferMutation = useTenantMutation<TenantConfigTransfer, CreateTransferCommand>(
@@ -49,18 +46,19 @@ export function useTenantConfigTransferCreationCommands(
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     {
       meta: { errorMode: 'silent' },
-      mutationFn: async command => {
-        const response = command.kind === 'upload'
-          ? await uploadTenantConfigTransfer(
-              command.file,
-              command.idempotencyKey,
-              command.controller.signal,
-            )
-          : await createTenantConfigTransferFromPackage(
-              command.bundleId,
-              command.idempotencyKey,
-              command.controller.signal,
-            )
+      mutationFn: async (command) => {
+        const response =
+          command.kind === 'upload'
+            ? await uploadTenantConfigTransfer(
+                command.file,
+                command.idempotencyKey,
+                command.controller.signal,
+              )
+            : await createTenantConfigTransferFromPackage(
+                command.bundleId,
+                command.idempotencyKey,
+                command.controller.signal,
+              )
         return requireOperationData(response)
       },
     },
@@ -72,10 +70,13 @@ export function useTenantConfigTransferCreationCommands(
     }
     const identity = context.requireIdentity()
     const guard = context.requireOperationContext()
-    const bundle = await context.runIdempotent(identity, guard, 'package-export', 'tenant-config-export', (
-      idempotencyKey,
-      controller,
-    ) => packageMutation.mutateAsync({ idempotencyKey, controller }))
+    const bundle = await context.runIdempotent(
+      identity,
+      guard,
+      'package-export',
+      'tenant-config-export',
+      (idempotencyKey, controller) => packageMutation.mutateAsync({ idempotencyKey, controller }),
+    )
     await context.selectFirstListPage('package')
     await context.cancelListBeforeMerge(identity, guard, 'package')
     context.mergePackage(identity, bundle)
@@ -96,12 +97,13 @@ export function useTenantConfigTransferCreationCommands(
         guard,
         `from-package:${bundle.id}`,
         'tenant-config-from-package',
-        (idempotencyKey, controller) => createTransferMutation.mutateAsync({
-          kind: 'from-package',
-          bundleId: bundle.id,
-          idempotencyKey,
-          controller,
-        }),
+        (idempotencyKey, controller) =>
+          createTransferMutation.mutateAsync({
+            kind: 'from-package',
+            bundleId: bundle.id,
+            idempotencyKey,
+            controller,
+          }),
       )
       await context.selectFirstListPage('transfer')
       await context.cancelListBeforeMerge(identity, guard, 'transfer')
@@ -109,8 +111,7 @@ export function useTenantConfigTransferCreationCommands(
       context.selectedTransfer.value = transfer
       context.scheduleActiveCycle()
       return transfer
-    }
-    finally {
+    } finally {
       createTransferBusy.value = false
     }
   }
@@ -130,12 +131,13 @@ export function useTenantConfigTransferCreationCommands(
         guard,
         `upload:${contentSha256}`,
         'tenant-config-upload',
-        (idempotencyKey, controller) => createTransferMutation.mutateAsync({
-          kind: 'upload',
-          file,
-          idempotencyKey,
-          controller,
-        }),
+        (idempotencyKey, controller) =>
+          createTransferMutation.mutateAsync({
+            kind: 'upload',
+            file,
+            idempotencyKey,
+            controller,
+          }),
       )
       await context.selectFirstListPage('transfer')
       await context.cancelListBeforeMerge(identity, guard, 'transfer')
@@ -143,8 +145,7 @@ export function useTenantConfigTransferCreationCommands(
       context.selectedTransfer.value = transfer
       context.scheduleActiveCycle()
       return transfer
-    }
-    finally {
+    } finally {
       createTransferBusy.value = false
     }
   }

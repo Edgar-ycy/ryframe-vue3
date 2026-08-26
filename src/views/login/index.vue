@@ -63,9 +63,11 @@
                   :src="captchaImage"
                   :alt="t('account.captcha')"
                   class="captcha-image"
-                >
+                />
                 <span v-else class="captcha-placeholder">
-                  {{ captchaLoadFailed ? t('account.captchaLoadFailed') : t('account.captchaLoading') }}
+                  {{
+                    captchaLoadFailed ? t('account.captchaLoadFailed') : t('account.captchaLoading')
+                  }}
                 </span>
               </button>
             </div>
@@ -75,12 +77,7 @@
           </div>
         </el-form-item>
         <el-form-item>
-          <el-button
-            type="primary"
-            :loading="loading"
-            style="width: 100%"
-            @click="handleLogin"
-          >
+          <el-button type="primary" :loading="loading" style="width: 100%" @click="handleLogin">
             {{ t('account.signIn') }}
           </el-button>
         </el-form-item>
@@ -120,7 +117,11 @@ const loginRules = computed<FormRules>(() => {
       { required: true, message: t('account.enterTenantId'), trigger: 'blur' },
       {
         validator: (_rule, value, callback) => {
-          callback(isValidTenantId(String(value ?? '')) ? undefined : new Error(t('account.tenantIdInvalid')))
+          callback(
+            isValidTenantId(String(value ?? ''))
+              ? undefined
+              : new Error(t('account.tenantIdInvalid')),
+          )
         },
         trigger: 'blur',
       },
@@ -157,7 +158,8 @@ async function syncCaptchaForTenant(): Promise<boolean> {
   const tenantId = resolveCaptchaTenantId()
   if (runtimeCapabilities.multiTenancyEnabled && !isValidTenantId(tenantId)) return false
   if (captchaRefreshing.value) return false
-  if (captchaTenantId.value === tenantId && (captchaImage.value || !captchaEnabled.value)) return true
+  if (captchaTenantId.value === tenantId && (captchaImage.value || !captchaEnabled.value))
+    return true
 
   const requestVersion = ++captchaRequestVersion
   captchaRefreshing.value = true
@@ -208,8 +210,8 @@ const handleLogin = async () => {
   try {
     const tenantId = resolveCaptchaTenantId()
     if (
-      captchaTenantId.value !== tenantId
-      && (!runtimeCapabilities.multiTenancyEnabled || isValidTenantId(tenantId))
+      captchaTenantId.value !== tenantId &&
+      (!runtimeCapabilities.multiTenancyEnabled || isValidTenantId(tenantId))
     ) {
       const synchronized = await syncCaptchaForTenant()
       if (!synchronized) return
@@ -217,7 +219,10 @@ const handleLogin = async () => {
     const valid = await loginFormRef.value?.validate().catch(() => false)
     if (!valid) return
 
-    if (captchaEnabled.value && (captchaRefreshing.value || !captchaId.value || !captchaImage.value)) {
+    if (
+      captchaEnabled.value &&
+      (captchaRefreshing.value || !captchaId.value || !captchaImage.value)
+    ) {
       const refreshed = await syncCaptchaForTenant()
       ElMessage.warning(refreshed ? t('account.captchaRefreshed') : t('account.captchaLoadFailed'))
       return
@@ -239,7 +244,9 @@ const handleLogin = async () => {
     const redirect = resolveLoginRedirect(route.query.redirect)
     await router.replace(resolveAccessibleRoute(redirect))
   } catch (error) {
-    ElMessage.error(error instanceof Error && error.message ? error.message : t('shell.http.requestFailed'))
+    ElMessage.error(
+      error instanceof Error && error.message ? error.message : t('shell.http.requestFailed'),
+    )
     if (captchaEnabled.value) {
       await refreshCaptcha()
     }

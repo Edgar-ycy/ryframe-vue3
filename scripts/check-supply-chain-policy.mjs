@@ -15,7 +15,7 @@ const ownerPattern = /^(?:@[A-Za-z0-9_.-]+|[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)$/u
 const datePattern = /^\d{4}-\d{2}-\d{2}$/u
 
 function exactKeys(value, expected) {
-  return Object.keys(value).filter(key => !expected.has(key))
+  return Object.keys(value).filter((key) => !expected.has(key))
 }
 
 function isValidDate(value) {
@@ -37,14 +37,12 @@ export function validatePolicy(policy, now = new Date()) {
   if (policy.schema_version !== 1) errors.push('schema_version 必须为 1')
   if (!Array.isArray(policy.allowed_licenses) || policy.allowed_licenses.length === 0) {
     errors.push('allowed_licenses 必须是非空数组')
-  }
-  else {
+  } else {
     const seen = new Set()
     for (const license of policy.allowed_licenses) {
       if (typeof license !== 'string' || license.trim() !== license || license.length === 0) {
         errors.push('allowed_licenses 只能包含非空且已规范化的字符串')
-      }
-      else if (seen.has(license)) errors.push(`许可证重复：${license}`)
+      } else if (seen.has(license)) errors.push(`许可证重复：${license}`)
       else seen.add(license)
     }
   }
@@ -61,7 +59,8 @@ export function validatePolicy(policy, now = new Date()) {
       errors.push(`${label} 必须是对象`)
       continue
     }
-    for (const key of exactKeys(exception, exceptionKeys)) errors.push(`${label} 包含未知字段：${key}`)
+    for (const key of exactKeys(exception, exceptionKeys))
+      errors.push(`${label} 包含未知字段：${key}`)
     for (const key of exceptionKeys) {
       if (typeof exception[key] !== 'string' || exception[key].trim().length === 0) {
         errors.push(`${label}.${key} 必须是非空字符串`)
@@ -71,7 +70,8 @@ export function validatePolicy(policy, now = new Date()) {
       errors.push(`${label}.owner 必须使用 @用户 或 组织/团队 格式`)
     }
     if (typeof exception.expires === 'string') {
-      if (!isValidDate(exception.expires)) errors.push(`${label}.expires 必须是有效的 YYYY-MM-DD 日期`)
+      if (!isValidDate(exception.expires))
+        errors.push(`${label}.expires 必须是有效的 YYYY-MM-DD 日期`)
       else if (exception.expires <= today) errors.push(`${label}.expires 必须晚于 ${today}`)
     }
     const id = `${exception.package}\u0000${exception.version}\u0000${exception.license}`
@@ -99,23 +99,24 @@ export function normalizeLicenseReport(report) {
         throw new TypeError(`许可证 ${license} 包含无效的软件包记录`)
       }
       const versions = versionsOf(entry)
-      if (versions.length === 0 || versions.some(version => typeof version !== 'string')) {
+      if (versions.length === 0 || versions.some((version) => typeof version !== 'string')) {
         throw new TypeError(`${entry.name} 缺少有效版本`)
       }
       for (const version of versions) records.push({ license, name: entry.name, version })
     }
   }
-  return records.sort((left, right) => (
-    left.name.localeCompare(right.name)
-    || left.version.localeCompare(right.version)
-    || left.license.localeCompare(right.license)
-  ))
+  return records.sort(
+    (left, right) =>
+      left.name.localeCompare(right.name) ||
+      left.version.localeCompare(right.version) ||
+      left.license.localeCompare(right.license),
+  )
 }
 
 function licenseIdentifiers(expression) {
   const normalized = expression.replaceAll('(', ' ').replaceAll(')', ' ').trim()
   if (normalized.length === 0) return []
-  return normalized.split(/\s+/u).filter(token => !expressionOperators.has(token))
+  return normalized.split(/\s+/u).filter((token) => !expressionOperators.has(token))
 }
 
 export function evaluateLicenseReport(policy, report, now = new Date()) {
@@ -124,26 +125,30 @@ export function evaluateLicenseReport(policy, report, now = new Date()) {
 
   const allowed = new Set(policy.allowed_licenses)
   const usedExceptions = new Set()
-  const exceptions = new Map(policy.exceptions.map((entry, index) => [
-    `${entry.package}\u0000${entry.version}\u0000${entry.license}`,
-    index,
-  ]))
+  const exceptions = new Map(
+    policy.exceptions.map((entry, index) => [
+      `${entry.package}\u0000${entry.version}\u0000${entry.license}`,
+      index,
+    ]),
+  )
 
   for (const record of normalizeLicenseReport(report)) {
     const identifiers = licenseIdentifiers(record.license)
-    const isAllowed = identifiers.length > 0 && identifiers.every(identifier => allowed.has(identifier))
+    const isAllowed =
+      identifiers.length > 0 && identifiers.every((identifier) => allowed.has(identifier))
     if (isAllowed) continue
     const key = `${record.name}\u0000${record.version}\u0000${record.license}`
     const exceptionIndex = exceptions.get(key)
     if (exceptionIndex === undefined) {
       errors.push(`${record.name}@${record.version} 使用未允许的许可证：${record.license}`)
-    }
-    else usedExceptions.add(exceptionIndex)
+    } else usedExceptions.add(exceptionIndex)
   }
 
   for (const [index, exception] of policy.exceptions.entries()) {
     if (!usedExceptions.has(index)) {
-      errors.push(`未使用的许可证例外：${exception.package}@${exception.version} (${exception.license})`)
+      errors.push(
+        `未使用的许可证例外：${exception.package}@${exception.version} (${exception.license})`,
+      )
     }
   }
   return errors
@@ -188,7 +193,9 @@ async function main() {
     process.exitCode = 1
     return
   }
-  console.log(`供应链许可证检查通过（${records.length} 个直接或传递依赖版本，${policy.exceptions.length} 个有效例外）。`)
+  console.log(
+    `供应链许可证检查通过（${records.length} 个直接或传递依赖版本，${policy.exceptions.length} 个有效例外）。`,
+  )
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)

@@ -1,11 +1,32 @@
 <template>
-  <el-dialog v-model="visible" :title="isEdit() ? t('system.user.editTitle') : t('system.user.addTitle')" width="580px" @open="handleOpen" @closed="resetForm">
-    <el-form ref="formRef" v-loading="detailLoading" :model="form" :rules="rules" label-width="80px">
+  <el-dialog
+    v-model="visible"
+    :title="isEdit() ? t('system.user.editTitle') : t('system.user.addTitle')"
+    width="580px"
+    @open="handleOpen"
+    @closed="resetForm"
+  >
+    <el-form
+      ref="formRef"
+      v-loading="detailLoading"
+      :model="form"
+      :rules="rules"
+      label-width="80px"
+    >
       <el-form-item :label="t('system.user.username')" prop="username">
-        <el-input v-model="form.username" :disabled="isEdit()" :placeholder="t('system.user.enterUsername')" maxlength="50" />
+        <el-input
+          v-model="form.username"
+          :disabled="isEdit()"
+          :placeholder="t('system.user.enterUsername')"
+          maxlength="50"
+        />
       </el-form-item>
       <el-form-item :label="t('system.user.nickname')" prop="nickname">
-        <el-input v-model="form.nickname" :placeholder="t('system.user.enterNickname')" maxlength="50" />
+        <el-input
+          v-model="form.nickname"
+          :placeholder="t('system.user.enterNickname')"
+          maxlength="50"
+        />
       </el-form-item>
       <el-form-item :label="t('system.user.email')" prop="email">
         <el-input v-model="form.email" :placeholder="t('system.user.enterEmail')" />
@@ -21,7 +42,7 @@
           :placeholder="t('system.user.selectDepartment')"
           clearable
           check-strictly
-          style="width:100%"
+          style="width: 100%"
         />
       </el-form-item>
       <el-form-item v-if="!isEdit()" :label="t('system.user.role')">
@@ -33,7 +54,7 @@
           :remote-method="remoteRoleSearch"
           :loading="roleOptionsLoading"
           :placeholder="t('system.user.selectRole')"
-          style="width:100%"
+          style="width: 100%"
           @change="syncSelectedRoleOptions"
         >
           <el-option
@@ -91,8 +112,7 @@ interface UserFormState {
 }
 
 type SaveUserCommand =
-  | { kind: 'create', data: UserCreateInput }
-  | { kind: 'update', id: Id, data: UserUpdateInput }
+  { kind: 'create'; data: UserCreateInput } | { kind: 'update'; id: Id; data: UserUpdateInput }
 
 const props = defineProps<{
   user: UserRecord | null
@@ -119,14 +139,10 @@ const {
 const formRef = ref<FormInstance>()
 const detailQuery = useTenantQuery<UserDetail>(
   () => userStore.tenantId,
-  () => (
-    userStore.sessionStatus === 'authenticated'
-    && visible.value
-    && props.user !== null
-  ),
+  () => userStore.sessionStatus === 'authenticated' && visible.value && props.user !== null,
   'users',
   () => ({ scope: 'detail', id: props.user?.id ?? null }),
-  async signal => {
+  async (signal) => {
     const user = props.user
     if (!user) throw new Error(t('system.user.detailMissing'))
     const response = await getUser(user.id, signal)
@@ -135,27 +151,21 @@ const detailQuery = useTenantQuery<UserDetail>(
   },
 )
 const detailLoading = detailQuery.isFetching
-const saveMutation = useTenantMutation<void, SaveUserCommand>(
-  () => userStore.tenantId,
-  'users',
-  {
-    mutationFn: async command => {
-      if (command.kind === 'update') {
-        await updateUser(command.id, command.data)
-        return
-      }
-      const response = await createUser(command.data)
-      if (!response.data) throw new Error(t('system.user.createResponseMissing'))
-    },
-    onSuccess: (_data, command) => {
-      ElMessage.success(t(
-        command.kind === 'update'
-          ? 'system.common.updateSuccess'
-          : 'system.user.createdPending',
-      ))
-    },
+const saveMutation = useTenantMutation<void, SaveUserCommand>(() => userStore.tenantId, 'users', {
+  mutationFn: async (command) => {
+    if (command.kind === 'update') {
+      await updateUser(command.id, command.data)
+      return
+    }
+    const response = await createUser(command.data)
+    if (!response.data) throw new Error(t('system.user.createResponseMissing'))
   },
-)
+  onSuccess: (_data, command) => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.user.createdPending'),
+    )
+  },
+})
 const submitting = saveMutation.pending
 
 function initialForm(): UserFormState {
@@ -185,11 +195,10 @@ function resetForm() {
 
 function syncSelectedRoleOptions(): void {
   const known = new Map(
-    [...selectedRoleOptions.value, ...roleOptions.value]
-      .map(option => [option.value, option]),
+    [...selectedRoleOptions.value, ...roleOptions.value].map((option) => [option.value, option]),
   )
   selectedRoleOptions.value = form.value.role_ids
-    .map(roleId => known.get(roleId))
+    .map((roleId) => known.get(roleId))
     .filter((option): option is SelectOption => option !== undefined)
 }
 
@@ -211,7 +220,7 @@ function handleOpen(): void {
 
 watch(
   () => detailQuery.data.value,
-  detail => {
+  (detail) => {
     if (visible.value && detail) populateForm(detail)
   },
 )
@@ -227,10 +236,10 @@ async function submit() {
         kind: 'update',
         id: editingUser.id,
         data: {
-        nickname: form.value.nickname,
-        email: form.value.email || undefined,
-        phone: form.value.phone || undefined,
-        dept_id: form.value.dept_id,
+          nickname: form.value.nickname,
+          email: form.value.email || undefined,
+          phone: form.value.phone || undefined,
+          dept_id: form.value.dept_id,
         },
       }
     : {

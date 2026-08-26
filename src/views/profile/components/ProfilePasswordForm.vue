@@ -3,7 +3,13 @@
     <template #header>
       <span>{{ t('account.changePassword') }}</span>
     </template>
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" class="profile-password-form">
+    <el-form
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      label-width="80px"
+      class="profile-password-form"
+    >
       <el-form-item :label="t('account.currentPassword')" prop="old_password">
         <el-input
           v-model="form.old_password"
@@ -43,9 +49,7 @@
 <script setup lang="ts">
 import type { FormItemRule } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import {
-  PASSWORD_POLICY,
-} from '@/shared/security/passwordPolicy'
+import { PASSWORD_POLICY } from '@/shared/security/passwordPolicy'
 import { useProfilePasswordMutation } from '../useProfileMutations'
 
 const formRef = ref<FormInstance>()

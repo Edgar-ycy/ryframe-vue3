@@ -8,10 +8,7 @@ export function currentExportJobIdentity(): ExportJobIdentity | undefined {
   return { tenantId: user.tenantId, userId: String(user.userId) }
 }
 
-export function sameExportJobIdentity(
-  left: ExportJobIdentity,
-  right: ExportJobIdentity,
-): boolean {
+export function sameExportJobIdentity(left: ExportJobIdentity, right: ExportJobIdentity): boolean {
   return left.tenantId === right.tenantId && left.userId === right.userId
 }
 

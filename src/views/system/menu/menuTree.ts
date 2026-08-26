@@ -9,7 +9,7 @@ export interface PermissionOption {
 }
 
 export function flattenPermissionOptions(nodes: PermissionTreeNode[]): PermissionOption[] {
-  return nodes.flatMap(node => [
+  return nodes.flatMap((node) => [
     { id: node.id, name: node.name, code: node.code },
     ...flattenPermissionOptions(node.children ?? []),
   ])

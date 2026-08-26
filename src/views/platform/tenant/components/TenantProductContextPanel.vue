@@ -1,7 +1,19 @@
 <template>
   <div v-loading="loading" class="product-context-panel">
-    <el-alert v-if="!canView" :title="t('productPlans.permissionDenied')" type="info" show-icon :closable="false" />
-    <el-alert v-else-if="error" :title="t('productPlans.contextUnavailable')" type="warning" show-icon :closable="false" />
+    <el-alert
+      v-if="!canView"
+      :title="t('productPlans.permissionDenied')"
+      type="info"
+      show-icon
+      :closable="false"
+    />
+    <el-alert
+      v-else-if="error"
+      :title="t('productPlans.contextUnavailable')"
+      type="warning"
+      show-icon
+      :closable="false"
+    />
     <template v-else-if="context">
       <div class="panel-heading">
         <p>{{ t('productPlans.tenantContextHint') }}</p>
@@ -23,7 +35,9 @@
         <el-table :data="context.capabilities" row-key="capability_code">
           <el-table-column prop="capability_code" :label="t('productPlans.code')" min-width="180" />
           <el-table-column :label="t('productPlans.enabled')" width="90">
-            <template #default="{ row }">{{ row.enabled ? t('productPlans.yes') : t('productPlans.no') }}</template>
+            <template #default="{ row }">{{
+              row.enabled ? t('productPlans.yes') : t('productPlans.no')
+            }}</template>
           </el-table-column>
           <el-table-column prop="variant_code" label="Variant" min-width="130" />
           <el-table-column prop="schema_version" label="Schema" width="100" />
@@ -39,7 +53,9 @@
         <el-table :data="context.overrides" row-key="capability_code">
           <el-table-column prop="capability_code" :label="t('productPlans.code')" min-width="180" />
           <el-table-column :label="t('productPlans.enabled')" width="90">
-            <template #default="{ row }">{{ row.enabled ? t('productPlans.yes') : t('productPlans.no') }}</template>
+            <template #default="{ row }">{{
+              row.enabled ? t('productPlans.yes') : t('productPlans.no')
+            }}</template>
           </el-table-column>
           <el-table-column prop="variant_code" label="Variant" min-width="130" />
           <el-table-column prop="schema_version" label="Schema" width="100" />
@@ -73,7 +89,7 @@ import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import TenantProductChangeDialog from './TenantProductChangeDialog.vue'
 
-const props = defineProps<{ active: boolean, tenantId: string }>()
+const props = defineProps<{ active: boolean; tenantId: string }>()
 const { t } = useI18n()
 const userStore = useUserStore()
 const changeVisible = ref(false)
@@ -83,13 +99,10 @@ const canAssign = computed(() => can(TENANT_PRODUCT_PERMISSIONS.assign))
 const canOverride = computed(() => can(TENANT_PRODUCT_PERMISSIONS.override))
 const contextQuery = useTenantQuery<TenantProductContext>(
   () => userStore.tenantId,
-  () => props.active
-    && userStore.tenantId === 'system'
-    && canView.value
-    && Boolean(props.tenantId),
+  () => props.active && userStore.tenantId === 'system' && canView.value && Boolean(props.tenantId),
   'platform-tenant-product-context',
   () => ({ tenant_id: props.tenantId }),
-  async signal => requireOperationData(await getTenantProductContext(props.tenantId, signal)),
+  async (signal) => requireOperationData(await getTenantProductContext(props.tenantId, signal)),
   { staleTime: 0 },
 )
 const context = contextQuery.data

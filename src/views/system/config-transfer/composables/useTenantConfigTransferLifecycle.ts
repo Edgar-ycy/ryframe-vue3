@@ -75,29 +75,34 @@ export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLi
     const identity = options.currentIdentity()
     const key = event.query.queryKey
     if (
-      !identity
-      || !options.pageActive.value
-      || key[0] !== 'server-state'
-      || key[1] !== identity.tenantId
-      || ![TENANT_CONFIG_PACKAGES_RESOURCE, TENANT_CONFIG_TRANSFERS_RESOURCE]
-        .includes(String(key[2]))
-    ) return
+      !identity ||
+      !options.pageActive.value ||
+      key[0] !== 'server-state' ||
+      key[1] !== identity.tenantId ||
+      ![TENANT_CONFIG_PACKAGES_RESOURCE, TENANT_CONFIG_TRANSFERS_RESOURCE].includes(String(key[2]))
+    )
+      return
     options.activeTracking.scheduleActiveCycle()
   })
 
-  const unsubscribeUser = userStore.$subscribe(() => {
-    const nextIdentity = options.currentIdentity()
-    if (sameIdentity(trackedIdentity, nextIdentity)) return
-    if (trackedIdentity) cancelIdentityQueries(trackedIdentity)
-    options.operationScope.invalidate()
-    options.clearPendingIntents()
-    options.activeTracking.stopActiveCycle()
-    options.resetSelection()
-    trackedIdentity = nextIdentity
-    if (nextIdentity && options.pageActive.value) {
-      void nextTick().then(() => options.refresh()).catch(() => undefined)
-    }
-  }, { flush: 'sync' })
+  const unsubscribeUser = userStore.$subscribe(
+    () => {
+      const nextIdentity = options.currentIdentity()
+      if (sameIdentity(trackedIdentity, nextIdentity)) return
+      if (trackedIdentity) cancelIdentityQueries(trackedIdentity)
+      options.operationScope.invalidate()
+      options.clearPendingIntents()
+      options.activeTracking.stopActiveCycle()
+      options.resetSelection()
+      trackedIdentity = nextIdentity
+      if (nextIdentity && options.pageActive.value) {
+        void nextTick()
+          .then(() => options.refresh())
+          .catch(() => undefined)
+      }
+    },
+    { flush: 'sync' },
+  )
 
   onMounted(() => {
     document.addEventListener('visibilitychange', handleVisibilityChange)

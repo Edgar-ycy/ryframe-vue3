@@ -12,10 +12,7 @@ import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contrac
 import type { Id } from '@/shared/http/types'
 
 export type PermissionType = ApiSchema<'PermissionType'>
-export type PermissionTreeNode = Omit<
-  ApiSchema<'PermissionTreeNode'>,
-  'children' | 'perm_type'
-> & {
+export type PermissionTreeNode = Omit<ApiSchema<'PermissionTreeNode'>, 'children' | 'perm_type'> & {
   children: PermissionTreeNode[]
   perm_type: PermissionType
 }

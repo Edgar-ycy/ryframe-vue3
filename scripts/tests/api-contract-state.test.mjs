@@ -10,10 +10,7 @@ import {
   verifyLocalContractState,
   writeFormalContract,
 } from '../api-contract-state.mjs'
-import {
-  parseArguments,
-  validateConsumerState,
-} from '../check-consumer-contract.mjs'
+import { parseArguments, validateConsumerState } from '../check-consumer-contract.mjs'
 
 const commit = '0123456789abcdef0123456789abcdef01234567'
 
@@ -68,10 +65,7 @@ async function createFormalRoot() {
   await mkdir(path.join(root, 'openapi'), { recursive: true })
   const bytes = Buffer.from(canonicalJson(contract()), 'utf8')
   await writeFile(path.join(root, 'openapi', 'openapi.json'), bytes)
-  await writeFile(
-    path.join(root, 'openapi', 'source.json'),
-    canonicalJson(sourceMetadata(bytes)),
-  )
+  await writeFile(path.join(root, 'openapi', 'source.json'), canonicalJson(sourceMetadata(bytes)))
   return root
 }
 
@@ -139,7 +133,7 @@ test('正式同步恢复契约并最后删除候选 marker', async (t) => {
   assert.ok(state.bytes.equals(formalBytes))
   await assert.rejects(
     () => readFile(path.join(frontend, 'openapi', 'candidate.json')),
-    error => error.code === 'ENOENT',
+    (error) => error.code === 'ENOENT',
   )
 })
 
@@ -149,11 +143,16 @@ test('consumer:check 显式区分 candidate 和 formal，并仅在正式态要�
   const candidateBytes = await enterCandidateState(root)
   const candidateState = await verifyLocalContractState(root)
   const options = parseArguments([
-    '--mode', 'candidate',
-    '--openapi', path.join(root, 'openapi', 'openapi.json'),
-    '--backend-commit', 'f'.repeat(40),
-    '--backend-repository', 'Edgar-ycy/ryframe',
-    '--require-pin', 'true',
+    '--mode',
+    'candidate',
+    '--openapi',
+    path.join(root, 'openapi', 'openapi.json'),
+    '--backend-commit',
+    'f'.repeat(40),
+    '--backend-repository',
+    'Edgar-ycy/ryframe',
+    '--require-pin',
+    'true',
   ])
   assert.doesNotThrow(() => validateConsumerState(options, candidateState, candidateBytes))
 
@@ -168,9 +167,7 @@ test('consumer:check 显式区分 candidate 和 formal，并仅在正式态要�
     () => validateConsumerState(formalOptions, formalState, candidateBytes),
     /精确固定/u,
   )
-  assert.doesNotThrow(() => validateConsumerState(
-    { ...formalOptions, requirePin: false },
-    formalState,
-    candidateBytes,
-  ))
+  assert.doesNotThrow(() =>
+    validateConsumerState({ ...formalOptions, requirePin: false }, formalState, candidateBytes),
+  )
 })

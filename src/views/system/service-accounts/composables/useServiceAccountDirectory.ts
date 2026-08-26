@@ -23,11 +23,25 @@ type SaveServiceAccountInput = CreateServiceAccountInput | UpdateServiceAccountI
 /** 服务账号目录查询与账号生命周期命令。 */
 export function useServiceAccountDirectory(context: ReturnType<typeof useServiceAccountContext>) {
   const {
-    accountsQuery, activeQueryParams, beginController, canListAccounts,
-    captureIdentity, credentialsKey, currentIdentity, detailKey, detailQuery,
-    ensureOperationContext, finishController,
-    pageActive, queryParams, removeAccountFromPage, requireIdentity,
-    requireOperationContext, roleIds, selectedAccount, featureAvailable,
+    accountsQuery,
+    activeQueryParams,
+    beginController,
+    canListAccounts,
+    captureIdentity,
+    credentialsKey,
+    currentIdentity,
+    detailKey,
+    detailQuery,
+    ensureOperationContext,
+    finishController,
+    pageActive,
+    queryParams,
+    removeAccountFromPage,
+    requireIdentity,
+    requireOperationContext,
+    roleIds,
+    selectedAccount,
+    featureAvailable,
     updateAccountPage,
   } = context
   const savePending = ref(false)
@@ -36,11 +50,12 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
 
   async function fetchAccounts(): Promise<void> {
     if (
-      !pageActive.value
-      || !featureAvailable.value
-      || !currentIdentity()
-      || !canListAccounts.value
-    ) return
+      !pageActive.value ||
+      !featureAvailable.value ||
+      !currentIdentity() ||
+      !canListAccounts.value
+    )
+      return
     const next = copyServiceAccountQuery(queryParams)
     if (!sameServiceAccountPageQuery(next, activeQueryParams)) {
       Object.assign(activeQueryParams, next)
@@ -71,8 +86,8 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     const sameAccount = previousId !== null && previousId === nextId
     selectedAccount.value = account
     roleIds.value = account
-      ? queryClient.getQueryData<ServiceAccountDetail>(detailKey(identity, account.id))
-        ?.role_ids ?? []
+      ? (queryClient.getQueryData<ServiceAccountDetail>(detailKey(identity, account.id))
+          ?.role_ids ?? [])
       : []
     if (sameAccount && pageActive.value) {
       await detailQuery.refetch({ throwOnError: true })
@@ -109,8 +124,7 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
         void detailQuery.refetch({ throwOnError: false })
       }
       return account
-    }
-    finally {
+    } finally {
       finishController(controller)
       savePending.value = false
     }
@@ -128,16 +142,19 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     try {
       await updateServiceAccountStatus(account.id, status, controller.signal)
       ensureOperationContext(identity, operationContext)
-      updateAccountPage(identity, {
-        ...account,
-        status: status === 'enabled' ? '1' : '0',
-      }, 'update')
+      updateAccountPage(
+        identity,
+        {
+          ...account,
+          status: status === 'enabled' ? '1' : '0',
+        },
+        'update',
+      )
       void accountsQuery.refetch({ throwOnError: false })
       if (selectedAccount.value?.id === account.id) {
         void detailQuery.refetch({ throwOnError: false })
       }
-    }
-    finally {
+    } finally {
       finishController(controller)
       statusPending.value = false
     }
@@ -157,15 +174,22 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
       removeAccountFromPage(identity, account.id)
       if (selectedAccount.value?.id === account.id) selectedAccount.value = null
       void accountsQuery.refetch({ throwOnError: false })
-    }
-    finally {
+    } finally {
       finishController(controller)
       removePending.value = false
     }
   }
 
   return {
-    fetchAccounts, refresh, removeAccount, removePending, resetAccountFilters,
-    saveAccount, savePending, selectAccount, setAccountStatus, statusPending,
+    fetchAccounts,
+    refresh,
+    removeAccount,
+    removePending,
+    resetAccountFilters,
+    saveAccount,
+    savePending,
+    selectAccount,
+    setAccountStatus,
+    statusPending,
   }
 }

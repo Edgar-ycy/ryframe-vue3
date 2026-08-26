@@ -69,12 +69,7 @@
       <el-button :disabled="submitting" @click="visible = false">
         {{ t('serviceAccounts.cancel') }}
       </el-button>
-      <el-button
-        type="primary"
-        :loading="submitting"
-        :disabled="submitting"
-        @click="submit"
-      >
+      <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submit">
         {{ t('serviceAccounts.save') }}
       </el-button>
     </template>
@@ -132,13 +127,15 @@ const rules = computed<FormRules<ServiceAccountFormState>>(() => ({
     { pattern: /^[a-z0-9_-]{1,64}$/, message: t('serviceAccounts.codeInvalid'), trigger: 'blur' },
   ],
   name: [{ required: true, message: t('serviceAccounts.nameRequired'), trigger: 'blur' }],
-  max_requests_per_minute: [{
-    validator: (_rule, value: number, callback) => {
-      if (Number.isInteger(value) && value >= 1 && value <= 10000) callback()
-      else callback(new Error(t('serviceAccounts.maxRequestsInvalid')))
+  max_requests_per_minute: [
+    {
+      validator: (_rule, value: number, callback) => {
+        if (Number.isInteger(value) && value >= 1 && value <= 10000) callback()
+        else callback(new Error(t('serviceAccounts.maxRequestsInvalid')))
+      },
+      trigger: 'change',
     },
-    trigger: 'change',
-  }],
+  ],
 }))
 
 function initializeForm(): void {
@@ -168,8 +165,8 @@ async function submit(): Promise<void> {
         name: form.value.name.trim(),
         description: form.value.description.trim() || null,
         dept_id: props.canListDepartments
-          ? form.value.dept_id ?? null
-          : props.account.dept_id ?? null,
+          ? (form.value.dept_id ?? null)
+          : (props.account.dept_id ?? null),
         max_requests_per_minute: form.value.max_requests_per_minute,
       }
     : {

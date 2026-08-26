@@ -36,8 +36,8 @@ export function validateRequiredJobs(event, results) {
   if (errors.length > 0) return errors
 
   const expected = new Map([
-    ...matrix.success.map(name => [name, 'success']),
-    ...matrix.skipped.map(name => [name, 'skipped']),
+    ...matrix.success.map((name) => [name, 'success']),
+    ...matrix.skipped.map((name) => [name, 'skipped']),
   ])
   for (const name of jobs) {
     if (results[name] !== expected.get(name)) {
@@ -60,7 +60,8 @@ function parseArguments(argv) {
     if (value === '--job' && argv[index + 1]) {
       const raw = argv[index + 1]
       const separator = raw.indexOf('=')
-      if (separator <= 0 || separator === raw.length - 1) throw new Error(`job 结果必须使用 name=result：${raw}`)
+      if (separator <= 0 || separator === raw.length - 1)
+        throw new Error(`job 结果必须使用 name=result：${raw}`)
       const name = raw.slice(0, separator)
       if (Object.hasOwn(results, name)) throw new Error(`job 结果重复：${name}`)
       results[name] = raw.slice(separator + 1)
@@ -88,8 +89,7 @@ const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolv
 if (isMain) {
   try {
     main()
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error.message)
     process.exitCode = 1
   }

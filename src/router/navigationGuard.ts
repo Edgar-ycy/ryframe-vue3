@@ -55,8 +55,7 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
     const runtimeCapabilities = dependencies.getRuntimeCapabilities()
     try {
       await runtimeCapabilities.ensureLoaded()
-    }
-    catch {
+    } catch {
       return target.path === '/503' ? true : { path: '/503', replace: true }
     }
     await dependencies.initializeSession()
@@ -83,8 +82,7 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
         // 重新解析原始完整地址，避免首次解析已经落入 404 的结果被复用。
         return dependencies.resolveReplacement(originalPath)
       }
-    }
-    catch (error) {
+    } catch (error) {
       if (error instanceof HttpError && error.status === 401) {
         await dependencies.clearSession()
         return { path: '/login', query: { redirect: originalPath } }
@@ -95,10 +93,7 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
       return { path: '/503', replace: true }
     }
 
-    if (
-      target.path === '/404'
-      && target.redirectedFrom
-    ) {
+    if (target.path === '/404' && target.redirectedFrom) {
       const result = registeredPageAccessResult(
         originalPath,
         routeAccessContext(

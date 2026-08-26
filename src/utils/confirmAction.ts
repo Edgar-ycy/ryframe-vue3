@@ -13,8 +13,7 @@ export async function confirmAction(
   try {
     await ElMessageBox.confirm(message, title, options)
     return true
-  }
-  catch (error) {
+  } catch (error) {
     if (isConfirmationCancellation(error)) return false
     throw error
   }

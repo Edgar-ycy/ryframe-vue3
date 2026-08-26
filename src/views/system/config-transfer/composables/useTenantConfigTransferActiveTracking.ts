@@ -4,10 +4,7 @@ import {
   type TenantConfigTransfer,
 } from '@/api/modules/tenantConfigTransfer'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import {
-  isActiveTenantConfigPackage,
-  isActiveTenantConfigTransfer,
-} from '../presentation'
+import { isActiveTenantConfigPackage, isActiveTenantConfigTransfer } from '../presentation'
 import {
   useTenantConfigTransferQueries,
   type TenantConfigIdentity,
@@ -51,14 +48,12 @@ export function useTenantConfigTransferActiveTracking(
   ): Promise<void> {
     try {
       mergePackage(identity, requireOperationData(await getTenantConfigPackage(id, signal)))
-    }
-    catch (error) {
+    } catch (error) {
       if (!options.isCurrentIdentity(identity) || !(error instanceof HttpError)) return
       if (error.kind === 'cancelled') return
       if (error.status === 403 || error.status === 404) {
         removePackage(identity, id)
-      }
-      else if (error.status === 409) {
+      } else if (error.status === 409) {
         await packagesQuery.refetch({ throwOnError: false })
       }
     }
@@ -74,21 +69,18 @@ export function useTenantConfigTransferActiveTracking(
         identity,
         requireOperationData(await getTenantConfigTransfer(id, signal)),
       )
-    }
-    catch (error) {
+    } catch (error) {
       if (!options.isCurrentIdentity(identity) || !(error instanceof HttpError)) return
       if (error.kind === 'cancelled') return
       if (error.status === 403 || error.status === 404) {
         removeTransfer(identity, id)
-      }
-      else if (error.status === 409) {
+      } else if (error.status === 409) {
         try {
           options.mergeTransfer(
             identity,
             requireOperationData(await getTenantConfigTransfer(id, signal)),
           )
-        }
-        catch {
+        } catch {
           await transfersQuery.refetch({ throwOnError: false })
         }
       }
@@ -99,10 +91,10 @@ export function useTenantConfigTransferActiveTracking(
     return [
       ...(packagesQuery.data.value?.items ?? [])
         .filter(isActiveTenantConfigPackage)
-        .map(bundle => ({ kind: 'package' as const, id: bundle.id })),
+        .map((bundle) => ({ kind: 'package' as const, id: bundle.id })),
       ...(transfersQuery.data.value?.items ?? [])
         .filter(isActiveTenantConfigTransfer)
-        .map(transfer => ({ kind: 'transfer' as const, id: transfer.id })),
+        .map((transfer) => ({ kind: 'transfer' as const, id: transfer.id })),
     ]
   }
 
@@ -142,16 +134,14 @@ export function useTenantConfigTransferActiveTracking(
             if (!detail) continue
             if (detail.kind === 'package') {
               await refreshPackageDetail(identity, detail.id, controller.signal)
-            }
-            else {
+            } else {
               await refreshTransferDetail(identity, detail.id, controller.signal)
             }
           }
         },
       )
       await Promise.all(workers)
-    }
-    finally {
+    } finally {
       if (activeCycleController === controller) activeCycleController = undefined
       activeCycleRunning = false
     }
@@ -161,11 +151,14 @@ export function useTenantConfigTransferActiveTracking(
     if (activeTimer !== undefined) globalThis.clearTimeout(activeTimer)
     activeTimer = undefined
     if (!canTrackActiveDetails() || activeDetails().length === 0) return
-    activeTimer = globalThis.setTimeout(async () => {
-      activeTimer = undefined
-      await refreshActiveDetails()
-      scheduleActiveCycle()
-    }, immediate ? 0 : ACTIVE_REFRESH_INTERVAL_MS)
+    activeTimer = globalThis.setTimeout(
+      async () => {
+        activeTimer = undefined
+        await refreshActiveDetails()
+        scheduleActiveCycle()
+      },
+      immediate ? 0 : ACTIVE_REFRESH_INTERVAL_MS,
+    )
   }
 
   return {

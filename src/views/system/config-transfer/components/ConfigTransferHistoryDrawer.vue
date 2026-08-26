@@ -18,7 +18,10 @@
       {{ t('tenantConfigTransfer.refresh') }}
     </el-button>
 
-    <el-empty v-if="!loading && transfers.length === 0" :description="t('tenantConfigTransfer.historyEmpty')" />
+    <el-empty
+      v-if="!loading && transfers.length === 0"
+      :description="t('tenantConfigTransfer.historyEmpty')"
+    />
     <div v-loading="loading" class="history-list" aria-live="polite">
       <article
         v-for="transfer in transfers"
@@ -31,13 +34,27 @@
             <strong>{{ transfer.bundle_summary.source_tenant_name }}</strong>
             <small>{{ transfer.bundle_summary.source_tenant_key }}</small>
           </div>
-          <el-tag :type="statusTag(transfer.status)" size="small">{{ statusLabel(transfer.status) }}</el-tag>
+          <el-tag :type="statusTag(transfer.status)" size="small">{{
+            statusLabel(transfer.status)
+          }}</el-tag>
         </header>
         <dl>
-          <div><dt>{{ t('tenantConfigTransfer.itemCount') }}</dt><dd>{{ transfer.bundle_summary.item_count }}</dd></div>
-          <div><dt>{{ t('tenantConfigTransfer.createdAt') }}</dt><dd>{{ formatLocalizedDate(transfer.created_at) }}</dd></div>
-          <div><dt>{{ t('tenantConfigTransfer.previewedAt') }}</dt><dd>{{ formatOptionalLocalizedDate(transfer.preview_calculated_at) }}</dd></div>
-          <div v-if="transfer.rollback_expires_at"><dt>{{ t('tenantConfigTransfer.rollbackUntil') }}</dt><dd>{{ formatOptionalLocalizedDate(transfer.rollback_expires_at) }}</dd></div>
+          <div>
+            <dt>{{ t('tenantConfigTransfer.itemCount') }}</dt>
+            <dd>{{ transfer.bundle_summary.item_count }}</dd>
+          </div>
+          <div>
+            <dt>{{ t('tenantConfigTransfer.createdAt') }}</dt>
+            <dd>{{ formatLocalizedDate(transfer.created_at) }}</dd>
+          </div>
+          <div>
+            <dt>{{ t('tenantConfigTransfer.previewedAt') }}</dt>
+            <dd>{{ formatOptionalLocalizedDate(transfer.preview_calculated_at) }}</dd>
+          </div>
+          <div v-if="transfer.rollback_expires_at">
+            <dt>{{ t('tenantConfigTransfer.rollbackUntil') }}</dt>
+            <dd>{{ formatOptionalLocalizedDate(transfer.rollback_expires_at) }}</dd>
+          </div>
         </dl>
         <el-alert
           v-if="transfer.error_summary"
@@ -100,11 +117,20 @@ const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 
 function statusLabel(status: string): string {
-  const suffix = {
-    preview_ready: 'PreviewReady', preview_pending: 'PreviewPending', previewing: 'Previewing', previewed: 'Previewed',
-    apply_pending: 'ApplyPending', applying: 'Applying', applied: 'Applied', rollback_pending: 'RollbackPending',
-    rolling_back: 'RollingBack', rolled_back: 'RolledBack', failed: 'Failed',
-  }[status] ?? 'Unknown'
+  const suffix =
+    {
+      preview_ready: 'PreviewReady',
+      preview_pending: 'PreviewPending',
+      previewing: 'Previewing',
+      previewed: 'Previewed',
+      apply_pending: 'ApplyPending',
+      applying: 'Applying',
+      applied: 'Applied',
+      rollback_pending: 'RollbackPending',
+      rolling_back: 'RollingBack',
+      rolled_back: 'RolledBack',
+      failed: 'Failed',
+    }[status] ?? 'Unknown'
   return t(`tenantConfigTransfer.status${suffix}`)
 }
 

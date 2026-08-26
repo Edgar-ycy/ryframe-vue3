@@ -53,12 +53,7 @@ export default defineConfig(({ mode }) => {
           'vue-router',
           'pinia',
           {
-            'element-plus': [
-              'ElMessage',
-              'ElMessageBox',
-              'ElNotification',
-              'ElLoading',
-            ],
+            'element-plus': ['ElMessage', 'ElMessageBox', 'ElNotification', 'ElLoading'],
           },
           {
             from: 'element-plus',
@@ -125,7 +120,12 @@ export default defineConfig(({ mode }) => {
       rolldownOptions: {
         output: {
           manualChunks(id: string) {
-            if (id.includes('node_modules/vue') || id.includes('node_modules/vue-router') || id.includes('node_modules/pinia')) return 'vue-vendor'
+            if (
+              id.includes('node_modules/vue') ||
+              id.includes('node_modules/vue-router') ||
+              id.includes('node_modules/pinia')
+            )
+              return 'vue-vendor'
             if (id.includes('node_modules/zrender')) return 'zrender-vendor'
             if (id.includes('node_modules/echarts')) {
               if (id.includes('/chart/')) return 'echarts-charts'

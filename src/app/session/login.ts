@@ -5,10 +5,7 @@ import { clearServerState } from '@/shared/query/client'
 import { ensureCsrfToken } from './csrf'
 import { publishAuthenticatedSession } from './lifecycle'
 
-export async function authenticateWithPassword(
-  credentials: LoginParams,
-  tenantId: string,
-) {
+export async function authenticateWithPassword(credentials: LoginParams, tenantId: string) {
   const csrfToken = await ensureCsrfToken()
   const response = await login(credentials, tenantId, csrfToken)
   const authData = response.data

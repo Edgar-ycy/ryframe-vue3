@@ -24,7 +24,10 @@
         effect="plain"
         type="info"
       >
-        <span class="tenant-tag__value" :title="`${userStore.tenantName || userStore.tenantId} · ${userStore.tenantId}`">
+        <span
+          class="tenant-tag__value"
+          :title="`${userStore.tenantName || userStore.tenantId} · ${userStore.tenantId}`"
+        >
           {{ userStore.tenantName || userStore.tenantId }} · {{ userStore.tenantId }}
         </span>
       </el-tag>
@@ -45,8 +48,12 @@
         :aria-label="t('settings.theme')"
         @update:model-value="setDarkMode"
       >
-        <template #active-icon><el-icon><Moon /></el-icon></template>
-        <template #inactive-icon><el-icon><Sunny /></el-icon></template>
+        <template #active-icon
+          ><el-icon><Moon /></el-icon
+        ></template>
+        <template #inactive-icon
+          ><el-icon><Sunny /></el-icon
+        ></template>
       </el-switch>
       <ExportCenter />
       <MessageCenter />
@@ -86,7 +93,16 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowDown, Expand, Fold, FullScreen, Moon, Setting, Sunny, UserFilled } from '@element-plus/icons-vue'
+import {
+  ArrowDown,
+  Expand,
+  Fold,
+  FullScreen,
+  Moon,
+  Setting,
+  Sunny,
+  UserFilled,
+} from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { logoutSession } from '@/app/session/sessionCoordinator'
 import { translateNavigationTitle } from '@/i18n'
@@ -110,7 +126,7 @@ const { t } = useI18n()
 const { imageSrc: avatarSrc } = useAuthenticatedImage(() => userStore.avatar)
 
 const settingsVisible = ref(false)
-const breadcrumbs = computed(() => route.matched.filter(item => item.meta?.title))
+const breadcrumbs = computed(() => route.matched.filter((item) => item.meta?.title))
 
 function setDarkMode(value: boolean): void {
   settingsStore.setTheme(value ? 'dark' : 'light')
@@ -120,12 +136,10 @@ async function toggleFullscreen(): Promise<void> {
   try {
     if (document.fullscreenElement) {
       await document.exitFullscreen()
-    }
-    else {
+    } else {
       await document.documentElement.requestFullscreen()
     }
-  }
-  catch {
+  } catch {
     ElMessage.warning(t('navbar.fullscreenUnavailable'))
   }
 }
@@ -133,11 +147,10 @@ async function toggleFullscreen(): Promise<void> {
 async function handleCommand(command: string): Promise<void> {
   switch (command) {
     case 'logout':
-      if (!await confirmAction(
-        t('navbar.logoutConfirm'),
-        t('navbar.prompt'),
-        { type: 'warning' },
-      )) return
+      if (
+        !(await confirmAction(t('navbar.logoutConfirm'), t('navbar.prompt'), { type: 'warning' }))
+      )
+        return
       await logoutSession()
       break
     case 'profile':

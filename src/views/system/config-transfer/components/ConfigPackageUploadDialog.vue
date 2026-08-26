@@ -8,7 +8,12 @@
     @open="reset"
     @closed="reset"
   >
-    <el-alert :title="t('tenantConfigTransfer.uploadHint')" type="info" show-icon :closable="false" />
+    <el-alert
+      :title="t('tenantConfigTransfer.uploadHint')"
+      type="info"
+      show-icon
+      :closable="false"
+    />
     <el-upload
       ref="uploadRef"
       class="package-upload"
@@ -35,7 +40,13 @@
 
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
-import { genFileId, type UploadFile, type UploadFiles, type UploadInstance, type UploadRawFile } from 'element-plus'
+import {
+  genFileId,
+  type UploadFile,
+  type UploadFiles,
+  type UploadInstance,
+  type UploadRawFile,
+} from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{ loading: boolean }>()
@@ -78,8 +89,7 @@ function handleExceed(files: File[], uploadFiles: UploadFiles): void {
     file.uid = genFileId()
     uploadRef.value?.handleStart(file)
     selectedFile.value = file
-  }
-  else {
+  } else {
     selectedFile.value = undefined
   }
   if (uploadFiles.length) ElMessage.warning(t('tenantConfigTransfer.uploadHint'))

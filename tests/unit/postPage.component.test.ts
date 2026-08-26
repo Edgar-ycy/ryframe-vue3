@@ -18,11 +18,8 @@ vi.mock('@/components/business/flat-crud', async () => {
   return {
     FlatCrudPage: defineComponent({
       setup(_props, { slots }) {
-        return () => h(
-          'div',
-          { 'data-has-actions': String(Boolean(slots.actions)) },
-          slots.actions?.(),
-        )
+        return () =>
+          h('div', { 'data-has-actions': String(Boolean(slots.actions)) }, slots.actions?.())
       },
     }),
     defineFlatCrudResource: <T>(resource: T): T => resource,
@@ -61,19 +58,21 @@ async function renderPostPage(
   crudScenario.canExport = scenario.canExport
   crudScenario.lastSuccessfulQuery = scenario.lastSuccessfulQuery
   const app = createSSRApp({
-    render: () => h(
-      PostPage,
-      null,
-      withActions
-        ? {
-            actions: (props: { canExport: boolean; lastSuccessfulQuery: unknown }) => h(
-              'span',
-              { id: 'post-actions' },
-              `${props.canExport}:${JSON.stringify(props.lastSuccessfulQuery)}`,
-            ),
-          }
-        : undefined,
-    ),
+    render: () =>
+      h(
+        PostPage,
+        null,
+        withActions
+          ? {
+              actions: (props: { canExport: boolean; lastSuccessfulQuery: unknown }) =>
+                h(
+                  'span',
+                  { id: 'post-actions' },
+                  `${props.canExport}:${JSON.stringify(props.lastSuccessfulQuery)}`,
+                ),
+            }
+          : undefined,
+      ),
   })
   app.use(i18n)
   return renderToString(app)

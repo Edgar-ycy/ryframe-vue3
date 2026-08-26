@@ -15,8 +15,7 @@ export function enqueueAcknowledgements(runtime: MessageRuntime, ids: readonly s
     if (runtime.pendingAckIds.has(id) || runtime.deferredAckIds.has(id)) continue
     if (runtime.pendingAckIds.size < MAX_PENDING_ACKS) {
       runtime.pendingAckIds.add(id)
-    }
-    else if (runtime.deferredAckIds.size < MAX_DEFERRED_ACKS) {
+    } else if (runtime.deferredAckIds.size < MAX_DEFERRED_ACKS) {
       // 有界保留溢出确认；超过上限的消息会由下一次收件箱补拉重新进入队列。
       runtime.deferredAckIds.add(id)
     }
@@ -25,10 +24,7 @@ export function enqueueAcknowledgements(runtime: MessageRuntime, ids: readonly s
 }
 
 export function promoteDeferredAcknowledgements(runtime: MessageRuntime): void {
-  while (
-    runtime.pendingAckIds.size < MAX_PENDING_ACKS
-    && runtime.deferredAckIds.size > 0
-  ) {
+  while (runtime.pendingAckIds.size < MAX_PENDING_ACKS && runtime.deferredAckIds.size > 0) {
     const next = runtime.deferredAckIds.values().next()
     if (next.done) break
     runtime.deferredAckIds.delete(next.value)
@@ -68,12 +64,10 @@ export function shouldRetryAcknowledgement(error: unknown): boolean {
 }
 
 export function acknowledgementRetryDelay(error: unknown, attempt: number): number {
-  const exponential = Math.min(
-    ACK_RETRY_BASE_DELAY_MS * 2 ** attempt,
-    ACK_RETRY_MAX_DELAY_MS,
-  )
-  const retryAfter = error instanceof HttpError && error.retryAfterSeconds !== undefined
-    ? Math.min(error.retryAfterSeconds * 1_000, ACK_RETRY_AFTER_MAX_DELAY_MS)
-    : 0
+  const exponential = Math.min(ACK_RETRY_BASE_DELAY_MS * 2 ** attempt, ACK_RETRY_MAX_DELAY_MS)
+  const retryAfter =
+    error instanceof HttpError && error.retryAfterSeconds !== undefined
+      ? Math.min(error.retryAfterSeconds * 1_000, ACK_RETRY_AFTER_MAX_DELAY_MS)
+      : 0
   return Math.max(exponential, retryAfter)
 }

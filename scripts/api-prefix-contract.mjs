@@ -6,8 +6,10 @@ export function apiPrefixContractViolation(value) {
     return 'must be an object'
   }
   const keys = Object.keys(value).sort()
-  if (keys.length !== canonicalKeys.length
-    || keys.some((key, index) => key !== canonicalKeys[index])) {
+  if (
+    keys.length !== canonicalKeys.length ||
+    keys.some((key, index) => key !== canonicalKeys[index])
+  ) {
     return 'must contain exactly version and value'
   }
   if (value.version !== 1) {

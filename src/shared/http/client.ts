@@ -4,19 +4,10 @@ import { translate } from '@/i18n'
 import { HttpError, parseEnvelope, toHttpError } from './errors'
 import { rawTransport, transport } from './transport'
 
-export {
-  HttpError,
-  type HttpErrorKind,
-  type HttpErrorOptions,
-} from './errors'
-export {
-  configureHttpSession,
-  type HttpSessionAdapter,
-} from './session'
+export { HttpError, type HttpErrorKind, type HttpErrorOptions } from './errors'
+export { configureHttpSession, type HttpSessionAdapter } from './session'
 
-export async function request<T = unknown>(
-  config: AxiosRequestConfig,
-): Promise<ApiResponse<T>> {
+export async function request<T = unknown>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
   const response = await transport.request<ApiResponse<T>>(config)
   return parseEnvelope(response)
 }
@@ -32,14 +23,11 @@ export function requireOperationData<T>(response: ApiResponse<T>): T {
   return response.data
 }
 
-export async function rawRequest<T>(
-  config: AxiosRequestConfig,
-): Promise<ApiResponse<T>> {
+export async function rawRequest<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
   try {
     const response = await rawTransport.request<ApiResponse<T>>(config)
     return parseEnvelope(response)
-  }
-  catch (error) {
+  } catch (error) {
     throw await toHttpError(error)
   }
 }

@@ -66,7 +66,9 @@ function emptyForm(): CredentialFormState {
 
 const form = ref<CredentialFormState>(emptyForm())
 const rules = computed<FormRules<CredentialFormState>>(() => ({
-  label: [{ required: true, message: t('serviceAccounts.credentialLabelPlaceholder'), trigger: 'blur' }],
+  label: [
+    { required: true, message: t('serviceAccounts.credentialLabelPlaceholder'), trigger: 'blur' },
+  ],
   expires_at: [{ required: true, message: t('serviceAccounts.expiresAt'), trigger: 'change' }],
 }))
 

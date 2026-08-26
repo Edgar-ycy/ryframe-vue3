@@ -5,10 +5,12 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-  font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  font-family:
+    Inter, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial,
+    sans-serif;
   font-size: 14px;
   color: var(--color-text-primary);
   background: var(--bg-color-page);

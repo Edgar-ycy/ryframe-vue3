@@ -1,5 +1,11 @@
 <template>
-  <el-dialog v-model="visible" :title="t('system.user.passwordResetTitle')" width="420px" @open="reset" @closed="reset">
+  <el-dialog
+    v-model="visible"
+    :title="t('system.user.passwordResetTitle')"
+    width="420px"
+    @open="reset"
+    @closed="reset"
+  >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="t('system.user.reason')" prop="reason">
         <el-input
@@ -22,12 +28,16 @@
     />
     <el-input v-if="resetLink" :model-value="resetLink" readonly class="reset-link-input">
       <template #append>
-        <el-button v-perm="'system:user:edit'" icon="DocumentCopy" @click="copyResetLink">{{ t('system.user.copy') }}</el-button>
+        <el-button v-perm="'system:user:edit'" icon="DocumentCopy" @click="copyResetLink">{{
+          t('system.user.copy')
+        }}</el-button>
       </template>
     </el-input>
     <template #footer>
       <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
-      <el-button v-perm="'system:user:edit'" type="primary" :loading="submitting" @click="submit">{{ t('system.user.initiate') }}</el-button>
+      <el-button v-perm="'system:user:edit'" type="primary" :loading="submitting" @click="submit">{{
+        t('system.user.initiate')
+      }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -56,22 +66,18 @@ const resetLink = ref('')
 const userStore = useUserStore()
 const resetMutation = useTenantMutation<
   PasswordResetRequestResult,
-  { userId: Id, data: PasswordResetRequestInput }
->(
-  () => userStore.tenantId,
-  'users',
-  {
-    mutationFn: async variables => {
-      const response = await requestPasswordReset(variables.userId, variables.data)
-      if (!response.data) throw new Error(t('system.user.resetResponseMissing'))
-      return response.data
-    },
-    onSuccess: data => {
-      resetLink.value = new URL(data.reset_url, window.location.origin).toString()
-      ElMessage.success(t('system.user.resetRequested'))
-    },
+  { userId: Id; data: PasswordResetRequestInput }
+>(() => userStore.tenantId, 'users', {
+  mutationFn: async (variables) => {
+    const response = await requestPasswordReset(variables.userId, variables.data)
+    if (!response.data) throw new Error(t('system.user.resetResponseMissing'))
+    return response.data
   },
-)
+  onSuccess: (data) => {
+    resetLink.value = new URL(data.reset_url, window.location.origin).toString()
+    ElMessage.success(t('system.user.resetRequested'))
+  },
+})
 const submitting = resetMutation.pending
 const rules = computed<FormRules>(() => ({
   reason: [{ required: true, message: t('system.user.resetReasonRequired'), trigger: 'blur' }],

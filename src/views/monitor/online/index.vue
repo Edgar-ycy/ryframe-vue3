@@ -3,28 +3,62 @@
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline>
         <el-form-item :label="t('monitor.online.username')">
-          <el-input v-model="queryParams.username" :placeholder="t('monitor.online.usernamePlaceholder')" clearable />
+          <el-input
+            v-model="queryParams.username"
+            :placeholder="t('monitor.online.usernamePlaceholder')"
+            clearable
+          />
         </el-form-item>
         <el-form-item :label="t('monitor.online.ipAddress')">
-          <el-input v-model="queryParams.ipaddr" :placeholder="t('monitor.online.ipAddressPlaceholder')" clearable />
+          <el-input
+            v-model="queryParams.ipaddr"
+            :placeholder="t('monitor.online.ipAddressPlaceholder')"
+            clearable
+          />
         </el-form-item>
         <el-form-item>
-          <el-button v-perm="'monitor:online:list'" type="primary" icon="Search" @click="handleSearch">{{ t('monitor.online.search') }}</el-button>
-          <el-button v-perm="'monitor:online:list'" icon="Refresh" @click="handleReset">{{ t('monitor.online.reset') }}</el-button>
+          <el-button
+            v-perm="'monitor:online:list'"
+            type="primary"
+            icon="Search"
+            @click="handleSearch"
+            >{{ t('monitor.online.search') }}</el-button
+          >
+          <el-button v-perm="'monitor:online:list'" icon="Refresh" @click="handleReset">{{
+            t('monitor.online.reset')
+          }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <el-card shadow="never" style="margin-top:12px">
-      <template #header><span>{{ t('monitor.online.title', { count: onlineUsers?.total ?? 0 }) }}</span></template>
+    <el-card shadow="never" style="margin-top: 12px">
+      <template #header
+        ><span>{{ t('monitor.online.title', { count: onlineUsers?.total ?? 0 }) }}</span></template
+      >
       <el-table v-loading="loading" :data="onlineUsers?.items ?? []" border stripe>
         <el-table-column prop="sid" :label="t('monitor.online.sessionId')" show-overflow-tooltip />
         <el-table-column prop="username" :label="t('monitor.online.username')" />
-        <el-table-column prop="dept_name" :label="t('monitor.online.department')" show-overflow-tooltip />
+        <el-table-column
+          prop="dept_name"
+          :label="t('monitor.online.department')"
+          show-overflow-tooltip
+        />
         <el-table-column prop="ipaddr" :label="t('monitor.online.ipAddress')" />
-        <el-table-column prop="login_location" :label="t('monitor.online.loginLocation')" show-overflow-tooltip />
-        <el-table-column prop="browser" :label="t('monitor.online.browser')" show-overflow-tooltip />
-        <el-table-column prop="os" :label="t('monitor.online.operatingSystem')" show-overflow-tooltip />
+        <el-table-column
+          prop="login_location"
+          :label="t('monitor.online.loginLocation')"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="browser"
+          :label="t('monitor.online.browser')"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="os"
+          :label="t('monitor.online.operatingSystem')"
+          show-overflow-tooltip
+        />
         <el-table-column :label="t('monitor.online.loginTime')" min-width="180">
           <template #default="{ row }">{{ formatLocalizedDate(row.login_time) }}</template>
         </el-table-column>

@@ -7,19 +7,23 @@ const zhOneTimeMaterial = {
   savedConfirmation: '我已将该安全材料保存到受控的密钥管理器',
   closeAfterSaved: '已安全保存并关闭',
   close: '关闭',
-  replayUnavailable: '这是幂等重放结果，服务端不会再次返回一次性安全材料。请使用首次响应中已保存的值；若已遗失，请创建新的材料并撤销旧记录。',
+  replayUnavailable:
+    '这是幂等重放结果，服务端不会再次返回一次性安全材料。请使用首次响应中已保存的值；若已遗失，请创建新的材料并撤销旧记录。',
 } as const
 
 const enOneTimeMaterial = {
-  warning: 'This sensitive material is shown only once. Copy it into an approved secrets manager before closing.',
-  memoryOnly: 'This page keeps the value only in this dialog and never writes it to browser cache or local storage.',
+  warning:
+    'This sensitive material is shown only once. Copy it into an approved secrets manager before closing.',
+  memoryOnly:
+    'This page keeps the value only in this dialog and never writes it to browser cache or local storage.',
   copy: 'Copy',
   copied: 'Copied. Store it in an approved secrets manager now.',
   copyUnavailable: 'Automatic copy is unavailable. Select and copy the value manually.',
   savedConfirmation: 'I stored this sensitive material in an approved secrets manager',
   closeAfterSaved: 'Stored safely — close',
   close: 'Close',
-  replayUnavailable: 'This is an idempotent replay, so the server did not return the one-time material again. Use the value saved from the first response. If it was lost, create new material and revoke the old record.',
+  replayUnavailable:
+    'This is an idempotent replay, so the server did not return the one-time material again. Use the value saved from the first response. If it was lost, create new material and revoke the old record.',
 } as const
 
 export const serviceAccountsMessages = {
@@ -96,7 +100,8 @@ export const serviceAccountsMessages = {
       credentialRevoked: 'API Key 已撤销',
       credentialSecretTitle: '保存一次性 API Key',
       apiKey: '完整 API Key',
-      credentialWarning: '完整 API Key 只显示一次。关闭前请保存到受控的密钥管理器，界面不会再次提供该值。',
+      credentialWarning:
+        '完整 API Key 只显示一次。关闭前请保存到受控的密钥管理器，界面不会再次提供该值。',
       revokeCredentialTitle: '确认撤销 API Key',
       revokeCredentialConfirm: '确认撤销 Key“{label}”吗？使用该 Key 的调用会立即失败，且无法恢复。',
       delegations: '服务委托',
@@ -139,7 +144,8 @@ export const serviceAccountsMessages = {
     oneTimeMaterial: enOneTimeMaterial,
     serviceAccounts: {
       title: 'Service accounts',
-      subtitle: 'Manage non-interactive machine identities, role scope, API keys, user delegations, and Agent access audits.',
+      subtitle:
+        'Manage non-interactive machine identities, role scope, API keys, user delegations, and Agent access audits.',
       accountsTab: 'Accounts',
       delegationsTab: 'Delegation governance',
       auditsTab: 'Access audits',
@@ -182,13 +188,15 @@ export const serviceAccountsMessages = {
       statusUpdated: 'Service account status updated',
       removed: 'Service account deleted',
       removeConfirmTitle: 'Delete service account',
-      removeConfirm: 'Delete “{name}”? Existing API keys will stop working immediately, and this cannot be undone.',
+      removeConfirm:
+        'Delete “{name}”? Existing API keys will stop working immediately, and this cannot be undone.',
       statusConfirmTitle: 'Change account status',
       statusConfirm: 'Set “{name}” to “{status}”? This immediately affects Agent calls.',
       rolesTab: 'Roles and data scope',
       credentialsTab: 'API keys',
       roles: 'Standard roles',
-      rolesHint: 'Only standard roles can be assigned. Super roles are never offered. Saved authorization takes effect immediately.',
+      rolesHint:
+        'Only standard roles can be assigned. Super roles are never offered. Saved authorization takes effect immediately.',
       selectRoles: 'Select standard roles',
       rolesSaved: 'Service-account roles updated',
       noRoles: 'No roles assigned',
@@ -208,11 +216,14 @@ export const serviceAccountsMessages = {
       credentialRevoked: 'API key revoked',
       credentialSecretTitle: 'Store the one-time API key',
       apiKey: 'Complete API key',
-      credentialWarning: 'The complete API key is shown only once. Store it in an approved secrets manager before closing; the UI cannot retrieve it again.',
+      credentialWarning:
+        'The complete API key is shown only once. Store it in an approved secrets manager before closing; the UI cannot retrieve it again.',
       revokeCredentialTitle: 'Revoke API key',
-      revokeCredentialConfirm: 'Revoke “{label}”? Calls using this key will fail immediately, and this cannot be undone.',
+      revokeCredentialConfirm:
+        'Revoke “{label}”? Calls using this key will fail immediately, and this cannot be undone.',
       delegations: 'Service delegations',
-      delegationHint: 'Administrators can only review and revoke tenant delegations. One-time delegation tokens are never shown here.',
+      delegationHint:
+        'Administrators can only review and revoke tenant delegations. One-time delegation tokens are never shown here.',
       accountId: 'Service account ID',
       userId: 'User ID',
       mode: 'Capabilities',
@@ -220,10 +231,12 @@ export const serviceAccountsMessages = {
       notBefore: 'Effective at',
       delegationRevoked: 'Delegation revoked',
       revokeDelegationTitle: 'Revoke delegation',
-      revokeDelegationConfirm: 'Revoke this user delegation? Agent calls representing the user will fail immediately.',
+      revokeDelegationConfirm:
+        'Revoke this user delegation? Agent calls representing the user will fail immediately.',
       emptyDelegations: 'No service delegations',
       audits: 'Agent access audits',
-      auditHint: 'Audit records never contain API keys, delegation tokens, query bodies, raw IP addresses, or raw user agents.',
+      auditHint:
+        'Audit records never contain API keys, delegation tokens, query bodies, raw IP addresses, or raw user agents.',
       requestId: 'Request ID',
       operation: 'Operation',
       capability: 'Capability',

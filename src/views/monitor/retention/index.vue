@@ -54,19 +54,35 @@
         <div class="policy-grid">
           <div class="policy-item">
             <span>{{ t('monitor.retention.policyBatchSize') }}</span>
-            <strong>{{ t('monitor.retention.rows', { value: formatNumber(overviewQuery.data.value.policy.cleanup_batch_size) }) }}</strong>
+            <strong>{{
+              t('monitor.retention.rows', {
+                value: formatNumber(overviewQuery.data.value.policy.cleanup_batch_size),
+              })
+            }}</strong>
           </div>
           <div class="policy-item">
             <span>{{ t('monitor.retention.policyRunLimit') }}</span>
-            <strong>{{ t('monitor.retention.rows', { value: formatNumber(overviewQuery.data.value.policy.max_rows_per_resource_per_run) }) }}</strong>
+            <strong>{{
+              t('monitor.retention.rows', {
+                value: formatNumber(overviewQuery.data.value.policy.max_rows_per_resource_per_run),
+              })
+            }}</strong>
           </div>
           <div class="policy-item">
             <span>{{ t('monitor.retention.protectedData') }}</span>
             <strong>{{ t('monitor.retention.protectedDataValue') }}</strong>
           </div>
-          <div v-for="item in policyWindows(overviewQuery.data.value.policy)" :key="item.key" class="policy-item">
+          <div
+            v-for="item in policyWindows(overviewQuery.data.value.policy)"
+            :key="item.key"
+            class="policy-item"
+          >
             <span>{{ resourceLabel(item.key) }}</span>
-            <strong>{{ item.unit === 'hours' ? t('monitor.retention.hours', { value: item.value }) : t('monitor.retention.days', { value: item.value }) }}</strong>
+            <strong>{{
+              item.unit === 'hours'
+                ? t('monitor.retention.hours', { value: item.value })
+                : t('monitor.retention.days', { value: item.value })
+            }}</strong>
           </div>
         </div>
 
@@ -92,14 +108,29 @@
             <p class="card-subtitle">{{ t('monitor.retention.previewHint') }}</p>
           </div>
           <span v-if="preview" class="calculated-at">
-            {{ t('monitor.retention.calculatedAt') }}：{{ formatLocalizedDate(preview.calculated_at) }}
+            {{ t('monitor.retention.calculatedAt') }}：{{
+              formatLocalizedDate(preview.calculated_at)
+            }}
           </span>
         </div>
       </template>
-      <el-alert v-if="previewError" :title="previewError" type="error" show-icon :closable="false" />
-      <el-empty v-else-if="preview && totalCount(preview.eligible_counts) === 0" :description="t('monitor.retention.previewEmpty')" />
+      <el-alert
+        v-if="previewError"
+        :title="previewError"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+      <el-empty
+        v-else-if="preview && totalCount(preview.eligible_counts) === 0"
+        :description="t('monitor.retention.previewEmpty')"
+      />
       <div v-else-if="preview" class="count-grid">
-        <div v-for="entry in countEntries(preview.eligible_counts)" :key="entry[0]" class="count-item">
+        <div
+          v-for="entry in countEntries(preview.eligible_counts)"
+          :key="entry[0]"
+          class="count-item"
+        >
           <span>{{ resourceLabel(entry[0]) }}</span>
           <strong>{{ formatNumber(entry[1]) }}</strong>
         </div>
@@ -124,13 +155,20 @@
           class="runs-table"
           :empty-text="t('common.noData')"
         >
-          <el-table-column prop="id" :label="t('system.common.id')" min-width="150" show-overflow-tooltip />
+          <el-table-column
+            prop="id"
+            :label="t('system.common.id')"
+            min-width="150"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('monitor.retention.triggerKind')" width="120">
             <template #default="{ row }">{{ triggerLabel(row.trigger_kind) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.retention.status')" width="120">
             <template #default="{ row }">
-              <el-tag :type="statusTag(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+              <el-tag :type="statusTag(row.status)" size="small">{{
+                statusLabel(row.status)
+              }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column :label="t('monitor.retention.deleted')" min-width="200">
@@ -140,13 +178,26 @@
             <template #default="{ row }">{{ countSummary(row.remaining_counts) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.retention.startedAt')" min-width="165">
-            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.started_at) }}</template>
+            <template #default="{ row }">{{
+              formatOptionalLocalizedDate(row.started_at)
+            }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.retention.completedAt')" min-width="165">
-            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.completed_at) }}</template>
+            <template #default="{ row }">{{
+              formatOptionalLocalizedDate(row.completed_at)
+            }}</template>
           </el-table-column>
-          <el-table-column prop="error_summary" :label="t('monitor.retention.error')" min-width="220" show-overflow-tooltip />
-          <el-table-column :label="t('monitor.retention.backgroundJob')" min-width="160" fixed="right">
+          <el-table-column
+            prop="error_summary"
+            :label="t('monitor.retention.error')"
+            min-width="220"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            :label="t('monitor.retention.backgroundJob')"
+            min-width="160"
+            fixed="right"
+          >
             <template #default="{ row }">
               <el-button type="primary" link @click="openJobs(row.background_job_id)">
                 {{ row.background_job_id }}
@@ -213,7 +264,7 @@ const overviewQuery = useTenantQuery(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   MONITOR_RETENTION_RESOURCE,
   () => ({ scope: 'policy' }),
-  async signal => requireOperationData(await getDataRetention(signal)),
+  async (signal) => requireOperationData(await getDataRetention(signal)),
   { refetchInterval: false },
 )
 
@@ -222,20 +273,16 @@ const runsQuery = useTenantQuery<PageResponse<DataRetentionRunRecord>>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   MONITOR_RETENTION_RUNS_RESOURCE,
   () => ({ scope: 'list', ...query.value }),
-  async signal => {
+  async (signal) => {
     const response = await listDataRetentionRuns(query.value, signal)
     return response.data ?? emptyPageResponse<DataRetentionRunRecord>(query.value)
   },
 )
 
-const runMutation = useTenantMutation(
-  () => userStore.tenantId,
-  MONITOR_RETENTION_RUNS_RESOURCE,
-  {
-    mutationFn: (idempotencyKey: string) => runDataRetention(idempotencyKey),
-    onSuccess: () => ElMessage.success(t('monitor.retention.runSuccess')),
-  },
-)
+const runMutation = useTenantMutation(() => userStore.tenantId, MONITOR_RETENTION_RUNS_RESOURCE, {
+  mutationFn: (idempotencyKey: string) => runDataRetention(idempotencyKey),
+  onSuccess: () => ElMessage.success(t('monitor.retention.runSuccess')),
+})
 
 useKeepAlivePageActive(pageActive, refresh)
 
@@ -279,9 +326,9 @@ function resourceLabel(resource: string): string {
 
 function countEntries(value: unknown): Array<[string, number]> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return []
-  return Object.entries(value).flatMap(([key, count]) => (
-    typeof count === 'number' && Number.isFinite(count) ? [[key, count] as [string, number]] : []
-  ))
+  return Object.entries(value).flatMap(([key, count]) =>
+    typeof count === 'number' && Number.isFinite(count) ? [[key, count] as [string, number]] : [],
+  )
 }
 
 function totalCount(value: unknown): number {
@@ -289,23 +336,28 @@ function totalCount(value: unknown): number {
 }
 
 function countSummary(value: unknown): string {
-  const entries = countEntries(value).filter(entry => entry[1] > 0)
+  const entries = countEntries(value).filter((entry) => entry[1] > 0)
   if (!entries.length) return '—'
-  return entries.map(entry => `${resourceLabel(entry[0])} ${formatNumber(entry[1])}`).join('；')
+  return entries.map((entry) => `${resourceLabel(entry[0])} ${formatNumber(entry[1])}`).join('；')
 }
 
 function triggerLabel(value: string): string {
-  return t(value === 'scheduled' ? 'monitor.retention.triggerScheduled' : 'monitor.retention.triggerManual')
+  return t(
+    value === 'scheduled'
+      ? 'monitor.retention.triggerScheduled'
+      : 'monitor.retention.triggerManual',
+  )
 }
 
 function statusLabel(value: string): string {
-  const key = {
-    pending: 'statusPending',
-    running: 'statusRunning',
-    succeeded: 'statusSucceeded',
-    partial: 'statusPartial',
-    failed: 'statusFailed',
-  }[value] ?? 'statusFailed'
+  const key =
+    {
+      pending: 'statusPending',
+      running: 'statusRunning',
+      succeeded: 'statusSucceeded',
+      partial: 'statusPartial',
+      failed: 'statusFailed',
+    }[value] ?? 'statusFailed'
   return t(`monitor.retention.${key}`)
 }
 
@@ -331,14 +383,12 @@ async function loadPreview(): Promise<void> {
   previewError.value = ''
   try {
     preview.value = requireOperationData(await previewDataRetention(controller.signal))
-  }
-  catch (error) {
+  } catch (error) {
     if (!controller.signal.aborted) {
       preview.value = undefined
       previewError.value = error instanceof Error ? error.message : String(error)
     }
-  }
-  finally {
+  } finally {
     if (previewController === controller) {
       previewController = undefined
       previewLoading.value = false
@@ -358,8 +408,7 @@ async function handleRun(): Promise<void> {
   try {
     await runMutation.mutateAsync(key)
     pendingRunKey = undefined
-  }
-  catch (error) {
+  } catch (error) {
     pendingRunKey = shouldReuseIdempotencyKey(error) ? key : undefined
     throw error
   }

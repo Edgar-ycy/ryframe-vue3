@@ -19,7 +19,9 @@ type JsonOperationId = {
 type MultipartOperationId = {
   [Name in OperationId]: ApiOperation<Name> extends {
     requestBody: { content: { 'multipart/form-data': unknown } }
-  } ? Name : never
+  }
+    ? Name
+    : never
 }[OperationId]
 
 type TextOperationId = {
@@ -49,24 +51,21 @@ type BodyOptions<Name extends OperationId> = [OperationJsonBody<Name>] extends [
   ? { data?: never }
   : { data: OperationJsonBody<Name> }
 
-export type OperationRequestOptions<Name extends JsonOperationId> = JsonRequestTransportOptions
-  & PathOptions<Name>
-  & QueryOptions<Name>
-  & BodyOptions<Name>
+export type OperationRequestOptions<Name extends JsonOperationId> = JsonRequestTransportOptions &
+  PathOptions<Name> &
+  QueryOptions<Name> &
+  BodyOptions<Name>
 
 export type MultipartOperationRequestOptions<Name extends MultipartOperationId> =
-  RequestTransportOptions
-  & PathOptions<Name>
-  & QueryOptions<Name>
-  & { data: FormData }
+  RequestTransportOptions & PathOptions<Name> & QueryOptions<Name> & { data: FormData }
 
-export type BlobOperationRequestOptions<Name extends OperationId> = RequestTransportOptions
-  & PathOptions<Name>
-  & QueryOptions<Name>
+export type BlobOperationRequestOptions<Name extends OperationId> = RequestTransportOptions &
+  PathOptions<Name> &
+  QueryOptions<Name>
 
-export type TextOperationRequestOptions<Name extends TextOperationId> = RequestTransportOptions
-  & PathOptions<Name>
-  & QueryOptions<Name>
+export type TextOperationRequestOptions<Name extends TextOperationId> = RequestTransportOptions &
+  PathOptions<Name> &
+  QueryOptions<Name>
 
 function resolveOperationPath(
   template: string,
@@ -107,8 +106,8 @@ export async function requestOperation<Name extends JsonOperationId>(
   if (params !== undefined) config.params = params
   if (data !== undefined) config.data = data
   return transport === 'raw'
-    ? rawRequest<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
-    : request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
+    ? (rawRequest<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>)
+    : (request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>)
 }
 
 /** 使用 OpenAPI operationId 发送 multipart 请求，避免业务模块重复维护方法和路径。 */

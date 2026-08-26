@@ -2,10 +2,18 @@
   <el-dialog v-model="visible" :title="title" width="600px" @close="emit('close')">
     <el-form :ref="handleFormRef" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="t('system.notice.title')" prop="title">
-        <el-input :model-value="form.title" :placeholder="t('system.notice.enterNoticeTitle')" @update:model-value="updateField('title', $event)" />
+        <el-input
+          :model-value="form.title"
+          :placeholder="t('system.notice.enterNoticeTitle')"
+          @update:model-value="updateField('title', $event)"
+        />
       </el-form-item>
       <el-form-item :label="t('system.notice.typePlaceholder')">
-        <el-select :model-value="form.notice_type" style="width:100%" @update:model-value="updateField('notice_type', $event)">
+        <el-select
+          :model-value="form.notice_type"
+          style="width: 100%"
+          @update:model-value="updateField('notice_type', $event)"
+        >
           <el-option :label="t('system.notice.notice')" value="notice" />
           <el-option :label="t('system.notice.announcement')" value="announcement" />
         </el-select>
@@ -20,7 +28,10 @@
             :placeholder="t('system.notice.markdownPlaceholder')"
             @update:model-value="updateField('content_markdown', $event)"
           />
-          <section class="markdown-editor__preview" :aria-label="t('system.notice.markdownPreview')">
+          <section
+            class="markdown-editor__preview"
+            :aria-label="t('system.notice.markdownPreview')"
+          >
             <p v-if="!form.content_markdown" class="markdown-editor__empty">
               {{ t('system.notice.previewEmpty') }}
             </p>
@@ -31,7 +42,10 @@
         </div>
       </el-form-item>
       <el-form-item v-if="isEdit" :label="t('system.common.status')">
-        <el-radio-group :model-value="form.status" @update:model-value="updateField('status', $event)">
+        <el-radio-group
+          :model-value="form.status"
+          @update:model-value="updateField('status', $event)"
+        >
           <el-radio value="1">{{ t('system.notice.published') }}</el-radio>
           <el-radio value="0">{{ t('system.notice.draft') }}</el-radio>
           <el-radio value="2">{{ t('system.notice.closed') }}</el-radio>
@@ -40,8 +54,22 @@
     </el-form>
     <template #footer>
       <el-button @click="visible = false">{{ t('system.common.cancel') }}</el-button>
-      <el-button v-if="isEdit" v-perm="'system:notice:edit'" type="primary" :loading="submitLoading" @click="emit('submit')">{{ t('system.common.confirm') }}</el-button>
-      <el-button v-else v-perm="'system:notice:add'" type="primary" :loading="submitLoading" @click="emit('submit')">{{ t('system.common.confirm') }}</el-button>
+      <el-button
+        v-if="isEdit"
+        v-perm="'system:notice:edit'"
+        type="primary"
+        :loading="submitLoading"
+        @click="emit('submit')"
+        >{{ t('system.common.confirm') }}</el-button
+      >
+      <el-button
+        v-else
+        v-perm="'system:notice:add'"
+        type="primary"
+        :loading="submitLoading"
+        @click="emit('submit')"
+        >{{ t('system.common.confirm') }}</el-button
+      >
     </template>
   </el-dialog>
 </template>
@@ -110,6 +138,8 @@ function updateField(key: keyof NoticeForm, value: string): void {
 }
 
 @media (width <= 720px) {
-  .markdown-editor { grid-template-columns: 1fr; }
+  .markdown-editor {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

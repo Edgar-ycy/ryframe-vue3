@@ -8,11 +8,7 @@ import {
   put_platform_tenants_by_tenant_id,
   put_platform_tenants_by_tenant_id_status,
 } from '@/api/generated/operations'
-import type {
-  OperationData,
-  OperationJsonBody,
-  OperationQuery,
-} from '@/api/contract'
+import type { OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 
 export type TenantStatus = 'enabled' | 'disabled'
 export type Tenant = OperationData<'get_platform_tenants'>[number]

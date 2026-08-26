@@ -7,10 +7,7 @@ function escapeRegExp(value: string): string {
 }
 
 function wildcardToRegExp(pattern: string): RegExp {
-  const source = pattern
-    .split('*')
-    .map(escapeRegExp)
-    .join('.*')
+  const source = pattern.split('*').map(escapeRegExp).join('.*')
   return new RegExp(`^${source}$`)
 }
 
@@ -22,16 +19,11 @@ export function matchPermission(owned: string, required: PermissionCode): boolea
   return wildcardToRegExp(owned).test(required)
 }
 
-export function hasPermission(
-  permissions: readonly string[],
-  required: PermissionValue,
-): boolean {
+export function hasPermission(permissions: readonly string[], required: PermissionValue): boolean {
   if (!required || required.length === 0) return true
 
   const requiredList = Array.isArray(required) ? required : [required]
-  return requiredList.some(perm =>
-    permissions.some(owned => matchPermission(owned, perm)),
-  )
+  return requiredList.some((perm) => permissions.some((owned) => matchPermission(owned, perm)))
 }
 
 export function hasAllPermissions(
@@ -39,5 +31,5 @@ export function hasAllPermissions(
   required: readonly PermissionCode[],
 ): boolean {
   if (!required.length) return true
-  return required.every(perm => hasPermission(permissions, perm))
+  return required.every((perm) => hasPermission(permissions, perm))
 }

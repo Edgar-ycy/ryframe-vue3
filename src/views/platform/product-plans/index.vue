@@ -39,9 +39,16 @@
           @current-change="selectPlan"
         >
           <el-table-column prop="key" :label="t('productPlans.code')" min-width="130" />
-          <el-table-column prop="name" :label="t('productPlans.name')" min-width="150" show-overflow-tooltip />
+          <el-table-column
+            prop="name"
+            :label="t('productPlans.name')"
+            min-width="150"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('productPlans.planStatus')" min-width="110">
-            <template #default="{ row }">{{ row.status === '1' ? t('productPlans.planEnabled') : t('productPlans.planDisabled') }}</template>
+            <template #default="{ row }">{{
+              row.status === '1' ? t('productPlans.planEnabled') : t('productPlans.planDisabled')
+            }}</template>
           </el-table-column>
           <el-table-column v-if="canEdit" width="88" fixed="right">
             <template #default="{ row }">
@@ -97,7 +104,12 @@
           <el-table-column :label="t('productPlans.publishedAt')" min-width="160">
             <template #default="{ row }">{{ formatDate(row.published_at) }}</template>
           </el-table-column>
-          <el-table-column v-if="canEdit || canPublish" :label="t('productPlans.actions')" width="190" fixed="right">
+          <el-table-column
+            v-if="canEdit || canPublish"
+            :label="t('productPlans.actions')"
+            width="190"
+            fixed="right"
+          >
             <template #default="{ row }">
               <el-button
                 v-if="canEdit && row.status === 'draft'"

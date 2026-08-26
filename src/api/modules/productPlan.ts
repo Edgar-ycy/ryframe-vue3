@@ -14,59 +14,43 @@ import {
   put_platform_product_plans_by_plan_id,
   put_platform_product_plans_by_plan_id_versions_by_version_draft,
 } from '@/api/generated/operations'
-import type {
-  OperationData,
-  OperationJsonBody,
-  OperationQuery,
-} from '@/api/contract'
+import type { OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 
-export type ProductPlanVersionStatus = OperationData<
-  'get_platform_product_plans_by_plan_id_versions'
->[number]['status']
-export type ProductCapability = OperationJsonBody<
-  'post_platform_product_plans_by_plan_id_versions'
->['capabilities'][number]
-export type ProductCapabilityVariant = OperationData<
-  'get_platform_capabilities'
->[number]['variants'][number]
+export type ProductPlanVersionStatus =
+  OperationData<'get_platform_product_plans_by_plan_id_versions'>[number]['status']
+export type ProductCapability =
+  OperationJsonBody<'post_platform_product_plans_by_plan_id_versions'>['capabilities'][number]
+export type ProductCapabilityVariant =
+  OperationData<'get_platform_capabilities'>[number]['variants'][number]
 export type ProductCapabilityDescriptor = OperationData<'get_platform_capabilities'>[number]
-export type EffectiveProductCapability = OperationData<
-  'get_platform_tenants_by_tenant_id_product_context'
->['capabilities'][number]
-export type CapabilityOverrideInput = NonNullable<OperationJsonBody<
-  'post_platform_tenants_by_tenant_id_product_change_previews'
->['overrides']>[number]
-export type TenantCapabilityOverride = OperationData<
-  'get_platform_tenants_by_tenant_id_product_context'
->['overrides'][number]
-export type ProductPlan = OperationData<'get_platform_product_plans'>['items'][number]
-export type ProductPlanVersion = OperationData<
-  'get_platform_product_plans_by_plan_id_versions'
+export type EffectiveProductCapability =
+  OperationData<'get_platform_tenants_by_tenant_id_product_context'>['capabilities'][number]
+export type CapabilityOverrideInput = NonNullable<
+  OperationJsonBody<'post_platform_tenants_by_tenant_id_product_change_previews'>['overrides']
 >[number]
-export type TenantProductContext = OperationData<
-  'get_platform_tenants_by_tenant_id_product_context'
->
-export type ProductCapabilityChange = OperationData<
-  'post_platform_tenants_by_tenant_id_product_change_previews'
->['capability_changes'][number]
-export type ProductChangePreview = OperationData<
-  'post_platform_tenants_by_tenant_id_product_change_previews'
->
+export type TenantCapabilityOverride =
+  OperationData<'get_platform_tenants_by_tenant_id_product_context'>['overrides'][number]
+export type ProductPlan = OperationData<'get_platform_product_plans'>['items'][number]
+export type ProductPlanVersion =
+  OperationData<'get_platform_product_plans_by_plan_id_versions'>[number]
+export type TenantProductContext =
+  OperationData<'get_platform_tenants_by_tenant_id_product_context'>
+export type ProductCapabilityChange =
+  OperationData<'post_platform_tenants_by_tenant_id_product_change_previews'>['capability_changes'][number]
+export type ProductChangePreview =
+  OperationData<'post_platform_tenants_by_tenant_id_product_change_previews'>
 
 export type ProductPlanQuery = OperationQuery<'get_platform_product_plans'>
 export type CreateProductPlanInput = OperationJsonBody<'post_platform_product_plans'>
 export type UpdateProductPlanInput = OperationJsonBody<'put_platform_product_plans_by_plan_id'>
 /** 套餐编辑弹窗的本地表单模型；创建时忽略 status。 */
 export type ProductPlanFormInput = CreateProductPlanInput & Pick<UpdateProductPlanInput, 'status'>
-export type ProductPlanVersionInput = OperationJsonBody<
-  'post_platform_product_plans_by_plan_id_versions'
->
-export type ProductChangePreviewInput = OperationJsonBody<
-  'post_platform_tenants_by_tenant_id_product_change_previews'
->
-export type ApplyProductChangeInput = OperationJsonBody<
-  'post_platform_tenants_by_tenant_id_product_changes'
->
+export type ProductPlanVersionInput =
+  OperationJsonBody<'post_platform_product_plans_by_plan_id_versions'>
+export type ProductChangePreviewInput =
+  OperationJsonBody<'post_platform_tenants_by_tenant_id_product_change_previews'>
+export type ApplyProductChangeInput =
+  OperationJsonBody<'post_platform_tenants_by_tenant_id_product_changes'>
 
 export function listProductCapabilities(signal?: AbortSignal) {
   return requestOperation(get_platform_capabilities, { signal })
@@ -138,10 +122,7 @@ export function getTenantProductContext(tenantId: string, signal?: AbortSignal) 
   })
 }
 
-export function previewTenantProductChange(
-  tenantId: string,
-  data: ProductChangePreviewInput,
-) {
+export function previewTenantProductChange(tenantId: string, data: ProductChangePreviewInput) {
   return requestOperation(post_platform_tenants_by_tenant_id_product_change_previews, {
     data,
     path: { tenant_id: tenantId },

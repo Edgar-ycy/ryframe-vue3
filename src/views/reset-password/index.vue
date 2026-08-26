@@ -65,9 +65,7 @@
 import { useI18n } from 'vue-i18n'
 import { completePasswordReset } from '@/api/modules/auth'
 import type { FormItemRule } from 'element-plus'
-import {
-  PASSWORD_POLICY,
-} from '@/shared/security/passwordPolicy'
+import { PASSWORD_POLICY } from '@/shared/security/passwordPolicy'
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { consumeResetPasswordFragment } from './resetCredentials'
 
@@ -77,14 +75,11 @@ const { t } = useI18n()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 
-const resetCredentials = typeof window === 'undefined'
-  ? { tenantId: '', resetRequestKey: '', token: '' }
-  : consumeResetPasswordFragment(window.location, window.history, route.path)
-const {
-  tenantId,
-  resetRequestKey,
-  token,
-} = resetCredentials
+const resetCredentials =
+  typeof window === 'undefined'
+    ? { tenantId: '', resetRequestKey: '', token: '' }
+    : consumeResetPasswordFragment(window.location, window.history, route.path)
+const { tenantId, resetRequestKey, token } = resetCredentials
 const missingParams = !isValidTenantId(tenantId) || !resetRequestKey || !token
 
 const form = ref({
@@ -170,9 +165,7 @@ function passwordValidationMessage(password: string): string | undefined {
   padding: 24px 16px;
   display: grid;
   place-items: center;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(255 255 255 / 90%)),
-    #eef2f6;
+  background: linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(255 255 255 / 90%)), #eef2f6;
 }
 
 .reset-panel {

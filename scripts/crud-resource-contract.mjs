@@ -74,10 +74,12 @@ function requireExactKeys(value, expected, location) {
 }
 
 function requireString(value, location, pattern) {
-  if (typeof value !== 'string'
-    || value.trim() !== value
-    || value.length === 0
-    || (pattern && !pattern.test(value))) {
+  if (
+    typeof value !== 'string' ||
+    value.trim() !== value ||
+    value.length === 0 ||
+    (pattern && !pattern.test(value))
+  ) {
     throw new Error(`${location}: 字符串格式无效`)
   }
   return value
@@ -96,7 +98,7 @@ function requireActions(value, location, pattern) {
 
 function isStrictPermission(value) {
   const segments = typeof value === 'string' ? value.split(':') : []
-  return segments.length === 3 && segments.every(segment => kebabIdentifierPattern.test(segment))
+  return segments.length === 3 && segments.every((segment) => kebabIdentifierPattern.test(segment))
 }
 
 function requirePermission(value, location, permissionCodes) {
@@ -163,8 +165,10 @@ function requireField(field, location) {
   requireString(field.name, `${location}.name`, /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/u)
   if (!valueTypes.has(field.value_type)) throw new Error(`${location}.value_type: 不支持的字段类型`)
   if (!valueTypes.has(field.wire_type)) throw new Error(`${location}.wire_type: 不支持的传输类型`)
-  if (field.wire_type !== field.value_type
-    && !(field.value_type === 'i64' && field.wire_type === 'string')) {
+  if (
+    field.wire_type !== field.value_type &&
+    !(field.value_type === 'i64' && field.wire_type === 'string')
+  ) {
     throw new Error(`${location}.wire_type: 只允许 i64 使用 string 传输`)
   }
   if (typeof field.nullable !== 'boolean') throw new Error(`${location}.nullable: 必须是布尔值`)
@@ -176,7 +180,8 @@ function requireField(field, location) {
 
   requireExactKeys(field.usage, usageKeys, `${location}.usage`)
   for (const key of usageKeys) {
-    if (typeof field.usage[key] !== 'boolean') throw new Error(`${location}.usage.${key}: 必须是布尔值`)
+    if (typeof field.usage[key] !== 'boolean')
+      throw new Error(`${location}.usage.${key}: 必须是布尔值`)
   }
   requireExactKeys(field.validation, validationKeys, `${location}.validation`)
   if (typeof field.validation.required !== 'boolean') {
@@ -195,22 +200,30 @@ function requireField(field, location) {
     }
   }
   const validation = field.validation
-  if (validation.min_length !== null
-    && validation.max_length !== null
-    && validation.min_length > validation.max_length) {
+  if (
+    validation.min_length !== null &&
+    validation.max_length !== null &&
+    validation.min_length > validation.max_length
+  ) {
     throw new Error(`${location}.validation: min_length 不能大于 max_length`)
   }
-  if (validation.minimum !== null
-    && validation.maximum !== null
-    && validation.minimum > validation.maximum) {
+  if (
+    validation.minimum !== null &&
+    validation.maximum !== null &&
+    validation.minimum > validation.maximum
+  ) {
     throw new Error(`${location}.validation: minimum 不能大于 maximum`)
   }
-  if ((validation.min_length !== null || validation.max_length !== null)
-    && field.value_type !== 'string') {
+  if (
+    (validation.min_length !== null || validation.max_length !== null) &&
+    field.value_type !== 'string'
+  ) {
     throw new Error(`${location}.validation: 长度约束只能用于 string 字段`)
   }
-  if ((validation.minimum !== null || validation.maximum !== null)
-    && !['i32', 'i64'].includes(field.value_type)) {
+  if (
+    (validation.minimum !== null || validation.maximum !== null) &&
+    !['i32', 'i64'].includes(field.value_type)
+  ) {
     throw new Error(`${location}.validation: 数值范围只能用于 i32/i64 字段`)
   }
   if (validation.required && field.nullable) {
@@ -262,7 +275,8 @@ function requireEnumKey(value, valueType, location) {
   requireString(value, location)
   if (valueType === 'string') return
   if (valueType === 'bool') {
-    if (!['false', 'true'].includes(value)) throw new Error(`${location}: bool 枚举仅支持 false/true`)
+    if (!['false', 'true'].includes(value))
+      throw new Error(`${location}: bool 枚举仅支持 false/true`)
     return
   }
   if (valueType === 'i32') {
@@ -283,7 +297,8 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
   if (seen.names.has(name)) throw new Error(`${location}.name: 资源名重复 ${name}`)
   seen.names.add(name)
   requireString(resource.module, `${location}.module`, snakeIdentifierPattern)
-  if (resource.module !== 'system') throw new Error(`${location}.module: flat_crud v1 仅支持 system`)
+  if (resource.module !== 'system')
+    throw new Error(`${location}.module: flat_crud v1 仅支持 system`)
   if (resource.profile !== 'flat_crud') throw new Error(`${location}.profile: 只支持 flat_crud`)
   if (!['control_row', 'tenant_data'].includes(resource.storage)) {
     throw new Error(`${location}.storage: 不支持的存储类型`)
@@ -348,19 +363,46 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
   for (const [fieldIndex, field] of resource.fields.entries()) {
     const fieldLocation = `${location}.fields[${fieldIndex}]`
     requireField(field, fieldLocation)
-    if (fieldNames.has(field.name)) throw new Error(`${fieldLocation}.name: 字段名重复 ${field.name}`)
-    if (field.order <= previousOrder) throw new Error(`${fieldLocation}.order: 字段顺序必须严格递增`)
+    if (fieldNames.has(field.name))
+      throw new Error(`${fieldLocation}.name: 字段名重复 ${field.name}`)
+    if (field.order <= previousOrder)
+      throw new Error(`${fieldLocation}.order: 字段顺序必须严格递增`)
     fieldNames.add(field.name)
     previousOrder = field.order
   }
 
   const operations = resource.api.operations
-  requireOperation(operationMap, operations.create, { method: 'post', path: apiPath }, `${location}.api.operations.create`)
-  requireOperation(operationMap, operations.list, { method: 'get', path: apiPath }, `${location}.api.operations.list`)
+  requireOperation(
+    operationMap,
+    operations.create,
+    { method: 'post', path: apiPath },
+    `${location}.api.operations.create`,
+  )
+  requireOperation(
+    operationMap,
+    operations.list,
+    { method: 'get', path: apiPath },
+    `${location}.api.operations.list`,
+  )
   const detailPath = `${apiPath}/{id}`
-  requireOperation(operationMap, operations.read, { method: 'get', path: detailPath }, `${location}.api.operations.read`)
-  requireOperation(operationMap, operations.update, { method: 'put', path: detailPath }, `${location}.api.operations.update`)
-  requireOperation(operationMap, operations.delete, { method: 'delete', path: detailPath }, `${location}.api.operations.delete`)
+  requireOperation(
+    operationMap,
+    operations.read,
+    { method: 'get', path: detailPath },
+    `${location}.api.operations.read`,
+  )
+  requireOperation(
+    operationMap,
+    operations.update,
+    { method: 'put', path: detailPath },
+    `${location}.api.operations.update`,
+  )
+  requireOperation(
+    operationMap,
+    operations.delete,
+    { method: 'delete', path: detailPath },
+    `${location}.api.operations.delete`,
+  )
 }
 
 export function requireCrudResourceCatalog(value, document) {
@@ -368,10 +410,9 @@ export function requireCrudResourceCatalog(value, document) {
   if (value.version !== 1 || !Array.isArray(value.resources) || value.resources.length === 0) {
     throw new Error('x-ryframe-crud-resources: 必须是 version=1 且包含非空 resources 数组')
   }
-  const permissionCodes = new Set(requirePermissionCatalog(
-    document?.['x-ryframe-permission-catalog'],
-    'OpenAPI',
-  ))
+  const permissionCodes = new Set(
+    requirePermissionCatalog(document?.['x-ryframe-permission-catalog'], 'OpenAPI'),
+  )
   const operationMap = operationLocations(document)
   const seen = {
     menuKeys: new Set(),

@@ -64,7 +64,11 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="TRecord extends object, TQuery extends object, TForm extends object">
+<script
+  setup
+  lang="ts"
+  generic="TRecord extends object, TQuery extends object, TForm extends object"
+>
 import FlatCrudFormDialog from './FlatCrudFormDialog.vue'
 import FlatCrudQueryForm from './FlatCrudQueryForm.vue'
 import FlatCrudTable from './FlatCrudTable.vue'

@@ -4,10 +4,11 @@ import { parse as parseYaml } from 'yaml'
  * 匹配所有 SemVer 风格的预发布后缀，避免维护标签清单。数字标识符以及
  * 生态系统特有的 `next`、`dev`、`experimental` 等标签也属于预发布版本。
  */
-export const prereleaseVersion = /(?<![0-9A-Za-z\\])v?(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?![0-9A-Za-z\\])/giu
+export const prereleaseVersion =
+  /(?<![0-9A-Za-z\\])v?(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?![0-9A-Za-z\\])/giu
 
 export function findPrereleaseVersions(source) {
-  return [...source.matchAll(prereleaseVersion)].map(match => match[0])
+  return [...source.matchAll(prereleaseVersion)].map((match) => match[0])
 }
 
 function findPrereleaseVersionsInValue(value, seen = new WeakSet()) {
@@ -54,10 +55,7 @@ export function findPrereleaseVersionsInPnpmLock(source) {
 
   // packages 和 snapshots 的键表示锁定后的实际解析版本；值中的 peerDependency
   // 范围只是兼容性声明，不能视为项目安装了预发布依赖。
-  for (const key of [
-    ...Object.keys(lock.packages ?? {}),
-    ...Object.keys(lock.snapshots ?? {}),
-  ]) {
+  for (const key of [...Object.keys(lock.packages ?? {}), ...Object.keys(lock.snapshots ?? {})]) {
     findings.push(...findPrereleaseVersions(key))
   }
 
@@ -78,13 +76,12 @@ function findCiDependencyReferences(value, seen = new WeakSet()) {
     const key = rawKey.toLowerCase()
     if (typeof child === 'string') {
       const isDependencyReference =
-        key === 'uses'
-        || key === 'image'
-        || key === 'container'
-        || child.trimStart().toLowerCase().startsWith('docker://')
+        key === 'uses' ||
+        key === 'image' ||
+        key === 'container' ||
+        child.trimStart().toLowerCase().startsWith('docker://')
       if (isDependencyReference) findings.push(...findPrereleaseVersions(child))
-    }
-    else {
+    } else {
       findings.push(...findCiDependencyReferences(child, seen))
     }
   }

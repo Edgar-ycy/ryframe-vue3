@@ -36,12 +36,14 @@ function currentIdentity(user = useUserStore()): ExportJobIdentity {
   return { tenantId: user.tenantId, userId: String(user.userId) }
 }
 
-function identityMatchesCurrent(user: ReturnType<typeof useUserStore>, identity: ExportJobIdentity): boolean {
+function identityMatchesCurrent(
+  user: ReturnType<typeof useUserStore>,
+  identity: ExportJobIdentity,
+): boolean {
   try {
     const current = currentIdentity(user)
     return current.tenantId === identity.tenantId && current.userId === identity.userId
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -62,10 +64,8 @@ export function useExportJobRequest() {
   const mutation = useMutation<ExportJob, HttpError, SubmitExportVariables>({
     mutationKey: ['export-job-create'],
     meta: { errorMode: 'global' },
-    mutationFn: async variables => requireOperationData(await variables.create(
-      variables.idempotencyKey,
-      variables.signal,
-    )),
+    mutationFn: async (variables) =>
+      requireOperationData(await variables.create(variables.idempotencyKey, variables.signal)),
     onSuccess: async (job, variables) => {
       intentKeys.delete(variables.intentSignature)
       if (!identityMatchesCurrent(user, variables.identity)) return
@@ -90,10 +90,7 @@ export function useExportJobRequest() {
     },
   })
 
-  function submitExport(
-    intentSignature: string,
-    create: CreateExportJob,
-  ): Promise<ExportJob> {
+  function submitExport(intentSignature: string, create: CreateExportJob): Promise<ExportJob> {
     if (activePromise) return activePromise
 
     const identity = currentIdentity(user)
@@ -103,33 +100,39 @@ export function useExportJobRequest() {
     const controller = new AbortController()
     activeController = controller
     activeIdentity = identity
-    const promise = mutation.mutateAsync({
-      create,
-      idempotencyKey,
-      identity,
-      intentSignature: scopedIntent,
-      signal: controller.signal,
-    }).finally(() => {
-      if (activePromise === promise) {
-        activePromise = undefined
-        activeController = undefined
-        activeIdentity = undefined
-        if (scopeDisposed) unsubscribeUser()
-      }
-    })
+    const promise = mutation
+      .mutateAsync({
+        create,
+        idempotencyKey,
+        identity,
+        intentSignature: scopedIntent,
+        signal: controller.signal,
+      })
+      .finally(() => {
+        if (activePromise === promise) {
+          activePromise = undefined
+          activeController = undefined
+          activeIdentity = undefined
+          if (scopeDisposed) unsubscribeUser()
+        }
+      })
     activePromise = promise
     return promise
   }
 
-  unsubscribeUser = user.$subscribe((_mutation, state) => {
-    if (!activeController || !activeIdentity) return
-    const nextUserId = String(state.userId || '')
-    if (
-      state.sessionStatus !== 'authenticated'
-      || state.tenantId !== activeIdentity.tenantId
-      || nextUserId !== activeIdentity.userId
-    ) activeController.abort()
-  }, { flush: 'sync' })
+  unsubscribeUser = user.$subscribe(
+    (_mutation, state) => {
+      if (!activeController || !activeIdentity) return
+      const nextUserId = String(state.userId || '')
+      if (
+        state.sessionStatus !== 'authenticated' ||
+        state.tenantId !== activeIdentity.tenantId ||
+        nextUserId !== activeIdentity.userId
+      )
+        activeController.abort()
+    },
+    { flush: 'sync' },
+  )
 
   if (getCurrentScope()) {
     onScopeDispose(() => {

@@ -59,11 +59,12 @@ export function useDictManagement() {
     authenticated,
     'dict-types',
     () => ({ scope: 'list', filters: { ...appliedTypeQuery.value } }),
-    signal => runAppliedQuery(signal, async (query, requestSignal) => {
-      const params = { ...query }
-      const response = await listDictType(params, requestSignal)
-      return response.data ?? emptyPageResponse<DictTypeRecord>(params)
-    }),
+    (signal) =>
+      runAppliedQuery(signal, async (query, requestSignal) => {
+        const params = { ...query }
+        const response = await listDictType(params, requestSignal)
+        return response.data ?? emptyPageResponse<DictTypeRecord>(params)
+      }),
   )
   const typePageResponse = typesQuery.data
   const currentType = computed<DictTypeRecord | null>({
@@ -71,9 +72,9 @@ export function useDictManagement() {
       const id = currentTypeId.value
       return id === null
         ? null
-        : typePageResponse.value?.items.find(item => item.id === id) ?? null
+        : (typePageResponse.value?.items.find((item) => item.id === id) ?? null)
     },
-    set: value => {
+    set: (value) => {
       currentTypeId.value = value?.id ?? null
     },
   })
@@ -82,7 +83,7 @@ export function useDictManagement() {
     () => authenticated() && currentType.value !== null,
     'dict-data',
     () => ({ scope: 'list', typeCode: currentType.value?.code ?? null }),
-    async signal => {
+    async (signal) => {
       const typeCode = currentType.value?.code
       if (!typeCode) return []
       const response = await listDictData({ type_code: typeCode }, signal)
@@ -98,7 +99,7 @@ export function useDictManagement() {
     () => userStore.tenantId,
     'dict-types',
     {
-      mutationFn: async dictType => {
+      mutationFn: async (dictType) => {
         await deleteDictType(dictType.id)
       },
       onSuccess: () => {
@@ -110,7 +111,7 @@ export function useDictManagement() {
     () => userStore.tenantId,
     'dict-data',
     {
-      mutationFn: async dictData => {
+      mutationFn: async (dictData) => {
         await deleteDictData(dictData.id)
       },
       onSuccess: () => {
@@ -118,16 +119,12 @@ export function useDictManagement() {
       },
     },
   )
-  const deletingTypeId = computed<Id | null>(() => (
-    deleteTypeMutation.pending.value
-      ? deleteTypeMutation.variables.value?.id ?? null
-      : null
-  ))
-  const deletingDataId = computed<Id | null>(() => (
-    deleteDataMutation.pending.value
-      ? deleteDataMutation.variables.value?.id ?? null
-      : null
-  ))
+  const deletingTypeId = computed<Id | null>(() =>
+    deleteTypeMutation.pending.value ? (deleteTypeMutation.variables.value?.id ?? null) : null,
+  )
+  const deletingDataId = computed<Id | null>(() =>
+    deleteDataMutation.pending.value ? (deleteDataMutation.variables.value?.id ?? null) : null,
+  )
 
   function clearCurrentType(): void {
     currentTypeId.value = null
@@ -158,14 +155,8 @@ export function useDictManagement() {
     const intent = normalizeExportIntent('dict-types', successfulQuery)
     if (!(await confirmExportIntent(intent))) return
 
-    await submitExport(
-      intent.signature,
-      (idempotencyKey, signal) => exportDictType(
-        intent.filter,
-        idempotencyKey,
-        signal,
-        intent.isEmpty,
-      ),
+    await submitExport(intent.signature, (idempotencyKey, signal) =>
+      exportDictType(intent.filter, idempotencyKey, signal, intent.isEmpty),
     )
   }
 

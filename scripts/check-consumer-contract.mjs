@@ -20,8 +20,8 @@ export function parseArguments(argv) {
     const value = args[index + 1]
     if (!name?.startsWith('--') || value === undefined) {
       throw new Error(
-        '用法：consumer:check -- --mode <candidate|formal> --openapi <文件> '
-        + '--backend-commit <SHA> --backend-repository <owner/repo> --require-pin <true|false>',
+        '用法：consumer:check -- --mode <candidate|formal> --openapi <文件> ' +
+          '--backend-commit <SHA> --backend-repository <owner/repo> --require-pin <true|false>',
       )
     }
     if (values.has(name)) throw new Error(`参数重复：${name}`)
@@ -69,9 +69,11 @@ export function validateConsumerState(options, local, candidateBytes) {
   if (local.metadata.backend_repository !== options.backendRepository) {
     throw new Error('openapi/source.json 未指向本次后端仓库')
   }
-  if (options.mode === 'formal'
-    && options.requirePin
-    && local.metadata.backend_commit !== options.backendCommit) {
+  if (
+    options.mode === 'formal' &&
+    options.requirePin &&
+    local.metadata.backend_commit !== options.backendCommit
+  ) {
     throw new Error('正式契约必须精确固定本次后端提交')
   }
 }
@@ -111,12 +113,11 @@ async function main() {
     await runPackageScript(script)
   }
   console.log(
-    `消费契约 ${options.mode} 态检查通过：`
-    + `${options.backendRepository}@${options.backendCommit}`,
+    `消费契约 ${options.mode} 态检查通过：` +
+      `${options.backendRepository}@${options.backendCommit}`,
   )
 }
 
-if (process.argv[1]
-  && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   await main()
 }

@@ -228,7 +228,8 @@ export const systemMessages = {
         value: '参数键值',
         enterValue: '请输入参数键值',
         portable: '允许配置包迁移',
-        portableHint: '仅开启后才会随租户配置包迁移。密码、Secret、Token、Credential、Private Key 等敏感键名无法开启。',
+        portableHint:
+          '仅开启后才会随租户配置包迁移。密码、Secret、Token、Credential、Private Key 等敏感键名无法开启。',
         remark: '备注',
         enterRemark: '请输入备注',
         exportFilename: '参数数据.xlsx',
@@ -408,8 +409,10 @@ export const systemMessages = {
         selectPermission: 'Select a permission',
         display: 'Show',
         hidden: 'Hide',
-        permissionRequired: 'Menus require a read permission and buttons require an action permission',
-        pageMissing: 'The selected permission has no matching page. Select the page read permission.',
+        permissionRequired:
+          'Menus require a read permission and buttons require an action permission',
+        pageMissing:
+          'The selected permission has no matching page. Select the page read permission.',
       },
       permission: {
         list: 'Permissions',
@@ -494,7 +497,8 @@ export const systemMessages = {
         value: 'Parameter value',
         enterValue: 'Enter a parameter value',
         portable: 'Allow config package migration',
-        portableHint: 'Only enabled parameters are included in tenant config packages. Sensitive keys such as Password, Secret, Token, Credential, and Private Key cannot be enabled.',
+        portableHint:
+          'Only enabled parameters are included in tenant config packages. Sensitive keys such as Password, Secret, Token, Credential, and Private Key cannot be enabled.',
         remark: 'Notes',
         enterRemark: 'Enter notes',
         exportFilename: 'configuration.xlsx',

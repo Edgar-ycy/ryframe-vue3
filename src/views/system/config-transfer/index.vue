@@ -59,16 +59,40 @@
     />
 
     <el-card v-if="selectedPackage" shadow="never" class="selected-package-card">
-      <template #header><strong>{{ t('tenantConfigTransfer.selectedPackage') }}</strong></template>
+      <template #header
+        ><strong>{{ t('tenantConfigTransfer.selectedPackage') }}</strong></template
+      >
       <div class="package-summary">
-        <div><span>{{ t('tenantConfigTransfer.sourceTenant') }}</span><strong>{{ selectedPackage.source_tenant_name }}</strong></div>
-        <div><span>{{ t('tenantConfigTransfer.sourceKey') }}</span><strong>{{ selectedPackage.source_tenant_key }}</strong></div>
-        <div><span>{{ t('tenantConfigTransfer.schemaVersion') }}</span><strong>{{ selectedPackage.package_schema_version }}</strong></div>
-        <div><span>{{ t('tenantConfigTransfer.sourceVersion') }}</span><strong>{{ selectedPackage.source_app_version }}</strong></div>
-        <div class="package-summary__wide"><span>{{ t('tenantConfigTransfer.sha256') }}</span><code>{{ selectedPackage.sha256 || '—' }}</code></div>
-        <div><span>{{ t('tenantConfigTransfer.expiresAt') }}</span><strong>{{ formatOptionalLocalizedDate(selectedPackage.expires_at) }}</strong></div>
+        <div>
+          <span>{{ t('tenantConfigTransfer.sourceTenant') }}</span
+          ><strong>{{ selectedPackage.source_tenant_name }}</strong>
+        </div>
+        <div>
+          <span>{{ t('tenantConfigTransfer.sourceKey') }}</span
+          ><strong>{{ selectedPackage.source_tenant_key }}</strong>
+        </div>
+        <div>
+          <span>{{ t('tenantConfigTransfer.schemaVersion') }}</span
+          ><strong>{{ selectedPackage.package_schema_version }}</strong>
+        </div>
+        <div>
+          <span>{{ t('tenantConfigTransfer.sourceVersion') }}</span
+          ><strong>{{ selectedPackage.source_app_version }}</strong>
+        </div>
+        <div class="package-summary__wide">
+          <span>{{ t('tenantConfigTransfer.sha256') }}</span
+          ><code>{{ selectedPackage.sha256 || '—' }}</code>
+        </div>
+        <div>
+          <span>{{ t('tenantConfigTransfer.expiresAt') }}</span
+          ><strong>{{ formatOptionalLocalizedDate(selectedPackage.expires_at) }}</strong>
+        </div>
       </div>
-      <div v-if="resourceCounts(selectedPackage).length" class="resource-tags" :aria-label="t('tenantConfigTransfer.resources')">
+      <div
+        v-if="resourceCounts(selectedPackage).length"
+        class="resource-tags"
+        :aria-label="t('tenantConfigTransfer.resources')"
+      >
         <el-tag v-for="entry in resourceCounts(selectedPackage)" :key="entry[0]" type="info">
           {{ resourceLabel(entry[0]) }}: {{ entry[1] }}
         </el-tag>
@@ -216,8 +240,7 @@ function showError(error: unknown): void {
 async function refreshPackages(): Promise<void> {
   try {
     await fetchPackages()
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -225,8 +248,7 @@ async function refreshPackages(): Promise<void> {
 async function refreshTransfers(): Promise<void> {
   try {
     await fetchData()
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -236,8 +258,7 @@ async function handleGeneratePackage(): Promise<void> {
     const bundle = await createPackage()
     await selectPackage(bundle)
     ElMessage.success(t('tenantConfigTransfer.createPackageSuccess'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -251,8 +272,7 @@ async function handleCreateFromPackage(bundle: TenantConfigBundle): Promise<void
     await selectPackage(bundle)
     await createFromPackage(bundle)
     ElMessage.success(t('tenantConfigTransfer.createTransferSuccess'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -262,8 +282,7 @@ async function handleUploadPackage(file: File): Promise<void> {
     await uploadPackage(file)
     uploadVisible.value = false
     ElMessage.success(t('tenantConfigTransfer.uploadSuccess'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -272,8 +291,7 @@ async function handleDownloadPackage(bundle: TenantConfigBundle): Promise<void> 
   try {
     await downloadPackage(bundle)
     ElMessage.success(t('tenantConfigTransfer.downloadSuccess'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -282,8 +300,7 @@ async function handlePreview(transfer: TenantConfigTransfer): Promise<void> {
   try {
     await previewTransfer(transfer)
     ElMessage.success(t('tenantConfigTransfer.previewSubmitted'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -293,12 +310,15 @@ async function handleApply(transfer: TenantConfigTransfer): Promise<void> {
     await ElMessageBox.confirm(
       t('tenantConfigTransfer.applyConfirm'),
       t('tenantConfigTransfer.applyConfirmTitle'),
-      { type: 'warning', confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel') },
+      {
+        type: 'warning',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+      },
     )
     await applyTransfer(transfer)
     ElMessage.success(t('tenantConfigTransfer.applySubmitted'))
-  }
-  catch (error) {
+  } catch (error) {
     if (error === 'cancel' || error === 'close') return
     showError(error)
   }
@@ -309,12 +329,15 @@ async function handleRollback(transfer: TenantConfigTransfer): Promise<void> {
     await ElMessageBox.confirm(
       t('tenantConfigTransfer.rollbackConfirm'),
       t('tenantConfigTransfer.rollbackConfirmTitle'),
-      { type: 'warning', confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel') },
+      {
+        type: 'warning',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+      },
     )
     await rollbackTransfer(transfer)
     ElMessage.success(t('tenantConfigTransfer.rollbackSubmitted'))
-  }
-  catch (error) {
+  } catch (error) {
     if (error === 'cancel' || error === 'close') return
     showError(error)
   }
@@ -336,8 +359,7 @@ async function handleSelectTransfer(transfer: TenantConfigTransfer): Promise<voi
   try {
     await selectTransfer(transfer)
     historyVisible.value = false
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -347,30 +369,46 @@ function handleHistoryClosed(): void {
 }
 
 function resourceCounts(bundle: TenantConfigBundle): [string, number][] {
-  return Object.entries(bundle.resource_counts).filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+  return Object.entries(bundle.resource_counts).filter(
+    (entry): entry is [string, number] => typeof entry[1] === 'number',
+  )
 }
 
 function resourceLabel(resource: string): string {
   const suffix = {
-    department: 'resourceDepartments', departments: 'resourceDepartments',
-    post: 'resourcePosts', posts: 'resourcePosts',
-    dict_type: 'resourceDictTypes', dict_types: 'resourceDictTypes',
-    dictionary_type: 'resourceDictTypes', dictionary_types: 'resourceDictTypes',
-    dict_datum: 'resourceDictData', dict_data: 'resourceDictData', dictionary_data: 'resourceDictData',
-    config: 'resourceConfigs', configs: 'resourceConfigs',
-    permission: 'resourcePermissions', permissions: 'resourcePermissions',
-    menu: 'resourceMenus', menus: 'resourceMenus',
-    role: 'resourceRoles', roles: 'resourceRoles',
-    role_permission: 'resourceRolePermissions', role_permissions: 'resourceRolePermissions',
-    role_department: 'resourceRoleDepartments', role_departments: 'resourceRoleDepartments',
-    role_dept: 'resourceRoleDepartments', role_depts: 'resourceRoleDepartments',
+    department: 'resourceDepartments',
+    departments: 'resourceDepartments',
+    post: 'resourcePosts',
+    posts: 'resourcePosts',
+    dict_type: 'resourceDictTypes',
+    dict_types: 'resourceDictTypes',
+    dictionary_type: 'resourceDictTypes',
+    dictionary_types: 'resourceDictTypes',
+    dict_datum: 'resourceDictData',
+    dict_data: 'resourceDictData',
+    dictionary_data: 'resourceDictData',
+    config: 'resourceConfigs',
+    configs: 'resourceConfigs',
+    permission: 'resourcePermissions',
+    permissions: 'resourcePermissions',
+    menu: 'resourceMenus',
+    menus: 'resourceMenus',
+    role: 'resourceRoles',
+    roles: 'resourceRoles',
+    role_permission: 'resourceRolePermissions',
+    role_permissions: 'resourceRolePermissions',
+    role_department: 'resourceRoleDepartments',
+    role_departments: 'resourceRoleDepartments',
+    role_dept: 'resourceRoleDepartments',
+    role_depts: 'resourceRoleDepartments',
   }[resource]
   return suffix ? t(`tenantConfigTransfer.${suffix}`) : resource
 }
 
 function canUseSelectedPackage(): boolean {
-  return selectedPackage.value !== undefined
-    && canDownloadTenantConfigPackage(selectedPackage.value)
+  return (
+    selectedPackage.value !== undefined && canDownloadTenantConfigPackage(selectedPackage.value)
+  )
 }
 </script>
 

@@ -193,8 +193,10 @@ export const monitorToolsMessages = {
         category: 'Category',
         count: 'Count',
         commandStatistics: 'Redis command statistics',
-        commandStatsNotConfigured: 'Redis is not configured. This instance uses in-memory caching, so Redis command statistics are unavailable.',
-        commandStatsUnavailable: 'Redis is currently unavailable, so command statistics cannot be provided.',
+        commandStatsNotConfigured:
+          'Redis is not configured. This instance uses in-memory caching, so Redis command statistics are unavailable.',
+        commandStatsUnavailable:
+          'Redis is currently unavailable, so command statistics cannot be provided.',
         command: 'Command',
         statistics: 'Statistics',
         allKeys: 'All keys',

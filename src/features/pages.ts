@@ -21,6 +21,8 @@ export interface PageManifest {
 }
 
 /** 保留路由键、权限和页面路径的字面量类型。 */
-export function definePageManifest<const Manifest extends PageManifest>(manifest: Manifest): Manifest {
+export function definePageManifest<const Manifest extends PageManifest>(
+  manifest: Manifest,
+): Manifest {
   return manifest
 }

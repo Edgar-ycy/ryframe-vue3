@@ -33,13 +33,12 @@
             <p>{{ descriptor.description }}</p>
           </div>
           <div class="capability-state">
-            <el-tag
-              :type="descriptor.deployment_available ? 'success' : 'danger'"
-              effect="plain"
-            >
-              {{ descriptor.deployment_available
-                ? t('productPlans.deploymentAvailable')
-                : t('productPlans.deploymentUnavailable') }}
+            <el-tag :type="descriptor.deployment_available ? 'success' : 'danger'" effect="plain">
+              {{
+                descriptor.deployment_available
+                  ? t('productPlans.deploymentAvailable')
+                  : t('productPlans.deploymentUnavailable')
+              }}
             </el-tag>
             <el-switch
               :model-value="Boolean(selectedCapability(descriptor.code))"
@@ -50,7 +49,10 @@
           </div>
         </header>
 
-        <div v-if="descriptor.dependencies.length || descriptor.conflicts.length" class="relationships">
+        <div
+          v-if="descriptor.dependencies.length || descriptor.conflicts.length"
+          class="relationships"
+        >
           <span v-for="dependency in descriptor.dependencies" :key="`dep-${dependency}`">
             {{ t('productPlans.dependsOn') }} <code>{{ dependency }}</code>
           </span>
@@ -113,13 +115,15 @@ const loadError = ref(false)
 const editorCache = new Map<string, Component>()
 
 const unknownCodes = computed(() => {
-  const known = new Set(catalog.value.map(descriptor => descriptor.code))
+  const known = new Set(catalog.value.map((descriptor) => descriptor.code))
   return model.value
-    .map(capability => capability.capability_code)
-    .filter(code => !known.has(code))
+    .map((capability) => capability.capability_code)
+    .filter((code) => !known.has(code))
 })
 
-onMounted(() => { void loadCatalog() })
+onMounted(() => {
+  void loadCatalog()
+})
 
 async function loadCatalog(): Promise<void> {
   loading.value = true
@@ -127,41 +131,42 @@ async function loadCatalog(): Promise<void> {
   try {
     const value = requireOperationData(await listProductCapabilities())
     catalog.value = [...value].sort((left, right) => left.code.localeCompare(right.code))
-  }
-  catch {
+  } catch {
     catalog.value = []
     loadError.value = true
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }
 
 function selectedCapability(code: string): ProductCapability | undefined {
-  return model.value.find(capability => capability.capability_code === code)
+  return model.value.find((capability) => capability.capability_code === code)
 }
 
 function toggleCapability(descriptor: ProductCapabilityDescriptor, enabled: boolean): void {
   const current = selectedCapability(descriptor.code)
   if (!enabled) {
-    model.value = model.value.filter(capability => capability.capability_code !== descriptor.code)
+    model.value = model.value.filter((capability) => capability.capability_code !== descriptor.code)
     return
   }
   if (current) return
   const variant = descriptor.variants[0]
   if (!variant) return
-  model.value = [...model.value, {
-    capability_code: descriptor.code,
-    variant_code: variant.code,
-    schema_version: variant.schema_version,
-    config: {},
-  }]
+  model.value = [
+    ...model.value,
+    {
+      capability_code: descriptor.code,
+      variant_code: variant.code,
+      schema_version: variant.schema_version,
+      config: {},
+    },
+  ]
 }
 
 function updateVariant(descriptor: ProductCapabilityDescriptor, variantCode: string): void {
-  const variant = descriptor.variants.find(item => item.code === variantCode)
+  const variant = descriptor.variants.find((item) => item.code === variantCode)
   if (!variant) return
-  replaceCapability(descriptor.code, capability => ({
+  replaceCapability(descriptor.code, (capability) => ({
     ...capability,
     variant_code: variant.code,
     schema_version: variant.schema_version,
@@ -170,16 +175,16 @@ function updateVariant(descriptor: ProductCapabilityDescriptor, variantCode: str
 }
 
 function updateConfig(code: string, config: Record<string, unknown>): void {
-  replaceCapability(code, capability => ({ ...capability, config: { ...config } }))
+  replaceCapability(code, (capability) => ({ ...capability, config: { ...config } }))
 }
 
 function replaceCapability(
   code: string,
   update: (capability: ProductCapability) => ProductCapability,
 ): void {
-  model.value = model.value.map(capability => (
-    capability.capability_code === code ? update(capability) : capability
-  ))
+  model.value = model.value.map((capability) =>
+    capability.capability_code === code ? update(capability) : capability,
+  )
 }
 
 function editorFor(code: string): Component | undefined {
@@ -187,34 +192,34 @@ function editorFor(code: string): Component | undefined {
   if (cached) return cached
   const manifest = findFeatureManifest(code)
   if (!manifest) return undefined
-  const editor = markRaw(defineAsyncComponent(
-    () => manifest.planConfigEditor().then(module => module.default),
-  ))
+  const editor = markRaw(
+    defineAsyncComponent(() => manifest.planConfigEditor().then((module) => module.default)),
+  )
   editorCache.set(code, editor)
   return editor
 }
 
 function validate(): boolean {
   if (loading.value || loadError.value || unknownCodes.value.length > 0) return false
-  if (new Set(model.value.map(item => item.capability_code)).size !== model.value.length) {
+  if (new Set(model.value.map((item) => item.capability_code)).size !== model.value.length) {
     return false
   }
   return model.value.every((capability) => {
-    const descriptor = catalog.value.find(item => item.code === capability.capability_code)
-    const variant = descriptor?.variants.find(item => (
-      item.code === capability.variant_code
-      && item.schema_version === capability.schema_version
-    ))
+    const descriptor = catalog.value.find((item) => item.code === capability.capability_code)
+    const variant = descriptor?.variants.find(
+      (item) =>
+        item.code === capability.variant_code && item.schema_version === capability.schema_version,
+    )
     const manifest = findFeatureManifest(capability.capability_code)
     return Boolean(
-      descriptor
-      && variant
-      && (manifest?.allowedVariants as readonly string[] | undefined)?.includes(
+      descriptor &&
+      variant &&
+      (manifest?.allowedVariants as readonly string[] | undefined)?.includes(
         capability.variant_code,
-      )
-      && capability.config
-      && typeof capability.config === 'object'
-      && !Array.isArray(capability.config),
+      ) &&
+      capability.config &&
+      typeof capability.config === 'object' &&
+      !Array.isArray(capability.config),
     )
   })
 }

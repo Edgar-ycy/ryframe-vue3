@@ -6,8 +6,17 @@ import { useServiceAccountContext } from './useServiceAccountContext'
 /** 服务账号角色绑定命令。 */
 export function useServiceAccountRoles(context: ReturnType<typeof useServiceAccountContext>) {
   const {
-    accountsQuery, beginController, captureIdentity, detailKey, detailQuery, ensureOperationContext,
-    finishController, requireIdentity, requireOperationContext, roleIds, selectedAccount,
+    accountsQuery,
+    beginController,
+    captureIdentity,
+    detailKey,
+    detailQuery,
+    ensureOperationContext,
+    finishController,
+    requireIdentity,
+    requireOperationContext,
+    roleIds,
+    selectedAccount,
   } = context
   const rolesPending = ref(false)
 
@@ -23,17 +32,15 @@ export function useServiceAccountRoles(context: ReturnType<typeof useServiceAcco
     try {
       await replaceServiceAccountRoles(accountId, nextRoleIds, controller.signal)
       ensureOperationContext(identity, operationContext)
-      queryClient.setQueryData<ServiceAccountDetail>(
-        detailKey(identity, accountId),
-        current => current ? { ...current, role_ids: [...nextRoleIds] } : current,
+      queryClient.setQueryData<ServiceAccountDetail>(detailKey(identity, accountId), (current) =>
+        current ? { ...current, role_ids: [...nextRoleIds] } : current,
       )
       if (selectedAccount.value?.id === accountId) roleIds.value = [...nextRoleIds]
       if (selectedAccount.value?.id === accountId) {
         void detailQuery.refetch({ throwOnError: false })
       }
       void accountsQuery.refetch({ throwOnError: false })
-    }
-    finally {
+    } finally {
       finishController(controller)
       rolesPending.value = false
     }

@@ -11,8 +11,7 @@ const errors = []
 async function readDirectory(directory) {
   try {
     return await readdir(directory, { withFileTypes: true })
-  }
-  catch (error) {
+  } catch (error) {
     if (error?.code === 'ENOENT') return []
     throw error
   }
@@ -22,7 +21,7 @@ async function collectYamlFiles(directory, predicate = () => true) {
   const files = []
   for (const entry of await readDirectory(directory)) {
     const absolute = path.join(directory, entry.name)
-    if (entry.isDirectory()) files.push(...await collectYamlFiles(absolute, predicate))
+    if (entry.isDirectory()) files.push(...(await collectYamlFiles(absolute, predicate)))
     else if (entry.isFile() && predicate(entry.name)) files.push(absolute)
   }
   return files
@@ -32,8 +31,7 @@ async function fileExists(absolute) {
   try {
     await access(absolute)
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -41,8 +39,7 @@ async function fileExists(absolute) {
 function collectLocalUses(value, uses = []) {
   if (Array.isArray(value)) {
     for (const child of value) collectLocalUses(child, uses)
-  }
-  else if (value && typeof value === 'object') {
+  } else if (value && typeof value === 'object') {
     for (const [key, child] of Object.entries(value)) {
       if (key === 'uses' && typeof child === 'string' && child.startsWith('./')) uses.push(child)
       else collectLocalUses(child, uses)
@@ -54,8 +51,7 @@ function collectLocalUses(value, uses = []) {
 function collectRemoteUses(value, uses = []) {
   if (Array.isArray(value)) {
     for (const child of value) collectRemoteUses(child, uses)
-  }
-  else if (value && typeof value === 'object') {
+  } else if (value && typeof value === 'object') {
     for (const [key, child] of Object.entries(value)) {
       if (key === 'uses' && typeof child === 'string' && !child.startsWith('./')) uses.push(child)
       else collectRemoteUses(child, uses)
@@ -68,8 +64,10 @@ function relative(absolute) {
   return path.relative(root, absolute).split(path.sep).join('/')
 }
 
-const workflowFiles = await collectYamlFiles(workflowsDirectory, name => /\.ya?ml$/iu.test(name))
-const actionFiles = await collectYamlFiles(actionsDirectory, name => /^action\.ya?ml$/iu.test(name))
+const workflowFiles = await collectYamlFiles(workflowsDirectory, (name) => /\.ya?ml$/iu.test(name))
+const actionFiles = await collectYamlFiles(actionsDirectory, (name) =>
+  /^action\.ya?ml$/iu.test(name),
+)
 
 for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
   const source = await readFile(absolute)
@@ -101,7 +99,7 @@ for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
     const candidates = /\.ya?ml$/iu.test(target)
       ? [target]
       : [path.join(target, 'action.yml'), path.join(target, 'action.yaml')]
-    if (!await Promise.all(candidates.map(fileExists)).then(results => results.some(Boolean))) {
+    if (!(await Promise.all(candidates.map(fileExists)).then((results) => results.some(Boolean)))) {
       errors.push(`${name}: local uses reference is missing (${localUse})`)
     }
   }
@@ -109,7 +107,9 @@ for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
   for (const remoteUse of collectRemoteUses(document.toJS())) {
     const separator = remoteUse.lastIndexOf('@')
     if (separator < 1) {
-      errors.push(`${name}: remote uses reference must include an immutable revision (${remoteUse})`)
+      errors.push(
+        `${name}: remote uses reference must include an immutable revision (${remoteUse})`,
+      )
       continue
     }
     const action = remoteUse.slice(0, separator)
@@ -118,8 +118,7 @@ for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
       if (!/^sha256:[0-9a-f]{64}$/iu.test(revision)) {
         errors.push(`${name}: container action must use a sha256 digest (${remoteUse})`)
       }
-    }
-    else if (!/^[0-9a-f]{7,40}$/iu.test(revision)) {
+    } else if (!/^[0-9a-f]{7,40}$/iu.test(revision)) {
       errors.push(`${name}: remote action must use a commit SHA (${remoteUse})`)
     }
   }
@@ -129,7 +128,8 @@ if (errors.length > 0) {
   console.error('Workflow check failed:')
   for (const error of errors) console.error(`  - ${error}`)
   process.exitCode = 1
-}
-else {
-  console.log(`Workflow check passed (${workflowFiles.length} workflows, ${actionFiles.length} action manifests)`)
+} else {
+  console.log(
+    `Workflow check passed (${workflowFiles.length} workflows, ${actionFiles.length} action manifests)`,
+  )
 }

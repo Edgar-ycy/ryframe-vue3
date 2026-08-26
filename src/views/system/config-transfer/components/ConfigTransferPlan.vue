@@ -16,7 +16,11 @@
             :disabled="operationPending"
             @click="emit('preview', transfer)"
           >
-            {{ t(`tenantConfigTransfer.${transfer.status === 'previewed' || transfer.status === 'failed' ? 'previewAgain' : 'preview'}`) }}
+            {{
+              t(
+                `tenantConfigTransfer.${transfer.status === 'previewed' || transfer.status === 'failed' ? 'previewAgain' : 'preview'}`,
+              )
+            }}
           </el-button>
           <el-button
             v-if="canApplyTenantConfigTransfer(transfer)"
@@ -55,7 +59,9 @@
         </div>
         <div>
           <span>{{ t('tenantConfigTransfer.transferStatus') }}</span>
-          <el-tag :type="transferStatusTag(transfer.status)">{{ transferStatusLabel(transfer.status) }}</el-tag>
+          <el-tag :type="transferStatusTag(transfer.status)">{{
+            transferStatusLabel(transfer.status)
+          }}</el-tag>
         </div>
         <div>
           <span>{{ t('tenantConfigTransfer.targetConfigVersion') }}</span>
@@ -108,44 +114,88 @@
       />
 
       <section class="change-counts" :aria-label="t('tenantConfigTransfer.totalChanges')">
-        <div v-for="action in planActions" :key="action" :class="`change-count change-count--${action}`">
+        <div
+          v-for="action in planActions"
+          :key="action"
+          :class="`change-count change-count--${action}`"
+        >
           <span>{{ actionLabel(action) }}</span>
           <strong>{{ transfer.change_counts[action] ?? 0 }}</strong>
         </div>
       </section>
 
       <div class="desktop-items-table">
-        <el-table v-loading="itemsLoading" :data="items" border stripe :empty-text="t('tenantConfigTransfer.itemsEmpty')">
+        <el-table
+          v-loading="itemsLoading"
+          :data="items"
+          border
+          stripe
+          :empty-text="t('tenantConfigTransfer.itemsEmpty')"
+        >
           <el-table-column :label="t('tenantConfigTransfer.itemResource')" min-width="140">
             <template #default="{ row }">{{ resourceLabel(row.resource_type) }}</template>
           </el-table-column>
-          <el-table-column prop="display_name" :label="t('tenantConfigTransfer.itemName')" min-width="180" show-overflow-tooltip />
-          <el-table-column prop="stable_key" :label="t('tenantConfigTransfer.stableKey')" min-width="220" show-overflow-tooltip />
+          <el-table-column
+            prop="display_name"
+            :label="t('tenantConfigTransfer.itemName')"
+            min-width="180"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="stable_key"
+            :label="t('tenantConfigTransfer.stableKey')"
+            min-width="220"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('tenantConfigTransfer.action')" width="112">
             <template #default="{ row }">
-              <el-tag :type="actionTag(row.action)" size="small">{{ actionLabel(row.action) }}</el-tag>
+              <el-tag :type="actionTag(row.action)" size="small">{{
+                actionLabel(row.action)
+              }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column :label="t('tenantConfigTransfer.outcome')" width="118">
             <template #default="{ row }">{{ outcomeLabel(row.outcome) }}</template>
           </el-table-column>
-          <el-table-column :label="t('tenantConfigTransfer.detail')" min-width="220" show-overflow-tooltip>
+          <el-table-column
+            :label="t('tenantConfigTransfer.detail')"
+            min-width="220"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">{{ detailLabel(row) }}</template>
           </el-table-column>
         </el-table>
       </div>
 
       <div v-if="items.length" v-loading="itemsLoading" class="mobile-item-list">
-        <article v-for="item in items" :key="`${item.resource_type}:${item.stable_key}`" class="mobile-item-card">
+        <article
+          v-for="item in items"
+          :key="`${item.resource_type}:${item.stable_key}`"
+          class="mobile-item-card"
+        >
           <header>
             <strong>{{ item.display_name }}</strong>
-            <el-tag :type="actionTag(item.action)" size="small">{{ actionLabel(item.action) }}</el-tag>
+            <el-tag :type="actionTag(item.action)" size="small">{{
+              actionLabel(item.action)
+            }}</el-tag>
           </header>
           <dl>
-            <div><dt>{{ t('tenantConfigTransfer.itemResource') }}</dt><dd>{{ resourceLabel(item.resource_type) }}</dd></div>
-            <div><dt>{{ t('tenantConfigTransfer.stableKey') }}</dt><dd>{{ item.stable_key }}</dd></div>
-            <div><dt>{{ t('tenantConfigTransfer.outcome') }}</dt><dd>{{ outcomeLabel(item.outcome) }}</dd></div>
-            <div v-if="item.detail || item.detail_code"><dt>{{ t('tenantConfigTransfer.detail') }}</dt><dd>{{ detailLabel(item) }}</dd></div>
+            <div>
+              <dt>{{ t('tenantConfigTransfer.itemResource') }}</dt>
+              <dd>{{ resourceLabel(item.resource_type) }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantConfigTransfer.stableKey') }}</dt>
+              <dd>{{ item.stable_key }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantConfigTransfer.outcome') }}</dt>
+              <dd>{{ outcomeLabel(item.outcome) }}</dd>
+            </div>
+            <div v-if="item.detail || item.detail_code">
+              <dt>{{ t('tenantConfigTransfer.detail') }}</dt>
+              <dd>{{ detailLabel(item) }}</dd>
+            </div>
           </dl>
         </article>
       </div>
@@ -168,7 +218,10 @@
 <script setup lang="ts">
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import type { TenantConfigTransfer, TenantConfigTransferItem } from '@/api/modules/tenantConfigTransfer'
+import type {
+  TenantConfigTransfer,
+  TenantConfigTransferItem,
+} from '@/api/modules/tenantConfigTransfer'
 import { formatOptionalLocalizedDate } from '@/i18n'
 import {
   canApplyTenantConfigTransfer,
@@ -200,24 +253,24 @@ const { t } = useI18n()
 const planActions = ['create', 'update', 'unchanged', 'conflict', 'blocked'] as const
 
 function hasBlockedItems(transfer: TenantConfigTransfer): boolean {
-  return (transfer.change_counts.blocked ?? 0) > 0
-    || (transfer.change_counts.conflict ?? 0) > 0
+  return (transfer.change_counts.blocked ?? 0) > 0 || (transfer.change_counts.conflict ?? 0) > 0
 }
 
 function transferStatusLabel(status: string): string {
-  const suffix = {
-    preview_ready: 'PreviewReady',
-    preview_pending: 'PreviewPending',
-    previewing: 'Previewing',
-    previewed: 'Previewed',
-    apply_pending: 'ApplyPending',
-    applying: 'Applying',
-    applied: 'Applied',
-    rollback_pending: 'RollbackPending',
-    rolling_back: 'RollingBack',
-    rolled_back: 'RolledBack',
-    failed: 'Failed',
-  }[status] ?? 'Unknown'
+  const suffix =
+    {
+      preview_ready: 'PreviewReady',
+      preview_pending: 'PreviewPending',
+      previewing: 'Previewing',
+      previewed: 'Previewed',
+      apply_pending: 'ApplyPending',
+      applying: 'Applying',
+      applied: 'Applied',
+      rollback_pending: 'RollbackPending',
+      rolling_back: 'RollingBack',
+      rolled_back: 'RolledBack',
+      failed: 'Failed',
+    }[status] ?? 'Unknown'
   return t(`tenantConfigTransfer.status${suffix}`)
 }
 
@@ -230,7 +283,9 @@ function transferStatusTag(status: string): TagProps['type'] {
 }
 
 function actionLabel(action: string): string {
-  return t(`tenantConfigTransfer.${planActions.includes(action as typeof planActions[number]) ? action : 'unchanged'}`)
+  return t(
+    `tenantConfigTransfer.${planActions.includes(action as (typeof planActions)[number]) ? action : 'unchanged'}`,
+  )
 }
 
 function actionTag(action: string): TagProps['type'] {
@@ -241,13 +296,14 @@ function actionTag(action: string): TagProps['type'] {
 }
 
 function outcomeLabel(outcome: string): string {
-  const suffix = {
-    pending: 'Pending',
-    applied: 'Applied',
-    skipped: 'Skipped',
-    failed: 'Failed',
-    rolled_back: 'RolledBack',
-  }[outcome] ?? 'Pending'
+  const suffix =
+    {
+      pending: 'Pending',
+      applied: 'Applied',
+      skipped: 'Skipped',
+      failed: 'Failed',
+      rolled_back: 'RolledBack',
+    }[outcome] ?? 'Pending'
   return t(`tenantConfigTransfer.outcome${suffix}`)
 }
 
@@ -373,12 +429,18 @@ function detailLabel(item: TenantConfigTransferItem): string {
   border-radius: 8px;
   background: var(--el-fill-color-light);
 
-  &--create { border-left-color: var(--el-color-success); }
+  &--create {
+    border-left-color: var(--el-color-success);
+  }
 
-  &--update { border-left-color: var(--el-color-primary); }
+  &--update {
+    border-left-color: var(--el-color-primary);
+  }
 
   &--conflict,
-  &--blocked { border-left-color: var(--el-color-danger); }
+  &--blocked {
+    border-left-color: var(--el-color-danger);
+  }
 
   strong {
     font-size: 20px;

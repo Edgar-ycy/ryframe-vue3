@@ -16,8 +16,8 @@ const idempotency = vi.hoisted(() => ({
 
 vi.mock('@/api/modules/exportJob', () => api)
 vi.mock('@/hooks/useDownload', () => ({ downloadBlobDirect: vi.fn() }))
-vi.mock('@/shared/http/idempotency', async importOriginal => ({
-  ...await importOriginal<typeof import('@/shared/http/idempotency')>(),
+vi.mock('@/shared/http/idempotency', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/http/idempotency')>()),
   createIdempotencyKey: idempotency.createIdempotencyKey,
 }))
 
@@ -90,10 +90,11 @@ describe('导出记录删除动作', () => {
   it('排序去重后一次提交批量命令，受理后再清缓存并补回最近记录', async () => {
     const removed = [exportJob('job-1'), exportJob('job-3')]
     const backfilled = [exportJob('job-2'), exportJob('job-4')]
-    queryClient.setQueryData(
-      exportJobListQueryKey(identity.tenantId, identity.userId),
-      [removed[0], backfilled[0], removed[1]],
-    )
+    queryClient.setQueryData(exportJobListQueryKey(identity.tenantId, identity.userId), [
+      removed[0],
+      backfilled[0],
+      removed[1],
+    ])
     for (const job of removed) {
       queryClient.setQueryData(
         exportJobDetailQueryKey(identity.tenantId, identity.userId, job.id),
@@ -101,11 +102,13 @@ describe('导出记录删除动作', () => {
       )
     }
     queryClient.setQueryData(exportJobUnreadQueryKey(identity.tenantId, identity.userId), 3)
-    api.deleteExportJobs.mockResolvedValue(response({
-      accepted_ids: ['job-1', 'job-3'],
-      accepted_count: 2,
-      removed_unread_count: 1,
-    }))
+    api.deleteExportJobs.mockResolvedValue(
+      response({
+        accepted_ids: ['job-1', 'job-3'],
+        accepted_count: 2,
+        removed_unread_count: 1,
+      }),
+    )
     api.listExportJobs.mockResolvedValue(response(backfilled))
     api.getUnreadExportNotificationCount.mockResolvedValue(response(1))
 
@@ -119,12 +122,15 @@ describe('导出记录删除动作', () => {
       expect.any(AbortSignal),
     )
     expect(result.accepted_count).toBe(2)
-    expect(queryClient.getQueryData(exportJobListQueryKey(identity.tenantId, identity.userId)))
-      .toEqual(backfilled)
-    expect(queryClient.getQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-1')))
-      .toBeUndefined()
-    expect(queryClient.getQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-3')))
-      .toBeUndefined()
+    expect(
+      queryClient.getQueryData(exportJobListQueryKey(identity.tenantId, identity.userId)),
+    ).toEqual(backfilled)
+    expect(
+      queryClient.getQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-1')),
+    ).toBeUndefined()
+    expect(
+      queryClient.getQueryData(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-3')),
+    ).toBeUndefined()
     expect(queryClient.getQueryData(exportJobUnreadQueryKey('tenant-a', 'user-a'))).toBe(1)
   })
 
@@ -133,11 +139,13 @@ describe('导出记录删除动作', () => {
     queryClient.setQueryData(exportJobListQueryKey('tenant-a', 'user-a'), [job])
     api.deleteExportJobs
       .mockRejectedValueOnce(new HttpError('网络失败', { kind: 'network' }))
-      .mockResolvedValueOnce(response({
-        accepted_ids: [job.id],
-        accepted_count: 1,
-        removed_unread_count: 0,
-      }))
+      .mockResolvedValueOnce(
+        response({
+          accepted_ids: [job.id],
+          accepted_count: 1,
+          removed_unread_count: 0,
+        }),
+      )
 
     const actions = createActions()
     await expect(actions.deleteJobs([job.id])).rejects.toMatchObject({ kind: 'network' })
@@ -145,8 +153,10 @@ describe('导出记录删除动作', () => {
 
     await actions.deleteJobs([job.id])
 
-    expect(api.deleteExportJobs.mock.calls.map(call => call[1]))
-      .toEqual(['delete-key-1', 'delete-key-1'])
+    expect(api.deleteExportJobs.mock.calls.map((call) => call[1])).toEqual([
+      'delete-key-1',
+      'delete-key-1',
+    ])
     expect(idempotency.createIdempotencyKey).toHaveBeenCalledTimes(1)
   })
 
@@ -161,8 +171,9 @@ describe('导出记录删除动作', () => {
     const accepted = await actions.deleteJobs([retained.id, deleted.id])
 
     expect(accepted.accepted_ids).toEqual([deleted.id, retained.id])
-    expect(queryClient.getQueryData(exportJobListQueryKey('tenant-a', 'user-a')))
-      .toEqual([retained])
+    expect(queryClient.getQueryData(exportJobListQueryKey('tenant-a', 'user-a'))).toEqual([
+      retained,
+    ])
   })
 
   it('409 刷新服务端状态并保留记录', async () => {
@@ -174,16 +185,17 @@ describe('导出记录删除动作', () => {
     api.listExportJobs.mockResolvedValueOnce(response([running]))
 
     await expect(actions.deleteJobs([running.id])).rejects.toMatchObject({ status: 409 })
-    expect(queryClient.getQueryData(exportJobListQueryKey('tenant-a', 'user-a')))
-      .toEqual([running])
+    expect(queryClient.getQueryData(exportJobListQueryKey('tenant-a', 'user-a'))).toEqual([running])
   })
 
   it('删除执行期间禁止对同一任务下载或重复删除', async () => {
-    const pending = deferred<ApiResponse<{
-      accepted_ids: string[]
-      accepted_count: number
-      removed_unread_count: number
-    }>>()
+    const pending = deferred<
+      ApiResponse<{
+        accepted_ids: string[]
+        accepted_count: number
+        removed_unread_count: number
+      }>
+    >()
     api.deleteExportJobs.mockReturnValueOnce(pending.promise)
     const actions = createActions()
     const otherActions = createActions()
@@ -191,14 +203,18 @@ describe('导出记录删除动作', () => {
     const deleting = actions.deleteJobs(['job-1'])
     expect(actions.deletingJobIds.value).toEqual(['job-1'])
     expect(actions.isJobActionBusy('job-1')).toBe(true)
-    await expect(otherActions.downloadJob(exportJob('job-1'))).rejects.toMatchObject({ status: 409 })
+    await expect(otherActions.downloadJob(exportJob('job-1'))).rejects.toMatchObject({
+      status: 409,
+    })
     await expect(actions.deleteJobs(['job-2'])).rejects.toMatchObject({ status: 409 })
 
-    pending.resolve(response({
-      accepted_ids: ['job-1'],
-      accepted_count: 1,
-      removed_unread_count: 0,
-    }))
+    pending.resolve(
+      response({
+        accepted_ids: ['job-1'],
+        accepted_count: 1,
+        removed_unread_count: 0,
+      }),
+    )
     await deleting
     expect(actions.deletingJobIds.value).toEqual([])
   })

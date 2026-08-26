@@ -50,17 +50,14 @@ export function applyAuthenticatedSession(accessToken: string, context: SessionC
     userStore.token = accessToken
     userStore.sessionStatus = 'authenticated'
     return scopeChanged
-  }
-  catch (error) {
+  } catch (error) {
     failClosedTenantContext()
     userStore.resetState()
     throw error
   }
 }
 
-export async function ensureRoutesAfterAuthentication(
-  skipAuthRefresh = false,
-): Promise<void> {
+export async function ensureRoutesAfterAuthentication(skipAuthRefresh = false): Promise<void> {
   await getRouteRuntime()?.ensureAccessibleRoutes({ skipAuthRefresh })
 }
 
@@ -71,17 +68,18 @@ function hasAuthenticatedScopeChanged(
 ): boolean {
   const userInfo = context.user
   if (userStore.sessionStatus !== 'authenticated' || userStore.userId === '') return false
-  return String(userStore.userId) !== String(userInfo.id)
-    || userStore.tenantId !== userInfo.tenant_id
-    || userStore.isSuperAdmin !== context.is_super_admin
-    || accessFingerprint(userStore.roles) !== accessFingerprint(context.roles)
-    || accessFingerprint(userStore.permissions) !== accessFingerprint(context.permissions)
-    || tenantContext.authorizationEpoch !== context.authorization_epoch
-    || tenantContext.runtimeEpoch !== context.runtime_epoch
-    || accessFingerprint(tenantContext.capabilityCodes) !== accessFingerprint(
-      context.capabilities.map(item => item.code),
-    )
-    || JSON.stringify(tenantContext.context?.menus ?? []) !== JSON.stringify(context.menus)
+  return (
+    String(userStore.userId) !== String(userInfo.id) ||
+    userStore.tenantId !== userInfo.tenant_id ||
+    userStore.isSuperAdmin !== context.is_super_admin ||
+    accessFingerprint(userStore.roles) !== accessFingerprint(context.roles) ||
+    accessFingerprint(userStore.permissions) !== accessFingerprint(context.permissions) ||
+    tenantContext.authorizationEpoch !== context.authorization_epoch ||
+    tenantContext.runtimeEpoch !== context.runtime_epoch ||
+    accessFingerprint(tenantContext.capabilityCodes) !==
+      accessFingerprint(context.capabilities.map((item) => item.code)) ||
+    JSON.stringify(tenantContext.context?.menus ?? []) !== JSON.stringify(context.menus)
+  )
 }
 
 function accessFingerprint(values: readonly string[]): string {

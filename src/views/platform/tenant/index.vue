@@ -16,21 +16,46 @@
     </header>
 
     <el-card shadow="never" class="filter-card">
-      <el-form :model="filters" class="filter-form" label-position="top" @submit.prevent="handleSearch">
+      <el-form
+        :model="filters"
+        class="filter-form"
+        label-position="top"
+        @submit.prevent="handleSearch"
+      >
         <el-form-item :label="t('tenantCapacity.tenantId')">
-          <el-input v-model="filters.tenant_id" :placeholder="t('tenantCapacity.tenantIdPlaceholder')" clearable maxlength="64" @keyup.enter="handleSearch" />
+          <el-input
+            v-model="filters.tenant_id"
+            :placeholder="t('tenantCapacity.tenantIdPlaceholder')"
+            clearable
+            maxlength="64"
+            @keyup.enter="handleSearch"
+          />
         </el-form-item>
         <el-form-item :label="t('tenantCapacity.tenantName')">
-          <el-input v-model="filters.name" :placeholder="t('tenantCapacity.tenantNamePlaceholder')" clearable maxlength="100" @keyup.enter="handleSearch" />
+          <el-input
+            v-model="filters.name"
+            :placeholder="t('tenantCapacity.tenantNamePlaceholder')"
+            clearable
+            maxlength="100"
+            @keyup.enter="handleSearch"
+          />
         </el-form-item>
         <el-form-item :label="t('tenantCapacity.status')">
-          <el-select v-model="filters.status" :placeholder="t('tenantCapacity.statusAll')" clearable>
+          <el-select
+            v-model="filters.status"
+            :placeholder="t('tenantCapacity.statusAll')"
+            clearable
+          >
             <el-option :label="t('tenantCapacity.statusEnabled')" value="enabled" />
             <el-option :label="t('tenantCapacity.statusDisabled')" value="disabled" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('tenantCapacity.expiration')">
-          <el-select v-model="filters.expiration_status" :placeholder="t('tenantCapacity.expirationAll')" clearable>
+          <el-select
+            v-model="filters.expiration_status"
+            :placeholder="t('tenantCapacity.expirationAll')"
+            clearable
+          >
             <el-option :label="t('tenantCapacity.expirationActive')" value="active" />
             <el-option :label="t('tenantCapacity.expirationExpiring')" value="expiring" />
             <el-option :label="t('tenantCapacity.expirationExpired')" value="expired" />
@@ -38,7 +63,11 @@
           </el-select>
         </el-form-item>
         <el-form-item v-if="canViewUsage" :label="t('tenantCapacity.capacityStatus')">
-          <el-select v-model="filters.capacity_status" :placeholder="t('tenantCapacity.capacityAll')" clearable>
+          <el-select
+            v-model="filters.capacity_status"
+            :placeholder="t('tenantCapacity.capacityAll')"
+            clearable
+          >
             <el-option :label="t('tenantCapacity.capacityNormal')" value="normal" />
             <el-option :label="t('tenantCapacity.capacityWarning')" value="warning" />
             <el-option :label="t('tenantCapacity.capacityCritical')" value="critical" />
@@ -48,13 +77,24 @@
           </el-select>
         </el-form-item>
         <div class="filter-actions">
-          <el-button type="primary" icon="Search" @click="handleSearch">{{ t('tenantCapacity.search') }}</el-button>
-          <el-button icon="RefreshLeft" @click="handleReset">{{ t('tenantCapacity.reset') }}</el-button>
+          <el-button type="primary" icon="Search" @click="handleSearch">{{
+            t('tenantCapacity.search')
+          }}</el-button>
+          <el-button icon="RefreshLeft" @click="handleReset">{{
+            t('tenantCapacity.reset')
+          }}</el-button>
         </div>
       </el-form>
     </el-card>
 
-    <el-alert v-if="!canViewUsage" :title="t('tenantCapacity.usagePermissionHint')" type="info" show-icon :closable="false" class="permission-alert" />
+    <el-alert
+      v-if="!canViewUsage"
+      :title="t('tenantCapacity.usagePermissionHint')"
+      type="info"
+      show-icon
+      :closable="false"
+      class="permission-alert"
+    />
 
     <TenantCapacityList
       :can-view-usage="canViewUsage"
@@ -77,8 +117,22 @@
       @page-size-change="changePageSize"
     />
 
-    <TenantFormDialog v-model="formVisible" :tenant="editingTenant" :submitting="savePending" @create="handleCreate" @update="handleUpdate" />
-    <TenantUsageDrawer v-model="detailVisible" :tenant="detail" :loading="detailLoading" :refreshing="detailRefreshing" @closed="closeDetail" @refresh="handleRefreshDetail" @edit="openEditFromDrawer" />
+    <TenantFormDialog
+      v-model="formVisible"
+      :tenant="editingTenant"
+      :submitting="savePending"
+      @create="handleCreate"
+      @update="handleUpdate"
+    />
+    <TenantUsageDrawer
+      v-model="detailVisible"
+      :tenant="detail"
+      :loading="detailLoading"
+      :refreshing="detailRefreshing"
+      @closed="closeDetail"
+      @refresh="handleRefreshDetail"
+      @edit="openEditFromDrawer"
+    />
   </div>
 </template>
 
@@ -147,8 +201,7 @@ async function handleCreate(payload: CreateTenantPayload): Promise<void> {
     await createTenantRecord(payload)
     formVisible.value = false
     ElMessage.success(t('tenantCapacity.tenantCreated'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -158,8 +211,7 @@ async function handleUpdate(tenantId: string, payload: UpdateTenantPayload): Pro
     await updateTenantRecord(tenantId, payload)
     formVisible.value = false
     ElMessage.success(t('tenantCapacity.tenantUpdated'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -184,8 +236,7 @@ async function handleToggle(tenant: TenantCapacity): Promise<void> {
   try {
     await toggleTenantStatus(tenant.tenant_id, nextEnabled ? 'enabled' : 'disabled')
     ElMessage.success(t('tenantCapacity.tenantStatusUpdated'))
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -193,8 +244,7 @@ async function handleToggle(tenant: TenantCapacity): Promise<void> {
 async function handleSearch(): Promise<void> {
   try {
     await applyFilters()
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -202,8 +252,7 @@ async function handleSearch(): Promise<void> {
 async function handleReset(): Promise<void> {
   try {
     await resetFilters()
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -211,8 +260,7 @@ async function handleReset(): Promise<void> {
 async function handleRefresh(): Promise<void> {
   try {
     await refresh()
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -221,8 +269,7 @@ async function showDetail(tenantId: string): Promise<void> {
   detailVisible.value = true
   try {
     await openDetail(tenantId)
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -230,8 +277,7 @@ async function showDetail(tenantId: string): Promise<void> {
 async function handleRefreshDetail(): Promise<void> {
   try {
     await refreshDetail()
-  }
-  catch (error) {
+  } catch (error) {
     showError(error)
   }
 }
@@ -261,9 +307,14 @@ function capacityType(status: string | null | undefined): TagProps['type'] {
 
 function capacityLabel(status: string | null | undefined): string {
   const suffixes: Record<string, string> = {
-    normal: 'Normal', warning: 'Warning', critical: 'Critical', exceeded: 'Exceeded', unlimited: 'Unlimited', unknown: 'Unknown',
+    normal: 'Normal',
+    warning: 'Warning',
+    critical: 'Critical',
+    exceeded: 'Exceeded',
+    unlimited: 'Unlimited',
+    unknown: 'Unknown',
   }
-  return t(`tenantCapacity.capacity${status ? suffixes[status] ?? 'Unknown' : 'Unknown'}`)
+  return t(`tenantCapacity.capacity${status ? (suffixes[status] ?? 'Unknown') : 'Unknown'}`)
 }
 
 function expirationType(status: string): TagProps['type'] {
@@ -275,7 +326,10 @@ function expirationType(status: string): TagProps['type'] {
 
 function expirationLabel(status: string): string {
   const suffixes: Record<string, string> = {
-    active: 'Active', expiring: 'Expiring', expired: 'Expired', never: 'Never',
+    active: 'Active',
+    expiring: 'Expiring',
+    expired: 'Expired',
+    never: 'Never',
   }
   return t(`tenantCapacity.expiration${suffixes[status] ?? 'Active'}`)
 }

@@ -60,7 +60,10 @@
       />
     </div>
 
-    <div v-else-if="mode === 'interval_hours'" class="cron-builder__fields cron-builder__fields--two">
+    <div
+      v-else-if="mode === 'interval_hours'"
+      class="cron-builder__fields cron-builder__fields--two"
+    >
       <div>
         <label>{{ t('monitor.schedules.intervalHours') }}</label>
         <el-input-number
@@ -162,7 +165,12 @@
             :aria-label="t('monitor.schedules.month')"
             @update:model-value="updateYearlyMonth"
           >
-            <el-option v-for="item in monthOptions" :key="item" :value="item" :label="monthLabel(item)" />
+            <el-option
+              v-for="item in monthOptions"
+              :key="item"
+              :value="item"
+              :label="monthLabel(item)"
+            />
           </el-select>
         </div>
         <div>
@@ -173,7 +181,12 @@
             :aria-label="t('monitor.schedules.day')"
             @update:model-value="updateYearlyDay"
           >
-            <el-option v-for="item in yearlyDayOptions" :key="item" :value="item" :label="String(item)" />
+            <el-option
+              v-for="item in yearlyDayOptions"
+              :key="item"
+              :value="item"
+              :label="String(item)"
+            />
           </el-select>
         </div>
       </div>
@@ -306,7 +319,7 @@ const {
 } = useCronBuilder({
   cronExpression,
   translate: t,
-  emitChange: state => emit('change', state),
+  emitChange: (state) => emit('change', state),
 })
 
 defineExpose({ loadExpression, applyTemplate })

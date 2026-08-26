@@ -17,18 +17,16 @@ export function useServiceAccountIdentityContext() {
   const tenantContext = useTenantContextStore()
   const { hasPermission } = usePermission()
   const pageActive = ref(true)
-  const featureAvailable = computed(() => (
-    tenantContext.hasCapability(SERVICE_ACCOUNTS_CAPABILITY)
-  ))
+  const featureAvailable = computed(() => tenantContext.hasCapability(SERVICE_ACCOUNTS_CAPABILITY))
   const canListAccounts = computed(() => hasPermission('system:service-account:list'))
   const canAddAccount = computed(() => hasPermission('system:service-account:add'))
   const canEditAccount = computed(() => hasPermission('system:service-account:edit'))
   const canRemoveAccount = computed(() => hasPermission('system:service-account:remove'))
   const canListDepartments = computed(() => hasPermission('system:dept:list'))
   const canListRoles = computed(() => hasPermission('system:role:list'))
-  const canManageRoles = computed(() => (
-    hasPermission('system:service-account:role') && canListRoles.value
-  ))
+  const canManageRoles = computed(
+    () => hasPermission('system:service-account:role') && canListRoles.value,
+  )
   const canRotateKey = computed(() => hasPermission('system:service-account:key-rotate'))
   const canRevokeKey = computed(() => hasPermission('system:service-account:key-revoke'))
   const canListDelegations = computed(() => hasPermission('system:service-delegation:list'))
@@ -36,11 +34,8 @@ export function useServiceAccountIdentityContext() {
   const canListAudits = computed(() => hasPermission('system:service-access-audit:list'))
 
   function currentIdentity(): ServiceAccountIdentity | undefined {
-    if (
-      userStore.sessionStatus !== 'authenticated'
-      || !userStore.tenantId
-      || !userStore.userId
-    ) return undefined
+    if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId)
+      return undefined
     return { tenantId: userStore.tenantId, userId: String(userStore.userId) }
   }
 

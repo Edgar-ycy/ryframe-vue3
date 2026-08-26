@@ -154,7 +154,9 @@ function validateC1QueryParameter(
     return
   }
   if (parameter.required !== false) {
-    errors.push(`${operationId}.${parameterName}: parameter must remain optional with runtime defaults`)
+    errors.push(
+      `${operationId}.${parameterName}: parameter must remain optional with runtime defaults`,
+    )
   }
   const schema = resolveLocalReference(parameter.schema, `${operationId}.${parameterName}.schema`)
   if (!schema || typeof schema !== 'object') {
@@ -164,8 +166,8 @@ function validateC1QueryParameter(
   for (const [keyword, expected] of Object.entries(expectedSchema)) {
     if (schema[keyword] !== expected) {
       errors.push(
-        `${operationId}.${parameterName}: expected ${keyword}=`
-        + `${displayContractValue(expected)}, found ${displayContractValue(schema[keyword])}`,
+        `${operationId}.${parameterName}: expected ${keyword}=` +
+          `${displayContractValue(expected)}, found ${displayContractValue(schema[keyword])}`,
       )
     }
   }
@@ -181,8 +183,10 @@ function validateRoleOptionPurpose(operationId, parameters, resolveLocalReferenc
     errors.push(`${operationId}.purpose: parameter must remain required`)
   }
   const schema = resolveLocalReference(parameter.schema, `${operationId}.purpose.schema`)
-  if (schema?.type !== 'string'
-    || !isDeepStrictEqual(schema.enum, ['user_assignment', 'service_account_assignment'])) {
+  if (
+    schema?.type !== 'string' ||
+    !isDeepStrictEqual(schema.enum, ['user_assignment', 'service_account_assignment'])
+  ) {
     errors.push(`${operationId}.purpose: role option purpose enum is invalid`)
   }
 }
@@ -201,10 +205,14 @@ export function validatePaginationContracts({
     errors,
   )
   if (c1PaginatedOperationIds.size !== 30) {
-    errors.push(`C1 pagination manifest must contain 30 operationIds, found ${c1PaginatedOperationIds.size}`)
+    errors.push(
+      `C1 pagination manifest must contain 30 operationIds, found ${c1PaginatedOperationIds.size}`,
+    )
   }
   if (c1OptionOperationContracts.size !== 2) {
-    errors.push(`C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`)
+    errors.push(
+      `C1 options manifest must contain 2 operationIds, found ${c1OptionOperationContracts.size}`,
+    )
   }
 
   for (const operationId of c1PaginatedOperationIds) {
@@ -215,16 +223,13 @@ export function validatePaginationContracts({
     }
     const parameters = queryParametersFor(operationId, entry)
     for (const [parameterName, expectedSchema] of c1PaginationParameterContracts) {
-      const fixedMaximum = parameterName === 'page_size'
-        ? fixedPaginationPageSizeMaximums.get(operationId)
-        : undefined
+      const fixedMaximum =
+        parameterName === 'page_size' ? fixedPaginationPageSizeMaximums.get(operationId) : undefined
       validateC1QueryParameter(
         operationId,
         parameters,
         parameterName,
-        fixedMaximum === undefined
-          ? expectedSchema
-          : { ...expectedSchema, maximum: fixedMaximum },
+        fixedMaximum === undefined ? expectedSchema : { ...expectedSchema, maximum: fixedMaximum },
         resolveLocalReference,
         errors,
       )
@@ -256,7 +261,8 @@ export function validatePaginationContracts({
         errors,
       )
     }
-    if (isRoleOptions) validateRoleOptionPurpose(operationId, parameters, resolveLocalReference, errors)
+    if (isRoleOptions)
+      validateRoleOptionPurpose(operationId, parameters, resolveLocalReference, errors)
   }
 
   // 新增分页或 options 操作不能绕过按 operationId 维护的精确清单。
@@ -273,7 +279,9 @@ export function validatePaginationContracts({
 
   // C1 已删除无上限列表，并只为受控候选项保留 `/options`；不允许旧路径回流。
   if (c1RemovedUnboundedListPaths.size !== 11) {
-    errors.push(`C1 removed path manifest must contain 11 entries, found ${c1RemovedUnboundedListPaths.size}`)
+    errors.push(
+      `C1 removed path manifest must contain 11 entries, found ${c1RemovedUnboundedListPaths.size}`,
+    )
   }
   for (const path of c1RemovedUnboundedListPaths) {
     if (document.paths?.[path]) errors.push(`${path}: removed unbounded list path returned`)

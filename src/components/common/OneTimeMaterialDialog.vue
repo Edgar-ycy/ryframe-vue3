@@ -121,8 +121,7 @@ async function copyMaterial(): Promise<void> {
   try {
     await navigator.clipboard.writeText(value)
     ElMessage.success(t('oneTimeMaterial.copied'))
-  }
-  catch {
+  } catch {
     ElMessage.warning(t('oneTimeMaterial.copyUnavailable'))
   }
 }

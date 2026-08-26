@@ -45,11 +45,7 @@ const router = useRouter()
 const tagsViewStore = useTagsViewStore()
 const { t } = useI18n()
 
-const removeRouteTagSync = installRouteTagSync(
-  router,
-  route,
-  view => tagsViewStore.addView(view),
-)
+const removeRouteTagSync = installRouteTagSync(router, route, (view) => tagsViewStore.addView(view))
 
 onUnmounted(removeRouteTagSync)
 

@@ -19,8 +19,7 @@ function storedLocale(): AppLocale | undefined {
   if (typeof localStorage === 'undefined') return undefined
   try {
     return normalizeLocale(localStorage.getItem(LOCALE_STORAGE_KEY))
-  }
-  catch {
+  } catch {
     return undefined
   }
 }
@@ -65,8 +64,7 @@ export function setApplicationLocale(locale: AppLocale): void {
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.setItem(LOCALE_STORAGE_KEY, locale)
-  }
-  catch {
+  } catch {
     return
   }
 }

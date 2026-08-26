@@ -1,5 +1,11 @@
 <template>
-  <el-dialog v-model="visible" :title="version ? t('productPlans.editVersion') : t('productPlans.createVersion')" width="min(840px, calc(100vw - 24px))" destroy-on-close @open="reset">
+  <el-dialog
+    v-model="visible"
+    :title="version ? t('productPlans.editVersion') : t('productPlans.createVersion')"
+    width="min(840px, calc(100vw - 24px))"
+    destroy-on-close
+    @open="reset"
+  >
     <p class="dialog-hint">{{ t('productPlans.capabilitiesHint') }}</p>
     <el-form ref="formRef" :model="form" label-width="110px">
       <el-form-item :label="t('productPlans.versionName')" :error="nameError">
@@ -17,8 +23,12 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">{{ t('productPlans.cancel') }}</el-button>
-      <el-button type="primary" :loading="submitting" @click="submit">{{ t('productPlans.save') }}</el-button>
+      <el-button :disabled="submitting" @click="visible = false">{{
+        t('productPlans.cancel')
+      }}</el-button>
+      <el-button type="primary" :loading="submitting" @click="submit">{{
+        t('productPlans.save')
+      }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -32,12 +42,12 @@ import type {
 } from '@/api/modules/productPlan'
 import ProductCapabilityEditor from './ProductCapabilityEditor.vue'
 
-const props = defineProps<{ submitting: boolean, version?: ProductPlanVersion }>()
+const props = defineProps<{ submitting: boolean; version?: ProductPlanVersion }>()
 const emit = defineEmits<{ save: [data: ProductPlanVersionInput] }>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const formRef = ref<FormInstance>()
-const form = reactive<{ name: string, description: string, capabilities: ProductCapability[] }>({
+const form = reactive<{ name: string; description: string; capabilities: ProductCapability[] }>({
   name: '',
   description: '',
   capabilities: [],
@@ -47,7 +57,7 @@ const capabilityError = ref('')
 const nameError = ref('')
 
 function reset(): void {
-  form.capabilities = (props.version?.capabilities ?? []).map(capability => ({
+  form.capabilities = (props.version?.capabilities ?? []).map((capability) => ({
     ...capability,
     config: { ...capability.config },
   }))
@@ -72,7 +82,7 @@ function submit(): void {
   emit('save', {
     name,
     description: form.description.trim() || undefined,
-    capabilities: form.capabilities.map(capability => ({
+    capabilities: form.capabilities.map((capability) => ({
       ...capability,
       config: { ...capability.config },
     })),

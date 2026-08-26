@@ -22,9 +22,9 @@ const { t } = useI18n()
 const tenantContext = useTenantContextStore()
 const state = computed(() => tenantContext.businessData?.state)
 const placementGeneration = computed(() => tenantContext.businessData?.placement_generation ?? '—')
-const alertType = computed<AlertProps['type']>(() => (
-  state.value === 'provisioning' ? 'warning' : 'error'
-))
+const alertType = computed<AlertProps['type']>(() =>
+  state.value === 'provisioning' ? 'warning' : 'error',
+)
 </script>
 
 <style scoped>

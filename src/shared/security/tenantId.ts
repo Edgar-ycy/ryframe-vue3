@@ -8,6 +8,9 @@ export function isValidTenantId(value: string): boolean {
   return TENANT_ID_PATTERN.test(value)
 }
 
-export function tenantIdValidationMessage(value: string, invalidMessage = TENANT_ID_VALIDATION_MESSAGE): string | null {
+export function tenantIdValidationMessage(
+  value: string,
+  invalidMessage = TENANT_ID_VALIDATION_MESSAGE,
+): string | null {
   return isValidTenantId(value) ? null : invalidMessage
 }

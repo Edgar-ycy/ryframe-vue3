@@ -3,7 +3,7 @@ const httpMethods = new Set(['delete', 'get', 'head', 'options', 'patch', 'post'
 
 export const schemaDomainNames = domainNames
 export const schemaArtifactPaths = Object.freeze([
-  ...domainNames.map(domain => `src/api/generated/schema/${domain}.ts`),
+  ...domainNames.map((domain) => `src/api/generated/schema/${domain}.ts`),
   'src/api/generated/schema/index.ts',
 ])
 
@@ -17,11 +17,12 @@ function sortedObject(entries) {
 }
 
 export function schemaDomainForPath(routePath, apiPrefix) {
-  const relative = routePath === apiPrefix
-    ? '/'
-    : routePath.startsWith(`${apiPrefix}/`)
-      ? routePath.slice(apiPrefix.length)
-      : routePath
+  const relative =
+    routePath === apiPrefix
+      ? '/'
+      : routePath.startsWith(`${apiPrefix}/`)
+        ? routePath.slice(apiPrefix.length)
+        : routePath
   const segment = relative.split('/').filter(Boolean)[0]
   return domainNames.includes(segment) && segment !== 'core' ? segment : 'core'
 }
@@ -76,25 +77,26 @@ function collectComponentClosure(document, selectedPaths) {
     components.set(component.section, section)
     collectReferences(component.value, pending)
   }
-  return sortedObject([...components].map(([section, values]) => [
-    section,
-    sortedObject([...values]),
-  ]))
+  return sortedObject(
+    [...components].map(([section, values]) => [section, sortedObject([...values])]),
+  )
 }
 
 function mergeComponents(left, right) {
   const sections = new Set([...Object.keys(left), ...Object.keys(right)])
-  return sortedObject([...sections].map(section => [
-    section,
-    sortedObject([
-      ...Object.entries(left[section] ?? {}),
-      ...Object.entries(right[section] ?? {}),
+  return sortedObject(
+    [...sections].map((section) => [
+      section,
+      sortedObject([
+        ...Object.entries(left[section] ?? {}),
+        ...Object.entries(right[section] ?? {}),
+      ]),
     ]),
-  ]))
+  )
 }
 
 export function createSchemaDomainDocuments(document, apiPrefix) {
-  const pathsByDomain = new Map(domainNames.map(domain => [domain, []]))
+  const pathsByDomain = new Map(domainNames.map((domain) => [domain, []]))
   for (const entry of Object.entries(document.paths ?? {})) {
     pathsByDomain.get(schemaDomainForPath(entry[0], apiPrefix)).push(entry)
   }
@@ -111,12 +113,12 @@ export function createSchemaDomainDocuments(document, apiPrefix) {
     })
   }
   const ownedSchemas = new Set(
-    [...domains.values()].flatMap(domain => Object.keys(domain.components.schemas ?? {})),
+    [...domains.values()].flatMap((domain) => Object.keys(domain.components.schemas ?? {})),
   )
   const compatibilityRoots = Object.keys(document.components?.schemas ?? {})
-    .filter(name => !ownedSchemas.has(name))
+    .filter((name) => !ownedSchemas.has(name))
     .sort(compareText)
-    .map(name => ({ $ref: `#/components/schemas/${name}` }))
+    .map((name) => ({ $ref: `#/components/schemas/${name}` }))
   if (compatibilityRoots.length > 0) {
     const core = domains.get('core')
     core.components = mergeComponents(
@@ -190,11 +192,14 @@ export function validateSchemaDomainDocuments(document, domains) {
 }
 
 export function renderSchemaIndex(header) {
-  const imports = domainNames.map(domain => (
-    `import type { components as ${domain}Components, operations as ${domain}Operations } from './${domain}'`
-  )).join('\n')
-  const operationTypes = domainNames.map(domain => `${domain}Operations`).join('\n  & ')
-  const schemaTypes = domainNames.map(domain => `${domain}Components['schemas']`).join('\n    & ')
+  const imports = domainNames
+    .map(
+      (domain) =>
+        `import type { components as ${domain}Components, operations as ${domain}Operations } from './${domain}'`,
+    )
+    .join('\n')
+  const operationTypes = domainNames.map((domain) => `${domain}Operations`).join('\n  & ')
+  const schemaTypes = domainNames.map((domain) => `${domain}Components['schemas']`).join('\n    & ')
   return `${header}${imports}
 
 export type operations =

@@ -10,11 +10,7 @@ export function exportJobListQueryKey(tenantId: string, userId: string): QueryKe
   return ['tenant', tenantId, 'user', userId, 'export-jobs']
 }
 
-export function exportJobDetailQueryKey(
-  tenantId: string,
-  userId: string,
-  jobId: string,
-): QueryKey {
+export function exportJobDetailQueryKey(tenantId: string, userId: string, jobId: string): QueryKey {
   return [...exportJobListQueryKey(tenantId, userId), jobId]
 }
 
@@ -29,10 +25,9 @@ export function prependExportJob(
   job: ExportJob,
 ): void {
   const key = exportJobListQueryKey(identity.tenantId, identity.userId)
-  client.setQueryData<ExportJob[]>(key, current => [
-    job,
-    ...(current ?? []).filter(item => item.id !== job.id),
-  ].slice(0, 100))
+  client.setQueryData<ExportJob[]>(key, (current) =>
+    [job, ...(current ?? []).filter((item) => item.id !== job.id)].slice(0, 100),
+  )
   client.setQueryData(exportJobDetailQueryKey(identity.tenantId, identity.userId, job.id), job)
 }
 
@@ -43,9 +38,9 @@ export function mergeExportJob(
   job: ExportJob,
 ): void {
   const key = exportJobListQueryKey(identity.tenantId, identity.userId)
-  client.setQueryData<ExportJob[]>(key, current => {
+  client.setQueryData<ExportJob[]>(key, (current) => {
     if (!current) return [job]
-    const index = current.findIndex(item => item.id === job.id)
+    const index = current.findIndex((item) => item.id === job.id)
     if (index < 0) return [job, ...current].slice(0, 100)
     const next = current.slice()
     next[index] = job
@@ -72,7 +67,7 @@ export function removeExportJobs(
   if (ids.size === 0) return
   client.setQueryData<ExportJob[]>(
     exportJobListQueryKey(identity.tenantId, identity.userId),
-    current => current?.filter(item => !ids.has(item.id)),
+    (current) => current?.filter((item) => !ids.has(item.id)),
   )
   for (const jobId of ids) {
     client.removeQueries({
@@ -87,15 +82,16 @@ export function isActiveExportJob(job: ExportJob): boolean {
 }
 
 export function isTerminalExportJob(job: ExportJob): boolean {
-  return job.status === 'succeeded'
-    || job.status === 'failed'
-    || job.status === 'cancelled'
-    || job.status === 'expired'
+  return (
+    job.status === 'succeeded' ||
+    job.status === 'failed' ||
+    job.status === 'cancelled' ||
+    job.status === 'expired'
+  )
 }
 
 export function isUnreadExportNotification(job: ExportJob): boolean {
-  return (job.status === 'succeeded' || job.status === 'failed')
-    && !job.notification_read_at
+  return (job.status === 'succeeded' || job.status === 'failed') && !job.notification_read_at
 }
 
 /** 同步已读结果到列表和详情缓存；服务端时间会在下一次刷新时覆盖本地展示值。 */
@@ -108,17 +104,20 @@ export function markExportNotificationsReadInCache(
   const ids = new Set(jobIds)
   if (ids.size === 0) return
   const listKey = exportJobListQueryKey(identity.tenantId, identity.userId)
-  client.setQueryData<ExportJob[]>(listKey, current => current?.map(job => (
-    ids.has(job.id) && isUnreadExportNotification(job)
-      ? { ...job, notification_read_at: readAt }
-      : job
-  )))
+  client.setQueryData<ExportJob[]>(listKey, (current) =>
+    current?.map((job) =>
+      ids.has(job.id) && isUnreadExportNotification(job)
+        ? { ...job, notification_read_at: readAt }
+        : job,
+    ),
+  )
   for (const id of ids) {
     client.setQueryData<ExportJob>(
       exportJobDetailQueryKey(identity.tenantId, identity.userId, id),
-      current => current && isUnreadExportNotification(current)
-        ? { ...current, notification_read_at: readAt }
-        : current,
+      (current) =>
+        current && isUnreadExportNotification(current)
+          ? { ...current, notification_read_at: readAt }
+          : current,
     )
   }
 }

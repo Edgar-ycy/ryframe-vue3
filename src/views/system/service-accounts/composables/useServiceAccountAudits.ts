@@ -8,8 +8,12 @@ import {
 /** 服务访问审计的显式分页查询。 */
 export function useServiceAccountAudits(context: ReturnType<typeof useServiceAccountContext>) {
   const {
-    activeAuditsQueryParams, auditsQuery, auditsQueryParams,
-    canListAudits, currentIdentity, pageActive,
+    activeAuditsQueryParams,
+    auditsQuery,
+    auditsQueryParams,
+    canListAudits,
+    currentIdentity,
+    pageActive,
   } = context
 
   async function fetchAudits(): Promise<void> {

@@ -21,16 +21,16 @@ export function createIdentityOperationScope<Identity>(
   let generation = 0
 
   function capture(): IdentityOperationGuard | undefined {
-    return options.isActive() && options.currentIdentity()
-      ? `${nonce}:${generation}`
-      : undefined
+    return options.isActive() && options.currentIdentity() ? `${nonce}:${generation}` : undefined
   }
 
   function matches(guard: IdentityOperationGuard | undefined): boolean {
-    return guard !== undefined
-      && options.isActive()
-      && options.currentIdentity() !== undefined
-      && guard === `${nonce}:${generation}`
+    return (
+      guard !== undefined &&
+      options.isActive() &&
+      options.currentIdentity() !== undefined &&
+      guard === `${nonce}:${generation}`
+    )
   }
 
   function isCurrentIdentity(identity: Identity): boolean {
@@ -59,8 +59,7 @@ export function createIdentityOperationScope<Identity>(
     for (const callback of invalidationCallbacks) {
       try {
         callback()
-      }
-      catch {
+      } catch {
         // 单个展示层回调异常不能阻断其余请求取消与安全材料清理。
       }
     }

@@ -52,7 +52,8 @@ export const shellMessages = {
       },
       tenant: {
         idRequired: '请输入租户标识',
-        idInvalid: '租户标识必须为 2–64 位 ASCII 字母、数字、下划线或连字符，且首尾必须是字母或数字',
+        idInvalid:
+          '租户标识必须为 2–64 位 ASCII 字母、数字、下划线或连字符，且首尾必须是字母或数字',
       },
       download: {
         defaultFilename: '下载文件',
@@ -103,7 +104,8 @@ export const shellMessages = {
         retryAfter: 'Retry in {seconds} seconds.',
         serverError: 'Internal server error.',
         requestFailed: 'Request failed.',
-        logoutFailed: 'The local session was cleared, but the server session could not be revoked. Try again later.',
+        logoutFailed:
+          'The local session was cleared, but the server session could not be revoked. Try again later.',
         otherTabRefreshFailed: 'The session refresh in another tab failed.',
         csrfChallengeInvalid: 'The CSRF challenge response is invalid.',
         initializationFailed: 'Session initialization failed.',
@@ -143,7 +145,8 @@ export const shellMessages = {
       },
       tenant: {
         idRequired: 'Enter a tenant identifier.',
-        idInvalid: 'The tenant identifier must be 2–64 ASCII letters, digits, underscores, or hyphens, and must begin and end with a letter or digit.',
+        idInvalid:
+          'The tenant identifier must be 2–64 ASCII letters, digits, underscores, or hyphens, and must begin and end with a letter or digit.',
       },
       download: {
         defaultFilename: 'download',
@@ -171,9 +174,12 @@ export const shellMessages = {
         closeMobileNavigation: 'Close mobile navigation',
       },
       businessData: {
-        provisioning: 'Business data is being provisioned. Business operations are unavailable; system administration remains available.',
-        maintenance: 'Business data is under maintenance. Business writes are paused; system administration remains available.',
-        failed: 'Business data placement failed. Business operations are unavailable; contact a platform administrator.',
+        provisioning:
+          'Business data is being provisioned. Business operations are unavailable; system administration remains available.',
+        maintenance:
+          'Business data is under maintenance. Business writes are paused; system administration remains available.',
+        failed:
+          'Business data placement failed. Business operations are unavailable; contact a platform administrator.',
         placementGeneration: 'Data placement generation: {generation}',
       },
       tags: {

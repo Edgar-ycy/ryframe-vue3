@@ -9,7 +9,13 @@
         {{ t('dashboard.viewOverview') }}
       </el-button>
     </div>
-    <el-alert v-if="error" :title="t('dashboard.activityError')" type="warning" show-icon :closable="false" />
+    <el-alert
+      v-if="error"
+      :title="t('dashboard.activityError')"
+      type="warning"
+      show-icon
+      :closable="false"
+    />
     <el-skeleton v-else-if="loading && !trends" :rows="4" animated />
     <el-empty v-else-if="trends && !hasData()" :description="t('monitor.overview.noTrendData')" />
     <EChartContainer
@@ -34,10 +40,7 @@ import EChartContainer from '@/components/charts/EChartContainer.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import { activityChartOption } from '@/views/monitor/overview/chartOptions'
-import {
-  cancelOverviewTrendRequests,
-  fetchOverviewTrends,
-} from '@/views/monitor/overview/data'
+import { cancelOverviewTrendRequests, fetchOverviewTrends } from '@/views/monitor/overview/data'
 
 interface ChartHandle {
   setOption: (option: EChartsCoreOption) => void
@@ -100,21 +103,21 @@ async function load(force: boolean): Promise<void> {
     trends.value = await fetchOverviewTrends(userStore.tenantId, '24h', force)
     await nextTick()
     renderChart()
-  }
-  catch (reason) {
+  } catch (reason) {
     error.value = reason instanceof Error ? reason.message : String(reason)
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }
 
 function renderChart(): void {
   if (!trends.value) return
-  chart.value?.setOption(activityChartOption(trends.value.buckets, t, {
-    dark: settingsStore.theme === 'dark',
-    primary: settingsStore.themeColor,
-  }))
+  chart.value?.setOption(
+    activityChartOption(trends.value.buckets, t, {
+      dark: settingsStore.theme === 'dark',
+      primary: settingsStore.themeColor,
+    }),
+  )
 }
 
 function sum(selector: (bucket: MonitorOverviewTrends['buckets'][number]) => number): number {
@@ -122,11 +125,20 @@ function sum(selector: (bucket: MonitorOverviewTrends['buckets'][number]) => num
 }
 
 function hasData(): boolean {
-  return sum(bucket => bucket.background_jobs_created + bucket.login_success + bucket.login_failure + bucket.operation_success + bucket.operation_failure) > 0
+  return (
+    sum(
+      (bucket) =>
+        bucket.background_jobs_created +
+        bucket.login_success +
+        bucket.login_failure +
+        bucket.operation_success +
+        bucket.operation_failure,
+    ) > 0
+  )
 }
 
 function summary(): string {
-  return `${t('monitor.overview.jobsCreated')} ${sum(bucket => bucket.background_jobs_created)}；${t('monitor.overview.loginTotal')} ${sum(bucket => bucket.login_success + bucket.login_failure)}；${t('monitor.overview.operationTotal')} ${sum(bucket => bucket.operation_success + bucket.operation_failure)}`
+  return `${t('monitor.overview.jobsCreated')} ${sum((bucket) => bucket.background_jobs_created)}；${t('monitor.overview.loginTotal')} ${sum((bucket) => bucket.login_success + bucket.login_failure)}；${t('monitor.overview.operationTotal')} ${sum((bucket) => bucket.operation_success + bucket.operation_failure)}`
 }
 
 function openOverview(): void {

@@ -1,7 +1,4 @@
-import type {
-  TenantConfigBundle,
-  TenantConfigTransfer,
-} from '@/api/modules/tenantConfigTransfer'
+import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
 
 const ACTIVE_PACKAGE_STATUSES = new Set(['pending', 'running'])
 const ACTIVE_TRANSFER_STATUSES = new Set([
@@ -30,10 +27,12 @@ export function canPreviewTenantConfigTransfer(transfer: TenantConfigTransfer): 
 
 /** 应用必须使用成功预览且没有冲突或阻断的计划。 */
 export function canApplyTenantConfigTransfer(transfer: TenantConfigTransfer): boolean {
-  return transfer.status === 'previewed'
-    && !!transfer.plan_hash
-    && (transfer.change_counts.blocked ?? 0) === 0
-    && (transfer.change_counts.conflict ?? 0) === 0
+  return (
+    transfer.status === 'previewed' &&
+    !!transfer.plan_hash &&
+    (transfer.change_counts.blocked ?? 0) === 0 &&
+    (transfer.change_counts.conflict ?? 0) === 0
+  )
 }
 
 /** 浏览器时间只用于提前禁用按钮，服务端仍是回滚窗口的最终裁决者。 */

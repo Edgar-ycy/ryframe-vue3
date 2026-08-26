@@ -9,8 +9,7 @@ import type { PageQuery, PageResponse, Id } from '@/shared/http/types'
 import type { FlatCrudResource } from './resource'
 
 type SaveCommand<TCreate extends object, TUpdate extends object> =
-  | { kind: 'create'; input: TCreate }
-  | { kind: 'update'; id: Id; input: TUpdate }
+  { kind: 'create'; input: TCreate } | { kind: 'update'; id: Id; input: TUpdate }
 
 export function useFlatCrudResource<
   TRecord extends object,
@@ -43,15 +42,16 @@ export function useFlatCrudResource<
     authenticated,
     resource.key,
     () => ({ scope: 'list', filters: { ...appliedQuery.value } }),
-    signal => runAppliedQuery(signal, (query, requestSignal) => (
-      resource.adapter.list(query, requestSignal)
-    )),
+    (signal) =>
+      runAppliedQuery(signal, (query, requestSignal) =>
+        resource.adapter.list(query, requestSignal),
+      ),
   )
 
   const editingRecord = shallowRef<TRecord>()
-  const currentEditId = computed(() => (
-    editingRecord.value ? resource.recordId(editingRecord.value) : null
-  ))
+  const currentEditId = computed(() =>
+    editingRecord.value ? resource.recordId(editingRecord.value) : null,
+  )
   const dialogVisible = shallowRef(false)
   const form = shallowRef<TForm>(resource.emptyForm())
 
@@ -60,49 +60,45 @@ export function useFlatCrudResource<
     () => authenticated() && editingRecord.value !== undefined,
     resource.key,
     () => ({ scope: 'detail', id: currentEditId.value }),
-    async signal => {
+    async (signal) => {
       const id = currentEditId.value
       if (!id) throw new Error(resource.messages.detailMissing)
       return resource.adapter.detail(id, signal)
     },
   )
 
-  const saveMutation = useTenantMutation<
-    void,
-    SaveCommand<TCreate, TUpdate>
-  >(
+  const saveMutation = useTenantMutation<void, SaveCommand<TCreate, TUpdate>>(
     () => userStore.tenantId,
     resource.key,
     {
-      mutationFn: command => command.kind === 'create'
-        ? resource.adapter.create(command.input)
-        : resource.adapter.update(command.id, command.input),
+      mutationFn: (command) =>
+        command.kind === 'create'
+          ? resource.adapter.create(command.input)
+          : resource.adapter.update(command.id, command.input),
       onSuccess: (_data, command) => {
-        ElMessage.success(command.kind === 'create'
-          ? resource.messages.addSuccess
-          : resource.messages.updateSuccess)
+        ElMessage.success(
+          command.kind === 'create'
+            ? resource.messages.addSuccess
+            : resource.messages.updateSuccess,
+        )
       },
     },
   )
 
-  const deleteMutation = useTenantMutation<void, TRecord>(
-    () => userStore.tenantId,
-    resource.key,
-    {
-      mutationFn: record => resource.adapter.remove(resource.recordId(record)),
-      onSuccess: () => ElMessage.success(resource.messages.deleteSuccess),
-    },
-  )
+  const deleteMutation = useTenantMutation<void, TRecord>(() => userStore.tenantId, resource.key, {
+    mutationFn: (record) => resource.adapter.remove(resource.recordId(record)),
+    onSuccess: () => ElMessage.success(resource.messages.deleteSuccess),
+  })
 
   const page = computed({
     get: () => draftQuery.value.page ?? 1,
-    set: value => {
+    set: (value) => {
       draftQuery.value = Object.assign({}, draftQuery.value, { page: value })
     },
   })
   const pageSize = computed({
     get: () => draftQuery.value.page_size ?? 10,
-    set: value => {
+    set: (value) => {
       draftQuery.value = Object.assign({}, draftQuery.value, { page_size: value })
     },
   })
@@ -165,8 +161,7 @@ export function useFlatCrudResource<
         id,
         input: resource.updateInput(form.value),
       })
-    }
-    else {
+    } else {
       await saveMutation.mutateAsync({
         kind: 'create',
         input: resource.createInput(form.value),
@@ -194,9 +189,9 @@ export function useFlatCrudResource<
     canExport: hasSuccessfulQuery,
     changePage: applyAndRefresh,
     deletingKey,
-    dialogTitle: computed(() => currentEditId.value
-      ? resource.messages.editTitle
-      : resource.messages.addTitle),
+    dialogTitle: computed(() =>
+      currentEditId.value ? resource.messages.editTitle : resource.messages.addTitle,
+    ),
     dialogVisible,
     edit,
     editing: computed(() => currentEditId.value !== null),

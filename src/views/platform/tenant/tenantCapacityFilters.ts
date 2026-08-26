@@ -43,11 +43,13 @@ export function sameTenantCapacityFilters(
   left: TenantCapacityFilterState,
   right: TenantCapacityFilterState,
 ): boolean {
-  return left.tenant_id === right.tenant_id
-    && left.name === right.name
-    && left.status === right.status
-    && left.expiration_status === right.expiration_status
-    && left.capacity_status === right.capacity_status
+  return (
+    left.tenant_id === right.tenant_id &&
+    left.name === right.name &&
+    left.status === right.status &&
+    left.expiration_status === right.expiration_status &&
+    left.capacity_status === right.capacity_status
+  )
 }
 
 export function normalizePositiveInteger(

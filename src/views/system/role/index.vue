@@ -19,7 +19,12 @@
           />
         </el-form-item>
         <el-form-item :label="t('system.common.status')">
-          <el-select v-model="queryParams.status" :placeholder="t('system.role.statusPlaceholder')" clearable style="width:120px">
+          <el-select
+            v-model="queryParams.status"
+            :placeholder="t('system.role.statusPlaceholder')"
+            clearable
+            style="width: 120px"
+          >
             <el-option :label="t('system.common.normal')" value="1" />
             <el-option :label="t('system.common.disabled')" value="0" />
           </el-select>
@@ -59,15 +64,26 @@
 
       <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
-        <el-table-column prop="name" :label="t('system.role.name')" min-width="130" show-overflow-tooltip />
+        <el-table-column
+          prop="name"
+          :label="t('system.role.name')"
+          min-width="130"
+          show-overflow-tooltip
+        />
         <el-table-column prop="code" :label="t('system.role.code')" />
         <el-table-column prop="sort" :label="t('system.common.sort')" align="center" />
         <el-table-column prop="data_scope" :label="t('system.role.dataScope')" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.data_scope === '1'" type="success">{{ t('system.role.all') }}</el-tag>
-            <el-tag v-else-if="row.data_scope === '2'" type="warning">{{ t('system.role.custom') }}</el-tag>
-            <el-tag v-else-if="row.data_scope === '3'">{{ t('system.role.currentDepartment') }}</el-tag>
-            <el-tag v-else-if="row.data_scope === '4'" type="info">{{ t('system.role.currentAndBelow') }}</el-tag>
+            <el-tag v-else-if="row.data_scope === '2'" type="warning">{{
+              t('system.role.custom')
+            }}</el-tag>
+            <el-tag v-else-if="row.data_scope === '3'">{{
+              t('system.role.currentDepartment')
+            }}</el-tag>
+            <el-tag v-else-if="row.data_scope === '4'" type="info">{{
+              t('system.role.currentAndBelow')
+            }}</el-tag>
             <el-tag v-else type="danger">{{ t('system.role.selfOnly') }}</el-tag>
           </template>
         </el-table-column>
@@ -81,7 +97,12 @@
         <el-table-column :label="t('system.common.createdAt')" min-width="160">
           <template #default="{ row }">{{ formatLocalizedDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column :label="t('system.common.actions')" min-width="280" fixed="right" align="center">
+        <el-table-column
+          :label="t('system.common.actions')"
+          min-width="280"
+          fixed="right"
+          align="center"
+        >
           <template #default="{ row }">
             <el-button
               v-if="!isProtectedRole(row)"
@@ -143,11 +164,7 @@
       />
     </el-card>
 
-    <RoleFormDialog
-      v-model="roleDialogVisible"
-      :role="editingRole"
-      @saved="refreshData"
-    />
+    <RoleFormDialog v-model="roleDialogVisible" :role="editingRole" @saved="refreshData" />
     <RolePermissionDialog
       v-model="permissionDialogVisible"
       :role="permissionRole"

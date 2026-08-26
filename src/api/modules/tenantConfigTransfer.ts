@@ -1,8 +1,4 @@
-import type {
-  ApiSchema,
-  OperationJsonBody,
-  OperationQuery,
-} from '@/api/contract'
+import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import {
   requestBlobOperation,
   requestMultipartOperation,
@@ -35,18 +31,12 @@ export type ApplyTenantConfigTransferInput =
   OperationJsonBody<'post_system_config_transfers_by_id_apply'>
 
 /** 分页读取当前租户可见的配置包。 */
-export function listTenantConfigPackages(
-  params: TenantConfigPackageQuery,
-  signal?: AbortSignal,
-) {
+export function listTenantConfigPackages(params: TenantConfigPackageQuery, signal?: AbortSignal) {
   return requestOperation(get_system_config_packages, { params, signal })
 }
 
 /** 创建当前租户配置包的异步导出任务。 */
-export function createTenantConfigPackage(
-  idempotencyKey: string,
-  signal?: AbortSignal,
-) {
+export function createTenantConfigPackage(idempotencyKey: string, signal?: AbortSignal) {
   return requestOperation(post_system_config_packages, {
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
@@ -70,10 +60,7 @@ export function downloadTenantConfigPackage(id: string, signal?: AbortSignal) {
 }
 
 /** 分页读取当前租户的配置迁移记录。 */
-export function listTenantConfigTransfers(
-  params: TenantConfigTransferQuery,
-  signal?: AbortSignal,
-) {
+export function listTenantConfigTransfers(params: TenantConfigTransferQuery, signal?: AbortSignal) {
   return requestOperation(get_system_config_transfers, { params, signal })
 }
 

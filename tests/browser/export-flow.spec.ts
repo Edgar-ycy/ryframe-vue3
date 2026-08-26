@@ -93,15 +93,17 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
     createJob('job-2', 'roles.xlsx', 'failed', '生成失败'),
     createJob('job-3', 'posts.xlsx', 'cancelled'),
   ]
-  const posts: PostFixture[] = [{
-    code: 'tester',
-    created_at: NOW,
-    id: '2001',
-    name: '测试岗位',
-    remark: null,
-    sort: 1,
-    status: '1',
-  }]
+  const posts: PostFixture[] = [
+    {
+      code: 'tester',
+      created_at: NOW,
+      id: '2001',
+      name: '测试岗位',
+      remark: null,
+      sort: 1,
+      status: '1',
+    },
+  ]
   const sessionContext = {
     authorization_epoch: '11',
     business_data: { placement_generation: '3', state: 'active' },
@@ -191,7 +193,11 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
     if (key === 'GET /version') {
       await fulfillJson(route, {
         api_prefix: '/api/v1',
-        endpoints: { openapi: '/api/v1/openapi.json', swagger: '/api/v1/swagger-ui', system: '/api/v1/system' },
+        endpoints: {
+          openapi: '/api/v1/openapi.json',
+          swagger: '/api/v1/swagger-ui',
+          system: '/api/v1/system',
+        },
         multi_tenancy_enabled: false,
         name: 'RyFrame API',
         source_commit: 'browser-smoke',
@@ -228,18 +234,20 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
     }
     if (key === 'GET /system/users') {
       await fulfillJson(route, {
-        items: [{
-          created_at: NOW,
-          dept_id: null,
-          dept_name: '研发部',
-          email: 'alice@example.com',
-          id: '1001',
-          nickname: 'Alice',
-          phone: '13800000001',
-          remark: null,
-          status: '1',
-          username: 'alice',
-        }],
+        items: [
+          {
+            created_at: NOW,
+            dept_id: null,
+            dept_name: '研发部',
+            email: 'alice@example.com',
+            id: '1001',
+            nickname: 'Alice',
+            phone: '13800000001',
+            remark: null,
+            status: '1',
+            username: 'alice',
+          },
+        ],
         max_page_size: 100,
         page: Number(url.searchParams.get('page') ?? 1),
         page_size: Number(url.searchParams.get('page_size') ?? 10),
@@ -257,11 +265,12 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
       const name = (url.searchParams.get('name') ?? '').trim()
       const code = (url.searchParams.get('code') ?? '').trim()
       const status = (url.searchParams.get('status') ?? '').trim()
-      const items = posts.filter(post => (
-        (!name || post.name.includes(name))
-        && (!code || post.code.includes(code))
-        && (!status || post.status === status)
-      ))
+      const items = posts.filter(
+        (post) =>
+          (!name || post.name.includes(name)) &&
+          (!code || post.code.includes(code)) &&
+          (!status || post.status === status),
+      )
       await fulfillJson(route, {
         items,
         max_page_size: 100,
@@ -304,7 +313,7 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
     const postDetailMatch = /^\/system\/posts\/([^/]+)$/u.exec(path)
     if (method === 'GET' && postDetailMatch) {
       const id = decodeURIComponent(postDetailMatch[1])
-      const post = posts.find(item => item.id === id)
+      const post = posts.find((item) => item.id === id)
       await fulfillJson(route, post ?? undefined, post ? 200 : 404)
       return
     }
@@ -312,7 +321,7 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
       const id = decodeURIComponent(postDetailMatch[1])
       const body = request.postDataJSON() as { name: string; sort?: number | null; status: string }
       postUpdateBodies.push({ body, id })
-      const post = posts.find(item => item.id === id)
+      const post = posts.find((item) => item.id === id)
       if (!post) throw new Error(`岗位 fixture 不存在：${id}`)
       Object.assign(post, {
         name: body.name,
@@ -325,7 +334,7 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
     if (method === 'DELETE' && postDetailMatch) {
       const id = decodeURIComponent(postDetailMatch[1])
       postDeleteIds.push(id)
-      const index = posts.findIndex(item => item.id === id)
+      const index = posts.findIndex((item) => item.id === id)
       expect(index).toBeGreaterThanOrEqual(0)
       posts.splice(index, 1)
       await fulfillJson(route, null)
@@ -375,14 +384,18 @@ async function installApiFixture(page: Page, diagnostics: BrowserDiagnostics) {
       expect(request.headers()['idempotency-key']).toBeTruthy()
       deletionBodies.push({ ids })
       for (const id of ids) {
-        const index = jobs.findIndex(job => job.id === id)
+        const index = jobs.findIndex((job) => job.id === id)
         if (index >= 0) jobs.splice(index, 1)
       }
-      await fulfillJson(route, {
-        accepted_count: ids.length,
-        accepted_ids: ids,
-        removed_unread_count: 0,
-      }, 202)
+      await fulfillJson(
+        route,
+        {
+          accepted_count: ids.length,
+          accepted_ids: ids,
+          removed_unread_count: 0,
+        },
+        202,
+      )
       return
     }
 
@@ -421,9 +434,11 @@ function observeDiagnostics(page: Page): BrowserDiagnostics {
     if (response.status() === 401 && url.pathname === '/api/v1/auth/refresh') return
     diagnostics.httpErrors.push(`${response.status()} ${url.pathname}`)
   })
-  page.on('pageerror', error => diagnostics.pageErrors.push(error.message))
+  page.on('pageerror', (error) => diagnostics.pageErrors.push(error.message))
   page.on('requestfailed', (request) => {
-    diagnostics.requestFailures.push(`${request.method()} ${request.url()}: ${request.failure()?.errorText}`)
+    diagnostics.requestFailures.push(
+      `${request.method()} ${request.url()}: ${request.failure()?.errorText}`,
+    )
   })
   return diagnostics
 }
@@ -436,10 +451,7 @@ async function loginWithFixture(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/index$/u)
 }
 
-async function expectCleanDiagnostics(
-  page: Page,
-  diagnostics: BrowserDiagnostics,
-): Promise<void> {
+async function expectCleanDiagnostics(page: Page, diagnostics: BrowserDiagnostics): Promise<void> {
   await page.waitForTimeout(200)
   expect(diagnostics.unhandledApi).toEqual([])
   expect(diagnostics.httpErrors).toEqual([])
@@ -461,21 +473,26 @@ test('筛选后跨页导出并管理终态记录', async ({ page }) => {
   const filteredResponse = page.waitForResponse((response) => {
     const request = response.request()
     const url = new URL(response.url())
-    return request.method() === 'GET'
-      && url.pathname === '/api/v1/system/users'
-      && url.searchParams.get('username')?.trim() === 'alice'
+    return (
+      request.method() === 'GET' &&
+      url.pathname === '/api/v1/system/users' &&
+      url.searchParams.get('username')?.trim() === 'alice'
+    )
   })
   await page.getByPlaceholder('请输入用户名').fill('  alice  ')
   await page.locator('.search-card').getByRole('button', { name: '搜索', exact: true }).click()
   await filteredResponse
   await expect(page.getByText('共 21 条')).toBeVisible()
 
-  const exportButton = page.locator('.card-header').getByRole('button', { name: '导出', exact: true })
+  const exportButton = page
+    .locator('.card-header')
+    .getByRole('button', { name: '导出', exact: true })
   await expect(exportButton).toBeEnabled()
-  const exportRequest = page.waitForRequest(request => (
-    request.method() === 'POST'
-    && new URL(request.url()).pathname === '/api/v1/system/users/exports'
-  ))
+  const exportRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'POST' &&
+      new URL(request.url()).pathname === '/api/v1/system/users/exports',
+  )
   await exportButton.click()
   await exportRequest
   expect(exportBodies).toEqual([{ confirm_all: false, filter: { username: 'alice' } }])
@@ -532,19 +549,21 @@ test('生成的岗位页面完成查询、导出和增改删闭环', async ({ pa
   await addDialog.getByPlaceholder('请输入岗位名称').fill('浏览器岗位')
   await addDialog.getByPlaceholder('请输入岗位编码').fill('browser-post')
   await addDialog.getByRole('spinbutton').fill('12')
-  const createResponse = page.waitForResponse(response => (
-    response.request().method() === 'POST'
-    && new URL(response.url()).pathname === '/api/v1/system/posts'
-  ))
+  const createResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/v1/system/posts',
+  )
   await addDialog.getByRole('button', { name: '确定', exact: true }).click()
   await createResponse
   await expect(page.getByText('浏览器岗位', { exact: true })).toBeVisible()
 
   const createdRow = page.locator('.el-table__body tr').filter({ hasText: '浏览器岗位' })
-  const detailResponse = page.waitForResponse(response => (
-    response.request().method() === 'GET'
-    && new URL(response.url()).pathname === '/api/v1/system/posts/2002'
-  ))
+  const detailResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/v1/system/posts/2002',
+  )
   await createdRow.getByRole('button', { name: '编辑', exact: true }).click()
   await detailResponse
   const editDialog = page.getByRole('dialog', { name: '编辑岗位' })
@@ -553,10 +572,11 @@ test('生成的岗位页面完成查询、导出和增改删闭环', async ({ pa
   await editDialog.getByPlaceholder('请输入岗位名称').fill('浏览器岗位已改')
   await editDialog.getByRole('spinbutton').fill('18')
   await editDialog.getByText('停用', { exact: true }).click()
-  const updateResponse = page.waitForResponse(response => (
-    response.request().method() === 'PUT'
-    && new URL(response.url()).pathname === '/api/v1/system/posts/2002'
-  ))
+  const updateResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      new URL(response.url()).pathname === '/api/v1/system/posts/2002',
+  )
   await editDialog.getByRole('button', { name: '确定', exact: true }).click()
   await updateResponse
   await expect(page.getByText('浏览器岗位已改', { exact: true })).toBeVisible()
@@ -564,46 +584,58 @@ test('生成的岗位页面完成查询、导出和增改删闭环', async ({ pa
   const filteredResponse = page.waitForResponse((response) => {
     const request = response.request()
     const url = new URL(response.url())
-    return request.method() === 'GET'
-      && url.pathname === '/api/v1/system/posts'
-      && url.searchParams.get('name') === '浏览器岗位已改'
+    return (
+      request.method() === 'GET' &&
+      url.pathname === '/api/v1/system/posts' &&
+      url.searchParams.get('name') === '浏览器岗位已改'
+    )
   })
   await page.getByPlaceholder('请输入或选择岗位名称').fill('浏览器岗位已改')
   await page.locator('.search-card').getByRole('button', { name: '搜索', exact: true }).click()
   await filteredResponse
 
-  const exportButton = page.locator('.card-header').getByRole('button', { name: '导出', exact: true })
+  const exportButton = page
+    .locator('.card-header')
+    .getByRole('button', { name: '导出', exact: true })
   await expect(exportButton).toBeEnabled()
-  const exportResponse = page.waitForResponse(response => (
-    response.request().method() === 'POST'
-    && new URL(response.url()).pathname === '/api/v1/system/posts/exports'
-  ))
+  const exportResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/v1/system/posts/exports',
+  )
   await exportButton.click()
   await exportResponse
 
   const updatedRow = page.locator('.el-table__body tr').filter({ hasText: '浏览器岗位已改' })
-  const deleteResponse = page.waitForResponse(response => (
-    response.request().method() === 'DELETE'
-    && new URL(response.url()).pathname === '/api/v1/system/posts/2002'
-  ))
+  const deleteResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'DELETE' &&
+      new URL(response.url()).pathname === '/api/v1/system/posts/2002',
+  )
   await updatedRow.getByRole('button', { name: '删除', exact: true }).click()
   await page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click()
   await deleteResponse
   await expect(page.getByText('浏览器岗位已改', { exact: true })).toHaveCount(0)
 
-  expect(postCreateBodies).toEqual([{
-    code: 'browser-post',
-    name: '浏览器岗位',
-    sort: 12,
-  }])
-  expect(postUpdateBodies).toEqual([{
-    body: { name: '浏览器岗位已改', sort: 18, status: '0' },
-    id: '2002',
-  }])
-  expect(postExportBodies).toEqual([{
-    confirm_all: false,
-    filter: { name: '浏览器岗位已改' },
-  }])
+  expect(postCreateBodies).toEqual([
+    {
+      code: 'browser-post',
+      name: '浏览器岗位',
+      sort: 12,
+    },
+  ])
+  expect(postUpdateBodies).toEqual([
+    {
+      body: { name: '浏览器岗位已改', sort: 18, status: '0' },
+      id: '2002',
+    },
+  ])
+  expect(postExportBodies).toEqual([
+    {
+      confirm_all: false,
+      filter: { name: '浏览器岗位已改' },
+    },
+  ])
   expect(postDeleteIds).toEqual(['2002'])
   expect(postRequestContexts.length).toBeGreaterThanOrEqual(8)
   for (const context of postRequestContexts) {

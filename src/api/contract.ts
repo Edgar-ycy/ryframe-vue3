@@ -41,27 +41,19 @@ type ResponseAt<Responses, Status extends PropertyKey> = Status extends keyof Re
 export type OperationJsonResponse<Name extends keyof operations> =
   ApiOperation<Name> extends { responses: infer Responses }
     ? JsonContent<
-      | ResponseAt<Responses, 200>
-      | ResponseAt<Responses, 201>
-      | ResponseAt<Responses, 202>
-    >
+        ResponseAt<Responses, 200> | ResponseAt<Responses, 201> | ResponseAt<Responses, 202>
+      >
     : never
 
 export type OperationTextResponse<Name extends keyof operations> =
   ApiOperation<Name> extends { responses: infer Responses }
     ? TextContent<
-      | ResponseAt<Responses, 200>
-      | ResponseAt<Responses, 201>
-      | ResponseAt<Responses, 202>
-    >
+        ResponseAt<Responses, 200> | ResponseAt<Responses, 201> | ResponseAt<Responses, 202>
+      >
     : never
 
 export type OperationData<Name extends keyof operations> =
-  OperationJsonResponse<Name> extends { data?: infer Data }
-    ? NonNullable<Data>
-    : never
+  OperationJsonResponse<Name> extends { data?: infer Data } ? NonNullable<Data> : never
 
 export type OperationRows<Name extends keyof operations> =
-  OperationData<Name> extends { items: infer Items }
-    ? Items
-    : never
+  OperationData<Name> extends { items: infer Items } ? Items : never

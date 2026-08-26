@@ -1,5 +1,12 @@
 <template>
-  <div class="app-wrapper" :class="{ 'sidebar-collapse': appStore.sidebarCollapsed, 'no-tagsview': !settingsStore.tagsView, 'is-mobile': appStore.isMobile }">
+  <div
+    class="app-wrapper"
+    :class="{
+      'sidebar-collapse': appStore.sidebarCollapsed,
+      'no-tagsview': !settingsStore.tagsView,
+      'is-mobile': appStore.isMobile,
+    }"
+  >
     <!-- 侧边栏 -->
     <Sidebar />
     <button

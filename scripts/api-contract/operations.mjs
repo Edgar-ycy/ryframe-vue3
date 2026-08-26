@@ -36,26 +36,29 @@ export function collectOperationContractState(document, errors) {
       else if (operationIds.has(operationId)) errors.push(`${operationId}: duplicate operationId`)
       else operationIds.add(operationId)
 
-      const successResponses = Object.entries(operation.responses ?? {})
-        .filter(([status]) => /^2\d\d$/.test(status))
+      const successResponses = Object.entries(operation.responses ?? {}).filter(([status]) =>
+        /^2\d\d$/.test(status),
+      )
       if (successResponses.length === 0) {
         errors.push(`${operationId}: missing 2xx response`)
       }
       for (const [status, response] of successResponses) {
         const content = Object.values(response.content ?? {})
-        if (content.length === 0 || content.some(media => !media.schema)) {
+        if (content.length === 0 || content.some((media) => !media.schema)) {
           errors.push(`${operationId}: ${status} response is missing a content schema`)
         }
       }
 
-      if (['post', 'put', 'patch'].includes(method)
-        && !operation.requestBody
-        && !bodylessWriteAllowlist.has(operationId)) {
+      if (
+        ['post', 'put', 'patch'].includes(method) &&
+        !operation.requestBody &&
+        !bodylessWriteAllowlist.has(operationId)
+      ) {
         errors.push(`${operationId}: write operation is missing requestBody`)
       }
 
       const parameters = [...(pathItem.parameters ?? []), ...(operation.parameters ?? [])]
-      if (operationId && parameters.some(parameter => parameter.in === 'query')) {
+      if (operationId && parameters.some((parameter) => parameter.in === 'query')) {
         queryOperationIds.add(operationId)
       }
       if (operationId && !operationsById.has(operationId)) {

@@ -30,12 +30,10 @@ beforeEach(() => {
 
 describe('导出任务跨标签事件', () => {
   it('只接收身份完整且数量合法的 deleted 事件', async () => {
-    const {
-      publishExportJobEvent,
-      subscribeExportJobEvents,
-    } = await import('@/app/exports/exportJobChannel')
+    const { publishExportJobEvent, subscribeExportJobEvents } =
+      await import('@/app/exports/exportJobChannel')
     const received: unknown[] = []
-    const unsubscribe = subscribeExportJobEvents(event => received.push(event))
+    const unsubscribe = subscribeExportJobEvents((event) => received.push(event))
     const event = {
       type: 'deleted' as const,
       tenantId: 'tenant-a',

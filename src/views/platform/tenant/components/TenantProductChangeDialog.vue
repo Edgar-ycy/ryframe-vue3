@@ -10,11 +10,21 @@
     <el-form label-width="138px">
       <el-form-item :label="t('productPlans.plans')">
         <el-select v-model="selectedPlanId" filterable @change="handlePlanChange">
-          <el-option v-for="plan in plans?.items ?? []" :key="plan.id" :label="`${plan.name} (${plan.key})`" :value="plan.id" />
+          <el-option
+            v-for="plan in plans?.items ?? []"
+            :key="plan.id"
+            :label="`${plan.name} (${plan.key})`"
+            :value="plan.id"
+          />
         </el-select>
       </el-form-item>
       <el-form-item :label="t('productPlans.targetPlanVersion')">
-        <el-select v-model="planVersionId" :placeholder="t('productPlans.selectTargetVersion')" :loading="versionsLoading" @change="clearPreview">
+        <el-select
+          v-model="planVersionId"
+          :placeholder="t('productPlans.selectTargetVersion')"
+          :loading="versionsLoading"
+          @change="clearPreview"
+        >
           <el-option
             v-for="version in publishedVersions"
             :key="version.id"
@@ -47,16 +57,29 @@
         show-icon
         :closable="false"
       >
-        <ul><li v-for="warning in preview.warnings" :key="warning">{{ warning }}</li></ul>
+        <ul>
+          <li v-for="warning in preview.warnings" :key="warning">{{ warning }}</li>
+        </ul>
       </el-alert>
     </section>
 
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">{{ t('productPlans.cancel') }}</el-button>
-      <el-button :loading="previewPending" :disabled="!planVersionId || submitting" @click="handlePreview">
+      <el-button :disabled="submitting" @click="visible = false">{{
+        t('productPlans.cancel')
+      }}</el-button>
+      <el-button
+        :loading="previewPending"
+        :disabled="!planVersionId || submitting"
+        @click="handlePreview"
+      >
         {{ t('productPlans.preview') }}
       </el-button>
-      <el-button type="primary" :loading="applyPending" :disabled="!preview || submitting" @click="handleApply">
+      <el-button
+        type="primary"
+        :loading="applyPending"
+        :disabled="!preview || submitting"
+        @click="handleApply"
+      >
         {{ t('productPlans.apply') }}
       </el-button>
     </template>
@@ -104,55 +127,62 @@ const plansQuery = useTenantQuery(
   enabled,
   'platform-product-plan-options',
   () => ({ page: 1, page_size: 100 }),
-  async signal => requireOperationData(await listProductPlans({ page: 1, page_size: 100 }, signal)),
+  async (signal) =>
+    requireOperationData(await listProductPlans({ page: 1, page_size: 100 }, signal)),
 )
 const versionsQuery = useTenantQuery(
   () => userStore.tenantId,
   () => enabled.value && Boolean(selectedPlanId.value),
   'platform-product-plan-version-options',
   () => ({ plan_id: selectedPlanId.value }),
-  async signal => requireOperationData(await getProductPlan(selectedPlanId.value, signal)).versions,
+  async (signal) =>
+    requireOperationData(await getProductPlan(selectedPlanId.value, signal)).versions,
 )
 
 const previewMutation = useTenantMutation(
   () => userStore.tenantId,
   'platform-tenant-product-change-preview',
   {
-    mutationFn: async (input: { planVersionId: string, overrides: CapabilityOverrideInput[] }) => (
-      requireOperationData(await previewTenantProductChange(props.tenantId, {
-        plan_version_id: input.planVersionId,
-        overrides: input.overrides,
-      }))
-    ),
+    mutationFn: async (input: { planVersionId: string; overrides: CapabilityOverrideInput[] }) =>
+      requireOperationData(
+        await previewTenantProductChange(props.tenantId, {
+          plan_version_id: input.planVersionId,
+          overrides: input.overrides,
+        }),
+      ),
   },
 )
 const applyMutation = useTenantMutation(
   () => userStore.tenantId,
   'platform-tenant-product-context',
   {
-    mutationFn: async (input: { preview: ProductChangePreview, overrides: CapabilityOverrideInput[] }) => (
-      requireOperationData(await applyTenantProductChange(props.tenantId, {
-        plan_version_id: planVersionId.value,
-        overrides: input.overrides,
-        plan_hash: input.preview.plan_hash,
-        preview_runtime_epoch: input.preview.runtime_epoch,
-      }))
-    ),
+    mutationFn: async (input: {
+      preview: ProductChangePreview
+      overrides: CapabilityOverrideInput[]
+    }) =>
+      requireOperationData(
+        await applyTenantProductChange(props.tenantId, {
+          plan_version_id: planVersionId.value,
+          overrides: input.overrides,
+          plan_hash: input.preview.plan_hash,
+          preview_runtime_epoch: input.preview.runtime_epoch,
+        }),
+      ),
   },
 )
 
 const plans = plansQuery.data
 const versionsLoading = versionsQuery.isFetching
-const publishedVersions = computed(() => (
-  (versionsQuery.data.value ?? []).filter(version => version.status === 'published')
-))
+const publishedVersions = computed(() =>
+  (versionsQuery.data.value ?? []).filter((version) => version.status === 'published'),
+)
 const previewPending = previewMutation.pending
 const applyPending = applyMutation.pending
 const submitting = computed(() => previewPending.value || applyPending.value)
 const capabilityDiff = computed(() => ({
   added: preview.value?.capability_additions ?? [],
   removed: preview.value?.capability_removals ?? [],
-  changed: preview.value?.capability_changes.map(change => change.capability_code) ?? [],
+  changed: preview.value?.capability_changes.map((change) => change.capability_code) ?? [],
 }))
 const menuDiff = computed(() => ({
   added: preview.value?.menu_additions ?? [],
@@ -186,13 +216,16 @@ function clearPreview(): void {
 function parseOverrides(): CapabilityOverrideInput[] | undefined {
   if (!props.canOverride) return props.context.overrides.map(toOverrideInput)
   if (!overrideEditorRef.value?.validate()) return undefined
-  return overrides.value.map(item => ({ ...item, config: { ...item.config } }))
+  return overrides.value.map((item) => ({ ...item, config: { ...item.config } }))
 }
 
-watch(() => props.canOverride, () => {
-  overrides.value = props.context.overrides.map(toOverrideInput)
-  clearPreview()
-})
+watch(
+  () => props.canOverride,
+  () => {
+    overrides.value = props.context.overrides.map(toOverrideInput)
+    clearPreview()
+  },
+)
 
 function toOverrideInput(value: TenantCapabilityOverride): CapabilityOverrideInput {
   return {

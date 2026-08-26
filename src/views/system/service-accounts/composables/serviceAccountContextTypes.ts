@@ -9,7 +9,7 @@ export interface ServiceAccountIdentity {
   userId: string
 }
 
-export type ServiceResourcePageState = { page: number, page_size: number }
+export type ServiceResourcePageState = { page: number; page_size: number }
 export type ServiceAccountIdentityGuard = IdentityOperationGuard
 
 export function sameServiceAccountIdentity(
@@ -26,6 +26,8 @@ export function sameServiceAccountPageQuery(
   return left.page === right.page && left.page_size === right.page_size
 }
 
-export function copyServiceAccountQuery<T extends { page?: number, page_size?: number }>(query: T): T {
+export function copyServiceAccountQuery<T extends { page?: number; page_size?: number }>(
+  query: T,
+): T {
   return { ...query }
 }

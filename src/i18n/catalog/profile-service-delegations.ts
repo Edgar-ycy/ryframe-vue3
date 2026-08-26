@@ -9,12 +9,14 @@ export const profileServiceDelegationsMessages = {
       savedConfirmation: '我已将该安全材料保存到受控的密钥管理器',
       closeAfterSaved: '已安全保存并关闭',
       close: '关闭',
-      replayUnavailable: '这是幂等重放结果，服务端不会再次返回一次性安全材料。请使用首次响应中已保存的值；若已遗失，请创建新的材料并撤销旧记录。',
+      replayUnavailable:
+        '这是幂等重放结果，服务端不会再次返回一次性安全材料。请使用首次响应中已保存的值；若已遗失，请创建新的材料并撤销旧记录。',
     },
     profile: {
       serviceDelegations: {
         title: 'Agent 服务委托',
-        description: '将你与服务账号当前共同拥有的固定只读能力限时委托给该账号。双方任一方失去权限后，委托不会继续授权。',
+        description:
+          '将你与服务账号当前共同拥有的固定只读能力限时委托给该账号。双方任一方失去权限后，委托不会继续授权。',
         create: '创建委托',
         refresh: '刷新委托',
         retry: '重新加载',
@@ -58,20 +60,24 @@ export const profileServiceDelegationsMessages = {
   },
   'en-US': {
     oneTimeMaterial: {
-      warning: 'This sensitive material is shown only once. Copy it into an approved secrets manager before closing.',
-      memoryOnly: 'This page keeps the value only in this dialog and never writes it to browser cache or local storage.',
+      warning:
+        'This sensitive material is shown only once. Copy it into an approved secrets manager before closing.',
+      memoryOnly:
+        'This page keeps the value only in this dialog and never writes it to browser cache or local storage.',
       copy: 'Copy',
       copied: 'Copied. Store it in an approved secrets manager now.',
       copyUnavailable: 'Automatic copy is unavailable. Select and copy the value manually.',
       savedConfirmation: 'I stored this sensitive material in an approved secrets manager',
       closeAfterSaved: 'Stored safely — close',
       close: 'Close',
-      replayUnavailable: 'This is an idempotent replay, so the server did not return the one-time material again. Use the value saved from the first response. If it was lost, create new material and revoke the old record.',
+      replayUnavailable:
+        'This is an idempotent replay, so the server did not return the one-time material again. Use the value saved from the first response. If it was lost, create new material and revoke the old record.',
     },
     profile: {
       serviceDelegations: {
         title: 'Agent service delegations',
-        description: 'Temporarily delegate fixed read-only capabilities that you and a service account currently share. The delegation grants nothing after either principal loses permission.',
+        description:
+          'Temporarily delegate fixed read-only capabilities that you and a service account currently share. The delegation grants nothing after either principal loses permission.',
         create: 'Create delegation',
         refresh: 'Refresh delegations',
         retry: 'Try again',
@@ -92,7 +98,8 @@ export const profileServiceDelegationsMessages = {
         createTitle: 'Create a time-limited Agent delegation',
         accountPlaceholder: 'Select a service account',
         capabilitiesPlaceholder: 'Select capabilities shared by both principals',
-        capabilityHint: 'Candidates come from the server’s fixed registry and are already intersected with your and the service account’s current permissions.',
+        capabilityHint:
+          'Candidates come from the server’s fixed registry and are already intersected with your and the service account’s current permissions.',
         reasonPlaceholder: 'Describe the business purpose, owner, and intended lifetime',
         expiration: 'Expiration',
         defaultExpiration: 'Defaults to 24 hours; maximum 30 days',
@@ -106,9 +113,11 @@ export const profileServiceDelegationsMessages = {
         revokedSuccess: 'Service delegation revoked',
         tokenTitle: 'Store the one-time delegation token',
         token: 'Complete delegation token',
-        tokenWarning: 'The delegation token is shown only once. Store it in an approved secrets manager before closing; the UI cannot retrieve it again.',
+        tokenWarning:
+          'The delegation token is shown only once. Store it in an approved secrets manager before closing; the UI cannot retrieve it again.',
         revokeConfirmTitle: 'Revoke delegation',
-        revokeConfirm: 'Revoke the delegation to “{account}”? Representative calls using this token will fail immediately.',
+        revokeConfirm:
+          'Revoke the delegation to “{account}”? Representative calls using this token will fail immediately.',
         notAvailable: '—',
       },
     },

@@ -48,7 +48,10 @@ import ProfileDetailsForm from './components/ProfileDetailsForm.vue'
 import ProfilePasswordForm from './components/ProfilePasswordForm.vue'
 import ProfileSessionsCard from './components/ProfileSessionsCard.vue'
 import ProfileServiceDelegationsCard from './components/ProfileServiceDelegationsCard.vue'
-import type { CreateProfileServiceDelegationInput, ProfileServiceDelegation } from '@/api/modules/profileServiceDelegation'
+import type {
+  CreateProfileServiceDelegationInput,
+  ProfileServiceDelegation,
+} from '@/api/modules/profileServiceDelegation'
 import { useAuthSessionManagement } from './useAuthSessionManagement'
 import { useProfileManagement } from './useProfileManagement'
 import { useServiceDelegationManagement } from './useServiceDelegationManagement'
@@ -57,13 +60,8 @@ import { useTenantContextStore } from '@/app/tenant-context'
 
 const { t } = useI18n()
 const tenantContext = useTenantContextStore()
-const {
-  handleAvatarUpdated,
-  handleProfileSaved,
-  loading,
-  profile,
-  userStore,
-} = useProfileManagement(t)
+const { handleAvatarUpdated, handleProfileSaved, loading, profile, userStore } =
+  useProfileManagement(t)
 
 const {
   devices: sessionDevices,

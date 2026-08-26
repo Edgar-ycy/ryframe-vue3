@@ -2,7 +2,7 @@
   <div class="sidebar-container">
     <div v-if="settingsStore.sidebarLogo" class="logo">
       <span v-show="!appStore.sidebarCollapsed">RyFrame</span>
-      <span v-show="appStore.sidebarCollapsed" style="font-size: 16px;">R</span>
+      <span v-show="appStore.sidebarCollapsed" style="font-size: 16px">R</span>
     </div>
     <el-scrollbar>
       <el-menu
@@ -17,7 +17,9 @@
         <template v-for="menu in permissionStore.menus" :key="menu.path">
           <el-sub-menu v-if="isSubMenu(menu)" :index="menu.path">
             <template #title>
-              <el-icon v-if="menu.meta?.icon"><component :is="resolveElementIcon(menu.meta.icon)" /></el-icon>
+              <el-icon v-if="menu.meta?.icon"
+                ><component :is="resolveElementIcon(menu.meta.icon)"
+              /></el-icon>
               <span>{{ translateNavigationTitle(menu.meta?.title) }}</span>
             </template>
             <el-menu-item
@@ -25,7 +27,9 @@
               :key="child.path"
               :index="resolvePath(menu.path, child.path)"
             >
-              <el-icon v-if="child.meta?.icon"><component :is="resolveElementIcon(child.meta.icon)" /></el-icon>
+              <el-icon v-if="child.meta?.icon"
+                ><component :is="resolveElementIcon(child.meta.icon)"
+              /></el-icon>
               <template #title>{{ translateNavigationTitle(child.meta?.title) }}</template>
             </el-menu-item>
           </el-sub-menu>
@@ -63,7 +67,7 @@ function handleMenuSelect(indexPath: string): void {
 }
 
 function visibleChildren(menu: RouteRecordRaw): RouteRecordRaw[] {
-  return (menu.children || []).filter(child => !child.meta?.hidden)
+  return (menu.children || []).filter((child) => !child.meta?.hidden)
 }
 
 function isSubMenu(menu: RouteRecordRaw): boolean {

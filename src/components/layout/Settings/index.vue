@@ -55,13 +55,19 @@
 
         <div class="setting-section">
           <div class="setting-label">{{ t('settings.tagsView') }}</div>
-          <el-switch :model-value="settingsStore.tagsView" @change="settingsStore.toggleTagsView()" />
+          <el-switch
+            :model-value="settingsStore.tagsView"
+            @change="settingsStore.toggleTagsView()"
+          />
           <span class="setting-hint">{{ t('settings.tagsViewHint') }}</span>
         </div>
 
         <div class="setting-section">
           <div class="setting-label">{{ t('settings.sidebarLogo') }}</div>
-          <el-switch :model-value="settingsStore.sidebarLogo" @change="settingsStore.toggleSidebarLogo()" />
+          <el-switch
+            :model-value="settingsStore.sidebarLogo"
+            @change="settingsStore.toggleSidebarLogo()"
+          />
           <span class="setting-hint">{{ t('settings.sidebarLogoHint') }}</span>
         </div>
 
@@ -92,23 +98,19 @@ const visible = defineModel<boolean>({ default: false })
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const { t } = useI18n()
-const localeMutation = useTenantMutation<void, AppLocale>(
-  () => userStore.tenantId,
-  'profile',
-  {
-    mutationFn: async locale => {
-      await updateProfile({
-        nickname: userStore.nickname,
-        email: userStore.email || undefined,
-        phone: userStore.phone || undefined,
-        preferred_locale: locale,
-      })
-    },
-    onSuccess: (_data, locale) => {
-      userStore.setPreferredLocale(locale)
-    },
+const localeMutation = useTenantMutation<void, AppLocale>(() => userStore.tenantId, 'profile', {
+  mutationFn: async (locale) => {
+    await updateProfile({
+      nickname: userStore.nickname,
+      email: userStore.email || undefined,
+      phone: userStore.phone || undefined,
+      preferred_locale: locale,
+    })
   },
-)
+  onSuccess: (_data, locale) => {
+    userStore.setPreferredLocale(locale)
+  },
+})
 const localeSaving = localeMutation.pending
 
 async function handleLocaleChange(value: string): Promise<void> {
@@ -126,7 +128,9 @@ async function handleLocaleChange(value: string): Promise<void> {
 </script>
 
 <style scoped>
-.drawer-body { padding: 0 8px; }
+.drawer-body {
+  padding: 0 8px;
+}
 
 .setting-section {
   display: flex;

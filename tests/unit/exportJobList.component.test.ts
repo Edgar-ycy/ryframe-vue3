@@ -6,9 +6,8 @@ import type { ExportJob } from '@/api/modules/exportJob'
 import { i18n } from '@/i18n'
 import ExportJobList from '@/views/profile/exports/components/ExportJobList.vue'
 
-const PassThrough: FunctionalComponent = (_props, { attrs, slots }) => (
+const PassThrough: FunctionalComponent = (_props, { attrs, slots }) =>
   h('span', attrs, slots.default?.())
-)
 const TableStub: FunctionalComponent = (_props, { slots }) => h('div', slots.default?.())
 const EmptyStub: FunctionalComponent = () => null
 
@@ -34,19 +33,21 @@ describe('导出任务列表组件', () => {
       exportJob('active', 'running', '执行中.xlsx'),
     ]
     const app = createSSRApp({
-      render: () => h(ExportJobList, {
-        canCancel: (status: string) => status === 'queued' || status === 'running',
-        canDelete: (status: string) => ['succeeded', 'failed', 'cancelled', 'expired'].includes(status),
-        deletingJobIds: [],
-        displayName: (job: ExportJob) => job.result_file_name ?? job.id,
-        isDownloadUnavailable: () => false,
-        jobs,
-        loading: false,
-        resourceLabel: () => '用户',
-        selectedJobIds: ['done'],
-        statusLabel: status => status,
-        visibleJobs: jobs,
-      }),
+      render: () =>
+        h(ExportJobList, {
+          canCancel: (status: string) => status === 'queued' || status === 'running',
+          canDelete: (status: string) =>
+            ['succeeded', 'failed', 'cancelled', 'expired'].includes(status),
+          deletingJobIds: [],
+          displayName: (job: ExportJob) => job.result_file_name ?? job.id,
+          isDownloadUnavailable: () => false,
+          jobs,
+          loading: false,
+          resourceLabel: () => '用户',
+          selectedJobIds: ['done'],
+          statusLabel: (status) => status,
+          visibleJobs: jobs,
+        }),
     })
     app.use(i18n)
     app.component('ElButton', PassThrough)
@@ -60,8 +61,7 @@ describe('导出任务列表组件', () => {
     let html: string
     try {
       html = await renderToString(app)
-    }
-    finally {
+    } finally {
       i18n.global.locale.value = previousLocale
     }
 

@@ -1,71 +1,71 @@
 /* ====== 深色主题 ====== */
 html.dark {
   --bg-color: #111827;
-  --bg-color-page: #0F172A;
-  --color-text-primary: #F1F5F9;
-  --color-text-regular: #CBD5E1;
-  --color-text-secondary: #94A3B8;
-  --border-color-base: #1E293B;
-  --border-color-light: #1A2236;
+  --bg-color-page: #0f172a;
+  --color-text-primary: #f1f5f9;
+  --color-text-regular: #cbd5e1;
+  --color-text-secondary: #94a3b8;
+  --border-color-base: #1e293b;
+  --border-color-light: #1a2236;
 
   /* ====== Element Plus 全局暗色变量 ====== */
   --el-bg-color: #111827;
-  --el-bg-color-overlay: #1E293B;
-  --el-bg-color-page: #0F172A;
-  --el-text-color-primary: #F1F5F9;
-  --el-text-color-regular: #CBD5E1;
-  --el-text-color-secondary: #94A3B8;
-  --el-text-color-placeholder: #64748B;
-  --el-text-color-disabled: #4B5563;
-  --el-border-color: #1E293B;
+  --el-bg-color-overlay: #1e293b;
+  --el-bg-color-page: #0f172a;
+  --el-text-color-primary: #f1f5f9;
+  --el-text-color-regular: #cbd5e1;
+  --el-text-color-secondary: #94a3b8;
+  --el-text-color-placeholder: #64748b;
+  --el-text-color-disabled: #4b5563;
+  --el-border-color: #1e293b;
   --el-border-color-light: #334155;
-  --el-border-color-lighter: #1E293B;
-  --el-border-color-extra-light: #1E293B;
+  --el-border-color-lighter: #1e293b;
+  --el-border-color-extra-light: #1e293b;
   --el-border-color-dark: #475569;
-  --el-fill-color: #1E293B;
-  --el-fill-color-light: #1A2236;
+  --el-fill-color: #1e293b;
+  --el-fill-color-light: #1a2236;
   --el-fill-color-lighter: #334155;
   --el-fill-color-blank: #111827;
   --el-mask-color: rgb(0 0 0 / 60%);
 
   /* 按钮 */
-  --el-button-bg-color: #1E293B;
+  --el-button-bg-color: #1e293b;
   --el-button-border-color: #334155;
-  --el-button-text-color: #CBD5E1;
+  --el-button-text-color: #cbd5e1;
   --el-button-hover-bg-color: #334155;
   --el-button-hover-border-color: #475569;
-  --el-button-active-bg-color: #0F172A;
-  --el-button-disabled-bg-color: #1E293B;
+  --el-button-active-bg-color: #0f172a;
+  --el-button-disabled-bg-color: #1e293b;
   --el-button-disabled-border-color: #334155;
-  --el-button-disabled-text-color: #64748B;
+  --el-button-disabled-text-color: #64748b;
 
   /* 表单 */
-  --el-form-label-color: #CBD5E1;
-  --el-input-bg-color: #1E293B;
+  --el-form-label-color: #cbd5e1;
+  --el-input-bg-color: #1e293b;
   --el-input-border-color: #334155;
   --el-input-hover-border-color: #475569;
   --el-input-focus-border-color: var(--color-primary);
-  --el-input-placeholder-color: #64748B;
-  --el-input-text-color: #CBD5E1;
+  --el-input-placeholder-color: #64748b;
+  --el-input-text-color: #cbd5e1;
 
   /* 菜单 */
   --el-menu-bg-color: #111827;
-  --el-menu-text-color: #CBD5E1;
+  --el-menu-text-color: #cbd5e1;
   --el-menu-hover-bg-color: rgb(99 102 241 / 10%);
-  --el-menu-active-color: #818CF8;
+  --el-menu-active-color: #818cf8;
   --el-menu-border-color: transparent;
 
   /* 弹出框 / 下拉菜单 / 选择器 */
-  --el-popover-bg-color: #1E293B;
+  --el-popover-bg-color: #1e293b;
   --el-popover-border-color: #334155;
   --el-dropdown-menuItem-hover-fill: var(--border-color-light);
   --el-dropdown-menuItem-hover-color: var(--color-primary);
   --el-select-option-hover-bg: #334155;
 
   /* 标签 */
-  --el-tag-bg-color: #1E293B;
+  --el-tag-bg-color: #1e293b;
   --el-tag-border-color: #334155;
-  --el-tag-text-color: #CBD5E1;
+  --el-tag-text-color: #cbd5e1;
 
   .sidebar-container {
     background: var(--sidebar-bg);

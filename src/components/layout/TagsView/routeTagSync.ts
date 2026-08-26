@@ -22,5 +22,5 @@ export function installRouteTagSync(
   addView: (view: TagView) => void,
 ): () => void {
   addRouteTag(currentRoute, addView)
-  return router.afterEach(to => addRouteTag(to, addView))
+  return router.afterEach((to) => addRouteTag(to, addView))
 }

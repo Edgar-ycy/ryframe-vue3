@@ -20,13 +20,24 @@
         class="imports-table"
         :empty-text="t('common.noData')"
       >
-        <el-table-column prop="source_name" :label="t('system.userImport.sourceName')" min-width="180" show-overflow-tooltip />
-        <el-table-column :label="t('system.userImport.requester')" min-width="130" show-overflow-tooltip>
+        <el-table-column
+          prop="source_name"
+          :label="t('system.userImport.sourceName')"
+          min-width="180"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          :label="t('system.userImport.requester')"
+          min-width="130"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">{{ row.requester_username || '—' }}</template>
         </el-table-column>
         <el-table-column :label="t('system.userImport.status')" width="110">
           <template #default="{ row }">
-            <el-tag :type="statusTag(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+            <el-tag :type="statusTag(row.status)" size="small">{{
+              statusLabel(row.status)
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column :label="t('system.userImport.progress')" min-width="190">
@@ -35,15 +46,29 @@
             <small>{{ row.processed_rows }} / {{ row.total_rows || '—' }}</small>
           </template>
         </el-table-column>
-        <el-table-column prop="success_count" :label="t('system.userImport.successCount')" width="86" />
-        <el-table-column prop="skipped_count" :label="t('system.userImport.skippedCount')" width="86" />
-        <el-table-column prop="failure_count" :label="t('system.userImport.failureCount')" width="86" />
+        <el-table-column
+          prop="success_count"
+          :label="t('system.userImport.successCount')"
+          width="86"
+        />
+        <el-table-column
+          prop="skipped_count"
+          :label="t('system.userImport.skippedCount')"
+          width="86"
+        />
+        <el-table-column
+          prop="failure_count"
+          :label="t('system.userImport.failureCount')"
+          width="86"
+        />
         <el-table-column :label="t('system.userImport.createdAt')" min-width="160">
           <template #default="{ row }">{{ formatLocalizedDate(row.created_at) }}</template>
         </el-table-column>
         <el-table-column :label="t('system.userImport.operation')" min-width="230" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDetails(row)">{{ t('system.userImport.details') }}</el-button>
+            <el-button type="primary" link @click="openDetails(row)">{{
+              t('system.userImport.details')
+            }}</el-button>
             <el-button
               v-if="isActive(row.status) && hasPermission('system:user-import:cancel')"
               type="danger"
@@ -81,14 +106,30 @@
       <el-divider />
       <h3 class="detail-title">{{ t('system.userImport.details') }}</h3>
       <el-descriptions :column="2" border class="job-details">
-        <el-descriptions-item :label="t('system.userImport.sourceName')">{{ currentJob()!.source_name }}</el-descriptions-item>
-        <el-descriptions-item :label="t('system.userImport.requester')">{{ currentJob()!.requester_username || '—' }}</el-descriptions-item>
-        <el-descriptions-item :label="t('system.userImport.status')">{{ statusLabel(currentJob()!.status) }}</el-descriptions-item>
-        <el-descriptions-item :label="t('system.userImport.totalRows')">{{ currentJob()!.total_rows }}</el-descriptions-item>
-        <el-descriptions-item :label="t('system.userImport.processedRows')">{{ currentJob()!.processed_rows }}</el-descriptions-item>
-        <el-descriptions-item :label="t('system.userImport.startedAt')">{{ formatOptionalLocalizedDate(currentJob()!.started_at) }}</el-descriptions-item>
-        <el-descriptions-item :label="t('system.userImport.completedAt')">{{ formatOptionalLocalizedDate(currentJob()!.completed_at) }}</el-descriptions-item>
-        <el-descriptions-item :label="t('system.userImport.lastError')" :span="2">{{ currentJob()!.last_error || '—' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.sourceName')">{{
+          currentJob()!.source_name
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.requester')">{{
+          currentJob()!.requester_username || '—'
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.status')">{{
+          statusLabel(currentJob()!.status)
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.totalRows')">{{
+          currentJob()!.total_rows
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.processedRows')">{{
+          currentJob()!.processed_rows
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.startedAt')">{{
+          formatOptionalLocalizedDate(currentJob()!.started_at)
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.completedAt')">{{
+          formatOptionalLocalizedDate(currentJob()!.completed_at)
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('system.userImport.lastError')" :span="2">{{
+          currentJob()!.last_error || '—'
+        }}</el-descriptions-item>
       </el-descriptions>
 
       <h3 class="detail-title">{{ t('system.userImport.rowResults') }}</h3>
@@ -101,13 +142,32 @@
           class="rows-table"
           :empty-text="t('system.userImport.noRows')"
         >
-          <el-table-column prop="row_number" :label="t('system.userImport.rowNumber')" width="110" />
-          <el-table-column prop="username" :label="t('system.userImport.username')" min-width="140" show-overflow-tooltip />
+          <el-table-column
+            prop="row_number"
+            :label="t('system.userImport.rowNumber')"
+            width="110"
+          />
+          <el-table-column
+            prop="username"
+            :label="t('system.userImport.username')"
+            min-width="140"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('system.userImport.outcome')" width="100">
             <template #default="{ row }">{{ outcomeLabel(row.outcome) }}</template>
           </el-table-column>
-          <el-table-column prop="code" :label="t('system.userImport.code')" min-width="150" show-overflow-tooltip />
-          <el-table-column prop="message" :label="t('system.userImport.message')" min-width="240" show-overflow-tooltip />
+          <el-table-column
+            prop="code"
+            :label="t('system.userImport.code')"
+            min-width="150"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="message"
+            :label="t('system.userImport.message')"
+            min-width="240"
+            show-overflow-tooltip
+          />
         </el-table>
       </div>
       <el-pagination
@@ -161,7 +221,7 @@ const importsQuery = useTenantQuery<PageResponse<UserImportJob>>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && queryReady.value,
   'user-imports',
   () => ({ scope: 'list', ...query.value }),
-  async signal => {
+  async (signal) => {
     const response = await listUserImports(query.value, signal)
     return response.data ?? emptyPageResponse<UserImportJob>(query.value)
   },
@@ -173,7 +233,7 @@ const detailQuery = useTenantQuery<UserImportJob>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(selectedId.value),
   'user-import-detail',
   () => ({ id: selectedId.value }),
-  async signal => requireOperationData(await getUserImport(selectedId.value, signal)),
+  async (signal) => requireOperationData(await getUserImport(selectedId.value, signal)),
   { refetchInterval: false },
 )
 
@@ -182,7 +242,7 @@ const rowsQuery = useTenantQuery<PageResponse<UserImportRow>>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(selectedId.value),
   'user-import-rows',
   () => ({ id: selectedId.value, ...rowQuery.value }),
-  async signal => {
+  async (signal) => {
     if (!selectedId.value) return emptyPageResponse<UserImportRow>(rowQuery.value)
     const response = await listUserImportRows(selectedId.value, rowQuery.value, signal)
     return response.data ?? emptyPageResponse<UserImportRow>(rowQuery.value)
@@ -190,14 +250,10 @@ const rowsQuery = useTenantQuery<PageResponse<UserImportRow>>(
   { refetchInterval: false },
 )
 
-const cancelMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'user-imports',
-  {
-    mutationFn: (job: UserImportJob) => cancelUserImport(job.id),
-    onSuccess: () => ElMessage.success(t('system.userImport.cancelSuccess')),
-  },
-)
+const cancelMutation = useTenantMutation(() => userStore.tenantId, 'user-imports', {
+  mutationFn: (job: UserImportJob) => cancelUserImport(job.id),
+  onSuccess: () => ElMessage.success(t('system.userImport.cancelSuccess')),
+})
 
 onActivated(() => {
   if (visible.value) void refreshImports()
@@ -210,7 +266,7 @@ function isActive(status: string): boolean {
 }
 
 function hasActiveJobs(): boolean {
-  return (importsQuery.data.value?.items ?? []).some(job => isActive(job.status))
+  return (importsQuery.data.value?.items ?? []).some((job) => isActive(job.status))
 }
 
 function clearPolling(): void {
@@ -258,13 +314,15 @@ function openDetails(job: UserImportJob): void {
 }
 
 function currentJob(): UserImportJob | undefined {
-  return detailQuery.data.value
-    ?? importsQuery.data.value?.items.find(job => job.id === selectedId.value)
+  return (
+    detailQuery.data.value ??
+    importsQuery.data.value?.items.find((job) => job.id === selectedId.value)
+  )
 }
 
 function progress(job: UserImportJob): number {
   if (job.total_rows <= 0) return isActive(job.status) ? 0 : 100
-  return Math.min(100, Math.round(job.processed_rows / job.total_rows * 100))
+  return Math.min(100, Math.round((job.processed_rows / job.total_rows) * 100))
 }
 
 function progressStatus(status: string): '' | 'exception' | 'success' | 'warning' {
@@ -275,10 +333,15 @@ function progressStatus(status: string): '' | 'exception' | 'success' | 'warning
 }
 
 function statusLabel(status: string): string {
-  const key = {
-    pending: 'statusPending', running: 'statusRunning', succeeded: 'statusSucceeded',
-    partial: 'statusPartial', failed: 'statusFailed', cancelled: 'statusCancelled',
-  }[status] ?? 'statusFailed'
+  const key =
+    {
+      pending: 'statusPending',
+      running: 'statusRunning',
+      succeeded: 'statusSucceeded',
+      partial: 'statusPartial',
+      failed: 'statusFailed',
+      cancelled: 'statusCancelled',
+    }[status] ?? 'statusFailed'
   return t(`system.userImport.${key}`)
 }
 
@@ -291,7 +354,9 @@ function statusTag(status: string): 'danger' | 'info' | 'primary' | 'success' | 
 }
 
 function outcomeLabel(outcome: string): string {
-  return t(outcome === 'skipped' ? 'system.userImport.outcomeSkipped' : 'system.userImport.outcomeFailed')
+  return t(
+    outcome === 'skipped' ? 'system.userImport.outcomeSkipped' : 'system.userImport.outcomeFailed',
+  )
 }
 
 function isCancelling(id: string): boolean {
@@ -317,8 +382,7 @@ async function downloadReport(job: UserImportJob): Promise<void> {
     const blob = await downloadUserImportReport(job.id)
     downloadBlobDirect(blob, `${job.source_name.replace(/\.xlsx$/iu, '')}-report.xlsx`)
     ElMessage.success(t('shell.download.success'))
-  }
-  finally {
+  } finally {
     reportLoadingId.value = ''
   }
 }

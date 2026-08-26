@@ -15,9 +15,8 @@ describe('权限匹配', () => {
   })
 
   it('全部权限要求不会因其他角色信息而被绕过', () => {
-    expect(hasAllPermissions(
-      ['system:user:list'],
-      ['system:user:list', 'system:user:edit'],
-    )).toBe(false)
+    expect(hasAllPermissions(['system:user:list'], ['system:user:list', 'system:user:edit'])).toBe(
+      false,
+    )
   })
 })

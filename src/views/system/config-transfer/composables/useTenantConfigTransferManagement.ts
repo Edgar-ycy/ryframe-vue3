@@ -24,24 +24,19 @@ export function useTenantConfigTransferManagement() {
   const pageActive = ref(true)
 
   function currentIdentity(): TenantConfigIdentity | undefined {
-    if (
-      userStore.sessionStatus !== 'authenticated'
-      || !userStore.tenantId
-      || !userStore.userId
-    ) return undefined
+    if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId)
+      return undefined
     return { tenantId: userStore.tenantId, userId: String(userStore.userId) }
   }
 
   const operationScope = createIdentityOperationScope({
     currentIdentity,
     isActive: () => pageActive.value,
-    sameIdentity: (left, right) => (
-      left?.tenantId === right?.tenantId && left?.userId === right?.userId
-    ),
+    sameIdentity: (left, right) =>
+      left?.tenantId === right?.tenantId && left?.userId === right?.userId,
   })
-  const isCurrentIdentity = (identity: TenantConfigIdentity) => (
+  const isCurrentIdentity = (identity: TenantConfigIdentity) =>
     operationScope.isCurrentIdentity(identity)
-  )
   const canListPackages = () => hasPermission('system:config-package:list')
   const queries = useTenantConfigTransferQueries({
     pageActive,
@@ -117,11 +112,12 @@ export function useTenantConfigTransferManagement() {
     const guard = commands.requireOperationContext()
     const controller = operationScope.beginController()
     try {
-      const latest = requireOperationData(await getTenantConfigPackage(bundle.id, controller.signal))
+      const latest = requireOperationData(
+        await getTenantConfigPackage(bundle.id, controller.signal),
+      )
       commands.ensureOperationContext(identity, guard)
       queries.mergePackage(identity, latest)
-    }
-    finally {
+    } finally {
       operationScope.finishController(controller)
     }
   }
@@ -134,17 +130,15 @@ export function useTenantConfigTransferManagement() {
     const guard = commands.requireOperationContext()
     const controller = operationScope.beginController()
     try {
-      const latest = requireOperationData(await getTenantConfigTransfer(
-        transfer.id,
-        controller.signal,
-      ))
+      const latest = requireOperationData(
+        await getTenantConfigTransfer(transfer.id, controller.signal),
+      )
       commands.ensureOperationContext(identity, guard)
       commands.mergeTransfer(identity, latest)
       await nextTick()
       commands.ensureOperationContext(identity, guard)
       await queries.itemsQuery.refetch({ throwOnError: false })
-    }
-    finally {
+    } finally {
       operationScope.finishController(controller)
     }
   }

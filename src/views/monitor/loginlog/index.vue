@@ -3,10 +3,19 @@
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline>
         <el-form-item :label="t('monitor.loginLog.username')">
-          <el-input v-model="queryParams.user_name" :placeholder="t('monitor.loginLog.usernamePlaceholder')" clearable />
+          <el-input
+            v-model="queryParams.user_name"
+            :placeholder="t('monitor.loginLog.usernamePlaceholder')"
+            clearable
+          />
         </el-form-item>
         <el-form-item :label="t('monitor.loginLog.status')">
-          <el-select v-model="queryParams.status" :placeholder="t('monitor.loginLog.statusPlaceholder')" clearable style="width:100px">
+          <el-select
+            v-model="queryParams.status"
+            :placeholder="t('monitor.loginLog.statusPlaceholder')"
+            clearable
+            style="width: 100px"
+          >
             <el-option :label="t('monitor.loginLog.success')" value="1" />
             <el-option :label="t('monitor.loginLog.failed')" value="0" />
           </el-select>
@@ -19,12 +28,20 @@
             :start-placeholder="t('monitor.loginLog.startTime')"
             :end-placeholder="t('monitor.loginLog.endTime')"
             value-format="YYYY-MM-DDTHH:mm:ssZ"
-            style="width:340px"
+            style="width: 340px"
           />
         </el-form-item>
         <el-form-item>
-          <el-button v-perm="'system:logininfor:list'" type="primary" icon="Search" @click="handleSearch">{{ t('monitor.loginLog.search') }}</el-button>
-          <el-button v-perm="'system:logininfor:list'" icon="Refresh" @click="handleReset">{{ t('monitor.loginLog.reset') }}</el-button>
+          <el-button
+            v-perm="'system:logininfor:list'"
+            type="primary"
+            icon="Search"
+            @click="handleSearch"
+            >{{ t('monitor.loginLog.search') }}</el-button
+          >
+          <el-button v-perm="'system:logininfor:list'" icon="Refresh" @click="handleReset">{{
+            t('monitor.loginLog.reset')
+          }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -48,9 +65,21 @@
       <el-table v-loading="loading" :data="loginLogPage?.items ?? []" border stripe>
         <el-table-column prop="user_name" :label="t('monitor.loginLog.username')" />
         <el-table-column prop="ipaddr" :label="t('monitor.loginLog.ipAddress')" />
-        <el-table-column prop="login_location" :label="t('monitor.loginLog.loginLocation')" show-overflow-tooltip />
-        <el-table-column prop="browser" :label="t('monitor.loginLog.browser')" show-overflow-tooltip />
-        <el-table-column prop="os" :label="t('monitor.loginLog.operatingSystem')" show-overflow-tooltip />
+        <el-table-column
+          prop="login_location"
+          :label="t('monitor.loginLog.loginLocation')"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="browser"
+          :label="t('monitor.loginLog.browser')"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="os"
+          :label="t('monitor.loginLog.operatingSystem')"
+          show-overflow-tooltip
+        />
         <el-table-column prop="status" :label="t('monitor.loginLog.status')" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
@@ -60,21 +89,35 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="msg" :label="t('monitor.loginLog.message')" min-width="150" show-overflow-tooltip />
+        <el-table-column
+          prop="msg"
+          :label="t('monitor.loginLog.message')"
+          min-width="150"
+          show-overflow-tooltip
+        />
         <el-table-column :label="t('monitor.loginLog.loginTime')" min-width="160">
           <template #default="{ row }">{{ formatOptionalLocalizedDate(row.login_time) }}</template>
         </el-table-column>
         <el-table-column :label="t('monitor.loginLog.operation')" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'system:logininfor:list'" type="primary" link icon="View" @click="handleDetail(row)">{{ t('monitor.loginLog.details') }}</el-button>
+            <el-button
+              v-perm="'system:logininfor:list'"
+              type="primary"
+              link
+              icon="View"
+              @click="handleDetail(row)"
+              >{{ t('monitor.loginLog.details') }}</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="loginLogPage?.total ?? 0" :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper" background
+        :total="loginLogPage?.total ?? 0"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
         @change="fetchData"
       />
     </el-card>
@@ -82,16 +125,32 @@
     <!-- 详情弹窗 -->
     <el-dialog v-model="detailVisible" :title="t('monitor.loginLog.detailTitle')" width="550px">
       <el-descriptions :column="2" border size="small">
-        <el-descriptions-item :label="t('monitor.loginLog.username')">{{ detailRow.user_name }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.username')">{{
+          detailRow.user_name
+        }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.loginLog.status')">
-          <el-tag :type="detailRow.status === '1' ? 'success' : 'danger'" size="small">{{ detailRow.status === '1' ? t('monitor.loginLog.success') : t('monitor.loginLog.failed') }}</el-tag>
+          <el-tag :type="detailRow.status === '1' ? 'success' : 'danger'" size="small">{{
+            detailRow.status === '1' ? t('monitor.loginLog.success') : t('monitor.loginLog.failed')
+          }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.ipAddress')">{{ detailRow.ipaddr }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.loginLocation')">{{ detailRow.login_location }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.browser')">{{ detailRow.browser }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.operatingSystem')">{{ detailRow.os }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.loginTime')" :span="2">{{ formatOptionalLocalizedDate(detailRow.login_time) }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.loginLog.message')" :span="2">{{ detailRow.msg }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.ipAddress')">{{
+          detailRow.ipaddr
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.loginLocation')">{{
+          detailRow.login_location
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.browser')">{{
+          detailRow.browser
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.operatingSystem')">{{
+          detailRow.os
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.loginTime')" :span="2">{{
+          formatOptionalLocalizedDate(detailRow.login_time)
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.loginLog.message')" :span="2">{{
+          detailRow.msg
+        }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button @click="detailVisible = false">{{ t('monitor.loginLog.close') }}</el-button>
@@ -152,11 +211,12 @@ const loginLogsQuery = useTenantQuery<PageResponse<LoginLogRecord>>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-login-logs',
   () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
-  signal => runAppliedQuery(signal, async (query, requestSignal) => {
-    const params = { ...query }
-    const response = await listLoginLog(params, requestSignal)
-    return response.data ?? emptyPageResponse<LoginLogRecord>(params)
-  }),
+  (signal) =>
+    runAppliedQuery(signal, async (query, requestSignal) => {
+      const params = { ...query }
+      const response = await listLoginLog(params, requestSignal)
+      return response.data ?? emptyPageResponse<LoginLogRecord>(params)
+    }),
 )
 
 const loading = loginLogsQuery.isFetching
@@ -171,14 +231,8 @@ async function handleExport(): Promise<void> {
   const intent = normalizeExportIntent('loginlogs', successfulQuery)
   if (!(await confirmExportIntent(intent))) return
 
-  await submitExport(
-    intent.signature,
-    (idempotencyKey, signal) => exportLoginLog(
-      intent.filter,
-      idempotencyKey,
-      signal,
-      intent.isEmpty,
-    ),
+  await submitExport(intent.signature, (idempotencyKey, signal) =>
+    exportLoginLog(intent.filter, idempotencyKey, signal, intent.isEmpty),
   )
 }
 

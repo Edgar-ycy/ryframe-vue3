@@ -25,7 +25,7 @@ export function usePermissionManagement() {
     () => userStore.sessionStatus === 'authenticated',
     'permissions',
     () => ({ scope: 'tree' }),
-    async signal => {
+    async (signal) => {
       const response = await getPermissionTree(undefined, signal)
       return response.data ?? []
     },
@@ -37,7 +37,7 @@ export function usePermissionManagement() {
     () => userStore.tenantId,
     'permissions',
     {
-      mutationFn: async permission => {
+      mutationFn: async (permission) => {
         await deletePermission(permission.id)
       },
       onSuccess: () => {
@@ -54,36 +54,34 @@ export function usePermissionManagement() {
         if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
         return response.data
       },
-      onSuccess: report => {
+      onSuccess: (report) => {
         syncReport.value = report
-        ElMessage.success(
-          translate('system.permission.syncSuccess', { count: report.created }),
-        )
+        ElMessage.success(translate('system.permission.syncSuccess', { count: report.created }))
       },
     },
   )
 
-  const deletingId = computed<Id | null>(() => (
-    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
-  ))
+  const deletingId = computed<Id | null>(() =>
+    deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
+  )
   const syncLoading = syncMutation.pending
   function syncReportTitle(): string {
     if (!syncReport.value) return ''
     return translate(
-      syncReport.value.created > 0
-        ? 'system.permission.syncDone'
-        : 'system.permission.syncNoNew',
+      syncReport.value.created > 0 ? 'system.permission.syncDone' : 'system.permission.syncNoNew',
     )
   }
-  const parentTree = computed<PermissionTreeNode[]>(() => [{
-    id: '0',
-    name: translate('system.permission.root'),
-    code: '',
-    perm_type: 'menu',
-    sort: 0,
-    status: '1',
-    children: tableData.value ?? [],
-  }])
+  const parentTree = computed<PermissionTreeNode[]>(() => [
+    {
+      id: '0',
+      name: translate('system.permission.root'),
+      code: '',
+      perm_type: 'menu',
+      sort: 0,
+      status: '1',
+      children: tableData.value ?? [],
+    },
+  ])
 
   async function fetchData(): Promise<void> {
     await permissionsQuery.refetch({ throwOnError: true })
@@ -114,26 +112,17 @@ export function usePermissionManagement() {
     if (!confirmed) return
 
     await deleteMutation.mutateAsync(permission)
-    await Promise.all([
-      fetchData(),
-      refreshAccessibleRoutes(),
-    ])
+    await Promise.all([fetchData(), refreshAccessibleRoutes()])
   }
 
   async function handleSync(): Promise<void> {
     if (syncMutation.pending.value) return
     await syncMutation.mutateAsync()
-    await Promise.all([
-      fetchData(),
-      refreshAccessibleRoutes(),
-    ])
+    await Promise.all([fetchData(), refreshAccessibleRoutes()])
   }
 
   async function handleSaved(): Promise<void> {
-    await Promise.all([
-      fetchData(),
-      refreshAccessibleRoutes(),
-    ])
+    await Promise.all([fetchData(), refreshAccessibleRoutes()])
   }
 
   return {

@@ -1,7 +1,11 @@
 <template>
   <el-drawer
     v-model="visible"
-    :title="schedule ? t('monitor.schedules.historyTitle', { name: schedule.name }) : t('monitor.schedules.history')"
+    :title="
+      schedule
+        ? t('monitor.schedules.historyTitle', { name: schedule.name })
+        : t('monitor.schedules.history')
+    "
     size="min(760px, calc(100vw - 32px))"
     direction="rtl"
     @open="handleOpen"
@@ -10,23 +14,47 @@
     <template v-if="schedule">
       <el-form :model="queryParams" inline class="history-filters" @submit.prevent="handleSearch">
         <el-form-item :label="t('monitor.schedules.triggerKind')">
-          <el-select v-model="queryParams.trigger_kind" :placeholder="t('monitor.schedules.triggerKindPlaceholder')" clearable>
+          <el-select
+            v-model="queryParams.trigger_kind"
+            :placeholder="t('monitor.schedules.triggerKindPlaceholder')"
+            clearable
+          >
             <el-option :label="t('monitor.schedules.triggerScheduled')" value="scheduled" />
             <el-option :label="t('monitor.schedules.triggerMisfire')" value="misfire" />
             <el-option :label="t('monitor.schedules.triggerManual')" value="manual" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('monitor.schedules.outcome')">
-          <el-select v-model="queryParams.outcome" :placeholder="t('monitor.schedules.outcomePlaceholder')" clearable>
+          <el-select
+            v-model="queryParams.outcome"
+            :placeholder="t('monitor.schedules.outcomePlaceholder')"
+            clearable
+          >
             <el-option :label="t('monitor.schedules.outcomeEnqueued')" value="enqueued" />
-            <el-option :label="t('monitor.schedules.outcomeSkippedMisfire')" value="skipped_misfire" />
-            <el-option :label="t('monitor.schedules.outcomeSkippedConcurrency')" value="skipped_concurrency" />
-            <el-option :label="t('monitor.schedules.outcomeTargetUnavailable')" value="target_unavailable" />
-            <el-option :label="t('monitor.schedules.outcomeInvalidConfiguration')" value="invalid_configuration" />
+            <el-option
+              :label="t('monitor.schedules.outcomeSkippedMisfire')"
+              value="skipped_misfire"
+            />
+            <el-option
+              :label="t('monitor.schedules.outcomeSkippedConcurrency')"
+              value="skipped_concurrency"
+            />
+            <el-option
+              :label="t('monitor.schedules.outcomeTargetUnavailable')"
+              value="target_unavailable"
+            />
+            <el-option
+              :label="t('monitor.schedules.outcomeInvalidConfiguration')"
+              value="invalid_configuration"
+            />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('monitor.schedules.jobStatus')">
-          <el-select v-model="queryParams.background_job_status" :placeholder="t('monitor.schedules.statusPlaceholder')" clearable>
+          <el-select
+            v-model="queryParams.background_job_status"
+            :placeholder="t('monitor.schedules.statusPlaceholder')"
+            clearable
+          >
             <el-option :label="t('monitor.schedules.statusPending')" value="pending" />
             <el-option :label="t('monitor.schedules.statusRunning')" value="running" />
             <el-option :label="t('monitor.schedules.statusSucceeded')" value="succeeded" />
@@ -34,37 +62,83 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleSearch">{{ t('monitor.schedules.search') }}</el-button>
-          <el-button icon="Refresh" @click="handleReset">{{ t('monitor.schedules.reset') }}</el-button>
+          <el-button type="primary" icon="Search" @click="handleSearch">{{
+            t('monitor.schedules.search')
+          }}</el-button>
+          <el-button icon="Refresh" @click="handleReset">{{
+            t('monitor.schedules.reset')
+          }}</el-button>
         </el-form-item>
       </el-form>
 
-      <el-alert v-if="executionsError?.message" :title="executionsError.message" type="error" show-icon :closable="false" class="history-error" />
+      <el-alert
+        v-if="executionsError?.message"
+        :title="executionsError.message"
+        type="error"
+        show-icon
+        :closable="false"
+        class="history-error"
+      />
 
       <div class="table-scroll">
-        <el-table v-loading="loading" :data="executions?.items ?? []" border stripe class="history-table" :empty-text="t('monitor.schedules.emptyHistory')">
+        <el-table
+          v-loading="loading"
+          :data="executions?.items ?? []"
+          border
+          stripe
+          class="history-table"
+          :empty-text="t('monitor.schedules.emptyHistory')"
+        >
           <el-table-column :label="t('monitor.schedules.triggerKind')" min-width="118">
-            <template #default="{ row }"><el-tag :type="triggerTagType(row.trigger_kind)" size="small">{{ triggerLabel(row.trigger_kind) }}</el-tag></template>
+            <template #default="{ row }"
+              ><el-tag :type="triggerTagType(row.trigger_kind)" size="small">{{
+                triggerLabel(row.trigger_kind)
+              }}</el-tag></template
+            >
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.scheduledFor')" min-width="160">
             <template #default="{ row }">{{ formatDate(row.scheduled_for) }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.outcome')" min-width="150">
-            <template #default="{ row }"><el-tag :type="outcomeTagType(row.outcome)" size="small">{{ outcomeLabel(row.outcome) }}</el-tag></template>
+            <template #default="{ row }"
+              ><el-tag :type="outcomeTagType(row.outcome)" size="small">{{
+                outcomeLabel(row.outcome)
+              }}</el-tag></template
+            >
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.jobStatus')" min-width="126">
             <template #default="{ row }">
-              <el-tag v-if="row.background_job_status" :type="jobStatusTagType(row.background_job_status)" size="small">{{ jobStatusLabel(row.background_job_status) }}</el-tag>
+              <el-tag
+                v-if="row.background_job_status"
+                :type="jobStatusTagType(row.background_job_status)"
+                size="small"
+                >{{ jobStatusLabel(row.background_job_status) }}</el-tag
+              >
               <span v-else>—</span>
             </template>
           </el-table-column>
-          <el-table-column :label="t('monitor.schedules.jobId')" min-width="170" show-overflow-tooltip>
+          <el-table-column
+            :label="t('monitor.schedules.jobId')"
+            min-width="170"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
-              <el-button v-if="row.background_job_id" type="primary" link @click="goToJob(row.schedule_id)">{{ row.background_job_id }}</el-button>
+              <el-button
+                v-if="row.background_job_id"
+                type="primary"
+                link
+                @click="goToJob(row.schedule_id)"
+                >{{ row.background_job_id }}</el-button
+              >
               <span v-else>—</span>
             </template>
           </el-table-column>
-          <el-table-column prop="detail" :label="t('monitor.schedules.detail')" min-width="180" show-overflow-tooltip>
+          <el-table-column
+            prop="detail"
+            :label="t('monitor.schedules.detail')"
+            min-width="180"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">{{ row.detail || '—' }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.schedules.createdAt')" min-width="160">
@@ -111,15 +185,17 @@ const queryReady = ref(false)
 
 const executionsQuery = useTenantQuery<PageResponse<JobScheduleExecutionRecord>>(
   () => userStore.tenantId,
-  () => (
-    userStore.sessionStatus === 'authenticated'
-    && visible.value
-    && queryReady.value
-    && Boolean(props.schedule)
-  ),
+  () =>
+    userStore.sessionStatus === 'authenticated' &&
+    visible.value &&
+    queryReady.value &&
+    Boolean(props.schedule),
   MONITOR_SCHEDULE_EXECUTIONS_RESOURCE,
-  () => ({ scheduleId: props.schedule?.id, filters: normalizeQueryParams(activeQueryParams.value) }),
-  async signal => {
+  () => ({
+    scheduleId: props.schedule?.id,
+    filters: normalizeQueryParams(activeQueryParams.value),
+  }),
+  async (signal) => {
     const params = normalizeQueryParams(activeQueryParams.value)
     if (!props.schedule) return emptyPageResponse<JobScheduleExecutionRecord>(params)
     const response = await listScheduleExecutions(props.schedule.id, params, signal)

@@ -19,13 +19,11 @@ function resultsFor(event) {
   if (event === 'push' || event === 'pull_request') {
     common.check = 'success'
     common['windows-smoke'] = 'success'
-  }
-  else if (event === 'schedule') {
+  } else if (event === 'schedule') {
     common['node-22-compatibility'] = 'success'
     common['supply-chain'] = 'success'
     common['osv-scan'] = 'success'
-  }
-  else if (event === 'workflow_dispatch') {
+  } else if (event === 'workflow_dispatch') {
     common.check = 'success'
     common['supply-chain'] = 'success'
     common['osv-scan'] = 'success'

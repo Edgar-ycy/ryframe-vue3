@@ -17,10 +17,7 @@ function redact(value: string): string {
       /(["']?authorization["']?\s*[:=]\s*)(?:bearer\s+)?(?:["'][^"']*["']|[^\s,;&}\]]+)/giu,
       '$1[REDACTED]',
     )
-    .replace(
-      /(["']?cookie["']?\s*[:=]\s*)(?:["'][^"']*["']|[^\r\n,}]*)/giu,
-      '$1[REDACTED]',
-    )
+    .replace(/(["']?cookie["']?\s*[:=]\s*)(?:["'][^"']*["']|[^\r\n,}]*)/giu, '$1[REDACTED]')
     .replace(
       /(["']?(?:password|secret|ticket|token|(?:access|refresh|id|csrf|websocket)[_-]?token|x[-_]?csrf[-_]?token)["']?\s*[:=]\s*)(?:bearer\s+)?(?:["'][^"']*["']|[^\s,;&}\]]+)/giu,
       '$1[REDACTED]',
@@ -47,8 +44,7 @@ function describeUnknownError(error: unknown): string {
     try {
       const serialized = JSON.stringify(error)
       if (serialized !== undefined) return serialized
-    }
-    catch {
+    } catch {
       // 循环引用等无法序列化的对象退回 toString。
     }
   }
@@ -64,13 +60,14 @@ function reportUnhandled(error: unknown, context: ErrorContext): void {
   }
 
   if (import.meta.env.DEV) {
-    const details = error instanceof Error
-      ? {
-          name: redact(error.name),
-          message: redact(error.message),
-          stack: error.stack ? redact(error.stack) : undefined,
-        }
-      : { message: redact(describeUnknownError(error)) }
+    const details =
+      error instanceof Error
+        ? {
+            name: redact(error.name),
+            message: redact(error.message),
+            stack: error.stack ? redact(error.stack) : undefined,
+          }
+        : { message: redact(describeUnknownError(error)) }
     console.error('[RyFrame] 未捕获运行时错误', details, redactContext(context))
     return
   }

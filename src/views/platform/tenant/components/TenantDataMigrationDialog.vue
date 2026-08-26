@@ -50,16 +50,26 @@
       <section v-if="preview" class="preview-panel" aria-live="polite">
         <h3>{{ t('tenantData.previewTitle') }}</h3>
         <el-alert
-          :title="previewAllowed ? t('tenantData.previewEligible') : t('tenantData.previewIneligible')"
+          :title="
+            previewAllowed ? t('tenantData.previewEligible') : t('tenantData.previewIneligible')
+          "
           :type="previewAllowed ? 'success' : 'error'"
           show-icon
           :closable="false"
         />
         <el-descriptions :column="2" border>
-          <el-descriptions-item :label="t('tenantData.sourceTarget')">{{ preview.source_target_key }}</el-descriptions-item>
-          <el-descriptions-item :label="t('tenantData.targetTarget')">{{ preview.target_target_key }}</el-descriptions-item>
-          <el-descriptions-item :label="t('tenantData.sourceGeneration')">{{ preview.expected_placement_generation }}</el-descriptions-item>
-          <el-descriptions-item :label="t('tenantData.targetGeneration')">{{ preview.target_generation }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.sourceTarget')">{{
+            preview.source_target_key
+          }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.targetTarget')">{{
+            preview.target_target_key
+          }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.sourceGeneration')">{{
+            preview.expected_placement_generation
+          }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.targetGeneration')">{{
+            preview.target_generation
+          }}</el-descriptions-item>
           <el-descriptions-item :label="t('tenantData.writeMaintenanceRequired')">
             {{ preview.impact.stop_write ? t('tenantData.yes') : t('tenantData.no') }}
           </el-descriptions-item>
@@ -73,11 +83,25 @@
             {{ preview.impact.rollback_boundary }}
           </el-descriptions-item>
         </el-descriptions>
-        <el-alert v-if="preview.blockers.length" :title="t('tenantData.blockers')" type="error" :closable="false">
-          <ul><li v-for="blocker in preview.blockers" :key="blocker">{{ blocker }}</li></ul>
+        <el-alert
+          v-if="preview.blockers.length"
+          :title="t('tenantData.blockers')"
+          type="error"
+          :closable="false"
+        >
+          <ul>
+            <li v-for="blocker in preview.blockers" :key="blocker">{{ blocker }}</li>
+          </ul>
         </el-alert>
-        <el-alert v-if="preview.warnings.length" :title="t('tenantData.warnings')" type="warning" :closable="false">
-          <ul><li v-for="warning in preview.warnings" :key="warning">{{ warning }}</li></ul>
+        <el-alert
+          v-if="preview.warnings.length"
+          :title="t('tenantData.warnings')"
+          type="warning"
+          :closable="false"
+        >
+          <ul>
+            <li v-for="warning in preview.warnings" :key="warning">{{ warning }}</li>
+          </ul>
         </el-alert>
         <el-form-item
           v-if="previewAllowed"
@@ -109,7 +133,9 @@
     </el-form>
 
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">{{ t('tenantCapacity.cancel') }}</el-button>
+      <el-button :disabled="submitting" @click="visible = false">{{
+        t('tenantCapacity.cancel')
+      }}</el-button>
       <el-button
         :loading="previewMutation.pending.value"
         :disabled="!selectedTargetKey || submitting || eligibleTargets.length === 0"
@@ -166,31 +192,37 @@ const targetsQuery = useTenantQuery<DataTargetSummary[]>(
   () => props.active && visible.value && userStore.tenantId === 'system',
   'platform-tenant-migration-targets',
   () => ({ tenant_id: props.tenantId }),
-  async signal => listAllDataTargetOptions({
-    eligible_for: 'migration',
-    tenant_id: props.tenantId,
-  }, signal),
+  async (signal) =>
+    listAllDataTargetOptions(
+      {
+        eligible_for: 'migration',
+        tenant_id: props.tenantId,
+      },
+      signal,
+    ),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
-const eligibleTargets = computed(() => (targetsQuery.data.value ?? []).filter(target => (
-  target.eligible && target.key !== props.placement.current_target_key
-)))
-const previewAllowed = computed(() => Boolean(
-  preview.value?.eligible && preview.value.blockers.length === 0,
-))
+const eligibleTargets = computed(() =>
+  (targetsQuery.data.value ?? []).filter(
+    (target) => target.eligible && target.key !== props.placement.current_target_key,
+  ),
+)
+const previewAllowed = computed(() =>
+  Boolean(preview.value?.eligible && preview.value.blockers.length === 0),
+)
 
 const previewMutation = useTenantMutation(
   () => userStore.tenantId,
   'platform-tenant-data-migration-preview',
   {
     meta: { errorMode: 'silent' },
-    mutationFn: async () => requireOperationData(await previewTenantDataMigration(
-      props.tenantId,
-      {
-        target_key: selectedTargetKey.value,
-        expected_placement_generation: props.placement.placement_generation,
-      },
-    )),
+    mutationFn: async () =>
+      requireOperationData(
+        await previewTenantDataMigration(props.tenantId, {
+          target_key: selectedTargetKey.value,
+          expected_placement_generation: props.placement.placement_generation,
+        }),
+      ),
   },
 )
 const createMutation = useTenantMutation(
@@ -198,25 +230,29 @@ const createMutation = useTenantMutation(
   'platform-tenant-data-migrations',
   {
     meta: { errorMode: 'silent' },
-    mutationFn: async (input: { preview: TenantDataMigrationPreview, idempotencyKey: string }) => (
-      requireOperationData(await createTenantDataMigration(
-        props.tenantId,
-        {
-          target_key: input.preview.target_target_key,
-          plan_hash: input.preview.plan_hash,
-          expected_placement_generation: input.preview.expected_placement_generation,
-        },
-        input.idempotencyKey,
-      ))
-    ),
+    mutationFn: async (input: { preview: TenantDataMigrationPreview; idempotencyKey: string }) =>
+      requireOperationData(
+        await createTenantDataMigration(
+          props.tenantId,
+          {
+            target_key: input.preview.target_target_key,
+            plan_hash: input.preview.plan_hash,
+            expected_placement_generation: input.preview.expected_placement_generation,
+          },
+          input.idempotencyKey,
+        ),
+      ),
   },
 )
 const submitting = computed(() => previewMutation.pending.value || createMutation.pending.value)
 const operationError = computed(() => previewMutation.error.value ?? createMutation.error.value)
 
-watch(() => props.placement.placement_generation, (generation) => {
-  if (preview.value && preview.value.expected_placement_generation !== generation) clearPreview()
-})
+watch(
+  () => props.placement.placement_generation,
+  (generation) => {
+    if (preview.value && preview.value.expected_placement_generation !== generation) clearPreview()
+  },
+)
 
 function reset(): void {
   selectedTargetKey.value = ''
@@ -269,8 +305,7 @@ async function handleCreate(): Promise<void> {
     pendingIdempotencyKey = undefined
     emit('created', migration)
     visible.value = false
-  }
-  catch (error) {
+  } catch (error) {
     pendingIdempotencyKey = shouldReuseIdempotencyKey(error) ? key : undefined
   }
 }

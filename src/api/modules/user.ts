@@ -36,9 +36,8 @@ export type UserDetail = Omit<ApiSchema<'UserDetailVo'>, 'roles' | 'status'> & {
   roles: UserRole[]
   status: UserStatus
 }
-export type PasswordResetRequestInput = OperationJsonBody<
-  'post_system_users_by_id_password_reset_requests'
->
+export type PasswordResetRequestInput =
+  OperationJsonBody<'post_system_users_by_id_password_reset_requests'>
 export type PasswordResetRequestResult = ApiSchema<'PasswordResetRequestResponse'>
 
 /** 分页查询用户列表 */

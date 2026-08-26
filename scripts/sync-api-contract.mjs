@@ -29,7 +29,7 @@ function sourceUrl(metadata) {
 function contentsApiUrl(metadata) {
   const sourcePath = metadata.openapi_path
     .split('/')
-    .map(segment => encodeURIComponent(segment))
+    .map((segment) => encodeURIComponent(segment))
     .join('/')
   return `https://api.github.com/repos/${metadata.backend_repository}/contents/${sourcePath}?ref=${metadata.backend_commit}`
 }
@@ -46,8 +46,7 @@ async function readRemoteSource(metadata) {
   const rawUrl = sourceUrl(metadata)
   try {
     return await fetchRemoteSource(rawUrl)
-  }
-  catch (rawError) {
+  } catch (rawError) {
     const apiUrl = contentsApiUrl(metadata)
     try {
       return await fetchRemoteSource(apiUrl, {
@@ -55,11 +54,10 @@ async function readRemoteSource(metadata) {
         'User-Agent': 'ryframe-api-contract-check',
         'X-GitHub-Api-Version': '2022-11-28',
       })
-    }
-    catch (apiError) {
+    } catch (apiError) {
       throw new Error(
-        `无法从 GitHub Raw（${rawError.message}）或 Contents API（${apiError.message}）`
-        + '读取固定的 OpenAPI 契约',
+        `无法从 GitHub Raw（${rawError.message}）或 Contents API（${apiError.message}）` +
+          '读取固定的 OpenAPI 契约',
       )
     }
   }
@@ -77,8 +75,7 @@ async function readPinnedSource(metadata) {
       { encoding: 'buffer', maxBuffer: 16 * 1024 * 1024 },
     )
     return Buffer.from(stdout)
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error(
       `无法从后端 Git 对象 ${objectName} 读取 OpenAPI；请确认工作区和提交 SHA 正确：${error.message}`,
     )
@@ -98,8 +95,7 @@ async function sync() {
   let metadata
   try {
     metadata = requireSyncMetadata()
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error(
       `${error.message}。api:sync 需要 RYFRAME_BACKEND_REPOSITORY 和 RYFRAME_BACKEND_COMMIT。`,
     )
@@ -120,10 +116,7 @@ async function verifyUpstream() {
   if (local.mode !== 'formal') {
     throw new Error('候选契约不能执行 --verify-upstream；请先运行 cargo api-sync --commit <提交>')
   }
-  const upstream = parseContract(
-    await readRemoteSource(local.metadata),
-    sourceUrl(local.metadata),
-  )
+  const upstream = parseContract(await readRemoteSource(local.metadata), sourceUrl(local.metadata))
   const upstreamBytes = Buffer.from(canonicalJson(upstream), 'utf8')
   if (!upstreamBytes.equals(local.bytes)) {
     throw new Error('固定的上游 OpenAPI 与 openapi/openapi.json 不一致；请重新正式同步')
@@ -137,5 +130,4 @@ if (mode === 'sync') await sync()
 else if (mode === '--verify-local') {
   const local = await verifyLocalContractState(root)
   console.log(`本地 OpenAPI ${local.mode === 'candidate' ? '候选态' : '正式态'}校验通过`)
-}
-else await verifyUpstream()
+} else await verifyUpstream()

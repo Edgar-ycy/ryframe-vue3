@@ -37,7 +37,7 @@ export function useMenuManagement() {
     authenticated,
     'menus',
     () => ({ scope: 'tree' }),
-    async signal => {
+    async (signal) => {
       const response = await getMenuTree(signal)
       return response.data ?? []
     },
@@ -47,66 +47,61 @@ export function useMenuManagement() {
     authenticated,
     'permissions',
     () => ({ scope: 'tree' }),
-    async signal => {
+    async (signal) => {
       const response = await getPermissionTree(undefined, signal)
       return response.data ?? []
     },
   )
   const tableData = menusQuery.data
-  const permissionOptions = computed(() => flattenPermissionOptions(
-    permissionsQuery.data.value ?? [],
-  ))
+  const permissionOptions = computed(() =>
+    flattenPermissionOptions(permissionsQuery.data.value ?? []),
+  )
   const loading = menusQuery.isFetching
 
-  const statusMutation = useTenantMutation<void, StatusCommand>(
-    () => userStore.tenantId,
-    'menus',
-    {
-      mutationFn: async variables => {
-        await updateMenu(
-          variables.menu.id,
-          toUpdateInput(variables.menu, variables.status),
-        )
-      },
-      onError: (_error, variables) => {
-        variables.menu.status = variables.previousStatus
-      },
-      onSuccess: (_data, variables) => {
-        ElMessage.success(translate('system.common.actionSuccess', {
+  const statusMutation = useTenantMutation<void, StatusCommand>(() => userStore.tenantId, 'menus', {
+    mutationFn: async (variables) => {
+      await updateMenu(variables.menu.id, toUpdateInput(variables.menu, variables.status))
+    },
+    onError: (_error, variables) => {
+      variables.menu.status = variables.previousStatus
+    },
+    onSuccess: (_data, variables) => {
+      ElMessage.success(
+        translate('system.common.actionSuccess', {
           action: variables.action,
-        }))
-      },
+        }),
+      )
     },
-  )
-  const deleteMutation = useTenantMutation<void, MenuTreeNode>(
-    () => userStore.tenantId,
-    'menus',
-    {
-      mutationFn: async menu => {
-        await deleteMenu(menu.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(translate('system.common.deleteSuccess'))
-      },
+  })
+  const deleteMutation = useTenantMutation<void, MenuTreeNode>(() => userStore.tenantId, 'menus', {
+    mutationFn: async (menu) => {
+      await deleteMenu(menu.id)
     },
+    onSuccess: () => {
+      ElMessage.success(translate('system.common.deleteSuccess'))
+    },
+  })
+  const deletingId = computed<Id | null>(() =>
+    deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
   )
-  const deletingId = computed<Id | null>(() => (
-    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
-  ))
-  const statusUpdatingId = computed<Id | null>(() => (
-    statusMutation.pending.value ? statusMutation.variables.value?.menu.id ?? null : null
-  ))
+  const statusUpdatingId = computed<Id | null>(() =>
+    statusMutation.pending.value ? (statusMutation.variables.value?.menu.id ?? null) : null,
+  )
 
   async function fetchData(): Promise<void> {
     await menusQuery.refetch({ throwOnError: true })
   }
 
   function menuTypeLabel(type: MenuType): string {
-    return translate(({
-      M: 'system.menu.directory',
-      C: 'system.menu.menu',
-      F: 'system.menu.button',
-    } as const)[type])
+    return translate(
+      (
+        {
+          M: 'system.menu.directory',
+          C: 'system.menu.menu',
+          F: 'system.menu.button',
+        } as const
+      )[type],
+    )
   }
 
   function menuTypeTag(type: MenuType): TagProps['type'] | undefined {
@@ -116,7 +111,7 @@ export function useMenuManagement() {
 
   function permissionLabel(menu: MenuTreeNode): string {
     if (menu.perm_id == null) return '-'
-    const permission = permissionOptions.value.find(option => option.id === menu.perm_id)
+    const permission = permissionOptions.value.find((option) => option.id === menu.perm_id)
     return permission ? `${permission.name} (${permission.code})` : (menu.perm_code ?? '-')
   }
 
@@ -140,9 +135,7 @@ export function useMenuManagement() {
       menu.status = previousStatus
       return
     }
-    const action = translate(
-      status === '1' ? 'system.common.enable' : 'system.common.disable',
-    )
+    const action = translate(status === '1' ? 'system.common.enable' : 'system.common.disable')
     const confirmed = await confirmAction(
       translate('system.menu.statusChangeConfirm', { action, name: menu.name }),
       translate('system.common.prompt'),

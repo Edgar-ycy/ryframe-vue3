@@ -38,17 +38,16 @@ export async function refreshAccessToken(): Promise<string> {
   const callerEpoch = getSessionEpoch()
   const remoteOperation = getRemoteRefreshOperation()
   if (
-    !refreshPromise
-    && remoteOperation?.pending
-    && remoteOperation.expiresAt > Date.now()
-    && typeof window !== 'undefined'
+    !refreshPromise &&
+    remoteOperation?.pending &&
+    remoteOperation.expiresAt > Date.now() &&
+    typeof window !== 'undefined'
   ) {
     try {
       const token = await waitForRemoteRefresh(remoteOperation)
       assertSessionEpoch(callerEpoch)
       return token
-    }
-    catch (error) {
+    } catch (error) {
       if (callerEpoch !== getSessionEpoch()) throw error
     }
   }
@@ -71,10 +70,7 @@ export async function refreshAccessToken(): Promise<string> {
       })
       .catch((error: unknown) => {
         if (refreshEpoch === getSessionEpoch()) {
-          broadcastRefreshFailed(
-            operation,
-            error instanceof HttpError ? error.status : undefined,
-          )
+          broadcastRefreshFailed(operation, error instanceof HttpError ? error.status : undefined)
         }
         throw error
       })
@@ -90,12 +86,11 @@ async function performRefresh(refreshEpoch: number): Promise<string> {
   const tokenBeforeRefresh = useUserStore().token
   try {
     return await requestRefresh(false, refreshEpoch)
-  }
-  catch (error) {
+  } catch (error) {
     assertSessionEpoch(refreshEpoch)
     if (!(error instanceof HttpError) || error.status !== 409) throw error
     const delaySeconds = Math.min(Math.max(error.retryAfterSeconds ?? 5, 0), 10)
-    await new Promise(resolve => setTimeout(resolve, delaySeconds * 1_000))
+    await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1_000))
     assertSessionEpoch(refreshEpoch)
     const tokenFromAnotherTab = useUserStore().token
     if (tokenFromAnotherTab && tokenFromAnotherTab !== tokenBeforeRefresh) {
@@ -121,12 +116,10 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
     const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.session_context)
     if (scopeChanged) {
       await synchronizeTenantContextUi({ skipAuthRefresh: true, refreshContext: false })
-    }
-    else await ensureRoutesAfterAuthentication(true)
+    } else await ensureRoutesAfterAuthentication(true)
     assertSessionEpoch(refreshEpoch)
     return auth.access_token
-  }
-  finally {
+  } finally {
     // 后端在刷新失败时会清理认证 Cookie；本次双提交挑战也必须同步作废，
     // 避免登录或后续刷新继续复用已经失去 Cookie 配对的内存令牌。
     invalidateCsrfToken()

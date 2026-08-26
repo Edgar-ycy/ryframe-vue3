@@ -4,14 +4,9 @@ import {
   type RouteLocationRaw,
   type RouteRecordRaw,
 } from 'vue-router'
-import {
-  buildAccessibleMenus,
-  buildRoutesFromMenuTree,
-} from '@/app/navigation/routeProjection'
+import { buildAccessibleMenus, buildRoutesFromMenuTree } from '@/app/navigation/routeProjection'
 import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
-import {
-  ensureTenantContextLoaded,
-} from '@/app/tenant-context/coordinator'
+import { ensureTenantContextLoaded } from '@/app/tenant-context/coordinator'
 import { useTenantContextStore } from '@/app/tenant-context/store'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
@@ -40,9 +35,7 @@ let installedGeneration = -1
 let routeInstallation: RouteInstallation | undefined
 let routeRefreshPromise: Promise<RouteRecordRaw[]> | undefined
 
-async function buildAccessibleRoutes(
-  generation: number,
-): Promise<RouteRecordRaw[] | undefined> {
+async function buildAccessibleRoutes(generation: number): Promise<RouteRecordRaw[] | undefined> {
   const tenantContext = useTenantContextStore()
   await ensureTenantContextLoaded()
   if (generation !== routeGeneration) return undefined
@@ -51,11 +44,7 @@ async function buildAccessibleRoutes(
   if (!context) return undefined
   if (!permissionStore.isRoutesLoaded) {
     const routes = buildRoutesFromMenuTree(context.menus)
-    const menus = buildAccessibleMenus(
-      routes,
-      context.permissions,
-      tenantContext.capabilityCodes,
-    )
+    const menus = buildAccessibleMenus(routes, context.permissions, tenantContext.capabilityCodes)
     permissionStore.applyRouteProjection(routes, menus)
   }
   return permissionStore.routes
@@ -64,9 +53,9 @@ async function buildAccessibleRoutes(
 /**
  * 确保当前会话的动态路由只安装一次；同一代际中的并发调用共享同一个请求。
  */
-export function ensureAccessibleRoutes(
-  options?: { skipAuthRefresh?: boolean },
-): Promise<RouteRecordRaw[]> {
+export function ensureAccessibleRoutes(options?: {
+  skipAuthRefresh?: boolean
+}): Promise<RouteRecordRaw[]> {
   void options
   const permissionStore = usePermissionStore()
   if (permissionStore.isRoutesLoaded && installedGeneration === routeGeneration) {
@@ -83,8 +72,7 @@ export function ensureAccessibleRoutes(
       runtimeRouteRegistry.add(ROOT_LAYOUT_ROUTE_NAME, routes)
       installedGeneration = generation
       return routes
-    }
-    catch (error) {
+    } catch (error) {
       if (generation === routeGeneration) {
         runtimeRouteRegistry.reset()
         permissionStore.resetRoutes()
@@ -108,9 +96,9 @@ export function resetDynamicRoutes(): void {
 }
 
 /** 强制重新读取权限；并发刷新仍然合并为一次。 */
-export function refreshAccessibleRoutes(
-  options?: { skipAuthRefresh?: boolean },
-): Promise<RouteRecordRaw[]> {
+export function refreshAccessibleRoutes(options?: {
+  skipAuthRefresh?: boolean
+}): Promise<RouteRecordRaw[]> {
   if (routeRefreshPromise) return routeRefreshPromise
 
   const permissionStore = usePermissionStore()
@@ -133,8 +121,7 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
   let resolved: ReturnType<typeof router.resolve>
   try {
     resolved = router.resolve(candidate)
-  }
-  catch {
+  } catch {
     return fallback
   }
 
@@ -148,19 +135,23 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
     '/feature-unavailable',
   ])
   if (
-    blockedPaths.has(resolved.path)
-    || resolved.matched.length === 0
-    || resolved.matched.some(record => record.path === '/:pathMatch(.*)*')
-  ) return fallback
+    blockedPaths.has(resolved.path) ||
+    resolved.matched.length === 0 ||
+    resolved.matched.some((record) => record.path === '/:pathMatch(.*)*')
+  )
+    return fallback
 
   const user = useUserStore()
   const runtimeCapabilities = useRuntimeCapabilitiesStore()
   const tenantContext = useTenantContextStore()
-  const access = matchedRouteAccessResult(resolved.matched.map(record => record.meta), {
-    capabilities: tenantContext.capabilityCodes,
-    multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
-    permissions: user.permissions,
-  })
+  const access = matchedRouteAccessResult(
+    resolved.matched.map((record) => record.meta),
+    {
+      capabilities: tenantContext.capabilityCodes,
+      multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
+      permissions: user.permissions,
+    },
+  )
   return access === 'allowed' ? resolved.fullPath : fallback
 }
 
@@ -175,10 +166,8 @@ const navigationGuard = createNavigationGuard({
   clearSession,
   isKnownRoute: (path) => {
     try {
-      return router.resolve(path).matched
-        .some(record => record.path !== '/:pathMatch(.*)*')
-    }
-    catch {
+      return router.resolve(path).matched.some((record) => record.path !== '/:pathMatch(.*)*')
+    } catch {
       return false
     }
   },

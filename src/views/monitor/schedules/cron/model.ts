@@ -1,11 +1,5 @@
 export type CronBuilderMode =
-  | 'interval_minutes'
-  | 'interval_hours'
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'yearly'
-  | 'advanced'
+  'interval_minutes' | 'interval_hours' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'advanced'
 
 export type CronTemplate =
   | 'every_five_minutes'
@@ -75,26 +69,31 @@ export function daysInMonth(month: number): number {
 }
 
 export function isValidCronTime(values: Pick<CronBuilderValues, 'hour' | 'minute'>): boolean {
-  return values.hour !== undefined
-    && values.minute !== undefined
-    && values.hour >= 0
-    && values.hour <= 23
-    && values.minute >= 0
-    && values.minute <= 59
+  return (
+    values.hour !== undefined &&
+    values.minute !== undefined &&
+    values.hour >= 0 &&
+    values.hour <= 23 &&
+    values.minute >= 0 &&
+    values.minute <= 59
+  )
 }
 
 export function hasLateMonthDay(monthDays: readonly number[]): boolean {
-  return monthDays.some(day => day >= 29)
+  return monthDays.some((day) => day >= 29)
 }
 
 export function normalizeWeekdays(values: readonly string[]): string[] {
-  const unique = new Set(values.filter(value => WEEKDAY_OPTIONS.includes(value as typeof WEEKDAY_OPTIONS[number])))
-  return WEEKDAY_OPTIONS.filter(value => unique.has(value))
+  const unique = new Set(
+    values.filter((value) => WEEKDAY_OPTIONS.includes(value as (typeof WEEKDAY_OPTIONS)[number])),
+  )
+  return WEEKDAY_OPTIONS.filter((value) => unique.has(value))
 }
 
 export function normalizeMonthDays(values: readonly number[]): number[] {
-  return [...new Set(values.filter(value => Number.isInteger(value) && value >= 1 && value <= 31))]
-    .sort((left, right) => left - right)
+  return [
+    ...new Set(values.filter((value) => Number.isInteger(value) && value >= 1 && value <= 31)),
+  ].sort((left, right) => left - right)
 }
 
 export function buildCronExpression(
@@ -103,11 +102,13 @@ export function buildCronExpression(
   advancedExpression: string,
 ): string | undefined {
   if (mode === 'interval_minutes') {
-    if (!values.intervalMinutes || values.intervalMinutes < 1 || values.intervalMinutes > 59) return undefined
+    if (!values.intervalMinutes || values.intervalMinutes < 1 || values.intervalMinutes > 59)
+      return undefined
     return `0 */${values.intervalMinutes} * * * * *`
   }
   if (mode === 'interval_hours') {
-    if (!values.intervalHours || values.intervalHours < 1 || values.intervalHours > 23) return undefined
+    if (!values.intervalHours || values.intervalHours < 1 || values.intervalHours > 23)
+      return undefined
     if (values.minute === undefined || values.minute < 0 || values.minute > 59) return undefined
     return `0 ${values.minute} */${values.intervalHours} * * * *`
   }
@@ -124,7 +125,8 @@ export function buildCronExpression(
     return `0 ${values.minute} ${values.hour} ${values.monthDays.join(',')} * * *`
   }
   if (mode === 'yearly') {
-    if (!isValidCronTime(values) || values.yearlyDay > daysInMonth(values.yearlyMonth)) return undefined
+    if (!isValidCronTime(values) || values.yearlyDay > daysInMonth(values.yearlyMonth))
+      return undefined
     return `0 ${values.minute} ${values.hour} ${values.yearlyDay} ${values.yearlyMonth} * *`
   }
   return advancedExpression.trim() || undefined
@@ -134,12 +136,16 @@ export function recognizeCronExpression(expression: string): RecognizedCronExpre
   const fields = expression.trim().split(/\s+/)
   if (fields.length !== 7 || fields[0] !== '0' || fields[6] !== '*') return undefined
   const minuteInterval = parseStep(fields[1], 1, 59)
-  if (minuteInterval !== undefined && fields.slice(2, 6).every(field => field === '*')) {
+  if (minuteInterval !== undefined && fields.slice(2, 6).every((field) => field === '*')) {
     return { mode: 'interval_minutes', intervalMinutes: minuteInterval }
   }
   const parsedMinute = parseInteger(fields[1], 0, 59)
   const hourInterval = parseStep(fields[2], 1, 23)
-  if (parsedMinute !== undefined && hourInterval !== undefined && fields.slice(3, 6).every(field => field === '*')) {
+  if (
+    parsedMinute !== undefined &&
+    hourInterval !== undefined &&
+    fields.slice(3, 6).every((field) => field === '*')
+  ) {
     return { mode: 'interval_hours', intervalHours: hourInterval, minute: parsedMinute }
   }
   const parsedHour = parseInteger(fields[2], 0, 23)
@@ -160,7 +166,12 @@ export function recognizeCronExpression(expression: string): RecognizedCronExpre
   if (fields[5] === '*') {
     const parsedDay = parseInteger(fields[3], 1, 31)
     const parsedMonth = parseInteger(fields[4], 1, 12)
-    if (parsedDay === undefined || parsedMonth === undefined || parsedDay > daysInMonth(parsedMonth)) return undefined
+    if (
+      parsedDay === undefined ||
+      parsedMonth === undefined ||
+      parsedDay > daysInMonth(parsedMonth)
+    )
+      return undefined
     return {
       mode: 'yearly',
       hour: parsedHour,
@@ -184,8 +195,8 @@ function parseStep(value: string, minimum: number, maximum: number): number | un
 }
 
 function parseNumberList(value: string, minimum: number, maximum: number): number[] | undefined {
-  const parsed = value.split(',').map(item => parseInteger(item, minimum, maximum))
-  if (parsed.some(item => item === undefined)) return undefined
+  const parsed = value.split(',').map((item) => parseInteger(item, minimum, maximum))
+  if (parsed.some((item) => item === undefined)) return undefined
   return normalizeMonthDays(parsed as number[])
 }
 

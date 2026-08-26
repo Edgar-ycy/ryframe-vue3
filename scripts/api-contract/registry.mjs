@@ -16,8 +16,8 @@ function staticString(node, constants = new Map()) {
 
 function staticStringArray(node, constants = new Map()) {
   if (!node || !ts.isArrayLiteralExpression(node)) return undefined
-  const values = node.elements.map(element => staticString(element, constants))
-  return values.every(value => typeof value === 'string') ? values : undefined
+  const values = node.elements.map((element) => staticString(element, constants))
+  return values.every((value) => typeof value === 'string') ? values : undefined
 }
 
 async function readFeatureRegistry(featuresPath, errors) {
@@ -29,8 +29,7 @@ async function readFeatureRegistry(featuresPath, errors) {
     let source
     try {
       source = await readFile(manifestPath, 'utf8')
-    }
-    catch (error) {
+    } catch (error) {
       if (error?.code === 'ENOENT') continue
       throw error
     }
@@ -45,9 +44,11 @@ async function readFeatureRegistry(featuresPath, errors) {
     for (const statement of sourceFile.statements) {
       if (!ts.isVariableStatement(statement)) continue
       for (const declaration of statement.declarationList.declarations) {
-        if (ts.isIdentifier(declaration.name)
-          && declaration.initializer
-          && ts.isStringLiteral(declaration.initializer)) {
+        if (
+          ts.isIdentifier(declaration.name) &&
+          declaration.initializer &&
+          ts.isStringLiteral(declaration.initializer)
+        ) {
           constants.set(declaration.name.text, declaration.initializer.text)
         }
       }
@@ -56,12 +57,15 @@ async function readFeatureRegistry(featuresPath, errors) {
       if (!ts.isVariableStatement(statement)) continue
       for (const declaration of statement.declarationList.declarations) {
         const initializer = declaration.initializer
-        if (!initializer
-          || !ts.isCallExpression(initializer)
-          || !ts.isIdentifier(initializer.expression)
-          || initializer.expression.text !== 'defineFeatureManifest'
-          || initializer.arguments.length !== 1
-          || !ts.isObjectLiteralExpression(initializer.arguments[0])) continue
+        if (
+          !initializer ||
+          !ts.isCallExpression(initializer) ||
+          !ts.isIdentifier(initializer.expression) ||
+          initializer.expression.text !== 'defineFeatureManifest' ||
+          initializer.arguments.length !== 1 ||
+          !ts.isObjectLiteralExpression(initializer.arguments[0])
+        )
+          continue
         const fields = new Map()
         for (const field of initializer.arguments[0].properties) {
           if (ts.isPropertyAssignment(field)) fields.set(propertyName(field), field.initializer)
@@ -73,17 +77,19 @@ async function readFeatureRegistry(featuresPath, errors) {
         const routeKey = staticString(routeKeyNode, constants)
         const routePath = staticString(routePathNode, constants)
         const allowedVariants = staticStringArray(fields.get('allowedVariants'), constants)
-        if (!capabilityCode
-          || !permissionCode
-          || !routeKey
-          || !routePath?.startsWith('/')
-          || !allowedVariants?.length
-          || new Set(allowedVariants).size !== allowedVariants.length
-          || !fields.has('page')
-          || !fields.has('planConfigEditor')) {
+        if (
+          !capabilityCode ||
+          !permissionCode ||
+          !routeKey ||
+          !routePath?.startsWith('/') ||
+          !allowedVariants?.length ||
+          new Set(allowedVariants).size !== allowedVariants.length ||
+          !fields.has('page') ||
+          !fields.has('planConfigEditor')
+        ) {
           errors.push(
-            `${manifestPath.pathname}: feature manifest requires static capabilityCode, `
-            + 'permissionCode, routeKey, path, unique allowedVariants, page, and planConfigEditor',
+            `${manifestPath.pathname}: feature manifest requires static capabilityCode, ` +
+              'permissionCode, routeKey, path, unique allowedVariants, page, and planConfigEditor',
           )
           continue
         }
@@ -112,8 +118,7 @@ async function readPageManifestRegistry(rootPath, fileName, errors) {
     let source
     try {
       source = await readFile(pagesPath, 'utf8')
-    }
-    catch (error) {
+    } catch (error) {
       if (error?.code === 'ENOENT') continue
       throw error
     }
@@ -128,18 +133,23 @@ async function readPageManifestRegistry(rootPath, fileName, errors) {
       if (!ts.isVariableStatement(statement)) continue
       for (const declaration of statement.declarationList.declarations) {
         const initializer = declaration.initializer
-        if (!initializer
-          || !ts.isCallExpression(initializer)
-          || !ts.isIdentifier(initializer.expression)
-          || initializer.expression.text !== 'definePageManifest'
-          || initializer.arguments.length !== 1
-          || !ts.isObjectLiteralExpression(initializer.arguments[0])) continue
-        const pagesProperty = initializer.arguments[0].properties.find(
-          property => ts.isPropertyAssignment(property) && propertyName(property) === 'pages',
+        if (
+          !initializer ||
+          !ts.isCallExpression(initializer) ||
+          !ts.isIdentifier(initializer.expression) ||
+          initializer.expression.text !== 'definePageManifest' ||
+          initializer.arguments.length !== 1 ||
+          !ts.isObjectLiteralExpression(initializer.arguments[0])
         )
-        if (!pagesProperty
-          || !ts.isPropertyAssignment(pagesProperty)
-          || !ts.isArrayLiteralExpression(pagesProperty.initializer)) {
+          continue
+        const pagesProperty = initializer.arguments[0].properties.find(
+          (property) => ts.isPropertyAssignment(property) && propertyName(property) === 'pages',
+        )
+        if (
+          !pagesProperty ||
+          !ts.isPropertyAssignment(pagesProperty) ||
+          !ts.isArrayLiteralExpression(pagesProperty.initializer)
+        ) {
           errors.push(`${pagesPath.pathname}: page manifest requires a static pages array`)
           continue
         }
@@ -157,10 +167,14 @@ async function readPageManifestRegistry(rootPath, fileName, errors) {
           const permissionCode = fields.has('permissionCode')
             ? staticString(fields.get('permissionCode'))
             : null
-          if (!routeKey || !routePath?.startsWith('/') || (fields.has('permissionCode') && !permissionCode)) {
+          if (
+            !routeKey ||
+            !routePath?.startsWith('/') ||
+            (fields.has('permissionCode') && !permissionCode)
+          ) {
             errors.push(
-              `${pagesPath.pathname}: page entry requires static routeKey, absolute path, `
-              + 'and an optional static permissionCode',
+              `${pagesPath.pathname}: page entry requires static routeKey, absolute path, ` +
+                'and an optional static permissionCode',
             )
             continue
           }
@@ -180,11 +194,7 @@ async function readPageManifestRegistry(rootPath, fileName, errors) {
 }
 
 /** 校验前端 AST 注册表与 OpenAPI 菜单路由扩展。 */
-export async function validatePageRegistryContract({
-  document,
-  errors,
-  featuresPath,
-}) {
+export async function validatePageRegistryContract({ document, errors, featuresPath }) {
   const featureRegistry = await readFeatureRegistry(featuresPath, errors)
   const pageRegistry = await readPageManifestRegistry(featuresPath, 'pages.ts', errors)
   const resourceRegistry = await readPageManifestRegistry(
@@ -223,22 +233,19 @@ export async function validatePageRegistryContract({
   const contractRoutes = new Map()
   if (!menuRouteExtension || typeof menuRouteExtension !== 'object') {
     errors.push('OpenAPI is missing x-ryframe-menu-routes')
-  }
-  else {
+  } else {
     if (menuRouteExtension.version !== 2) {
       errors.push(`unsupported menu route contract version: ${menuRouteExtension.version}`)
     }
     if (!Array.isArray(menuRouteExtension.routes)) {
       errors.push('x-ryframe-menu-routes.routes must be an array')
-    }
-    else {
+    } else {
       for (const [index, route] of menuRouteExtension.routes.entries()) {
         const routeKey = route?.route_key
         const name = route?.name
         const titleKey = route?.title_key
         const menuType = route?.menu_type
-        if (typeof routeKey !== 'string'
-          || !/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/.test(routeKey)) {
+        if (typeof routeKey !== 'string' || !/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/.test(routeKey)) {
           errors.push(`menu route contract entry ${index} has an invalid route_key`)
           continue
         }
@@ -291,15 +298,15 @@ export async function validatePageRegistryContract({
     const expectedPermission = permissions[0] ?? null
     if (contract.permissionCode !== expectedPermission) {
       errors.push(
-        `menu route contract ${routeKey}: permission_code must be `
-        + `${JSON.stringify(expectedPermission)}, found ${JSON.stringify(contract.permissionCode)}`,
+        `menu route contract ${routeKey}: permission_code must be ` +
+          `${JSON.stringify(expectedPermission)}, found ${JSON.stringify(contract.permissionCode)}`,
       )
     }
     const expectedCapability = featureRegistry.get(routeKey)?.capabilityCode ?? null
     if (contract.capabilityCode !== expectedCapability) {
       errors.push(
-        `menu route contract ${routeKey}: capability_code must be `
-        + `${JSON.stringify(expectedCapability)}, found ${JSON.stringify(contract.capabilityCode)}`,
+        `menu route contract ${routeKey}: capability_code must be ` +
+          `${JSON.stringify(expectedCapability)}, found ${JSON.stringify(contract.capabilityCode)}`,
       )
     }
   }

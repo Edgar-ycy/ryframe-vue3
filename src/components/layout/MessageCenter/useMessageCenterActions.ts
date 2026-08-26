@@ -37,8 +37,7 @@ export function useMessageCenterActions({
     if (message.read_at) return
     try {
       await messageCenter.markRead(message.id)
-    }
-    catch {
+    } catch {
       ElMessage.error(t('messageCenter.markReadFailed'))
     }
   }
@@ -46,8 +45,7 @@ export function useMessageCenterActions({
   async function refresh(): Promise<void> {
     try {
       await messageCenter.refresh()
-    }
-    catch {
+    } catch {
       ElMessage.warning(t('messageCenter.refreshFailed'))
     }
   }
@@ -61,8 +59,7 @@ export function useMessageCenterActions({
         t('messageCenter.deleteConfirmTitle'),
         { type: 'warning' },
       )
-    }
-    catch {
+    } catch {
       return
     }
     if (await removeMessages(ids)) selectedIds.value = []
@@ -75,8 +72,7 @@ export function useMessageCenterActions({
         t('messageCenter.deleteConfirmTitle'),
         { type: 'warning' },
       )
-    }
-    catch {
+    } catch {
       return
     }
     await removeMessages([message.id])
@@ -92,8 +88,7 @@ export function useMessageCenterActions({
       }
       ElMessage.success(t('messageCenter.deleteSuccess'))
       return true
-    }
-    catch {
+    } catch {
       ElMessage.error(t('messageCenter.deleteFailed'))
       return false
     }
@@ -102,8 +97,7 @@ export function useMessageCenterActions({
   async function markAllRead(): Promise<void> {
     try {
       await messageCenter.markAllRead()
-    }
-    catch {
+    } catch {
       ElMessage.error(t('messageCenter.markAllReadFailed'))
     }
   }

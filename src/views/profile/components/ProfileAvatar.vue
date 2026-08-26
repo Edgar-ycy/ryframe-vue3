@@ -45,7 +45,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { imageSrc } = useAuthenticatedImage(() => props.src)
-const { uploadAvatar, uploading } = useProfileAvatarMutation(t, avatarUrl => {
+const { uploadAvatar, uploading } = useProfileAvatarMutation(t, (avatarUrl) => {
   emit('updated', avatarUrl)
 })
 const acceptedTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])

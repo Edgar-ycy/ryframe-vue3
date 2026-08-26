@@ -1,13 +1,6 @@
 import { defineStore } from 'pinia'
-import {
-  type SessionContext,
-  type TenantBusinessDataContext,
-} from '@/api/modules/sessionContext'
-import {
-  capabilityCodes,
-  hasCapabilities,
-  hasCapability,
-} from './capability'
+import { type SessionContext, type TenantBusinessDataContext } from '@/api/modules/sessionContext'
+import { capabilityCodes, hasCapabilities, hasCapability } from './capability'
 
 export type TenantContextStatus = 'idle' | 'loading' | 'loaded' | 'failed'
 
@@ -31,15 +24,18 @@ export const useTenantContextStore = defineStore('tenant-context', {
   }),
 
   getters: {
-    capabilityCodes: state => state.status === 'loaded'
-      ? capabilityCodes(state.context?.capabilities ?? [])
-      : [],
-    hasCapability: state => (code: string): boolean => state.status === 'loaded'
-      && hasCapability(state.context?.capabilities ?? [], code),
-    hasCapabilities: state => (codes: readonly string[]): boolean => state.status === 'loaded'
-      && hasCapabilities(state.context?.capabilities ?? [], codes),
-    canWriteBusinessData: state => state.status === 'loaded'
-      && state.businessData?.state === 'active',
+    capabilityCodes: (state) =>
+      state.status === 'loaded' ? capabilityCodes(state.context?.capabilities ?? []) : [],
+    hasCapability:
+      (state) =>
+      (code: string): boolean =>
+        state.status === 'loaded' && hasCapability(state.context?.capabilities ?? [], code),
+    hasCapabilities:
+      (state) =>
+      (codes: readonly string[]): boolean =>
+        state.status === 'loaded' && hasCapabilities(state.context?.capabilities ?? [], codes),
+    canWriteBusinessData: (state) =>
+      state.status === 'loaded' && state.businessData?.state === 'active',
   },
 
   actions: {

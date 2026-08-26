@@ -4,7 +4,8 @@ export const exportJobMessages = {
       title: '我的导出任务',
       submitted: '已加入导出队列，完成后会在“我的导出任务”提醒你。',
       exportAllConfirmTitle: '确认导出全部数据',
-      exportAllConfirmMessage: '当前已应用筛选为空，将导出你有权查看的全部匹配数据。数据量可能较大，是否继续？',
+      exportAllConfirmMessage:
+        '当前已应用筛选为空，将导出你有权查看的全部匹配数据。数据量可能较大，是否继续？',
       exportAllConfirmButton: '继续导出',
       myExports: '我的导出',
       open: '打开导出任务中心',
@@ -86,7 +87,8 @@ export const exportJobMessages = {
       title: 'My export jobs',
       submitted: 'Added to the export queue. My export jobs will notify you when it finishes.',
       exportAllConfirmTitle: 'Export all matching data?',
-      exportAllConfirmMessage: 'No applied filters are active. This will export all matching data you are allowed to view and may include many rows. Continue?',
+      exportAllConfirmMessage:
+        'No applied filters are active. This will export all matching data you are allowed to view and may include many rows. Continue?',
       exportAllConfirmButton: 'Continue export',
       myExports: 'My exports',
       open: 'Open export job center',
@@ -96,7 +98,8 @@ export const exportJobMessages = {
       viewAll: 'View all',
       empty: 'No export jobs',
       recentHint: 'Shows up to 10 recent active and completed jobs.',
-      listHint: 'Only the latest 100 export jobs for this tenant and account are shown. Filters apply to these jobs only.',
+      listHint:
+        'Only the latest 100 export jobs for this tenant and account are shown. Filters apply to these jobs only.',
       statusFilter: 'Job status',
       resourceFilter: 'Resource type',
       allStatuses: 'All statuses',
@@ -116,14 +119,17 @@ export const exportJobMessages = {
       operation: 'Actions',
       cancel: 'Cancel job',
       cancelConfirmTitle: 'Cancel export job?',
-      cancelConfirm: 'Cancel export job “{name}”? Completed jobs will use the latest server status.',
+      cancelConfirm:
+        'Cancel export job “{name}”? Completed jobs will use the latest server status.',
       cancelSuccess: 'Export job cancelled',
       cancelFailed: 'Could not cancel the export job. Refresh and try again.',
       delete: 'Delete',
       deleteSelected: 'Delete selected ({count})',
       deleteConfirmTitle: 'Delete export record?',
-      deleteConfirm: 'Permanently delete export record “{name}” and its result file? This cannot be undone.',
-      deleteBatchConfirm: 'Permanently delete the selected {count} export records and their result files? This cannot be undone.',
+      deleteConfirm:
+        'Permanently delete export record “{name}” and its result file? This cannot be undone.',
+      deleteBatchConfirm:
+        'Permanently delete the selected {count} export records and their result files? This cannot be undone.',
       deleteSuccess: 'Export record deleted.',
       deleteBatchSuccess: 'Deleted {count} export records.',
       deleteFailed: 'Deletion failed. The records were kept; try again.',
@@ -133,7 +139,8 @@ export const exportJobMessages = {
       download: 'Download',
       downloadFailed: 'Download failed. Refresh the job and try again.',
       downloadExpired: 'The export file has expired and cannot be downloaded.',
-      downloadForbidden: 'Your permissions changed and this export file can no longer be downloaded.',
+      downloadForbidden:
+        'Your permissions changed and this export file can no longer be downloaded.',
       downloadMissing: 'The export file does not exist or has been removed.',
       queued: 'Queued',
       running: 'Running',
@@ -142,7 +149,8 @@ export const exportJobMessages = {
       cancelled: 'Cancelled',
       expired: 'Expired',
       unknown: 'Unknown',
-      notifySucceeded: 'Export job “{name}” is complete and ready to download from the export center.',
+      notifySucceeded:
+        'Export job “{name}” is complete and ready to download from the export center.',
       notifyFailed: 'Export job “{name}” failed.',
       notifyCancelled: 'Export job “{name}” was cancelled.',
       notifyTitleSucceeded: 'Export complete',

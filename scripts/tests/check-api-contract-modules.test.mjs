@@ -15,12 +15,13 @@ async function readJson(path) {
 }
 
 test('拆分后的 OpenAPI 契约模块保持正式文档一致', async () => {
-  const [document, generatedApiPrefix, generatedNoticePolicy, generatedPasswordPolicy] = await Promise.all([
-    readJson('openapi/openapi.json'),
-    readJson('src/shared/config/apiPrefix.generated.json'),
-    readJson('src/shared/markdown/noticePolicy.generated.json'),
-    readJson('src/shared/security/passwordPolicy.generated.json'),
-  ])
+  const [document, generatedApiPrefix, generatedNoticePolicy, generatedPasswordPolicy] =
+    await Promise.all([
+      readJson('openapi/openapi.json'),
+      readJson('src/shared/config/apiPrefix.generated.json'),
+      readJson('src/shared/markdown/noticePolicy.generated.json'),
+      readJson('src/shared/security/passwordPolicy.generated.json'),
+    ])
   const errors = []
   const { contractRoutes, featureRegistry } = await validatePageRegistryContract({
     document,
@@ -48,10 +49,19 @@ test('拆分后的 OpenAPI 契约模块保持正式文档一致', async () => {
 
 test('本地引用解析器拒绝外部和不存在的引用', () => {
   const errors = []
-  const resolveLocalReference = createLocalReferenceResolver({ components: { schemas: {} } }, errors)
+  const resolveLocalReference = createLocalReferenceResolver(
+    { components: { schemas: {} } },
+    errors,
+  )
 
-  assert.equal(resolveLocalReference({ $ref: 'https://example.test/schema' }, 'external'), undefined)
-  assert.equal(resolveLocalReference({ $ref: '#/components/schemas/Unknown' }, 'missing'), undefined)
+  assert.equal(
+    resolveLocalReference({ $ref: 'https://example.test/schema' }, 'external'),
+    undefined,
+  )
+  assert.equal(
+    resolveLocalReference({ $ref: '#/components/schemas/Unknown' }, 'missing'),
+    undefined,
+  )
   assert.deepEqual(errors, [
     'external: only local OpenAPI references are supported',
     'missing: unresolved OpenAPI reference #/components/schemas/Unknown',

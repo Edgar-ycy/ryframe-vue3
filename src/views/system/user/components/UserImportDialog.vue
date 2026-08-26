@@ -31,8 +31,20 @@
       show-icon
       :closable="false"
     />
-    <el-alert class="import-hint" :title="t('system.userImport.duplicateHint')" type="warning" show-icon :closable="false" />
-    <el-alert class="import-hint" :title="t('system.userImport.activationHint')" type="info" show-icon :closable="false" />
+    <el-alert
+      class="import-hint"
+      :title="t('system.userImport.duplicateHint')"
+      type="warning"
+      show-icon
+      :closable="false"
+    />
+    <el-alert
+      class="import-hint"
+      :title="t('system.userImport.activationHint')"
+      type="info"
+      show-icon
+      :closable="false"
+    />
     <template #footer>
       <el-button :disabled="loading" @click="visible = false">{{ t('common.cancel') }}</el-button>
       <el-button type="primary" :loading="loading" :disabled="!selectedFile" @click="submit">
@@ -44,7 +56,13 @@
 
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
-import { genFileId, type UploadFile, type UploadFiles, type UploadInstance, type UploadRawFile } from 'element-plus'
+import {
+  genFileId,
+  type UploadFile,
+  type UploadFiles,
+  type UploadInstance,
+  type UploadRawFile,
+} from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{ loading: boolean }>()
@@ -83,8 +101,7 @@ function handleExceed(files: File[], uploadFiles: UploadFiles): void {
     file.uid = genFileId()
     uploadRef.value?.handleStart(file)
     selectedFile.value = file
-  }
-  else {
+  } else {
     selectedFile.value = undefined
   }
   if (uploadFiles.length) ElMessage.warning(t('system.userImport.fileHint'))

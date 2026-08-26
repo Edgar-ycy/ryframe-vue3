@@ -75,43 +75,54 @@ export function useCronBuilder(options: CronBuilderOptions) {
       return
     }
     if (mode.value === 'interval_hours') {
-      summary.value = current.intervalHours !== undefined && current.minute !== undefined
-        ? t('monitor.schedules.summaryIntervalHours', { hours: current.intervalHours, minute: current.minute })
-        : t('monitor.schedules.summaryIncomplete')
+      summary.value =
+        current.intervalHours !== undefined && current.minute !== undefined
+          ? t('monitor.schedules.summaryIntervalHours', {
+              hours: current.intervalHours,
+              minute: current.minute,
+            })
+          : t('monitor.schedules.summaryIncomplete')
       return
     }
     if (mode.value === 'daily') {
       summary.value = isValidCronTime(current)
-        ? t('monitor.schedules.summaryDaily', { time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}` })
+        ? t('monitor.schedules.summaryDaily', {
+            time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
+          })
         : t('monitor.schedules.summaryIncomplete')
       return
     }
     if (mode.value === 'weekly') {
-      summary.value = isValidCronTime(current) && current.weekdays.length
-        ? t('monitor.schedules.summaryWeekly', {
-            weekdays: current.weekdays.map(weekdayLabel).join(t('monitor.schedules.listSeparator')),
-            time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
-          })
-        : t('monitor.schedules.summaryIncomplete')
+      summary.value =
+        isValidCronTime(current) && current.weekdays.length
+          ? t('monitor.schedules.summaryWeekly', {
+              weekdays: current.weekdays
+                .map(weekdayLabel)
+                .join(t('monitor.schedules.listSeparator')),
+              time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
+            })
+          : t('monitor.schedules.summaryIncomplete')
       return
     }
     if (mode.value === 'monthly') {
-      summary.value = isValidCronTime(current) && current.monthDays.length
-        ? t('monitor.schedules.summaryMonthly', {
-            days: current.monthDays.join(t('monitor.schedules.listSeparator')),
-            time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
-          })
-        : t('monitor.schedules.summaryIncomplete')
+      summary.value =
+        isValidCronTime(current) && current.monthDays.length
+          ? t('monitor.schedules.summaryMonthly', {
+              days: current.monthDays.join(t('monitor.schedules.listSeparator')),
+              time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
+            })
+          : t('monitor.schedules.summaryIncomplete')
       return
     }
     if (mode.value === 'yearly') {
-      summary.value = isValidCronTime(current) && current.yearlyDay <= daysInMonth(current.yearlyMonth)
-        ? t('monitor.schedules.summaryYearly', {
-            month: current.yearlyMonth,
-            day: current.yearlyDay,
-            time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
-          })
-        : t('monitor.schedules.summaryIncomplete')
+      summary.value =
+        isValidCronTime(current) && current.yearlyDay <= daysInMonth(current.yearlyMonth)
+          ? t('monitor.schedules.summaryYearly', {
+              month: current.yearlyMonth,
+              day: current.yearlyDay,
+              time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
+            })
+          : t('monitor.schedules.summaryIncomplete')
       return
     }
     summary.value = cronExpression.value.trim()
@@ -239,26 +250,20 @@ export function useCronBuilder(options: CronBuilderOptions) {
     if (template === 'every_five_minutes') {
       mode.value = 'interval_minutes'
       intervalMinutes.value = 5
-    }
-    else if (template === 'hourly') {
+    } else if (template === 'hourly') {
       mode.value = 'interval_hours'
       intervalHours.value = 1
       minute.value = 0
-    }
-    else if (template === 'daily_midnight' || template === 'daily_two') {
+    } else if (template === 'daily_midnight' || template === 'daily_two') {
       mode.value = 'daily'
       hour.value = template === 'daily_two' ? 2 : 0
       minute.value = 0
-    }
-    else if (template === 'weekdays' || template === 'monday') {
+    } else if (template === 'weekdays' || template === 'monday') {
       mode.value = 'weekly'
-      weekdays.value = template === 'weekdays'
-        ? ['MON', 'TUE', 'WED', 'THU', 'FRI']
-        : ['MON']
+      weekdays.value = template === 'weekdays' ? ['MON', 'TUE', 'WED', 'THU', 'FRI'] : ['MON']
       hour.value = template === 'weekdays' ? 9 : 0
       minute.value = 0
-    }
-    else {
+    } else {
       mode.value = 'monthly'
       monthDays.value = [1]
       hour.value = 0

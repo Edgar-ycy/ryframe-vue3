@@ -31,7 +31,9 @@
               :disabled="option.disabled"
             >
               <span>{{ option.label }}</span>
-              <small v-if="option.description" class="option-description">{{ option.description }}</small>
+              <small v-if="option.description" class="option-description">{{
+                option.description
+              }}</small>
             </el-option>
           </el-select>
         </el-form-item>
@@ -50,8 +52,16 @@
       </el-form>
     </el-card>
 
-    <el-empty v-if="!selectedUserId" :description="t('system.authorizationDiagnostic.selectUserPlaceholder')" />
-    <el-skeleton v-else-if="diagnosticQuery.isLoading.value" :rows="8" animated class="diagnostic-loading" />
+    <el-empty
+      v-if="!selectedUserId"
+      :description="t('system.authorizationDiagnostic.selectUserPlaceholder')"
+    />
+    <el-skeleton
+      v-else-if="diagnosticQuery.isLoading.value"
+      :rows="8"
+      animated
+      class="diagnostic-loading"
+    />
 
     <template v-else-if="diagnosticQuery.data.value">
       <el-card shadow="never" class="content-card">
@@ -59,18 +69,30 @@
           <div class="card-header">
             <span>{{ t('system.authorizationDiagnostic.account') }}</span>
             <span class="calculated-at">
-              {{ t('system.authorizationDiagnostic.calculatedAt', { time: formatLocalizedDate(diagnosticQuery.data.value.calculated_at) }) }}
+              {{
+                t('system.authorizationDiagnostic.calculatedAt', {
+                  time: formatLocalizedDate(diagnosticQuery.data.value.calculated_at),
+                })
+              }}
             </span>
           </div>
         </template>
         <div class="summary-grid">
           <div class="summary-item">
             <span>{{ t('dashboard.account') }}</span>
-            <strong>{{ diagnosticQuery.data.value.user.nickname }}（{{ diagnosticQuery.data.value.user.username }}）</strong>
+            <strong
+              >{{ diagnosticQuery.data.value.user.nickname }}（{{
+                diagnosticQuery.data.value.user.username
+              }}）</strong
+            >
           </div>
           <div class="summary-item">
             <span>{{ t('system.authorizationDiagnostic.tenant') }}</span>
-            <strong>{{ diagnosticQuery.data.value.tenant.name }}（{{ diagnosticQuery.data.value.tenant.tenant_id }}）</strong>
+            <strong
+              >{{ diagnosticQuery.data.value.tenant.name }}（{{
+                diagnosticQuery.data.value.tenant.tenant_id
+              }}）</strong
+            >
           </div>
           <div class="summary-item">
             <span>{{ t('system.authorizationDiagnostic.department') }}</span>
@@ -78,8 +100,14 @@
           </div>
           <div class="summary-item">
             <span>{{ t('system.authorizationDiagnostic.finalAccess') }}</span>
-            <el-tag :type="diagnosticQuery.data.value.user.final_access_enabled ? 'success' : 'danger'">
-              {{ diagnosticQuery.data.value.user.final_access_enabled ? t('system.authorizationDiagnostic.accessEnabled') : t('system.authorizationDiagnostic.accessDisabled') }}
+            <el-tag
+              :type="diagnosticQuery.data.value.user.final_access_enabled ? 'success' : 'danger'"
+            >
+              {{
+                diagnosticQuery.data.value.user.final_access_enabled
+                  ? t('system.authorizationDiagnostic.accessEnabled')
+                  : t('system.authorizationDiagnostic.accessDisabled')
+              }}
             </el-tag>
           </div>
         </div>
@@ -92,7 +120,9 @@
           class="warnings-alert"
         >
           <ul class="warning-list">
-            <li v-for="warning in diagnosticQuery.data.value.warnings" :key="warning">{{ warningLabel(warning) }}</li>
+            <li v-for="warning in diagnosticQuery.data.value.warnings" :key="warning">
+              {{ warningLabel(warning) }}
+            </li>
           </ul>
         </el-alert>
         <el-alert
@@ -106,11 +136,23 @@
       </el-card>
 
       <el-card shadow="never" class="content-card">
-        <template #header><span>{{ t('system.authorizationDiagnostic.roles') }}</span></template>
+        <template #header
+          ><span>{{ t('system.authorizationDiagnostic.roles') }}</span></template
+        >
         <div class="table-scroll">
           <el-table :data="diagnosticQuery.data.value.roles" border stripe class="roles-table">
-            <el-table-column prop="name" :label="t('system.user.role')" min-width="150" show-overflow-tooltip />
-            <el-table-column prop="code" :label="t('system.authorizationDiagnostic.roleCode')" min-width="150" show-overflow-tooltip />
+            <el-table-column
+              prop="name"
+              :label="t('system.user.role')"
+              min-width="150"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="code"
+              :label="t('system.authorizationDiagnostic.roleCode')"
+              min-width="150"
+              show-overflow-tooltip
+            />
             <el-table-column :label="t('system.authorizationDiagnostic.roleStatus')" width="110">
               <template #default="{ row }">
                 <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
@@ -144,10 +186,29 @@
           </div>
         </template>
         <div class="table-scroll">
-          <el-table :data="filteredPermissions()" border stripe class="permissions-table" :empty-text="t('common.noData')">
-            <el-table-column prop="name" :label="t('system.authorizationDiagnostic.permissions')" min-width="180" show-overflow-tooltip />
-            <el-table-column prop="code" :label="t('system.authorizationDiagnostic.permissionCode')" min-width="240" show-overflow-tooltip />
-            <el-table-column :label="t('system.authorizationDiagnostic.sourceRoles')" min-width="220">
+          <el-table
+            :data="filteredPermissions()"
+            border
+            stripe
+            class="permissions-table"
+            :empty-text="t('common.noData')"
+          >
+            <el-table-column
+              prop="name"
+              :label="t('system.authorizationDiagnostic.permissions')"
+              min-width="180"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="code"
+              :label="t('system.authorizationDiagnostic.permissionCode')"
+              min-width="240"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              :label="t('system.authorizationDiagnostic.sourceRoles')"
+              min-width="220"
+            >
               <template #default="{ row }">{{ row.source_roles.join(', ') || '—' }}</template>
             </el-table-column>
           </el-table>
@@ -167,18 +228,44 @@
           </div>
         </template>
         <div class="table-scroll">
-          <el-table :data="filteredMenus()" border stripe class="menus-table" :empty-text="t('common.noData')">
-            <el-table-column prop="name" :label="t('system.authorizationDiagnostic.menus')" min-width="170" show-overflow-tooltip />
-            <el-table-column prop="route_key" :label="t('system.authorizationDiagnostic.routeKey')" min-width="190" show-overflow-tooltip />
-            <el-table-column prop="permission_code" :label="t('system.authorizationDiagnostic.permission')" min-width="220" show-overflow-tooltip />
+          <el-table
+            :data="filteredMenus()"
+            border
+            stripe
+            class="menus-table"
+            :empty-text="t('common.noData')"
+          >
+            <el-table-column
+              prop="name"
+              :label="t('system.authorizationDiagnostic.menus')"
+              min-width="170"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="route_key"
+              :label="t('system.authorizationDiagnostic.routeKey')"
+              min-width="190"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="permission_code"
+              :label="t('system.authorizationDiagnostic.permission')"
+              min-width="220"
+              show-overflow-tooltip
+            />
             <el-table-column :label="t('system.authorizationDiagnostic.accessible')" width="100">
               <template #default="{ row }">{{ yesNo(row.accessible) }}</template>
             </el-table-column>
-            <el-table-column :label="t('system.authorizationDiagnostic.visibleInNavigation')" width="120">
+            <el-table-column
+              :label="t('system.authorizationDiagnostic.visibleInNavigation')"
+              width="120"
+            >
               <template #default="{ row }">{{ yesNo(row.visible_in_navigation) }}</template>
             </el-table-column>
             <el-table-column :label="t('system.authorizationDiagnostic.reason')" min-width="180">
-              <template #default="{ row }">{{ row.inaccessible_reason ? reasonLabel(row.inaccessible_reason) : '—' }}</template>
+              <template #default="{ row }">{{
+                row.inaccessible_reason ? reasonLabel(row.inaccessible_reason) : '—'
+              }}</template>
             </el-table-column>
           </el-table>
         </div>
@@ -186,7 +273,9 @@
 
       <div class="diagnostic-grid">
         <el-card shadow="never" class="content-card">
-          <template #header><span>{{ t('system.authorizationDiagnostic.scopeResult') }}</span></template>
+          <template #header
+            ><span>{{ t('system.authorizationDiagnostic.scopeResult') }}</span></template
+          >
           <el-descriptions :column="1" border>
             <el-descriptions-item :label="t('system.authorizationDiagnostic.dataScope')">
               {{ scopeLabel(diagnosticQuery.data.value.data_scope.scope) }}
@@ -207,19 +296,37 @@
         </el-card>
 
         <el-card shadow="never" class="content-card">
-          <template #header><span>{{ t('system.authorizationDiagnostic.versions') }}</span></template>
+          <template #header
+            ><span>{{ t('system.authorizationDiagnostic.versions') }}</span></template
+          >
           <el-descriptions :column="1" border>
             <el-descriptions-item :label="t('system.authorizationDiagnostic.cacheStatus')">
               <el-tag :type="cacheStatusTag(diagnosticQuery.data.value.versions.cache_status)">
                 {{ cacheStatusLabel(diagnosticQuery.data.value.versions.cache_status) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="t('system.authorizationDiagnostic.tenantEpoch')">{{ diagnosticQuery.data.value.versions.tenant_authorization_epoch }}</el-descriptions-item>
-            <el-descriptions-item :label="t('system.authorizationDiagnostic.userVersion')">{{ diagnosticQuery.data.value.versions.user_authorization_version }}</el-descriptions-item>
-            <el-descriptions-item :label="t('system.authorizationDiagnostic.cachedTenantEpoch')">{{ diagnosticQuery.data.value.versions.cached_tenant_authorization_epoch ?? '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('system.authorizationDiagnostic.cachedUserVersion')">{{ diagnosticQuery.data.value.versions.cached_user_authorization_version ?? '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('system.authorizationDiagnostic.websocket')">{{ availableLabel(diagnosticQuery.data.value.dynamic_refresh.websocket_notification_available) }}</el-descriptions-item>
-            <el-descriptions-item :label="t('system.authorizationDiagnostic.headerFallback')">{{ availableLabel(diagnosticQuery.data.value.dynamic_refresh.response_header_epoch_fallback_available) }}</el-descriptions-item>
+            <el-descriptions-item :label="t('system.authorizationDiagnostic.tenantEpoch')">{{
+              diagnosticQuery.data.value.versions.tenant_authorization_epoch
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('system.authorizationDiagnostic.userVersion')">{{
+              diagnosticQuery.data.value.versions.user_authorization_version
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('system.authorizationDiagnostic.cachedTenantEpoch')">{{
+              diagnosticQuery.data.value.versions.cached_tenant_authorization_epoch ?? '—'
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('system.authorizationDiagnostic.cachedUserVersion')">{{
+              diagnosticQuery.data.value.versions.cached_user_authorization_version ?? '—'
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('system.authorizationDiagnostic.websocket')">{{
+              availableLabel(
+                diagnosticQuery.data.value.dynamic_refresh.websocket_notification_available,
+              )
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('system.authorizationDiagnostic.headerFallback')">{{
+              availableLabel(
+                diagnosticQuery.data.value.dynamic_refresh.response_header_epoch_fallback_available,
+              )
+            }}</el-descriptions-item>
           </el-descriptions>
           <p class="refresh-note">{{ t('system.authorizationDiagnostic.onlineNotAsserted') }}</p>
         </el-card>
@@ -230,7 +337,10 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { getAuthorizationDiagnostic, type AuthorizationDiagnostic } from '@/api/modules/authorizationDiagnostic'
+import {
+  getAuthorizationDiagnostic,
+  type AuthorizationDiagnostic,
+} from '@/api/modules/authorizationDiagnostic'
 import { listUserOptions } from '@/api/modules/user'
 import type { SelectOptionList } from '@/api/modules/option'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
@@ -257,7 +367,7 @@ const usersQuery = useTenantQuery<SelectOptionList>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'user-options',
   () => ({ q: userSearch.value, limit: 50 }),
-  async signal => {
+  async (signal) => {
     const response = await listUserOptions({ q: userSearch.value || undefined, limit: 50 }, signal)
     return response.data ?? { items: [], has_more: false }
   },
@@ -266,10 +376,14 @@ const usersQuery = useTenantQuery<SelectOptionList>(
 
 const diagnosticQuery = useTenantQuery<AuthorizationDiagnostic>(
   () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated' && pageActive.value && Boolean(selectedUserId.value),
+  () =>
+    userStore.sessionStatus === 'authenticated' &&
+    pageActive.value &&
+    Boolean(selectedUserId.value),
   'authorization-diagnostic',
   () => ({ userId: selectedUserId.value }),
-  async signal => requireOperationData(await getAuthorizationDiagnostic(selectedUserId.value, signal)),
+  async (signal) =>
+    requireOperationData(await getAuthorizationDiagnostic(selectedUserId.value, signal)),
   { refetchInterval: false },
 )
 
@@ -303,7 +417,11 @@ function yesNo(value: boolean): string {
 }
 
 function availableLabel(value: boolean): string {
-  return t(value ? 'system.authorizationDiagnostic.available' : 'system.authorizationDiagnostic.unavailable')
+  return t(
+    value
+      ? 'system.authorizationDiagnostic.available'
+      : 'system.authorizationDiagnostic.unavailable',
+  )
 }
 
 function normalizedSearch(value: string): string {
@@ -315,10 +433,11 @@ function filteredPermissions() {
   if (!diagnostic) return []
   const keyword = normalizedSearch(permissionSearch.value)
   if (!keyword) return diagnostic.permissions
-  return diagnostic.permissions.filter(permission => (
-    permission.code.toLocaleLowerCase().includes(keyword)
-    || permission.name.toLocaleLowerCase().includes(keyword)
-  ))
+  return diagnostic.permissions.filter(
+    (permission) =>
+      permission.code.toLocaleLowerCase().includes(keyword) ||
+      permission.name.toLocaleLowerCase().includes(keyword),
+  )
 }
 
 function filteredMenus() {
@@ -326,16 +445,20 @@ function filteredMenus() {
   if (!diagnostic) return []
   const keyword = normalizedSearch(menuSearch.value)
   if (!keyword) return diagnostic.menus
-  return diagnostic.menus.filter(menu => (
-    menu.name.toLocaleLowerCase().includes(keyword)
-    || menu.route_key?.toLocaleLowerCase().includes(keyword)
-    || menu.permission_code?.toLocaleLowerCase().includes(keyword)
-  ))
+  return diagnostic.menus.filter(
+    (menu) =>
+      menu.name.toLocaleLowerCase().includes(keyword) ||
+      menu.route_key?.toLocaleLowerCase().includes(keyword) ||
+      menu.permission_code?.toLocaleLowerCase().includes(keyword),
+  )
 }
 
 const SCOPE_KEYS: Record<string, string> = {
-  all: 'scopeAll', custom: 'scopeCustom', department: 'scopeDepartment',
-  department_and_children: 'scopeDepartmentChildren', self_only: 'scopeSelf',
+  all: 'scopeAll',
+  custom: 'scopeCustom',
+  department: 'scopeDepartment',
+  department_and_children: 'scopeDepartmentChildren',
+  self_only: 'scopeSelf',
 }
 
 function scopeLabel(scope: string): string {
@@ -343,9 +466,12 @@ function scopeLabel(scope: string): string {
 }
 
 const WARNING_KEYS: Record<string, string> = {
-  user_disabled: 'warningUserDisabled', tenant_disabled: 'warningTenantDisabled',
-  tenant_expired: 'warningTenantExpired', no_enabled_roles: 'warningNoEnabledRoles',
-  authorization_cache_stale: 'warningCacheStale', authorization_cache_missing: 'warningCacheMissing',
+  user_disabled: 'warningUserDisabled',
+  tenant_disabled: 'warningTenantDisabled',
+  tenant_expired: 'warningTenantExpired',
+  no_enabled_roles: 'warningNoEnabledRoles',
+  authorization_cache_stale: 'warningCacheStale',
+  authorization_cache_missing: 'warningCacheMissing',
   authorization_cache_unavailable: 'warningCacheUnavailable',
   invalid_menu_permission_reference: 'warningInvalidMenuPermission',
 }
@@ -356,10 +482,14 @@ function warningLabel(warning: string): string {
 }
 
 const REASON_KEYS: Record<string, string> = {
-  tenant_unavailable: 'reasonTenantUnavailable', user_disabled: 'reasonUserDisabled',
-  menu_disabled: 'reasonMenuDisabled', no_accessible_child: 'reasonNoAccessibleChild',
-  permission_missing: 'reasonPermissionMissing', invalid_permission_reference: 'reasonInvalidPermission',
-  permission_disabled: 'reasonPermissionDisabled', permission_not_granted: 'reasonPermissionNotGranted',
+  tenant_unavailable: 'reasonTenantUnavailable',
+  user_disabled: 'reasonUserDisabled',
+  menu_disabled: 'reasonMenuDisabled',
+  no_accessible_child: 'reasonNoAccessibleChild',
+  permission_missing: 'reasonPermissionMissing',
+  invalid_permission_reference: 'reasonInvalidPermission',
+  permission_disabled: 'reasonPermissionDisabled',
+  permission_not_granted: 'reasonPermissionNotGranted',
 }
 
 function reasonLabel(reason: string): string {
@@ -367,19 +497,27 @@ function reasonLabel(reason: string): string {
   return key ? t(`system.authorizationDiagnostic.${key}`) : reason
 }
 
-function departmentNames(departments: AuthorizationDiagnostic['data_scope']['department_path']): string {
-  return departments.map(department => department.name).join(' / ') || '—'
+function departmentNames(
+  departments: AuthorizationDiagnostic['data_scope']['department_path'],
+): string {
+  return departments.map((department) => department.name).join(' / ') || '—'
 }
 
 function scopeSources(): string {
   const sources = diagnosticQuery.data.value?.data_scope.sources ?? []
-  return sources.map(source => `${source.role_code}：${scopeLabel(source.scope)}`).join('；') || '—'
+  return (
+    sources.map((source) => `${source.role_code}：${scopeLabel(source.scope)}`).join('；') || '—'
+  )
 }
 
 function cacheStatusLabel(status: string): string {
-  const key = {
-    current: 'cacheCurrent', stale: 'cacheStale', missing: 'cacheMissing', unavailable: 'cacheUnavailable',
-  }[status] ?? 'cacheUnavailable'
+  const key =
+    {
+      current: 'cacheCurrent',
+      stale: 'cacheStale',
+      missing: 'cacheMissing',
+      unavailable: 'cacheUnavailable',
+    }[status] ?? 'cacheUnavailable'
   return t(`system.authorizationDiagnostic.${key}`)
 }
 

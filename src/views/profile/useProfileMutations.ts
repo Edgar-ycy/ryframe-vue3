@@ -23,7 +23,7 @@ export function useProfileDetailsMutation(
     () => userStore.tenantId,
     'profile',
     {
-      mutationFn: async profile => {
+      mutationFn: async (profile) => {
         await updateProfile(profile)
       },
       onSuccess: async (_data, profile) => {
@@ -50,13 +50,13 @@ export function useProfilePasswordMutation(
     () => userStore.tenantId,
     'profile-password',
     {
-      mutationFn: async password => {
+      mutationFn: async (password) => {
         await changePassword(password)
       },
       onSuccess: async () => {
         ElMessage.success(t('account.passwordChangedSignInAgain'))
         await onPasswordChanged()
-        await new Promise(resolve => setTimeout(resolve, PASSWORD_SIGN_OUT_DELAY_MS))
+        await new Promise((resolve) => setTimeout(resolve, PASSWORD_SIGN_OUT_DELAY_MS))
         await terminateSession()
       },
     },
@@ -75,22 +75,18 @@ export function useProfileAvatarMutation(
   onUpdated: (avatarUrl: string) => MaybePromise<void>,
 ) {
   const userStore = useUserStore()
-  const mutation = useTenantMutation<string, FormData>(
-    () => userStore.tenantId,
-    'profile',
-    {
-      mutationFn: async formData => {
-        const response = await updateAvatar(formData)
-        const avatarUrl = response.data?.avatar_url
-        if (!avatarUrl) throw new Error(t('account.avatarResponseMissing'))
-        return avatarUrl
-      },
-      onSuccess: async avatarUrl => {
-        await onUpdated(avatarUrl)
-        ElMessage.success(t('account.avatarUpdated'))
-      },
+  const mutation = useTenantMutation<string, FormData>(() => userStore.tenantId, 'profile', {
+    mutationFn: async (formData) => {
+      const response = await updateAvatar(formData)
+      const avatarUrl = response.data?.avatar_url
+      if (!avatarUrl) throw new Error(t('account.avatarResponseMissing'))
+      return avatarUrl
     },
-  )
+    onSuccess: async (avatarUrl) => {
+      await onUpdated(avatarUrl)
+      ElMessage.success(t('account.avatarUpdated'))
+    },
+  })
 
   async function uploadAvatar(formData: FormData): Promise<void> {
     if (mutation.pending.value) return

@@ -11,7 +11,7 @@ interface DownloadOptions {
 
 /**
  * 文件下载钩子
- * 
+ *
  * @example
  * const { downloading, progress, downloadBlob, downloadUrl } = useDownload()
  * await downloadBlob(() => exportApi(), { filename: '数据.xlsx' })
@@ -21,10 +21,7 @@ export function useDownload() {
   const progress = ref(0)
 
   /** 下载二进制数据 */
-  async function downloadBlob(
-    fetchFn: () => Promise<Blob>,
-    options: DownloadOptions = {},
-  ) {
+  async function downloadBlob(fetchFn: () => Promise<Blob>, options: DownloadOptions = {}) {
     downloading.value = true
     progress.value = 0
     try {

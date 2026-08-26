@@ -45,11 +45,7 @@ export function cancelUserImport(id: string) {
 }
 
 /** 分页查询失败和跳过的行结果。 */
-export function listUserImportRows(
-  id: string,
-  params: UserImportRowQuery,
-  signal?: AbortSignal,
-) {
+export function listUserImportRows(id: string, params: UserImportRowQuery, signal?: AbortSignal) {
   return requestOperation(get_system_user_imports_by_id_rows, {
     path: { id },
     params,

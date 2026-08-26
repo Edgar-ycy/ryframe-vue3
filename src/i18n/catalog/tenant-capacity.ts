@@ -96,7 +96,8 @@ export const tenantCapacityMessages = {
       create: '创建',
       save: '保存',
       tenantIdRequired: '请输入租户标识',
-      tenantIdInvalid: '租户标识必须为 2～64 位 ASCII 字母、数字、下划线或连字符，且首尾必须是字母或数字',
+      tenantIdInvalid:
+        '租户标识必须为 2～64 位 ASCII 字母、数字、下划线或连字符，且首尾必须是字母或数字',
       tenantNameRequired: '请输入租户名称',
       adminUsernameRequired: '请输入管理员账号',
       initialPasswordRequired: '请输入初始密码',
@@ -120,7 +121,8 @@ export const tenantCapacityMessages = {
   'en-US': {
     tenantCapacity: {
       title: 'Tenant capacity',
-      subtitle: 'Review tenant details, resource quotas, and the current request-rate window. This page does not poll automatically.',
+      subtitle:
+        'Review tenant details, resource quotas, and the current request-rate window. This page does not poll automatically.',
       createTenant: 'Create tenant',
       editTenant: 'Edit tenant',
       refresh: 'Refresh',
@@ -162,7 +164,8 @@ export const tenantCapacityMessages = {
       requestWindow: 'Request rate (current window)',
       currentWindowHint: 'This is the current rate-limit window, not historical request volume.',
       currentWindowRemaining: '{seconds}s remaining in this window',
-      currentWindowUnknown: 'Redis is temporarily unavailable, so current request-window usage is unknown. Other resource usage is unaffected.',
+      currentWindowUnknown:
+        'Redis is temporarily unavailable, so current request-window usage is unknown. Other resource usage is unaffected.',
       usedOfLimit: '{used} used / {limit} limit',
       usedUnlimited: '{used} used / unlimited',
       percentage: '{value}%',
@@ -176,10 +179,12 @@ export const tenantCapacityMessages = {
       disable: 'Disable',
       empty: 'No tenants match these filters',
       total: '{count} tenants',
-      usagePermissionHint: 'This account can view basic tenant details only. Resource usage and capacity filtering are unavailable.',
+      usagePermissionHint:
+        'This account can view basic tenant details only. Resource usage and capacity filtering are unavailable.',
       detailTitle: 'Tenant capacity details',
       capacityTab: 'Capacity and usage',
-      detailHint: 'Database usage is read consistently from the primary database. Request usage covers only the current rate-limit window.',
+      detailHint:
+        'Database usage is read consistently from the primary database. Request usage covers only the current rate-limit window.',
       calculatedAt: 'Calculated at',
       basicInformation: 'Basic information',
       quotaConfiguration: 'Quota configuration',
@@ -200,7 +205,8 @@ export const tenantCapacityMessages = {
       selectPublishedPlanVersion: 'Select a published plan version',
       dataTarget: 'Data target',
       selectDataTarget: 'Select an eligible data target',
-      creationOptionsUnavailable: 'Product plan versions or data targets could not be loaded. Tenant creation is unavailable.',
+      creationOptionsUnavailable:
+        'Product plan versions or data targets could not be loaded. Tenant creation is unavailable.',
       passwordHint: 'At least {min} characters with uppercase, lowercase, digits, and symbols',
       formDomain: 'Domain',
       formExpireAt: 'Expiration',
@@ -214,7 +220,8 @@ export const tenantCapacityMessages = {
       create: 'Create',
       save: 'Save',
       tenantIdRequired: 'Enter a tenant ID',
-      tenantIdInvalid: 'The tenant ID must use 2–64 ASCII letters, digits, underscores, or hyphens, and begin and end with a letter or digit',
+      tenantIdInvalid:
+        'The tenant ID must use 2–64 ASCII letters, digits, underscores, or hyphens, and begin and end with a letter or digit',
       tenantNameRequired: 'Enter a tenant name',
       adminUsernameRequired: 'Enter an administrator username',
       initialPasswordRequired: 'Enter an initial password',
@@ -232,7 +239,8 @@ export const tenantCapacityMessages = {
       tenantStatusUpdated: 'Tenant status updated',
       systemTenantCannotDisable: 'The system tenant cannot be disabled',
       statusConfirmTitle: 'Confirm tenant status change',
-      statusConfirm: 'Set tenant “{name}” to “{status}”? This immediately affects sign-in and access for that tenant.',
+      statusConfirm:
+        'Set tenant “{name}” to “{status}”? This immediately affects sign-in and access for that tenant.',
     },
   },
 } as const

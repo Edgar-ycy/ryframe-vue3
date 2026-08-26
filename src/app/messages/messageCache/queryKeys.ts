@@ -49,11 +49,7 @@ export function messageInboxQueryKey(
   userId: string,
   query: MessageInboxQuery,
 ): QueryKey {
-  return tenantQueryKey(
-    tenantId,
-    MESSAGE_INBOX_RESOURCE,
-    messageInboxKeyParams(userId, query),
-  )
+  return tenantQueryKey(tenantId, MESSAGE_INBOX_RESOURCE, messageInboxKeyParams(userId, query))
 }
 
 export function messageUnreadQueryKey(tenantId: string, userId: string): QueryKey {
@@ -71,7 +67,7 @@ export function invalidateUserInbox(
 ): Promise<void> {
   return client.invalidateQueries({
     queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
-    predicate: query => isInboxKeyForUser(query.queryKey, userId),
+    predicate: (query) => isInboxKeyForUser(query.queryKey, userId),
   })
 }
 
@@ -84,10 +80,10 @@ export function inboxParamsFromKey(queryKey: QueryKey): MessageInboxKeyParams | 
   const params = queryKey[3]
   if (!isRecord(params)) return undefined
   if (
-    typeof params.user_id !== 'string'
-    || !(typeof params.cursor === 'string' || params.cursor === null)
-    || typeof params.limit !== 'number'
-    || typeof params.unread_only !== 'boolean'
+    typeof params.user_id !== 'string' ||
+    !(typeof params.cursor === 'string' || params.cursor === null) ||
+    typeof params.limit !== 'number' ||
+    typeof params.unread_only !== 'boolean'
   ) {
     return undefined
   }

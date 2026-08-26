@@ -6,12 +6,23 @@
     @open="handleOpen"
     @closed="resetForm"
   >
-    <el-form ref="formRef" v-loading="detailLoading" :model="form" :rules="rules" label-width="80px">
+    <el-form
+      ref="formRef"
+      v-loading="detailLoading"
+      :model="form"
+      :rules="rules"
+      label-width="80px"
+    >
       <el-form-item :label="t('system.role.name')" prop="name">
         <el-input v-model="form.name" :placeholder="t('system.role.enterName')" maxlength="50" />
       </el-form-item>
       <el-form-item :label="t('system.role.code')" prop="code">
-        <el-input v-model="form.code" :disabled="isEdit()" :placeholder="t('system.role.enterCode')" maxlength="50" />
+        <el-input
+          v-model="form.code"
+          :disabled="isEdit()"
+          :placeholder="t('system.role.enterCode')"
+          maxlength="50"
+        />
       </el-form-item>
       <el-form-item :label="t('system.common.sort')">
         <el-input-number v-model="form.sort" :min="0" :max="999" />
@@ -62,8 +73,7 @@ interface RoleFormState {
 }
 
 type SaveRoleCommand =
-  | { kind: 'create', data: RoleCreateInput }
-  | { kind: 'update', id: Id, data: RoleUpdateInput }
+  { kind: 'create'; data: RoleCreateInput } | { kind: 'update'; id: Id; data: RoleUpdateInput }
 
 const props = defineProps<{
   role: RoleRecord | null
@@ -84,7 +94,7 @@ const detailQuery = useTenantQuery<RoleRecord>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
   'roles',
   () => ({ scope: 'detail', id: props.role?.id ?? null }),
-  async signal => {
+  async (signal) => {
     const role = props.role
     if (!role) throw new Error(t('system.role.detailMissing'))
     const response = await getRole(role.id, signal)
@@ -92,23 +102,17 @@ const detailQuery = useTenantQuery<RoleRecord>(
     return response.data
   },
 )
-const saveMutation = useTenantMutation<void, SaveRoleCommand>(
-  () => userStore.tenantId,
-  'roles',
-  {
-    mutationFn: async command => {
-      if (command.kind === 'update') await updateRole(command.id, command.data)
-      else await createRole(command.data)
-    },
-    onSuccess: (_data, command) => {
-      ElMessage.success(t(
-        command.kind === 'update'
-          ? 'system.common.updateSuccess'
-          : 'system.common.addSuccess',
-      ))
-    },
+const saveMutation = useTenantMutation<void, SaveRoleCommand>(() => userStore.tenantId, 'roles', {
+  mutationFn: async (command) => {
+    if (command.kind === 'update') await updateRole(command.id, command.data)
+    else await createRole(command.data)
   },
-)
+  onSuccess: (_data, command) => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
+  },
+})
 const detailLoading = detailQuery.isFetching
 const submitting = saveMutation.pending
 
@@ -143,7 +147,7 @@ function handleOpen(): void {
 
 watch(
   () => detailQuery.data.value,
-  role => {
+  (role) => {
     if (visible.value && role) populateForm(role)
   },
 )

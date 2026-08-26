@@ -14,7 +14,8 @@ export const tenantConfigTransferMessages = {
       createPackageSuccess: '配置包生成任务已提交',
       uploadPackage: '上传配置包',
       uploadTitle: '上传配置包',
-      uploadHint: '仅支持不超过 5 MiB 的 .ryframe-config.zip 文件。服务器会验证文件结构、大小、Schema 和 SHA-256。',
+      uploadHint:
+        '仅支持不超过 5 MiB 的 .ryframe-config.zip 文件。服务器会验证文件结构、大小、Schema 和 SHA-256。',
       chooseFile: '点击或拖拽文件到此处',
       invalidFile: '请选择 .ryframe-config.zip 配置包',
       emptyFile: '配置包不能为空',
@@ -61,7 +62,8 @@ export const tenantConfigTransferMessages = {
       applySubmitted: '配置应用任务已提交',
       rollback: '回滚',
       rollbackConfirmTitle: '确认回滚配置',
-      rollbackConfirm: '回滚会恢复本次应用前的受影响配置。如果应用后出现新引用或修改，服务器会拒绝回滚。确定继续吗？',
+      rollbackConfirm:
+        '回滚会恢复本次应用前的受影响配置。如果应用后出现新引用或修改，服务器会拒绝回滚。确定继续吗？',
       rollbackSubmitted: '配置回滚任务已提交',
       blockedHint: '当前计划存在阻断项，请先修复来源或目标配置，然后重新预览。',
       planStaleHint: '应用时服务器会再次校验计划哈希、配置版本和授权纪元。',
@@ -130,19 +132,23 @@ export const tenantConfigTransferMessages = {
   'en-US': {
     tenantConfigTransfer: {
       title: 'Configuration transfer',
-      subtitle: 'Safely move departments, positions, dictionaries, portable parameters, permissions, menus, and roles between environments.',
-      securityHint: 'Packages never include users, passwords, API keys, secrets, files, or business data.',
+      subtitle:
+        'Safely move departments, positions, dictionaries, portable parameters, permissions, menus, and roles between environments.',
+      securityHint:
+        'Packages never include users, passwords, API keys, secrets, files, or business data.',
       sourceStep: 'Choose source',
       inspectStep: 'Inspect package',
       previewStep: 'Preview changes',
       applyStep: 'Apply or roll back',
       packagesTitle: 'Configuration packages',
-      packagesHint: 'Generate a package from this tenant or upload a .ryframe-config.zip file from another environment.',
+      packagesHint:
+        'Generate a package from this tenant or upload a .ryframe-config.zip file from another environment.',
       createPackage: 'Generate package',
       createPackageSuccess: 'Package generation job submitted',
       uploadPackage: 'Upload package',
       uploadTitle: 'Upload configuration package',
-      uploadHint: 'Only .ryframe-config.zip files up to 5 MiB are accepted. The server validates structure, size, schema, and SHA-256.',
+      uploadHint:
+        'Only .ryframe-config.zip files up to 5 MiB are accepted. The server validates structure, size, schema, and SHA-256.',
       chooseFile: 'Click or drag a file here',
       invalidFile: 'Select a .ryframe-config.zip package',
       emptyFile: 'The package cannot be empty',
@@ -167,13 +173,15 @@ export const tenantConfigTransferMessages = {
       usePackage: 'Use this package',
       downloadPackage: 'Download',
       downloadSuccess: 'Package download started',
-      generatedPendingHint: 'The package is being generated in the background. Refresh to see its latest status.',
+      generatedPendingHint:
+        'The package is being generated in the background. Refresh to see its latest status.',
       selectedPackage: 'Selected package',
       selectPackageFirst: 'Select a completed package first',
       createTransfer: 'Create transfer',
       createTransferSuccess: 'Transfer created',
       planTitle: 'Transfer plan',
-      planHint: 'Preview reads current configuration from the primary database. A plan with blocked items cannot be applied.',
+      planHint:
+        'Preview reads current configuration from the primary database. A plan with blocked items cannot be applied.',
       noTransfer: 'Select a previous transfer or create one from a configuration package.',
       transferStatus: 'Transfer status',
       targetConfigVersion: 'Target configuration version',
@@ -185,15 +193,20 @@ export const tenantConfigTransferMessages = {
       previewSubmitted: 'Preview job submitted',
       apply: 'Apply configuration',
       applyConfirmTitle: 'Apply configuration',
-      applyConfirm: 'The target tenant will be updated using this preview plan. A rollback snapshot is created first. Continue?',
+      applyConfirm:
+        'The target tenant will be updated using this preview plan. A rollback snapshot is created first. Continue?',
       applySubmitted: 'Apply job submitted',
       rollback: 'Roll back',
       rollbackConfirmTitle: 'Roll back configuration',
-      rollbackConfirm: 'This restores affected configuration from before the apply. The server rejects rollback if later changes or references exist. Continue?',
+      rollbackConfirm:
+        'This restores affected configuration from before the apply. The server rejects rollback if later changes or references exist. Continue?',
       rollbackSubmitted: 'Rollback job submitted',
-      blockedHint: 'This plan contains blocked items. Fix the source or target configuration, then run preview again.',
-      planStaleHint: 'The server revalidates the plan hash, configuration version, and authorization epoch before apply.',
-      targetOwnedHint: 'Resources that exist only on the target remain unchanged; they are never deleted or automatically disabled.',
+      blockedHint:
+        'This plan contains blocked items. Fix the source or target configuration, then run preview again.',
+      planStaleHint:
+        'The server revalidates the plan hash, configuration version, and authorization epoch before apply.',
+      targetOwnedHint:
+        'Resources that exist only on the target remain unchanged; they are never deleted or automatically disabled.',
       create: 'Create',
       update: 'Update',
       unchanged: 'Unchanged',
@@ -216,15 +229,21 @@ export const tenantConfigTransferMessages = {
       action: 'Planned action',
       outcome: 'Outcome',
       detail: 'Details',
-      detailProtectedPermission: 'Platform-only and super-wildcard permissions cannot be transferred.',
-      detailPermissionNotRegistered: 'The target environment has not registered this API permission.',
-      detailPermissionCatalogMismatch: 'The permission does not match the target environment\'s compile-time permission catalog.',
+      detailProtectedPermission:
+        'Platform-only and super-wildcard permissions cannot be transferred.',
+      detailPermissionNotRegistered:
+        'The target environment has not registered this API permission.',
+      detailPermissionCatalogMismatch:
+        "The permission does not match the target environment's compile-time permission catalog.",
       detailRouteNotRegistered: 'The target environment has not registered this page route.',
-      detailRouteCatalogMismatch: 'The page route does not match the target environment\'s compile-time route catalog.',
-      detailUnknown: 'Fix this item and preview again. The detailed reason is not exposed to this client version.',
+      detailRouteCatalogMismatch:
+        "The page route does not match the target environment's compile-time route catalog.",
+      detailUnknown:
+        'Fix this item and preview again. The detailed reason is not exposed to this client version.',
       itemsEmpty: 'Run preview to see item-level changes',
       historyTitle: 'Transfer history',
-      historyHint: 'Database IDs are never shown. Select a record to inspect its source, plan, and rollback window.',
+      historyHint:
+        'Database IDs are never shown. Select a record to inspect its source, plan, and rollback window.',
       viewHistory: 'View transfer history',
       historyEmpty: 'No transfer history',
       select: 'View',

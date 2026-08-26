@@ -1,10 +1,10 @@
 import { onScopeDispose, ref } from 'vue'
-import {
-  previewSchedule,
-  type JobSchedulePreview,
-} from '@/api/modules/monitor'
+import { previewSchedule, type JobSchedulePreview } from '@/api/modules/monitor'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { formatScheduleTime as formatScheduleTimeValue, formatUtcTime as formatUtcTimeValue } from './model'
+import {
+  formatScheduleTime as formatScheduleTimeValue,
+  formatUtcTime as formatUtcTimeValue,
+} from './model'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
 
@@ -34,15 +34,15 @@ export function useSchedulePreview(options: SchedulePreviewOptions) {
   }
 
   function canPreview(): boolean {
-    return builderComplete()
-      && Boolean(cronExpression().trim())
-      && Boolean(timezone().trim())
+    return builderComplete() && Boolean(cronExpression().trim()) && Boolean(timezone().trim())
   }
 
   function hasValidPreview(): boolean {
-    return Boolean(preview.value)
-      && previewSignature.value === currentPreviewSignature()
-      && !previewLoading.value
+    return (
+      Boolean(preview.value) &&
+      previewSignature.value === currentPreviewSignature() &&
+      !previewLoading.value
+    )
   }
 
   function schedulePreview(): void {
@@ -91,25 +91,31 @@ export function useSchedulePreview(options: SchedulePreviewOptions) {
     previewError.value = ''
     previewLoading.value = true
     try {
-      const result = requireOperationData(await previewSchedule({
-        cron_expression: cronExpression().trim(),
-        timezone: timezone().trim(),
-      }, controller.signal))
-      if (sequence !== previewRequestSequence.value || signature !== currentPreviewSignature()) return false
+      const result = requireOperationData(
+        await previewSchedule(
+          {
+            cron_expression: cronExpression().trim(),
+            timezone: timezone().trim(),
+          },
+          controller.signal,
+        ),
+      )
+      if (sequence !== previewRequestSequence.value || signature !== currentPreviewSignature())
+        return false
       preview.value = result
       previewSignature.value = signature
       return true
-    }
-    catch (error) {
-      if (isCancelledRequest(error, controller.signal) || sequence !== previewRequestSequence.value) return false
-      previewError.value = error instanceof HttpError && error.errorKey === 'validation'
-        ? t('monitor.schedules.previewValidationFailed')
-        : error instanceof Error && error.message
-        ? error.message
-        : t('monitor.schedules.previewRequestFailed')
+    } catch (error) {
+      if (isCancelledRequest(error, controller.signal) || sequence !== previewRequestSequence.value)
+        return false
+      previewError.value =
+        error instanceof HttpError && error.errorKey === 'validation'
+          ? t('monitor.schedules.previewValidationFailed')
+          : error instanceof Error && error.message
+            ? error.message
+            : t('monitor.schedules.previewRequestFailed')
       return false
-    }
-    finally {
+    } finally {
       if (sequence === previewRequestSequence.value) {
         previewLoading.value = false
         previewController.value = undefined
@@ -129,10 +135,12 @@ export function useSchedulePreview(options: SchedulePreviewOptions) {
   function isCancelledRequest(error: unknown, signal: AbortSignal): boolean {
     if (signal.aborted) return true
     if (error instanceof DOMException && error.name === 'AbortError') return true
-    return typeof error === 'object'
-      && error !== null
-      && 'code' in error
-      && (error as { code?: string }).code === 'ERR_CANCELED'
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'ERR_CANCELED'
+    )
   }
 
   function clearPreviewTimer(): void {

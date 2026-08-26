@@ -19,7 +19,11 @@
       <el-form-item v-if="!tenant" :label="t('tenantCapacity.adminUsername')" prop="admin_username">
         <el-input v-model="form.admin_username" maxlength="64" autocomplete="off" />
       </el-form-item>
-      <el-form-item v-if="!tenant" :label="t('tenantCapacity.initialPassword')" prop="admin_password">
+      <el-form-item
+        v-if="!tenant"
+        :label="t('tenantCapacity.initialPassword')"
+        prop="admin_password"
+      >
         <el-input
           v-model="form.admin_password"
           type="password"
@@ -29,7 +33,11 @@
           show-password
         />
       </el-form-item>
-      <el-form-item v-if="!tenant" :label="t('tenantCapacity.productPlanVersion')" prop="plan_version_id">
+      <el-form-item
+        v-if="!tenant"
+        :label="t('tenantCapacity.productPlanVersion')"
+        prop="plan_version_id"
+      >
         <el-select
           v-model="form.plan_version_id"
           class="form-control"
@@ -83,20 +91,46 @@
       <el-divider content-position="left">{{ t('tenantCapacity.quotaConfiguration') }}</el-divider>
       <p class="quota-hint">{{ t('tenantCapacity.zeroUnlimitedHint') }}</p>
       <el-form-item :label="t('tenantCapacity.maxUsers')">
-        <el-input-number v-model="form.max_users" :min="0" :max="2147483647" :precision="0" class="form-control" />
+        <el-input-number
+          v-model="form.max_users"
+          :min="0"
+          :max="2147483647"
+          :precision="0"
+          class="form-control"
+        />
       </el-form-item>
       <el-form-item :label="t('tenantCapacity.maxRoles')" prop="max_roles">
-        <el-input-number v-model="form.max_roles" :min="0" :max="2147483647" :precision="0" class="form-control" />
+        <el-input-number
+          v-model="form.max_roles"
+          :min="0"
+          :max="2147483647"
+          :precision="0"
+          class="form-control"
+        />
       </el-form-item>
       <el-form-item :label="t('tenantCapacity.maxStorage')">
-        <el-input-number v-model="form.max_storage_mb" :min="0" :max="Number.MAX_SAFE_INTEGER" :precision="0" class="form-control" />
+        <el-input-number
+          v-model="form.max_storage_mb"
+          :min="0"
+          :max="Number.MAX_SAFE_INTEGER"
+          :precision="0"
+          class="form-control"
+        />
       </el-form-item>
       <el-form-item :label="t('tenantCapacity.maxRequests')">
-        <el-input-number v-model="form.max_requests_per_min" :min="0" :max="2147483647" :precision="0" class="form-control" />
+        <el-input-number
+          v-model="form.max_requests_per_min"
+          :min="0"
+          :max="2147483647"
+          :precision="0"
+          class="form-control"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">{{ t('tenantCapacity.cancel') }}</el-button>
+      <el-button :disabled="submitting" @click="visible = false">{{
+        t('tenantCapacity.cancel')
+      }}</el-button>
       <el-button
         v-perm="tenant ? 'tenant:edit' : 'tenant:add'"
         type="primary"
@@ -113,11 +147,7 @@
 <script setup lang="ts">
 import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import type {
-  CreateTenantPayload,
-  TenantCapacity,
-  UpdateTenantPayload,
-} from '@/api/modules/tenant'
+import type { CreateTenantPayload, TenantCapacity, UpdateTenantPayload } from '@/api/modules/tenant'
 import { listAllDataTargetOptions, type DataTargetSummary } from '@/api/modules/dataTarget'
 import {
   getProductPlan,
@@ -175,30 +205,42 @@ const rules: FormRules<TenantFormModel> = {
     { required: true, message: t('tenantCapacity.tenantIdRequired'), trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
-        callback(isValidTenantId(String(value ?? ''))
-          ? undefined
-          : new Error(t('tenantCapacity.tenantIdInvalid')))
+        callback(
+          isValidTenantId(String(value ?? ''))
+            ? undefined
+            : new Error(t('tenantCapacity.tenantIdInvalid')),
+        )
       },
       trigger: 'blur',
     },
   ],
   name: [{ required: true, message: t('tenantCapacity.tenantNameRequired'), trigger: 'blur' }],
-  admin_username: [{ required: true, message: t('tenantCapacity.adminUsernameRequired'), trigger: 'blur' }],
+  admin_username: [
+    { required: true, message: t('tenantCapacity.adminUsernameRequired'), trigger: 'blur' },
+  ],
   admin_password: [
     { required: true, message: t('tenantCapacity.initialPasswordRequired'), trigger: 'blur' },
     { validator: validateNewPassword, trigger: 'blur' },
   ],
-  plan_version_id: [{ required: true, message: t('tenantCapacity.planVersionRequired'), trigger: 'change' }],
-  data_target_key: [{ required: true, message: t('tenantCapacity.dataTargetRequired'), trigger: 'change' }],
-  max_roles: [{
-    validator: (_rule, value, callback) => {
-      const roleLimit = Number(value)
-      callback(roleLimit === 0 || roleLimit >= 2
-        ? undefined
-        : new Error(t('tenantCapacity.maxRolesInvalid')))
+  plan_version_id: [
+    { required: true, message: t('tenantCapacity.planVersionRequired'), trigger: 'change' },
+  ],
+  data_target_key: [
+    { required: true, message: t('tenantCapacity.dataTargetRequired'), trigger: 'change' },
+  ],
+  max_roles: [
+    {
+      validator: (_rule, value, callback) => {
+        const roleLimit = Number(value)
+        callback(
+          roleLimit === 0 || roleLimit >= 2
+            ? undefined
+            : new Error(t('tenantCapacity.maxRolesInvalid')),
+        )
+      },
+      trigger: 'change',
     },
-    trigger: 'change',
-  }],
+  ],
 }
 
 function createDefaultForm(): TenantFormModel {
@@ -219,22 +261,25 @@ function createDefaultForm(): TenantFormModel {
 }
 
 function handleOpen(): void {
-  Object.assign(form, props.tenant
-    ? {
-        tenant_id: props.tenant.tenant_id,
-        name: props.tenant.name,
-        domain: props.tenant.domain ?? '',
-        expire_at: props.tenant.expire_at ?? '',
-        max_users: props.tenant.max_users,
-        max_roles: props.tenant.max_roles,
-        max_storage_mb: props.tenant.max_storage_mb,
-        max_requests_per_min: props.tenant.max_requests_per_min,
-        admin_username: '',
-        admin_password: '',
-        plan_version_id: '',
-        data_target_key: '',
-      }
-    : createDefaultForm())
+  Object.assign(
+    form,
+    props.tenant
+      ? {
+          tenant_id: props.tenant.tenant_id,
+          name: props.tenant.name,
+          domain: props.tenant.domain ?? '',
+          expire_at: props.tenant.expire_at ?? '',
+          max_users: props.tenant.max_users,
+          max_roles: props.tenant.max_roles,
+          max_storage_mb: props.tenant.max_storage_mb,
+          max_requests_per_min: props.tenant.max_requests_per_min,
+          admin_username: '',
+          admin_password: '',
+          plan_version_id: '',
+          data_target_key: '',
+        }
+      : createDefaultForm(),
+  )
   void nextTick(() => formRef.value?.clearValidate())
   if (!props.tenant) void loadCreationOptions()
 }
@@ -288,21 +333,21 @@ async function loadCreationOptions(): Promise<void> {
       listAllDataTargetOptions({ eligible_for: 'new_tenant' }),
     ])
     const details = await Promise.all(
-      planPage.items.map(plan => getProductPlan(plan.id).then(requireOperationData)),
+      planPage.items.map((plan) => getProductPlan(plan.id).then(requireOperationData)),
     )
     if (generation !== optionsGeneration) return
-    publishedPlanVersions.value = details.flatMap(detail => detail.versions
-      .filter(version => version.status === 'published')
-      .map(version => ({ ...version, planName: detail.name })))
-    dataTargets.value = targets.filter(target => target.eligible)
-  }
-  catch {
+    publishedPlanVersions.value = details.flatMap((detail) =>
+      detail.versions
+        .filter((version) => version.status === 'published')
+        .map((version) => ({ ...version, planName: detail.name })),
+    )
+    dataTargets.value = targets.filter((target) => target.eligible)
+  } catch {
     if (generation !== optionsGeneration) return
     publishedPlanVersions.value = []
     dataTargets.value = []
     creationOptionsError.value = true
-  }
-  finally {
+  } finally {
     if (generation === optionsGeneration) creationOptionsLoading.value = false
   }
 }
@@ -313,13 +358,19 @@ function dataTargetLabel(target: DataTargetSummary): string {
 }
 
 function passwordValidationMessage(password: string): string | undefined {
-  if (password.length < PASSWORD_POLICY.min_length) return t('tenantCapacity.passwordTooShort', { min: PASSWORD_POLICY.min_length })
-  if (password.length > PASSWORD_POLICY.max_length) return t('tenantCapacity.passwordTooLong', { max: PASSWORD_POLICY.max_length })
+  if (password.length < PASSWORD_POLICY.min_length)
+    return t('tenantCapacity.passwordTooShort', { min: PASSWORD_POLICY.min_length })
+  if (password.length > PASSWORD_POLICY.max_length)
+    return t('tenantCapacity.passwordTooLong', { max: PASSWORD_POLICY.max_length })
   if (!/^[!-~]+$/.test(password)) return t('tenantCapacity.passwordVisibleAscii')
-  if (PASSWORD_POLICY.required_classes.includes('uppercase') && !/[A-Z]/.test(password)) return t('tenantCapacity.passwordNeedsUppercase')
-  if (PASSWORD_POLICY.required_classes.includes('lowercase') && !/[a-z]/.test(password)) return t('tenantCapacity.passwordNeedsLowercase')
-  if (PASSWORD_POLICY.required_classes.includes('digit') && !/[0-9]/.test(password)) return t('tenantCapacity.passwordNeedsDigit')
-  if (PASSWORD_POLICY.required_classes.includes('special') && !/[^A-Za-z0-9]/.test(password)) return t('tenantCapacity.passwordNeedsSpecial')
+  if (PASSWORD_POLICY.required_classes.includes('uppercase') && !/[A-Z]/.test(password))
+    return t('tenantCapacity.passwordNeedsUppercase')
+  if (PASSWORD_POLICY.required_classes.includes('lowercase') && !/[a-z]/.test(password))
+    return t('tenantCapacity.passwordNeedsLowercase')
+  if (PASSWORD_POLICY.required_classes.includes('digit') && !/[0-9]/.test(password))
+    return t('tenantCapacity.passwordNeedsDigit')
+  if (PASSWORD_POLICY.required_classes.includes('special') && !/[^A-Za-z0-9]/.test(password))
+    return t('tenantCapacity.passwordNeedsSpecial')
   return undefined
 }
 </script>

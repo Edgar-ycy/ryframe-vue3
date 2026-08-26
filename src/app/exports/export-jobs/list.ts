@@ -6,15 +6,12 @@ import { useUserStore } from '@/stores/user'
 import { exportJobListQueryKey } from '../exportJobCache'
 import { shouldEnableExportJobs } from './identity'
 
-export function useExportJobList(
-  enabled: MaybeRefOrGetter<boolean> = true,
-) {
+export function useExportJobList(enabled: MaybeRefOrGetter<boolean> = true) {
   const user = useUserStore()
   const listQuery = useQuery<ExportJob[], HttpError>({
-    queryKey: computed(() => exportJobListQueryKey(
-      user.tenantId || 'anonymous',
-      String(user.userId || 'anonymous'),
-    )),
+    queryKey: computed(() =>
+      exportJobListQueryKey(user.tenantId || 'anonymous', String(user.userId || 'anonymous')),
+    ),
     enabled: computed(() => shouldEnableExportJobs(enabled)),
     queryFn: async ({ signal }) => requireOperationData(await listExportJobs(signal)),
     staleTime: Number.POSITIVE_INFINITY,

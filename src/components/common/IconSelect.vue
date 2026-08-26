@@ -1,13 +1,27 @@
 <template>
   <el-button
     :icon="resolveElementIcon(props.modelValue, 'Plus')"
-    :aria-label="props.modelValue ? t('shell.icon.changeCurrent', { icon: props.modelValue }) : t('shell.icon.select')"
+    :aria-label="
+      props.modelValue
+        ? t('shell.icon.changeCurrent', { icon: props.modelValue })
+        : t('shell.icon.select')
+    "
     @click="openDialog"
   >
     {{ props.modelValue ? '' : t('shell.icon.select') }}
   </el-button>
-  <el-dialog v-model="dialogVisible" :title="t('shell.icon.dialogTitle')" width="600px" append-to-body>
-    <el-input v-model="search" :placeholder="t('shell.icon.search')" clearable style="margin-bottom:12px" />
+  <el-dialog
+    v-model="dialogVisible"
+    :title="t('shell.icon.dialogTitle')"
+    width="600px"
+    append-to-body
+  >
+    <el-input
+      v-model="search"
+      :placeholder="t('shell.icon.search')"
+      clearable
+      style="margin-bottom: 12px"
+    />
     <el-tabs v-model="activeTab">
       <el-tab-pane :label="t('shell.icon.elementPlus')" name="ep">
         <div class="icon-grid">
@@ -50,17 +64,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const search = ref('')
 const activeTab = ref('ep')
-const {
-  closeDialog,
-  confirmSelection,
-  dialogVisible,
-  openDialog,
-  pendingIcon,
-  selectIcon,
-} = useIconSelection(
-  () => props.modelValue,
-  value => emit('update:modelValue', value),
-)
+const { closeDialog, confirmSelection, dialogVisible, openDialog, pendingIcon, selectIcon } =
+  useIconSelection(
+    () => props.modelValue,
+    (value) => emit('update:modelValue', value),
+  )
 
 // Element Plus 图标清单
 const epIcons = Object.keys(elementIcons)
@@ -68,9 +76,8 @@ const epIcons = Object.keys(elementIcons)
 const filteredIcons = computed(() => {
   if (!search.value) return epIcons.slice(0, 100)
   const q = search.value.toLowerCase()
-  return epIcons.filter(i => i.toLowerCase().includes(q)).slice(0, 100)
+  return epIcons.filter((i) => i.toLowerCase().includes(q)).slice(0, 100)
 })
-
 </script>
 
 <style scoped>

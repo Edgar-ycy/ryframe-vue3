@@ -6,6 +6,5 @@ import { useTenantContextStore } from '@/app/tenant-context'
 export function canExecuteFeaturePermission(permissionCode: PermissionCode): boolean {
   const tenantContext = useTenantContextStore()
   if (tenantContext.status !== 'loaded') return false
-  return !isBusinessWritePermission(permissionCode)
-    || tenantContext.canWriteBusinessData
+  return !isBusinessWritePermission(permissionCode) || tenantContext.canWriteBusinessData
 }

@@ -1,12 +1,4 @@
-import {
-  mkdir,
-  mkdtemp,
-  readFile,
-  readdir,
-  rename,
-  rm,
-  writeFile,
-} from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -32,12 +24,14 @@ const sharedGeneratedPaths = new Set([
 ])
 
 function requireOwnedPath(relative) {
-  if (typeof relative !== 'string'
-    || relative.length === 0
-    || relative.includes('\\')
-    || path.posix.isAbsolute(relative)
-    || relative.split('/').includes('..')
-    || (!relative.startsWith('src/api/generated/') && !sharedGeneratedPaths.has(relative))) {
+  if (
+    typeof relative !== 'string' ||
+    relative.length === 0 ||
+    relative.includes('\\') ||
+    path.posix.isAbsolute(relative) ||
+    relative.split('/').includes('..') ||
+    (!relative.startsWith('src/api/generated/') && !sharedGeneratedPaths.has(relative))
+  ) {
     throw new Error(`OpenAPI ownership manifest 包含非法路径：${String(relative)}`)
   }
   return relative
@@ -59,8 +53,7 @@ async function readPreviousOwnership() {
       throw new Error('OpenAPI ownership manifest 必须是 version=1 且包含 files 数组')
     }
     return new Set(manifest.files.map(requireOwnedPath))
-  }
-  catch (error) {
+  } catch (error) {
     if (error?.code !== 'ENOENT') throw error
     return new Set([...legacyArtifactPaths, ...generatedArtifactPaths])
   }
@@ -69,8 +62,7 @@ async function readPreviousOwnership() {
 async function existingFile(relative) {
   try {
     return await readFile(path.join(root, relative))
-  }
-  catch (error) {
+  } catch (error) {
     if (error?.code === 'ENOENT') return undefined
     throw error
   }
@@ -95,10 +87,12 @@ async function checkArtifacts(stagingRoot, artifacts, previousOwnership) {
     if (!committed?.equals(generated)) stale.push(relative)
   }
   for (const relative of previousOwnership) {
-    if (!generatedSet.has(relative) && await existingFile(relative)) stale.push(relative)
+    if (!generatedSet.has(relative) && (await existingFile(relative))) stale.push(relative)
   }
   if (stale.length > 0) {
-    throw new Error(`以下 OpenAPI 派生文件不是最新版本：\n  - ${stale.sort().join('\n  - ')}\n请运行 pnpm api:generate`)
+    throw new Error(
+      `以下 OpenAPI 派生文件不是最新版本：\n  - ${stale.sort().join('\n  - ')}\n请运行 pnpm api:generate`,
+    )
   }
 }
 
@@ -110,7 +104,7 @@ async function installArtifacts(stagingRoot, previousOwnership) {
   try {
     for (const relative of affected) {
       const output = path.join(root, relative)
-      if (!await existingFile(relative)) continue
+      if (!(await existingFile(relative))) continue
       const backup = path.join(backupRoot, relative)
       await mkdir(path.dirname(backup), { recursive: true })
       await rename(output, backup)
@@ -123,8 +117,7 @@ async function installArtifacts(stagingRoot, previousOwnership) {
       await rename(staged, output)
       installed.push(relative)
     }
-  }
-  catch (error) {
+  } catch (error) {
     for (const relative of installed.reverse()) {
       await rm(path.join(root, relative), { force: true })
     }
@@ -142,7 +135,7 @@ async function sourceFiles(directory) {
   const files = []
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const target = path.join(directory, entry.name)
-    if (entry.isDirectory()) files.push(...await sourceFiles(target))
+    if (entry.isDirectory()) files.push(...(await sourceFiles(target)))
     else if (/\.(?:ts|vue)$/u.test(entry.name)) files.push(target)
   }
   return files
@@ -160,7 +153,9 @@ async function assertUnifiedSchemaImports() {
     if (source.includes('generated/schema')) violations.push(relative)
   }
   if (violations.length > 0) {
-    throw new Error(`业务代码只能通过 src/api/contract.ts 使用 OpenAPI 类型：\n  - ${violations.join('\n  - ')}`)
+    throw new Error(
+      `业务代码只能通过 src/api/contract.ts 使用 OpenAPI 类型：\n  - ${violations.join('\n  - ')}`,
+    )
   }
 }
 
@@ -176,12 +171,10 @@ try {
   if (mode === '--check') {
     await checkArtifacts(stagingRoot, artifacts, previousOwnership)
     console.log(`OpenAPI 派生文件只读校验通过（${artifacts.size} 个文件）`)
-  }
-  else {
+  } else {
     await installArtifacts(stagingRoot, previousOwnership)
     console.log(`已原子安装 OpenAPI 派生文件（${artifacts.size} 个文件）`)
   }
-}
-finally {
+} finally {
   await rm(stagingRoot, { recursive: true, force: true })
 }

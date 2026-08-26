@@ -286,7 +286,8 @@ export const messages = {
       restore: 'Restore defaults',
       locale: 'Language',
       selectThemeColor: 'Select theme color {color}',
-      localeSaveFailed: 'The language changed, but your profile preference could not be saved. The local setting will continue to be used until your next sign-in.',
+      localeSaveFailed:
+        'The language changed, but your profile preference could not be saved. The local setting will continue to be used until your next sign-in.',
     },
     profile: {
       basicInformation: 'Basic information',
@@ -368,16 +369,16 @@ export const messages = {
 
 export const navigationTitleKeys: Readonly<Record<string, string>> = Object.freeze({
   ...navigationRouteTitleKeys,
-  '登录': 'login',
-  '重置密码': 'resetPassword',
-  '个人中心': 'profile',
-  '我的导出': 'exports',
-  '监控管理': 'monitor',
-  '运行监控': 'runtime',
-  '数据库连接池': 'dbPool',
-  '重定向': 'redirect',
-  '无权限': 'unauthorized',
-  '禁止访问': 'forbidden',
-  '页面不存在': 'notFound',
-  '服务器错误': 'serverError',
+  登录: 'login',
+  重置密码: 'resetPassword',
+  个人中心: 'profile',
+  我的导出: 'exports',
+  监控管理: 'monitor',
+  运行监控: 'runtime',
+  数据库连接池: 'dbPool',
+  重定向: 'redirect',
+  无权限: 'unauthorized',
+  禁止访问: 'forbidden',
+  页面不存在: 'notFound',
+  服务器错误: 'serverError',
 })

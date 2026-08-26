@@ -24,15 +24,14 @@ export function reconnectDelayForError(
   }
   const retryAfterSeconds = Number(error.retryAfterSeconds)
   if (!Number.isFinite(retryAfterSeconds) || retryAfterSeconds < 0) return exponential
-  return Math.max(
-    exponential,
-    Math.min(retryAfterSeconds * 1_000, MAX_RETRY_AFTER_DELAY_MS),
-  )
+  return Math.max(exponential, Math.min(retryAfterSeconds * 1_000, MAX_RETRY_AFTER_DELAY_MS))
 }
 
 /** 仅服务端明确声明实时服务不可用时进入低频健康重试。 */
 export function isRealtimeServiceUnavailable(error: unknown): boolean {
   if (!(error instanceof HttpError) || error.status !== 503) return false
-  return error.realtimeStatus === 'unavailable'
-    || (error.errorKey === 'service_unavailable' && error.retryAfterSeconds !== undefined)
+  return (
+    error.realtimeStatus === 'unavailable' ||
+    (error.errorKey === 'service_unavailable' && error.retryAfterSeconds !== undefined)
+  )
 }

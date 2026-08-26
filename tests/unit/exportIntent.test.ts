@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  confirmExportIntent,
-  normalizeExportIntent,
-} from '@/app/exports/exportIntent'
+import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 
 describe('normalizeExportIntent', () => {
   it('去除分页和空值并裁剪字符串', () => {

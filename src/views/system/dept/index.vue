@@ -10,10 +10,19 @@
         </div>
       </template>
       <el-table
-        v-loading="loading" :data="tableData ?? []" border stripe row-key="id"
+        v-loading="loading"
+        :data="tableData ?? []"
+        border
+        stripe
+        row-key="id"
         :tree-props="{ children: 'children' }"
       >
-        <el-table-column prop="name" :label="t('system.department.name')" min-width="180" show-overflow-tooltip />
+        <el-table-column
+          prop="name"
+          :label="t('system.department.name')"
+          min-width="180"
+          show-overflow-tooltip
+        />
         <el-table-column prop="sort" :label="t('system.common.sort')" align="center" />
         <el-table-column prop="status" :label="t('system.common.status')" align="center">
           <template #default="{ row }">
@@ -25,10 +34,22 @@
 
         <el-table-column :label="t('system.common.actions')" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'system:dept:add'" type="success" link icon="Plus" @click="handleAdd(row.id)">
+            <el-button
+              v-perm="'system:dept:add'"
+              type="success"
+              link
+              icon="Plus"
+              @click="handleAdd(row.id)"
+            >
               {{ t('system.common.add') }}
             </el-button>
-            <el-button v-perm="'system:dept:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">
+            <el-button
+              v-perm="'system:dept:edit'"
+              type="primary"
+              link
+              icon="Edit"
+              @click="handleEdit(row)"
+            >
               {{ t('system.common.edit') }}
             </el-button>
             <el-button
@@ -48,15 +69,22 @@
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialog.visible" :title="dialog.title" width="500px" @close="resetForm">
-      <el-form ref="formRef" v-loading="detailLoading" :model="form" :rules="rules" label-width="80px">
+      <el-form
+        ref="formRef"
+        v-loading="detailLoading"
+        :model="form"
+        :rules="rules"
+        label-width="80px"
+      >
         <el-form-item :label="t('system.department.parent')">
           <el-tree-select
             v-model="form.parent_id"
             :data="deptOptions ?? []"
             :props="{ label: 'name', value: 'id', children: 'children' }"
             :placeholder="t('system.department.rootPlaceholder')"
-            clearable check-strictly
-            style="width:100%"
+            clearable
+            check-strictly
+            style="width: 100%"
           />
         </el-form-item>
         <el-form-item :label="t('system.department.name')" prop="name">
@@ -74,10 +102,22 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">{{ t('system.common.cancel') }}</el-button>
-        <el-button v-if="dialog.isEdit" v-perm="'system:dept:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button
+          v-if="dialog.isEdit"
+          v-perm="'system:dept:edit'"
+          type="primary"
+          :loading="submitLoading"
+          @click="handleSubmit"
+        >
           {{ t('system.common.confirm') }}
         </el-button>
-        <el-button v-else v-perm="'system:dept:add'" type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button
+          v-else
+          v-perm="'system:dept:add'"
+          type="primary"
+          :loading="submitLoading"
+          @click="handleSubmit"
+        >
           {{ t('system.common.confirm') }}
         </el-button>
       </template>

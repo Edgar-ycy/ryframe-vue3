@@ -47,14 +47,14 @@ cargo api-sync --commit HEAD
 
 ## 运行配置
 
-| 变量 | 用途 |
-| --- | --- |
-| `VITE_APP_TITLE` | 浏览器标题 |
-| `VITE_APP_API_ORIGIN` | 生产 API 的绝对 HTTPS origin |
+| 变量                    | 用途                                       |
+| ----------------------- | ------------------------------------------ |
+| `VITE_APP_TITLE`        | 浏览器标题                                 |
+| `VITE_APP_API_ORIGIN`   | 生产 API 的绝对 HTTPS origin               |
 | `VITE_APP_PROXY_TARGET` | 本地代理目标，默认 `http://localhost:8080` |
-| `VITE_APP_DEV_HOST` | 开发监听地址，默认 `127.0.0.1` |
-| `VITE_APP_DEV_PORT` | 开发端口，默认 `5173` |
-| `VITE_APP_BUILD_COMMIT` | 部署对应的完整前端提交 SHA |
+| `VITE_APP_DEV_HOST`     | 开发监听地址，默认 `127.0.0.1`             |
+| `VITE_APP_DEV_PORT`     | 开发端口，默认 `5173`                      |
+| `VITE_APP_BUILD_COMMIT` | 部署对应的完整前端提交 SHA                 |
 
 API 版本前缀来自 OpenAPI 扩展，不通过环境变量重复配置。生产环境配置放入被忽略的 `.env.production`，不得提交秘密。
 

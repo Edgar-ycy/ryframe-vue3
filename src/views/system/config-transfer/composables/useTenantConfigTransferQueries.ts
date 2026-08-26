@@ -34,10 +34,7 @@ interface TenantConfigTransferQueriesOptions {
   canListPackages: () => boolean
 }
 
-function samePageQuery(
-  left: TenantConfigPackageQuery,
-  right: TenantConfigPackageQuery,
-): boolean {
+function samePageQuery(left: TenantConfigPackageQuery, right: TenantConfigPackageQuery): boolean {
   return left.page === right.page && left.page_size === right.page_size
 }
 
@@ -85,19 +82,11 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   }
 
   function packageListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(
-      identity.tenantId,
-      TENANT_CONFIG_PACKAGES_RESOURCE,
-      packageListParams(),
-    )
+    return tenantQueryKey(identity.tenantId, TENANT_CONFIG_PACKAGES_RESOURCE, packageListParams())
   }
 
   function transferListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(
-      identity.tenantId,
-      TENANT_CONFIG_TRANSFERS_RESOURCE,
-      transferListParams(),
-    )
+    return tenantQueryKey(identity.tenantId, TENANT_CONFIG_TRANSFERS_RESOURCE, transferListParams())
   }
 
   const packagesQuery = useTenantQuery<PageResponse<TenantConfigBundle>>(
@@ -105,10 +94,10 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     () => queryEnabled() && options.canListPackages(),
     TENANT_CONFIG_PACKAGES_RESOURCE,
     packageListParams,
-    async signal => requireOperationData(await listTenantConfigPackages(
-      { ...activePackageQueryParams.value },
-      signal,
-    )),
+    async (signal) =>
+      requireOperationData(
+        await listTenantConfigPackages({ ...activePackageQueryParams.value }, signal),
+      ),
     {
       staleTime: 0,
       refetchInterval: false,
@@ -124,10 +113,8 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     queryEnabled,
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     transferListParams,
-    async signal => requireOperationData(await listTenantConfigTransfers(
-      { ...activeQueryParams.value },
-      signal,
-    )),
+    async (signal) =>
+      requireOperationData(await listTenantConfigTransfers({ ...activeQueryParams.value }, signal)),
     {
       staleTime: 0,
       refetchInterval: false,
@@ -146,11 +133,9 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     async (signal) => {
       const transferId = selectedTransfer.value?.id
       if (!transferId) return emptyPageResponse<TenantConfigTransferItem>(itemQueryParams.value)
-      return requireOperationData(await listTenantConfigTransferItems(
-        transferId,
-        { ...itemQueryParams.value },
-        signal,
-      ))
+      return requireOperationData(
+        await listTenantConfigTransferItems(transferId, { ...itemQueryParams.value }, signal),
+      )
     },
     {
       staleTime: 0,
@@ -176,7 +161,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
           total_pages: 1,
         }
       }
-      const index = current.items.findIndex(item => item.id === value.id)
+      const index = current.items.findIndex((item) => item.id === value.id)
       if (index >= 0) {
         const items = [...current.items]
         items[index] = value
@@ -194,11 +179,11 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
 
   function removePageRecord<T extends { id: string }>(key: QueryKey, id: string): void {
     queryClient.setQueryData<PageResponse<T>>(key, (current) => {
-      if (!current || !current.items.some(item => item.id === id)) return current
+      if (!current || !current.items.some((item) => item.id === id)) return current
       const total = Math.max(0, current.total - 1)
       return {
         ...current,
-        items: current.items.filter(item => item.id !== id),
+        items: current.items.filter((item) => item.id !== id),
         total,
         total_pages: Math.ceil(total / current.page_size),
       }

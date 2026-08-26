@@ -3,10 +3,7 @@ import { confirmAction } from '@/utils/confirmAction'
 
 const PAGINATION_KEYS = new Set(['page', 'page_size'])
 
-export type NormalizedExportFilter<TQuery extends object> = Omit<
-  TQuery,
-  'page' | 'page_size'
->
+export type NormalizedExportFilter<TQuery extends object> = Omit<TQuery, 'page' | 'page_size'>
 
 export interface ExportIntent<TQuery extends object> {
   filter: NormalizedExportFilter<TQuery>

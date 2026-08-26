@@ -42,13 +42,16 @@ import {
   storageUsedMiB,
 } from '../presentation'
 
-const props = withDefaults(defineProps<{
-  label: string
-  quota: TenantQuotaUsage
-  unit?: 'count' | 'storage'
-}>(), {
-  unit: 'count',
-})
+const props = withDefaults(
+  defineProps<{
+    label: string
+    quota: TenantQuotaUsage
+    unit?: 'count' | 'storage'
+  }>(),
+  {
+    unit: 'count',
+  },
+)
 
 const { t } = useI18n()
 
@@ -100,9 +103,11 @@ function usageText(): string {
 
 function formatAmount(value: number): string {
   const normalized = props.unit === 'storage' ? storageUsedMiB(value) : value
-  return new Intl.NumberFormat(getApplicationLocale(), {
-    maximumFractionDigits: props.unit === 'storage' ? 2 : 0,
-  }).format(normalized) + (props.unit === 'storage' ? ' MiB' : '')
+  return (
+    new Intl.NumberFormat(getApplicationLocale(), {
+      maximumFractionDigits: props.unit === 'storage' ? 2 : 0,
+    }).format(normalized) + (props.unit === 'storage' ? ' MiB' : '')
+  )
 }
 </script>
 

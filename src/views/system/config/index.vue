@@ -3,14 +3,32 @@
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline>
         <el-form-item :label="t('system.config.name')">
-          <el-input v-model="queryParams.name" :placeholder="t('system.config.enterName')" clearable @keyup.enter="handleSearch" />
+          <el-input
+            v-model="queryParams.name"
+            :placeholder="t('system.config.enterName')"
+            clearable
+            @keyup.enter="handleSearch"
+          />
         </el-form-item>
         <el-form-item :label="t('system.config.key')">
-          <el-input v-model="queryParams.key" :placeholder="t('system.config.enterKey')" clearable @keyup.enter="handleSearch" />
+          <el-input
+            v-model="queryParams.key"
+            :placeholder="t('system.config.enterKey')"
+            clearable
+            @keyup.enter="handleSearch"
+          />
         </el-form-item>
         <el-form-item>
-          <el-button v-perm="'system:config:list'" type="primary" icon="Search" @click="handleSearch">{{ t('system.common.search') }}</el-button>
-          <el-button v-perm="'system:config:list'" icon="Refresh" @click="handleReset">{{ t('system.common.reset') }}</el-button>
+          <el-button
+            v-perm="'system:config:list'"
+            type="primary"
+            icon="Search"
+            @click="handleSearch"
+            >{{ t('system.common.search') }}</el-button
+          >
+          <el-button v-perm="'system:config:list'" icon="Refresh" @click="handleReset">{{
+            t('system.common.reset')
+          }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -30,29 +48,63 @@
             >
               {{ t('system.common.export') }}
             </el-button>
-            <el-button v-perm="'system:config:add'" type="primary" icon="Plus" @click="handleAdd">{{ t('system.common.add') }}</el-button>
+            <el-button v-perm="'system:config:add'" type="primary" icon="Plus" @click="handleAdd">{{
+              t('system.common.add')
+            }}</el-button>
           </div>
         </div>
       </template>
       <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
-        <el-table-column prop="name" :label="t('system.config.name')" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="key" :label="t('system.config.key')" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="value" :label="t('system.config.value')" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="portable" :label="t('system.config.portable')" width="130" align="center">
+        <el-table-column
+          prop="name"
+          :label="t('system.config.name')"
+          min-width="120"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="key"
+          :label="t('system.config.key')"
+          min-width="140"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="value"
+          :label="t('system.config.value')"
+          min-width="120"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="portable"
+          :label="t('system.config.portable')"
+          width="130"
+          align="center"
+        >
           <template #default="{ row }">
             <el-tag :type="row.portable ? 'success' : 'info'" effect="plain">
               {{ t(row.portable ? 'system.common.yes' : 'system.common.no') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" :label="t('system.config.remark')" min-width="120" show-overflow-tooltip />
+        <el-table-column
+          prop="remark"
+          :label="t('system.config.remark')"
+          min-width="120"
+          show-overflow-tooltip
+        />
         <el-table-column :label="t('system.common.createdAt')" min-width="160">
           <template #default="{ row }">{{ formatLocalizedDate(row.created_at) }}</template>
         </el-table-column>
         <el-table-column :label="t('system.common.actions')" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-perm="'system:config:edit'" type="primary" link icon="Edit" @click="handleEdit(row)">{{ t('system.common.edit') }}</el-button>
+            <el-button
+              v-perm="'system:config:edit'"
+              type="primary"
+              link
+              icon="Edit"
+              @click="handleEdit(row)"
+              >{{ t('system.common.edit') }}</el-button
+            >
             <el-button
               v-perm="'system:config:remove'"
               type="danger"
@@ -69,25 +121,46 @@
       <el-pagination
         v-model:current-page="queryParams.page"
         v-model:page-size="queryParams.page_size"
-        :total="tableResponse?.total ?? 0" :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper" background
+        :total="tableResponse?.total ?? 0"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
         @change="fetchData"
       />
     </el-card>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="min(500px, calc(100vw - 32px))" @close="resetDialog">
+    <el-dialog
+      v-model="dialog.visible"
+      :title="dialog.title"
+      width="min(500px, calc(100vw - 32px))"
+      @close="resetDialog"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item :label="t('system.config.name')" prop="name">
           <el-input v-model="form.name" :placeholder="t('system.config.enterName')" />
         </el-form-item>
         <el-form-item :label="t('system.config.key')" prop="key">
-          <el-input v-model="form.key" :disabled="dialog.isEdit" :placeholder="t('system.config.enterKey')" />
+          <el-input
+            v-model="form.key"
+            :disabled="dialog.isEdit"
+            :placeholder="t('system.config.enterKey')"
+          />
         </el-form-item>
         <el-form-item :label="t('system.config.value')" prop="value">
-          <el-input v-model="form.value" type="textarea" :rows="3" :placeholder="t('system.config.enterValue')" />
+          <el-input
+            v-model="form.value"
+            type="textarea"
+            :rows="3"
+            :placeholder="t('system.config.enterValue')"
+          />
         </el-form-item>
         <el-form-item :label="t('system.config.remark')">
-          <el-input v-model="form.remark" type="textarea" :rows="2" :placeholder="t('system.config.enterRemark')" />
+          <el-input
+            v-model="form.remark"
+            type="textarea"
+            :rows="2"
+            :placeholder="t('system.config.enterRemark')"
+          />
         </el-form-item>
         <el-form-item :label="t('system.config.portable')">
           <div class="portable-field">
@@ -98,8 +171,22 @@
       </el-form>
       <template #footer>
         <el-button @click="dialog.visible = false">{{ t('system.common.cancel') }}</el-button>
-        <el-button v-if="dialog.isEdit" v-perm="'system:config:edit'" type="primary" :loading="submitLoading" @click="handleSubmit">{{ t('system.common.confirm') }}</el-button>
-        <el-button v-else v-perm="'system:config:add'" type="primary" :loading="submitLoading" @click="handleSubmit">{{ t('system.common.confirm') }}</el-button>
+        <el-button
+          v-if="dialog.isEdit"
+          v-perm="'system:config:edit'"
+          type="primary"
+          :loading="submitLoading"
+          @click="handleSubmit"
+          >{{ t('system.common.confirm') }}</el-button
+        >
+        <el-button
+          v-else
+          v-perm="'system:config:add'"
+          type="primary"
+          :loading="submitLoading"
+          @click="handleSubmit"
+          >{{ t('system.common.confirm') }}</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -157,11 +244,12 @@ const configsQuery = useTenantQuery<PageResponse<ConfigRecord>>(
   authenticated,
   'configs',
   () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
-  signal => runAppliedQuery(signal, async (query, requestSignal) => {
-    const params = { ...query }
-    const response = await listConfig(params, requestSignal)
-    return response.data ?? emptyPageResponse<ConfigRecord>(params)
-  }),
+  (signal) =>
+    runAppliedQuery(signal, async (query, requestSignal) => {
+      const params = { ...query }
+      const response = await listConfig(params, requestSignal)
+      return response.data ?? emptyPageResponse<ConfigRecord>(params)
+    }),
 )
 const tableResponse = configsQuery.data
 const loading = configsQuery.isFetching
@@ -175,14 +263,8 @@ async function handleExport(): Promise<void> {
   const intent = normalizeExportIntent('configs', successfulQuery)
   if (!(await confirmExportIntent(intent))) return
 
-  await submitExport(
-    intent.signature,
-    (idempotencyKey, signal) => exportConfig(
-      intent.filter,
-      idempotencyKey,
-      signal,
-      intent.isEmpty,
-    ),
+  await submitExport(intent.signature, (idempotencyKey, signal) =>
+    exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
   )
 }
 
@@ -191,7 +273,10 @@ async function fetchData(): Promise<void> {
   await refreshData()
 }
 
-function handleSearch() { queryParams.value.page = 1; void fetchData() }
+function handleSearch() {
+  queryParams.value.page = 1
+  void fetchData()
+}
 function handleReset() {
   queryParams.value = {
     page: 1,
@@ -239,7 +324,7 @@ const detailQuery = useTenantQuery<ConfigRecord>(
   () => authenticated() && editingConfig.value !== null,
   'configs',
   () => ({ scope: 'detail', id: editingConfig.value?.id ?? null }),
-  async signal => {
+  async (signal) => {
     const target = editingConfig.value
     if (!target) throw new Error(t('system.config.detailMissing'))
     const response = await getConfig(target.id, signal)
@@ -256,7 +341,7 @@ const saveMutation = useTenantMutation<void, SaveConfigCommand>(
   () => userStore.tenantId,
   'configs',
   {
-    mutationFn: async command => {
+    mutationFn: async (command) => {
       if (command.kind === 'create') {
         await createConfig(command.data)
       } else {
@@ -264,12 +349,12 @@ const saveMutation = useTenantMutation<void, SaveConfigCommand>(
       }
     },
     onSuccess: async (_data, command) => {
-      ElMessage.success(t(command.kind === 'create'
-        ? 'system.common.addSuccess'
-        : 'system.common.updateSuccess'))
+      ElMessage.success(
+        t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
+      )
       if (
-        command.kind === 'update'
-        && (command.key === 'sys.index.skinName' || command.key === 'sys.index.sideTheme')
+        command.kind === 'update' &&
+        (command.key === 'sys.index.skinName' || command.key === 'sys.index.sideTheme')
       ) {
         await refreshShellSettings(userStore.tenantId)
       }
@@ -278,41 +363,42 @@ const saveMutation = useTenantMutation<void, SaveConfigCommand>(
 )
 const submitLoading = saveMutation.pending
 
-const deleteMutation = useTenantMutation<void, ConfigRecord>(
-  () => userStore.tenantId,
-  'configs',
-  {
-    mutationFn: async config => {
-      await deleteConfig(config.id)
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.common.deleteSuccess'))
-    },
+const deleteMutation = useTenantMutation<void, ConfigRecord>(() => userStore.tenantId, 'configs', {
+  mutationFn: async (config) => {
+    await deleteConfig(config.id)
   },
+  onSuccess: () => {
+    ElMessage.success(t('system.common.deleteSuccess'))
+  },
+})
+const deletingId = computed<Id | null>(() =>
+  deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
 )
-const deletingId = computed<Id | null>(() => (
-  deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
-))
 
 function handleAdd() {
   currentEditId.value = null
   editingConfig.value = null
-  dialog.value.title = t('system.config.addTitle'); dialog.value.isEdit = false
-  resetForm(); dialog.value.visible = true
+  dialog.value.title = t('system.config.addTitle')
+  dialog.value.isEdit = false
+  resetForm()
+  dialog.value.visible = true
 }
 
 async function handleEdit(row: ConfigRecord) {
   if (saveMutation.pending.value) return
   currentEditId.value = row.id
   editingConfig.value = row
-  dialog.value.title = t('system.config.editTitle'); dialog.value.isEdit = true
+  dialog.value.title = t('system.config.editTitle')
+  dialog.value.isEdit = true
   resetForm()
   await nextTick()
   const result = await detailQuery.refetch({ throwOnError: true })
   const d = result.data
   if (!d) throw new Error(t('system.config.detailMissing'))
-  form.value.name = d.name; form.value.key = d.key
-  form.value.value = d.value; form.value.remark = d.remark || ''
+  form.value.name = d.name
+  form.value.key = d.key
+  form.value.value = d.value
+  form.value.remark = d.remark || ''
   form.value.portable = d.portable
   dialog.value.visible = true
 }

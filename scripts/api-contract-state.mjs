@@ -47,9 +47,11 @@ export function normalizeCommit(value) {
 export function normalizeOpenApiPath(value) {
   const sourcePath = value?.trim() || defaultOpenApiPath
   const segments = sourcePath.split('/')
-  if (!sourcePath.endsWith('.json')
-    || sourcePath.startsWith('/')
-    || segments.some(segment => !segment || segment === '.' || segment === '..')) {
+  if (
+    !sourcePath.endsWith('.json') ||
+    sourcePath.startsWith('/') ||
+    segments.some((segment) => !segment || segment === '.' || segment === '..')
+  ) {
     throw new Error('openapi_path 必须是不含路径穿越的相对 JSON 路径')
   }
   return sourcePath
@@ -84,8 +86,7 @@ export function validateCandidateMarker(value) {
     throw new Error('openapi/candidate.json 必须包含对象')
   }
   const keys = Object.keys(value).sort()
-  if (keys.length !== markerKeys.length
-    || keys.some((key, index) => key !== markerKeys[index])) {
+  if (keys.length !== markerKeys.length || keys.some((key, index) => key !== markerKeys[index])) {
     throw new Error('openapi/candidate.json 字段集合无效')
   }
   if (value.schema_version !== 1 || value.mode !== 'candidate') {
@@ -101,8 +102,10 @@ export function validateCandidateMarker(value) {
   if (!marker.openapi_version.startsWith('3.')) {
     throw new Error('openapi/candidate.json 必须记录 OpenAPI 3 版本')
   }
-  if (!sha256Pattern.test(marker.candidate_sha256)
-    || !sha256Pattern.test(marker.formal_source_sha256)) {
+  if (
+    !sha256Pattern.test(marker.candidate_sha256) ||
+    !sha256Pattern.test(marker.formal_source_sha256)
+  ) {
     throw new Error('openapi/candidate.json 必须记录有效的 SHA256 摘要')
   }
   return marker
@@ -112,15 +115,13 @@ export function parseContract(bytes, label) {
   let source
   try {
     source = decoder.decode(bytes)
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error(`${label} 不是有效 UTF-8：${error.message}`)
   }
   let document
   try {
     document = JSON.parse(source)
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error(`${label} 不是有效 JSON：${error.message}`)
   }
   validateContract(document, label)
@@ -132,22 +133,26 @@ export function validateContract(document, label) {
     throw new Error(`${label} 不是受支持的 RyFrame OpenAPI 3 契约`)
   }
   const passwordPolicy = document['x-ryframe-password-policy']
-  if (!passwordPolicy
-    || passwordPolicy.version !== 1
-    || !Number.isInteger(passwordPolicy.min_length)
-    || !Number.isInteger(passwordPolicy.max_length)
-    || typeof passwordPolicy.pattern !== 'string'
-    || passwordPolicy.allowed_characters !== 'ascii_graphic'
-    || !Array.isArray(passwordPolicy.required_classes)) {
+  if (
+    !passwordPolicy ||
+    passwordPolicy.version !== 1 ||
+    !Number.isInteger(passwordPolicy.min_length) ||
+    !Number.isInteger(passwordPolicy.max_length) ||
+    typeof passwordPolicy.pattern !== 'string' ||
+    passwordPolicy.allowed_characters !== 'ascii_graphic' ||
+    !Array.isArray(passwordPolicy.required_classes)
+  ) {
     throw new Error(`${label} 缺少受支持的 RyFrame 密码策略`)
   }
   const noticePolicy = document['x-ryframe-notice-policy']
-  if (!noticePolicy
-    || noticePolicy.version !== 1
-    || !Number.isInteger(noticePolicy.content_markdown?.min_utf8_bytes)
-    || !Number.isInteger(noticePolicy.content_markdown?.max_utf8_bytes)
-    || noticePolicy.content_markdown.min_utf8_bytes < 1
-    || noticePolicy.content_markdown.max_utf8_bytes < noticePolicy.content_markdown.min_utf8_bytes) {
+  if (
+    !noticePolicy ||
+    noticePolicy.version !== 1 ||
+    !Number.isInteger(noticePolicy.content_markdown?.min_utf8_bytes) ||
+    !Number.isInteger(noticePolicy.content_markdown?.max_utf8_bytes) ||
+    noticePolicy.content_markdown.min_utf8_bytes < 1 ||
+    noticePolicy.content_markdown.max_utf8_bytes < noticePolicy.content_markdown.min_utf8_bytes
+  ) {
     throw new Error(`${label} 缺少受支持的 RyFrame 公告策略`)
   }
   requireApiPrefixContract(document['x-ryframe-api-prefix'], label)
@@ -157,8 +162,7 @@ export function validateContract(document, label) {
 async function readOptional(pathname) {
   try {
     return await readFile(pathname)
-  }
-  catch (error) {
+  } catch (error) {
     if (error.code === 'ENOENT') return null
     throw error
   }

@@ -32,11 +32,16 @@ export async function listAllDataTargetOptions(
   let page = 1
   let totalPages = 1
   do {
-    const result = requireOperationData(await listDataTargets({
-      ...params,
-      page,
-      page_size: 100,
-    }, signal))
+    const result = requireOperationData(
+      await listDataTargets(
+        {
+          ...params,
+          page,
+          page_size: 100,
+        },
+        signal,
+      ),
+    )
     if (result.total > 200 || result.total_pages > 2) {
       throw new HttpError('数据目标数量超过当前产品支持的 200 个上限', {
         kind: 'invalid_response',

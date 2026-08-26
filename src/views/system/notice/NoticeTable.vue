@@ -3,28 +3,49 @@
     <template #header>
       <div class="card-header">
         <span>{{ t('system.notice.list') }}</span>
-        <el-button v-perm="'system:notice:add'" type="primary" icon="Plus" @click="emit('add')">{{ t('system.common.add') }}</el-button>
+        <el-button v-perm="'system:notice:add'" type="primary" icon="Plus" @click="emit('add')">{{
+          t('system.common.add')
+        }}</el-button>
       </div>
     </template>
     <el-table v-loading="loading" :data="tableData" border stripe>
       <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
-      <el-table-column prop="title" :label="t('system.notice.shortTitle')" min-width="180" show-overflow-tooltip />
-      <el-table-column prop="content_markdown" :label="t('system.common.content')" min-width="200" show-overflow-tooltip />
+      <el-table-column
+        prop="title"
+        :label="t('system.notice.shortTitle')"
+        min-width="180"
+        show-overflow-tooltip
+      />
+      <el-table-column
+        prop="content_markdown"
+        :label="t('system.common.content')"
+        min-width="200"
+        show-overflow-tooltip
+      />
       <el-table-column :label="t('system.common.type')" align="center">
         <template #default="{ row }">
           <el-tag :type="row.notice_type === 'notice' ? 'primary' : 'warning'" size="small">
-            {{ row.notice_type === 'notice' ? t('system.notice.notice') : t('system.notice.announcement') }}
+            {{
+              row.notice_type === 'notice'
+                ? t('system.notice.notice')
+                : t('system.notice.announcement')
+            }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" :label="t('system.common.status')" align="center">
         <template #default="{ row }">
-          <el-tag :type="row.status === '1' ? 'success' : row.status === '2' ? 'info' : 'warning'" size="small">
-            {{ row.status === '1'
-              ? t('system.notice.published')
-              : row.status === '2'
-                ? t('system.notice.closed')
-                : t('system.notice.draft') }}
+          <el-tag
+            :type="row.status === '1' ? 'success' : row.status === '2' ? 'info' : 'warning'"
+            size="small"
+          >
+            {{
+              row.status === '1'
+                ? t('system.notice.published')
+                : row.status === '2'
+                  ? t('system.notice.closed')
+                  : t('system.notice.draft')
+            }}
           </el-tag>
         </template>
       </el-table-column>
@@ -43,7 +64,14 @@
           >
             {{ t('system.notice.publishToMessageCenter') }}
           </el-button>
-          <el-button v-perm="'system:notice:edit'" type="primary" link icon="Edit" @click="emit('edit', row)">{{ t('system.common.edit') }}</el-button>
+          <el-button
+            v-perm="'system:notice:edit'"
+            type="primary"
+            link
+            icon="Edit"
+            @click="emit('edit', row)"
+            >{{ t('system.common.edit') }}</el-button
+          >
           <el-button
             v-perm="'system:notice:remove'"
             type="danger"

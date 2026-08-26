@@ -24,7 +24,11 @@
       <div class="desktop-table" role="region" :aria-label="t('serviceAccounts.delegations')">
         <el-table :data="items" border stripe row-key="id">
           <el-table-column prop="id" label="ID" min-width="90" />
-          <el-table-column prop="account_id" :label="t('serviceAccounts.accountId')" min-width="130" />
+          <el-table-column
+            prop="account_id"
+            :label="t('serviceAccounts.accountId')"
+            min-width="130"
+          />
           <el-table-column prop="user_id" :label="t('serviceAccounts.userId')" min-width="130" />
           <el-table-column :label="t('serviceAccounts.mode')" min-width="230">
             <template #default="{ row }">
@@ -35,7 +39,12 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="reason" :label="t('serviceAccounts.reason')" min-width="180" show-overflow-tooltip />
+          <el-table-column
+            prop="reason"
+            :label="t('serviceAccounts.reason')"
+            min-width="180"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('serviceAccounts.status')" width="105">
             <template #default="{ row }">
               <el-tag :type="delegationStatusType(row)">{{ delegationStatusLabel(row) }}</el-tag>
@@ -66,13 +75,27 @@
         <article v-for="delegation in items" :key="delegation.id" class="mobile-card">
           <div class="mobile-card__heading">
             <strong>#{{ delegation.id }}</strong>
-            <el-tag :type="delegationStatusType(delegation)">{{ delegationStatusLabel(delegation) }}</el-tag>
+            <el-tag :type="delegationStatusType(delegation)">{{
+              delegationStatusLabel(delegation)
+            }}</el-tag>
           </div>
           <dl>
-            <div><dt>{{ t('serviceAccounts.accountId') }}</dt><dd>{{ delegation.account_id }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.userId') }}</dt><dd>{{ delegation.user_id }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.reason') }}</dt><dd>{{ delegation.reason }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.expiresAt') }}</dt><dd>{{ formatLocalizedDate(delegation.expires_at) }}</dd></div>
+            <div>
+              <dt>{{ t('serviceAccounts.accountId') }}</dt>
+              <dd>{{ delegation.account_id }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.userId') }}</dt>
+              <dd>{{ delegation.user_id }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.reason') }}</dt>
+              <dd>{{ delegation.reason }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.expiresAt') }}</dt>
+              <dd>{{ formatLocalizedDate(delegation.expires_at) }}</dd>
+            </div>
           </dl>
           <div class="capability-tags">
             <el-tag v-for="key in delegation.capability_keys" :key="key" size="small" type="info">

@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 
 const MOBILE_BREAKPOINT = 1024
-const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT
+const isMobileViewport = () =>
+  typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT
 const responsiveCleanups = new WeakMap<object, () => void>()
 
 interface AppState {

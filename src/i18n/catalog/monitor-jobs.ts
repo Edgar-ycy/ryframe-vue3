@@ -83,8 +83,10 @@ export const monitorJobsMessages = {
         history: '执行历史',
         delete: '删除',
         unavailable: '当前不可用',
-        unavailableTargetHint: '当前配置下没有可用的调度目标，暂时不能创建计划。普通租户需要由业务模块注册租户级目标。',
-        noTargetsHint: '当前租户没有可配置的调度目标。普通租户需要由业务模块注册租户级目标后才能创建计划。',
+        unavailableTargetHint:
+          '当前配置下没有可用的调度目标，暂时不能创建计划。普通租户需要由业务模块注册租户级目标。',
+        noTargetsHint:
+          '当前租户没有可配置的调度目标。普通租户需要由业务模块注册租户级目标后才能创建计划。',
         editTitle: '编辑定时任务',
         addTitle: '新增定时任务',
         misfirePolicy: '错过策略',
@@ -137,7 +139,8 @@ export const monitorJobsMessages = {
         advancedCronHint: '统一使用“秒 分 时 日 月 周 年”七段格式；秒必须为 0，年必须为 *。',
         dayWeekExclusiveHint: '日期字段和星期字段不能同时受限，其中一项必须为 *。',
         advancedOverwriteTitle: '确认覆盖高级规则',
-        advancedOverwriteConfirm: '当前表达式无法回填到常用生成器。继续切换将使用所选周期的默认值覆盖它，是否继续？',
+        advancedOverwriteConfirm:
+          '当前表达式无法回填到常用生成器。继续切换将使用所选周期的默认值覆盖它，是否继续？',
         summary: '规则摘要',
         summaryIncomplete: '请先完成执行周期设置',
         summaryIntervalMinutes: '每隔 {minutes} 分钟执行',
@@ -309,8 +312,10 @@ export const monitorJobsMessages = {
         history: 'History',
         delete: 'Delete',
         unavailable: 'Currently unavailable',
-        unavailableTargetHint: 'No scheduling target is available with the current configuration. Tenant targets must be registered by a business module.',
-        noTargetsHint: 'This tenant has no configurable scheduling targets. A business module must register a tenant target before a schedule can be created.',
+        unavailableTargetHint:
+          'No scheduling target is available with the current configuration. Tenant targets must be registered by a business module.',
+        noTargetsHint:
+          'This tenant has no configurable scheduling targets. A business module must register a tenant target before a schedule can be created.',
         editTitle: 'Edit schedule',
         addTitle: 'Add schedule',
         misfirePolicy: 'Misfire policy',
@@ -331,7 +336,8 @@ export const monitorJobsMessages = {
         presetWeekly: 'Monday at midnight',
         presetMonthly: 'First day monthly',
         builderTitle: 'Execution schedule',
-        builderDescription: 'Choose a cycle and time. The Cron expression is generated automatically.',
+        builderDescription:
+          'Choose a cycle and time. The Cron expression is generated automatically.',
         builderMode: 'Execution cycle type',
         modeIntervalMinutes: 'Every few minutes',
         modeIntervalHours: 'Every few hours',
@@ -357,13 +363,17 @@ export const monitorJobsMessages = {
         weekdaySAT: 'Saturday',
         weekdaySUN: 'Sunday',
         monthValue: 'Month {month}',
-        monthEndSkipHint: 'Months without the 29th, 30th, or 31st are skipped; the run is not moved to month end.',
+        monthEndSkipHint:
+          'Months without the 29th, 30th, or 31st are skipped; the run is not moved to month end.',
         leapYearHint: 'February 29 runs only in leap years.',
-        advancedOutsideBuilder: 'This rule is outside the common builder range. It has been preserved for server validation.',
-        advancedCronHint: 'Use seven fields: second minute hour day month weekday year. Second must be 0 and year must be *.',
+        advancedOutsideBuilder:
+          'This rule is outside the common builder range. It has been preserved for server validation.',
+        advancedCronHint:
+          'Use seven fields: second minute hour day month weekday year. Second must be 0 and year must be *.',
         dayWeekExclusiveHint: 'Day of month and weekday cannot both be restricted; one must be *.',
         advancedOverwriteTitle: 'Replace advanced rule?',
-        advancedOverwriteConfirm: 'This expression cannot be loaded into the common builder. Continuing will replace it with defaults for the selected cycle.',
+        advancedOverwriteConfirm:
+          'This expression cannot be loaded into the common builder. Continuing will replace it with defaults for the selected cycle.',
         summary: 'Rule summary',
         summaryIncomplete: 'Complete the execution cycle first',
         summaryIntervalMinutes: 'Run every {minutes} minutes',
@@ -388,8 +398,10 @@ export const monitorJobsMessages = {
         previewIncomplete: 'Complete the execution cycle and timezone first.',
         previewWaiting: 'Waiting to calculate the next five scheduled times.',
         previewRequestFailed: 'The next five scheduled times could not be calculated. Try again.',
-        previewValidationFailed: 'The Cron expression or timezone is invalid. Check the rule and recalculate.',
-        cronSevenFieldsError: 'The Cron expression must contain exactly seven fields: second, minute, hour, day, month, weekday, and year.',
+        previewValidationFailed:
+          'The Cron expression or timezone is invalid. Check the rule and recalculate.',
+        cronSevenFieldsError:
+          'The Cron expression must contain exactly seven fields: second, minute, hour, day, month, weekday, and year.',
         cronSecondError: 'The Cron second field must be 0.',
         cronYearError: 'The Cron year field must be *.',
         cronDayWeekError: 'Day of month and weekday cannot both be restricted; one must be *.',
@@ -399,7 +411,8 @@ export const monitorJobsMessages = {
         previewStatusCalculating: 'Validating',
         previewStatusPending: 'Awaiting server validation',
         previewStatusFailed: 'Server validation failed',
-        previewReviewBeforeSave: 'The next five times were updated. Review them and confirm the save again.',
+        previewReviewBeforeSave:
+          'The next five times were updated. Review them and confirm the save again.',
         scheduleTime: 'Schedule time',
         utcTime: 'UTC time',
         browserTime: 'Browser-local time',
@@ -414,7 +427,8 @@ export const monitorJobsMessages = {
         createSuccess: 'Schedule created',
         updateSuccess: 'Schedule updated',
         statusConfirmTitle: 'Confirm status change',
-        enableConfirm: 'Enable “{name}”? The next run will be calculated from the current database time.',
+        enableConfirm:
+          'Enable “{name}”? The next run will be calculated from the current database time.',
         disableConfirm: 'Disable “{name}”? Already queued jobs will not be cancelled.',
         enableSuccess: 'Schedule enabled',
         disableSuccess: 'Schedule disabled',

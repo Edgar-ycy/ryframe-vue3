@@ -7,9 +7,7 @@ import type {
 
 export type ServiceResourceTagType = 'success' | 'warning' | 'danger' | 'info'
 
-export function serviceAccountStatusType(
-  status: ServiceAccount['status'],
-): ServiceResourceTagType {
+export function serviceAccountStatusType(status: ServiceAccount['status']): ServiceResourceTagType {
   return status === '1' ? 'success' : status === '0' ? 'info' : 'warning'
 }
 

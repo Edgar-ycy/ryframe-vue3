@@ -80,10 +80,7 @@ export function useServiceAccountQueries(
     })
   }
 
-  function credentialsKey(
-    identity: ServiceAccountIdentity | undefined,
-    accountId: string | null,
-  ) {
+  function credentialsKey(identity: ServiceAccountIdentity | undefined, accountId: string | null) {
     return tenantQueryKey(identity?.tenantId, SERVICE_CREDENTIALS_RESOURCE, {
       ...identityParams(identity),
       accountId,
@@ -115,15 +112,17 @@ export function useServiceAccountQueries(
 
   const accountsQuery = useQuery<PageResponse<ServiceAccount>, HttpError>({
     queryKey: computed(() => accountsKey()),
-    enabled: computed(() => (
-      identityContext.pageActive.value
-      && identityContext.currentIdentity() !== undefined
-      && identityContext.canListAccounts.value
-      && identityContext.featureAvailable.value
-    )),
-    queryFn: async ({ signal }) => requireOperationData(
-      await listServiceAccounts(copyServiceAccountQuery(activeQueryParams), signal),
+    enabled: computed(
+      () =>
+        identityContext.pageActive.value &&
+        identityContext.currentIdentity() !== undefined &&
+        identityContext.canListAccounts.value &&
+        identityContext.featureAvailable.value,
     ),
+    queryFn: async ({ signal }) =>
+      requireOperationData(
+        await listServiceAccounts(copyServiceAccountQuery(activeQueryParams), signal),
+      ),
     staleTime: 0,
     gcTime: SERVICE_ACCOUNT_QUERY_GC_TIME,
     retry: false,
@@ -134,17 +133,17 @@ export function useServiceAccountQueries(
   })
 
   const detailQuery = useQuery<ServiceAccountDetail, HttpError>({
-    queryKey: computed(() => detailKey(
-      identityContext.currentIdentity(),
-      selectedAccount.value?.id ?? null,
-    )),
-    enabled: computed(() => (
-      identityContext.pageActive.value
-      && identityContext.currentIdentity() !== undefined
-      && identityContext.canListAccounts.value
-      && identityContext.featureAvailable.value
-      && selectedAccount.value !== null
-    )),
+    queryKey: computed(() =>
+      detailKey(identityContext.currentIdentity(), selectedAccount.value?.id ?? null),
+    ),
+    enabled: computed(
+      () =>
+        identityContext.pageActive.value &&
+        identityContext.currentIdentity() !== undefined &&
+        identityContext.canListAccounts.value &&
+        identityContext.featureAvailable.value &&
+        selectedAccount.value !== null,
+    ),
     queryFn: async ({ signal }) => {
       const identity = identityContext.requireIdentity()
       const id = selectedAccount.value?.id
@@ -163,10 +162,9 @@ export function useServiceAccountQueries(
   })
 
   const credentialsQuery = useQuery<readonly ServiceCredential[], HttpError>({
-    queryKey: computed(() => credentialsKey(
-      identityContext.currentIdentity(),
-      selectedAccount.value?.id ?? null,
-    )),
+    queryKey: computed(() =>
+      credentialsKey(identityContext.currentIdentity(), selectedAccount.value?.id ?? null),
+    ),
     enabled: false,
     queryFn: async ({ signal }) => {
       const id = selectedAccount.value?.id
@@ -186,9 +184,10 @@ export function useServiceAccountQueries(
   const delegationsQuery = useQuery<PageResponse<ServiceDelegation>, HttpError>({
     queryKey: computed(() => delegationsKey()),
     enabled: false,
-    queryFn: async ({ signal }) => requireOperationData(
-      await listServiceDelegations(copyServiceAccountQuery(activeDelegationsQueryParams), signal),
-    ),
+    queryFn: async ({ signal }) =>
+      requireOperationData(
+        await listServiceDelegations(copyServiceAccountQuery(activeDelegationsQueryParams), signal),
+      ),
     gcTime: SERVICE_ACCOUNT_QUERY_GC_TIME,
     retry: false,
     refetchInterval: false,
@@ -199,9 +198,10 @@ export function useServiceAccountQueries(
   const auditsQuery = useQuery<PageResponse<ServiceAccessAudit>, HttpError>({
     queryKey: computed(() => auditsKey()),
     enabled: false,
-    queryFn: async ({ signal }) => requireOperationData(
-      await listServiceAccessAudits(copyServiceAccountQuery(activeAuditsQueryParams), signal),
-    ),
+    queryFn: async ({ signal }) =>
+      requireOperationData(
+        await listServiceAccessAudits(copyServiceAccountQuery(activeAuditsQueryParams), signal),
+      ),
     gcTime: SERVICE_ACCOUNT_QUERY_GC_TIME,
     retry: false,
     refetchInterval: false,

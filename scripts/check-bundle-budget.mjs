@@ -4,9 +4,7 @@ import { gzipSync } from 'node:zlib'
 
 const dist = path.resolve('dist')
 const manifest = JSON.parse(await readFile(path.join(dist, '.vite/manifest.json'), 'utf8'))
-const baseline = JSON.parse(
-  await readFile(path.resolve('scripts/bundle-baseline.json'), 'utf8'),
-)
+const baseline = JSON.parse(await readFile(path.resolve('scripts/bundle-baseline.json'), 'utf8'))
 const entries = Object.entries(manifest)
 const entryKeys = entries.filter(([, value]) => value.isEntry).map(([key]) => key)
 
@@ -29,8 +27,8 @@ async function gzipBytes(file) {
   return gzipSync(await readFile(path.join(dist, file))).byteLength
 }
 
-const initialJs = [...initialFiles].filter(file => file.endsWith('.js'))
-const initialCss = [...initialFiles].filter(file => file.endsWith('.css'))
+const initialJs = [...initialFiles].filter((file) => file.endsWith('.js'))
+const initialCss = [...initialFiles].filter((file) => file.endsWith('.css'))
 const initialJsGzip = (await Promise.all(initialJs.map(gzipBytes))).reduce((a, b) => a + b, 0)
 const initialCssGzip = (await Promise.all(initialCss.map(gzipBytes))).reduce((a, b) => a + b, 0)
 
@@ -64,7 +62,8 @@ if (initialCssGzip > regressionLimits.initialCssGzip) {
 for (const [, chunk] of entries) {
   if (!chunk.file?.endsWith('.js') || initialFiles.has(chunk.file)) continue
   const bytes = (await stat(path.join(dist, chunk.file))).size
-  if (bytes > limits.asyncJsRaw) failures.push(`async JS ${chunk.file} ${bytes} > ${limits.asyncJsRaw}`)
+  if (bytes > limits.asyncJsRaw)
+    failures.push(`async JS ${chunk.file} ${bytes} > ${limits.asyncJsRaw}`)
 }
 
 console.log(

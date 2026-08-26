@@ -13,14 +13,8 @@ import { invalidateTenantServerState } from '@/shared/query/client'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useTagsViewStore } from '@/stores/tagsView'
 import { useUserStore } from '@/stores/user'
-import {
-  assertSessionEpoch,
-  getSessionEpoch,
-} from '@/app/session/state'
-import {
-  ensureTenantContextLoaded,
-  refreshTenantContext,
-} from './coordinator'
+import { assertSessionEpoch, getSessionEpoch } from '@/app/session/state'
+import { ensureTenantContextLoaded, refreshTenantContext } from './coordinator'
 import { useTenantContextStore } from './store'
 
 export interface TenantContextChangedFrame {
@@ -57,17 +51,16 @@ export function resetTenantContextObservation(): void {
   refreshPromise = undefined
 }
 
-export function synchronizeTenantContextUi(
-  options?: { skipAuthRefresh?: boolean, refreshContext?: boolean },
-): Promise<void> {
+export function synchronizeTenantContextUi(options?: {
+  skipAuthRefresh?: boolean
+  refreshContext?: boolean
+}): Promise<void> {
   const user = useUserStore()
   if (user.sessionStatus !== 'authenticated' || !user.userId) return Promise.resolve()
   return performTenantContextUiSynchronization(options)
 }
 
-function scheduleTenantContextRefresh(
-  observation: TenantContextObservation,
-): Promise<void> {
+function scheduleTenantContextRefresh(observation: TenantContextObservation): Promise<void> {
   const user = useUserStore()
   if (user.sessionStatus !== 'authenticated' || !user.userId) return Promise.resolve()
   queuedObservation = { ...queuedObservation, ...observation }
@@ -97,8 +90,7 @@ async function drainTenantContextRefreshes(generation: number): Promise<void> {
       // 再比较版本；直接忽略会丢失在请求发出之后发生的上下文变化。
       try {
         await ensureTenantContextLoaded()
-      }
-      catch {
+      } catch {
         // ensureLoaded 已 fail-closed；后续显式刷新或导航会重试，不能保留旧授权。
         continue
       }
@@ -114,19 +106,21 @@ function tenantContextDiffers(observation: TenantContextObservation): boolean {
   // loading 状态已经由 drainTenantContextRefreshes 等待完成，不应在这里吞掉观察值。
   if (context.status === 'loading') return true
   if (context.status !== 'loaded') return true
-  return (observation.authorizationEpoch !== undefined
-      && observation.authorizationEpoch !== context.authorizationEpoch)
-    || (observation.runtimeEpoch !== undefined
-      && observation.runtimeEpoch !== context.runtimeEpoch)
-    || (observation.placementGeneration !== undefined
-      && observation.placementGeneration !== context.businessData?.placement_generation)
-    || (observation.businessDataState !== undefined
-      && observation.businessDataState !== context.businessData?.state)
+  return (
+    (observation.authorizationEpoch !== undefined &&
+      observation.authorizationEpoch !== context.authorizationEpoch) ||
+    (observation.runtimeEpoch !== undefined && observation.runtimeEpoch !== context.runtimeEpoch) ||
+    (observation.placementGeneration !== undefined &&
+      observation.placementGeneration !== context.businessData?.placement_generation) ||
+    (observation.businessDataState !== undefined &&
+      observation.businessDataState !== context.businessData?.state)
+  )
 }
 
-async function performTenantContextUiSynchronization(
-  options?: { skipAuthRefresh?: boolean, refreshContext?: boolean },
-): Promise<void> {
+async function performTenantContextUiSynchronization(options?: {
+  skipAuthRefresh?: boolean
+  refreshContext?: boolean
+}): Promise<void> {
   const expectedSessionEpoch = getSessionEpoch()
   const user = useUserStore()
   const tenantId = user.tenantId
@@ -137,15 +131,13 @@ async function performTenantContextUiSynchronization(
   if (options?.refreshContext !== false) {
     try {
       await refreshTenantContext()
-    }
-    catch (error) {
+    } catch (error) {
       // 强一致上下文无法取得时，不能继续保留上一个快照安装的页面与标签。
       // 身份和 token 仍由会话协调器负责恢复，但所有租户授权投影立即失效。
       runtime.resetDynamicRoutes()
       useTagsViewStore().closeAllViews()
       await invalidateTenantServerState(tenantId)
-      if (isSameIdentity(tenantId, userId)
-        && runtime.router.currentRoute.value.path !== '/503') {
+      if (isSameIdentity(tenantId, userId) && runtime.router.currentRoute.value.path !== '/503') {
         await runtime.router.replace('/503')
       }
       throw error
@@ -177,16 +169,19 @@ function pathAccessResult(router: Router, path: string): RouteAccessResult {
   let resolved: ReturnType<Router['resolve']>
   try {
     resolved = router.resolve(path)
-  }
-  catch {
+  } catch {
     return registeredPageAccessResult(path, context)
   }
   if (
-    resolved.matched.length === 0
-    || resolved.matched.some(record => record.path === '/:pathMatch(.*)*')
-  ) return registeredPageAccessResult(path, context)
+    resolved.matched.length === 0 ||
+    resolved.matched.some((record) => record.path === '/:pathMatch(.*)*')
+  )
+    return registeredPageAccessResult(path, context)
 
-  return matchedRouteAccessResult(resolved.matched.map(record => record.meta), context)
+  return matchedRouteAccessResult(
+    resolved.matched.map((record) => record.meta),
+    context,
+  )
 }
 
 function currentRouteAccessContext(): RouteAccessContext {
@@ -202,9 +197,11 @@ function currentRouteAccessContext(): RouteAccessContext {
 
 function isSameIdentity(tenantId: string, userId: string): boolean {
   const user = useUserStore()
-  return user.sessionStatus === 'authenticated'
-    && user.tenantId === tenantId
-    && String(user.userId) === userId
+  return (
+    user.sessionStatus === 'authenticated' &&
+    user.tenantId === tenantId &&
+    String(user.userId) === userId
+  )
 }
 
 function hasObservation(observation: TenantContextObservation): boolean {

@@ -22,10 +22,7 @@ const noticePolicyPath = new URL(
   '../src/shared/markdown/noticePolicy.generated.json',
   import.meta.url,
 )
-const apiPrefixPath = new URL(
-  '../src/shared/config/apiPrefix.generated.json',
-  import.meta.url,
-)
+const apiPrefixPath = new URL('../src/shared/config/apiPrefix.generated.json', import.meta.url)
 const document = JSON.parse(await readFile(contractPath, 'utf8'))
 const packageDocument = JSON.parse(await readFile(packagePath, 'utf8'))
 const generatedPasswordPolicy = JSON.parse(await readFile(passwordPolicyPath, 'utf8'))
@@ -38,14 +35,12 @@ if (apiVersionViolation) errors.push(apiVersionViolation)
 
 try {
   requirePermissionCatalog(document['x-ryframe-permission-catalog'], 'openapi/openapi.json')
-}
-catch (error) {
+} catch (error) {
   errors.push(error instanceof Error ? error.message : String(error))
 }
 try {
   requireCrudResourceCatalog(document['x-ryframe-crud-resources'], document)
-}
-catch (error) {
+} catch (error) {
   errors.push(error instanceof Error ? error.message : String(error))
 }
 
@@ -107,11 +102,10 @@ if (errors.length > 0) {
   console.error('API contract check failed:')
   for (const error of errors) console.error(`  - ${error}`)
   process.exitCode = 1
-}
-else {
+} else {
   console.log(
-    `API contract check passed (${operationState.paths.length} paths, `
-    + `${operationState.operationCount} operations, ${Object.keys(operationState.schemas).length} schemas, `
-    + `${operationState.queryOperationIds.size} query operations, ${contractRoutes.size} menu routes)`,
+    `API contract check passed (${operationState.paths.length} paths, ` +
+      `${operationState.operationCount} operations, ${Object.keys(operationState.schemas).length} schemas, ` +
+      `${operationState.queryOperationIds.size} query operations, ${contractRoutes.size} menu routes)`,
   )
 }

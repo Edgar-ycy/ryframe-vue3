@@ -38,12 +38,15 @@ use([
   SVGRenderer,
 ])
 
-withDefaults(defineProps<{
-  chartLabel: string
-  minHeight?: string
-}>(), {
-  minHeight: '320px',
-})
+withDefaults(
+  defineProps<{
+    chartLabel: string
+    minHeight?: string
+  }>(),
+  {
+    minHeight: '320px',
+  },
+)
 
 const emit = defineEmits<{
   restore: []
@@ -105,9 +108,8 @@ function cancelScheduledResize(): void {
 
 const unsubscribeSettings = settingsStore.$subscribe((_mutation, state) => {
   const themeChanged = state.theme !== previousTheme
-  const visualChanged = themeChanged
-    || state.themeColor !== previousThemeColor
-    || state.locale !== previousLocale
+  const visualChanged =
+    themeChanged || state.themeColor !== previousThemeColor || state.locale !== previousLocale
   previousTheme = state.theme
   previousThemeColor = state.themeColor
   previousLocale = state.locale

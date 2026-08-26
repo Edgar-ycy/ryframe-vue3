@@ -20,16 +20,10 @@ export function useUserImportManagement(refreshUsers: () => void | Promise<unkno
   const templateLoading = ref(false)
   const pendingKeys = new Map<string, string>()
 
-  const importMutation = useTenantMutation(
-    () => userStore.tenantId,
-    'user-imports',
-    {
-      mutationFn: ({ file, idempotencyKey }: ImportCommand) => (
-        createUserImport(file, idempotencyKey)
-      ),
-      onSuccess: () => ElMessage.success(translate('system.userImport.createSuccess')),
-    },
-  )
+  const importMutation = useTenantMutation(() => userStore.tenantId, 'user-imports', {
+    mutationFn: ({ file, idempotencyKey }: ImportCommand) => createUserImport(file, idempotencyKey),
+    onSuccess: () => ElMessage.success(translate('system.userImport.createSuccess')),
+  })
 
   function openImport(): void {
     if (importMutation.pending.value) return
@@ -48,8 +42,7 @@ export function useUserImportManagement(refreshUsers: () => void | Promise<unkno
     try {
       await importMutation.mutateAsync(command)
       pendingKeys.delete(signature)
-    }
-    catch (error) {
+    } catch (error) {
       if (shouldReuseIdempotencyKey(error)) pendingKeys.set(signature, idempotencyKey)
       else pendingKeys.delete(signature)
       throw error
@@ -65,8 +58,7 @@ export function useUserImportManagement(refreshUsers: () => void | Promise<unkno
     try {
       const blob = await downloadImportTemplate()
       downloadBlobDirect(blob, translate('system.userImport.templateFilename'))
-    }
-    finally {
+    } finally {
       templateLoading.value = false
     }
   }

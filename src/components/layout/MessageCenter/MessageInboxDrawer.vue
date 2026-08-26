@@ -14,15 +14,18 @@
         {{ connectionLabel }}
       </span>
       <div class="message-center__toolbar-actions">
-        <el-button
-          v-if="connectionStatus === 'degraded'"
-          text
-          @click="emit('retry-realtime')"
-        >
+        <el-button v-if="connectionStatus === 'degraded'" text @click="emit('retry-realtime')">
           {{ t('messageCenter.retryRealtime') }}
         </el-button>
-        <el-button text :loading="loading" @click="emit('refresh')">{{ t('common.refresh') }}</el-button>
-        <el-button text :loading="mutating" :disabled="unreadCount === 0 || mutating" @click="emit('mark-all-read')">
+        <el-button text :loading="loading" @click="emit('refresh')">{{
+          t('common.refresh')
+        }}</el-button>
+        <el-button
+          text
+          :loading="mutating"
+          :disabled="unreadCount === 0 || mutating"
+          @click="emit('mark-all-read')"
+        >
           {{ t('messageCenter.markAllRead') }}
         </el-button>
       </div>
@@ -57,7 +60,11 @@
             />
             <div class="message-item__content">
               <div class="message-item__heading">
-                <button class="message-item__title" type="button" @click="emit('open-detail', message)">
+                <button
+                  class="message-item__title"
+                  type="button"
+                  @click="emit('open-detail', message)"
+                >
                   {{ message.title }}
                 </button>
                 <el-tag :type="messageSeverityType(message.severity)" size="small">
@@ -67,14 +74,20 @@
               <p class="message-item__text">{{ message.content }}</p>
               <div class="message-item__status">
                 <el-tag :type="message.acked_at ? 'success' : 'info'" size="small" effect="plain">
-                  {{ message.acked_at ? t('messageCenter.delivered') : t('messageCenter.deliveryPending') }}
+                  {{
+                    message.acked_at
+                      ? t('messageCenter.delivered')
+                      : t('messageCenter.deliveryPending')
+                  }}
                 </el-tag>
                 <el-tag :type="message.read_at ? 'success' : 'warning'" size="small" effect="plain">
                   {{ message.read_at ? t('messageCenter.read') : t('messageCenter.unread') }}
                 </el-tag>
               </div>
               <div class="message-item__footer">
-                <time :datetime="message.published_at">{{ formatMessageTime(message.published_at) }}</time>
+                <time :datetime="message.published_at">{{
+                  formatMessageTime(message.published_at)
+                }}</time>
                 <div class="message-item__actions">
                   <el-button link type="primary" @click="emit('open-detail', message)">
                     {{ t('messageCenter.view') }}

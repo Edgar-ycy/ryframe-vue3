@@ -51,10 +51,12 @@ test('按路径领域分组、闭合依赖并保留直接使用的兼容 schema'
   const domains = createSchemaDomainDocuments(source, apiPrefix)
   assert.deepEqual(Object.keys(domains.get('core').paths), ['/api/v1/auth/login', '/livez'])
   assert.deepEqual(Object.keys(domains.get('system').paths), ['/api/v1/system/users'])
-  assert.deepEqual(
-    Object.keys(domains.get('core').components.schemas),
-    ['Health', 'Login', 'Unused', 'User'],
-  )
+  assert.deepEqual(Object.keys(domains.get('core').components.schemas), [
+    'Health',
+    'Login',
+    'Unused',
+    'User',
+  ])
   assert.deepEqual(Object.keys(domains.get('system').components.schemas), ['User'])
   validateSchemaDomainDocuments(source, domains)
 })

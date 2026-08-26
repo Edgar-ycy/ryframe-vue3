@@ -88,18 +88,18 @@ const assignmentsQuery = useTenantQuery<Id[]>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
   'roles',
   () => ({ scope: 'permissions', id: props.role?.id ?? null }),
-  async signal => {
+  async (signal) => {
     const role = props.role
     if (!role) return []
     const response = await getRolePermissions(role.id, signal)
     return response.data ?? []
   },
 )
-const assignmentMutation = useTenantMutation<void, { roleId: Id, permissionIds: Id[] }>(
+const assignmentMutation = useTenantMutation<void, { roleId: Id; permissionIds: Id[] }>(
   () => userStore.tenantId,
   'roles',
   {
-    mutationFn: async variables => {
+    mutationFn: async (variables) => {
       await replaceRolePermissions(variables.roleId, variables.permissionIds)
     },
     onSuccess: () => {
@@ -110,10 +110,10 @@ const assignmentMutation = useTenantMutation<void, { roleId: Id, permissionIds: 
 const loading = assignmentsQuery.isFetching
 const submitting = assignmentMutation.pending
 const allNodeIds = computed(() => flattenNodeIds(props.permissionTree))
-const allSelected = computed(() => (
-  allNodeIds.value.length > 0
-  && allNodeIds.value.every(id => checkedKeys.value.includes(id))
-))
+const allSelected = computed(
+  () =>
+    allNodeIds.value.length > 0 && allNodeIds.value.every((id) => checkedKeys.value.includes(id)),
+)
 const partiallySelected = computed(() => checkedKeys.value.length > 0 && !allSelected.value)
 
 function reset(): void {
@@ -145,7 +145,7 @@ function handleOpen(): void {
 
 watch(
   () => assignmentsQuery.data.value,
-  ids => {
+  (ids) => {
     if (visible.value && ids) void populateAssignments(ids)
   },
 )
@@ -176,7 +176,7 @@ function setAllExpanded(expanded: boolean): void {
 }
 
 function flattenNodeIds(nodes: PermissionTreeNode[]): Id[] {
-  return nodes.flatMap(node => [String(node.id), ...flattenNodeIds(node.children ?? [])])
+  return nodes.flatMap((node) => [String(node.id), ...flattenNodeIds(node.children ?? [])])
 }
 
 async function submit(): Promise<void> {

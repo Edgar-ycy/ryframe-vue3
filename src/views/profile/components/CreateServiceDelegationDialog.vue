@@ -10,7 +10,10 @@
     @closed="resetForm"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-      <el-form-item :label="t('profile.serviceDelegations.serviceAccount')" prop="service_account_id">
+      <el-form-item
+        :label="t('profile.serviceDelegations.serviceAccount')"
+        prop="service_account_id"
+      >
         <el-select
           v-model="form.service_account_id"
           filterable
@@ -120,24 +123,32 @@ function emptyForm(): DelegationFormState {
 
 const form = ref<DelegationFormState>(emptyForm())
 const rules = computed<FormRules<DelegationFormState>>(() => ({
-  service_account_id: [{ required: true, message: t('profile.serviceDelegations.accountRequired'), trigger: 'change' }],
-  capability_keys: [{
-    validator: (_rule, value: string[], callback) => {
-      if (value.length >= 1 && value.length <= 16) callback()
-      else callback(new Error(t('profile.serviceDelegations.capabilitiesRequired')))
+  service_account_id: [
+    { required: true, message: t('profile.serviceDelegations.accountRequired'), trigger: 'change' },
+  ],
+  capability_keys: [
+    {
+      validator: (_rule, value: string[], callback) => {
+        if (value.length >= 1 && value.length <= 16) callback()
+        else callback(new Error(t('profile.serviceDelegations.capabilitiesRequired')))
+      },
+      trigger: 'change',
     },
-    trigger: 'change',
-  }],
-  reason: [{ required: true, message: t('profile.serviceDelegations.reasonRequired'), trigger: 'blur' }],
-  expires_at: [{
-    validator: (_rule, value: string, callback) => {
-      const timestamp = Date.parse(value)
-      const maximum = Date.now() + 30 * 24 * 60 * 60 * 1000
-      if (timestamp > Date.now() && timestamp <= maximum) callback()
-      else callback(new Error(t('profile.serviceDelegations.expirationInvalid')))
+  ],
+  reason: [
+    { required: true, message: t('profile.serviceDelegations.reasonRequired'), trigger: 'blur' },
+  ],
+  expires_at: [
+    {
+      validator: (_rule, value: string, callback) => {
+        const timestamp = Date.parse(value)
+        const maximum = Date.now() + 30 * 24 * 60 * 60 * 1000
+        if (timestamp > Date.now() && timestamp <= maximum) callback()
+        else callback(new Error(t('profile.serviceDelegations.expirationInvalid')))
+      },
+      trigger: 'change',
     },
-    trigger: 'change',
-  }],
+  ],
 }))
 
 function initializeForm(): void {
@@ -155,7 +166,10 @@ function handleAccountChange(): void {
 }
 
 function selectedCapabilities(): readonly ProfileServiceCapability[] {
-  return props.targets.find(target => target.account_id === form.value.service_account_id)?.capabilities ?? []
+  return (
+    props.targets.find((target) => target.account_id === form.value.service_account_id)
+      ?.capabilities ?? []
+  )
 }
 
 function disableOutsideRange(value: Date): boolean {

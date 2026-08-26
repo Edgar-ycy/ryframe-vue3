@@ -82,7 +82,12 @@
             highlight-current-row
             @row-click="handleTypeClick"
           >
-            <el-table-column prop="name" :label="t('system.dict.name')" min-width="110" show-overflow-tooltip />
+            <el-table-column
+              prop="name"
+              :label="t('system.dict.name')"
+              min-width="110"
+              show-overflow-tooltip
+            />
             <el-table-column prop="code" :label="t('system.dict.code')" show-overflow-tooltip />
             <el-table-column prop="status" :label="t('system.common.status')" align="center">
               <template #default="{ row }">
@@ -136,9 +141,11 @@
           <template #header>
             <div class="card-header">
               <span>
-                {{ currentType
-                  ? t('system.dict.dataTitleWithName', { name: currentType.name })
-                  : t('system.dict.dataTitle') }}
+                {{
+                  currentType
+                    ? t('system.dict.dataTitleWithName', { name: currentType.name })
+                    : t('system.dict.dataTitle')
+                }}
               </span>
               <el-button
                 v-if="currentType"
@@ -153,7 +160,12 @@
             </div>
           </template>
           <el-table v-if="currentType" v-loading="dataLoading" :data="dataList ?? []" border stripe>
-            <el-table-column prop="label" :label="t('system.dict.label')" min-width="120" show-overflow-tooltip />
+            <el-table-column
+              prop="label"
+              :label="t('system.dict.label')"
+              min-width="120"
+              show-overflow-tooltip
+            />
             <el-table-column prop="value" :label="t('system.dict.value')" />
             <el-table-column prop="sort" :label="t('system.common.sort')" align="center" />
             <el-table-column prop="status" :label="t('system.common.status')" align="center">
@@ -194,11 +206,7 @@
       </div>
     </div>
 
-    <DictTypeDialog
-      v-model="typeDialogVisible"
-      :dict-type="editingType"
-      @saved="handleTypeSaved"
-    />
+    <DictTypeDialog v-model="typeDialogVisible" :dict-type="editingType" @saved="handleTypeSaved" />
     <DictDataDialog
       v-model="dataDialogVisible"
       :dict-data="editingData"

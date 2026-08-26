@@ -53,13 +53,9 @@ export function quotaPercentage(usage: PercentageUsage | null | undefined): numb
 }
 
 /** 将后端基点换算为百分比；10000 基点等于 100%。 */
-export function quotaDisplayPercentage(
-  usage: PercentageUsage | null | undefined,
-): number {
+export function quotaDisplayPercentage(usage: PercentageUsage | null | undefined): number {
   const basisPoints = usage?.percentage_basis_points
-  return basisPoints == null || !Number.isFinite(basisPoints)
-    ? 0
-    : Math.max(0, basisPoints / 100)
+  return basisPoints == null || !Number.isFinite(basisPoints) ? 0 : Math.max(0, basisPoints / 100)
 }
 
 export function storageUsedMiB(usedBytes: number): number {

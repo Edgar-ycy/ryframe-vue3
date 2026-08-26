@@ -21,8 +21,7 @@ export function decodeMessageSocketFrame(raw: unknown): unknown {
   if (typeof raw !== 'string') return raw
   try {
     return JSON.parse(raw) as unknown
-  }
-  catch {
+  } catch {
     return undefined
   }
 }
@@ -41,15 +40,16 @@ export function parseTenantContextChanged(raw: unknown): TenantContextChangedFra
   const frame = raw as SocketFrame
   if (frame.v !== 1 || frame.type !== 'tenant_context_changed') return undefined
   if (
-    typeof frame.authorization_epoch !== 'number'
-    || !Number.isSafeInteger(frame.authorization_epoch)
-    || frame.authorization_epoch < 0
-    || typeof frame.runtime_epoch !== 'string'
-    || !/^(?:0|[1-9]\d*)$/u.test(frame.runtime_epoch)
-    || typeof frame.placement_generation !== 'string'
-    || !/^(?:0|[1-9]\d*)$/u.test(frame.placement_generation)
-    || !isBusinessDataState(frame.business_data_state)
-  ) return undefined
+    typeof frame.authorization_epoch !== 'number' ||
+    !Number.isSafeInteger(frame.authorization_epoch) ||
+    frame.authorization_epoch < 0 ||
+    typeof frame.runtime_epoch !== 'string' ||
+    !/^(?:0|[1-9]\d*)$/u.test(frame.runtime_epoch) ||
+    typeof frame.placement_generation !== 'string' ||
+    !/^(?:0|[1-9]\d*)$/u.test(frame.placement_generation) ||
+    !isBusinessDataState(frame.business_data_state)
+  )
+    return undefined
   return {
     v: 1,
     type: 'tenant_context_changed',
@@ -77,7 +77,8 @@ function normalizeMessage(value: unknown): MessageRecord | undefined {
   const content = typeof value.content === 'string' ? value.content : undefined
   const severity = typeof value.severity === 'string' ? value.severity : undefined
   const publishedAt = typeof value.published_at === 'string' ? value.published_at : undefined
-  if (!id || !topic || !title || content === undefined || !severity || !publishedAt) return undefined
+  if (!id || !topic || !title || content === undefined || !severity || !publishedAt)
+    return undefined
   return {
     id,
     topic,
@@ -92,9 +93,12 @@ function normalizeMessage(value: unknown): MessageRecord | undefined {
   }
 }
 
-function isBusinessDataState(value: unknown): value is TenantContextChangedFrame['business_data_state'] {
-  return typeof value === 'string'
-    && ['provisioning', 'active', 'maintenance', 'failed'].includes(value)
+function isBusinessDataState(
+  value: unknown,
+): value is TenantContextChangedFrame['business_data_state'] {
+  return (
+    typeof value === 'string' && ['provisioning', 'active', 'maintenance', 'failed'].includes(value)
+  )
 }
 
 function stringOrNull(value: unknown): string | null | undefined {

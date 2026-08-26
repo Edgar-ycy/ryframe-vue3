@@ -2,11 +2,12 @@ import type { ExportJobIdentity } from './exportJobCache'
 
 const CHANNEL_NAME = 'ryframe-export-jobs-v1'
 
-export type ExportJobEvent = ExportJobIdentity & (
-  | { type: 'created' | 'cancelled', jobId: string }
-  | { type: 'deleted', jobIds: string[] }
-  | { type: 'notifications-read', jobIds: string[], readAt: string }
-)
+export type ExportJobEvent = ExportJobIdentity &
+  (
+    | { type: 'created' | 'cancelled'; jobId: string }
+    | { type: 'deleted'; jobIds: string[] }
+    | { type: 'notifications-read'; jobIds: string[]; readAt: string }
+  )
 
 type ExportJobEventHandler = (event: ExportJobEvent) => void
 
@@ -20,13 +21,16 @@ function isExportJobEvent(value: unknown): value is ExportJobEvent {
   if (event.type === 'created' || event.type === 'cancelled') {
     return typeof event.jobId === 'string'
   }
-  const hasValidJobIds = Array.isArray(event.jobIds)
-    && event.jobIds.length > 0
-    && event.jobIds.length <= 100
-    && event.jobIds.every((id: unknown) => typeof id === 'string')
+  const hasValidJobIds =
+    Array.isArray(event.jobIds) &&
+    event.jobIds.length > 0 &&
+    event.jobIds.length <= 100 &&
+    event.jobIds.every((id: unknown) => typeof id === 'string')
   if (!hasValidJobIds) return false
-  return event.type === 'deleted'
-    || (event.type === 'notifications-read' && typeof event.readAt === 'string')
+  return (
+    event.type === 'deleted' ||
+    (event.type === 'notifications-read' && typeof event.readAt === 'string')
+  )
 }
 
 function notify(event: ExportJobEvent): void {

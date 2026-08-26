@@ -8,12 +8,7 @@ import {
   put_system_messages_by_id_read,
   put_system_messages_read_all,
 } from '@/api/generated/operations'
-import type {
-  ApiSchema,
-  OperationData,
-  OperationJsonBody,
-  OperationQuery,
-} from '@/api/contract'
+import type { ApiSchema, OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 
 export type MessageRecord = ApiSchema<'MessageVo'>
 export type MessageInboxQuery = OperationQuery<'get_system_messages'>

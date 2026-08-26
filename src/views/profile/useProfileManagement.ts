@@ -1,8 +1,4 @@
-import {
-  getProfile,
-  type ProfileInfo,
-  type ProfileUpdateParams,
-} from '@/api/modules/auth'
+import { getProfile, type ProfileInfo, type ProfileUpdateParams } from '@/api/modules/auth'
 import { normalizeLocale } from '@/i18n'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useSettingsStore } from '@/stores/settings'
@@ -37,7 +33,7 @@ export function useProfileManagement(t: Translate) {
     () => userStore.sessionStatus === 'authenticated' && Boolean(userStore.userId),
     'profile',
     () => ({ scope: 'self', userId: String(userStore.userId || 'anonymous') }),
-    async signal => {
+    async (signal) => {
       const response = await getProfile(signal)
       if (!response.data) throw new Error(t('profile.responseMissing'))
       return response.data
@@ -61,7 +57,7 @@ export function useProfileManagement(t: Translate) {
 
   watch(
     () => profileQuery.data.value,
-    nextProfile => {
+    (nextProfile) => {
       if (nextProfile) applyProfile(nextProfile)
     },
     { immediate: true },

@@ -1,8 +1,4 @@
-import axios, {
-  type AxiosError,
-  type AxiosResponse,
-  type InternalAxiosRequestConfig,
-} from 'axios'
+import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { getApplicationLocale } from '@/i18n'
 import { runtimeConfig } from '@/shared/config/runtimeConfig'
 import { toHttpError } from './errors'
@@ -48,10 +44,7 @@ function observeResponseTenantContext(response: AxiosResponse | undefined): void
   if (!accessToken || requestAuthorization !== `Bearer ${accessToken}`) return
   const authorizationEpoch = decimalHeader(response, TENANT_CONTEXT_HEADERS.authorizationEpoch)
   const runtimeEpoch = decimalHeader(response, TENANT_CONTEXT_HEADERS.runtimeEpoch)
-  const placementGeneration = decimalHeader(
-    response,
-    TENANT_CONTEXT_HEADERS.placementGeneration,
-  )
+  const placementGeneration = decimalHeader(response, TENANT_CONTEXT_HEADERS.placementGeneration)
   const businessDataState = stringHeader(response, TENANT_CONTEXT_HEADERS.businessDataState)
   const observation = {
     ...(authorizationEpoch === undefined ? {} : { authorizationEpoch }),
@@ -70,9 +63,7 @@ function stringHeader(response: AxiosResponse | undefined, name: string): string
 function decimalHeader(response: AxiosResponse | undefined, name: string): string | undefined {
   const raw = response?.headers[name.toLowerCase()]
   if (typeof raw === 'string' && /^(?:0|[1-9]\d*)$/u.test(raw)) return raw
-  return typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0
-    ? String(raw)
-    : undefined
+  return typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0 ? String(raw) : undefined
 }
 
 function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig): void {
@@ -117,12 +108,12 @@ transport.interceptors.response.use(
     const sessionAdapter = getHttpSession()
 
     if (
-      status === 401
-      && config
-      && !config.skipAuthRefresh
-      && !config.retryAfterRefresh
-      && sessionAdapter
-      && sessionAdapter.getAccessToken()
+      status === 401 &&
+      config &&
+      !config.skipAuthRefresh &&
+      !config.retryAfterRefresh &&
+      sessionAdapter &&
+      sessionAdapter.getAccessToken()
     ) {
       config.retryAfterRefresh = true
       const token = await refreshSession()

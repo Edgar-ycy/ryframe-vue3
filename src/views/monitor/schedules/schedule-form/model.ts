@@ -14,8 +14,7 @@ export type ScheduleFormModel = {
 export function browserTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  }
-  catch {
+  } catch {
     return 'UTC'
   }
 }
@@ -24,8 +23,7 @@ export function buildTimezoneOptions(browserTimezone: string): string[] {
   const values = new Set<string>(['UTC', 'Asia/Shanghai', browserTimezone])
   try {
     for (const timezone of Intl.supportedValuesOf('timeZone')) values.add(timezone)
-  }
-  catch {
+  } catch {
     // 旧浏览器不支持时保留最小 IANA 时区集合。
   }
   return [...values].filter(Boolean).sort((left, right) => {
@@ -63,8 +61,7 @@ export function formatScheduleTime(value: string, timezone: string, locale: stri
       dateStyle: 'medium',
       timeStyle: 'medium',
     }).format(new Date(value))
-  }
-  catch {
+  } catch {
     return value
   }
 }
@@ -77,8 +74,7 @@ export function formatUtcTime(value: string, locale: string): string {
       timeStyle: 'medium',
     }).format(new Date(value))
     return `${formatted} UTC`
-  }
-  catch {
+  } catch {
     return `${value} UTC`
   }
 }

@@ -23,9 +23,24 @@
     <template v-else>
       <div class="desktop-table" role="region" :aria-label="t('serviceAccounts.audits')">
         <el-table :data="items" border stripe row-key="id">
-          <el-table-column prop="request_id" :label="t('serviceAccounts.requestId')" min-width="250" show-overflow-tooltip />
-          <el-table-column prop="operation_id" :label="t('serviceAccounts.operation')" min-width="230" show-overflow-tooltip />
-          <el-table-column prop="capability_key" :label="t('serviceAccounts.capability')" min-width="210" show-overflow-tooltip />
+          <el-table-column
+            prop="request_id"
+            :label="t('serviceAccounts.requestId')"
+            min-width="250"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="operation_id"
+            :label="t('serviceAccounts.operation')"
+            min-width="230"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="capability_key"
+            :label="t('serviceAccounts.capability')"
+            min-width="210"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('serviceAccounts.accessMode')" width="105">
             <template #default="{ row }">{{ accessModeLabel(row.access_mode) }}</template>
           </el-table-column>
@@ -34,10 +49,19 @@
               <el-tag :type="resultType(row.result)">{{ resultLabel(row.result) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="reason_code" :label="t('serviceAccounts.reasonCode')" min-width="160" show-overflow-tooltip />
+          <el-table-column
+            prop="reason_code"
+            :label="t('serviceAccounts.reasonCode')"
+            min-width="160"
+            show-overflow-tooltip
+          />
           <el-table-column prop="http_status" :label="t('serviceAccounts.httpStatus')" width="86" />
           <el-table-column prop="row_count" :label="t('serviceAccounts.rowCount')" width="82" />
-          <el-table-column prop="response_bytes" :label="t('serviceAccounts.responseBytes')" min-width="120" />
+          <el-table-column
+            prop="response_bytes"
+            :label="t('serviceAccounts.responseBytes')"
+            min-width="120"
+          />
           <el-table-column :label="t('serviceAccounts.startedAt')" min-width="180">
             <template #default="{ row }">{{ formatLocalizedDate(row.started_at) }}</template>
           </el-table-column>
@@ -51,12 +75,30 @@
             <el-tag :type="resultType(audit.result)">{{ resultLabel(audit.result) }}</el-tag>
           </div>
           <dl>
-            <div><dt>{{ t('serviceAccounts.operation') }}</dt><dd>{{ audit.operation_id }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.capability') }}</dt><dd>{{ audit.capability_key }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.accessMode') }}</dt><dd>{{ accessModeLabel(audit.access_mode) }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.reasonCode') }}</dt><dd>{{ audit.reason_code }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.httpStatus') }}</dt><dd>{{ audit.http_status }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.startedAt') }}</dt><dd>{{ formatLocalizedDate(audit.started_at) }}</dd></div>
+            <div>
+              <dt>{{ t('serviceAccounts.operation') }}</dt>
+              <dd>{{ audit.operation_id }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.capability') }}</dt>
+              <dd>{{ audit.capability_key }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.accessMode') }}</dt>
+              <dd>{{ accessModeLabel(audit.access_mode) }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.reasonCode') }}</dt>
+              <dd>{{ audit.reason_code }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.httpStatus') }}</dt>
+              <dd>{{ audit.http_status }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.startedAt') }}</dt>
+              <dd>{{ formatLocalizedDate(audit.started_at) }}</dd>
+            </div>
           </dl>
         </article>
       </div>

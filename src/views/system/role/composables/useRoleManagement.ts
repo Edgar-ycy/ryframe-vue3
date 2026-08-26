@@ -60,18 +60,19 @@ export function useRoleManagement() {
     authenticated,
     'roles',
     () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
-    signal => runAppliedQuery(signal, async (query, requestSignal) => {
-      const params = { ...query }
-      const response = await listRole(params, requestSignal)
-      return response.data ?? emptyPageResponse<RoleRecord>(params)
-    }),
+    (signal) =>
+      runAppliedQuery(signal, async (query, requestSignal) => {
+        const params = { ...query }
+        const response = await listRole(params, requestSignal)
+        return response.data ?? emptyPageResponse<RoleRecord>(params)
+      }),
   )
   const departmentsQuery = useTenantQuery<DeptNode[]>(
     () => userStore.tenantId,
     authenticated,
     'departments',
     () => ({ scope: 'tree' }),
-    async signal => {
+    async (signal) => {
       const response = await getDeptTree(signal)
       return response.data ?? []
     },
@@ -81,7 +82,7 @@ export function useRoleManagement() {
     authenticated,
     'permissions',
     () => ({ scope: 'tree' }),
-    async signal => {
+    async (signal) => {
       const response = await getPermissionTree(undefined, signal)
       return response.data ?? []
     },
@@ -92,21 +93,17 @@ export function useRoleManagement() {
   const deptTree = departmentsQuery.data
   const permissionTree = permissionsQuery.data
 
-  const deleteMutation = useTenantMutation<void, RoleRecord>(
-    () => userStore.tenantId,
-    'roles',
-    {
-      mutationFn: async role => {
-        await deleteRole(role.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(translate('system.common.deleteSuccess'))
-      },
+  const deleteMutation = useTenantMutation<void, RoleRecord>(() => userStore.tenantId, 'roles', {
+    mutationFn: async (role) => {
+      await deleteRole(role.id)
     },
+    onSuccess: () => {
+      ElMessage.success(translate('system.common.deleteSuccess'))
+    },
+  })
+  const deletingId = computed<Id | null>(() =>
+    deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
   )
-  const deletingId = computed<Id | null>(() => (
-    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
-  ))
 
   async function fetchData(): Promise<void> {
     if (applyDraft()) return
@@ -144,14 +141,8 @@ export function useRoleManagement() {
     const intent = normalizeExportIntent('roles', successfulQuery)
     if (!(await confirmExportIntent(intent))) return
 
-    await submitExport(
-      intent.signature,
-      (idempotencyKey, signal) => exportRole(
-        intent.filter,
-        idempotencyKey,
-        signal,
-        intent.isEmpty,
-      ),
+    await submitExport(intent.signature, (idempotencyKey, signal) =>
+      exportRole(intent.filter, idempotencyKey, signal, intent.isEmpty),
     )
   }
 

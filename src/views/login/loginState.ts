@@ -5,10 +5,7 @@ export interface LoginFormModel {
   captcha_code: string
 }
 
-export function createInitialLoginForm(
-  tenantId: string,
-  isDevelopment: boolean,
-): LoginFormModel {
+export function createInitialLoginForm(tenantId: string, isDevelopment: boolean): LoginFormModel {
   return {
     tenant_id: tenantId,
     username: isDevelopment ? 'admin' : '',
@@ -20,14 +17,15 @@ export function createInitialLoginForm(
 export function resolveLoginRedirect(value: unknown): string {
   if (typeof value !== 'string') return '/index'
   if (
-    !value.startsWith('/')
-    || value.startsWith('//')
-    || value.includes('\\')
-    || [...value].some((character) => {
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    value.includes('\\') ||
+    [...value].some((character) => {
       const code = character.charCodeAt(0)
       return code <= 31 || code === 127
-    })
-    || value === '/login'
-  ) return '/index'
+    }) ||
+    value === '/login'
+  )
+    return '/index'
   return value
 }

@@ -6,10 +6,7 @@ import openapiTS, { astToString } from 'openapi-typescript'
 import { requireApiPrefixContract } from './api-prefix-contract.mjs'
 import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
-import {
-  createSchemaDomainDocuments,
-  renderSchemaIndex,
-} from './openapi-schema-domains.mjs'
+import { createSchemaDomainDocuments, renderSchemaIndex } from './openapi-schema-domains.mjs'
 
 export const ownershipManifestPath = 'src/api/generated/ownership.json'
 export const generatedArtifactPaths = Object.freeze([
@@ -65,8 +62,7 @@ export function createOperationManifest(document) {
       const operation = pathItem?.[method]
       if (!operation) continue
       const operationId = operation.operationId
-      if (typeof operationId !== 'string'
-        || !/^[A-Za-z_][A-Za-z0-9_]*$/u.test(operationId)) {
+      if (typeof operationId !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/u.test(operationId)) {
         throw new Error(`${method.toUpperCase()} ${routePath} 缺少合法 operationId`)
       }
       if (operationIds.has(operationId)) {
@@ -84,10 +80,15 @@ export function createOperationManifest(document) {
 export function renderOperationManifest(document) {
   const manifest = createOperationManifest(document)
   const operationIds = Object.keys(manifest)
-  const operationIdType = operationIds.map(operationId => JSON.stringify(operationId)).join('\n  | ')
-  const descriptors = Object.entries(manifest).map(([operationId, operation]) => (
-    `export const ${operationId} = ${JSON.stringify({ operationId, ...operation })} as const satisfies OperationDescriptor<${JSON.stringify(operationId)}>`
-  )).join('\n\n')
+  const operationIdType = operationIds
+    .map((operationId) => JSON.stringify(operationId))
+    .join('\n  | ')
+  const descriptors = Object.entries(manifest)
+    .map(
+      ([operationId, operation]) =>
+        `export const ${operationId} = ${JSON.stringify({ operationId, ...operation })} as const satisfies OperationDescriptor<${JSON.stringify(operationId)}>`,
+    )
+    .join('\n\n')
 
   return `${generatedHeader}export type OperationId =
   | ${operationIdType}
@@ -129,14 +130,15 @@ function requireMenuRouteCatalog(value, location) {
     const routeKey = route?.route_key
     const defaultName = route?.name
     const titleKey = route?.title_key
-    if (typeof routeKey !== 'string'
-      || !/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u.test(routeKey)) {
+    if (typeof routeKey !== 'string' || !/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u.test(routeKey)) {
       throw new Error(`${location}.routes[${index}]: route_key 无效`)
     }
-    if (typeof defaultName !== 'string'
-      || defaultName.trim() !== defaultName
-      || defaultName.length === 0
-      || [...defaultName].length > 64) {
+    if (
+      typeof defaultName !== 'string' ||
+      defaultName.trim() !== defaultName ||
+      defaultName.length === 0 ||
+      [...defaultName].length > 64
+    ) {
       throw new Error(`${location}.routes[${index}]: name 无效`)
     }
     if (typeof titleKey !== 'string' || !/^[A-Za-z][A-Za-z0-9]*$/u.test(titleKey)) {
@@ -155,10 +157,12 @@ export function renderMenuRouteCatalog(document) {
     document?.['x-ryframe-menu-routes'],
     'openapi/openapi.json.x-ryframe-menu-routes',
   )
-  const titleKeys = Object.fromEntries(routes.flatMap(route => [
-    [route.routeKey, route.titleKey],
-    [route.defaultName, route.titleKey],
-  ]))
+  const titleKeys = Object.fromEntries(
+    routes.flatMap((route) => [
+      [route.routeKey, route.titleKey],
+      [route.defaultName, route.titleKey],
+    ]),
+  )
   return `${generatedHeader}export const menuRouteCatalog = ${JSON.stringify(routes, null, 2)} as const
 
 export type MenuRouteKey = typeof menuRouteCatalog[number]['routeKey']
@@ -168,10 +172,7 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
 }
 
 export function renderCrudResourceCatalog(document) {
-  const resources = requireCrudResourceCatalog(
-    document?.['x-ryframe-crud-resources'],
-    document,
-  )
+  const resources = requireCrudResourceCatalog(document?.['x-ryframe-crud-resources'], document)
   const resourcesByName = resources
     .map((resource, index) => `  ${JSON.stringify(resource.name)}: crudResourceCatalog[${index}],`)
     .join('\n')
@@ -210,10 +211,7 @@ export async function buildApiArtifacts(root) {
       generatedHeader + astToString(await openapiTS(domainDocument)),
     ])
   }
-  schemaArtifacts.push([
-    'src/api/generated/schema/index.ts',
-    renderSchemaIndex(generatedHeader),
-  ])
+  schemaArtifacts.push(['src/api/generated/schema/index.ts', renderSchemaIndex(generatedHeader)])
 
   return new Map([
     ...schemaArtifacts,
@@ -229,10 +227,7 @@ export async function buildApiArtifacts(root) {
       'src/shared/markdown/noticePolicy.generated.json',
       canonicalJson(document['x-ryframe-notice-policy']),
     ],
-    [
-      'src/shared/config/apiPrefix.generated.json',
-      canonicalJson(document['x-ryframe-api-prefix']),
-    ],
+    ['src/shared/config/apiPrefix.generated.json', canonicalJson(document['x-ryframe-api-prefix'])],
     [
       ownershipManifestPath,
       canonicalJson({

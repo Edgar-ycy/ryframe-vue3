@@ -4,16 +4,10 @@ import type { SessionContext } from '@/api/modules/sessionContext'
 import { getRouteRuntime } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
-import {
-  clearServerState,
-  configureServerStateErrorReporter,
-} from '@/shared/query/client'
+import { clearServerState, configureServerStateErrorReporter } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useTagsViewStore } from '@/stores/tagsView'
-import {
-  failClosedTenantContext,
-  resetTenantContext,
-} from '@/app/tenant-context/coordinator'
+import { failClosedTenantContext, resetTenantContext } from '@/app/tenant-context/coordinator'
 import {
   observeTenantContext,
   resetTenantContextObservation,
@@ -49,16 +43,16 @@ export function installSessionCoordinator(): void {
       const synchronization = scopeChanged
         ? synchronizeTenantContextUi({ skipAuthRefresh: true, refreshContext: false })
         : ensureRoutesAfterAuthentication(true)
-      void synchronization
-        .catch(async (error: unknown) => {
-          const httpError = error instanceof HttpError
+      void synchronization.catch(async (error: unknown) => {
+        const httpError =
+          error instanceof HttpError
             ? error
             : new HttpError(translate('shell.session.authUnavailable'), {
                 kind: 'unknown',
                 cause: error,
               })
-          await handleRefreshFailure(httpError)
-        })
+        await handleRefreshFailure(httpError)
+      })
     },
     onRefreshFailed: () => undefined,
     onLogout: () => {
@@ -75,7 +69,10 @@ export function installSessionCoordinator(): void {
   configureServerStateErrorReporter(reportError)
 }
 
-export function publishAuthenticatedSession(accessToken: string, sessionContext: SessionContext): void {
+export function publishAuthenticatedSession(
+  accessToken: string,
+  sessionContext: SessionContext,
+): void {
   applyAuthenticatedSession(accessToken, sessionContext)
   invalidateCsrfToken()
   const operation = startLocalRefreshOperation()
@@ -90,16 +87,16 @@ export function initializeSession(): Promise<void> {
     const pending = refreshAccessToken()
       .then(() => undefined)
       .catch(async (error: unknown) => {
-        const httpError = error instanceof HttpError
-          ? error
-          : new HttpError(translate('shell.session.initializationFailed'), {
-              kind: 'unknown',
-              cause: error,
-            })
+        const httpError =
+          error instanceof HttpError
+            ? error
+            : new HttpError(translate('shell.session.initializationFailed'), {
+                kind: 'unknown',
+                cause: error,
+              })
         if (httpError.status === 401 || httpError.status === 403) {
           await clearSession()
-        }
-        else {
+        } else {
           failClosedAuthorizationProjection()
           // 临时依赖或传输故障保留凭据以便重试，但绝不保留旧授权投影。
           useUserStore().sessionStatus = 'unavailable'
@@ -121,8 +118,7 @@ async function handleRemoteLogout(): Promise<void> {
     if (runtime?.router.currentRoute.value.path !== '/login') {
       await runtime?.router.replace('/login')
     }
-  }
-  finally {
+  } finally {
     setSessionTerminating(false)
   }
 }
@@ -165,9 +161,10 @@ function reportError(error: HttpError): void {
     return
   }
   if (error.status === 423 || error.status === 503) {
-    const fallback = error.status === 423
-      ? translate('shell.session.resourceLocked')
-      : translate('shell.session.serviceUnavailable')
+    const fallback =
+      error.status === 423
+        ? translate('shell.session.resourceLocked')
+        : translate('shell.session.serviceUnavailable')
     ElMessage.error(error.message || fallback)
     return
   }
@@ -210,8 +207,7 @@ export async function terminateSession(): Promise<void> {
     if (runtime?.router.currentRoute.value.path !== '/login') {
       await runtime?.router.replace('/login')
     }
-  }
-  finally {
+  } finally {
     setSessionTerminating(false)
   }
 }
@@ -225,11 +221,9 @@ export async function logoutSession(): Promise<void> {
     await pendingRefresh?.catch(() => undefined)
     const challenge = await ensureCsrfToken(true)
     await logoutApi(challenge, accessToken)
-  }
-  catch {
+  } catch {
     ElMessage.warning(translate('shell.session.logoutFailed'))
-  }
-  finally {
+  } finally {
     await terminateSession()
   }
 }

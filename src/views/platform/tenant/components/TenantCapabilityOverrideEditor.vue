@@ -41,8 +41,9 @@
           <el-form-item :label="t('productPlans.enabled')">
             <el-switch
               :model-value="selectedOverride(descriptor.code)?.enabled"
-              :disabled="!descriptor.deployment_available
-                && !selectedOverride(descriptor.code)?.enabled"
+              :disabled="
+                !descriptor.deployment_available && !selectedOverride(descriptor.code)?.enabled
+              "
               @update:model-value="updateEnabled(descriptor.code, Boolean($event))"
             />
           </el-form-item>
@@ -101,11 +102,13 @@ const loadError = ref(false)
 const editorCache = new Map<string, Component>()
 
 const unknownCodes = computed(() => {
-  const known = new Set(catalog.value.map(descriptor => descriptor.code))
-  return model.value.map(item => item.capability_code).filter(code => !known.has(code))
+  const known = new Set(catalog.value.map((descriptor) => descriptor.code))
+  return model.value.map((item) => item.capability_code).filter((code) => !known.has(code))
 })
 
-onMounted(() => { void loadCatalog() })
+onMounted(() => {
+  void loadCatalog()
+})
 
 async function loadCatalog(): Promise<void> {
   loading.value = true
@@ -113,50 +116,54 @@ async function loadCatalog(): Promise<void> {
   try {
     const value = requireOperationData(await listProductCapabilities())
     catalog.value = [...value].sort((left, right) => left.code.localeCompare(right.code))
-  }
-  catch {
+  } catch {
     catalog.value = []
     loadError.value = true
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }
 
 function selectedOverride(code: string): CapabilityOverrideInput | undefined {
-  return model.value.find(item => item.capability_code === code)
+  return model.value.find((item) => item.capability_code === code)
 }
 
 function toggleOverride(descriptor: ProductCapabilityDescriptor, enabled: boolean): void {
   if (!enabled) {
-    model.value = model.value.filter(item => item.capability_code !== descriptor.code)
+    model.value = model.value.filter((item) => item.capability_code !== descriptor.code)
     return
   }
   if (selectedOverride(descriptor.code)) return
-  const effective = props.effectiveCapabilities.find(item => item.capability_code === descriptor.code)
-  const effectiveVariant = descriptor.variants.find(variant => (
-    variant.code === effective?.variant_code
-    && variant.schema_version === effective.schema_version
-  ))
+  const effective = props.effectiveCapabilities.find(
+    (item) => item.capability_code === descriptor.code,
+  )
+  const effectiveVariant = descriptor.variants.find(
+    (variant) =>
+      variant.code === effective?.variant_code &&
+      variant.schema_version === effective.schema_version,
+  )
   const variant = effectiveVariant ?? descriptor.variants[0]
   if (!variant) return
-  model.value = [...model.value, {
-    capability_code: descriptor.code,
-    enabled: effective?.enabled ?? true,
-    variant_code: variant.code,
-    schema_version: variant.schema_version,
-    config: effective?.config ? { ...effective.config } : {},
-  }]
+  model.value = [
+    ...model.value,
+    {
+      capability_code: descriptor.code,
+      enabled: effective?.enabled ?? true,
+      variant_code: variant.code,
+      schema_version: variant.schema_version,
+      config: effective?.config ? { ...effective.config } : {},
+    },
+  ]
 }
 
 function updateEnabled(code: string, enabled: boolean): void {
-  replaceOverride(code, item => ({ ...item, enabled }))
+  replaceOverride(code, (item) => ({ ...item, enabled }))
 }
 
 function updateVariant(descriptor: ProductCapabilityDescriptor, variantCode: string): void {
-  const variant = descriptor.variants.find(item => item.code === variantCode)
+  const variant = descriptor.variants.find((item) => item.code === variantCode)
   if (!variant) return
-  replaceOverride(descriptor.code, item => ({
+  replaceOverride(descriptor.code, (item) => ({
     ...item,
     variant_code: variant.code,
     schema_version: variant.schema_version,
@@ -165,14 +172,14 @@ function updateVariant(descriptor: ProductCapabilityDescriptor, variantCode: str
 }
 
 function updateConfig(code: string, config: Record<string, unknown>): void {
-  replaceOverride(code, item => ({ ...item, config: { ...config } }))
+  replaceOverride(code, (item) => ({ ...item, config: { ...config } }))
 }
 
 function replaceOverride(
   code: string,
   update: (item: CapabilityOverrideInput) => CapabilityOverrideInput,
 ): void {
-  model.value = model.value.map(item => item.capability_code === code ? update(item) : item)
+  model.value = model.value.map((item) => (item.capability_code === code ? update(item) : item))
 }
 
 function editorFor(code: string): Component | undefined {
@@ -180,31 +187,31 @@ function editorFor(code: string): Component | undefined {
   if (cached) return cached
   const manifest = findFeatureManifest(code)
   if (!manifest) return undefined
-  const editor = markRaw(defineAsyncComponent(
-    () => manifest.planConfigEditor().then(module => module.default),
-  ))
+  const editor = markRaw(
+    defineAsyncComponent(() => manifest.planConfigEditor().then((module) => module.default)),
+  )
   editorCache.set(code, editor)
   return editor
 }
 
 function validate(): boolean {
   if (loading.value || loadError.value || unknownCodes.value.length > 0) return false
-  if (new Set(model.value.map(item => item.capability_code)).size !== model.value.length) {
+  if (new Set(model.value.map((item) => item.capability_code)).size !== model.value.length) {
     return false
   }
   return model.value.every((item) => {
-    const descriptor = catalog.value.find(value => value.code === item.capability_code)
-    const variant = descriptor?.variants.find(value => (
-      value.code === item.variant_code && value.schema_version === item.schema_version
-    ))
+    const descriptor = catalog.value.find((value) => value.code === item.capability_code)
+    const variant = descriptor?.variants.find(
+      (value) => value.code === item.variant_code && value.schema_version === item.schema_version,
+    )
     const manifest = findFeatureManifest(item.capability_code)
     return Boolean(
-      descriptor
-      && variant
-      && (manifest?.allowedVariants as readonly string[] | undefined)?.includes(item.variant_code)
-      && item.config
-      && typeof item.config === 'object'
-      && !Array.isArray(item.config),
+      descriptor &&
+      variant &&
+      (manifest?.allowedVariants as readonly string[] | undefined)?.includes(item.variant_code) &&
+      item.config &&
+      typeof item.config === 'object' &&
+      !Array.isArray(item.config),
     )
   })
 }

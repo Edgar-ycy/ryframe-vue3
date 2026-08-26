@@ -15,7 +15,10 @@ export function rememberDeletedMessages(runtime: MessageRuntime, ids: readonly s
   return unique
 }
 
-export function forgetDeletedAcknowledgements(runtime: MessageRuntime, ids: readonly string[]): void {
+export function forgetDeletedAcknowledgements(
+  runtime: MessageRuntime,
+  ids: readonly string[],
+): void {
   for (const id of ids) {
     runtime.pendingAckIds.delete(id)
     runtime.deferredAckIds.delete(id)

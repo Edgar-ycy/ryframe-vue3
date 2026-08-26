@@ -1,9 +1,7 @@
 export type FlatCrudScalar = string | number | boolean | null | undefined
 
 type ScalarFieldKey<TModel extends object> = {
-  [TKey in keyof TModel]-?: TModel[TKey] extends FlatCrudScalar
-    ? Extract<TKey, string>
-    : never
+  [TKey in keyof TModel]-?: TModel[TKey] extends FlatCrudScalar ? Extract<TKey, string> : never
 }[keyof TModel]
 
 export interface FlatCrudOption {
@@ -16,33 +14,33 @@ interface FlatCrudFieldBase<TModel extends object> {
 }
 
 export type FlatCrudQueryField<TModel extends object> =
-  | FlatCrudFieldBase<TModel> & {
-    kind: 'text'
-    placeholder: string
-  }
-  | FlatCrudFieldBase<TModel> & {
-    kind: 'select'
-    placeholder: string
-    options: readonly FlatCrudOption[]
-  }
+  | (FlatCrudFieldBase<TModel> & {
+      kind: 'text'
+      placeholder: string
+    })
+  | (FlatCrudFieldBase<TModel> & {
+      kind: 'select'
+      placeholder: string
+      options: readonly FlatCrudOption[]
+    })
 
 export type FlatCrudFormField<TModel extends object> =
-  | FlatCrudFieldBase<TModel> & {
-    kind: 'text'
-    placeholder: string
-    requiredMessage?: string
-    disabledOnEdit?: boolean
-  }
-  | FlatCrudFieldBase<TModel> & {
-    kind: 'number'
-    min?: number
-    max?: number
-  }
-  | FlatCrudFieldBase<TModel> & {
-    kind: 'radio'
-    options: readonly FlatCrudOption[]
-    editOnly?: boolean
-  }
+  | (FlatCrudFieldBase<TModel> & {
+      kind: 'text'
+      placeholder: string
+      requiredMessage?: string
+      disabledOnEdit?: boolean
+    })
+  | (FlatCrudFieldBase<TModel> & {
+      kind: 'number'
+      min?: number
+      max?: number
+    })
+  | (FlatCrudFieldBase<TModel> & {
+      kind: 'radio'
+      options: readonly FlatCrudOption[]
+      editOnly?: boolean
+    })
 
 interface FlatCrudColumnBase<TRecord extends object> {
   key: ScalarFieldKey<TRecord>
@@ -53,18 +51,18 @@ interface FlatCrudColumnBase<TRecord extends object> {
 }
 
 export type FlatCrudColumn<TRecord extends object> =
-  | FlatCrudColumnBase<TRecord> & {
-    display?: 'text'
-  }
-  | FlatCrudColumnBase<TRecord> & {
-    display: 'datetime'
-    format: (value: string) => string
-  }
-  | FlatCrudColumnBase<TRecord> & {
-    display: 'status'
-    options: readonly FlatCrudOption[]
-    positiveValue: string | number | boolean
-  }
+  | (FlatCrudColumnBase<TRecord> & {
+      display?: 'text'
+    })
+  | (FlatCrudColumnBase<TRecord> & {
+      display: 'datetime'
+      format: (value: string) => string
+    })
+  | (FlatCrudColumnBase<TRecord> & {
+      display: 'status'
+      options: readonly FlatCrudOption[]
+      positiveValue: string | number | boolean
+    })
 
 export interface FlatCrudPermissions {
   list: string

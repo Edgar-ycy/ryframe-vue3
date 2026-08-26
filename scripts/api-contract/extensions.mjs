@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { apiPrefixContractViolation } from '../api-prefix-contract.mjs'
 
 function sortedUniqueStrings(value, location, errors) {
-  if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
     errors.push(`${location}: expected a string array`)
     return []
   }
@@ -41,7 +41,11 @@ function validateProductCapabilityContract(document, featureRegistry, errors) {
       errors.push(`${location}: duplicate capability ${capability.code}`)
       continue
     }
-    const dependencies = sortedUniqueStrings(capability.dependencies, `${location}.dependencies`, errors)
+    const dependencies = sortedUniqueStrings(
+      capability.dependencies,
+      `${location}.dependencies`,
+      errors,
+    )
     const conflicts = sortedUniqueStrings(capability.conflicts, `${location}.conflicts`, errors)
     const routeKeys = sortedUniqueStrings(capability.route_keys, `${location}.route_keys`, errors)
     const permissionCodes = sortedUniqueStrings(
@@ -66,17 +70,21 @@ function validateProductCapabilityContract(document, featureRegistry, errors) {
     if (!Array.isArray(capability.variants) || capability.variants.length === 0) {
       errors.push(`${location}.variants: expected a non-empty array`)
     }
-    const variants = (capability.variants ?? []).map((variant, variantIndex) => {
-      if (!variant
-        || typeof variant.code !== 'string'
-        || !variant.code
-        || !Number.isSafeInteger(variant.schema_version)
-        || variant.schema_version < 1) {
-        errors.push(`${location}.variants[${variantIndex}]: invalid code or schema_version`)
-        return undefined
-      }
-      return variant.code
-    }).filter(Boolean)
+    const variants = (capability.variants ?? [])
+      .map((variant, variantIndex) => {
+        if (
+          !variant ||
+          typeof variant.code !== 'string' ||
+          !variant.code ||
+          !Number.isSafeInteger(variant.schema_version) ||
+          variant.schema_version < 1
+        ) {
+          errors.push(`${location}.variants[${variantIndex}]: invalid code or schema_version`)
+          return undefined
+        }
+        return variant.code
+      })
+      .filter(Boolean)
     if (new Set(variants).size !== variants.length) {
       errors.push(`${location}.variants: duplicate variant code`)
     }
@@ -93,8 +101,8 @@ function validateProductCapabilityContract(document, featureRegistry, errors) {
   const frontendCodes = [...manifestsByCapability.keys()].sort()
   if (!isDeepStrictEqual(backendCodes, frontendCodes)) {
     errors.push(
-      'feature capability codes do not exactly match x-ryframe-product-capabilities: '
-      + `frontend=${JSON.stringify(frontendCodes)}, backend=${JSON.stringify(backendCodes)}`,
+      'feature capability codes do not exactly match x-ryframe-product-capabilities: ' +
+        `frontend=${JSON.stringify(frontendCodes)}, backend=${JSON.stringify(backendCodes)}`,
     )
   }
   for (const [capabilityCode, manifest] of manifestsByCapability) {
@@ -104,10 +112,14 @@ function validateProductCapabilityContract(document, featureRegistry, errors) {
       errors.push(`${capabilityCode}: manifest route_key does not exactly match backend route_keys`)
     }
     if (!isDeepStrictEqual(capability.variants, [...manifest.allowedVariants].sort())) {
-      errors.push(`${capabilityCode}: manifest allowedVariants do not exactly match backend variants`)
+      errors.push(
+        `${capabilityCode}: manifest allowedVariants do not exactly match backend variants`,
+      )
     }
     if (!capability.permissionCodes.includes(manifest.permissionCode)) {
-      errors.push(`${capabilityCode}: manifest permissionCode is absent from backend permission_codes`)
+      errors.push(
+        `${capabilityCode}: manifest permissionCode is absent from backend permission_codes`,
+      )
     }
   }
   for (const [capabilityCode, capability] of capabilities) {
@@ -117,7 +129,8 @@ function validateProductCapabilityContract(document, featureRegistry, errors) {
       }
     }
     for (const conflict of capability.conflicts) {
-      if (!capabilities.has(conflict)) errors.push(`${capabilityCode}: unknown conflict ${conflict}`)
+      if (!capabilities.has(conflict))
+        errors.push(`${capabilityCode}: unknown conflict ${conflict}`)
     }
   }
   return capabilities
@@ -137,12 +150,14 @@ function validateCapabilityRouteContract(document, capabilities, errors) {
   const boundPermissions = new Map()
   for (const [index, route] of extension.routes.entries()) {
     const location = `x-ryframe-route-contract.routes[${index}]`
-    if (!route
-      || typeof route.source !== 'string'
-      || typeof route.handler !== 'string'
-      || typeof route.method !== 'string'
-      || typeof route.path !== 'string'
-      || typeof route.capability_code !== 'string') {
+    if (
+      !route ||
+      typeof route.source !== 'string' ||
+      typeof route.handler !== 'string' ||
+      typeof route.method !== 'string' ||
+      typeof route.path !== 'string' ||
+      typeof route.capability_code !== 'string'
+    ) {
       errors.push(`${location}: malformed route binding`)
       continue
     }
@@ -199,9 +214,11 @@ function validatePasswordPolicy(document, generatedPasswordPolicy, errors) {
     ['CreateTenantDto', 'admin_password'],
   ]) {
     const field = document.components?.schemas?.[schemaName]?.properties?.[fieldName]
-    if (field?.minLength !== expectedPasswordPolicy.min_length
-      || field?.maxLength !== expectedPasswordPolicy.max_length
-      || field?.pattern !== expectedPasswordPolicy.pattern) {
+    if (
+      field?.minLength !== expectedPasswordPolicy.min_length ||
+      field?.maxLength !== expectedPasswordPolicy.max_length ||
+      field?.pattern !== expectedPasswordPolicy.pattern
+    ) {
       errors.push(`${schemaName}.${fieldName}: schema does not expose the password policy`)
     }
   }
@@ -222,15 +239,19 @@ function validateNoticePolicy(document, generatedNoticePolicy, errors) {
   for (const schemaName of ['CreateNoticeDto', 'UpdateNoticeDto']) {
     const properties = document.components?.schemas?.[schemaName]?.properties
     const field = properties?.content_markdown
-    if (properties?.content !== undefined
-      || field?.minLength !== expectedNoticePolicy.content_markdown.min_utf8_bytes
-      || field?.maxLength !== expectedNoticePolicy.content_markdown.max_utf8_bytes) {
+    if (
+      properties?.content !== undefined ||
+      field?.minLength !== expectedNoticePolicy.content_markdown.min_utf8_bytes ||
+      field?.maxLength !== expectedNoticePolicy.content_markdown.max_utf8_bytes
+    ) {
       errors.push(`${schemaName}.content_markdown: schema does not expose the notice policy`)
     }
   }
   const noticeResponseProperties = document.components?.schemas?.NoticeVo?.properties
-  if (noticeResponseProperties?.content !== undefined
-    || noticeResponseProperties?.content_markdown?.type !== 'string') {
+  if (
+    noticeResponseProperties?.content !== undefined ||
+    noticeResponseProperties?.content_markdown?.type !== 'string'
+  ) {
     errors.push('NoticeVo must expose content_markdown and must not expose legacy content')
   }
 }

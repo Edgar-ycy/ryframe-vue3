@@ -3,11 +3,7 @@ import { getMenuPageByPath } from '@/features/pageRegistry'
 import { hasRequiredCapabilities } from '@/shared/navigation/capabilityAccess'
 import { hasPermission } from '@/utils/permission'
 
-export type RouteAccessResult =
-  | 'allowed'
-  | 'forbidden'
-  | 'capability-unavailable'
-  | 'unknown'
+export type RouteAccessResult = 'allowed' | 'forbidden' | 'capability-unavailable' | 'unknown'
 
 export const CAPABILITY_UNAVAILABLE_PATH = '/feature-unavailable'
 

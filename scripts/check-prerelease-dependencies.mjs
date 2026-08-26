@@ -21,8 +21,7 @@ const findings = []
 async function readDirectory(directory) {
   try {
     return await readdir(directory, { withFileTypes: true })
-  }
-  catch (error) {
+  } catch (error) {
     if (error?.code === 'ENOENT') return []
     throw error
   }
@@ -33,9 +32,8 @@ async function findActionManifests(directory) {
   for (const entry of await readDirectory(directory)) {
     const absolute = path.join(directory, entry.name)
     if (entry.isDirectory()) {
-      manifests.push(...await findActionManifests(absolute))
-    }
-    else if (entry.isFile() && /^action\.ya?ml$/iu.test(entry.name)) {
+      manifests.push(...(await findActionManifests(absolute)))
+    } else if (entry.isFile() && /^action\.ya?ml$/iu.test(entry.name)) {
       manifests.push(absolute)
     }
   }
@@ -45,8 +43,8 @@ async function findActionManifests(directory) {
 async function findCiYamlFiles() {
   const workflowDirectory = path.join(root, '.github', 'workflows')
   const workflows = (await readDirectory(workflowDirectory))
-    .filter(entry => entry.isFile() && /\.ya?ml$/iu.test(entry.name))
-    .map(entry => path.join(workflowDirectory, entry.name))
+    .filter((entry) => entry.isFile() && /\.ya?ml$/iu.test(entry.name))
+    .map((entry) => path.join(workflowDirectory, entry.name))
   const actions = await findActionManifests(path.join(root, '.github', 'actions'))
   return [...workflows, ...actions].sort()
 }
@@ -72,8 +70,7 @@ if (findings.length > 0) {
   for (const finding of [...new Set(findings)].sort()) console.error(`  - ${finding}`)
   console.error('Use a compatible stable release; do not add an implicit prerelease allowlist.')
   process.exitCode = 1
-}
-else {
+} else {
   console.log(
     `Prerelease dependency check passed (package.json, pnpm-workspace.yaml, pnpm-lock.yaml, and ${ciYamlFiles.length} CI YAML files)`,
   )

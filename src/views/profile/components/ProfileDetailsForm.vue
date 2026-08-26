@@ -8,7 +8,11 @@
         <el-input :model-value="username" disabled />
       </el-form-item>
       <el-form-item :label="t('profile.nickname')" prop="nickname">
-        <el-input v-model="form.nickname" maxlength="64" :placeholder="t('profile.enterNickname')" />
+        <el-input
+          v-model="form.nickname"
+          maxlength="64"
+          :placeholder="t('profile.enterNickname')"
+        />
       </el-form-item>
       <el-form-item :label="t('profile.email')" prop="email">
         <el-input v-model="form.email" :placeholder="t('profile.enterEmail')" />
@@ -31,7 +35,9 @@
         <el-input :model-value="formatCreatedAt(profile.created_at)" disabled />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :loading="submitting" @click="submit">{{ t('common.save') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="submit">{{
+          t('common.save')
+        }}</el-button>
       </el-form-item>
     </el-form>
   </el-card>
@@ -39,10 +45,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import {
-  type ProfileInfo,
-  type ProfileUpdateParams,
-} from '@/api/modules/auth'
+import { type ProfileInfo, type ProfileUpdateParams } from '@/api/modules/auth'
 import { useProfileDetailsMutation } from '../useProfileMutations'
 import { formatLocalizedDate } from '@/i18n'
 
@@ -58,7 +61,7 @@ const emit = defineEmits<{
 const formRef = ref<FormInstance>()
 const form = ref({ nickname: '', email: '', phone: '' })
 const { t } = useI18n()
-const { saveProfile, submitting } = useProfileDetailsMutation(t, profile => {
+const { saveProfile, submitting } = useProfileDetailsMutation(t, (profile) => {
   emit('saved', profile)
 })
 const rules = computed<FormRules>(() => ({
@@ -97,8 +100,7 @@ function formatCreatedAt(value: string | null | undefined): string {
   if (!value) return '—'
   try {
     return formatLocalizedDate(value)
-  }
-  catch {
+  } catch {
     return value
   }
 }

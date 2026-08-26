@@ -15,25 +15,17 @@ import {
   markExportNotificationsReadInCache,
   type ExportJobIdentity,
 } from '../exportJobCache'
-import {
-  currentExportJobIdentity,
-  sameExportJobIdentity,
-  shouldEnableExportJobs,
-} from './identity'
+import { currentExportJobIdentity, sameExportJobIdentity, shouldEnableExportJobs } from './identity'
 
-export function useExportNotificationState(
-  enabled: MaybeRefOrGetter<boolean> = true,
-) {
+export function useExportNotificationState(enabled: MaybeRefOrGetter<boolean> = true) {
   const user = useUserStore()
   const unreadQuery = useQuery<number, HttpError>({
-    queryKey: computed(() => exportJobUnreadQueryKey(
-      user.tenantId || 'anonymous',
-      String(user.userId || 'anonymous'),
-    )),
-    enabled: computed(() => shouldEnableExportJobs(enabled)),
-    queryFn: async ({ signal }) => requireOperationData(
-      await getUnreadExportNotificationCount(signal),
+    queryKey: computed(() =>
+      exportJobUnreadQueryKey(user.tenantId || 'anonymous', String(user.userId || 'anonymous')),
     ),
+    enabled: computed(() => shouldEnableExportJobs(enabled)),
+    queryFn: async ({ signal }) =>
+      requireOperationData(await getUnreadExportNotificationCount(signal)),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 10 * 60_000,
     refetchInterval: false,
@@ -58,7 +50,10 @@ export function useExportNotificationState(
   async function markVisibleNotificationsRead(jobs: readonly ExportJob[]): Promise<void> {
     const identity = currentExportJobIdentity()
     if (!identity) return
-    const ids = jobs.filter(isUnreadExportNotification).map(job => job.id).slice(0, 100)
+    const ids = jobs
+      .filter(isUnreadExportNotification)
+      .map((job) => job.id)
+      .slice(0, 100)
     if (ids.length === 0) return
     readController?.abort()
     const controller = new AbortController()
@@ -77,8 +72,7 @@ export function useExportNotificationState(
       )
       publishExportJobEvent({ type: 'notifications-read', ...identity, jobIds: ids, readAt })
       await refreshUnread().catch(() => undefined)
-    }
-    finally {
+    } finally {
       if (readController === controller) {
         readController = undefined
         readIdentity = undefined
@@ -86,9 +80,12 @@ export function useExportNotificationState(
     }
   }
 
-  const unsubscribeUser = user.$subscribe(() => {
-    if (readIdentity && !identityStillCurrent(readIdentity)) readController?.abort()
-  }, { flush: 'sync' })
+  const unsubscribeUser = user.$subscribe(
+    () => {
+      if (readIdentity && !identityStillCurrent(readIdentity)) readController?.abort()
+    },
+    { flush: 'sync' },
+  )
 
   if (getCurrentScope()) {
     onScopeDispose(() => {

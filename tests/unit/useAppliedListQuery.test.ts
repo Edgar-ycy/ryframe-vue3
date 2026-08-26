@@ -29,7 +29,7 @@ describe('列表成功筛选快照', () => {
     expect(state.appliedQuery.value).toEqual({ keyword: '草稿', page: 1 })
     expect(state.lastSuccessfulQuery.value).toBeUndefined()
 
-    await state.runAppliedQuery(controller.signal, async query => query.keyword)
+    await state.runAppliedQuery(controller.signal, async (query) => query.keyword)
     expect(state.lastSuccessfulQuery.value).toEqual({ keyword: '草稿', page: 1 })
     expect(state.hasSuccessfulQuery.value).toBe(true)
   })
@@ -57,9 +57,11 @@ describe('列表成功筛选快照', () => {
     state.draftQuery.value.keyword = '失败条件'
     state.applyDraft()
 
-    await expect(state.runAppliedQuery(controller.signal, async () => {
-      throw new Error('请求失败')
-    })).rejects.toThrow('请求失败')
+    await expect(
+      state.runAppliedQuery(controller.signal, async () => {
+        throw new Error('请求失败')
+      }),
+    ).rejects.toThrow('请求失败')
     expect(state.lastSuccessfulQuery.value).toEqual({ keyword: '首次', page: 1 })
   })
 

@@ -29,7 +29,7 @@ export function useOnlineManagement(t: Translate) {
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     'monitor-online-users',
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-    async signal => {
+    async (signal) => {
       const response = await listOnlineUser({ ...activeQueryParams.value }, signal)
       return response.data ?? emptyPageResponse<OnlineUserRecord>(activeQueryParams.value)
     },
@@ -38,7 +38,7 @@ export function useOnlineManagement(t: Translate) {
     () => userStore.tenantId,
     'monitor-online-users',
     {
-      mutationFn: async user => {
+      mutationFn: async (user) => {
         await forceLogout(user.sid)
       },
       onSuccess: () => {
@@ -50,9 +50,9 @@ export function useOnlineManagement(t: Translate) {
   const loading = onlineUsersQuery.isFetching
   const onlineUsers = onlineUsersQuery.data
   const forceLogoutPending = logoutMutation.pending
-  const forcingSid = computed(() => (
-    logoutMutation.pending.value ? logoutMutation.variables.value?.sid ?? null : null
-  ))
+  const forcingSid = computed(() =>
+    logoutMutation.pending.value ? (logoutMutation.variables.value?.sid ?? null) : null,
+  )
 
   async function fetchData(): Promise<void> {
     const nextParams = { ...queryParams.value }

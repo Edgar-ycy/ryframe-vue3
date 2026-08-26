@@ -15,14 +15,22 @@
           :placeholder="t('system.permission.selectParent')"
           clearable
           check-strictly
-          style="width:100%"
+          style="width: 100%"
         />
       </el-form-item>
       <el-form-item :label="t('system.permission.name')" prop="name">
-        <el-input v-model="form.name" maxlength="50" :placeholder="t('system.permission.enterName')" />
+        <el-input
+          v-model="form.name"
+          maxlength="50"
+          :placeholder="t('system.permission.enterName')"
+        />
       </el-form-item>
       <el-form-item :label="t('system.permission.code')" prop="code">
-        <el-input v-model="form.code" maxlength="100" :placeholder="t('system.permission.codeExample')" />
+        <el-input
+          v-model="form.code"
+          maxlength="100"
+          :placeholder="t('system.permission.codeExample')"
+        />
       </el-form-item>
       <el-form-item :label="t('system.permission.type')" prop="perm_type">
         <el-radio-group v-model="form.perm_type">
@@ -31,7 +39,11 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item :label="t('system.permission.icon')">
-        <el-input v-model="form.icon" maxlength="50" :placeholder="t('system.permission.optional')" />
+        <el-input
+          v-model="form.icon"
+          maxlength="50"
+          :placeholder="t('system.permission.optional')"
+        />
       </el-form-item>
       <el-form-item :label="t('system.common.sort')">
         <el-input-number v-model="form.sort" :min="0" :max="9999" />
@@ -87,23 +99,18 @@ function isEdit(): boolean {
 }
 const formRef = ref<FormInstance>()
 const userStore = useUserStore()
-const saveMutation = useTenantMutation<
-  void,
-  { id?: Id, payload: PermissionForm }
->(
+const saveMutation = useTenantMutation<void, { id?: Id; payload: PermissionForm }>(
   () => userStore.tenantId,
   'permissions',
   {
-    mutationFn: async variables => {
+    mutationFn: async (variables) => {
       if (variables.id === undefined) await createPermission(variables.payload)
       else await updatePermission(variables.id, variables.payload)
     },
     onSuccess: (_data, variables) => {
-      ElMessage.success(t(
-        variables.id === undefined
-          ? 'system.common.addSuccess'
-          : 'system.common.updateSuccess',
-      ))
+      ElMessage.success(
+        t(variables.id === undefined ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
+      )
     },
   },
 )
@@ -125,11 +132,13 @@ const form = ref<PermissionForm>(initialForm())
 const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: t('system.permission.enterName'), trigger: 'blur' }],
   code: [{ required: true, message: t('system.permission.enterCode'), trigger: 'blur' }],
-  perm_type: [{
-    required: true,
-    message: t('system.permission.selectType'),
-    trigger: 'change',
-  }],
+  perm_type: [
+    {
+      required: true,
+      message: t('system.permission.selectType'),
+      trigger: 'change',
+    },
+  ],
 }))
 
 function resetForm(): void {

@@ -9,17 +9,23 @@ import {
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { queryClient } from '@/shared/query/client'
-import {
-  sameServiceAccountIdentity,
-  useServiceAccountContext,
-} from './useServiceAccountContext'
+import { sameServiceAccountIdentity, useServiceAccountContext } from './useServiceAccountContext'
 
 /** Credential 元数据、幂等签发与撤销；一次性 Secret 只经函数结果返回。 */
 export function useServiceAccountCredentials(context: ReturnType<typeof useServiceAccountContext>) {
   const {
-    beginController, canListAccounts, captureIdentity, credentialsKey, credentialsQuery,
-    currentIdentity, ensureOperationContext, finishController, pageActive,
-    requireIdentity, requireOperationContext, selectedAccount,
+    beginController,
+    canListAccounts,
+    captureIdentity,
+    credentialsKey,
+    credentialsQuery,
+    currentIdentity,
+    ensureOperationContext,
+    finishController,
+    pageActive,
+    requireIdentity,
+    requireOperationContext,
+    selectedAccount,
   } = context
   const issueCredentialPending = ref(false)
   const revokingCredentialId = ref<string>()
@@ -33,54 +39,44 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
     const signature = JSON.stringify({ accountId, input })
-    const idempotencyKey = pendingCredentialKeys.get(signature)
-      ?? createIdempotencyKey('service-credential')
+    const idempotencyKey =
+      pendingCredentialKeys.get(signature) ?? createIdempotencyKey('service-credential')
     const controller = beginController()
     issueCredentialPending.value = true
     try {
-      const result = requireOperationData(await createServiceCredential(
-        accountId,
-        input,
-        idempotencyKey,
-        controller.signal,
-      ))
+      const result = requireOperationData(
+        await createServiceCredential(accountId, input, idempotencyKey, controller.signal),
+      )
       ensureOperationContext(identity, operationContext)
       // 只缓存不含 Secret 的元数据；完整结果仅经本次函数返回给局部对话框。
       queryClient.setQueryData<readonly ServiceCredential[]>(
         credentialsKey(identity, accountId),
-        current => [
+        (current) => [
           result.credential,
-          ...(current ?? []).filter(item => item.id !== result.credential.id),
+          ...(current ?? []).filter((item) => item.id !== result.credential.id),
         ],
       )
       pendingCredentialKeys.delete(signature)
       return result
-    }
-    catch (error) {
+    } catch (error) {
       if (
-        sameServiceAccountIdentity(identity, currentIdentity())
-        && shouldReuseIdempotencyKey(error)
+        sameServiceAccountIdentity(identity, currentIdentity()) &&
+        shouldReuseIdempotencyKey(error)
       ) {
         pendingCredentialKeys.set(signature, idempotencyKey)
-      }
-      else {
+      } else {
         pendingCredentialKeys.delete(signature)
       }
       throw error
-    }
-    finally {
+    } finally {
       finishController(controller)
       issueCredentialPending.value = false
     }
   }
 
   async function fetchCredentials(): Promise<void> {
-    if (
-      !pageActive.value
-      || !currentIdentity()
-      || !canListAccounts.value
-      || !selectedAccount.value
-    ) return
+    if (!pageActive.value || !currentIdentity() || !canListAccounts.value || !selectedAccount.value)
+      return
     await credentialsQuery.refetch({ throwOnError: true })
   }
 
@@ -98,15 +94,17 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
       ensureOperationContext(identity, operationContext)
       queryClient.setQueryData<readonly ServiceCredential[]>(
         credentialsKey(identity, accountId),
-        current => current?.map(item => item.id === credential.id
-          ? { ...item, revoked_at: new Date().toISOString(), status: 'revoked' }
-          : item),
+        (current) =>
+          current?.map((item) =>
+            item.id === credential.id
+              ? { ...item, revoked_at: new Date().toISOString(), status: 'revoked' }
+              : item,
+          ),
       )
       if (selectedAccount.value?.id === accountId) {
         void credentialsQuery.refetch({ throwOnError: false })
       }
-    }
-    finally {
+    } finally {
       finishController(controller)
       if (revokingCredentialId.value === credential.id) {
         revokingCredentialId.value = undefined
@@ -119,7 +117,11 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
   }
 
   return {
-    clearPendingCredentialKeys, fetchCredentials, issueCredential,
-    issueCredentialPending, revokeCredential, revokingCredentialId,
+    clearPendingCredentialKeys,
+    fetchCredentials,
+    issueCredential,
+    issueCredentialPending,
+    revokeCredential,
+    revokingCredentialId,
   }
 }

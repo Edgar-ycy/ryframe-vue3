@@ -1,7 +1,5 @@
 function normalizedVersion(value) {
-  return typeof value === 'string' && value.trim() === value && value.length > 0
-    ? value
-    : null
+  return typeof value === 'string' && value.trim() === value && value.length > 0 ? value : null
 }
 
 export function apiVersionContractViolation(packageDocument, openApiDocument) {
@@ -16,8 +14,10 @@ export function apiVersionContractViolation(packageDocument, openApiDocument) {
   }
 
   if (packageVersion !== openApiVersion) {
-    return `package.json version ${JSON.stringify(packageVersion)} does not equal `
-      + `OpenAPI info.version ${JSON.stringify(openApiVersion)}`
+    return (
+      `package.json version ${JSON.stringify(packageVersion)} does not equal ` +
+      `OpenAPI info.version ${JSON.stringify(openApiVersion)}`
+    )
   }
 
   return null

@@ -41,7 +41,9 @@
           :closable="false"
           class="load-alert"
         >
-          <el-button type="warning" plain @click="refreshTargets">{{ t('tenantData.retry') }}</el-button>
+          <el-button type="warning" plain @click="refreshTargets">{{
+            t('tenantData.retry')
+          }}</el-button>
         </el-alert>
 
         <div class="target-table-wrap">
@@ -53,7 +55,13 @@
             stripe
             class="target-table"
           >
-            <el-table-column prop="key" :label="t('tenantData.targetKey')" min-width="180" fixed="left" show-overflow-tooltip />
+            <el-table-column
+              prop="key"
+              :label="t('tenantData.targetKey')"
+              min-width="180"
+              fixed="left"
+              show-overflow-tooltip
+            />
             <el-table-column :label="t('tenantData.mode')" width="112" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.mode === 'dedicated' ? 'warning' : 'info'" effect="plain">
@@ -63,15 +71,24 @@
             </el-table-column>
             <el-table-column prop="kind" :label="t('tenantData.kind')" width="112" />
             <el-table-column prop="region" :label="t('tenantData.region')" min-width="120">
-              <template #default="{ row }">{{ row.region || t('tenantData.notAvailable') }}</template>
+              <template #default="{ row }">{{
+                row.region || t('tenantData.notAvailable')
+              }}</template>
             </el-table-column>
             <el-table-column :label="t('tenantData.health')" width="122" align="center">
               <template #default="{ row }">
                 <el-tag :type="healthTagType(row.health)">{{ healthLabel(row.health) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="schema_fingerprint" :label="t('tenantData.schemaFingerprint')" min-width="230" show-overflow-tooltip>
-              <template #default="{ row }"><code>{{ row.schema_fingerprint || t('tenantData.notAvailable') }}</code></template>
+            <el-table-column
+              prop="schema_fingerprint"
+              :label="t('tenantData.schemaFingerprint')"
+              min-width="230"
+              show-overflow-tooltip
+            >
+              <template #default="{ row }"
+                ><code>{{ row.schema_fingerprint || t('tenantData.notAvailable') }}</code></template
+              >
             </el-table-column>
             <el-table-column :label="t('tenantData.poolConnected')" width="120" align="center">
               <template #default="{ row }">
@@ -80,11 +97,28 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="pool_max_connections" :label="t('tenantData.poolMax')" width="120" align="right">
-              <template #default="{ row }">{{ row.pool_max_connections ?? t('tenantData.notAvailable') }}</template>
+            <el-table-column
+              prop="pool_max_connections"
+              :label="t('tenantData.poolMax')"
+              width="120"
+              align="right"
+            >
+              <template #default="{ row }">{{
+                row.pool_max_connections ?? t('tenantData.notAvailable')
+              }}</template>
             </el-table-column>
-            <el-table-column prop="active_leases" :label="t('tenantData.poolActive')" width="110" align="right" />
-            <el-table-column :label="t('tenantData.actions')" width="100" fixed="right" align="center">
+            <el-table-column
+              prop="active_leases"
+              :label="t('tenantData.poolActive')"
+              width="110"
+              align="right"
+            />
+            <el-table-column
+              :label="t('tenantData.actions')"
+              width="100"
+              fixed="right"
+              align="center"
+            >
               <template #default="{ row }">
                 <el-button type="primary" link @click="openTargetDetail(row.key)">
                   {{ t('tenantData.details') }}
@@ -96,20 +130,48 @@
         </div>
 
         <div v-loading="targetsQuery.isFetching.value" class="target-card-list" aria-live="polite">
-          <el-empty v-if="!targetsQuery.isFetching.value && targets.length === 0" :description="t('tenantData.noTargets')" />
+          <el-empty
+            v-if="!targetsQuery.isFetching.value && targets.length === 0"
+            :description="t('tenantData.noTargets')"
+          />
           <article v-for="target in targets" :key="target.key" class="target-mobile-card">
             <header>
               <strong>{{ target.key }}</strong>
-              <el-tag :type="healthTagType(target.health)" size="small">{{ healthLabel(target.health) }}</el-tag>
+              <el-tag :type="healthTagType(target.health)" size="small">{{
+                healthLabel(target.health)
+              }}</el-tag>
             </header>
             <dl>
-              <div><dt>{{ t('tenantData.mode') }}</dt><dd>{{ t(`tenantData.${target.mode}`) }}</dd></div>
-              <div><dt>{{ t('tenantData.kind') }}</dt><dd>{{ target.kind }}</dd></div>
-              <div><dt>{{ t('tenantData.region') }}</dt><dd>{{ target.region || t('tenantData.notAvailable') }}</dd></div>
-              <div><dt>{{ t('tenantData.poolConnected') }}</dt><dd>{{ target.connected ? t('tenantData.connected') : t('tenantData.disconnected') }}</dd></div>
-              <div><dt>{{ t('tenantData.poolMax') }}</dt><dd>{{ target.pool_max_connections ?? t('tenantData.notAvailable') }}</dd></div>
-              <div><dt>{{ t('tenantData.poolActive') }}</dt><dd>{{ target.active_leases }}</dd></div>
-              <div class="fingerprint"><dt>{{ t('tenantData.schemaFingerprint') }}</dt><dd>{{ target.schema_fingerprint || t('tenantData.notAvailable') }}</dd></div>
+              <div>
+                <dt>{{ t('tenantData.mode') }}</dt>
+                <dd>{{ t(`tenantData.${target.mode}`) }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('tenantData.kind') }}</dt>
+                <dd>{{ target.kind }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('tenantData.region') }}</dt>
+                <dd>{{ target.region || t('tenantData.notAvailable') }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('tenantData.poolConnected') }}</dt>
+                <dd>
+                  {{ target.connected ? t('tenantData.connected') : t('tenantData.disconnected') }}
+                </dd>
+              </div>
+              <div>
+                <dt>{{ t('tenantData.poolMax') }}</dt>
+                <dd>{{ target.pool_max_connections ?? t('tenantData.notAvailable') }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('tenantData.poolActive') }}</dt>
+                <dd>{{ target.active_leases }}</dd>
+              </div>
+              <div class="fingerprint">
+                <dt>{{ t('tenantData.schemaFingerprint') }}</dt>
+                <dd>{{ target.schema_fingerprint || t('tenantData.notAvailable') }}</dd>
+              </div>
             </dl>
             <el-button type="primary" plain @click="openTargetDetail(target.key)">
               {{ t('tenantData.details') }}
@@ -150,18 +212,38 @@
         </el-alert>
         <template v-else-if="targetDetail">
           <el-descriptions :column="2" border>
-            <el-descriptions-item :label="t('tenantData.targetKey')">{{ targetDetail.key }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.targetKey')">{{
+              targetDetail.key
+            }}</el-descriptions-item>
             <el-descriptions-item :label="t('tenantData.health')">
-              <el-tag :type="healthTagType(targetDetail.health)">{{ healthLabel(targetDetail.health) }}</el-tag>
+              <el-tag :type="healthTagType(targetDetail.health)">{{
+                healthLabel(targetDetail.health)
+              }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.mode')">{{ t(`tenantData.${targetDetail.mode}`) }}</el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.kind')">{{ targetDetail.kind }}</el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.lastVerifiedAt')">{{ formatDate(targetDetail.last_verified_at) }}</el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.poolConnected')">{{ targetDetail.connected ? t('tenantData.connected') : t('tenantData.disconnected') }}</el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.reservedConnections')">{{ targetDetail.reserved_connections }}</el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.totalConnectionBudget')">{{ targetDetail.max_total_connections }}</el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.openTargets')">{{ targetDetail.open_targets }}</el-descriptions-item>
-            <el-descriptions-item :label="t('tenantData.openingTargets')">{{ targetDetail.opening_targets }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.mode')">{{
+              t(`tenantData.${targetDetail.mode}`)
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.kind')">{{
+              targetDetail.kind
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.lastVerifiedAt')">{{
+              formatDate(targetDetail.last_verified_at)
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.poolConnected')">{{
+              targetDetail.connected ? t('tenantData.connected') : t('tenantData.disconnected')
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.reservedConnections')">{{
+              targetDetail.reserved_connections
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.totalConnectionBudget')">{{
+              targetDetail.max_total_connections
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.openTargets')">{{
+              targetDetail.open_targets
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('tenantData.openingTargets')">{{
+              targetDetail.opening_targets
+            }}</el-descriptions-item>
             <el-descriptions-item :label="t('tenantData.schemaFingerprint')" :span="2">
               <code>{{ targetDetail.schema_fingerprint || t('tenantData.notAvailable') }}</code>
             </el-descriptions-item>
@@ -200,21 +282,26 @@ const pageSize = ref(20)
 const detailVisible = ref(false)
 const selectedTargetKey = ref('')
 let searchTimer: ReturnType<typeof setTimeout> | undefined
-const canView = computed(() => hasPermission(
-  userStore.permissions,
-  TENANT_DATA_PERMISSIONS.placementView,
-))
+const canView = computed(() =>
+  hasPermission(userStore.permissions, TENANT_DATA_PERMISSIONS.placementView),
+)
 
 const targetsQuery = useTenantQuery<DataTargetPage>(
   () => userStore.tenantId,
   () => userStore.tenantId === 'system' && canView.value,
   'platform-data-targets',
   () => ({ page: page.value, page_size: pageSize.value, q: appliedKeyword.value }),
-  async signal => requireOperationData(await listDataTargets({
-    page: page.value,
-    page_size: pageSize.value,
-    q: appliedKeyword.value || undefined,
-  }, signal)),
+  async (signal) =>
+    requireOperationData(
+      await listDataTargets(
+        {
+          page: page.value,
+          page_size: pageSize.value,
+          q: appliedKeyword.value || undefined,
+        },
+        signal,
+      ),
+    ),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 
@@ -222,13 +309,14 @@ const targetPage = targetsQuery.data
 const targets = computed(() => targetPage.value?.items ?? [])
 const detailQuery = useTenantQuery<DataTargetDetail>(
   () => userStore.tenantId,
-  () => userStore.tenantId === 'system'
-    && canView.value
-    && detailVisible.value
-    && Boolean(selectedTargetKey.value),
+  () =>
+    userStore.tenantId === 'system' &&
+    canView.value &&
+    detailVisible.value &&
+    Boolean(selectedTargetKey.value),
   'platform-data-target-detail',
   () => ({ target_key: selectedTargetKey.value }),
-  async signal => requireOperationData(await getDataTarget(selectedTargetKey.value, signal)),
+  async (signal) => requireOperationData(await getDataTarget(selectedTargetKey.value, signal)),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const targetDetail = detailQuery.data
@@ -241,18 +329,21 @@ watch(keyword, (value) => {
     searchTimer = undefined
   }, 300)
 })
-watch(pageSize, () => { page.value = 1 })
+watch(pageSize, () => {
+  page.value = 1
+})
 onBeforeUnmount(() => {
   if (searchTimer) clearTimeout(searchTimer)
 })
 
 function healthLabel(health: string): string {
-  const key = {
-    healthy: 'healthHealthy',
-    verified: 'healthHealthy',
-    degraded: 'healthDegraded',
-    unavailable: 'healthUnavailable',
-  }[health] ?? 'healthUnknown'
+  const key =
+    {
+      healthy: 'healthHealthy',
+      verified: 'healthHealthy',
+      degraded: 'healthDegraded',
+      unavailable: 'healthUnavailable',
+    }[health] ?? 'healthUnknown'
   return t(`tenantData.${key}`)
 }
 

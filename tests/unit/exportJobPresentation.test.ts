@@ -60,13 +60,18 @@ describe('导出任务展示规则', () => {
     vi.setSystemTime(new Date('2026-08-20T12:00:00.000Z'))
 
     expect(isExportDownloadExpired(exportJob({ status: 'expired' }))).toBe(true)
-    expect(isExportDownloadExpired(exportJob({ expires_at: '2026-08-20T12:00:00.000Z' }))).toBe(true)
-    expect(isExportDownloadExpired(exportJob({ expires_at: '2026-08-20T12:00:01.000Z' }))).toBe(false)
+    expect(isExportDownloadExpired(exportJob({ expires_at: '2026-08-20T12:00:00.000Z' }))).toBe(
+      true,
+    )
+    expect(isExportDownloadExpired(exportJob({ expires_at: '2026-08-20T12:00:01.000Z' }))).toBe(
+      false,
+    )
     expect(isExportDownloadExpired(exportJob({ expires_at: null }))).toBe(false)
   })
 
   it('优先显示服务端生成的文件名', () => {
-    expect(exportJobDisplayName(exportJob({ result_file_name: '用户报表.xlsx' })))
-      .toBe('用户报表.xlsx')
+    expect(exportJobDisplayName(exportJob({ result_file_name: '用户报表.xlsx' }))).toBe(
+      '用户报表.xlsx',
+    )
   })
 })

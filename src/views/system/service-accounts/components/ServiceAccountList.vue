@@ -7,24 +7,56 @@
       </el-button>
     </div>
 
-    <el-alert v-if="hasError" :title="t('serviceAccounts.loadFailed')" type="error" show-icon :closable="false" class="panel-alert" />
-    <el-skeleton v-if="loading && !(accounts?.items.length)" :rows="6" animated />
-    <el-empty v-else-if="!(accounts?.items.length)" :description="t('serviceAccounts.emptyAccounts')" />
+    <el-alert
+      v-if="hasError"
+      :title="t('serviceAccounts.loadFailed')"
+      type="error"
+      show-icon
+      :closable="false"
+      class="panel-alert"
+    />
+    <el-skeleton v-if="loading && !accounts?.items.length" :rows="6" animated />
+    <el-empty
+      v-else-if="!accounts?.items.length"
+      :description="t('serviceAccounts.emptyAccounts')"
+    />
 
     <template v-else>
       <div class="accounts-table" role="region" :aria-label="t('serviceAccounts.accountsTab')">
         <el-table :data="accounts.items" border stripe row-key="id">
-          <el-table-column prop="code" :label="t('serviceAccounts.code')" min-width="180" show-overflow-tooltip />
-          <el-table-column prop="name" :label="t('serviceAccounts.name')" min-width="180" show-overflow-tooltip />
-          <el-table-column prop="description" :label="t('serviceAccounts.description')" min-width="210" show-overflow-tooltip />
+          <el-table-column
+            prop="code"
+            :label="t('serviceAccounts.code')"
+            min-width="180"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="name"
+            :label="t('serviceAccounts.name')"
+            min-width="180"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="description"
+            :label="t('serviceAccounts.description')"
+            min-width="210"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('serviceAccounts.status')" width="100">
             <template #default="{ row }">
               <el-tag :type="row.status === '1' ? 'success' : 'info'">
-                {{ row.status === '1' ? t('serviceAccounts.enabled') : t('serviceAccounts.disabled') }}
+                {{
+                  row.status === '1' ? t('serviceAccounts.enabled') : t('serviceAccounts.disabled')
+                }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="max_requests_per_minute" :label="t('serviceAccounts.maxRequests')" min-width="140" align="right" />
+          <el-table-column
+            prop="max_requests_per_minute"
+            :label="t('serviceAccounts.maxRequests')"
+            min-width="140"
+            align="right"
+          />
           <el-table-column :label="t('serviceAccounts.updatedAt')" min-width="180">
             <template #default="{ row }">{{ formatLocalizedDate(row.updated_at) }}</template>
           </el-table-column>
@@ -33,7 +65,12 @@
               <el-button type="primary" link @click="emit('details', row)">
                 {{ t('serviceAccounts.details') }}
               </el-button>
-              <el-button v-perm="'system:service-account:edit'" type="primary" link @click="emit('edit', row)">
+              <el-button
+                v-perm="'system:service-account:edit'"
+                type="primary"
+                link
+                @click="emit('edit', row)"
+              >
                 {{ t('serviceAccounts.edit') }}
               </el-button>
               <el-button
@@ -44,7 +81,9 @@
                 :disabled="statusPending"
                 @click="emit('status', row)"
               >
-                {{ row.status === '1' ? t('serviceAccounts.disable') : t('serviceAccounts.enable') }}
+                {{
+                  row.status === '1' ? t('serviceAccounts.disable') : t('serviceAccounts.enable')
+                }}
               </el-button>
               <el-button
                 v-perm="'system:service-account:remove'"
@@ -69,13 +108,23 @@
               <code>{{ account.code }}</code>
             </div>
             <el-tag :type="account.status === '1' ? 'success' : 'info'">
-              {{ account.status === '1' ? t('serviceAccounts.enabled') : t('serviceAccounts.disabled') }}
+              {{
+                account.status === '1'
+                  ? t('serviceAccounts.enabled')
+                  : t('serviceAccounts.disabled')
+              }}
             </el-tag>
           </div>
           <p>{{ account.description || t('serviceAccounts.notAvailable') }}</p>
           <dl>
-            <div><dt>{{ t('serviceAccounts.maxRequests') }}</dt><dd>{{ account.max_requests_per_minute }}</dd></div>
-            <div><dt>{{ t('serviceAccounts.updatedAt') }}</dt><dd>{{ formatLocalizedDate(account.updated_at) }}</dd></div>
+            <div>
+              <dt>{{ t('serviceAccounts.maxRequests') }}</dt>
+              <dd>{{ account.max_requests_per_minute }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('serviceAccounts.updatedAt') }}</dt>
+              <dd>{{ formatLocalizedDate(account.updated_at) }}</dd>
+            </div>
           </dl>
           <div class="account-card__actions">
             <el-button type="primary" plain @click="emit('details', account)">
@@ -92,7 +141,9 @@
               :disabled="statusPending"
               @click="emit('status', account)"
             >
-              {{ account.status === '1' ? t('serviceAccounts.disable') : t('serviceAccounts.enable') }}
+              {{
+                account.status === '1' ? t('serviceAccounts.disable') : t('serviceAccounts.enable')
+              }}
             </el-button>
             <el-button
               v-perm="'system:service-account:remove'"

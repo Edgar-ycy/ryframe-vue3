@@ -1,11 +1,5 @@
-import {
-  isPermissionCode,
-  type PermissionCode,
-} from '@/api/generated/permissions'
-import {
-  registeredMenuPageRegistry,
-  registeredPermissionRouteKeys,
-} from '@/features/registry'
+import { isPermissionCode, type PermissionCode } from '@/api/generated/permissions'
+import { registeredMenuPageRegistry, registeredPermissionRouteKeys } from '@/features/registry'
 import type { MenuPageRegistryEntry } from '@/features/pages'
 
 export type { MenuPageRegistryEntry } from '@/features/pages'
@@ -22,7 +16,9 @@ export function getMenuPage(routeKey?: string | null): MenuPageRegistryEntry | u
   return routeKey ? menuPageRegistry[routeKey] : undefined
 }
 
-export function getRouteKeyByPermissionCode(permissionCode?: PermissionCode | null): string | undefined {
+export function getRouteKeyByPermissionCode(
+  permissionCode?: PermissionCode | null,
+): string | undefined {
   return permissionCode ? permissionRouteKeys[permissionCode] : undefined
 }
 

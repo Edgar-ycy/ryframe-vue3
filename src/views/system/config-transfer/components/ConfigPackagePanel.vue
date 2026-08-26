@@ -17,11 +17,7 @@
           >
             {{ t('tenantConfigTransfer.refresh') }}
           </el-button>
-          <el-button
-            v-perm="'system:config-transfer:add'"
-            icon="Upload"
-            @click="emit('upload')"
-          >
+          <el-button v-perm="'system:config-transfer:add'" icon="Upload" @click="emit('upload')">
             {{ t('tenantConfigTransfer.uploadPackage') }}
           </el-button>
           <el-button
@@ -47,10 +43,19 @@
     />
 
     <template v-if="canList">
-      <el-empty v-if="!loading && packages.length === 0" :description="t('tenantConfigTransfer.packageEmpty')" />
+      <el-empty
+        v-if="!loading && packages.length === 0"
+        :description="t('tenantConfigTransfer.packageEmpty')"
+      />
 
       <div v-else class="desktop-package-table">
-        <el-table v-loading="loading" :data="packages" border stripe :empty-text="t('tenantConfigTransfer.packageEmpty')">
+        <el-table
+          v-loading="loading"
+          :data="packages"
+          border
+          stripe
+          :empty-text="t('tenantConfigTransfer.packageEmpty')"
+        >
           <el-table-column width="56" align="center">
             <template #default="{ row }">
               <el-radio
@@ -63,7 +68,11 @@
               </el-radio>
             </template>
           </el-table-column>
-          <el-table-column :label="t('tenantConfigTransfer.sourceTenant')" min-width="180" show-overflow-tooltip>
+          <el-table-column
+            :label="t('tenantConfigTransfer.sourceTenant')"
+            min-width="180"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
               <strong>{{ row.source_tenant_name }}</strong>
               <small class="secondary-line">{{ row.source_tenant_key }}</small>
@@ -72,7 +81,11 @@
           <el-table-column :label="t('tenantConfigTransfer.origin')" width="132">
             <template #default="{ row }">{{ originLabel(row.origin) }}</template>
           </el-table-column>
-          <el-table-column :label="t('tenantConfigTransfer.sourceVersion')" min-width="130" show-overflow-tooltip>
+          <el-table-column
+            :label="t('tenantConfigTransfer.sourceVersion')"
+            min-width="130"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">{{ row.source_app_version }}</template>
           </el-table-column>
           <el-table-column :label="t('tenantConfigTransfer.itemCount')" width="110" align="right">
@@ -80,7 +93,9 @@
           </el-table-column>
           <el-table-column :label="t('tenantConfigTransfer.packageStatus')" width="120">
             <template #default="{ row }">
-              <el-tag :type="packageStatusTag(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+              <el-tag :type="packageStatusTag(row.status)" size="small">{{
+                statusLabel(row.status)
+              }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column :label="t('tenantConfigTransfer.createdAt')" min-width="160">
@@ -129,13 +144,27 @@
             >
               <strong>{{ item.source_tenant_name }}</strong>
             </el-radio>
-            <el-tag :type="packageStatusTag(item.status)" size="small">{{ statusLabel(item.status) }}</el-tag>
+            <el-tag :type="packageStatusTag(item.status)" size="small">{{
+              statusLabel(item.status)
+            }}</el-tag>
           </header>
           <dl>
-            <div><dt>{{ t('tenantConfigTransfer.sourceKey') }}</dt><dd>{{ item.source_tenant_key }}</dd></div>
-            <div><dt>{{ t('tenantConfigTransfer.sourceVersion') }}</dt><dd>{{ item.source_app_version }}</dd></div>
-            <div><dt>{{ t('tenantConfigTransfer.itemCount') }}</dt><dd>{{ item.item_count }}</dd></div>
-            <div><dt>{{ t('tenantConfigTransfer.createdAt') }}</dt><dd>{{ formatLocalizedDate(item.created_at) }}</dd></div>
+            <div>
+              <dt>{{ t('tenantConfigTransfer.sourceKey') }}</dt>
+              <dd>{{ item.source_tenant_key }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantConfigTransfer.sourceVersion') }}</dt>
+              <dd>{{ item.source_app_version }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantConfigTransfer.itemCount') }}</dt>
+              <dd>{{ item.item_count }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantConfigTransfer.createdAt') }}</dt>
+              <dd>{{ formatLocalizedDate(item.created_at) }}</dd>
+            </div>
           </dl>
           <footer v-if="item.status === 'succeeded'">
             <el-button
@@ -195,13 +224,14 @@ function originLabel(origin: string): string {
 }
 
 function statusLabel(status: string): string {
-  const key = {
-    pending: 'statusPending',
-    running: 'statusRunning',
-    succeeded: 'statusSucceeded',
-    failed: 'statusFailed',
-    expired: 'statusExpired',
-  }[status] ?? 'statusUnknown'
+  const key =
+    {
+      pending: 'statusPending',
+      running: 'statusRunning',
+      succeeded: 'statusSucceeded',
+      failed: 'statusFailed',
+      expired: 'statusExpired',
+    }[status] ?? 'statusUnknown'
   return t(`tenantConfigTransfer.${key}`)
 }
 

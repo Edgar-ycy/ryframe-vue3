@@ -104,12 +104,7 @@
               >
                 {{ t('system.common.export') }}
               </el-button>
-              <el-button
-                v-perm="'system:user:add'"
-                type="primary"
-                icon="Plus"
-                @click="handleAdd"
-              >
+              <el-button v-perm="'system:user:add'" type="primary" icon="Plus" @click="handleAdd">
                 {{ t('system.common.add') }}
               </el-button>
             </div>
@@ -118,11 +113,23 @@
 
         <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
           <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
-          <el-table-column prop="username" :label="t('system.user.username')" show-overflow-tooltip />
-          <el-table-column prop="nickname" :label="t('system.user.nickname')" show-overflow-tooltip />
+          <el-table-column
+            prop="username"
+            :label="t('system.user.username')"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="nickname"
+            :label="t('system.user.nickname')"
+            show-overflow-tooltip
+          />
           <el-table-column prop="email" :label="t('system.user.email')" show-overflow-tooltip />
           <el-table-column prop="phone" :label="t('system.user.phone')" show-overflow-tooltip />
-          <el-table-column prop="dept_name" :label="t('system.user.department')" show-overflow-tooltip />
+          <el-table-column
+            prop="dept_name"
+            :label="t('system.user.department')"
+            show-overflow-tooltip
+          />
           <el-table-column prop="status" :label="t('system.common.status')" align="center">
             <template #default="{ row }">
               <el-switch
@@ -142,7 +149,12 @@
           <el-table-column :label="t('system.common.createdAt')" min-width="160">
             <template #default="{ row }">{{ formatLocalizedDate(row.created_at) }}</template>
           </el-table-column>
-          <el-table-column :label="t('system.common.actions')" min-width="330" fixed="right" align="center">
+          <el-table-column
+            :label="t('system.common.actions')"
+            min-width="330"
+            fixed="right"
+            align="center"
+          >
             <template #default="{ row }">
               <el-button
                 v-perm="'system:user:edit'"
@@ -215,7 +227,11 @@
       @saved="refreshData"
     />
     <PasswordResetDialog v-model="passwordDialogVisible" :user-id="passwordResetUserId" />
-    <UserImportDialog v-model="importDialogVisible" :loading="importLoading" @submit="submitImport" />
+    <UserImportDialog
+      v-model="importDialogVisible"
+      :loading="importLoading"
+      @submit="submitImport"
+    />
     <UserImportHistoryDrawer v-model="importHistoryVisible" />
   </div>
 </template>

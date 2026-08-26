@@ -43,26 +43,22 @@ const MESSAGE_QUERY_POLICY = {
 
 function currentMessageIdentity(): MessageIdentity {
   const userStore = useUserStore()
-  if (
-    userStore.sessionStatus !== 'authenticated'
-    || !userStore.tenantId
-    || !userStore.userId
-  ) {
+  if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId) {
     throw new HttpError('消息会话尚未就绪', { status: 401, kind: 'http' })
   }
   return { tenantId: userStore.tenantId, userId: String(userStore.userId) }
 }
 
 /** 消息中心状态统一由 Vue Query 管理，实时投递与显式补拉负责更新缓存。 */
-export function useMessageCenterQueries(
-  query: MaybeRefOrGetter<MessageInboxQuery>,
-) {
+export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuery>) {
   const userStore = useUserStore()
 
   function isMessageSessionActive(): boolean {
-    return userStore.sessionStatus === 'authenticated'
-      && Boolean(userStore.tenantId)
-      && Boolean(userStore.userId)
+    return (
+      userStore.sessionStatus === 'authenticated' &&
+      Boolean(userStore.tenantId) &&
+      Boolean(userStore.userId)
+    )
   }
 
   function currentUserId(): string {
@@ -78,13 +74,7 @@ export function useMessageCenterQueries(
       const tenantId = userStore.tenantId
       const requestedUserId = currentUserId()
       const requestedQuery = toValue(query)
-      return fetchMessageInboxPage(
-        queryClient,
-        tenantId,
-        requestedUserId,
-        requestedQuery,
-        signal,
-      )
+      return fetchMessageInboxPage(queryClient, tenantId, requestedUserId, requestedQuery, signal)
     },
     MESSAGE_QUERY_POLICY,
   )
@@ -110,18 +100,19 @@ export function useMessageCenterQueries(
     onSuccess: async (_response, variables) => {
       markCachedMessageRead(queryClient, variables, new Date().toISOString())
       if (variables.wasUnread === true) {
-        if (!setUnreadCount(
-          queryClient,
-          variables.tenantId,
-          variables.userId,
-          current => current - 1,
-        )) {
+        if (
+          !setUnreadCount(
+            queryClient,
+            variables.tenantId,
+            variables.userId,
+            (current) => current - 1,
+          )
+        ) {
           await queryClient.invalidateQueries({
             queryKey: messageUnreadQueryKey(variables.tenantId, variables.userId),
           })
         }
-      }
-      else if (variables.wasUnread === undefined) {
+      } else if (variables.wasUnread === undefined) {
         await queryClient.invalidateQueries({
           queryKey: messageUnreadQueryKey(variables.tenantId, variables.userId),
         })
@@ -206,12 +197,13 @@ export function useMessageCenterQueries(
     unreadData: unreadQuery.data,
     inboxLoading: inboxQuery.isFetching,
     unreadLoading: unreadQuery.isFetching,
-    mutating: computed(() => (
-      acknowledgeMutation.isPending.value
-      || markReadMutation.isPending.value
-      || markAllReadMutation.isPending.value
-      || deleteMutation.isPending.value
-    )),
+    mutating: computed(
+      () =>
+        acknowledgeMutation.isPending.value ||
+        markReadMutation.isPending.value ||
+        markAllReadMutation.isPending.value ||
+        deleteMutation.isPending.value,
+    ),
     acknowledge,
     markRead,
     markAllRead,

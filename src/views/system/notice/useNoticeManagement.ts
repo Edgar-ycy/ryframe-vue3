@@ -15,10 +15,7 @@ import {
 import { requireOperationData } from '@/shared/http/client'
 import type { Id, PageResponse } from '@/shared/http/types'
 import { renderMarkdown } from '@/shared/markdown/render'
-import {
-  NOTICE_POLICY,
-  validateNoticeMarkdown,
-} from '@/shared/markdown/noticePolicy'
+import { NOTICE_POLICY, validateNoticeMarkdown } from '@/shared/markdown/noticePolicy'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
@@ -38,11 +35,16 @@ interface NoticeDialogState {
 }
 
 type SaveNoticeCommand =
-  | { kind: 'create'; data: NoticeCreateInput }
-  | { kind: 'update'; id: Id; data: NoticeUpdateInput }
+  { kind: 'create'; data: NoticeCreateInput } | { kind: 'update'; id: Id; data: NoticeUpdateInput }
 
 export function useNoticeManagement() {
-  const queryParams = ref<NoticeQuery>({ page: 1, page_size: 10, title: '', notice_type: '', status: '' })
+  const queryParams = ref<NoticeQuery>({
+    page: 1,
+    page_size: 10,
+    title: '',
+    notice_type: '',
+    status: '',
+  })
   const activeQueryParams = ref<NoticeQuery>({ ...queryParams.value })
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -52,7 +54,7 @@ export function useNoticeManagement() {
     authenticated,
     'notices',
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
-    async signal => {
+    async (signal) => {
       const response = await listNotice({ ...activeQueryParams.value }, signal)
       return requireOperationData(response)
     },
@@ -85,19 +87,26 @@ export function useNoticeManagement() {
   const formRef = ref<FormInstance>()
   const currentEditId = ref<Id | null>(null)
   const editingNotice = ref<NoticeRecord | null>(null)
-  const form = ref<NoticeForm>({ title: '', notice_type: 'notice', content_markdown: '', status: '1' })
+  const form = ref<NoticeForm>({
+    title: '',
+    notice_type: 'notice',
+    content_markdown: '',
+    status: '1',
+  })
   const renderedContent = computed(() => renderMarkdown(form.value.content_markdown))
   const validateMarkdown: FormItemRule['validator'] = (_rule, value, callback) => {
     const result = validateNoticeMarkdown(typeof value === 'string' ? value : '')
     if (result === 'required') {
       callback(new Error(t('system.notice.enterContent')))
-    }
-    else if (result === 'too_long') {
-      callback(new Error(t('system.notice.contentTooLong', {
-        max: NOTICE_POLICY.content_markdown.max_utf8_bytes,
-      })))
-    }
-    else {
+    } else if (result === 'too_long') {
+      callback(
+        new Error(
+          t('system.notice.contentTooLong', {
+            max: NOTICE_POLICY.content_markdown.max_utf8_bytes,
+          }),
+        ),
+      )
+    } else {
       callback()
     }
   }
@@ -126,7 +135,7 @@ export function useNoticeManagement() {
     () => authenticated() && editingNotice.value !== null,
     'notices',
     () => ({ scope: 'detail', id: editingNotice.value?.id ?? null }),
-    async signal => {
+    async (signal) => {
       const target = editingNotice.value
       if (!target) throw new Error(t('system.notice.detailMissing'))
       const response = await getNotice(target.id, signal)
@@ -138,18 +147,17 @@ export function useNoticeManagement() {
     () => userStore.tenantId,
     'notices',
     {
-      mutationFn: async command => {
+      mutationFn: async (command) => {
         if (command.kind === 'create') {
           await createNotice(command.data)
-        }
-        else {
+        } else {
           await updateNotice(command.id, command.data)
         }
       },
       onSuccess: (_data, command) => {
-        ElMessage.success(t(command.kind === 'create'
-          ? 'system.common.addSuccess'
-          : 'system.common.updateSuccess'))
+        ElMessage.success(
+          t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
+        )
       },
     },
   )
@@ -159,7 +167,7 @@ export function useNoticeManagement() {
     () => userStore.tenantId,
     'messages',
     {
-      mutationFn: async notice => {
+      mutationFn: async (notice) => {
         await publishNoticeToMessageCenter(notice.id)
       },
       onSuccess: () => {
@@ -167,15 +175,15 @@ export function useNoticeManagement() {
       },
     },
   )
-  const publishingId = computed<Id | null>(() => (
-    publishMutation.pending.value ? publishMutation.variables.value?.id ?? null : null
-  ))
+  const publishingId = computed<Id | null>(() =>
+    publishMutation.pending.value ? (publishMutation.variables.value?.id ?? null) : null,
+  )
 
   const deleteMutation = useTenantMutation<void, NoticeRecord>(
     () => userStore.tenantId,
     'notices',
     {
-      mutationFn: async notice => {
+      mutationFn: async (notice) => {
         await deleteNotice(notice.id)
       },
       onSuccess: () => {
@@ -183,9 +191,9 @@ export function useNoticeManagement() {
       },
     },
   )
-  const deletingId = computed<Id | null>(() => (
-    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
-  ))
+  const deletingId = computed<Id | null>(() =>
+    deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
+  )
 
   function handleAdd() {
     currentEditId.value = null
@@ -231,8 +239,7 @@ export function useNoticeManagement() {
         id: currentEditId.value!,
         data: { ...data, status: form.value.status },
       })
-    }
-    else {
+    } else {
       await saveMutation.mutateAsync({ kind: 'create', data })
     }
     dialog.value.visible = false

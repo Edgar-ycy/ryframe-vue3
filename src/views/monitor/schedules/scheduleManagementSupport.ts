@@ -6,7 +6,7 @@ import type {
 } from '@/api/modules/monitor'
 
 export type ScheduleSavePayload = CreateScheduleBody | UpdateScheduleBody
-export type RunSchedulePayload = { row: JobScheduleRecord, idempotencyKey: string }
+export type RunSchedulePayload = { row: JobScheduleRecord; idempotencyKey: string }
 
 export const BUILT_IN_TARGET_LABELS: Record<string, string> = {
   'system.export_result_cleanup': 'monitor.schedules.targetExportResultCleanup',
@@ -24,8 +24,6 @@ export function normalizeQueryParams(params: ScheduleQuery): ScheduleQuery {
   }
 }
 
-export function isUpdatePayload(
-  payload: ScheduleSavePayload,
-): payload is UpdateScheduleBody {
+export function isUpdatePayload(payload: ScheduleSavePayload): payload is UpdateScheduleBody {
   return 'version' in payload
 }

@@ -27,7 +27,7 @@ export function useShellSettingsQuery() {
     () => userStore.sessionStatus === 'authenticated',
     SHELL_SETTINGS_RESOURCE,
     () => SHELL_SETTINGS_PARAMS,
-    async signal => {
+    async (signal) => {
       const [sideThemeResponse, skinNameResponse] = await Promise.all([
         getConfigByKey('sys.index.sideTheme', signal),
         getConfigByKey('sys.index.skinName', signal),
@@ -41,7 +41,7 @@ export function useShellSettingsQuery() {
 
   watch(
     () => settingsQuery.data.value,
-    settings => {
+    (settings) => {
       if (settings) settingsStore.applyServerSettings(settings)
     },
     { immediate: true },

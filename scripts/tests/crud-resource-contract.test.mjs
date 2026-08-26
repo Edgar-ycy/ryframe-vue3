@@ -37,51 +37,55 @@ function contract() {
     },
     'x-ryframe-crud-resources': {
       version: 1,
-      resources: [{
-        access: { capability: 'system.post', permissions },
-        api: { operations, path: '/api/v1/system/posts' },
-        extension_permissions: { export: 'system:post:export' },
-        fields: [{
-          enum_values: {},
-          labels,
-          name: 'name',
-          nullable: false,
-          order: 10,
-          usage: {
-            create: true,
-            create_optional: false,
-            filter: true,
-            list: true,
-            read: true,
-            sort: true,
-            update: true,
-            update_optional: false,
+      resources: [
+        {
+          access: { capability: 'system.post', permissions },
+          api: { operations, path: '/api/v1/system/posts' },
+          extension_permissions: { export: 'system:post:export' },
+          fields: [
+            {
+              enum_values: {},
+              labels,
+              name: 'name',
+              nullable: false,
+              order: 10,
+              usage: {
+                create: true,
+                create_optional: false,
+                filter: true,
+                list: true,
+                read: true,
+                sort: true,
+                update: true,
+                update_optional: false,
+              },
+              validation: {
+                max_length: 100,
+                maximum: null,
+                min_length: 1,
+                minimum: null,
+                required: true,
+              },
+              value_type: 'string',
+              widget: 'text',
+              wire_type: 'string',
+            },
+          ],
+          labels: { en: 'Post', zh_cn: '岗位' },
+          menu: {
+            icon: null,
+            key: 'system.post',
+            labels: { en: 'Posts', zh_cn: '岗位管理' },
+            order: 8,
+            parent: 'system',
           },
-          validation: {
-            max_length: 100,
-            maximum: null,
-            min_length: 1,
-            minimum: null,
-            required: true,
-          },
-          value_type: 'string',
-          widget: 'text',
-          wire_type: 'string',
-        }],
-        labels: { en: 'Post', zh_cn: '岗位' },
-        menu: {
-          icon: null,
-          key: 'system.post',
-          labels: { en: 'Posts', zh_cn: '岗位管理' },
-          order: 8,
-          parent: 'system',
+          module: 'system',
+          name: 'post',
+          profile: 'flat_crud',
+          route: { key: 'system.post', path: '/system/post' },
+          storage: 'control_row',
         },
-        module: 'system',
-        name: 'post',
-        profile: 'flat_crud',
-        route: { key: 'system.post', path: '/system/post' },
-        storage: 'control_row',
-      }],
+      ],
     },
     'x-ryframe-permission-catalog': {
       codes: [
@@ -160,17 +164,17 @@ function generatedTypeErrors(source) {
   }
   const host = ts.createCompilerHost(options)
   const readSourceFile = host.getSourceFile.bind(host)
-  host.fileExists = name => name === fileName || ts.sys.fileExists(name)
-  host.readFile = name => name === fileName ? source : ts.sys.readFile(name)
-  host.getSourceFile = (name, languageVersion, onError, shouldCreateNewSourceFile) => (
+  host.fileExists = (name) => name === fileName || ts.sys.fileExists(name)
+  host.readFile = (name) => (name === fileName ? source : ts.sys.readFile(name))
+  host.getSourceFile = (name, languageVersion, onError, shouldCreateNewSourceFile) =>
     name === fileName
       ? ts.createSourceFile(name, source, languageVersion, true, ts.ScriptKind.TS)
       : readSourceFile(name, languageVersion, onError, shouldCreateNewSourceFile)
-  )
   const program = ts.createProgram([fileName], options, host)
-  return ts.getPreEmitDiagnostics(program)
-    .filter(diagnostic => diagnostic.file?.fileName === fileName)
-    .map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))
+  return ts
+    .getPreEmitDiagnostics(program)
+    .filter((diagnostic) => diagnostic.file?.fileName === fileName)
+    .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))
 }
 
 test('接受与 OpenAPI 操作和权限目录严格对应的资源目录', () => {
@@ -207,8 +211,8 @@ void [postName, deviceName]
 test('允许没有扩展动作的空 extension_permissions', () => {
   const document = contract()
   resource(document).extension_permissions = {}
-  assert.doesNotThrow(
-    () => requireCrudResourceCatalog(document['x-ryframe-crud-resources'], document),
+  assert.doesNotThrow(() =>
+    requireCrudResourceCatalog(document['x-ryframe-crud-resources'], document),
   )
 })
 
@@ -271,8 +275,8 @@ test('CRUD 权限必须使用严格三段 kebab-case 且属于全局目录', () 
   const multiword = contract()
   addPermission(multiword, 'system:work-order:list')
   resource(multiword).access.permissions.create = 'system:work-order:list'
-  assert.doesNotThrow(
-    () => requireCrudResourceCatalog(multiword['x-ryframe-crud-resources'], multiword),
+  assert.doesNotThrow(() =>
+    requireCrudResourceCatalog(multiword['x-ryframe-crud-resources'], multiword),
   )
 
   for (const invalidPermission of [
@@ -329,35 +333,89 @@ test('拒绝 operationId 的请求路径漂移', () => {
 })
 
 for (const [title, mutate, expected] of [
-  ['非 system 模块', item => { item.module = 'platform' }, /仅支持 system/u],
-  ['集合 API 尾斜杠', item => { item.api.path += '/' }, /api\.path: 字符串格式无效/u],
-  ['非 select 枚举', item => {
-    item.fields[0].enum_values = { active: labels }
-  }, /enum_values 只能配合 select/u],
-  ['required 与 nullable 冲突', item => { item.fields[0].nullable = true }, /required=true 冲突/u],
-  ['无 create 的 create_optional', item => {
-    item.fields[0].usage.create = false
-    item.fields[0].usage.create_optional = true
-  }, /create_optional 只能用于 create/u],
-  ['nullable 的 update_optional', item => {
-    item.fields[0].nullable = true
-    item.fields[0].validation.required = false
-    item.fields[0].usage.update_optional = true
-  }, /nullable 与 update_optional/u],
-  ['负数长度边界', item => { item.fields[0].validation.min_length = -1 }, /非负安全整数/u],
-  ['倒置长度边界', item => {
-    item.fields[0].validation.min_length = 101
-  }, /min_length 不能大于 max_length/u],
-  ['错误类型的长度约束', item => {
-    item.fields[0].value_type = 'i32'
-    item.fields[0].wire_type = 'i32'
-    item.fields[0].widget = 'number'
-  }, /长度约束只能用于 string/u],
-  ['不支持的可编辑控件', item => { item.fields[0].widget = 'textarea' }, /可编辑字段只支持/u],
-  ['不可回读的编辑字段', item => {
-    item.fields[0].usage.list = false
-    item.fields[0].usage.read = false
-  }, /必须同时出现在 read 或 list/u],
+  [
+    '非 system 模块',
+    (item) => {
+      item.module = 'platform'
+    },
+    /仅支持 system/u,
+  ],
+  [
+    '集合 API 尾斜杠',
+    (item) => {
+      item.api.path += '/'
+    },
+    /api\.path: 字符串格式无效/u,
+  ],
+  [
+    '非 select 枚举',
+    (item) => {
+      item.fields[0].enum_values = { active: labels }
+    },
+    /enum_values 只能配合 select/u,
+  ],
+  [
+    'required 与 nullable 冲突',
+    (item) => {
+      item.fields[0].nullable = true
+    },
+    /required=true 冲突/u,
+  ],
+  [
+    '无 create 的 create_optional',
+    (item) => {
+      item.fields[0].usage.create = false
+      item.fields[0].usage.create_optional = true
+    },
+    /create_optional 只能用于 create/u,
+  ],
+  [
+    'nullable 的 update_optional',
+    (item) => {
+      item.fields[0].nullable = true
+      item.fields[0].validation.required = false
+      item.fields[0].usage.update_optional = true
+    },
+    /nullable 与 update_optional/u,
+  ],
+  [
+    '负数长度边界',
+    (item) => {
+      item.fields[0].validation.min_length = -1
+    },
+    /非负安全整数/u,
+  ],
+  [
+    '倒置长度边界',
+    (item) => {
+      item.fields[0].validation.min_length = 101
+    },
+    /min_length 不能大于 max_length/u,
+  ],
+  [
+    '错误类型的长度约束',
+    (item) => {
+      item.fields[0].value_type = 'i32'
+      item.fields[0].wire_type = 'i32'
+      item.fields[0].widget = 'number'
+    },
+    /长度约束只能用于 string/u,
+  ],
+  [
+    '不支持的可编辑控件',
+    (item) => {
+      item.fields[0].widget = 'textarea'
+    },
+    /可编辑字段只支持/u,
+  ],
+  [
+    '不可回读的编辑字段',
+    (item) => {
+      item.fields[0].usage.list = false
+      item.fields[0].usage.read = false
+    },
+    /必须同时出现在 read 或 list/u,
+  ],
 ]) {
   test(`拒绝 flat_crud v1 非法语义：${title}`, () => {
     const document = contract()
@@ -386,9 +444,27 @@ test('枚举键必须与值类型一致', () => {
 })
 
 for (const [kind, mutate, expected] of [
-  ['菜单键', (device, post) => { post.menu.key = device.menu.key }, /菜单键重复/u],
-  ['路由键', (device, post) => { post.route.key = device.route.key }, /路由键重复/u],
-  ['路由路径', (device, post) => { post.route.path = device.route.path }, /路由路径重复/u],
+  [
+    '菜单键',
+    (device, post) => {
+      post.menu.key = device.menu.key
+    },
+    /菜单键重复/u,
+  ],
+  [
+    '路由键',
+    (device, post) => {
+      post.route.key = device.route.key
+    },
+    /路由键重复/u,
+  ],
+  [
+    '路由路径',
+    (device, post) => {
+      post.route.path = device.route.path
+    },
+    /路由路径重复/u,
+  ],
 ]) {
   test(`拒绝跨资源重复${kind}`, () => {
     const document = contract()

@@ -11,5 +11,5 @@ import en from 'element-plus/es/locale/lang/en'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
 const settingsStore = useSettingsStore()
-const elementLocale = computed(() => i18n.global.locale.value === 'en-US' ? en : zhCn)
+const elementLocale = computed(() => (i18n.global.locale.value === 'en-US' ? en : zhCn))
 </script>

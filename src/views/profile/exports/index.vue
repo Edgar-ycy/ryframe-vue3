@@ -7,22 +7,54 @@
             <h2>{{ t('exportCenter.title') }}</h2>
             <p>{{ t('exportCenter.listHint') }}</p>
           </div>
-          <el-button icon="Refresh" :loading="loading" :aria-label="t('exportCenter.refresh')" @click="handleRefresh">
+          <el-button
+            icon="Refresh"
+            :loading="loading"
+            :aria-label="t('exportCenter.refresh')"
+            @click="handleRefresh"
+          >
             {{ t('exportCenter.refresh') }}
           </el-button>
         </div>
       </template>
 
-      <el-alert v-if="error" :title="listErrorMessage(error)" type="error" show-icon :closable="false" class="exports-error" />
+      <el-alert
+        v-if="error"
+        :title="listErrorMessage(error)"
+        type="error"
+        show-icon
+        :closable="false"
+        class="exports-error"
+      />
 
       <div class="exports-filters" role="search" :aria-label="t('exportCenter.title')">
-        <el-select v-model="statusFilter" :placeholder="t('exportCenter.statusFilter')" :aria-label="t('exportCenter.statusFilter')" @change="handleVisibleJobsChange">
+        <el-select
+          v-model="statusFilter"
+          :placeholder="t('exportCenter.statusFilter')"
+          :aria-label="t('exportCenter.statusFilter')"
+          @change="handleVisibleJobsChange"
+        >
           <el-option :label="t('exportCenter.allStatuses')" value="" />
-          <el-option v-for="status in STATUS_OPTIONS" :key="status" :label="statusLabel(status)" :value="status" />
+          <el-option
+            v-for="status in STATUS_OPTIONS"
+            :key="status"
+            :label="statusLabel(status)"
+            :value="status"
+          />
         </el-select>
-        <el-select v-model="resourceFilter" :placeholder="t('exportCenter.resourceFilter')" :aria-label="t('exportCenter.resourceFilter')" @change="handleVisibleJobsChange">
+        <el-select
+          v-model="resourceFilter"
+          :placeholder="t('exportCenter.resourceFilter')"
+          :aria-label="t('exportCenter.resourceFilter')"
+          @change="handleVisibleJobsChange"
+        >
           <el-option :label="t('exportCenter.allResources')" value="" />
-          <el-option v-for="resource in RESOURCE_OPTIONS" :key="resource" :label="resourceLabel(resource)" :value="resource" />
+          <el-option
+            v-for="resource in RESOURCE_OPTIONS"
+            :key="resource"
+            :label="resourceLabel(resource)"
+            :value="resource"
+          />
         </el-select>
         <el-button
           type="danger"
@@ -56,7 +88,12 @@
       />
     </el-card>
 
-    <el-dialog v-model="errorDialogVisible" :title="t('exportCenter.errorDetail')" width="min(620px, calc(100vw - 32px))" @closed="selectedErrorJob = undefined">
+    <el-dialog
+      v-model="errorDialogVisible"
+      :title="t('exportCenter.errorDetail')"
+      width="min(620px, calc(100vw - 32px))"
+      @closed="selectedErrorJob = undefined"
+    >
       <template v-if="selectedErrorJob">
         <p class="error-job-name">{{ displayName(selectedErrorJob) }}</p>
         <pre class="error-content">{{ selectedErrorJob.error_message }}</pre>
@@ -71,8 +108,17 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { ExportJob } from '@/api/modules/exportJob'
-import { exportJobDisplayName, exportJobResourceKey, exportJobStatusKey, isExportDownloadExpired } from '@/app/exports/exportJobPresentation'
-import { useExportJobActions, useExportJobList, useExportNotificationState } from '@/app/exports/useExportJobs'
+import {
+  exportJobDisplayName,
+  exportJobResourceKey,
+  exportJobStatusKey,
+  isExportDownloadExpired,
+} from '@/app/exports/exportJobPresentation'
+import {
+  useExportJobActions,
+  useExportJobList,
+  useExportNotificationState,
+} from '@/app/exports/useExportJobs'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { HttpError } from '@/shared/http/client'
 import { confirmAction } from '@/utils/confirmAction'
@@ -105,22 +151,37 @@ onMounted(() => {
 })
 
 const STATUS_OPTIONS = ['queued', 'running', 'succeeded', 'failed', 'cancelled', 'expired'] as const
-const RESOURCE_OPTIONS = ['users', 'roles', 'posts', 'configs', 'dict-types', 'operlogs', 'loginlogs'] as const
+const RESOURCE_OPTIONS = [
+  'users',
+  'roles',
+  'posts',
+  'configs',
+  'dict-types',
+  'operlogs',
+  'loginlogs',
+] as const
 const TERMINAL_STATUSES = new Set(['succeeded', 'failed', 'cancelled', 'expired'])
 
-watch([jobs, statusFilter, resourceFilter], () => {
-  const visibleTerminalIds = new Set(
-    visibleJobs().filter(job => canDelete(job.status)).map(job => job.id),
-  )
-  const selected = selectedJobIds.value.filter(id => visibleTerminalIds.has(id))
-  if (selected.length !== selectedJobIds.value.length) selectedJobIds.value = selected
-}, { flush: 'sync' })
+watch(
+  [jobs, statusFilter, resourceFilter],
+  () => {
+    const visibleTerminalIds = new Set(
+      visibleJobs()
+        .filter((job) => canDelete(job.status))
+        .map((job) => job.id),
+    )
+    const selected = selectedJobIds.value.filter((id) => visibleTerminalIds.has(id))
+    if (selected.length !== selectedJobIds.value.length) selectedJobIds.value = selected
+  },
+  { flush: 'sync' },
+)
 
 function visibleJobs(): ExportJob[] {
-  return (jobs.value ?? []).filter(job => (
-    (!statusFilter.value || job.status === statusFilter.value)
-    && (!resourceFilter.value || job.resource === resourceFilter.value)
-  ))
+  return (jobs.value ?? []).filter(
+    (job) =>
+      (!statusFilter.value || job.status === statusFilter.value) &&
+      (!resourceFilter.value || job.resource === resourceFilter.value),
+  )
 }
 
 function handleVisibleJobsChange(): void {
@@ -171,10 +232,9 @@ async function handleCancel(job: ExportJob): Promise<void> {
   if (!confirmed || cancellingJobId.value) return
   try {
     await cancelJob(job.id)
-  }
-  catch {
+  } catch {
     await refreshAfterAction()
-    const current = jobs.value?.find(item => item.id === job.id)
+    const current = jobs.value?.find((item) => item.id === job.id)
     if (current && !canCancel(current.status)) {
       ElMessage.info(`${displayName(current)}：${statusLabel(current.status)}`)
       return
@@ -185,27 +245,24 @@ async function handleCancel(job: ExportJob): Promise<void> {
 
 async function handleDownload(job: ExportJob): Promise<void> {
   if (
-    job.status !== 'succeeded'
-    || isDownloadUnavailable(job)
-    || downloadingJobId.value
-    || isJobActionBusy(job.id)
-  ) return
+    job.status !== 'succeeded' ||
+    isDownloadUnavailable(job) ||
+    downloadingJobId.value ||
+    isJobActionBusy(job.id)
+  )
+    return
   try {
     await downloadJob(job)
-  }
-  catch (error) {
+  } catch (error) {
     await refreshAfterAction()
-    const current = jobs.value?.find(item => item.id === job.id)
+    const current = jobs.value?.find((item) => item.id === job.id)
     if (current?.status === 'expired' || isDownloadUnavailable(current ?? job)) {
       ElMessage.error(t('exportCenter.downloadExpired'))
-    }
-    else if (error instanceof HttpError && error.status === 403) {
+    } else if (error instanceof HttpError && error.status === 403) {
       ElMessage.error(t('exportCenter.downloadForbidden'))
-    }
-    else if (error instanceof HttpError && error.status === 404) {
+    } else if (error instanceof HttpError && error.status === 404) {
       ElMessage.error(t('exportCenter.downloadMissing'))
-    }
-    else {
+    } else {
       ElMessage.error(t('exportCenter.downloadFailed'))
     }
   }
@@ -218,38 +275,40 @@ async function handleDelete(job: ExportJob): Promise<void> {
 async function handleBatchDelete(): Promise<void> {
   const selected = new Set(selectedJobIds.value)
   await handleDeleteJobs(
-    visibleJobs().filter(job => selected.has(job.id) && canDelete(job.status)),
+    visibleJobs().filter((job) => selected.has(job.id) && canDelete(job.status)),
   )
 }
 
 async function handleDeleteJobs(selectedJobs: readonly ExportJob[]): Promise<void> {
   if (
-    selectedJobs.length === 0
-    || selectedJobs.length > 100
-    || deletingJobIds.value.length > 0
-    || selectedJobs.some(job => !canDelete(job.status) || isJobActionBusy(job.id))
-  ) return
-  const message = selectedJobs.length === 1
-    ? t('exportCenter.deleteConfirm', { name: displayName(selectedJobs[0]!) })
-    : t('exportCenter.deleteBatchConfirm', { count: selectedJobs.length })
-  const confirmed = await confirmAction(
-    message,
-    t('exportCenter.deleteConfirmTitle'),
-    { type: 'warning', confirmButtonText: t('exportCenter.delete') },
+    selectedJobs.length === 0 ||
+    selectedJobs.length > 100 ||
+    deletingJobIds.value.length > 0 ||
+    selectedJobs.some((job) => !canDelete(job.status) || isJobActionBusy(job.id))
   )
+    return
+  const message =
+    selectedJobs.length === 1
+      ? t('exportCenter.deleteConfirm', { name: displayName(selectedJobs[0]!) })
+      : t('exportCenter.deleteBatchConfirm', { count: selectedJobs.length })
+  const confirmed = await confirmAction(message, t('exportCenter.deleteConfirmTitle'), {
+    type: 'warning',
+    confirmButtonText: t('exportCenter.delete'),
+  })
   if (!confirmed || deletingJobIds.value.length > 0) return
   try {
-    const accepted = await deleteJobs(selectedJobs.map(job => job.id))
+    const accepted = await deleteJobs(selectedJobs.map((job) => job.id))
     const removed = new Set(accepted.accepted_ids)
-    selectedJobIds.value = selectedJobIds.value.filter(id => !removed.has(id))
-    ElMessage.success(t(
-      accepted.accepted_count === 1
-        ? 'exportCenter.deleteSuccess'
-        : 'exportCenter.deleteBatchSuccess',
-      { count: accepted.accepted_count },
-    ))
-  }
-  catch (actionError) {
+    selectedJobIds.value = selectedJobIds.value.filter((id) => !removed.has(id))
+    ElMessage.success(
+      t(
+        accepted.accepted_count === 1
+          ? 'exportCenter.deleteSuccess'
+          : 'exportCenter.deleteBatchSuccess',
+        { count: accepted.accepted_count },
+      ),
+    )
+  } catch (actionError) {
     if (actionError instanceof HttpError && actionError.status === 409) {
       await refreshAfterAction()
       ElMessage.warning(t('exportCenter.deleteConflict'))
@@ -262,8 +321,7 @@ async function handleDeleteJobs(selectedJobs: readonly ExportJob[]): Promise<voi
 async function refreshAfterAction(): Promise<void> {
   try {
     await refresh()
-  }
-  catch {
+  } catch {
     return
   }
 }
@@ -271,15 +329,13 @@ async function refreshAfterAction(): Promise<void> {
 async function handleRefresh(): Promise<void> {
   try {
     await refresh()
-  }
-  catch {
+  } catch {
     ElMessage.error(t('exportCenter.loadFailed'))
     return
   }
   try {
     await markVisibleNotificationsRead(visibleJobs())
-  }
-  catch {
+  } catch {
     // 已读确认失败时保留徽标，不把已成功加载的任务列表误报为读取失败。
   }
 }

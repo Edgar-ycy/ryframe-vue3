@@ -3,12 +3,7 @@ import type { ApiResponse } from './types'
 import { translate } from '@/i18n'
 
 export type HttpErrorKind =
-  | 'http'
-  | 'network'
-  | 'timeout'
-  | 'cancelled'
-  | 'invalid_response'
-  | 'unknown'
+  'http' | 'network' | 'timeout' | 'cancelled' | 'invalid_response' | 'unknown'
 
 export interface HttpErrorOptions {
   status?: number
@@ -70,14 +65,16 @@ const errorKeyTranslation: Record<string, string> = {
 }
 
 function isApiEnvelope(value: unknown): value is ApiResponse {
-  return typeof value === 'object'
-    && value !== null
-    && 'code' in value
-    && typeof value.code === 'number'
-    && 'message' in value
-    && typeof value.message === 'string'
-    && 'request_id' in value
-    && typeof value.request_id === 'string'
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'code' in value &&
+    typeof value.code === 'number' &&
+    'message' in value &&
+    typeof value.message === 'string' &&
+    'request_id' in value &&
+    typeof value.request_id === 'string'
+  )
 }
 
 function translatedErrorMessage(envelope: ApiResponse, fallback: string): string {
@@ -96,8 +93,7 @@ async function responseErrorPayload(data: unknown, fallback: string): Promise<Er
     if (!text) return { message: fallback }
     try {
       return responseErrorPayload(JSON.parse(text), fallback)
-    }
-    catch {
+    } catch {
       return { message: text }
     }
   }
@@ -122,20 +118,17 @@ export async function toHttpError(error: unknown): Promise<HttpError> {
       error.message || translate('shell.http.requestFailed'),
     )
     const retryAfterSeconds = parseRetryAfter(error.response?.headers['retry-after'])
-    return new HttpError(
-      withRetryAfter(payload.message, status, retryAfterSeconds),
-      {
-        status,
-        code: payload.envelope?.code,
-        errorKey: payload.envelope?.error_key ?? undefined,
-        details: payload.envelope?.details,
-        request_id: payload.envelope?.request_id,
-        kind: axiosErrorKind(error, status),
-        cause: error,
-        retryAfterSeconds,
-        realtimeStatus: responseHeader(error.response?.headers, 'x-ryframe-realtime'),
-      },
-    )
+    return new HttpError(withRetryAfter(payload.message, status, retryAfterSeconds), {
+      status,
+      code: payload.envelope?.code,
+      errorKey: payload.envelope?.error_key ?? undefined,
+      details: payload.envelope?.details,
+      request_id: payload.envelope?.request_id,
+      kind: axiosErrorKind(error, status),
+      cause: error,
+      retryAfterSeconds,
+      realtimeStatus: responseHeader(error.response?.headers, 'x-ryframe-realtime'),
+    })
   }
   return new HttpError(
     error instanceof Error ? error.message : translate('shell.http.requestFailed'),
@@ -178,9 +171,8 @@ export function parseEnvelope<T>(response: AxiosResponse<ApiResponse<T>>): ApiRe
     })
     throw error
   }
-  const isSuccessfulStatus = response.status >= 200
-    && response.status < 300
-    && envelope.code === response.status
+  const isSuccessfulStatus =
+    response.status >= 200 && response.status < 300 && envelope.code === response.status
   if (!isSuccessfulStatus) {
     const error = new HttpError(
       translatedErrorMessage(envelope, translate('shell.http.requestFailed')),

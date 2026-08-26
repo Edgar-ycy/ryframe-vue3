@@ -6,10 +6,10 @@ const translate = (zhCN: string, _en: string) => zhCN
 
 describe('平面资源描述', () => {
   it('岗位资源保持强类型字段顺序和权限', () => {
-    const presentation = createPostPresentation(translate, value => `date:${value}`)
+    const presentation = createPostPresentation(translate, (value) => `date:${value}`)
 
-    expect(presentation.queryFields.map(field => field.key)).toEqual(['name', 'code', 'status'])
-    expect(presentation.columns.map(column => column.key)).toEqual([
+    expect(presentation.queryFields.map((field) => field.key)).toEqual(['name', 'code', 'status'])
+    expect(presentation.columns.map((column) => column.key)).toEqual([
       'id',
       'name',
       'code',
@@ -17,7 +17,7 @@ describe('平面资源描述', () => {
       'status',
       'created_at',
     ])
-    expect(presentation.formFields.map(field => field.key)).toEqual([
+    expect(presentation.formFields.map((field) => field.key)).toEqual([
       'name',
       'code',
       'sort',
@@ -43,7 +43,7 @@ describe('平面资源描述', () => {
     const presentation = createPostPresentation((_zhCN, en) => en, String)
 
     expect(presentation.labels.title).toBe('Post')
-    expect(presentation.queryFields.map(field => field.label)).toEqual([
+    expect(presentation.queryFields.map((field) => field.label)).toEqual([
       'Post name',
       'Post code',
       'Status',

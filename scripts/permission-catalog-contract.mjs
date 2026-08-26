@@ -15,8 +15,7 @@ export function requirePermissionCatalog(value, label) {
     return code
   })
   const canonical = [...new Set(codes)].sort()
-  if (canonical.length !== codes.length
-    || canonical.some((code, index) => code !== codes[index])) {
+  if (canonical.length !== codes.length || canonical.some((code, index) => code !== codes[index])) {
     throw new Error(`${label} 的权限目录必须按字典序排列且不重复`)
   }
   return Object.freeze(codes)

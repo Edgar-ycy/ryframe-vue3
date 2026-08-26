@@ -64,7 +64,7 @@ export function useScheduleManagement(t: Translate) {
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_SCHEDULES_RESOURCE,
     () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
-    async signal => {
+    async (signal) => {
       const params = normalizeQueryParams(activeQueryParams.value)
       const response = await listSchedules(params, signal)
       return response.data ?? emptyPageResponse<JobScheduleRecord>(params)
@@ -75,7 +75,7 @@ export function useScheduleManagement(t: Translate) {
     () => userStore.sessionStatus === 'authenticated',
     MONITOR_SCHEDULE_TARGETS_RESOURCE,
     () => ({ scope: 'catalog' }),
-    async signal => {
+    async (signal) => {
       const response = await listScheduleTargets(signal)
       return response.data ?? []
     },
@@ -86,11 +86,11 @@ export function useScheduleManagement(t: Translate) {
     () => userStore.tenantId,
     MONITOR_SCHEDULES_RESOURCE,
     {
-      mutationFn: payload => createSchedule(payload),
+      mutationFn: (payload) => createSchedule(payload),
       onSuccess: () => ElMessage.success(t('monitor.schedules.createSuccess')),
     },
   )
-  const updateMutation = useTenantMutation<unknown, { id: string, data: UpdateScheduleBody }>(
+  const updateMutation = useTenantMutation<unknown, { id: string; data: UpdateScheduleBody }>(
     () => userStore.tenantId,
     MONITOR_SCHEDULES_RESOURCE,
     {
@@ -98,13 +98,18 @@ export function useScheduleManagement(t: Translate) {
       onSuccess: () => ElMessage.success(t('monitor.schedules.updateSuccess')),
     },
   )
-  const statusMutation = useTenantMutation<unknown, { row: JobScheduleRecord, enabled: boolean }>(
+  const statusMutation = useTenantMutation<unknown, { row: JobScheduleRecord; enabled: boolean }>(
     () => userStore.tenantId,
     MONITOR_SCHEDULES_RESOURCE,
     {
-      mutationFn: ({ row, enabled }) => updateScheduleStatus(row.id, { enabled, version: row.version }),
+      mutationFn: ({ row, enabled }) =>
+        updateScheduleStatus(row.id, { enabled, version: row.version }),
       onSuccess: (_data, variables) => {
-        ElMessage.success(variables.enabled ? t('monitor.schedules.enableSuccess') : t('monitor.schedules.disableSuccess'))
+        ElMessage.success(
+          variables.enabled
+            ? t('monitor.schedules.enableSuccess')
+            : t('monitor.schedules.disableSuccess'),
+        )
       },
     },
   )
@@ -112,7 +117,7 @@ export function useScheduleManagement(t: Translate) {
     () => userStore.tenantId,
     MONITOR_SCHEDULES_RESOURCE,
     {
-      mutationFn: row => removeSchedule(row.id, { version: row.version }),
+      mutationFn: (row) => removeSchedule(row.id, { version: row.version }),
       onSuccess: () => ElMessage.success(t('monitor.schedules.deleteSuccess')),
     },
   )
@@ -133,21 +138,24 @@ export function useScheduleManagement(t: Translate) {
   const targetsError = targetsQuery.error
   const targetsLoaded = targetsQuery.isSuccess
   const formSaving = computed(() => createMutation.pending.value || updateMutation.pending.value)
-  const statusPendingId = computed(() => (
-    statusMutation.pending.value ? statusMutation.variables.value?.row.id ?? undefined : undefined
-  ))
-  const removePendingId = computed(() => (
-    removeMutation.pending.value ? removeMutation.variables.value?.id ?? undefined : undefined
-  ))
-  const runPendingId = computed(() => (
-    runMutation.pending.value ? runMutation.variables.value?.row.id ?? undefined : undefined
-  ))
-  const hasPendingWrite = computed(() => (
-    formSaving.value
-    || statusMutation.pending.value
-    || removeMutation.pending.value
-    || runMutation.pending.value
-  ))
+  const statusPendingId = computed(() =>
+    statusMutation.pending.value
+      ? (statusMutation.variables.value?.row.id ?? undefined)
+      : undefined,
+  )
+  const removePendingId = computed(() =>
+    removeMutation.pending.value ? (removeMutation.variables.value?.id ?? undefined) : undefined,
+  )
+  const runPendingId = computed(() =>
+    runMutation.pending.value ? (runMutation.variables.value?.row.id ?? undefined) : undefined,
+  )
+  const hasPendingWrite = computed(
+    () =>
+      formSaving.value ||
+      statusMutation.pending.value ||
+      removeMutation.pending.value ||
+      runMutation.pending.value,
+  )
   async function refresh(): Promise<void> {
     await Promise.all([
       schedulesQuery.refetch({ throwOnError: true }),
@@ -193,14 +201,15 @@ export function useScheduleManagement(t: Translate) {
     editingId.value = row.id
     try {
       const detail = await queryClient.fetchQuery<JobScheduleRecord>({
-        queryKey: tenantQueryKey(userStore.tenantId, MONITOR_SCHEDULE_DETAIL_RESOURCE, { id: row.id }),
+        queryKey: tenantQueryKey(userStore.tenantId, MONITOR_SCHEDULE_DETAIL_RESOURCE, {
+          id: row.id,
+        }),
         queryFn: async ({ signal }) => requireOperationData(await getSchedule(row.id, signal)),
         staleTime: 0,
       })
       editingSchedule.value = detail
       formVisible.value = true
-    }
-    finally {
+    } finally {
       editingId.value = undefined
     }
   }
@@ -219,12 +228,13 @@ export function useScheduleManagement(t: Translate) {
         const message = payload.enabled
           ? t('monitor.schedules.enableConfirm', { name: schedule.name })
           : t('monitor.schedules.disableConfirm', { name: schedule.name })
-        const confirmed = await confirmAction(message, t('monitor.schedules.statusConfirmTitle'), { type: 'warning' })
+        const confirmed = await confirmAction(message, t('monitor.schedules.statusConfirmTitle'), {
+          type: 'warning',
+        })
         if (!confirmed || formSaving.value) return
       }
       await updateMutation.mutateAsync({ id: schedule.id, data: payload })
-    }
-    else {
+    } else {
       await createMutation.mutateAsync(payload)
     }
     formVisible.value = false
@@ -236,7 +246,9 @@ export function useScheduleManagement(t: Translate) {
     const message = enabled
       ? t('monitor.schedules.enableConfirm', { name: row.name })
       : t('monitor.schedules.disableConfirm', { name: row.name })
-    const confirmed = await confirmAction(message, t('monitor.schedules.statusConfirmTitle'), { type: 'warning' })
+    const confirmed = await confirmAction(message, t('monitor.schedules.statusConfirmTitle'), {
+      type: 'warning',
+    })
     if (!confirmed || hasPendingWrite.value) return
     await statusMutation.mutateAsync({ row, enabled })
     await refreshScheduleState()
@@ -254,12 +266,10 @@ export function useScheduleManagement(t: Translate) {
     try {
       await runMutation.mutateAsync({ row, idempotencyKey })
       pendingRunKeys.delete(row.id)
-    }
-    catch (error) {
+    } catch (error) {
       if (shouldReuseIdempotencyKey(error)) {
         pendingRunKeys.set(row.id, idempotencyKey)
-      }
-      else {
+      } else {
         pendingRunKeys.delete(row.id)
       }
       throw error
@@ -300,11 +310,13 @@ export function useScheduleManagement(t: Translate) {
   function targetName(handlerKey: string): string {
     const labelKey = BUILT_IN_TARGET_LABELS[handlerKey]
     if (labelKey) return t(labelKey)
-    return targets.value?.find(target => target.handler_key === handlerKey)?.display_name ?? handlerKey
+    return (
+      targets.value?.find((target) => target.handler_key === handlerKey)?.display_name ?? handlerKey
+    )
   }
 
   function availableTargets(): ScheduleTargetRecord[] {
-    return (targets.value ?? []).filter(target => target.available)
+    return (targets.value ?? []).filter((target) => target.available)
   }
 
   return {

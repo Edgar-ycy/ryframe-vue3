@@ -9,10 +9,7 @@ import {
   parseTenantContextChanged,
   type MessageSocketProtocolError,
 } from './frameCodec'
-import {
-  isRealtimeServiceUnavailable,
-  reconnectDelayForError,
-} from './retryPolicy'
+import { isRealtimeServiceUnavailable, reconnectDelayForError } from './retryPolicy'
 
 const SOCKET_CONNECTING = 0
 const SOCKET_OPEN = 1
@@ -100,18 +97,15 @@ export class MessageSocket {
     try {
       const ticket = await this.options.requestTicket()
       if (!this.active || generation !== this.generation) return
-      const socket = (this.options.createSocket ?? createBrowserSocket)(buildMessageSocketUrl(
-        ticket,
-        this.options.apiBaseUrl,
-        this.options.origin,
-      ))
+      const socket = (this.options.createSocket ?? createBrowserSocket)(
+        buildMessageSocketUrl(ticket, this.options.apiBaseUrl, this.options.origin),
+      )
       if (!this.active || generation !== this.generation) {
         socket.close(1000, '已失效的消息连接')
         return
       }
       this.attachSocket(socket, generation)
-    }
-    catch (error) {
+    } catch (error) {
       if (this.active && generation === this.generation) this.scheduleReconnect(error)
     }
   }
@@ -127,7 +121,8 @@ export class MessageSocket {
     socket.onmessage = (event) => this.handleMessage(socket, generation, event.data)
     socket.onerror = () => {
       if (!this.isCurrent(socket, generation)) return
-      if (socket.readyState === SOCKET_OPEN || socket.readyState === SOCKET_CONNECTING) socket.close()
+      if (socket.readyState === SOCKET_OPEN || socket.readyState === SOCKET_CONNECTING)
+        socket.close()
       else this.scheduleReconnect()
     }
     socket.onclose = () => {
@@ -170,8 +165,7 @@ export class MessageSocket {
     if (degraded) {
       this.reconnectAttempt = 0
       this.setState('degraded')
-    }
-    else {
+    } else {
       this.reconnectAttempt += 1
       this.setState('retrying')
     }

@@ -29,10 +29,7 @@ function removeAttribute(el: HTMLElement, name: string): void {
 
 function updateVisibility(el: HTMLElement, state: PermissionDirectiveState): void {
   const userStore = useUserStore()
-  const allowed = hasExecutablePermission(
-    state.value,
-    userStore.permissions,
-  )
+  const allowed = hasExecutablePermission(state.value, userStore.permissions)
   const controlled = el as HTMLElement & { inert?: boolean }
 
   if (allowed) {
@@ -55,10 +52,10 @@ function hasExecutablePermission(
 ): boolean {
   if (!required || required.length === 0) return true
   const values = Array.isArray(required) ? required : [required]
-  return values.some(permission => (
-    hasPermission(permissions, permission)
-    && canExecuteFeaturePermission(permission)
-  ))
+  return values.some(
+    (permission) =>
+      hasPermission(permissions, permission) && canExecuteFeaturePermission(permission),
+  )
 }
 
 const permissionDirective: Directive<HTMLElement, PermissionValue> = {
@@ -74,14 +71,12 @@ const permissionDirective: Directive<HTMLElement, PermissionValue> = {
       unsubscribeUser: () => undefined,
       unsubscribeTenantContext: () => undefined,
     }
-    state.unsubscribeUser = userStore.$subscribe(
-      () => updateVisibility(el, state),
-      { flush: 'sync' },
-    )
-    state.unsubscribeTenantContext = tenantContext.$subscribe(
-      () => updateVisibility(el, state),
-      { flush: 'sync' },
-    )
+    state.unsubscribeUser = userStore.$subscribe(() => updateVisibility(el, state), {
+      flush: 'sync',
+    })
+    state.unsubscribeTenantContext = tenantContext.$subscribe(() => updateVisibility(el, state), {
+      flush: 'sync',
+    })
     states.set(el, state)
     updateVisibility(el, state)
   },

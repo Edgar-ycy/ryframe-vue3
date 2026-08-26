@@ -18,13 +18,15 @@ export function withRouteComponentName(
 
   return () => {
     if (!namedComponent) {
-      const loading = load().then(({ default: component }) => defineComponent({
-        name,
-        inheritAttrs: false,
-        setup(_props, { attrs, slots }) {
-          return () => h(component, attrs, slots)
-        },
-      }))
+      const loading = load().then(({ default: component }) =>
+        defineComponent({
+          name,
+          inheritAttrs: false,
+          setup(_props, { attrs, slots }) {
+            return () => h(component, attrs, slots)
+          },
+        }),
+      )
       namedComponent = loading
       void loading.catch(() => {
         if (namedComponent === loading) namedComponent = undefined

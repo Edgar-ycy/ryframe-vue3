@@ -43,7 +43,7 @@ function randomIdentifier(): string | undefined {
     if (typeof value === 'string' && value) return value
   }
   const values = crypto.getRandomValues(new Uint32Array(4))
-  return [...values].map(value => value.toString(16).padStart(8, '0')).join('')
+  return [...values].map((value) => value.toString(16).padStart(8, '0')).join('')
 }
 
 const sourceId = randomIdentifier()
@@ -60,11 +60,12 @@ let latestSessionOperationIsLocal = false
 export function installSessionChannel(nextHandlers: SessionChannelHandlers): void {
   handlers = nextHandlers
   if (
-    !sourceId
-    || channel
-    || typeof window === 'undefined'
-    || typeof BroadcastChannel === 'undefined'
-  ) return
+    !sourceId ||
+    channel ||
+    typeof window === 'undefined' ||
+    typeof BroadcastChannel === 'undefined'
+  )
+    return
 
   channel = new BroadcastChannel(CHANNEL_NAME)
   channel.addEventListener('message', (event) => {
@@ -82,7 +83,7 @@ function handleSessionMessage(message: SessionMessage): void {
     if (!matchesCurrentRemoteRefresh(message)) return
     remoteRefreshOperation!.pending = false
     handlers?.onAuthenticated(message.accessToken, message.sessionContext)
-    settleRemoteRefreshWaiters(message.operationId, waiter => waiter.resolve(message.accessToken))
+    settleRemoteRefreshWaiters(message.operationId, (waiter) => waiter.resolve(message.accessToken))
     return
   }
   if (message.type === 'refresh-failed') {
@@ -93,7 +94,7 @@ function handleSessionMessage(message: SessionMessage): void {
       status: message.status,
       kind: 'http',
     })
-    settleRemoteRefreshWaiters(message.operationId, waiter => waiter.reject(error))
+    settleRemoteRefreshWaiters(message.operationId, (waiter) => waiter.reject(error))
     return
   }
   if (message.type === 'logout') {
@@ -106,9 +107,7 @@ function handleSessionMessage(message: SessionMessage): void {
   }
 }
 
-function startRemoteRefresh(
-  message: Extract<SessionMessage, { type: 'refresh-start' }>,
-): void {
+function startRemoteRefresh(message: Extract<SessionMessage, { type: 'refresh-start' }>): void {
   if (message.startedAt <= latestLogoutAt || !isNewerSessionOperation(message)) return
 
   latestSessionOperationAt = Math.max(latestSessionOperationAt, message.startedAt)
@@ -140,16 +139,17 @@ function matchesCurrentRemoteRefresh(
 ): boolean {
   const current = remoteRefreshOperation
   if (
-    !current?.pending
-    || current.operationId !== message.operationId
-    || current.source !== message.source
-    || current.startedAt !== message.startedAt
-    || message.startedAt <= latestLogoutAt
-    || handlers?.isTerminating()
-    || latestSessionOperationIsLocal
-    || latestSessionOperationAt !== current.startedAt
-    || latestSessionOperationId !== current.operationId
-  ) return false
+    !current?.pending ||
+    current.operationId !== message.operationId ||
+    current.source !== message.source ||
+    current.startedAt !== message.startedAt ||
+    message.startedAt <= latestLogoutAt ||
+    handlers?.isTerminating() ||
+    latestSessionOperationIsLocal ||
+    latestSessionOperationAt !== current.startedAt ||
+    latestSessionOperationId !== current.operationId
+  )
+    return false
 
   if (current.expiresAt <= Date.now()) {
     current.pending = false
@@ -177,17 +177,23 @@ function scheduleRemoteRefreshWaiter(
   if (waiter.timeoutId !== undefined) clearTimeout(waiter.timeoutId)
   waiter.operationId = operation.operationId
   const remaining = operation.expiresAt - Date.now()
-  waiter.timeoutId = window.setTimeout(() => {
-    if (!remoteRefreshWaiters.delete(waiter)) return
-    if (
-      remoteRefreshOperation?.operationId === waiter.operationId
-      && remoteRefreshOperation.pending
-    ) remoteRefreshOperation.pending = false
-    waiter.reject(new HttpError(translate('shell.session.remoteRefreshTimeout'), {
-      status: 409,
-      kind: 'timeout',
-    }))
-  }, Math.max(remaining, 0))
+  waiter.timeoutId = window.setTimeout(
+    () => {
+      if (!remoteRefreshWaiters.delete(waiter)) return
+      if (
+        remoteRefreshOperation?.operationId === waiter.operationId &&
+        remoteRefreshOperation.pending
+      )
+        remoteRefreshOperation.pending = false
+      waiter.reject(
+        new HttpError(translate('shell.session.remoteRefreshTimeout'), {
+          status: 409,
+          kind: 'timeout',
+        }),
+      )
+    },
+    Math.max(remaining, 0),
+  )
 }
 
 export function getRemoteRefreshOperation(): RemoteRefreshOperation | undefined {
@@ -197,10 +203,12 @@ export function getRemoteRefreshOperation(): RemoteRefreshOperation | undefined 
 export function waitForRemoteRefresh(operation: RemoteRefreshOperation): Promise<string> {
   if (!operation.pending || operation.expiresAt <= Date.now()) {
     operation.pending = false
-    return Promise.reject(new HttpError(translate('shell.session.remoteRefreshFinished'), {
-      status: 409,
-      kind: 'http',
-    }))
+    return Promise.reject(
+      new HttpError(translate('shell.session.remoteRefreshFinished'), {
+        status: 409,
+        kind: 'http',
+      }),
+    )
   }
   return new Promise<string>((resolve, reject) => {
     const waiter: RemoteRefreshWaiter = {
@@ -214,16 +222,10 @@ export function waitForRemoteRefresh(operation: RemoteRefreshOperation): Promise
 }
 
 export function startLocalRefreshOperation(): RefreshOperation {
-  latestSessionOperationAt = Math.max(
-    Date.now(),
-    latestLogoutAt + 1,
-    latestSessionOperationAt + 1,
-  )
+  latestSessionOperationAt = Math.max(Date.now(), latestLogoutAt + 1, latestSessionOperationAt + 1)
   const startedAt = latestSessionOperationAt
   const nonce = randomIdentifier()
-  const operationId = sourceId && nonce
-    ? `${sourceId}:${startedAt}:${nonce}`
-    : `local:${startedAt}`
+  const operationId = sourceId && nonce ? `${sourceId}:${startedAt}:${nonce}` : `local:${startedAt}`
   latestSessionOperationId = operationId
   latestSessionOperationIsLocal = true
   if (remoteRefreshOperation?.pending) remoteRefreshOperation.pending = false
@@ -244,10 +246,7 @@ export function broadcastAuthenticated(
   })
 }
 
-export function broadcastRefreshFailed(
-  operation: RefreshOperation,
-  status?: number,
-): void {
+export function broadcastRefreshFailed(operation: RefreshOperation, status?: number): void {
   postMessage({ type: 'refresh-failed', ...operation, status })
 }
 
@@ -259,8 +258,7 @@ function postMessage(message: SessionOutboundMessage): void {
   if (!sourceId) return
   try {
     channel?.postMessage({ ...message, source: sourceId })
-  }
-  catch {
+  } catch {
     // 跨标签页协调只是优化，不能让本地已经成功的会话操作失败。
   }
 }

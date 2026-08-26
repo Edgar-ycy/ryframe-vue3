@@ -10,7 +10,7 @@ export const featureManifest = defineFeatureManifest({
   path: '/system/service-accounts',
   page: () => import('@/views/system/service-accounts/index.vue'),
   catalogs: [
-    () => import('@/i18n/catalog/service-accounts').then(module => module.messageCatalog),
+    () => import('@/i18n/catalog/service-accounts').then((module) => module.messageCatalog),
   ],
   allowedVariants: ['default'],
   planConfigEditor: () => import('./planConfigEditor.vue'),

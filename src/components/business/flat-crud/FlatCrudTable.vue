@@ -83,6 +83,6 @@ function cellValue(record: TRecord, column: FlatCrudColumn<TRecord>): FlatCrudSc
 }
 
 function optionLabel(options: readonly FlatCrudOption[], value: FlatCrudScalar): string {
-  return options.find(option => option.value === value)?.label ?? String(value ?? '')
+  return options.find((option) => option.value === value)?.label ?? String(value ?? '')
 }
 </script>

@@ -91,10 +91,7 @@ export function completePasswordReset(data: CompletePasswordResetParams) {
 // ========== 验证码 ==========
 
 /** 生成指定租户的验证码 */
-export function getCaptcha(
-  tenantId: string,
-  params?: OperationQuery<'get_auth_captcha_generate'>,
-) {
+export function getCaptcha(tenantId: string, params?: OperationQuery<'get_auth_captcha_generate'>) {
   return requestOperation(get_auth_captcha_generate, {
     params,
     headers: { 'X-Tenant-Id': tenantId },

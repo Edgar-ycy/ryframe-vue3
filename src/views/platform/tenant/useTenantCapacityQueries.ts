@@ -10,10 +10,7 @@ import { requireOperationData } from '@/shared/http/client'
 import { queryClient, tenantQueryKey } from '@/shared/query/client'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
-import {
-  TENANT_CAPACITY_DETAIL_RESOURCE,
-  TENANT_CAPACITY_PAGE_RESOURCE,
-} from './queryResources'
+import { TENANT_CAPACITY_DETAIL_RESOURCE, TENANT_CAPACITY_PAGE_RESOURCE } from './queryResources'
 import {
   buildTenantCapacityPageQuery,
   emptyTenantCapacityFilters,
@@ -37,12 +34,13 @@ export function useTenantCapacityQueries() {
   const selectedTenantId = ref<string | null>(null)
   const canViewUsage = computed(() => hasPermission('tenant:usage:list'))
   const canListTenants = computed(() => hasPermission('tenant:list'))
-  const queryEnabled = computed(() => (
-    pageActive.value
-    && userStore.sessionStatus === 'authenticated'
-    && userStore.tenantId === 'system'
-    && canListTenants.value
-  ))
+  const queryEnabled = computed(
+    () =>
+      pageActive.value &&
+      userStore.sessionStatus === 'authenticated' &&
+      userStore.tenantId === 'system' &&
+      canListTenants.value,
+  )
 
   const tenantPageQuery = useTenantQuery<TenantCapacityPage>(
     () => userStore.tenantId,
@@ -58,15 +56,18 @@ export function useTenantCapacityQueries() {
         canViewUsage.value,
       ),
     }),
-    async signal => requireOperationData(await listTenantCapacities(
-      buildTenantCapacityPageQuery(
-        appliedFilters.value,
-        page.value,
-        pageSize.value,
-        canViewUsage.value,
+    async (signal) =>
+      requireOperationData(
+        await listTenantCapacities(
+          buildTenantCapacityPageQuery(
+            appliedFilters.value,
+            page.value,
+            pageSize.value,
+            canViewUsage.value,
+          ),
+          signal,
+        ),
       ),
-      signal,
-    )),
     {
       staleTime: 0,
       refetchInterval: false,
@@ -84,7 +85,7 @@ export function useTenantCapacityQueries() {
       tenant_id: selectedTenantId.value,
       include_usage: canViewUsage.value,
     }),
-    async signal => {
+    async (signal) => {
       const tenantId = selectedTenantId.value
       if (!tenantId) throw new Error('租户详情查询缺少租户标识')
       return requireOperationData(await getTenantCapacity(tenantId, signal))

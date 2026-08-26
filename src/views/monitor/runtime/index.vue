@@ -1,6 +1,13 @@
 <template>
   <div v-loading="loading && !runtime" class="page-container monitor-page">
-    <el-alert v-if="error?.message" :title="error?.message ?? ''" type="error" show-icon :closable="false" class="monitor-page__alert" />
+    <el-alert
+      v-if="error?.message"
+      :title="error?.message ?? ''"
+      type="error"
+      show-icon
+      :closable="false"
+      class="monitor-page__alert"
+    />
     <div class="monitor-page__actions">
       <el-button v-perm="'monitor:runtime:list'" :loading="loading" @click="fetchRuntime">
         <el-icon><Refresh /></el-icon>
@@ -15,13 +22,17 @@
             <el-icon><Coin /></el-icon>
             <span>{{ t('monitor.runtime.database') }}</span>
           </div>
-          <div class="monitor-metric-value">{{ runtime?.database.driver?.toUpperCase() || '—' }}</div>
+          <div class="monitor-metric-value">
+            {{ runtime?.database.driver?.toUpperCase() || '—' }}
+          </div>
           <div class="monitor-metric-footer">
             <el-tag :type="databaseTagType" size="small">{{ databaseStatusText }}</el-tag>
             <span>
-              {{ runtime
-                ? `${t('monitor.runtime.replicaCount', { count: runtime.database.replica_count })} · ${t('monitor.runtime.sourceCount', { count: runtime.database.source_count })}`
-                : '—' }}
+              {{
+                runtime
+                  ? `${t('monitor.runtime.replicaCount', { count: runtime.database.replica_count })} · ${t('monitor.runtime.sourceCount', { count: runtime.database.source_count })}`
+                  : '—'
+              }}
             </span>
           </div>
         </el-card>
@@ -43,7 +54,9 @@
             <el-icon><FolderOpened /></el-icon>
             <span>{{ t('monitor.runtime.objectStorage') }}</span>
           </div>
-          <div class="monitor-metric-value">{{ runtime?.object_storage.backend?.toUpperCase() || '—' }}</div>
+          <div class="monitor-metric-value">
+            {{ runtime?.object_storage.backend?.toUpperCase() || '—' }}
+          </div>
           <div class="monitor-metric-footer">
             <el-tag :type="storageTagType" size="small">{{ storageStatusText }}</el-tag>
             <span class="monitor-metric-endpoint" :title="storageEndpointTitle">
@@ -95,7 +108,9 @@
         <el-table-column :label="t('monitor.runtime.status')" width="120">
           <template #default="{ row }">
             <el-tag :type="row.connected ? 'success' : 'danger'">
-              {{ row.connected ? t('monitor.runtime.connected') : t('monitor.runtime.disconnected') }}
+              {{
+                row.connected ? t('monitor.runtime.connected') : t('monitor.runtime.disconnected')
+              }}
             </el-tag>
           </template>
         </el-table-column>
@@ -105,7 +120,15 @@
 </template>
 
 <script setup lang="ts">
-import { Coin, Connection, FolderOpened, Operation, Refresh, Switch, Timer } from '@element-plus/icons-vue'
+import {
+  Coin,
+  Connection,
+  FolderOpened,
+  Operation,
+  Refresh,
+  Switch,
+  Timer,
+} from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { getRuntimeStatus, type RuntimeStatus } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
@@ -120,7 +143,7 @@ const runtimeQuery = useTenantQuery<RuntimeStatus | null>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-runtime',
   () => ({ scope: 'status' }),
-  async signal => {
+  async (signal) => {
     const response = await getRuntimeStatus(signal)
     return response.data ?? null
   },
@@ -143,12 +166,12 @@ const databaseNodes = computed<DatabaseNodeRow[]>(() => {
       role: t('monitor.runtime.primary'),
       connected: runtime.value.database.primary_connected,
     },
-    ...runtime.value.database.replicas.map(replica => ({
+    ...runtime.value.database.replicas.map((replica) => ({
       name: replica.name,
       role: t('monitor.runtime.readReplica'),
       connected: replica.connected,
     })),
-    ...runtime.value.database.sources.map(source => ({
+    ...runtime.value.database.sources.map((source) => ({
       name: source.name,
       role: t('monitor.runtime.businessDataSource'),
       connected: source.connected,
@@ -193,7 +216,8 @@ const storageEndpointTitle = computed(() => {
 
 const readPolicyText = computed(() => {
   if (!runtime.value) return '—'
-  if (runtime.value?.database.read_policy === 'round_robin') return t('monitor.runtime.readReplicaRoundRobin')
+  if (runtime.value?.database.read_policy === 'round_robin')
+    return t('monitor.runtime.readReplicaRoundRobin')
   return t('monitor.runtime.primaryRead')
 })
 
@@ -222,7 +246,9 @@ const redisTagType = computed(() => {
 const redisStatusText = computed(() => {
   if (!runtime.value) return '—'
   if (!runtime.value?.redis.configured) return t('monitor.runtime.unconfigured')
-  return runtime.value.redis.connected ? t('monitor.runtime.connected') : t('monitor.runtime.disconnected')
+  return runtime.value.redis.connected
+    ? t('monitor.runtime.connected')
+    : t('monitor.runtime.disconnected')
 })
 
 function jobModeText(): string {

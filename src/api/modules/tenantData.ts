@@ -9,39 +9,26 @@ import {
   post_platform_tenants_by_tenant_id_data_migration_previews,
   post_platform_tenants_by_tenant_id_data_migrations,
 } from '@/api/generated/operations'
-import type {
-  OperationData,
-  OperationJsonBody,
-  OperationQuery,
-} from '@/api/contract'
+import type { OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 
-export type TenantDataPlacement = OperationData<
-  'get_platform_tenants_by_tenant_id_data_placement'
->
+export type TenantDataPlacement = OperationData<'get_platform_tenants_by_tenant_id_data_placement'>
 export type TenantDataPlacementState = TenantDataPlacement['state']
-export type TenantDataMigration = OperationData<
-  'get_platform_tenant_data_migrations_by_migration_id'
->
+export type TenantDataMigration =
+  OperationData<'get_platform_tenant_data_migrations_by_migration_id'>
 export type TenantDataMigrationState = TenantDataMigration['state']
 export type TenantDataMigrationItem = TenantDataMigration['items'][number]
-export type TenantDataMigrationPreviewInput = OperationJsonBody<
-  'post_platform_tenants_by_tenant_id_data_migration_previews'
->
-export type TenantDataMigrationPreview = OperationData<
-  'post_platform_tenants_by_tenant_id_data_migration_previews'
->
-export type CreateTenantDataMigrationInput = OperationJsonBody<
-  'post_platform_tenants_by_tenant_id_data_migrations'
->
-export type TenantDataBackupPoint = OperationData<
-  'get_platform_data_targets_by_target_key_backup_points'
->[number]
-export type TenantDataMigrationListQuery = OperationQuery<
-  'get_platform_tenants_by_tenant_id_data_migrations'
->
-export type TenantDataBackupPointQuery = OperationQuery<
-  'get_platform_data_targets_by_target_key_backup_points'
->
+export type TenantDataMigrationPreviewInput =
+  OperationJsonBody<'post_platform_tenants_by_tenant_id_data_migration_previews'>
+export type TenantDataMigrationPreview =
+  OperationData<'post_platform_tenants_by_tenant_id_data_migration_previews'>
+export type CreateTenantDataMigrationInput =
+  OperationJsonBody<'post_platform_tenants_by_tenant_id_data_migrations'>
+export type TenantDataBackupPoint =
+  OperationData<'get_platform_data_targets_by_target_key_backup_points'>[number]
+export type TenantDataMigrationListQuery =
+  OperationQuery<'get_platform_tenants_by_tenant_id_data_migrations'>
+export type TenantDataBackupPointQuery =
+  OperationQuery<'get_platform_data_targets_by_target_key_backup_points'>
 
 export function getTenantDataPlacement(tenantId: string, signal?: AbortSignal) {
   return requestOperation(get_platform_tenants_by_tenant_id_data_placement, {

@@ -7,15 +7,16 @@ const protectedDownloadPath = '/common/file/download'
 const fallbackOrigin = 'http://ryframe.local'
 
 /** 解析私有存储桶对象返回的稳定下载定位地址。 */
-export function parseProtectedFileUrl(value: string | null | undefined): ProtectedFileLocation | null {
+export function parseProtectedFileUrl(
+  value: string | null | undefined,
+): ProtectedFileLocation | null {
   const candidate = value?.trim()
   if (!candidate) return null
 
   let url: URL
   try {
     url = new URL(candidate, fallbackOrigin)
-  }
-  catch {
+  } catch {
     return null
   }
 

@@ -74,7 +74,8 @@ export const accountMessages = {
       tenantStatusConfirmTitle: '确认修改租户状态',
       tenantStatusConfirm: '确认将租户“{name}”设为“{status}”吗？这会立即影响该租户的登录和访问。',
       enterTenantId: '请输入租户标识',
-      tenantIdInvalid: '租户标识必须为 2–64 位 ASCII 字母、数字、下划线或连字符，且首尾必须是字母或数字',
+      tenantIdInvalid:
+        '租户标识必须为 2–64 位 ASCII 字母、数字、下划线或连字符，且首尾必须是字母或数字',
       enterTenantName: '请输入名称',
       enterAdminUsername: '请输入管理员账号',
       enterInitialPassword: '请输入初始密码',
@@ -93,7 +94,8 @@ export const accountMessages = {
       retry: 'Retry',
       accessDenied: 'Sorry, you do not have permission to access this page.',
       pageNotFound: 'Sorry, the page you requested does not exist.',
-      authenticationUnavailable: 'Authentication is temporarily unavailable. Please try again later.',
+      authenticationUnavailable:
+        'Authentication is temporarily unavailable. Please try again later.',
       featureUnavailableTitle: 'Feature unavailable',
       featureUnavailable: 'This feature is unavailable for the current tenant or environment.',
       redirecting: 'Redirecting...',
@@ -104,7 +106,8 @@ export const accountMessages = {
       captcha: 'Verification code',
       captchaLoading: 'Loading...',
       captchaLoadFailed: 'Unable to load the verification code. Click the image to retry.',
-      captchaHint: 'The code is case-insensitive and expires after one submission. Click the image to refresh it.',
+      captchaHint:
+        'The code is case-insensitive and expires after one submission. Click the image to refresh it.',
       captchaRefreshed: 'The verification code has been refreshed. Enter the new code.',
       refreshCaptcha: 'Refresh verification code',
       signIn: 'Sign in',
@@ -160,9 +163,11 @@ export const accountMessages = {
       systemTenantCannotDisable: 'The system tenant cannot be disabled',
       tenantStatusUpdated: 'Status updated',
       tenantStatusConfirmTitle: 'Confirm tenant status change',
-      tenantStatusConfirm: 'Set tenant “{name}” to “{status}”? This immediately affects sign-in and access for that tenant.',
+      tenantStatusConfirm:
+        'Set tenant “{name}” to “{status}”? This immediately affects sign-in and access for that tenant.',
       enterTenantId: 'Enter a tenant ID',
-      tenantIdInvalid: 'The tenant ID must use 2–64 ASCII letters, digits, underscores, or hyphens, and begin and end with a letter or digit',
+      tenantIdInvalid:
+        'The tenant ID must use 2–64 ASCII letters, digits, underscores, or hyphens, and begin and end with a letter or digit',
       enterTenantName: 'Enter a name',
       enterAdminUsername: 'Enter an administrator username',
       enterInitialPassword: 'Enter an initial password',

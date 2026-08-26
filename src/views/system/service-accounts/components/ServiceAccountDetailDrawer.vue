@@ -12,10 +12,14 @@
         <header class="account-heading">
           <div>
             <h2>{{ account.name }}</h2>
-            <p><code>{{ account.code }}</code></p>
+            <p>
+              <code>{{ account.code }}</code>
+            </p>
           </div>
           <el-tag :type="account.status === '1' ? 'success' : 'info'">
-            {{ account.status === '1' ? t('serviceAccounts.enabled') : t('serviceAccounts.disabled') }}
+            {{
+              account.status === '1' ? t('serviceAccounts.enabled') : t('serviceAccounts.disabled')
+            }}
           </el-tag>
         </header>
 
@@ -41,11 +45,7 @@
         </el-descriptions>
 
         <el-tabs v-model="activeTab" class="detail-tabs" @tab-change="handleTabChange">
-          <el-tab-pane
-            v-if="canManageRoles"
-            :label="t('serviceAccounts.rolesTab')"
-            name="roles"
-          >
+          <el-tab-pane v-if="canManageRoles" :label="t('serviceAccounts.rolesTab')" name="roles">
             <el-alert
               :title="t('serviceAccounts.rolesHint')"
               type="info"
@@ -114,7 +114,11 @@
               :description="t('serviceAccounts.noCredentials')"
             />
             <div v-else class="credential-list">
-              <article v-for="credential in credentials" :key="credential.id" class="credential-card">
+              <article
+                v-for="credential in credentials"
+                :key="credential.id"
+                class="credential-card"
+              >
                 <div class="credential-card__header">
                   <div>
                     <strong>{{ credential.label }}</strong>
@@ -131,7 +135,13 @@
                   </div>
                   <div>
                     <dt>{{ t('serviceAccounts.lastUsedAt') }}</dt>
-                    <dd>{{ credential.last_used_at ? formatLocalizedDate(credential.last_used_at) : t('serviceAccounts.notAvailable') }}</dd>
+                    <dd>
+                      {{
+                        credential.last_used_at
+                          ? formatLocalizedDate(credential.last_used_at)
+                          : t('serviceAccounts.notAvailable')
+                      }}
+                    </dd>
                   </div>
                   <div>
                     <dt>{{ t('serviceAccounts.createdAt') }}</dt>
@@ -198,7 +208,7 @@ let roleSearchGeneration = 0
 let roleIdsSnapshot = ''
 let roleSearchController: AbortController | undefined
 
-const standardRoleOptions = computed(() => roleOptions.value.filter(option => !option.disabled))
+const standardRoleOptions = computed(() => roleOptions.value.filter((option) => !option.disabled))
 
 function initializeTab(): void {
   if (props.canManageRoles) activeTab.value = 'roles'
@@ -249,8 +259,7 @@ async function searchRoles(value: string): Promise<void> {
     if (!controller.signal.aborted && generation === roleSearchGeneration) {
       roleOptions.value = response.data?.items ?? []
     }
-  }
-  finally {
+  } finally {
     if (generation === roleSearchGeneration) {
       rolesLoading.value = false
       roleSearchController = undefined

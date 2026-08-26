@@ -7,7 +7,11 @@
           <p>{{ t('profile.serviceDelegations.description') }}</p>
         </div>
         <div class="card-heading__actions">
-          <el-button :loading="loading" :disabled="loading || createPending" @click="emit('refresh')">
+          <el-button
+            :loading="loading"
+            :disabled="loading || createPending"
+            @click="emit('refresh')"
+          >
             {{ t('profile.serviceDelegations.refresh') }}
           </el-button>
           <el-button
@@ -40,9 +44,16 @@
       />
 
       <template v-else-if="delegations.length > 0">
-        <div class="delegations-table" role="region" :aria-label="t('profile.serviceDelegations.title')">
+        <div
+          class="delegations-table"
+          role="region"
+          :aria-label="t('profile.serviceDelegations.title')"
+        >
           <el-table :data="delegations" row-key="id">
-            <el-table-column :label="t('profile.serviceDelegations.serviceAccount')" min-width="190">
+            <el-table-column
+              :label="t('profile.serviceDelegations.serviceAccount')"
+              min-width="190"
+            >
               <template #default="{ row }">{{ accountLabel(row.account_id) }}</template>
             </el-table-column>
             <el-table-column :label="t('profile.serviceDelegations.capabilities')" min-width="260">
@@ -54,7 +65,12 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="reason" :label="t('profile.serviceDelegations.reason')" min-width="190" show-overflow-tooltip />
+            <el-table-column
+              prop="reason"
+              :label="t('profile.serviceDelegations.reason')"
+              min-width="190"
+              show-overflow-tooltip
+            />
             <el-table-column :label="t('profile.serviceDelegations.status')" width="100">
               <template #default="{ row }">
                 <el-tag :type="statusType(row)">{{ statusLabel(row) }}</el-tag>
@@ -63,7 +79,11 @@
             <el-table-column :label="t('profile.serviceDelegations.expiresAt')" min-width="180">
               <template #default="{ row }">{{ formatLocalizedDate(row.expires_at) }}</template>
             </el-table-column>
-            <el-table-column :label="t('profile.serviceDelegations.actions')" width="100" fixed="right">
+            <el-table-column
+              :label="t('profile.serviceDelegations.actions')"
+              width="100"
+              fixed="right"
+            >
               <template #default="{ row }">
                 <el-button
                   v-if="canRevoke(row)"
@@ -93,9 +113,18 @@
               </el-tag>
             </div>
             <dl>
-              <div><dt>{{ t('profile.serviceDelegations.effectiveAt') }}</dt><dd>{{ formatLocalizedDate(delegation.not_before) }}</dd></div>
-              <div><dt>{{ t('profile.serviceDelegations.expiresAt') }}</dt><dd>{{ formatLocalizedDate(delegation.expires_at) }}</dd></div>
-              <div><dt>{{ t('profile.serviceDelegations.createdAt') }}</dt><dd>{{ formatLocalizedDate(delegation.created_at) }}</dd></div>
+              <div>
+                <dt>{{ t('profile.serviceDelegations.effectiveAt') }}</dt>
+                <dd>{{ formatLocalizedDate(delegation.not_before) }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('profile.serviceDelegations.expiresAt') }}</dt>
+                <dd>{{ formatLocalizedDate(delegation.expires_at) }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('profile.serviceDelegations.createdAt') }}</dt>
+                <dd>{{ formatLocalizedDate(delegation.created_at) }}</dd>
+              </div>
             </dl>
             <el-button
               v-if="canRevoke(delegation)"
@@ -173,7 +202,7 @@ let observedSensitiveGeneration = props.sensitiveMaterialGeneration ?? 0
 let createIdentitySnapshot: string | undefined
 
 function accountLabel(accountId: string): string {
-  const target = props.targets.find(item => item.account_id === accountId)
+  const target = props.targets.find((item) => item.account_id === accountId)
   return target ? `${target.account_name} (${target.account_code})` : accountId
 }
 
@@ -204,7 +233,7 @@ function openCreateDialog(): void {
 }
 
 function createDelegation(input: CreateProfileServiceDelegationInput): void {
-  emit('create', input, createIdentitySnapshot, token => {
+  emit('create', input, createIdentitySnapshot, (token) => {
     createDialogVisible.value = false
     delegationToken.value = token
     nextTick(() => {

@@ -19,11 +19,7 @@
         </div>
       </template>
 
-      <el-tabs
-        v-model="activeTab"
-        class="management-tabs"
-        @tab-change="handleTabChange"
-      >
+      <el-tabs v-model="activeTab" class="management-tabs" @tab-change="handleTabChange">
         <el-tab-pane
           v-if="canListAccounts"
           :label="t('serviceAccounts.accountsTab')"
@@ -70,11 +66,7 @@
           />
         </el-tab-pane>
 
-        <el-tab-pane
-          v-if="canListAudits"
-          :label="t('serviceAccounts.auditsTab')"
-          name="audits"
-        >
+        <el-tab-pane v-if="canListAudits" :label="t('serviceAccounts.auditsTab')" name="audits">
           <ServiceAccessAuditsPanel
             :page="auditsQueryParams.page ?? 1"
             :page-size="auditsQueryParams.page_size ?? 20"
@@ -261,8 +253,7 @@ async function loadDepartmentTree(): Promise<void> {
     if (!controller.signal.aborted && identityMatches(guard)) {
       departmentTree.value = response.data ?? []
     }
-  }
-  finally {
+  } finally {
     if (departmentTreeController === controller) departmentTreeController = undefined
   }
 }
@@ -281,7 +272,9 @@ function openEditDialog(account: ServiceAccount): void {
   if (canListDepartments.value && departmentTree.value.length === 0) void loadDepartmentTree()
 }
 
-async function submitAccount(input: CreateServiceAccountInput | UpdateServiceAccountInput): Promise<void> {
+async function submitAccount(
+  input: CreateServiceAccountInput | UpdateServiceAccountInput,
+): Promise<void> {
   const guard = accountFormIdentity.value
   if (!identityMatches(guard)) return
   const account = await saveAccount(input, editingAccount.value?.id, guard)
@@ -311,15 +304,19 @@ async function confirmStatusChange(account: ServiceAccount): Promise<void> {
       status: t(nextStatus === 'enabled' ? 'serviceAccounts.enabled' : 'serviceAccounts.disabled'),
     }),
     t('serviceAccounts.statusConfirmTitle'),
-    { type: 'warning', confirmButtonText: t(nextStatus === 'enabled' ? 'serviceAccounts.enable' : 'serviceAccounts.disable') },
+    {
+      type: 'warning',
+      confirmButtonText: t(
+        nextStatus === 'enabled' ? 'serviceAccounts.enable' : 'serviceAccounts.disable',
+      ),
+    },
   )
   if (!confirmed || !identityMatches(guard)) return
   pendingAccountId.value = account.id
   try {
     await setAccountStatus(account, nextStatus, guard)
     ElMessage.success(t('serviceAccounts.statusUpdated'))
-  }
-  finally {
+  } finally {
     pendingAccountId.value = undefined
   }
 }
@@ -336,8 +333,7 @@ async function confirmRemove(account: ServiceAccount): Promise<void> {
   try {
     await removeAccount(account, guard)
     ElMessage.success(t('serviceAccounts.removed'))
-  }
-  finally {
+  } finally {
     pendingAccountId.value = undefined
   }
 }

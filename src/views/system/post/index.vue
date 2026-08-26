@@ -36,14 +36,8 @@ async function handleExport(successfulQuery: PostQuery | null): Promise<void> {
   const intent = normalizeExportIntent('posts', successfulQuery)
   if (!(await confirmExportIntent(intent))) return
 
-  await submitExport(
-    intent.signature,
-    (idempotencyKey, signal) => exportPost(
-      intent.filter,
-      idempotencyKey,
-      signal,
-      intent.isEmpty,
-    ),
+  await submitExport(intent.signature, (idempotencyKey, signal) =>
+    exportPost(intent.filter, idempotencyKey, signal, intent.isEmpty),
   )
 }
 </script>

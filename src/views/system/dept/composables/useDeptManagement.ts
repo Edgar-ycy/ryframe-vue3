@@ -18,8 +18,7 @@ import { confirmAction } from '@/utils/confirmAction'
 
 type Translate = (key: string, params?: Record<string, unknown>) => string
 type SaveDeptCommand =
-  | { kind: 'create', data: DeptCreateInput }
-  | { kind: 'update', id: Id, data: DeptUpdateInput }
+  { kind: 'create'; data: DeptCreateInput } | { kind: 'update'; id: Id; data: DeptUpdateInput }
 
 export function useDeptManagement(t: Translate) {
   const userStore = useUserStore()
@@ -38,22 +37,21 @@ export function useDeptManagement(t: Translate) {
     () => userStore.sessionStatus === 'authenticated',
     'departments',
     () => ({ scope: 'tree' }),
-    async signal => {
+    async (signal) => {
       const response = await getDeptTree(signal)
       return response.data ?? []
     },
   )
   const detailQuery = useTenantQuery<DeptRecord>(
     () => userStore.tenantId,
-    () => (
-      userStore.sessionStatus === 'authenticated'
-      && dialog.value.visible
-      && dialog.value.isEdit
-      && currentEditId.value !== null
-    ),
+    () =>
+      userStore.sessionStatus === 'authenticated' &&
+      dialog.value.visible &&
+      dialog.value.isEdit &&
+      currentEditId.value !== null,
     'departments',
     () => ({ scope: 'detail', id: currentEditId.value }),
-    async signal => {
+    async (signal) => {
       const id = currentEditId.value
       if (id === null) throw new Error(t('system.department.detailMissing'))
       const response = await getDept(id, signal)
@@ -65,16 +63,14 @@ export function useDeptManagement(t: Translate) {
     () => userStore.tenantId,
     'departments',
     {
-      mutationFn: async command => {
+      mutationFn: async (command) => {
         if (command.kind === 'update') await updateDept(command.id, command.data)
         else await createDept(command.data)
       },
       onSuccess: (_data, command) => {
-        ElMessage.success(t(
-          command.kind === 'update'
-            ? 'system.common.updateSuccess'
-            : 'system.common.addSuccess',
-        ))
+        ElMessage.success(
+          t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+        )
       },
     },
   )
@@ -82,7 +78,7 @@ export function useDeptManagement(t: Translate) {
     () => userStore.tenantId,
     'departments',
     {
-      mutationFn: async department => {
+      mutationFn: async (department) => {
         await deleteDept(department.id)
       },
       onSuccess: () => {
@@ -96,9 +92,9 @@ export function useDeptManagement(t: Translate) {
   const deptOptions = tableData
   const detailLoading = detailQuery.isFetching
   const submitLoading = saveMutation.pending
-  const deletingId = computed<Id | null>(() => (
-    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
-  ))
+  const deletingId = computed<Id | null>(() =>
+    deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
+  )
   const rules = computed<FormRules>(() => ({
     name: [{ required: true, message: t('system.department.enterName'), trigger: 'blur' }],
   }))
@@ -145,7 +141,7 @@ export function useDeptManagement(t: Translate) {
 
   watch(
     () => detailQuery.data.value,
-    department => {
+    (department) => {
       if (dialog.value.visible && dialog.value.isEdit && department) populateForm(department)
     },
   )
@@ -159,13 +155,14 @@ export function useDeptManagement(t: Translate) {
       parent_id: form.value.parent_id,
       sort: form.value.sort,
     }
-    const command: SaveDeptCommand = dialog.value.isEdit && currentEditId.value !== null
-      ? {
-          kind: 'update',
-          id: currentEditId.value,
-          data: { ...data, status: form.value.status },
-        }
-      : { kind: 'create', data }
+    const command: SaveDeptCommand =
+      dialog.value.isEdit && currentEditId.value !== null
+        ? {
+            kind: 'update',
+            id: currentEditId.value,
+            data: { ...data, status: form.value.status },
+          }
+        : { kind: 'create', data }
     await saveMutation.mutateAsync(command)
     dialog.value.visible = false
     await fetchData()

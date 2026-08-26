@@ -1,30 +1,33 @@
-import {
-  isSessionContext,
-  type SessionContext,
-} from '@/api/modules/sessionContext'
+import { isSessionContext, type SessionContext } from '@/api/modules/sessionContext'
 
 export type SessionMessage =
   | { type: 'refresh-start'; source: string; operationId: string; startedAt: number }
   | {
-    type: 'authenticated'
-    source: string
-    operationId: string
-    startedAt: number
-    accessToken: string
-    sessionContext: SessionContext
-  }
-  | { type: 'refresh-failed'; source: string; operationId: string; startedAt: number; status?: number }
+      type: 'authenticated'
+      source: string
+      operationId: string
+      startedAt: number
+      accessToken: string
+      sessionContext: SessionContext
+    }
+  | {
+      type: 'refresh-failed'
+      source: string
+      operationId: string
+      startedAt: number
+      status?: number
+    }
   | { type: 'logout'; source: string; at: number }
 
 export type SessionOutboundMessage =
   | { type: 'refresh-start'; operationId: string; startedAt: number }
   | {
-    type: 'authenticated'
-    operationId: string
-    startedAt: number
-    accessToken: string
-    sessionContext: SessionContext
-  }
+      type: 'authenticated'
+      operationId: string
+      startedAt: number
+      accessToken: string
+      sessionContext: SessionContext
+    }
   | { type: 'refresh-failed'; operationId: string; startedAt: number; status?: number }
   | { type: 'logout'; at: number }
 
@@ -41,8 +44,10 @@ function hasExactKeys(
 ): boolean {
   const allowed = new Set([...required, ...optional])
   const keys = Reflect.ownKeys(value)
-  return keys.every(key => typeof key === 'string' && allowed.has(key))
-    && required.every(key => Object.hasOwn(value, key))
+  return (
+    keys.every((key) => typeof key === 'string' && allowed.has(key)) &&
+    required.every((key) => Object.hasOwn(value, key))
+  )
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -58,8 +63,10 @@ function isTimestamp(value: unknown): value is number {
 }
 
 function isOptionalHttpStatus(value: unknown): value is number | undefined {
-  return value === undefined
-    || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 100 && value <= 599)
+  return (
+    value === undefined ||
+    (typeof value === 'number' && Number.isSafeInteger(value) && value >= 100 && value <= 599)
+  )
 }
 
 export function isSessionMessage(value: unknown): value is SessionMessage {
@@ -67,26 +74,35 @@ export function isSessionMessage(value: unknown): value is SessionMessage {
 
   switch (value.type) {
     case 'refresh-start':
-      return hasExactKeys(value, ['type', 'source', 'operationId', 'startedAt'])
-        && isOperationId(value.operationId)
-        && isTimestamp(value.startedAt)
-    case 'authenticated':
-      return hasExactKeys(
-        value,
-        ['type', 'source', 'operationId', 'startedAt', 'accessToken', 'sessionContext'],
+      return (
+        hasExactKeys(value, ['type', 'source', 'operationId', 'startedAt']) &&
+        isOperationId(value.operationId) &&
+        isTimestamp(value.startedAt)
       )
-        && isOperationId(value.operationId)
-        && isTimestamp(value.startedAt)
-        && isNonEmptyString(value.accessToken)
-        && isSessionContext(value.sessionContext)
+    case 'authenticated':
+      return (
+        hasExactKeys(value, [
+          'type',
+          'source',
+          'operationId',
+          'startedAt',
+          'accessToken',
+          'sessionContext',
+        ]) &&
+        isOperationId(value.operationId) &&
+        isTimestamp(value.startedAt) &&
+        isNonEmptyString(value.accessToken) &&
+        isSessionContext(value.sessionContext)
+      )
     case 'refresh-failed':
-      return hasExactKeys(value, ['type', 'source', 'operationId', 'startedAt'], ['status'])
-        && isOperationId(value.operationId)
-        && isTimestamp(value.startedAt)
-        && isOptionalHttpStatus(value.status)
+      return (
+        hasExactKeys(value, ['type', 'source', 'operationId', 'startedAt'], ['status']) &&
+        isOperationId(value.operationId) &&
+        isTimestamp(value.startedAt) &&
+        isOptionalHttpStatus(value.status)
+      )
     case 'logout':
-      return hasExactKeys(value, ['type', 'source', 'at'])
-        && isTimestamp(value.at)
+      return hasExactKeys(value, ['type', 'source', 'at']) && isTimestamp(value.at)
     default:
       return false
   }

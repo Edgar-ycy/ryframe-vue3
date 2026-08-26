@@ -29,7 +29,7 @@ export async function cancelMessageState(
   await Promise.all([
     client.cancelQueries({
       queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
-      predicate: query => isInboxKeyForUser(query.queryKey, userId),
+      predicate: (query) => isInboxKeyForUser(query.queryKey, userId),
     }),
     client.cancelQueries({ queryKey: messageUnreadQueryKey(tenantId, userId) }),
   ])
@@ -44,7 +44,7 @@ export async function fetchMessageInboxPage(
 ): Promise<MessageInboxPage> {
   const key = messageInboxQueryKey(tenantId, userId, query)
   const knownIds = new Set(
-    client.getQueryData<MessageInboxPage>(key)?.records.map(message => message.id) ?? [],
+    client.getQueryData<MessageInboxPage>(key)?.records.map((message) => message.id) ?? [],
   )
   const response = await listMessages(query, signal)
   if (!response.data) {
@@ -53,7 +53,8 @@ export async function fetchMessageInboxPage(
   const params = messageInboxKeyParams(userId, query)
   const current = client.getQueryData<MessageInboxPage>(key)
   const arrivedDuringRequest = new Set(
-    current?.records.filter(message => !knownIds.has(message.id)).map(message => message.id) ?? [],
+    current?.records.filter((message) => !knownIds.has(message.id)).map((message) => message.id) ??
+      [],
   )
   return mergeMessagePage(current, response.data, params.limit, arrivedDuringRequest)
 }
@@ -70,13 +71,7 @@ export async function synchronizeMessageState(
   const inboxPromise = client.fetchQuery({
     queryKey: inboxKey,
     staleTime: 0,
-    queryFn: ({ signal }) => fetchMessageInboxPage(
-      client,
-      tenantId,
-      userId,
-      query,
-      signal,
-    ),
+    queryFn: ({ signal }) => fetchMessageInboxPage(client, tenantId, userId, query, signal),
   })
   const unreadPromise = client.fetchQuery({
     queryKey: unreadKey,
@@ -89,15 +84,12 @@ export async function synchronizeMessageState(
       return Math.max(0, response.data)
     },
   })
-  const [page] = await Promise.all([
-    inboxPromise,
-    unreadPromise.catch(() => undefined),
-  ])
+  const [page] = await Promise.all([inboxPromise, unreadPromise.catch(() => undefined)])
   return page
 }
 
 export function normalizeMessageIds(ids: readonly string[], action: string): string[] {
-  const unique = [...new Set(ids.map(id => id.trim()).filter(Boolean))]
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))]
   if (unique.length > 100) {
     throw new HttpError(`一次最多${action} 100 条消息`, { status: 400, kind: 'http' })
   }

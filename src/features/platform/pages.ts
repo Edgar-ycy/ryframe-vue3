@@ -9,7 +9,7 @@ export const pageManifest = definePageManifest({
       path: '/platform/product-plans',
       page: () => import('@/views/platform/product-plans/index.vue'),
       catalogs: [
-        () => import('@/i18n/catalog/product-plans').then(module => module.messageCatalog),
+        () => import('@/i18n/catalog/product-plans').then((module) => module.messageCatalog),
       ],
     },
     {
@@ -18,7 +18,7 @@ export const pageManifest = definePageManifest({
       path: '/platform/data-targets',
       page: () => import('@/views/platform/data-targets/index.vue'),
       catalogs: [
-        () => import('@/i18n/catalog/tenant-data').then(module => module.messageCatalog),
+        () => import('@/i18n/catalog/tenant-data').then((module) => module.messageCatalog),
       ],
     },
     {
@@ -27,9 +27,9 @@ export const pageManifest = definePageManifest({
       path: '/platform/tenants',
       page: () => import('@/views/platform/tenant/index.vue'),
       catalogs: [
-        () => import('@/i18n/catalog/product-plans').then(module => module.messageCatalog),
-        () => import('@/i18n/catalog/tenant-capacity').then(module => module.messageCatalog),
-        () => import('@/i18n/catalog/tenant-data').then(module => module.messageCatalog),
+        () => import('@/i18n/catalog/product-plans').then((module) => module.messageCatalog),
+        () => import('@/i18n/catalog/tenant-capacity').then((module) => module.messageCatalog),
+        () => import('@/i18n/catalog/tenant-data').then((module) => module.messageCatalog),
       ],
     },
   ],

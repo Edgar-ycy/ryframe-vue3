@@ -16,7 +16,7 @@ async function collectTypeScriptFiles(directory) {
   const files = []
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const absolute = path.join(directory, entry.name)
-    if (entry.isDirectory()) files.push(...await collectTypeScriptFiles(absolute))
+    if (entry.isDirectory()) files.push(...(await collectTypeScriptFiles(absolute)))
     else if (entry.isFile() && entry.name.endsWith('.ts')) files.push(absolute)
   }
   return files.sort()
@@ -29,9 +29,10 @@ function propertyName(node) {
 
 function isHandwrittenApiPath(node) {
   if (ts.isStringLiteralLike(node)) return node.text.startsWith('/')
-  return ts.isTemplateExpression(node) && (
-    node.head.text.startsWith('/')
-    || node.templateSpans.some(span => span.literal.text.startsWith('/'))
+  return (
+    ts.isTemplateExpression(node) &&
+    (node.head.text.startsWith('/') ||
+      node.templateSpans.some((span) => span.literal.text.startsWith('/')))
   )
 }
 
@@ -73,9 +74,9 @@ function inspectSource(absolute, source) {
 
   function visit(node) {
     if (
-      ts.isCallExpression(node)
-      && ts.isIdentifier(node.expression)
-      && bindings.has(node.expression.text)
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      bindings.has(node.expression.text)
     ) {
       const helper = bindings.get(node.expression.text)
       directCalls[helper] = (directCalls[helper] ?? 0) + 1
@@ -92,9 +93,9 @@ function inspectSource(absolute, source) {
 
   return {
     directImports: [...directImports].sort(),
-    directCalls: Object.fromEntries(Object.entries(directCalls).sort(([left], [right]) => (
-      left.localeCompare(right)
-    ))),
+    directCalls: Object.fromEntries(
+      Object.entries(directCalls).sort(([left], [right]) => left.localeCompare(right)),
+    ),
     pathLiterals,
     urlProperties,
     methodProperties,
@@ -102,11 +103,13 @@ function inspectSource(absolute, source) {
 }
 
 function hasLegacyUsage(inventory) {
-  return inventory.directImports.length > 0
-    || Object.keys(inventory.directCalls).length > 0
-    || inventory.pathLiterals > 0
-    || inventory.urlProperties > 0
-    || inventory.methodProperties > 0
+  return (
+    inventory.directImports.length > 0 ||
+    Object.keys(inventory.directCalls).length > 0 ||
+    inventory.pathLiterals > 0 ||
+    inventory.urlProperties > 0 ||
+    inventory.methodProperties > 0
+  )
 }
 
 function sameInventory(left, right) {
@@ -128,10 +131,9 @@ for (const absolute of await collectTypeScriptFiles(modulesRoot)) {
   if (hasLegacyUsage(inventory)) current[relative(absolute)] = inventory
 }
 
-const mismatches = [...new Set([
-  ...Object.keys(allowlist),
-  ...Object.keys(current),
-])].sort().filter(file => !sameInventory(allowlist[file], current[file]))
+const mismatches = [...new Set([...Object.keys(allowlist), ...Object.keys(current)])]
+  .sort()
+  .filter((file) => !sameInventory(allowlist[file], current[file]))
 
 if (mismatches.length > 0) {
   console.error('API operation 使用门禁失败：发现未登记的新旧式请求，或过渡 allowlist 已过期。')
@@ -144,12 +146,13 @@ if (mismatches.length > 0) {
   console.error('当前完整基线如下：')
   console.error(`${JSON.stringify(current, null, 2)}\n`)
   process.exitCode = 1
-}
-else {
+} else {
   const files = Object.entries(current)
-  const directCallCount = files.reduce((total, [, item]) => (
-    total + Object.values(item.directCalls).reduce((sum, count) => sum + count, 0)
-  ), 0)
+  const directCallCount = files.reduce(
+    (total, [, item]) =>
+      total + Object.values(item.directCalls).reduce((sum, count) => sum + count, 0),
+    0,
+  )
   const pathLiteralCount = files.reduce((total, [, item]) => total + item.pathLiterals, 0)
   console.log(
     `API operation 使用门禁通过；剩余迁移 ${files.length} 个模块、${directCallCount} 个直连请求、${pathLiteralCount} 个手写路径。`,

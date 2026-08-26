@@ -14,7 +14,9 @@
         show-icon
         :closable="false"
       >
-        <el-button type="warning" plain @click="refreshDetail">{{ t('tenantData.retry') }}</el-button>
+        <el-button type="warning" plain @click="refreshDetail">{{
+          t('tenantData.retry')
+        }}</el-button>
       </el-alert>
 
       <template v-if="migration">
@@ -56,10 +58,18 @@
         />
 
         <el-descriptions :column="2" border>
-          <el-descriptions-item :label="t('tenantData.sourceGeneration')">{{ migration.source_generation }}</el-descriptions-item>
-          <el-descriptions-item :label="t('tenantData.targetGeneration')">{{ migration.target_generation }}</el-descriptions-item>
-          <el-descriptions-item :label="t('tenantData.createdAt')">{{ formatDate(migration.created_at) }}</el-descriptions-item>
-          <el-descriptions-item :label="t('tenantData.updatedAt')">{{ formatDate(migration.updated_at) }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.sourceGeneration')">{{
+            migration.source_generation
+          }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.targetGeneration')">{{
+            migration.target_generation
+          }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.createdAt')">{{
+            formatDate(migration.created_at)
+          }}</el-descriptions-item>
+          <el-descriptions-item :label="t('tenantData.updatedAt')">{{
+            formatDate(migration.updated_at)
+          }}</el-descriptions-item>
           <el-descriptions-item :label="t('tenantData.retentionUntil')" :span="2">
             {{ formatDate(migration.retention_until) }}
           </el-descriptions-item>
@@ -71,26 +81,39 @@
           type="info"
           :closable="false"
         >
-          <ul><li v-for="reason in migration.action_reasons" :key="reason">{{ reason }}</li></ul>
+          <ul>
+            <li v-for="reason in migration.action_reasons" :key="reason">{{ reason }}</li>
+          </ul>
         </el-alert>
 
         <section>
           <h3>{{ t('tenantData.migrationItems') }}</h3>
           <div class="item-table-wrap">
             <el-table :data="migration.items ?? []" row-key="id" border>
-              <el-table-column prop="table_name" :label="t('tenantData.tableName')" min-width="190" show-overflow-tooltip />
+              <el-table-column
+                prop="table_name"
+                :label="t('tenantData.tableName')"
+                min-width="190"
+                show-overflow-tooltip
+              />
               <el-table-column :label="t('tenantData.progressState')" width="120">
                 <template #default="{ row }">
-                  <el-tag :type="stateTagType(row.state)" effect="plain">{{ stateLabel(row.state) }}</el-tag>
+                  <el-tag :type="stateTagType(row.state)" effect="plain">{{
+                    stateLabel(row.state)
+                  }}</el-tag>
                 </template>
               </el-table-column>
               <el-table-column :label="t('tenantData.rowCounts')" min-width="150">
-                <template #default="{ row }">{{ row.source_row_count ?? '—' }} / {{ row.target_row_count ?? '—' }}</template>
+                <template #default="{ row }"
+                  >{{ row.source_row_count ?? '—' }} / {{ row.target_row_count ?? '—' }}</template
+                >
               </el-table-column>
               <el-table-column :label="t('tenantData.error')" min-width="220" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.error_code || '—' }}</template>
               </el-table-column>
-              <template #empty><el-empty :description="t('tenantData.noItems')" :image-size="56" /></template>
+              <template #empty
+                ><el-empty :description="t('tenantData.noItems')" :image-size="56"
+              /></template>
             </el-table>
           </div>
         </section>
@@ -170,24 +193,35 @@ const detailQuery = useTenantQuery<TenantDataMigration>(
   () => props.active && visible.value && Boolean(props.migrationId),
   'platform-tenant-data-migration-detail',
   () => ({ tenant_id: props.tenantId, migration_id: props.migrationId }),
-  async signal => requireOperationData(await getTenantDataMigration(props.migrationId || '', signal)),
+  async (signal) =>
+    requireOperationData(await getTenantDataMigration(props.migrationId || '', signal)),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const migration = detailQuery.data
-const cancelAllowed = computed(() => Boolean(migration.value && canCancelMigration(migration.value)))
-const finalizeAllowed = computed(() => Boolean(migration.value && canFinalizeMigration(migration.value)))
-const cutoverStarted = computed(() => Boolean(migration.value && [
-  'cutting_over', 'activating', 'succeeded', 'retention_pending', 'finalized',
-].includes(migration.value.state)))
+const cancelAllowed = computed(() =>
+  Boolean(migration.value && canCancelMigration(migration.value)),
+)
+const finalizeAllowed = computed(() =>
+  Boolean(migration.value && canFinalizeMigration(migration.value)),
+)
+const cutoverStarted = computed(() =>
+  Boolean(
+    migration.value &&
+    ['cutting_over', 'activating', 'succeeded', 'retention_pending', 'finalized'].includes(
+      migration.value.state,
+    ),
+  ),
+)
 
 const cancelMutation = useTenantMutation(
   () => userStore.tenantId,
   'platform-tenant-data-migrations',
   {
     meta: { errorMode: 'silent' },
-    mutationFn: async (input: { migrationId: string, idempotencyKey: string }) => (
-      requireOperationData(await cancelTenantDataMigration(input.migrationId, input.idempotencyKey))
-    ),
+    mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
+      requireOperationData(
+        await cancelTenantDataMigration(input.migrationId, input.idempotencyKey),
+      ),
   },
 )
 const finalizeMutation = useTenantMutation(
@@ -195,9 +229,10 @@ const finalizeMutation = useTenantMutation(
   'platform-tenant-data-migrations',
   {
     meta: { errorMode: 'silent' },
-    mutationFn: async (input: { migrationId: string, idempotencyKey: string }) => (
-      requireOperationData(await finalizeTenantDataMigration(input.migrationId, input.idempotencyKey))
-    ),
+    mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
+      requireOperationData(
+        await finalizeTenantDataMigration(input.migrationId, input.idempotencyKey),
+      ),
   },
 )
 const actionPending = computed(() => cancelMutation.pending.value || finalizeMutation.pending.value)
@@ -205,12 +240,16 @@ const actionError = computed(() => cancelMutation.error.value ?? finalizeMutatio
 
 useActivePolling(
   () => props.active && visible.value,
-  () => Boolean(migration.value && (
-    isMigrationInProgress(migration.value.state)
-    || migration.value.cancel_requested
-    || migration.value.finalize_requested
-  )),
-  async () => { await detailQuery.refetch() },
+  () =>
+    Boolean(
+      migration.value &&
+      (isMigrationInProgress(migration.value.state) ||
+        migration.value.cancel_requested ||
+        migration.value.finalize_requested),
+    ),
+  async () => {
+    await detailQuery.refetch()
+  },
 )
 
 function stateLabel(state: string): string {
@@ -250,8 +289,7 @@ async function handleCancel(): Promise<void> {
     emit('updated', updated)
     await detailQuery.refetch()
     ElMessage.success(t('tenantData.cancellationRequested'))
-  }
-  catch (error) {
+  } catch (error) {
     pendingCancelKey = shouldReuseIdempotencyKey(error) ? key : undefined
   }
 }
@@ -274,8 +312,7 @@ async function handleFinalize(): Promise<void> {
     emit('updated', updated)
     await detailQuery.refetch()
     ElMessage.success(t('tenantData.finalizationRequested'))
-  }
-  catch (error) {
+  } catch (error) {
     pendingFinalizeKey = shouldReuseIdempotencyKey(error) ? key : undefined
   }
 }

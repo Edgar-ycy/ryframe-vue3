@@ -34,8 +34,8 @@ function jobActionKey(identity: ExportJobIdentity, jobId: string): string {
 }
 
 function reserveJobActions(identity: ExportJobIdentity, jobIds: readonly string[]): boolean {
-  const keys = jobIds.map(jobId => jobActionKey(identity, jobId))
-  if (keys.some(key => activeJobActions.has(key))) return false
+  const keys = jobIds.map((jobId) => jobActionKey(identity, jobId))
+  if (keys.some((key) => activeJobActions.has(key))) return false
   for (const key of keys) activeJobActions.add(key)
   return true
 }
@@ -84,10 +84,12 @@ export function useExportJobActions() {
 
   function isJobActionBusy(jobId: string): boolean {
     const identity = currentExportJobIdentity()
-    return cancellingJobId.value === jobId
-      || downloadingJobId.value === jobId
-      || deletingJobIds.value.includes(jobId)
-      || (identity !== undefined && activeJobActions.has(jobActionKey(identity, jobId)))
+    return (
+      cancellingJobId.value === jobId ||
+      downloadingJobId.value === jobId ||
+      deletingJobIds.value.includes(jobId) ||
+      (identity !== undefined && activeJobActions.has(jobActionKey(identity, jobId)))
+    )
   }
 
   async function refreshAfterDeletion(
@@ -95,8 +97,8 @@ export function useExportJobActions() {
     signal: AbortSignal,
   ): Promise<void> {
     const [listResult, unreadResult] = await Promise.allSettled([
-      listExportJobs(signal).then(response => requireOperationData(response)),
-      getUnreadExportNotificationCount(signal).then(response => requireOperationData(response)),
+      listExportJobs(signal).then((response) => requireOperationData(response)),
+      getUnreadExportNotificationCount(signal).then((response) => requireOperationData(response)),
     ])
     if (!identityStillCurrent(identity)) return
     const listKey = exportJobListQueryKey(identity.tenantId, identity.userId)
@@ -104,7 +106,8 @@ export function useExportJobActions() {
     if (listResult.status === 'fulfilled') queryClient.setQueryData(listKey, listResult.value)
     else void queryClient.invalidateQueries({ queryKey: listKey, exact: true, refetchType: 'none' })
     if (unreadResult.status === 'fulfilled') queryClient.setQueryData(unreadKey, unreadResult.value)
-    else void queryClient.invalidateQueries({ queryKey: unreadKey, exact: true, refetchType: 'none' })
+    else
+      void queryClient.invalidateQueries({ queryKey: unreadKey, exact: true, refetchType: 'none' })
   }
 
   async function applyAcceptedDeletion(
@@ -116,9 +119,8 @@ export function useExportJobActions() {
     if (accepted.removed_unread_count > 0) {
       queryClient.setQueryData<number>(
         exportJobUnreadQueryKey(identity.tenantId, identity.userId),
-        current => current === undefined
-          ? undefined
-          : Math.max(0, current - accepted.removed_unread_count),
+        (current) =>
+          current === undefined ? undefined : Math.max(0, current - accepted.removed_unread_count),
       )
     }
     publishExportJobEvent({
@@ -145,8 +147,7 @@ export function useExportJobActions() {
     try {
       const latest = requireOperationData(await getExportJob(jobId))
       mergeExportJob(queryClient, identity, latest)
-    }
-    catch {
+    } catch {
       await queryClient.invalidateQueries({
         queryKey: exportJobListQueryKey(identity.tenantId, identity.userId),
         exact: true,
@@ -155,7 +156,11 @@ export function useExportJobActions() {
   }
 
   async function cancelJob(jobId: string): Promise<ExportJob> {
-    if (cancellingJobId.value || downloadingJobId.value === jobId || deletingJobIds.value.includes(jobId)) {
+    if (
+      cancellingJobId.value ||
+      downloadingJobId.value === jobId ||
+      deletingJobIds.value.includes(jobId)
+    ) {
       throw actionConflict()
     }
     const identity = currentExportJobIdentity()
@@ -173,12 +178,10 @@ export function useExportJobActions() {
       mergeExportJob(queryClient, identity, job)
       publishExportJobEvent({ type: 'cancelled', ...identity, jobId })
       return job
-    }
-    catch (error) {
+    } catch (error) {
       await reconcileAfterActionError(identity, jobId, error)
       throw error
-    }
-    finally {
+    } finally {
       if (cancelController === controller) {
         cancelController = undefined
         cancelIdentity = undefined
@@ -205,17 +208,12 @@ export function useExportJobActions() {
       if (!identityStillCurrent(identity)) {
         throw new HttpError(translate('shell.http.requestFailed'), { kind: 'cancelled' })
       }
-      downloadBlobDirect(
-        blob,
-        job.result_file_name || translate('shell.download.defaultFilename'),
-      )
+      downloadBlobDirect(blob, job.result_file_name || translate('shell.download.defaultFilename'))
       ElMessage.success(translate('shell.download.success'))
-    }
-    catch (error) {
+    } catch (error) {
       await reconcileAfterActionError(identity, job.id, error)
       throw error
-    }
-    finally {
+    } finally {
       if (downloadController === controller) {
         downloadController = undefined
         downloadIdentity = undefined
@@ -228,15 +226,16 @@ export function useExportJobActions() {
   async function deleteJobs(jobIds: readonly string[]): Promise<ExportDeletionAccepted> {
     const ids = normalizeDeletionIds(jobIds)
     if (
-      deletingJobIds.value.length > 0
-      || ids.some(jobId => cancellingJobId.value === jobId || downloadingJobId.value === jobId)
-    ) throw actionConflict()
+      deletingJobIds.value.length > 0 ||
+      ids.some((jobId) => cancellingJobId.value === jobId || downloadingJobId.value === jobId)
+    )
+      throw actionConflict()
 
     const identity = currentExportJobIdentity()
     if (!identity) throw new HttpError(translate('shell.session.expired'), { status: 401 })
     const requestKey = deletionRequestKey(identity, ids)
-    const idempotencyKey = deletionRetryKeys.get(requestKey)
-      ?? createIdempotencyKey('export-job-delete')
+    const idempotencyKey =
+      deletionRetryKeys.get(requestKey) ?? createIdempotencyKey('export-job-delete')
     if (!reserveJobActions(identity, ids)) throw actionConflict()
     deletionRetryKeys.set(requestKey, idempotencyKey)
     const controller = new AbortController()
@@ -253,8 +252,7 @@ export function useExportJobActions() {
       deletionRetryKeys.delete(requestKey)
       await applyAcceptedDeletion(identity, accepted, controller.signal)
       return accepted
-    }
-    catch (error) {
+    } catch (error) {
       if (error instanceof HttpError && error.status === 404 && identityStillCurrent(identity)) {
         deletionRetryKeys.delete(requestKey)
         const accepted: ExportDeletionAccepted = {
@@ -270,8 +268,7 @@ export function useExportJobActions() {
         await refreshAfterDeletion(identity, controller.signal)
       }
       throw error
-    }
-    finally {
+    } finally {
       if (deleteController === controller) {
         deleteController = undefined
         deleteIdentity = undefined
@@ -281,21 +278,34 @@ export function useExportJobActions() {
     }
   }
 
-  const unsubscribeUser = user.$subscribe((_mutation, state) => {
-    const stateIdentity = state.sessionStatus === 'authenticated' && state.tenantId && state.userId
-      ? { tenantId: state.tenantId, userId: String(state.userId) }
-      : undefined
-    if (cancelIdentity && (!stateIdentity || !sameExportJobIdentity(cancelIdentity, stateIdentity))) {
-      cancelController?.abort()
-    }
-    if (downloadIdentity && (!stateIdentity || !sameExportJobIdentity(downloadIdentity, stateIdentity))) {
-      downloadController?.abort()
-    }
-    if (deleteIdentity && (!stateIdentity || !sameExportJobIdentity(deleteIdentity, stateIdentity))) {
-      deleteController?.abort()
-      deletionRetryKeys.clear()
-    }
-  }, { flush: 'sync' })
+  const unsubscribeUser = user.$subscribe(
+    (_mutation, state) => {
+      const stateIdentity =
+        state.sessionStatus === 'authenticated' && state.tenantId && state.userId
+          ? { tenantId: state.tenantId, userId: String(state.userId) }
+          : undefined
+      if (
+        cancelIdentity &&
+        (!stateIdentity || !sameExportJobIdentity(cancelIdentity, stateIdentity))
+      ) {
+        cancelController?.abort()
+      }
+      if (
+        downloadIdentity &&
+        (!stateIdentity || !sameExportJobIdentity(downloadIdentity, stateIdentity))
+      ) {
+        downloadController?.abort()
+      }
+      if (
+        deleteIdentity &&
+        (!stateIdentity || !sameExportJobIdentity(deleteIdentity, stateIdentity))
+      ) {
+        deleteController?.abort()
+        deletionRetryKeys.clear()
+      }
+    },
+    { flush: 'sync' },
+  )
 
   if (getCurrentScope()) {
     onScopeDispose(() => {

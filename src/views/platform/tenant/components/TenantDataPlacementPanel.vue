@@ -16,17 +16,37 @@
         </el-button>
       </div>
 
-      <el-alert v-if="!canViewPlacement" :title="t('tenantData.noPlacementPermission')" type="info" show-icon :closable="false" />
-      <el-alert v-else-if="placementQuery.error.value" :title="t('tenantData.placementUnavailable')" type="warning" show-icon :closable="false">
-        <el-button type="warning" plain @click="refreshPlacement">{{ t('tenantData.retry') }}</el-button>
+      <el-alert
+        v-if="!canViewPlacement"
+        :title="t('tenantData.noPlacementPermission')"
+        type="info"
+        show-icon
+        :closable="false"
+      />
+      <el-alert
+        v-else-if="placementQuery.error.value"
+        :title="t('tenantData.placementUnavailable')"
+        type="warning"
+        show-icon
+        :closable="false"
+      >
+        <el-button type="warning" plain @click="refreshPlacement">{{
+          t('tenantData.retry')
+        }}</el-button>
       </el-alert>
       <el-descriptions v-else-if="placement" :column="2" border>
-        <el-descriptions-item :label="t('tenantData.currentTarget')">{{ placement.current_target_key }}</el-descriptions-item>
-        <el-descriptions-item :label="t('tenantData.placementGeneration')">{{ placement.placement_generation }}</el-descriptions-item>
+        <el-descriptions-item :label="t('tenantData.currentTarget')">{{
+          placement.current_target_key
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('tenantData.placementGeneration')">{{
+          placement.placement_generation
+        }}</el-descriptions-item>
         <el-descriptions-item :label="t('tenantData.placementState')">
           <el-tag :type="stateTagType(placement.state)">{{ stateLabel(placement.state) }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item :label="t('tenantData.updatedAt')">{{ formatDate(placement.updated_at) }}</el-descriptions-item>
+        <el-descriptions-item :label="t('tenantData.updatedAt')">{{
+          formatDate(placement.updated_at)
+        }}</el-descriptions-item>
       </el-descriptions>
     </section>
 
@@ -36,14 +56,33 @@
           <h3>{{ t('tenantData.migrationTitle') }}</h3>
           <p>{{ t('tenantData.migrationHint') }}</p>
         </div>
-        <el-button v-if="canListMigrations" icon="Refresh" :loading="migrationQuery.isFetching.value" @click="refreshMigrations">
+        <el-button
+          v-if="canListMigrations"
+          icon="Refresh"
+          :loading="migrationQuery.isFetching.value"
+          @click="refreshMigrations"
+        >
           {{ t('tenantData.refresh') }}
         </el-button>
       </div>
 
-      <el-alert v-if="!canListMigrations" :title="t('tenantData.noMigrationPermission')" type="info" show-icon :closable="false" />
-      <el-alert v-else-if="migrationQuery.error.value" :title="t('tenantData.migrationsUnavailable')" type="warning" show-icon :closable="false">
-        <el-button type="warning" plain @click="refreshMigrations">{{ t('tenantData.retry') }}</el-button>
+      <el-alert
+        v-if="!canListMigrations"
+        :title="t('tenantData.noMigrationPermission')"
+        type="info"
+        show-icon
+        :closable="false"
+      />
+      <el-alert
+        v-else-if="migrationQuery.error.value"
+        :title="t('tenantData.migrationsUnavailable')"
+        type="warning"
+        show-icon
+        :closable="false"
+      >
+        <el-button type="warning" plain @click="refreshMigrations">{{
+          t('tenantData.retry')
+        }}</el-button>
       </el-alert>
       <template v-else>
         <div class="migration-table-wrap">
@@ -54,38 +93,71 @@
             border
             class="migration-table"
           >
-            <el-table-column prop="id" :label="t('tenantData.migrationId')" min-width="130" show-overflow-tooltip />
-            <el-table-column :label="t('tenantData.sourceTarget')" min-width="150" show-overflow-tooltip>
+            <el-table-column
+              prop="id"
+              :label="t('tenantData.migrationId')"
+              min-width="130"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              :label="t('tenantData.sourceTarget')"
+              min-width="150"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">{{ row.source_target_key }}</template>
             </el-table-column>
-            <el-table-column :label="t('tenantData.targetTarget')" min-width="150" show-overflow-tooltip>
+            <el-table-column
+              :label="t('tenantData.targetTarget')"
+              min-width="150"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">{{ row.target_target_key }}</template>
             </el-table-column>
             <el-table-column :label="t('tenantData.migrationState')" width="130">
-              <template #default="{ row }"><el-tag :type="stateTagType(row.state)">{{ stateLabel(row.state) }}</el-tag></template>
+              <template #default="{ row }"
+                ><el-tag :type="stateTagType(row.state)">{{
+                  stateLabel(row.state)
+                }}</el-tag></template
+              >
             </el-table-column>
             <el-table-column :label="t('tenantData.createdAt')" min-width="165">
               <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
             </el-table-column>
-            <el-table-column :label="t('tenantData.actions')" width="100" fixed="right" align="center">
+            <el-table-column
+              :label="t('tenantData.actions')"
+              width="100"
+              fixed="right"
+              align="center"
+            >
               <template #default="{ row }">
-                <el-button type="primary" link @click="openMigration(row.id)">{{ t('tenantData.details') }}</el-button>
+                <el-button type="primary" link @click="openMigration(row.id)">{{
+                  t('tenantData.details')
+                }}</el-button>
               </template>
             </el-table-column>
-            <template #empty><el-empty :description="t('tenantData.noMigrations')" :image-size="64" /></template>
+            <template #empty
+              ><el-empty :description="t('tenantData.noMigrations')" :image-size="64"
+            /></template>
           </el-table>
         </div>
 
         <div v-loading="migrationQuery.isFetching.value" class="migration-card-list">
-          <el-empty v-if="!migrationQuery.isFetching.value && migrations.length === 0" :description="t('tenantData.noMigrations')" />
+          <el-empty
+            v-if="!migrationQuery.isFetching.value && migrations.length === 0"
+            :description="t('tenantData.noMigrations')"
+          />
           <article v-for="migration in migrations" :key="migration.id" class="migration-card">
             <header>
               <strong>{{ migration.id }}</strong>
-              <el-tag :type="stateTagType(migration.state)" size="small">{{ stateLabel(migration.state) }}</el-tag>
+              <el-tag :type="stateTagType(migration.state)" size="small">{{
+                stateLabel(migration.state)
+              }}</el-tag>
             </header>
             <p>{{ migration.source_target_key }} → {{ migration.target_target_key }}</p>
             <small>{{ formatDate(migration.created_at) }}</small>
-            <el-button type="primary" plain @click="openMigration(migration.id)">{{ t('tenantData.details') }}</el-button>
+            <el-button type="primary" plain @click="openMigration(migration.id)">{{
+              t('tenantData.details')
+            }}</el-button>
           </article>
         </div>
       </template>
@@ -131,7 +203,7 @@ import { hasPermission } from '@/utils/permission'
 import TenantDataMigrationDetailDialog from './TenantDataMigrationDetailDialog.vue'
 import TenantDataMigrationDialog from './TenantDataMigrationDialog.vue'
 
-const props = defineProps<{ active: boolean, tenantId: string }>()
+const props = defineProps<{ active: boolean; tenantId: string }>()
 const { t, te } = useI18n()
 const userStore = useUserStore()
 const migrationVisible = ref(false)
@@ -149,7 +221,7 @@ const placementQuery = useTenantQuery<TenantDataPlacement>(
   () => props.active && userStore.tenantId === 'system' && canViewPlacement.value,
   'platform-tenant-data-placement',
   () => ({ tenant_id: props.tenantId }),
-  async signal => requireOperationData(await getTenantDataPlacement(props.tenantId, signal)),
+  async (signal) => requireOperationData(await getTenantDataPlacement(props.tenantId, signal)),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const migrationQuery = useTenantQuery<TenantDataMigration[]>(
@@ -157,25 +229,23 @@ const migrationQuery = useTenantQuery<TenantDataMigration[]>(
   () => props.active && userStore.tenantId === 'system' && canListMigrations.value,
   'platform-tenant-data-migrations',
   () => ({ tenant_id: props.tenantId }),
-  async signal => requireOperationData(await listTenantDataMigrations(
-    props.tenantId,
-    undefined,
-    signal,
-  )),
+  async (signal) =>
+    requireOperationData(await listTenantDataMigrations(props.tenantId, undefined, signal)),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const placement = placementQuery.data
 const migrations = computed(() => migrationQuery.data.value ?? [])
-const hasOngoingMigration = computed(() => migrations.value.some(migration => (
-  isMigrationInProgress(migration.state)
-  || migration.cancel_requested
-  || migration.finalize_requested
-)))
-const canStartMigration = computed(() => Boolean(
-  canCreate.value
-  && placement.value?.state === 'active'
-  && !hasOngoingMigration.value,
-))
+const hasOngoingMigration = computed(() =>
+  migrations.value.some(
+    (migration) =>
+      isMigrationInProgress(migration.state) ||
+      migration.cancel_requested ||
+      migration.finalize_requested,
+  ),
+)
+const canStartMigration = computed(() =>
+  Boolean(canCreate.value && placement.value?.state === 'active' && !hasOngoingMigration.value),
+)
 
 useActivePolling(
   () => props.active,
@@ -187,11 +257,14 @@ useActivePolling(
   },
 )
 
-watch(() => props.active, (active) => {
-  if (active) return
-  migrationVisible.value = false
-  detailVisible.value = false
-})
+watch(
+  () => props.active,
+  (active) => {
+    if (active) return
+    migrationVisible.value = false
+    detailVisible.value = false
+  },
+)
 
 watch(canCreate, (allowed) => {
   if (!allowed) migrationVisible.value = false

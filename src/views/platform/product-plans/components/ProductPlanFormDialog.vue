@@ -1,5 +1,11 @@
 <template>
-  <el-dialog v-model="visible" :title="plan ? t('productPlans.editPlan') : t('productPlans.createPlan')" width="min(560px, calc(100vw - 24px))" destroy-on-close @open="populate">
+  <el-dialog
+    v-model="visible"
+    :title="plan ? t('productPlans.editPlan') : t('productPlans.createPlan')"
+    width="min(560px, calc(100vw - 24px))"
+    destroy-on-close
+    @open="populate"
+  >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
       <el-form-item :label="t('productPlans.code')" prop="key">
         <el-input v-model="form.key" maxlength="64" :disabled="Boolean(plan)" />
@@ -8,7 +14,13 @@
         <el-input v-model="form.name" maxlength="100" />
       </el-form-item>
       <el-form-item :label="t('productPlans.description')">
-        <el-input v-model="form.description" type="textarea" :rows="4" maxlength="500" show-word-limit />
+        <el-input
+          v-model="form.description"
+          type="textarea"
+          :rows="4"
+          maxlength="500"
+          show-word-limit
+        />
       </el-form-item>
       <el-form-item v-if="plan" :label="t('productPlans.planStatus')">
         <el-select v-model="form.status">
@@ -18,8 +30,12 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button :disabled="submitting" @click="visible = false">{{ t('productPlans.cancel') }}</el-button>
-      <el-button type="primary" :loading="submitting" @click="submit">{{ t('productPlans.save') }}</el-button>
+      <el-button :disabled="submitting" @click="visible = false">{{
+        t('productPlans.cancel')
+      }}</el-button>
+      <el-button type="primary" :loading="submitting" @click="submit">{{
+        t('productPlans.save')
+      }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -28,7 +44,7 @@
 import { useI18n } from 'vue-i18n'
 import type { ProductPlan, ProductPlanFormInput } from '@/api/modules/productPlan'
 
-const props = defineProps<{ plan?: ProductPlan, submitting: boolean }>()
+const props = defineProps<{ plan?: ProductPlan; submitting: boolean }>()
 const emit = defineEmits<{ save: [data: ProductPlanFormInput] }>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()

@@ -3,10 +3,18 @@
     <header class="workspace-header">
       <div class="workspace-header__content">
         <p class="workspace-label">{{ t('dashboard.workspace') }}</p>
-        <h1>{{ t('dashboard.greeting', { name: userStore.nickname || userStore.username || t('dashboard.defaultUser') }) }}</h1>
+        <h1>
+          {{
+            t('dashboard.greeting', {
+              name: userStore.nickname || userStore.username || t('dashboard.defaultUser'),
+            })
+          }}
+        </h1>
         <p class="workspace-subtitle">{{ t('dashboard.subtitle') }}</p>
       </div>
-      <el-tag class="session-tag" type="success" effect="plain">{{ t('dashboard.signedIn') }}</el-tag>
+      <el-tag class="session-tag" type="success" effect="plain">{{
+        t('dashboard.signedIn')
+      }}</el-tag>
     </header>
 
     <section
@@ -76,10 +84,7 @@ import { resolveElementIcon } from '@/shared/ui/icons'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
-import {
-  collectDashboardLinks,
-  type DashboardLink,
-} from './dashboardLinks'
+import { collectDashboardLinks, type DashboardLink } from './dashboardLinks'
 
 const router = useRouter()
 const permissionStore = usePermissionStore()
@@ -91,16 +96,21 @@ const TenantActivityChart = defineAsyncComponent(
   () => import('@/views/dashboard/TenantActivityChart.vue'),
 )
 
-const canManageTenants = computed(() =>
-  runtimeCapabilities.multiTenancyEnabled
-  && userStore.tenantId === 'system'
-  && hasPermission('tenant:list'),
+const canManageTenants = computed(
+  () =>
+    runtimeCapabilities.multiTenancyEnabled &&
+    userStore.tenantId === 'system' &&
+    hasPermission('tenant:list'),
 )
 
 const allLinks = computed<DashboardLink[]>(() => {
   const links = collectDashboardLinks(permissionStore.menus, Number.MAX_SAFE_INTEGER)
   if (canManageTenants.value) {
-    links.push({ title: t('account.tenantManagement'), path: '/platform/tenants', icon: 'OfficeBuilding' })
+    links.push({
+      title: t('account.tenantManagement'),
+      path: '/platform/tenants',
+      icon: 'OfficeBuilding',
+    })
   }
   return links
 })
@@ -255,7 +265,9 @@ h2 {
   text-align: left;
   background: var(--bg-color);
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .quick-link:hover,

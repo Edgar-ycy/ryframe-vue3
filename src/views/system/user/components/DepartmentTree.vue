@@ -7,7 +7,11 @@
     </template>
 
     <div v-if="loading" v-loading="loading" class="department-tree__loading" />
-    <el-empty v-else-if="nodes.length === 0" :description="t('system.user.noDepartments')" :image-size="80" />
+    <el-empty
+      v-else-if="nodes.length === 0"
+      :description="t('system.user.noDepartments')"
+      :image-size="80"
+    />
     <div v-else class="department-tree__content">
       <el-input
         :model-value="filterText"
@@ -68,7 +72,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  select: [department: { id?: Id, name: string }]
+  select: [department: { id?: Id; name: string }]
 }>()
 
 const treeRef = ref<TreeInstance>()

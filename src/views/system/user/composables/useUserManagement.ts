@@ -70,18 +70,19 @@ export function useUserManagement() {
     authenticated,
     'users',
     () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
-    signal => runAppliedQuery(signal, async (query, requestSignal) => {
-      const params = { ...query }
-      const response = await listUser(params, requestSignal)
-      return response.data ?? emptyPageResponse<UserRecord>(params)
-    }),
+    (signal) =>
+      runAppliedQuery(signal, async (query, requestSignal) => {
+        const params = { ...query }
+        const response = await listUser(params, requestSignal)
+        return response.data ?? emptyPageResponse<UserRecord>(params)
+      }),
   )
   const departmentsQuery = useTenantQuery<DeptNode[]>(
     () => userStore.tenantId,
     authenticated,
     'departments',
     () => ({ scope: 'tree' }),
-    async signal => {
+    async (signal) => {
       const response = await getDeptTree(signal)
       return response.data ?? []
     },
@@ -92,40 +93,32 @@ export function useUserManagement() {
   const deptTree = departmentsQuery.data
   const deptTreeLoading = departmentsQuery.isFetching
 
-  const statusMutation = useTenantMutation<void, StatusCommand>(
-    () => userStore.tenantId,
-    'users',
-    {
-      mutationFn: async ({ row, status }) => {
-        await updateUserStatus(row.id, status)
-      },
-      onError: (_error, variables) => {
-        variables.row.status = variables.previousStatus
-      },
-      onSuccess: (_data, variables) => {
-        ElMessage.success(translate('system.user.actionSuccess', { action: variables.action }))
-      },
+  const statusMutation = useTenantMutation<void, StatusCommand>(() => userStore.tenantId, 'users', {
+    mutationFn: async ({ row, status }) => {
+      await updateUserStatus(row.id, status)
     },
-  )
-  const deleteMutation = useTenantMutation<void, UserRecord>(
-    () => userStore.tenantId,
-    'users',
-    {
-      mutationFn: async user => {
-        await deleteUser(user.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(translate('system.common.deleteSuccess'))
-      },
+    onError: (_error, variables) => {
+      variables.row.status = variables.previousStatus
     },
-  )
+    onSuccess: (_data, variables) => {
+      ElMessage.success(translate('system.user.actionSuccess', { action: variables.action }))
+    },
+  })
+  const deleteMutation = useTenantMutation<void, UserRecord>(() => userStore.tenantId, 'users', {
+    mutationFn: async (user) => {
+      await deleteUser(user.id)
+    },
+    onSuccess: () => {
+      ElMessage.success(translate('system.common.deleteSuccess'))
+    },
+  })
 
-  const deletingId = computed<Id | null>(() => (
-    deleteMutation.pending.value ? deleteMutation.variables.value?.id ?? null : null
-  ))
-  const statusUpdatingId = computed<Id | null>(() => (
-    statusMutation.pending.value ? statusMutation.variables.value?.row.id ?? null : null
-  ))
+  const deletingId = computed<Id | null>(() =>
+    deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
+  )
+  const statusUpdatingId = computed<Id | null>(() =>
+    statusMutation.pending.value ? (statusMutation.variables.value?.row.id ?? null) : null,
+  )
 
   async function fetchData(): Promise<void> {
     if (applyDraft()) return
@@ -150,7 +143,7 @@ export function useUserManagement() {
     void fetchData()
   }
 
-  function handleDeptSelect(department: { id?: Id, name: string }): void {
+  function handleDeptSelect(department: { id?: Id; name: string }): void {
     selectedDeptId.value = department.id
     selectedDeptName.value = department.name
     queryParams.value.dept_id = department.id
@@ -170,14 +163,8 @@ export function useUserManagement() {
     const intent = normalizeExportIntent('users', successfulQuery)
     if (!(await confirmExportIntent(intent))) return
 
-    await submitExport(
-      intent.signature,
-      (idempotencyKey, signal) => exportUser(
-        intent.filter,
-        idempotencyKey,
-        signal,
-        intent.isEmpty,
-      ),
+    await submitExport(intent.signature, (idempotencyKey, signal) =>
+      exportUser(intent.filter, idempotencyKey, signal, intent.isEmpty),
     )
   }
 
@@ -195,10 +182,7 @@ export function useUserManagement() {
     return 'warning'
   }
 
-  async function handleChangeStatus(
-    row: UserRecord,
-    status: UserManageableStatus,
-  ): Promise<void> {
+  async function handleChangeStatus(row: UserRecord, status: UserManageableStatus): Promise<void> {
     const previousStatus = status === '1' ? '0' : '1'
     if (statusMutation.pending.value) {
       row.status = previousStatus
@@ -207,12 +191,16 @@ export function useUserManagement() {
 
     const actionKey = status === '1' ? 'system.common.enable' : 'system.common.disable'
     const action = translate(actionKey)
-    const confirmed = await confirmAction(translate('system.user.statusChangeConfirm', {
-      action,
-      name: row.username,
-    }), translate('system.common.prompt'), {
-      type: 'warning',
-    })
+    const confirmed = await confirmAction(
+      translate('system.user.statusChangeConfirm', {
+        action,
+        name: row.username,
+      }),
+      translate('system.common.prompt'),
+      {
+        type: 'warning',
+      },
+    )
     if (!confirmed) {
       row.status = previousStatus
       return
@@ -239,12 +227,16 @@ export function useUserManagement() {
 
   async function handleDelete(user: UserRecord): Promise<void> {
     if (deleteMutation.pending.value) return
-    const confirmed = await confirmAction(translate('system.user.deleteConfirm', {
-      name: user.username,
-    }), translate('system.common.warning'), {
-      type: 'warning',
-      confirmButtonText: translate('system.common.confirmDelete'),
-    })
+    const confirmed = await confirmAction(
+      translate('system.user.deleteConfirm', {
+        name: user.username,
+      }),
+      translate('system.common.warning'),
+      {
+        type: 'warning',
+        confirmButtonText: translate('system.common.confirmDelete'),
+      },
+    )
     if (!confirmed) return
 
     await deleteMutation.mutateAsync(user)

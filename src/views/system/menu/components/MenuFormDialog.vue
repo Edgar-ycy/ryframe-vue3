@@ -15,7 +15,7 @@
           :placeholder="t('system.menu.rootPlaceholder')"
           clearable
           check-strictly
-          style="width:100%"
+          style="width: 100%"
         />
       </el-form-item>
       <el-form-item :label="t('system.menu.name')" prop="name">
@@ -31,13 +31,17 @@
       <el-form-item :label="t('system.menu.icon')">
         <IconSelect v-model="form.icon" />
       </el-form-item>
-      <el-form-item v-if="form.menu_type !== 'M'" :label="t('system.menu.linkedPermission')" prop="perm_id">
+      <el-form-item
+        v-if="form.menu_type !== 'M'"
+        :label="t('system.menu.linkedPermission')"
+        prop="perm_id"
+      >
         <el-select
           v-model="form.perm_id"
           filterable
           clearable
           :placeholder="t('system.menu.selectPermission')"
-          style="width:100%"
+          style="width: 100%"
           @change="handlePermissionChange"
         >
           <el-option
@@ -111,8 +115,7 @@ interface MenuFormState {
 }
 
 type SaveMenuCommand =
-  | { kind: 'create', data: MenuCreateInput }
-  | { kind: 'update', id: Id, data: MenuUpdateInput }
+  { kind: 'create'; data: MenuCreateInput } | { kind: 'update'; id: Id; data: MenuUpdateInput }
 
 const props = defineProps<{
   menu: MenuTreeNode | null
@@ -131,23 +134,17 @@ function isEdit(): boolean {
 }
 const formRef = ref<FormInstance>()
 const userStore = useUserStore()
-const saveMutation = useTenantMutation<void, SaveMenuCommand>(
-  () => userStore.tenantId,
-  'menus',
-  {
-    mutationFn: async command => {
-      if (command.kind === 'update') await updateMenu(command.id, command.data)
-      else await createMenu(command.data)
-    },
-    onSuccess: (_data, command) => {
-      ElMessage.success(t(
-        command.kind === 'update'
-          ? 'system.common.updateSuccess'
-          : 'system.common.addSuccess',
-      ))
-    },
+const saveMutation = useTenantMutation<void, SaveMenuCommand>(() => userStore.tenantId, 'menus', {
+  mutationFn: async (command) => {
+    if (command.kind === 'update') await updateMenu(command.id, command.data)
+    else await createMenu(command.data)
   },
-)
+  onSuccess: (_data, command) => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
+  },
+})
 const submitting = saveMutation.pending
 
 function initialForm(): MenuFormState {
@@ -170,11 +167,13 @@ const rules = computed<FormRules>(() => ({
   ...(form.value.menu_type === 'M'
     ? {}
     : {
-        perm_id: [{
-          required: true,
-          message: t('system.menu.permissionRequired'),
-          trigger: 'change',
-        }],
+        perm_id: [
+          {
+            required: true,
+            message: t('system.menu.permissionRequired'),
+            trigger: 'change',
+          },
+        ],
       }),
 }))
 const parentOptions = computed(() =>
@@ -187,24 +186,21 @@ function resetForm(): void {
 }
 
 function handlePermissionChange(permissionId?: Id): void {
-  const selected = props.permissionOptions.find(option => option.id === permissionId)
+  const selected = props.permissionOptions.find((option) => option.id === permissionId)
   const permissionCode = selected?.code
-  form.value.route_key = form.value.menu_type === 'C'
-    && permissionCode
-    && isPermissionCode(permissionCode)
-    ? (getRouteKeyByPermissionCode(permissionCode) ?? '')
-    : ''
+  form.value.route_key =
+    form.value.menu_type === 'C' && permissionCode && isPermissionCode(permissionCode)
+      ? (getRouteKeyByPermissionCode(permissionCode) ?? '')
+      : ''
 }
 
 function handleMenuTypeChange(): void {
   if (form.value.menu_type === 'M') {
     form.value.perm_id = undefined
     form.value.route_key = ''
-  }
-  else if (form.value.menu_type === 'F') {
+  } else if (form.value.menu_type === 'F') {
     form.value.route_key = ''
-  }
-  else {
+  } else {
     handlePermissionChange(form.value.perm_id)
   }
   formRef.value?.clearValidate('perm_id')

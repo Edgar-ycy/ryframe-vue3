@@ -35,7 +35,8 @@ export function canFinalizeMigration(migration: TenantDataMigration): boolean {
 }
 
 export function stateTagType(state: string): TagProps['type'] {
-  if (state === 'active' || state === 'verified' || state === 'valid' || state === 'finalized') return 'success'
+  if (state === 'active' || state === 'verified' || state === 'valid' || state === 'finalized')
+    return 'success'
   if (state === 'failed' || state === 'invalid') return 'danger'
   if (state === 'cancelled') return 'info'
   if (state === 'maintenance' || state === 'retention_pending') return 'warning'

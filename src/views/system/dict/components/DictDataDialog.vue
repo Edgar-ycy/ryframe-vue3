@@ -60,8 +60,8 @@ interface DictDataFormState {
 }
 
 type SaveDictDataCommand =
-  | { kind: 'create', data: DictDataCreateInput }
-  | { kind: 'update', id: Id, data: DictDataUpdateInput }
+  | { kind: 'create'; data: DictDataCreateInput }
+  | { kind: 'update'; id: Id; data: DictDataUpdateInput }
 
 const props = defineProps<{
   dictData: DictDataRecord | null
@@ -82,16 +82,14 @@ const saveMutation = useTenantMutation<void, SaveDictDataCommand>(
   () => userStore.tenantId,
   'dict-data',
   {
-    mutationFn: async command => {
+    mutationFn: async (command) => {
       if (command.kind === 'update') await updateDictData(command.id, command.data)
       else await createDictData(command.data)
     },
     onSuccess: (_data, command) => {
-      ElMessage.success(t(
-        command.kind === 'update'
-          ? 'system.common.updateSuccess'
-          : 'system.common.addSuccess',
-      ))
+      ElMessage.success(
+        t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+      )
     },
   },
 )

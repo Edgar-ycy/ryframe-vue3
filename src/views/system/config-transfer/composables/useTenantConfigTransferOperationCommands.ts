@@ -37,35 +37,41 @@ export function useTenantConfigTransferOperationCommands(
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     {
       meta: { errorMode: 'silent' },
-      mutationFn: async command => {
+      mutationFn: async (command) => {
         const { transfer } = command
         if (command.kind === 'preview') {
-          return requireOperationData(await previewTenantConfigTransfer(
-            transfer.id,
-            command.idempotencyKey,
-            command.controller.signal,
-          ))
+          return requireOperationData(
+            await previewTenantConfigTransfer(
+              transfer.id,
+              command.idempotencyKey,
+              command.controller.signal,
+            ),
+          )
         }
         if (command.kind === 'rollback') {
-          return requireOperationData(await rollbackTenantConfigTransfer(
-            transfer.id,
-            command.idempotencyKey,
-            command.controller.signal,
-          ))
+          return requireOperationData(
+            await rollbackTenantConfigTransfer(
+              transfer.id,
+              command.idempotencyKey,
+              command.controller.signal,
+            ),
+          )
         }
         if (!transfer.plan_hash) {
           throw new HttpError('配置迁移缺少预览计划摘要', { status: 409, kind: 'http' })
         }
-        return requireOperationData(await applyTenantConfigTransfer(
-          transfer.id,
-          {
-            plan_hash: transfer.plan_hash,
-            target_authorization_epoch: transfer.target_authorization_epoch,
-            target_configuration_version: transfer.target_configuration_version,
-          },
-          command.idempotencyKey,
-          command.controller.signal,
-        ))
+        return requireOperationData(
+          await applyTenantConfigTransfer(
+            transfer.id,
+            {
+              plan_hash: transfer.plan_hash,
+              target_authorization_epoch: transfer.target_authorization_epoch,
+              target_configuration_version: transfer.target_configuration_version,
+            },
+            command.idempotencyKey,
+            command.controller.signal,
+          ),
+        )
       },
     },
   )
@@ -79,9 +85,10 @@ export function useTenantConfigTransferOperationCommands(
     }
     const identity = context.requireIdentity()
     const guard = context.requireOperationContext()
-    const suffix = kind === 'preview'
-      ? ''
-      : `:${transfer.plan_hash ?? ''}:${transfer.target_configuration_version}:${transfer.target_authorization_epoch}`
+    const suffix =
+      kind === 'preview'
+        ? ''
+        : `:${transfer.plan_hash ?? ''}:${transfer.target_configuration_version}:${transfer.target_authorization_epoch}`
     const signature = `${kind}:${transfer.id}${suffix}`
     try {
       const latest = await context.runIdempotent(
@@ -89,19 +96,19 @@ export function useTenantConfigTransferOperationCommands(
         guard,
         signature,
         `tenant-config-${kind}`,
-        (idempotencyKey, controller) => operationMutation.mutateAsync({
-          kind,
-          transfer,
-          idempotencyKey,
-          controller,
-        }),
+        (idempotencyKey, controller) =>
+          operationMutation.mutateAsync({
+            kind,
+            transfer,
+            idempotencyKey,
+            controller,
+          }),
       )
       await context.cancelListBeforeMerge(identity, guard, 'transfer')
       context.mergeTransfer(identity, latest)
       context.scheduleActiveCycle()
       return latest
-    }
-    catch (error) {
+    } catch (error) {
       await context.reconcileTransferError(identity, guard, transfer.id, error)
       throw error
     }
@@ -117,26 +124,23 @@ export function useTenantConfigTransferOperationCommands(
       const blob = await downloadTenantConfigPackage(bundle.id, controller.signal)
       context.ensureOperationContext(identity, guard)
       downloadBlobDirect(blob, safePackageFilename(bundle))
-    }
-    catch (error) {
+    } catch (error) {
       if (
-        context.operationContextMatches(identity, guard)
-        && error instanceof HttpError
-        && [403, 404, 409].includes(error.status ?? 0)
+        context.operationContextMatches(identity, guard) &&
+        error instanceof HttpError &&
+        [403, 404, 409].includes(error.status ?? 0)
       ) {
         try {
           context.mergePackage(
             identity,
             requireOperationData(await getTenantConfigPackage(bundle.id, controller.signal)),
           )
-        }
-        catch {
+        } catch {
           await context.packagesQuery.refetch({ throwOnError: false })
         }
       }
       throw error
-    }
-    finally {
+    } finally {
       context.operationScope.finishController(controller)
       if (downloadingPackageId.value === bundle.id) downloadingPackageId.value = undefined
     }
@@ -149,6 +153,7 @@ export function useTenantConfigTransferOperationCommands(
     downloadingPackageId,
     operationKind: operationMutation.variables,
     previewTransfer: (transfer: TenantConfigTransfer) => runTransferOperation('preview', transfer),
-    rollbackTransfer: (transfer: TenantConfigTransfer) => runTransferOperation('rollback', transfer),
+    rollbackTransfer: (transfer: TenantConfigTransfer) =>
+      runTransferOperation('rollback', transfer),
   }
 }

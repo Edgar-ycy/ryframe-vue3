@@ -53,17 +53,27 @@
               :type="exportJobStatusTag(job.status)"
               size="small"
               effect="plain"
-              :aria-label="t('exportCenter.ariaStatus', { status: t(exportJobStatusKey(job.status)) })"
+              :aria-label="
+                t('exportCenter.ariaStatus', { status: t(exportJobStatusKey(job.status)) })
+              "
             >
-              <el-icon v-if="job.status === 'running'" class="export-job-card__running"><Loading /></el-icon>
+              <el-icon v-if="job.status === 'running'" class="export-job-card__running"
+                ><Loading
+              /></el-icon>
               {{ t(exportJobStatusKey(job.status)) }}
             </el-tag>
           </div>
 
           <div class="export-job-card__meta">
-            <span>{{ t('exportCenter.createdAt') }}：{{ formatOptionalLocalizedDate(job.created_at) }}</span>
+            <span
+              >{{ t('exportCenter.createdAt') }}：{{
+                formatOptionalLocalizedDate(job.created_at)
+              }}</span
+            >
             <span v-if="job.completed_at">
-              {{ t('exportCenter.completedAt') }}：{{ formatOptionalLocalizedDate(job.completed_at) }}
+              {{ t('exportCenter.completedAt') }}：{{
+                formatOptionalLocalizedDate(job.completed_at)
+              }}
             </span>
             <span v-if="job.file_size !== null && job.file_size !== undefined">
               {{ t('exportCenter.fileSize') }}：{{ formatExportFileSize(job.file_size) }}
@@ -84,7 +94,11 @@
               link
               type="danger"
               :loading="cancellingJobId === job.id"
-              :disabled="Boolean(cancellingJobId) || downloadingJobId === job.id || deletingJobIds.includes(job.id)"
+              :disabled="
+                Boolean(cancellingJobId) ||
+                downloadingJobId === job.id ||
+                deletingJobIds.includes(job.id)
+              "
               @click="emit('cancel', job)"
             >
               {{ t('exportCenter.cancel') }}
@@ -94,17 +108,30 @@
               link
               type="primary"
               :loading="downloadingJobId === job.id"
-              :disabled="Boolean(downloadingJobId) || cancellingJobId === job.id || deletingJobIds.includes(job.id) || isExportDownloadExpired(job)"
+              :disabled="
+                Boolean(downloadingJobId) ||
+                cancellingJobId === job.id ||
+                deletingJobIds.includes(job.id) ||
+                isExportDownloadExpired(job)
+              "
               @click="emit('download', job)"
             >
-              {{ isExportDownloadExpired(job) ? t('exportCenter.expired') : t('exportCenter.download') }}
+              {{
+                isExportDownloadExpired(job)
+                  ? t('exportCenter.expired')
+                  : t('exportCenter.download')
+              }}
             </el-button>
             <el-button
               v-if="isTerminalExportJob(job)"
               link
               type="danger"
               :loading="deletingJobIds.includes(job.id)"
-              :disabled="deletingJobIds.length > 0 || cancellingJobId === job.id || downloadingJobId === job.id"
+              :disabled="
+                deletingJobIds.length > 0 ||
+                cancellingJobId === job.id ||
+                downloadingJobId === job.id
+              "
               @click="emit('delete', job)"
             >
               {{ t('exportCenter.delete') }}

@@ -72,7 +72,7 @@ export function useJobManagement(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_JOBS_RESOURCE,
     () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
-    async signal => {
+    async (signal) => {
       const params = normalizeQueryParams(activeQueryParams.value)
       const response = await listBackgroundJobs(params, signal)
       return response.data ?? emptyPageResponse<BackgroundJobRecord>(params)
@@ -83,7 +83,7 @@ export function useJobManagement(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_JOB_STATS_RESOURCE,
     () => ({ scope: 'summary' }),
-    async signal => {
+    async (signal) => {
       const response = await getBackgroundJobStats(signal)
       return response.data ?? EMPTY_STATS
     },
@@ -92,7 +92,7 @@ export function useJobManagement(
     () => userStore.tenantId,
     MONITOR_JOBS_RESOURCE,
     {
-      mutationFn: row => retryBackgroundJob(row.id),
+      mutationFn: (row) => retryBackgroundJob(row.id),
       onSuccess: () => {
         ElMessage.success(t('monitor.jobs.retrySuccess'))
       },
@@ -106,9 +106,9 @@ export function useJobManagement(
   const stats = statsQuery.data
   const statsError = statsQuery.error
   const retryPending = retryMutation.pending
-  const retryingId = computed(() => (
-    retryMutation.pending.value ? retryMutation.variables.value?.id ?? undefined : undefined
-  ))
+  const retryingId = computed(() =>
+    retryMutation.pending.value ? (retryMutation.variables.value?.id ?? undefined) : undefined,
+  )
 
   async function refresh(): Promise<void> {
     await Promise.all([

@@ -11,10 +11,19 @@ import {
 /** 管理员委托列表与撤销命令。 */
 export function useServiceAccountDelegations(context: ReturnType<typeof useServiceAccountContext>) {
   const {
-    activeDelegationsQueryParams, beginController, canListDelegations,
-    captureIdentity, currentIdentity, delegationsKey, delegationsQuery,
-    delegationsQueryParams, ensureOperationContext,
-    finishController, pageActive, requireIdentity, requireOperationContext,
+    activeDelegationsQueryParams,
+    beginController,
+    canListDelegations,
+    captureIdentity,
+    currentIdentity,
+    delegationsKey,
+    delegationsQuery,
+    delegationsQueryParams,
+    ensureOperationContext,
+    finishController,
+    pageActive,
+    requireIdentity,
+    requireOperationContext,
   } = context
   const revokingDelegationId = ref<string>()
 
@@ -41,16 +50,20 @@ export function useServiceAccountDelegations(context: ReturnType<typeof useServi
       ensureOperationContext(identity, operationContext)
       queryClient.setQueryData<PageResponse<ServiceDelegation>>(
         delegationsKey(identity),
-        current => current ? {
-          ...current,
-          items: current.items.map(item => item.id === delegation.id
-            ? { ...item, revoked_at: new Date().toISOString(), status: 'revoked' }
-            : item),
-        } : current,
+        (current) =>
+          current
+            ? {
+                ...current,
+                items: current.items.map((item) =>
+                  item.id === delegation.id
+                    ? { ...item, revoked_at: new Date().toISOString(), status: 'revoked' }
+                    : item,
+                ),
+              }
+            : current,
       )
       void delegationsQuery.refetch({ throwOnError: false })
-    }
-    finally {
+    } finally {
       finishController(controller)
       if (revokingDelegationId.value === delegation.id) {
         revokingDelegationId.value = undefined

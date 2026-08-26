@@ -39,30 +39,36 @@ function deliveryFrame() {
 describe('消息帧编解码', () => {
   it('只接受完整的 v1 投递、上下文和错误帧', () => {
     expect(parseMessageDelivery(deliveryFrame())?.id).toBe('10')
-    expect(parseTenantContextChanged({
-      v: 1,
-      type: 'tenant_context_changed',
-      authorization_epoch: 12,
-      runtime_epoch: '7',
-      placement_generation: '3',
-      business_data_state: 'active',
-    })).toMatchObject({ authorization_epoch: 12, runtime_epoch: '7' })
-    expect(parseMessageSocketError({
-      v: 1,
-      type: 'error',
-      code: 'invalid_ticket',
-      message: '票据无效',
-    })).toEqual({ code: 'invalid_ticket', message: '票据无效' })
+    expect(
+      parseTenantContextChanged({
+        v: 1,
+        type: 'tenant_context_changed',
+        authorization_epoch: 12,
+        runtime_epoch: '7',
+        placement_generation: '3',
+        business_data_state: 'active',
+      }),
+    ).toMatchObject({ authorization_epoch: 12, runtime_epoch: '7' })
+    expect(
+      parseMessageSocketError({
+        v: 1,
+        type: 'error',
+        code: 'invalid_ticket',
+        message: '票据无效',
+      }),
+    ).toEqual({ code: 'invalid_ticket', message: '票据无效' })
   })
 
   it('畸形 JSON 与缺字段帧不会进入业务回调', () => {
     expect(decodeMessageSocketFrame('{')).toBeUndefined()
     expect(parseMessageDelivery({ ...deliveryFrame(), v: 2 })).toBeUndefined()
-    expect(parseTenantContextChanged({
-      v: 1,
-      type: 'tenant_context_changed',
-      authorization_epoch: -1,
-    })).toBeUndefined()
+    expect(
+      parseTenantContextChanged({
+        v: 1,
+        type: 'tenant_context_changed',
+        authorization_epoch: -1,
+      }),
+    ).toBeUndefined()
   })
 })
 
@@ -75,10 +81,14 @@ describe('消息重试策略', () => {
   })
 
   it('只把服务端明确声明的 503 识别为实时降级', () => {
-    expect(isRealtimeServiceUnavailable(new HttpError('不可用', {
-      status: 503,
-      realtimeStatus: 'unavailable',
-    }))).toBe(true)
+    expect(
+      isRealtimeServiceUnavailable(
+        new HttpError('不可用', {
+          status: 503,
+          realtimeStatus: 'unavailable',
+        }),
+      ),
+    ).toBe(true)
     expect(isRealtimeServiceUnavailable(new HttpError('普通故障', { status: 503 }))).toBe(false)
   })
 })
@@ -94,19 +104,21 @@ describe('消息连接生命周期', () => {
       onclose: null,
       onerror: null,
       onmessage: null,
-      close: (code, reason) => { closed = [code, reason] },
+      close: (code, reason) => {
+        closed = [code, reason]
+      },
       send: vi.fn(),
     }
     const connection = new MessageSocket({
       requestTicket: async () => 'ticket-value',
       apiBaseUrl: '/api',
       origin: 'https://example.test',
-      createSocket: url => {
+      createSocket: (url) => {
         expect(url).toBe('wss://example.test/api/ws?ticket=ticket-value')
         return socket
       },
-      onDelivery: message => deliveries.push(message.id),
-      onStateChange: state => states.push(state),
+      onDelivery: (message) => deliveries.push(message.id),
+      onStateChange: (state) => states.push(state),
     })
 
     connection.start()
@@ -122,10 +134,8 @@ describe('消息连接生命周期', () => {
   })
 
   it('地址构造会清理原查询参数并对票据编码', () => {
-    expect(buildMessageSocketUrl(
-      'a b',
-      'http://api.test/base?old=1',
-      'http://fallback.test',
-    )).toBe('ws://api.test/base/ws?ticket=a+b')
+    expect(buildMessageSocketUrl('a b', 'http://api.test/base?old=1', 'http://fallback.test')).toBe(
+      'ws://api.test/base/ws?ticket=a+b',
+    )
   })
 })

@@ -86,13 +86,17 @@ export function useAuthSessionManagement() {
   let disposed = false
 
   const sessionsQuery = useQuery<AuthSession[], HttpError, AuthSessionView[]>({
-    queryKey: computed(() => authSessionQueryKey(currentIdentity() ?? {
-      tenantId: 'anonymous',
-      userId: 'anonymous',
-    })),
+    queryKey: computed(() =>
+      authSessionQueryKey(
+        currentIdentity() ?? {
+          tenantId: 'anonymous',
+          userId: 'anonymous',
+        },
+      ),
+    ),
     enabled: computed(() => pageActive.value && currentIdentity() !== undefined),
     queryFn: async ({ signal }) => requireOperationData(await getAuthSessions(signal)),
-    select: sessions => sessions.map(sessionView),
+    select: (sessions) => sessions.map(sessionView),
     initialData: () => [],
     staleTime: 0,
     gcTime: 10 * 60_000,
@@ -107,7 +111,7 @@ export function useAuthSessionManagement() {
   const loading = sessionsQuery.isFetching
 
   function hasOtherDevices(): boolean {
-    return devices.value.some(device => !device.current)
+    return devices.value.some((device) => !device.current)
   }
 
   async function refresh(): Promise<void> {
@@ -115,8 +119,7 @@ export function useAuthSessionManagement() {
     refreshing.value = true
     try {
       await sessionsQuery.refetch()
-    }
-    finally {
+    } finally {
       refreshing.value = false
     }
   }
@@ -147,8 +150,7 @@ export function useAuthSessionManagement() {
     ensureIdentityUnchanged(identity)
     try {
       return await execute(csrfToken)
-    }
-    catch (error) {
+    } catch (error) {
       if (!(error instanceof HttpError) || error.status !== 403) throw error
       ensureIdentityUnchanged(identity)
       const renewedCsrfToken = await ensureCsrfToken(true)
@@ -160,9 +162,10 @@ export function useAuthSessionManagement() {
   async function removeCachedSession(identity: SessionIdentity, sid: string): Promise<void> {
     const key = authSessionQueryKey(identity)
     await queryClient.cancelQueries({ queryKey: key, exact: true })
-    queryClient.setQueryData<AuthSession[]>(key, current => (
-      current?.filter(session => session.sid !== sid) ?? []
-    ))
+    queryClient.setQueryData<AuthSession[]>(
+      key,
+      (current) => current?.filter((session) => session.sid !== sid) ?? [],
+    )
   }
 
   function reportWriteError(error: unknown): void {
@@ -192,22 +195,23 @@ export function useAuthSessionManagement() {
       { type: 'warning' },
     )
     if (
-      !confirmed
-      || disposed
-      || !identityStillCurrent(identity)
-      || activeController
-      || revokeOthersPending.value
-      || pendingDeviceKey.value
-    ) return
+      !confirmed ||
+      disposed ||
+      !identityStillCurrent(identity) ||
+      activeController ||
+      revokeOthersPending.value ||
+      pendingDeviceKey.value
+    )
+      return
 
     const controller = new AbortController()
     activeController = controller
     activeIdentity = identity
     pendingDeviceKey.value = device.key
     try {
-      await withCsrfRetry(identity, csrfToken => (
-        revokeAuthSession(device.key, csrfToken, controller.signal)
-      ))
+      await withCsrfRetry(identity, (csrfToken) =>
+        revokeAuthSession(device.key, csrfToken, controller.signal),
+      )
       ensureIdentityUnchanged(identity)
       if (device.current) {
         ElMessage.success(translate('profile.sessions.revokeCurrentSuccess'))
@@ -216,17 +220,14 @@ export function useAuthSessionManagement() {
       }
       await removeCachedSession(identity, device.key)
       ElMessage.success(translate('profile.sessions.revokeSuccess'))
-    }
-    catch (error) {
+    } catch (error) {
       if (error instanceof HttpError && error.status === 404 && identityStillCurrent(identity)) {
         await removeCachedSession(identity, device.key)
         ElMessage.info(translate('profile.sessions.alreadyGone'))
-      }
-      else {
+      } else {
         reportWriteError(error)
       }
-    }
-    finally {
+    } finally {
       if (activeController === controller) {
         activeController = undefined
         activeIdentity = undefined
@@ -244,13 +245,14 @@ export function useAuthSessionManagement() {
       { type: 'warning' },
     )
     if (
-      !confirmed
-      || disposed
-      || !identityStillCurrent(identity)
-      || activeController
-      || revokeOthersPending.value
-      || pendingDeviceKey.value
-    ) return
+      !confirmed ||
+      disposed ||
+      !identityStillCurrent(identity) ||
+      activeController ||
+      revokeOthersPending.value ||
+      pendingDeviceKey.value
+    )
+      return
 
     const controller = new AbortController()
     activeController = controller
@@ -258,9 +260,9 @@ export function useAuthSessionManagement() {
     revokeOthersPending.value = true
     try {
       const result = requireOperationData(
-        await withCsrfRetry(identity, csrfToken => (
-          revokeOtherAuthSessions(csrfToken, controller.signal)
-        )),
+        await withCsrfRetry(identity, (csrfToken) =>
+          revokeOtherAuthSessions(csrfToken, controller.signal),
+        ),
       )
       ensureIdentityUnchanged(identity)
       await queryClient.cancelQueries({
@@ -269,19 +271,19 @@ export function useAuthSessionManagement() {
       })
       queryClient.setQueryData<AuthSession[]>(
         authSessionQueryKey(identity),
-        current => current?.filter(session => session.current) ?? [],
+        (current) => current?.filter((session) => session.current) ?? [],
       )
-      ElMessage.success(translate('profile.sessions.revokeOthersSuccess', {
-        count: result.revoked_count,
-      }))
+      ElMessage.success(
+        translate('profile.sessions.revokeOthersSuccess', {
+          count: result.revoked_count,
+        }),
+      )
       // 服务端撤销已经提交后，补拉失败不能把本次安全操作误报为失败；
       // 当前缓存已经只保留本设备，后续手动刷新或页面重新激活会继续对账。
       void sessionsQuery.refetch()
-    }
-    catch (error) {
+    } catch (error) {
       reportWriteError(error)
-    }
-    finally {
+    } finally {
       if (activeController === controller) {
         activeController = undefined
         activeIdentity = undefined
@@ -290,19 +292,22 @@ export function useAuthSessionManagement() {
     }
   }
 
-  const unsubscribeUser = userStore.$subscribe(() => {
-    const nextIdentity = currentIdentity()
-    if (sameIdentity(trackedIdentity, nextIdentity)) return
-    const previousIdentity = trackedIdentity
-    trackedIdentity = nextIdentity
-    if (activeIdentity && !sameIdentity(activeIdentity, nextIdentity)) {
-      activeController?.abort()
-    }
-    if (!previousIdentity) return
-    const previousKey = authSessionQueryKey(previousIdentity)
-    void queryClient.cancelQueries({ queryKey: previousKey, exact: true })
-    queryClient.removeQueries({ queryKey: previousKey, exact: true })
-  }, { flush: 'sync' })
+  const unsubscribeUser = userStore.$subscribe(
+    () => {
+      const nextIdentity = currentIdentity()
+      if (sameIdentity(trackedIdentity, nextIdentity)) return
+      const previousIdentity = trackedIdentity
+      trackedIdentity = nextIdentity
+      if (activeIdentity && !sameIdentity(activeIdentity, nextIdentity)) {
+        activeController?.abort()
+      }
+      if (!previousIdentity) return
+      const previousKey = authSessionQueryKey(previousIdentity)
+      void queryClient.cancelQueries({ queryKey: previousKey, exact: true })
+      queryClient.removeQueries({ queryKey: previousKey, exact: true })
+    },
+    { flush: 'sync' },
+  )
 
   useKeepAlivePageActive(pageActive, refresh)
 

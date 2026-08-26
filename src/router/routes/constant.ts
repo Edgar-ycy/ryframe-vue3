@@ -5,14 +5,15 @@ import { withMessageCatalogs } from '@/i18n/lazyCatalog'
 
 const dashboardPage = withMessageCatalogs(
   () => import('@/views/index.vue'),
-  [() => import('@/i18n/catalog/platform-operations').then(module => module.messageCatalog)],
+  [() => import('@/i18n/catalog/platform-operations').then((module) => module.messageCatalog)],
 )
 
 const profilePage = withMessageCatalogs(
   () => import('@/views/profile/index.vue'),
   [
-    () => import('@/i18n/catalog/profile-sessions').then(module => module.messageCatalog),
-    () => import('@/i18n/catalog/profile-service-delegations').then(module => module.messageCatalog),
+    () => import('@/i18n/catalog/profile-sessions').then((module) => module.messageCatalog),
+    () =>
+      import('@/i18n/catalog/profile-service-delegations').then((module) => module.messageCatalog),
   ],
 )
 

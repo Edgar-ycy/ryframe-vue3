@@ -1,6 +1,4 @@
-import type {
-  MessageSocket,
-} from '@/app/messages/socket/lifecycle'
+import type { MessageSocket } from '@/app/messages/socket/lifecycle'
 import { useUserStore } from '@/stores/user'
 
 export const POLL_INTERVAL_MS = 60_000
@@ -46,12 +44,7 @@ export function getRuntime(): MessageRuntime {
 
 export function currentIdentity(): MessageIdentity | undefined {
   const user = useUserStore()
-  if (
-    user.sessionStatus !== 'authenticated'
-    || !user.token
-    || !user.tenantId
-    || !user.userId
-  ) {
+  if (user.sessionStatus !== 'authenticated' || !user.token || !user.tenantId || !user.userId) {
     return undefined
   }
   const userId = String(user.userId)

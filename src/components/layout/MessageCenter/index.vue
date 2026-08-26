@@ -74,13 +74,15 @@ function badgeValue(): string | number {
 }
 
 function connectionLabel(): string {
-  return {
-    connecting: t('messageCenter.connecting'),
-    connected: t('messageCenter.connected'),
-    retrying: t('messageCenter.retrying'),
-    degraded: t('messageCenter.degraded'),
-    disconnected: t('messageCenter.disconnected'),
-  }[messageStore.connectionStatus] ?? t('messageCenter.disconnected')
+  return (
+    {
+      connecting: t('messageCenter.connecting'),
+      connected: t('messageCenter.connected'),
+      retrying: t('messageCenter.retrying'),
+      degraded: t('messageCenter.degraded'),
+      disconnected: t('messageCenter.disconnected'),
+    }[messageStore.connectionStatus] ?? t('messageCenter.disconnected')
+  )
 }
 
 function currentMessages(): MessageRecord[] {
@@ -89,16 +91,10 @@ function currentMessages(): MessageRecord[] {
 
 function detailMessage(): MessageRecord | undefined {
   const id = detailSeed.value?.id
-  return currentMessages().find(message => message.id === id) ?? detailSeed.value
+  return currentMessages().find((message) => message.id === id) ?? detailSeed.value
 }
 
-const {
-  deleteOne,
-  deleteSelected,
-  markAllRead,
-  openDetail,
-  refresh,
-} = useMessageCenterActions({
+const { deleteOne, deleteSelected, markAllRead, openDetail, refresh } = useMessageCenterActions({
   detailSeed,
   detailVisible,
   messageCenter,
@@ -108,16 +104,16 @@ const {
 
 function acknowledgeReceivedMessages(records = currentMessages()): void {
   messageController.queueAcknowledgement(
-    records.filter(message => !message.acked_at).map(message => message.id),
+    records.filter((message) => !message.acked_at).map((message) => message.id),
   )
 }
 
 watch(
   currentMessages,
   (records) => {
-    const ids = records.map(message => message.id)
+    const ids = records.map((message) => message.id)
     messageController.pruneDeletedMessages(ids)
-    selectedIds.value = selectedIds.value.filter(id => ids.includes(id))
+    selectedIds.value = selectedIds.value.filter((id) => ids.includes(id))
     // 无论来源是首次加载、手动刷新还是补拉，进入收件箱即自动确认送达。
     acknowledgeReceivedMessages(records)
   },

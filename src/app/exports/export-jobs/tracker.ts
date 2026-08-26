@@ -1,9 +1,4 @@
-import {
-  getCurrentScope,
-  onScopeDispose,
-  ref,
-  type MaybeRefOrGetter,
-} from 'vue'
+import { getCurrentScope, onScopeDispose, ref, type MaybeRefOrGetter } from 'vue'
 import { getExportJob, type ExportJob } from '@/api/modules/exportJob'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
@@ -52,9 +47,11 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   let trackedIdentity = currentExportJobIdentity()
 
   function listFromCache(identity: ExportJobIdentity): ExportJob[] {
-    return queryClient.getQueryData<ExportJob[]>(
-      exportJobListQueryKey(identity.tenantId, identity.userId),
-    ) ?? []
+    return (
+      queryClient.getQueryData<ExportJob[]>(
+        exportJobListQueryKey(identity.tenantId, identity.userId),
+      ) ?? []
+    )
   }
 
   function reconcileList(identity: ExportJobIdentity): void {
@@ -67,7 +64,7 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
       if (running && activeCount.value > 0 && timer === undefined) scheduleNextCycle(true)
       return
     }
-    const visibleIds = new Set(jobs.map(job => job.id))
+    const visibleIds = new Set(jobs.map((job) => job.id))
     for (const [jobId] of previousJobs) {
       if (!visibleIds.has(jobId)) previousJobs.delete(jobId)
     }
@@ -84,8 +81,7 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     if (!running) return
     if (activeCount.value > 0 && timer === undefined) {
       scheduleNextCycle()
-    }
-    else if (activeCount.value === 0) {
+    } else if (activeCount.value === 0) {
       if (timer !== undefined) globalThis.clearTimeout(timer)
       timer = undefined
       cycleController?.abort()
@@ -96,10 +92,12 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   async function refreshOne(identity: ExportJobIdentity, jobId: string): Promise<void> {
     try {
       const job = requireOperationData(await getExportJob(jobId, cycleController?.signal))
-      if (!sameExportJobIdentity(identity, currentExportJobIdentity() ?? { tenantId: '', userId: '' })) return
+      if (
+        !sameExportJobIdentity(identity, currentExportJobIdentity() ?? { tenantId: '', userId: '' })
+      )
+        return
       mergeExportJob(queryClient, identity, job)
-    }
-    catch (error) {
+    } catch (error) {
       if (!(error instanceof HttpError)) return
       if (error.kind === 'cancelled') return
       if (error.status === 403 || error.status === 404) {
@@ -109,15 +107,19 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
       if (error.status === 409) {
         try {
           const latest = requireOperationData(await getExportJob(jobId, cycleController?.signal))
-          if (!sameExportJobIdentity(identity, currentExportJobIdentity() ?? { tenantId: '', userId: '' })) return
+          if (
+            !sameExportJobIdentity(
+              identity,
+              currentExportJobIdentity() ?? { tenantId: '', userId: '' },
+            )
+          )
+            return
           mergeExportJob(queryClient, identity, latest)
-        }
-        catch (retryError) {
+        } catch (retryError) {
           if (retryError instanceof HttpError && retryError.kind === 'cancelled') return
           try {
             await list.refresh()
-          }
-          catch {
+          } catch {
             // 本轮对账失败时保留活跃任务，下一轮继续确认。
           }
         }
@@ -126,10 +128,13 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   }
 
   async function refreshActiveDetails(): Promise<void> {
-    if (!running || document.visibilityState === 'hidden' || !shouldEnableExportJobs(enabled)) return
+    if (!running || document.visibilityState === 'hidden' || !shouldEnableExportJobs(enabled))
+      return
     const identity = currentExportJobIdentity()
     if (!identity) return
-    const ids = listFromCache(identity).filter(isActiveExportJob).map(job => job.id)
+    const ids = listFromCache(identity)
+      .filter(isActiveExportJob)
+      .map((job) => job.id)
     let cursor = 0
     const workers = Array.from(
       { length: Math.min(MAX_CONCURRENT_DETAILS, ids.length) },
@@ -148,20 +153,20 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     if (timer !== undefined) globalThis.clearTimeout(timer)
     timer = undefined
     if (!running || !shouldEnableExportJobs(enabled) || activeCount.value === 0) return
-    timer = globalThis.setTimeout(async () => {
-      timer = undefined
-      cycleController?.abort()
-      cycleController = new AbortController()
-      await refreshActiveDetails()
-      scheduleNextCycle()
-    }, immediate ? 0 : ACTIVE_REFRESH_INTERVAL_MS)
+    timer = globalThis.setTimeout(
+      async () => {
+        timer = undefined
+        cycleController?.abort()
+        cycleController = new AbortController()
+        await refreshActiveDetails()
+        scheduleNextCycle()
+      },
+      immediate ? 0 : ACTIVE_REFRESH_INTERVAL_MS,
+    )
   }
 
   async function refresh(): Promise<void> {
-    await Promise.all([
-      list.refresh(),
-      notifications.refreshUnread().catch(() => undefined),
-    ])
+    await Promise.all([list.refresh(), notifications.refreshUnread().catch(() => undefined)])
     const identity = currentExportJobIdentity()
     if (identity) reconcileList(identity)
     if (activeCount.value > 0) scheduleNextCycle(true)
@@ -250,27 +255,27 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
       })
       .finally(() => channelControllers.delete(controller))
   })
-  const unsubscribeUser = useUserStore().$subscribe(() => {
-    const nextIdentity = currentExportJobIdentity()
-    if (
-      trackedIdentity
-      && nextIdentity
-      && sameExportJobIdentity(trackedIdentity, nextIdentity)
-    ) return
-    if (!trackedIdentity && !nextIdentity) return
-    trackedIdentity = nextIdentity
-    stopTracking()
-    baselineEstablished = false
-    previousJobs.clear()
-    activeCount.value = 0
-    if (!shouldEnableExportJobs(enabled) || !nextIdentity) return
-    void refresh()
-      .catch(() => undefined)
-      .finally(() => {
-        const latestIdentity = currentExportJobIdentity()
-        if (latestIdentity && sameExportJobIdentity(latestIdentity, nextIdentity)) startTracking()
-      })
-  }, { flush: 'sync' })
+  const unsubscribeUser = useUserStore().$subscribe(
+    () => {
+      const nextIdentity = currentExportJobIdentity()
+      if (trackedIdentity && nextIdentity && sameExportJobIdentity(trackedIdentity, nextIdentity))
+        return
+      if (!trackedIdentity && !nextIdentity) return
+      trackedIdentity = nextIdentity
+      stopTracking()
+      baselineEstablished = false
+      previousJobs.clear()
+      activeCount.value = 0
+      if (!shouldEnableExportJobs(enabled) || !nextIdentity) return
+      void refresh()
+        .catch(() => undefined)
+        .finally(() => {
+          const latestIdentity = currentExportJobIdentity()
+          if (latestIdentity && sameExportJobIdentity(latestIdentity, nextIdentity)) startTracking()
+        })
+    },
+    { flush: 'sync' },
+  )
 
   if (getCurrentScope()) {
     onScopeDispose(() => {

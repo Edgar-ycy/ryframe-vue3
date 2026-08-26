@@ -1,11 +1,4 @@
-import {
-  onScopeDispose,
-  readonly,
-  ref,
-  toValue,
-  watch,
-  type MaybeRefOrGetter,
-} from 'vue'
+import { onScopeDispose, readonly, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { downloadFile } from '@/api/modules/common'
 import { parseProtectedFileUrl } from '@/shared/media/protectedFile'
 
@@ -44,11 +37,9 @@ export function useAuthenticatedImage(source: MaybeRefOrGetter<string | null | u
         releaseObjectUrl()
         activeObjectUrl = nextObjectUrl
         imageSrc.value = nextObjectUrl
-      }
-      catch {
+      } catch {
         if (version === loadVersion && !activeObjectUrl) imageSrc.value = ''
-      }
-      finally {
+      } finally {
         if (version === loadVersion) loading.value = false
       }
     },

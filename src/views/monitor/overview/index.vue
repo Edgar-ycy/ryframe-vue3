@@ -5,7 +5,11 @@
         <div>
           <h2>{{ t('monitor.overview.title') }}</h2>
           <p>{{ t('monitor.overview.subtitle') }}</p>
-          <small v-if="snapshot">{{ t('monitor.overview.calculatedAt', { time: formatLocalizedDate(snapshot.calculated_at) }) }}</small>
+          <small v-if="snapshot">{{
+            t('monitor.overview.calculatedAt', {
+              time: formatLocalizedDate(snapshot.calculated_at),
+            })
+          }}</small>
         </div>
         <div class="overview-actions">
           <el-radio-group v-model="range" @change="handleRangeChange">
@@ -13,39 +17,84 @@
             <el-radio-button value="24h">{{ t('monitor.overview.range24h') }}</el-radio-button>
             <el-radio-button value="7d">{{ t('monitor.overview.range7d') }}</el-radio-button>
           </el-radio-group>
-          <el-button icon="Refresh" :loading="snapshotLoading || trendsLoading" @click="manualRefresh">
+          <el-button
+            icon="Refresh"
+            :loading="snapshotLoading || trendsLoading"
+            @click="manualRefresh"
+          >
             {{ t('monitor.overview.refresh') }}
           </el-button>
         </div>
       </div>
     </el-card>
 
-    <el-alert v-if="snapshotError" :title="snapshotError" type="error" show-icon :closable="false" class="overview-error" />
+    <el-alert
+      v-if="snapshotError"
+      :title="snapshotError"
+      type="error"
+      show-icon
+      :closable="false"
+      class="overview-error"
+    />
     <el-skeleton v-if="snapshotLoading && !snapshot" :rows="5" animated class="content-card" />
 
     <template v-if="snapshot">
       <section class="status-grid" :aria-label="t('monitor.overview.dependencies')">
         <article v-for="dependency in dependencyCards()" :key="dependency.key" class="status-card">
           <span>{{ dependency.label }}</span>
-          <el-tag :type="dependencyTag(dependency.status)" effect="plain">{{ dependencyStatusLabel(dependency.status) }}</el-tag>
+          <el-tag :type="dependencyTag(dependency.status)" effect="plain">{{
+            dependencyStatusLabel(dependency.status)
+          }}</el-tag>
           <small>{{ dependency.detail || '—' }}</small>
         </article>
       </section>
 
       <section class="metric-grid" :aria-label="t('monitor.overview.runtime')">
-        <article class="metric-card"><span>{{ t('monitor.overview.workerMode') }}</span><strong>{{ snapshot.jobs.mode }}</strong></article>
-        <article class="metric-card"><span>{{ t('monitor.overview.scheduler') }}</span><strong>{{ snapshot.jobs.scheduler_enabled ? t('monitor.overview.schedulerEnabled') : t('monitor.overview.schedulerDisabled') }}</strong></article>
-        <article class="metric-card"><span>{{ t('monitor.overview.cpu') }}</span><strong>{{ formatPercent(snapshot.system.cpu_usage) }}</strong></article>
-        <article class="metric-card"><span>{{ t('monitor.overview.memory') }}</span><strong>{{ formatMemory() }}</strong></article>
-        <article class="metric-card"><span>{{ t('monitor.overview.activeConnections') }}</span><strong>{{ snapshot.database_pool.active_connections ?? '—' }}</strong></article>
-        <article class="metric-card"><span>{{ t('monitor.overview.enabledSchedules') }}</span><strong>{{ snapshot.jobs.enabled_schedules }}</strong></article>
-        <article class="metric-card"><span>{{ t('monitor.overview.scheduleLag') }}</span><strong>{{ t('monitor.overview.seconds', { value: snapshot.jobs.schedule_lag_seconds.toFixed(2) }) }}</strong></article>
-        <article class="metric-card"><span>{{ t('monitor.overview.total') }}</span><strong>{{ snapshot.jobs.total }}</strong></article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.workerMode') }}</span
+          ><strong>{{ snapshot.jobs.mode }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.scheduler') }}</span
+          ><strong>{{
+            snapshot.jobs.scheduler_enabled
+              ? t('monitor.overview.schedulerEnabled')
+              : t('monitor.overview.schedulerDisabled')
+          }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.cpu') }}</span
+          ><strong>{{ formatPercent(snapshot.system.cpu_usage) }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.memory') }}</span
+          ><strong>{{ formatMemory() }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.activeConnections') }}</span
+          ><strong>{{ snapshot.database_pool.active_connections ?? '—' }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.enabledSchedules') }}</span
+          ><strong>{{ snapshot.jobs.enabled_schedules }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.scheduleLag') }}</span
+          ><strong>{{
+            t('monitor.overview.seconds', { value: snapshot.jobs.schedule_lag_seconds.toFixed(2) })
+          }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>{{ t('monitor.overview.total') }}</span
+          ><strong>{{ snapshot.jobs.total }}</strong>
+        </article>
       </section>
 
       <section class="chart-grid">
         <el-card shadow="never" class="chart-card chart-card--compact">
-          <template #header><span>{{ t('monitor.overview.jobsComposition') }}</span></template>
+          <template #header
+            ><span>{{ t('monitor.overview.jobsComposition') }}</span></template
+          >
           <EChartContainer
             ref="jobsChart"
             :chart-label="t('monitor.overview.chartAriaJobs')"
@@ -59,10 +108,22 @@
 
         <el-card shadow="never" class="chart-card chart-card--wide">
           <template #header>
-            <div><span>{{ t('monitor.overview.activityTrend') }}</span><p>{{ t('monitor.overview.activityTrendHint') }}</p></div>
+            <div>
+              <span>{{ t('monitor.overview.activityTrend') }}</span>
+              <p>{{ t('monitor.overview.activityTrendHint') }}</p>
+            </div>
           </template>
-          <el-alert v-if="trendsError" :title="trendsError" type="error" show-icon :closable="false" />
-          <el-empty v-else-if="trends && !hasTrendData()" :description="t('monitor.overview.noTrendData')" />
+          <el-alert
+            v-if="trendsError"
+            :title="trendsError"
+            type="error"
+            show-icon
+            :closable="false"
+          />
+          <el-empty
+            v-else-if="trends && !hasTrendData()"
+            :description="t('monitor.overview.noTrendData')"
+          />
           <EChartContainer
             v-else
             ref="activityChart"
@@ -77,8 +138,16 @@
 
       <section class="chart-grid chart-grid--equal">
         <el-card shadow="never" class="chart-card">
-          <template #header><div><span>{{ t('monitor.overview.scheduleOutcomes') }}</span><p>{{ t('monitor.overview.scheduleOutcomesHint') }}</p></div></template>
-          <el-empty v-if="trends && !hasScheduleData()" :description="t('monitor.overview.noTrendData')" />
+          <template #header
+            ><div>
+              <span>{{ t('monitor.overview.scheduleOutcomes') }}</span>
+              <p>{{ t('monitor.overview.scheduleOutcomesHint') }}</p>
+            </div></template
+          >
+          <el-empty
+            v-if="trends && !hasScheduleData()"
+            :description="t('monitor.overview.noTrendData')"
+          />
           <EChartContainer
             v-else
             ref="scheduleChart"
@@ -90,8 +159,16 @@
           </EChartContainer>
         </el-card>
         <el-card shadow="never" class="chart-card">
-          <template #header><div><span>{{ t('monitor.overview.accessEvents') }}</span><p>{{ t('monitor.overview.accessEventsHint') }}</p></div></template>
-          <el-empty v-if="trends && !hasAccessData()" :description="t('monitor.overview.noTrendData')" />
+          <template #header
+            ><div>
+              <span>{{ t('monitor.overview.accessEvents') }}</span>
+              <p>{{ t('monitor.overview.accessEventsHint') }}</p>
+            </div></template
+          >
+          <el-empty
+            v-if="trends && !hasAccessData()"
+            :description="t('monitor.overview.noTrendData')"
+          />
           <EChartContainer
             v-else
             ref="accessChart"
@@ -219,11 +296,9 @@ async function loadSnapshot(force: boolean): Promise<void> {
     snapshot.value = await fetchOverviewSnapshot(userStore.tenantId, force)
     await nextTick()
     renderCharts()
-  }
-  catch (error) {
+  } catch (error) {
     snapshotError.value = error instanceof Error ? error.message : String(error)
-  }
-  finally {
+  } finally {
     snapshotLoading.value = false
   }
 }
@@ -236,11 +311,9 @@ async function loadTrends(force: boolean): Promise<void> {
     trends.value = await fetchOverviewTrends(userStore.tenantId, range.value, force)
     await nextTick()
     renderTrendCharts()
-  }
-  catch (error) {
+  } catch (error) {
     trendsError.value = error instanceof Error ? error.message : String(error)
-  }
-  finally {
+  } finally {
     trendsLoading.value = false
   }
 }
@@ -282,15 +355,35 @@ function renderTrendCharts(): void {
 function dependencyCards() {
   if (!snapshot.value) return []
   return [
-    { key: 'database', label: t('monitor.overview.database'), ...snapshot.value.dependencies.database },
+    {
+      key: 'database',
+      label: t('monitor.overview.database'),
+      ...snapshot.value.dependencies.database,
+    },
     { key: 'redis', label: t('monitor.overview.redis'), ...snapshot.value.dependencies.redis },
-    { key: 'object_storage', label: t('monitor.overview.objectStorage'), ...snapshot.value.dependencies.object_storage },
-    { key: 'messaging', label: t('monitor.overview.messaging'), ...snapshot.value.dependencies.messaging },
+    {
+      key: 'object_storage',
+      label: t('monitor.overview.objectStorage'),
+      ...snapshot.value.dependencies.object_storage,
+    },
+    {
+      key: 'messaging',
+      label: t('monitor.overview.messaging'),
+      ...snapshot.value.dependencies.messaging,
+    },
   ]
 }
 
 function dependencyStatusLabel(status: string): string {
-  const key = { up: 'statusHealthy', healthy: 'statusHealthy', degraded: 'statusDegraded', disabled: 'statusDisabled', down: 'statusUnavailable', unavailable: 'statusUnavailable' }[status] ?? 'statusUnknown'
+  const key =
+    {
+      up: 'statusHealthy',
+      healthy: 'statusHealthy',
+      degraded: 'statusDegraded',
+      disabled: 'statusDisabled',
+      down: 'statusUnavailable',
+      unavailable: 'statusUnavailable',
+    }[status] ?? 'statusUnknown'
   return t(`monitor.overview.${key}`)
 }
 
@@ -302,7 +395,10 @@ function dependencyTag(status: string): 'danger' | 'info' | 'success' | 'warning
 }
 
 function formatPercent(value: number): string {
-  return new Intl.NumberFormat(getApplicationLocale(), { style: 'percent', maximumFractionDigits: 1 }).format(value / 100)
+  return new Intl.NumberFormat(getApplicationLocale(), {
+    style: 'percent',
+    maximumFractionDigits: 1,
+  }).format(value / 100)
 }
 
 function formatMemory(): string {
@@ -315,15 +411,41 @@ function sum(selector: (bucket: MonitorOverviewTrends['buckets'][number]) => num
 }
 
 function hasTrendData(): boolean {
-  return sum(bucket => bucket.background_jobs_created + bucket.login_success + bucket.login_failure + bucket.operation_success + bucket.operation_failure) > 0
+  return (
+    sum(
+      (bucket) =>
+        bucket.background_jobs_created +
+        bucket.login_success +
+        bucket.login_failure +
+        bucket.operation_success +
+        bucket.operation_failure,
+    ) > 0
+  )
 }
 
 function hasScheduleData(): boolean {
-  return sum(bucket => bucket.schedule_enqueued + bucket.schedule_skipped_misfire + bucket.schedule_skipped_concurrency + bucket.schedule_target_unavailable + bucket.schedule_invalid_configuration) > 0
+  return (
+    sum(
+      (bucket) =>
+        bucket.schedule_enqueued +
+        bucket.schedule_skipped_misfire +
+        bucket.schedule_skipped_concurrency +
+        bucket.schedule_target_unavailable +
+        bucket.schedule_invalid_configuration,
+    ) > 0
+  )
 }
 
 function hasAccessData(): boolean {
-  return sum(bucket => bucket.login_success + bucket.login_failure + bucket.operation_success + bucket.operation_failure) > 0
+  return (
+    sum(
+      (bucket) =>
+        bucket.login_success +
+        bucket.login_failure +
+        bucket.operation_success +
+        bucket.operation_failure,
+    ) > 0
+  )
 }
 
 function jobsSummary(): string {
@@ -333,15 +455,15 @@ function jobsSummary(): string {
 }
 
 function activitySummary(): string {
-  return `${t('monitor.overview.jobsCreated')} ${sum(bucket => bucket.background_jobs_created)}；${t('monitor.overview.loginTotal')} ${sum(bucket => bucket.login_success + bucket.login_failure)}；${t('monitor.overview.operationTotal')} ${sum(bucket => bucket.operation_success + bucket.operation_failure)}`
+  return `${t('monitor.overview.jobsCreated')} ${sum((bucket) => bucket.background_jobs_created)}；${t('monitor.overview.loginTotal')} ${sum((bucket) => bucket.login_success + bucket.login_failure)}；${t('monitor.overview.operationTotal')} ${sum((bucket) => bucket.operation_success + bucket.operation_failure)}`
 }
 
 function scheduleSummary(): string {
-  return `${t('monitor.overview.enqueued')} ${sum(bucket => bucket.schedule_enqueued)}；${t('monitor.overview.skippedMisfire')} ${sum(bucket => bucket.schedule_skipped_misfire)}；${t('monitor.overview.skippedConcurrency')} ${sum(bucket => bucket.schedule_skipped_concurrency)}`
+  return `${t('monitor.overview.enqueued')} ${sum((bucket) => bucket.schedule_enqueued)}；${t('monitor.overview.skippedMisfire')} ${sum((bucket) => bucket.schedule_skipped_misfire)}；${t('monitor.overview.skippedConcurrency')} ${sum((bucket) => bucket.schedule_skipped_concurrency)}`
 }
 
 function accessSummary(): string {
-  return `${t('monitor.overview.loginSuccess')} ${sum(bucket => bucket.login_success)}；${t('monitor.overview.loginFailure')} ${sum(bucket => bucket.login_failure)}；${t('monitor.overview.operationSuccess')} ${sum(bucket => bucket.operation_success)}；${t('monitor.overview.operationFailure')} ${sum(bucket => bucket.operation_failure)}`
+  return `${t('monitor.overview.loginSuccess')} ${sum((bucket) => bucket.login_success)}；${t('monitor.overview.loginFailure')} ${sum((bucket) => bucket.login_failure)}；${t('monitor.overview.operationSuccess')} ${sum((bucket) => bucket.operation_success)}；${t('monitor.overview.operationFailure')} ${sum((bucket) => bucket.operation_failure)}`
 }
 </script>
 

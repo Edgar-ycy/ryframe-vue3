@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/shared/http/client'
-import {
-  configureServerStateErrorReporter,
-  queryClient,
-} from '@/shared/query/client'
+import { configureServerStateErrorReporter, queryClient } from '@/shared/query/client'
 
 describe('服务端状态错误出口', () => {
   beforeEach(() => {
@@ -21,10 +18,12 @@ describe('服务端状态错误出口', () => {
     const error = new HttpError('请求失败', { status: 400, kind: 'http' })
     configureServerStateErrorReporter(reporter)
 
-    await expect(queryClient.fetchQuery({
-      queryKey: ['query-error-policy', 'global'],
-      queryFn: () => Promise.reject(error),
-    })).rejects.toBe(error)
+    await expect(
+      queryClient.fetchQuery({
+        queryKey: ['query-error-policy', 'global'],
+        queryFn: () => Promise.reject(error),
+      }),
+    ).rejects.toBe(error)
 
     expect(reporter).toHaveBeenCalledOnce()
     expect(reporter).toHaveBeenCalledWith(error)
@@ -35,11 +34,13 @@ describe('服务端状态错误出口', () => {
     const error = new HttpError('请求失败', { status: 400, kind: 'http' })
     configureServerStateErrorReporter(reporter)
 
-    await expect(queryClient.fetchQuery({
-      queryKey: ['query-error-policy', 'silent'],
-      meta: { errorMode: 'silent' },
-      queryFn: () => Promise.reject(error),
-    })).rejects.toBe(error)
+    await expect(
+      queryClient.fetchQuery({
+        queryKey: ['query-error-policy', 'silent'],
+        meta: { errorMode: 'silent' },
+        queryFn: () => Promise.reject(error),
+      }),
+    ).rejects.toBe(error)
 
     expect(reporter).not.toHaveBeenCalled()
   })
@@ -49,10 +50,12 @@ describe('服务端状态错误出口', () => {
     const error = new HttpError('请求已取消', { kind: 'cancelled' })
     configureServerStateErrorReporter(reporter)
 
-    await expect(queryClient.fetchQuery({
-      queryKey: ['query-error-policy', 'cancelled'],
-      queryFn: () => Promise.reject(error),
-    })).rejects.toBe(error)
+    await expect(
+      queryClient.fetchQuery({
+        queryKey: ['query-error-policy', 'cancelled'],
+        queryFn: () => Promise.reject(error),
+      }),
+    ).rejects.toBe(error)
 
     expect(reporter).not.toHaveBeenCalled()
   })

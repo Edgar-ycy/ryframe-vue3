@@ -72,11 +72,31 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="ipAddress" :label="t('profile.sessions.ipAddress')" min-width="140" />
-              <el-table-column prop="loginLocation" :label="t('profile.sessions.loginLocation')" min-width="150" />
-              <el-table-column prop="loginTime" :label="t('profile.sessions.loginTime')" min-width="180" />
-              <el-table-column prop="lastActivity" :label="t('profile.sessions.lastActivity')" min-width="180" />
-              <el-table-column prop="expiresAt" :label="t('profile.sessions.expiresAt')" min-width="180" />
+              <el-table-column
+                prop="ipAddress"
+                :label="t('profile.sessions.ipAddress')"
+                min-width="140"
+              />
+              <el-table-column
+                prop="loginLocation"
+                :label="t('profile.sessions.loginLocation')"
+                min-width="150"
+              />
+              <el-table-column
+                prop="loginTime"
+                :label="t('profile.sessions.loginTime')"
+                min-width="180"
+              />
+              <el-table-column
+                prop="lastActivity"
+                :label="t('profile.sessions.lastActivity')"
+                min-width="180"
+              />
+              <el-table-column
+                prop="expiresAt"
+                :label="t('profile.sessions.expiresAt')"
+                min-width="180"
+              />
               <el-table-column :label="t('profile.sessions.actions')" width="120" fixed="right">
                 <template #default="{ row }">
                   <el-button

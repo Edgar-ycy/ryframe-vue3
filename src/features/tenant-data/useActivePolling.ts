@@ -24,7 +24,9 @@ export function useActivePolling(
     timer = setInterval(() => {
       if (requestRunning || !enabled.value) return
       requestRunning = true
-      void poll().finally(() => { requestRunning = false })
+      void poll().finally(() => {
+        requestRunning = false
+      })
     }, intervalMs)
   }
 

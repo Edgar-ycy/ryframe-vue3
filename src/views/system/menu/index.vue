@@ -18,7 +18,12 @@
         row-key="id"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
       >
-        <el-table-column prop="name" :label="t('system.menu.name')" min-width="150" show-overflow-tooltip />
+        <el-table-column
+          prop="name"
+          :label="t('system.menu.name')"
+          min-width="150"
+          show-overflow-tooltip
+        />
         <el-table-column :label="t('system.common.type')" align="center">
           <template #default="{ row }">
             <el-tag :type="menuTypeTag(row.menu_type)" size="small">
@@ -33,7 +38,11 @@
             </el-icon>
           </template>
         </el-table-column>
-        <el-table-column :label="t('system.menu.linkedPermission')" min-width="220" show-overflow-tooltip>
+        <el-table-column
+          :label="t('system.menu.linkedPermission')"
+          min-width="220"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
             {{ permissionLabel(row) }}
           </template>
@@ -62,7 +71,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="t('system.common.actions')" min-width="100" fixed="right" align="center">
+        <el-table-column
+          :label="t('system.common.actions')"
+          min-width="100"
+          fixed="right"
+          align="center"
+        >
           <template #default="{ row }">
             <el-button
               v-perm="'system:menu:add'"

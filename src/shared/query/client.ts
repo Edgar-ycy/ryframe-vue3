@@ -1,9 +1,4 @@
-import {
-  MutationCache,
-  QueryCache,
-  QueryClient,
-  type QueryKey,
-} from '@tanstack/vue-query'
+import { MutationCache, QueryCache, QueryClient, type QueryKey } from '@tanstack/vue-query'
 import { HttpError } from '@/shared/http/client'
 
 const SERVER_STATE_PREFIX = 'server-state'
@@ -35,12 +30,13 @@ function errorMode(meta: ServerStateMeta | undefined): ServerStateErrorMode {
 
 function reportServerStateError(error: unknown, meta: ServerStateMeta | undefined): void {
   if (errorMode(meta) === 'silent') return
-  const normalized = error instanceof HttpError
-    ? error
-    : new HttpError(
-        error instanceof Error ? error.message : '服务端状态请求失败',
-        { kind: 'unknown', cause: error },
-      )
+  const normalized =
+    error instanceof HttpError
+      ? error
+      : new HttpError(error instanceof Error ? error.message : '服务端状态请求失败', {
+          kind: 'unknown',
+          cause: error,
+        })
   if (normalized.kind !== 'cancelled') errorReporter?.(normalized)
 }
 

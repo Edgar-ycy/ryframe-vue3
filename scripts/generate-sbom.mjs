@@ -51,11 +51,9 @@ async function runPnpmSbom(output) {
       child.once('close', resolve)
     })
     if (exitCode !== 0) throw new Error(`pnpm sbom 退出码为 ${exitCode}`)
-  }
-  catch (error) {
+  } catch (error) {
     spawnError = error
-  }
-  finally {
+  } finally {
     await handle.close()
   }
   if (spawnError) {
@@ -70,8 +68,7 @@ async function runPnpmSbom(output) {
     await rm(output, { force: true })
     await rename(temporary, output)
     return sbom.components.length
-  }
-  catch (error) {
+  } catch (error) {
     await rm(temporary, { force: true })
     throw error
   }

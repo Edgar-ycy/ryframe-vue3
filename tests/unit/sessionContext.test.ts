@@ -49,48 +49,60 @@ describe('会话授权快照', () => {
     Reflect.deleteProperty(missing, 'is_super_admin')
     expect(isSessionContext(missing)).toBe(false)
     expect(isSessionContext({ ...valid, unexpected: true })).toBe(false)
-    expect(isSessionContext({
-      ...valid,
-      capabilities: [{
-        client_config: {},
-        code: 'feature-a',
-        schema_version: 0,
-        variant: 'default',
-      }],
-    })).toBe(false)
-    expect(isSessionContext({
-      ...valid,
-      menus: [{
-        children: [],
-        id: '1',
-        menu_type: 'C',
-        name: '用户',
-        perm_code: 'not-in-catalog',
-        sort: 1,
-        status: '1',
-        visible: true,
-      }],
-    })).toBe(false)
+    expect(
+      isSessionContext({
+        ...valid,
+        capabilities: [
+          {
+            client_config: {},
+            code: 'feature-a',
+            schema_version: 0,
+            variant: 'default',
+          },
+        ],
+      }),
+    ).toBe(false)
+    expect(
+      isSessionContext({
+        ...valid,
+        menus: [
+          {
+            children: [],
+            id: '1',
+            menu_type: 'C',
+            name: '用户',
+            perm_code: 'not-in-catalog',
+            sort: 1,
+            status: '1',
+            visible: true,
+          },
+        ],
+      }),
+    ).toBe(false)
   })
 
   it('跨标签已认证消息复用同一严格校验', () => {
     const context = sessionContext(true)
-    expect(isSessionMessage({
-      type: 'authenticated',
-      source: 'tab-a',
-      operationId: 'refresh-1',
-      startedAt: 1,
-      accessToken: 'token',
-      sessionContext: context,
-    })).toBe(true)
-    expect(isSessionMessage({
-      type: 'authenticated',
-      source: 'tab-a',
-      operationId: 'refresh-1',
-      startedAt: 1,
-      accessToken: 'token',
-      sessionContext: { ...context, is_super_admin: 1 },
-    })).toBe(false)
+    expect(
+      isSessionMessage({
+        type: 'authenticated',
+        source: 'tab-a',
+        operationId: 'refresh-1',
+        startedAt: 1,
+        accessToken: 'token',
+        sessionContext: context,
+      }),
+    ).toBe(true)
+    expect(
+      isSessionMessage({
+        type: 'authenticated',
+        source: 'tab-a',
+        operationId: 'refresh-1',
+        startedAt: 1,
+        accessToken: 'token',
+        sessionContext: { ...context, is_super_admin: 1 },
+      }),
+    ).toBe(false)
   })
 
   it('角色名不会推导超级身份，失败关闭会原子清空授权投影', () => {

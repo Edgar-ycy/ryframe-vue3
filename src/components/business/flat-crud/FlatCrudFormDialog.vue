@@ -84,14 +84,18 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInstance>()
-const visibleFields = computed(() => props.fields.filter(field => (
-  !(field.kind === 'radio' && field.editOnly) || props.editing
-)))
-const rules = computed(() => Object.fromEntries(
-  props.fields.flatMap(field => field.kind === 'text' && field.requiredMessage
-    ? [[field.key, [{ required: true, message: field.requiredMessage, trigger: 'blur' }]]]
-    : []),
-))
+const visibleFields = computed(() =>
+  props.fields.filter((field) => !(field.kind === 'radio' && field.editOnly) || props.editing),
+)
+const rules = computed(() =>
+  Object.fromEntries(
+    props.fields.flatMap((field) =>
+      field.kind === 'text' && field.requiredMessage
+        ? [[field.key, [{ required: true, message: field.requiredMessage, trigger: 'blur' }]]]
+        : [],
+    ),
+  ),
+)
 
 function fieldValue(field: FlatCrudFormField<TModel>): FlatCrudScalar {
   const value: unknown = Reflect.get(props.modelValue, field.key)

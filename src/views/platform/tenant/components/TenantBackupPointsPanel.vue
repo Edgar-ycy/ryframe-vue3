@@ -5,40 +5,87 @@
         <h3>{{ t('tenantData.backupTitle') }}</h3>
         <p>{{ t('tenantData.backupHint') }}</p>
       </div>
-      <el-button icon="Refresh" :loading="loading" @click="refreshAll">{{ t('tenantData.refresh') }}</el-button>
+      <el-button icon="Refresh" :loading="loading" @click="refreshAll">{{
+        t('tenantData.refresh')
+      }}</el-button>
     </header>
 
-    <el-alert v-if="!canView" :title="t('tenantData.noBackupPermission')" type="info" show-icon :closable="false" />
-    <el-alert v-else-if="placementQuery.error.value" :title="t('tenantData.placementUnavailable')" type="warning" show-icon :closable="false">
+    <el-alert
+      v-if="!canView"
+      :title="t('tenantData.noBackupPermission')"
+      type="info"
+      show-icon
+      :closable="false"
+    />
+    <el-alert
+      v-else-if="placementQuery.error.value"
+      :title="t('tenantData.placementUnavailable')"
+      type="warning"
+      show-icon
+      :closable="false"
+    >
       <el-button type="warning" plain @click="refreshAll">{{ t('tenantData.retry') }}</el-button>
     </el-alert>
     <template v-else-if="placement">
       <el-descriptions :column="2" border>
-        <el-descriptions-item :label="t('tenantData.currentTarget')">{{ placement.current_target_key }}</el-descriptions-item>
-        <el-descriptions-item :label="t('tenantData.placementGeneration')">{{ placement.placement_generation }}</el-descriptions-item>
+        <el-descriptions-item :label="t('tenantData.currentTarget')">{{
+          placement.current_target_key
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('tenantData.placementGeneration')">{{
+          placement.placement_generation
+        }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-alert v-if="backupQuery.error.value" :title="t('tenantData.backupUnavailable')" type="warning" show-icon :closable="false">
-        <el-button type="warning" plain @click="refreshBackups">{{ t('tenantData.retry') }}</el-button>
+      <el-alert
+        v-if="backupQuery.error.value"
+        :title="t('tenantData.backupUnavailable')"
+        type="warning"
+        show-icon
+        :closable="false"
+      >
+        <el-button type="warning" plain @click="refreshBackups">{{
+          t('tenantData.retry')
+        }}</el-button>
       </el-alert>
 
       <div class="backup-table-wrap">
-        <el-table v-loading="backupQuery.isFetching.value" :data="backupPoints" row-key="id" border class="backup-table">
+        <el-table
+          v-loading="backupQuery.isFetching.value"
+          :data="backupPoints"
+          row-key="id"
+          border
+          class="backup-table"
+        >
           <el-table-column :label="t('tenantData.scope')" width="100">
-            <template #default="{ row }">{{ row.scope === 'tenant' ? t('tenantData.scopeTenant') : t('tenantData.scopeShard') }}</template>
+            <template #default="{ row }">{{
+              row.scope === 'tenant' ? t('tenantData.scopeTenant') : t('tenantData.scopeShard')
+            }}</template>
           </el-table-column>
           <el-table-column :label="t('tenantData.capturedAt')" min-width="170">
             <template #default="{ row }">{{ formatDate(row.captured_at) }}</template>
           </el-table-column>
           <el-table-column :label="t('tenantData.validationStatus')" width="125">
             <template #default="{ row }">
-              <el-tag :type="stateTagType(row.validation_status)">{{ validationLabel(row.validation_status) }}</el-tag>
+              <el-tag :type="stateTagType(row.validation_status)">{{
+                validationLabel(row.validation_status)
+              }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="placement_generation" :label="t('tenantData.placementGeneration')" width="120">
-            <template #default="{ row }">{{ row.placement_generation ?? t('tenantData.notAvailable') }}</template>
+          <el-table-column
+            prop="placement_generation"
+            :label="t('tenantData.placementGeneration')"
+            width="120"
+          >
+            <template #default="{ row }">{{
+              row.placement_generation ?? t('tenantData.notAvailable')
+            }}</template>
           </el-table-column>
-          <el-table-column prop="schema_fingerprint" :label="t('tenantData.schemaFingerprint')" min-width="220" show-overflow-tooltip />
+          <el-table-column
+            prop="schema_fingerprint"
+            :label="t('tenantData.schemaFingerprint')"
+            min-width="220"
+            show-overflow-tooltip
+          />
           <el-table-column :label="t('tenantData.retentionUntil')" min-width="170">
             <template #default="{ row }">{{ formatDate(row.retention_until) }}</template>
           </el-table-column>
@@ -48,24 +95,55 @@
           <el-table-column :label="t('tenantData.restoreDrillAt')" min-width="170">
             <template #default="{ row }">{{ formatDate(row.last_restore_drill_at) }}</template>
           </el-table-column>
-          <template #empty><el-empty :description="t('tenantData.noBackupPoints')" :image-size="64" /></template>
+          <template #empty
+            ><el-empty :description="t('tenantData.noBackupPoints')" :image-size="64"
+          /></template>
         </el-table>
       </div>
 
       <div v-loading="backupQuery.isFetching.value" class="backup-card-list">
-        <el-empty v-if="!backupQuery.isFetching.value && backupPoints.length === 0" :description="t('tenantData.noBackupPoints')" />
+        <el-empty
+          v-if="!backupQuery.isFetching.value && backupPoints.length === 0"
+          :description="t('tenantData.noBackupPoints')"
+        />
         <article v-for="point in backupPoints" :key="point.id" class="backup-card">
           <header>
             <strong>{{ formatDate(point.captured_at) }}</strong>
-            <el-tag :type="stateTagType(point.validation_status)" size="small">{{ validationLabel(point.validation_status) }}</el-tag>
+            <el-tag :type="stateTagType(point.validation_status)" size="small">{{
+              validationLabel(point.validation_status)
+            }}</el-tag>
           </header>
           <dl>
-            <div><dt>{{ t('tenantData.scope') }}</dt><dd>{{ point.scope === 'tenant' ? t('tenantData.scopeTenant') : t('tenantData.scopeShard') }}</dd></div>
-            <div><dt>{{ t('tenantData.placementGeneration') }}</dt><dd>{{ point.placement_generation ?? t('tenantData.notAvailable') }}</dd></div>
-            <div><dt>{{ t('tenantData.retentionUntil') }}</dt><dd>{{ formatDate(point.retention_until) }}</dd></div>
-            <div><dt>{{ t('tenantData.expiresAt') }}</dt><dd>{{ formatDate(point.expires_at) }}</dd></div>
-            <div class="wide"><dt>{{ t('tenantData.schemaFingerprint') }}</dt><dd>{{ point.schema_fingerprint }}</dd></div>
-            <div class="wide"><dt>{{ t('tenantData.restoreDrillAt') }}</dt><dd>{{ formatDate(point.last_restore_drill_at) }}</dd></div>
+            <div>
+              <dt>{{ t('tenantData.scope') }}</dt>
+              <dd>
+                {{
+                  point.scope === 'tenant'
+                    ? t('tenantData.scopeTenant')
+                    : t('tenantData.scopeShard')
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantData.placementGeneration') }}</dt>
+              <dd>{{ point.placement_generation ?? t('tenantData.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantData.retentionUntil') }}</dt>
+              <dd>{{ formatDate(point.retention_until) }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('tenantData.expiresAt') }}</dt>
+              <dd>{{ formatDate(point.expires_at) }}</dd>
+            </div>
+            <div class="wide">
+              <dt>{{ t('tenantData.schemaFingerprint') }}</dt>
+              <dd>{{ point.schema_fingerprint }}</dd>
+            </div>
+            <div class="wide">
+              <dt>{{ t('tenantData.restoreDrillAt') }}</dt>
+              <dd>{{ formatDate(point.last_restore_drill_at) }}</dd>
+            </div>
           </dl>
         </article>
       </div>
@@ -89,20 +167,19 @@ import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 
-const props = defineProps<{ active: boolean, tenantId: string }>()
+const props = defineProps<{ active: boolean; tenantId: string }>()
 const { t } = useI18n()
 const userStore = useUserStore()
-const canView = computed(() => hasPermission(
-  userStore.permissions,
-  TENANT_DATA_PERMISSIONS.backupList,
-))
+const canView = computed(() =>
+  hasPermission(userStore.permissions, TENANT_DATA_PERMISSIONS.backupList),
+)
 
 const placementQuery = useTenantQuery<TenantDataPlacement>(
   () => userStore.tenantId,
   () => props.active && userStore.tenantId === 'system' && canView.value,
   'platform-tenant-data-placement-for-backups',
   () => ({ tenant_id: props.tenantId }),
-  async signal => requireOperationData(await getTenantDataPlacement(props.tenantId, signal)),
+  async (signal) => requireOperationData(await getTenantDataPlacement(props.tenantId, signal)),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const placement = placementQuery.data
@@ -111,11 +188,14 @@ const backupQuery = useTenantQuery<TenantDataBackupPoint[]>(
   () => props.active && canView.value && Boolean(placement.value?.current_target_key),
   'platform-tenant-data-backup-points',
   () => ({ tenant_id: props.tenantId, target_key: placement.value?.current_target_key }),
-  async signal => requireOperationData(await listTenantDataBackupPoints(
-    placement.value?.current_target_key || '',
-    { tenant_id: props.tenantId },
-    signal,
-  )),
+  async (signal) =>
+    requireOperationData(
+      await listTenantDataBackupPoints(
+        placement.value?.current_target_key || '',
+        { tenant_id: props.tenantId },
+        signal,
+      ),
+    ),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const backupPoints = computed(() => backupQuery.data.value ?? [])

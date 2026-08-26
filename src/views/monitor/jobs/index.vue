@@ -16,10 +16,19 @@
     <el-card shadow="never" class="search-card">
       <el-form :model="queryParams" inline @submit.prevent="handleSearch">
         <el-form-item :label="t('monitor.jobs.jobType')">
-          <el-input v-model="queryParams.job_type" :placeholder="t('monitor.jobs.jobTypePlaceholder')" clearable @keyup.enter="handleSearch" />
+          <el-input
+            v-model="queryParams.job_type"
+            :placeholder="t('monitor.jobs.jobTypePlaceholder')"
+            clearable
+            @keyup.enter="handleSearch"
+          />
         </el-form-item>
         <el-form-item :label="t('monitor.jobs.status')">
-          <el-select v-model="queryParams.status" :placeholder="t('monitor.jobs.statusPlaceholder')" clearable>
+          <el-select
+            v-model="queryParams.status"
+            :placeholder="t('monitor.jobs.statusPlaceholder')"
+            clearable
+          >
             <el-option :label="t('monitor.jobs.statusPending')" value="pending" />
             <el-option :label="t('monitor.jobs.statusRunning')" value="running" />
             <el-option :label="t('monitor.jobs.statusSucceeded')" value="succeeded" />
@@ -27,11 +36,25 @@
           </el-select>
         </el-form-item>
         <el-form-item :label="t('monitor.jobs.scheduleId')">
-          <el-input v-model="queryParams.schedule_id" :placeholder="t('monitor.jobs.scheduleIdPlaceholder')" clearable inputmode="numeric" @keyup.enter="handleSearch" />
+          <el-input
+            v-model="queryParams.schedule_id"
+            :placeholder="t('monitor.jobs.scheduleIdPlaceholder')"
+            clearable
+            inputmode="numeric"
+            @keyup.enter="handleSearch"
+          />
         </el-form-item>
         <el-form-item>
-          <el-button v-perm="'monitor:job:list'" type="primary" icon="Search" @click="handleSearch">{{ t('monitor.jobs.search') }}</el-button>
-          <el-button v-perm="'monitor:job:list'" icon="Refresh" @click="handleReset">{{ t('monitor.jobs.reset') }}</el-button>
+          <el-button
+            v-perm="'monitor:job:list'"
+            type="primary"
+            icon="Search"
+            @click="handleSearch"
+            >{{ t('monitor.jobs.search') }}</el-button
+          >
+          <el-button v-perm="'monitor:job:list'" icon="Refresh" @click="handleReset">{{
+            t('monitor.jobs.reset')
+          }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -41,7 +64,13 @@
         <div class="card-header">
           <span>{{ t('monitor.jobs.listTitle') }}</span>
           <div>
-            <el-button v-perm="'monitor:job:list'" icon="Refresh" :loading="loading || statsLoading" @click="refresh">{{ t('monitor.jobs.refresh') }}</el-button>
+            <el-button
+              v-perm="'monitor:job:list'"
+              icon="Refresh"
+              :loading="loading || statsLoading"
+              @click="refresh"
+              >{{ t('monitor.jobs.refresh') }}</el-button
+            >
           </div>
         </div>
       </template>
@@ -56,28 +85,62 @@
       />
 
       <div class="table-scroll">
-        <el-table v-loading="loading" :data="jobs?.items ?? []" border stripe class="jobs-table" :empty-text="t('common.noData')">
-          <el-table-column prop="id" :label="t('monitor.jobs.id')" min-width="178" show-overflow-tooltip />
-          <el-table-column prop="job_type" :label="t('monitor.jobs.jobType')" min-width="150" show-overflow-tooltip />
-          <el-table-column :label="t('monitor.jobs.scheduleId')" min-width="125" show-overflow-tooltip>
+        <el-table
+          v-loading="loading"
+          :data="jobs?.items ?? []"
+          border
+          stripe
+          class="jobs-table"
+          :empty-text="t('common.noData')"
+        >
+          <el-table-column
+            prop="id"
+            :label="t('monitor.jobs.id')"
+            min-width="178"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="job_type"
+            :label="t('monitor.jobs.jobType')"
+            min-width="150"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            :label="t('monitor.jobs.scheduleId')"
+            min-width="125"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
               <span>{{ row.schedule_id ?? t('monitor.jobs.noSchedule') }}</span>
             </template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.status')" width="108" align="center">
             <template #default="{ row }">
-              <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+              <el-tag :type="statusTagType(row.status)" size="small">{{
+                statusLabel(row.status)
+              }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="priority" :label="t('monitor.jobs.priority')" width="90" align="center" />
+          <el-table-column
+            prop="priority"
+            :label="t('monitor.jobs.priority')"
+            width="90"
+            align="center"
+          />
           <el-table-column :label="t('monitor.jobs.attempts')" width="112" align="center">
-            <template #default="{ row }">{{ t('monitor.jobs.attemptsValue', { attempts: row.attempts, max: row.max_attempts }) }}</template>
+            <template #default="{ row }">{{
+              t('monitor.jobs.attemptsValue', { attempts: row.attempts, max: row.max_attempts })
+            }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.scheduledFor')" min-width="160">
-            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.scheduled_for) }}</template>
+            <template #default="{ row }">{{
+              formatOptionalLocalizedDate(row.scheduled_for)
+            }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.availableAt')" min-width="160">
-            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.available_at) }}</template>
+            <template #default="{ row }">{{
+              formatOptionalLocalizedDate(row.available_at)
+            }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.lease')" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">
@@ -89,18 +152,33 @@
             </template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.createdAt')" min-width="160">
-            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.created_at) }}</template>
+            <template #default="{ row }">{{
+              formatOptionalLocalizedDate(row.created_at)
+            }}</template>
           </el-table-column>
           <el-table-column :label="t('monitor.jobs.completedAt')" min-width="160">
-            <template #default="{ row }">{{ formatOptionalLocalizedDate(row.completed_at) }}</template>
+            <template #default="{ row }">{{
+              formatOptionalLocalizedDate(row.completed_at)
+            }}</template>
           </el-table-column>
-          <el-table-column :label="t('monitor.jobs.lastError')" min-width="140" show-overflow-tooltip>
+          <el-table-column
+            :label="t('monitor.jobs.lastError')"
+            min-width="140"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
-              <el-button v-if="row.last_error" type="danger" link @click="showError(row)">{{ t('monitor.jobs.viewError') }}</el-button>
+              <el-button v-if="row.last_error" type="danger" link @click="showError(row)">{{
+                t('monitor.jobs.viewError')
+              }}</el-button>
               <span v-else>{{ t('monitor.jobs.noError') }}</span>
             </template>
           </el-table-column>
-          <el-table-column :label="t('monitor.jobs.operation')" min-width="120" fixed="right" align="center">
+          <el-table-column
+            :label="t('monitor.jobs.operation')"
+            min-width="120"
+            fixed="right"
+            align="center"
+          >
             <template #default="{ row }">
               <el-button
                 v-if="row.status === 'dead' && hasPermission('monitor:job:retry')"
@@ -129,16 +207,33 @@
       />
     </el-card>
 
-    <el-dialog v-model="errorDialogVisible" :title="t('monitor.jobs.errorTitle')" width="min(620px, calc(100vw - 32px))">
+    <el-dialog
+      v-model="errorDialogVisible"
+      :title="t('monitor.jobs.errorTitle')"
+      width="min(620px, calc(100vw - 32px))"
+    >
       <el-descriptions v-if="selectedError" :column="1" border size="small">
-        <el-descriptions-item :label="t('monitor.jobs.id')">{{ selectedError.id }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.jobs.jobType')">{{ selectedError.job_type }}</el-descriptions-item>
-        <el-descriptions-item :label="t('monitor.jobs.scheduleId')">{{ selectedError.schedule_id ?? t('monitor.jobs.noSchedule') }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.jobs.id')">{{
+          selectedError.id
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.jobs.jobType')">{{
+          selectedError.job_type
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="t('monitor.jobs.scheduleId')">{{
+          selectedError.schedule_id ?? t('monitor.jobs.noSchedule')
+        }}</el-descriptions-item>
         <el-descriptions-item :label="t('monitor.jobs.maxRuntime')">
-          {{ selectedError.max_runtime_seconds === null || selectedError.max_runtime_seconds === undefined ? t('monitor.jobs.defaultRuntime') : t('monitor.jobs.maxRuntimeValue', { seconds: selectedError.max_runtime_seconds }) }}
+          {{
+            selectedError.max_runtime_seconds === null ||
+            selectedError.max_runtime_seconds === undefined
+              ? t('monitor.jobs.defaultRuntime')
+              : t('monitor.jobs.maxRuntimeValue', { seconds: selectedError.max_runtime_seconds })
+          }}
         </el-descriptions-item>
         <el-descriptions-item :label="t('monitor.jobs.lastError')">
-          <pre class="job-error-content">{{ selectedError.last_error ?? t('monitor.jobs.noError') }}</pre>
+          <pre class="job-error-content">{{
+            selectedError.last_error ?? t('monitor.jobs.noError')
+          }}</pre>
         </el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -179,16 +274,16 @@ const {
   statsError,
   statsLoading,
   syncFromRoute,
-} = useJobManagement(t, route, scheduleId => {
+} = useJobManagement(t, route, (scheduleId) => {
   const query = scheduleId ? { schedule_id: String(scheduleId) } : {}
   if (route.query.schedule_id === query.schedule_id) return
   void router.replace({ query })
 })
 
-onBeforeRouteUpdate(nextRoute => syncFromRoute(nextRoute))
+onBeforeRouteUpdate((nextRoute) => syncFromRoute(nextRoute))
 
 const statKeys = ['total', 'ready', 'pending', 'running', 'succeeded', 'dead'] as const
-type JobStatKey = typeof statKeys[number]
+type JobStatKey = (typeof statKeys)[number]
 
 function statLabel(key: JobStatKey): string {
   return t(`monitor.jobs.${key}`)

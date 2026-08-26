@@ -97,7 +97,8 @@ export const productPlanMessages = {
   'en-US': {
     productPlans: {
       title: 'Product plans',
-      subtitle: 'Manage publishable plan versions and capabilities. Tenants can only receive published versions.',
+      subtitle:
+        'Manage publishable plan versions and capabilities. Tenants can only receive published versions.',
       plans: 'Plans',
       versions: 'Versions',
       createPlan: 'New plan',
@@ -133,12 +134,16 @@ export const productPlanMessages = {
       codeRequired: 'Enter a plan code',
       nameRequired: 'Enter a plan name',
       capabilities: 'Capabilities',
-      capabilitiesHint: 'Choose capabilities and variants from the compiled catalog. Each editor fixes its matching schema version.',
-      capabilitiesInvalid: 'The catalog is unavailable, or a capability, variant, or configuration is incompatible',
-      capabilityCatalogUnavailable: 'The capability catalog is unavailable. This plan version cannot be saved.',
+      capabilitiesHint:
+        'Choose capabilities and variants from the compiled catalog. Each editor fixes its matching schema version.',
+      capabilitiesInvalid:
+        'The catalog is unavailable, or a capability, variant, or configuration is incompatible',
+      capabilityCatalogUnavailable:
+        'The capability catalog is unavailable. This plan version cannot be saved.',
       capabilityCatalogEmpty: 'This build exposes no configurable capabilities',
       capabilityClientMismatch: 'The frontend and backend capability catalogs differ: {codes}',
-      capabilityEditorUnavailable: 'This frontend build has no configuration editor for the capability.',
+      capabilityEditorUnavailable:
+        'This frontend build has no configuration editor for the capability.',
       deploymentAvailable: 'Deployment available',
       deploymentUnavailable: 'Deployment unavailable',
       dependsOn: 'Depends on',
@@ -148,16 +153,19 @@ export const productPlanMessages = {
       saved: 'Plan saved',
       versionCreated: 'Plan version created',
       versionUpdated: 'Plan draft updated',
-      publishConfirm: 'Publish version {version} of “{name}”? It will become assignable to tenants.',
+      publishConfirm:
+        'Publish version {version} of “{name}”? It will become assignable to tenants.',
       publishTitle: 'Publish plan version',
       publishedSuccess: 'Plan version published',
-      retireConfirm: 'Retire version {version} of “{name}”? Retired versions cannot be assigned to new tenants.',
+      retireConfirm:
+        'Retire version {version} of “{name}”? Retired versions cannot be assigned to new tenants.',
       retireTitle: 'Retire plan version',
       retiredSuccess: 'Plan version retired',
       permissionDenied: 'You do not have permission to view product plans',
       responseMissing: 'The response is missing product plan data',
       tenantTab: 'Plan and capabilities',
-      tenantContextHint: 'Shows the effective plan version, runtime epoch, capabilities, and overrides.',
+      tenantContextHint:
+        'Shows the effective plan version, runtime epoch, capabilities, and overrides.',
       currentPlanVersion: 'Current plan version',
       runtimeEpoch: 'Runtime epoch',
       effectiveCapabilities: 'Effective capabilities',

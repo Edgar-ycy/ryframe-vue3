@@ -40,7 +40,8 @@ export const profileSessionsMessages = {
     profile: {
       sessions: {
         title: 'Login devices',
-        description: 'Review devices signed in to this account and revoke sessions you no longer use.',
+        description:
+          'Review devices signed in to this account and revoke sessions you no longer use.',
         currentDevice: 'Current device',
         device: 'Device',
         browser: 'Browser',
@@ -62,9 +63,11 @@ export const profileSessionsMessages = {
         unknownValue: 'Unknown',
         responseMissing: 'The login devices response is missing data',
         confirmTitle: 'Confirm session revocation',
-        revokeCurrentConfirm: 'Revoking the current device will sign you out immediately. Continue?',
+        revokeCurrentConfirm:
+          'Revoking the current device will sign you out immediately. Continue?',
         revokeSessionConfirm: 'Revoke the login session for “{device}”?',
-        revokeOthersConfirm: 'Sign out every other device? The current device will remain signed in.',
+        revokeOthersConfirm:
+          'Sign out every other device? The current device will remain signed in.',
         revokeSuccess: 'The login session was revoked',
         revokeCurrentSuccess: 'The current login session was revoked',
         revokeOthersSuccess: 'Signed out {count} other login devices',

@@ -1,8 +1,14 @@
 <template>
-  <el-dialog v-model="visible" :title="t('system.role.setDataScopeTitle')" width="560px" @open="handleOpen" @closed="reset">
+  <el-dialog
+    v-model="visible"
+    :title="t('system.role.setDataScopeTitle')"
+    width="560px"
+    @open="handleOpen"
+    @closed="reset"
+  >
     <el-form v-loading="loading" label-width="110px">
       <el-form-item :label="t('system.role.dataScope')" required>
-        <el-select v-model="dataScope" style="width:100%">
+        <el-select v-model="dataScope" style="width: 100%">
           <el-option :label="t('system.role.allData')" value="1" />
           <el-option :label="t('system.role.customData')" value="2" />
           <el-option :label="t('system.role.currentDepartmentData')" value="3" />
@@ -19,7 +25,7 @@
           multiple
           check-strictly
           show-checkbox
-          style="width:100%"
+          style="width: 100%"
         />
       </el-form-item>
     </el-form>
@@ -66,7 +72,7 @@ const detailQuery = useTenantQuery<RoleRecord>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
   'roles',
   () => ({ scope: 'detail', id: props.role?.id ?? null }),
-  async signal => {
+  async (signal) => {
     const role = props.role
     if (!role) throw new Error(t('system.role.detailMissing'))
     const response = await getRole(role.id, signal)
@@ -76,22 +82,18 @@ const detailQuery = useTenantQuery<RoleRecord>(
 )
 const dataScopeMutation = useTenantMutation<
   void,
-  { roleId: Id, dataScope: RoleDataScope, deptIds: Id[] }
->(
-  () => userStore.tenantId,
-  'roles',
-  {
-    mutationFn: async variables => {
-      await replaceRoleDataScope(variables.roleId, {
-        data_scope: variables.dataScope,
-        dept_ids: variables.deptIds,
-      })
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.role.dataScopeUpdated'))
-    },
+  { roleId: Id; dataScope: RoleDataScope; deptIds: Id[] }
+>(() => userStore.tenantId, 'roles', {
+  mutationFn: async (variables) => {
+    await replaceRoleDataScope(variables.roleId, {
+      data_scope: variables.dataScope,
+      dept_ids: variables.deptIds,
+    })
   },
-)
+  onSuccess: () => {
+    ElMessage.success(t('system.role.dataScopeUpdated'))
+  },
+})
 const loading = detailQuery.isFetching
 const submitting = dataScopeMutation.pending
 
@@ -113,7 +115,7 @@ function handleOpen(): void {
 
 watch(
   () => detailQuery.data.value,
-  role => {
+  (role) => {
     if (visible.value && role) populateDataScope(role)
   },
 )

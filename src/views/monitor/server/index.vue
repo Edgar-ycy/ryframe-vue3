@@ -3,30 +3,71 @@
     <el-row :gutter="16">
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover">
-          <template #header><span><el-icon><Cpu /></el-icon> {{ t('monitor.server.cpu') }}</span></template>
+          <template #header
+            ><span
+              ><el-icon><Cpu /></el-icon> {{ t('monitor.server.cpu') }}</span
+            ></template
+          >
           <div class="gauge-wrapper">
-            <el-progress type="dashboard" :percentage="Math.round(info?.cpu_usage ?? 0)" :color="cpuColor" />
+            <el-progress
+              type="dashboard"
+              :percentage="Math.round(info?.cpu_usage ?? 0)"
+              :color="cpuColor"
+            />
           </div>
-          <div class="info-row"><span>{{ t('monitor.server.coreCount') }}</span><span>{{ info?.cpu_cores ?? '--' }}</span></div>
+          <div class="info-row">
+            <span>{{ t('monitor.server.coreCount') }}</span
+            ><span>{{ info?.cpu_cores ?? '--' }}</span>
+          </div>
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :lg="8">
         <el-card shadow="hover">
-          <template #header><span><el-icon><Monitor /></el-icon> {{ t('monitor.server.memory') }}</span></template>
+          <template #header
+            ><span
+              ><el-icon><Monitor /></el-icon> {{ t('monitor.server.memory') }}</span
+            ></template
+          >
           <div class="gauge-wrapper">
-            <el-progress type="dashboard" :percentage="Math.round(info?.memory_usage ?? 0)" :color="memColor" />
+            <el-progress
+              type="dashboard"
+              :percentage="Math.round(info?.memory_usage ?? 0)"
+              :color="memColor"
+            />
           </div>
-          <div class="info-row"><span>{{ t('monitor.server.usedTotal') }}</span><span>{{ (info?.used_memory ?? 0).toFixed(1) }} / {{ (info?.total_memory ?? 0).toFixed(1) }} {{ t('monitor.server.gigabytes') }}</span></div>
+          <div class="info-row">
+            <span>{{ t('monitor.server.usedTotal') }}</span
+            ><span
+              >{{ (info?.used_memory ?? 0).toFixed(1) }} /
+              {{ (info?.total_memory ?? 0).toFixed(1) }} {{ t('monitor.server.gigabytes') }}</span
+            >
+          </div>
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="24" :lg="8">
         <el-card shadow="hover">
-          <template #header><span><el-icon><Odometer /></el-icon> {{ t('monitor.server.systemInformation') }}</span></template>
+          <template #header
+            ><span
+              ><el-icon><Odometer /></el-icon> {{ t('monitor.server.systemInformation') }}</span
+            ></template
+          >
           <div class="sys-info">
-            <div class="info-row"><span>{{ t('monitor.server.operatingSystem') }}</span><span>{{ info?.os ?? '--' }}</span></div>
-            <div class="info-row"><span>{{ t('monitor.server.hostname') }}</span><span>{{ info?.hostname ?? '--' }}</span></div>
-            <div class="info-row"><span>{{ t('monitor.server.processId') }}</span><span>{{ info?.pid ?? '--' }}</span></div>
-            <div class="info-row"><span>{{ t('monitor.server.uptime') }}</span><span>{{ uptimeStr }}</span></div>
+            <div class="info-row">
+              <span>{{ t('monitor.server.operatingSystem') }}</span
+              ><span>{{ info?.os ?? '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span>{{ t('monitor.server.hostname') }}</span
+              ><span>{{ info?.hostname ?? '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span>{{ t('monitor.server.processId') }}</span
+              ><span>{{ info?.pid ?? '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span>{{ t('monitor.server.uptime') }}</span
+              ><span>{{ uptimeStr }}</span>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -50,7 +91,7 @@ const serverQuery = useTenantQuery<ServerInfo | null>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-server',
   () => ({ scope: 'overview' }),
-  async signal => {
+  async (signal) => {
     const response = await getServerInfo(signal)
     return response.data ?? null
   },
@@ -81,7 +122,6 @@ const uptimeStr = computed(() => {
 })
 
 useKeepAlivePageActive(pageActive, () => serverQuery.refetch())
-
 </script>
 
 <style scoped>
@@ -98,8 +138,11 @@ useKeepAlivePageActive(pageActive, () => serverQuery.refetch())
   border-bottom: 1px solid var(--border-color-base);
 }
 
-.info-row:last-child { border-bottom: none }
+.info-row:last-child {
+  border-bottom: none;
+}
 
-.sys-info { margin-top: 8px }
-
+.sys-info {
+  margin-top: 8px;
+}
 </style>

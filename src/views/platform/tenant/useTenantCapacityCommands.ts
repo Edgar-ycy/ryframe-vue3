@@ -22,15 +22,13 @@ import { createTenantIntentFingerprint } from './tenantCapacityFilters'
 import { useTenantCapacityQueries } from './useTenantCapacityQueries'
 
 type SaveTenantCommand =
-  | { kind: 'create'; data: CreateTenantPayload, idempotencyKey: string }
+  | { kind: 'create'; data: CreateTenantPayload; idempotencyKey: string }
   | { kind: 'update'; tenantId: string; data: UpdateTenantPayload }
 
 type TenantStatusCommand = { tenantId: string; status: TenantStatus }
 
 /** 平台租户容量页的新增、更新、状态变更与缓存协调。 */
-export function useTenantCapacityCommands(
-  queries: ReturnType<typeof useTenantCapacityQueries>,
-) {
+export function useTenantCapacityCommands(queries: ReturnType<typeof useTenantCapacityQueries>) {
   let pendingCreateIdempotencyKey: string | undefined
   let pendingCreateIntentFingerprint: string | undefined
   const saveMutation = useTenantMutation<Tenant, SaveTenantCommand>(
@@ -38,11 +36,12 @@ export function useTenantCapacityCommands(
     TENANT_CAPACITY_PAGE_RESOURCE,
     {
       meta: { errorMode: 'silent' },
-      mutationFn: async command => requireOperationData(await (
-        command.kind === 'create'
-          ? createTenant(command.data, command.idempotencyKey)
-          : updateTenant(command.tenantId, command.data)
-      )),
+      mutationFn: async (command) =>
+        requireOperationData(
+          await (command.kind === 'create'
+            ? createTenant(command.data, command.idempotencyKey)
+            : updateTenant(command.tenantId, command.data)),
+        ),
     },
   )
   const statusMutation = useTenantMutation<void, TenantStatusCommand>(
@@ -50,17 +49,15 @@ export function useTenantCapacityCommands(
     TENANT_CAPACITY_PAGE_RESOURCE,
     {
       meta: { errorMode: 'silent' },
-      mutationFn: async command => {
+      mutationFn: async (command) => {
         await updateTenantStatus(command.tenantId, command.status)
       },
     },
   )
 
-  const togglingTenantId = computed(() => (
-    statusMutation.pending.value
-      ? statusMutation.variables.value?.tenantId ?? null
-      : null
-  ))
+  const togglingTenantId = computed(() =>
+    statusMutation.pending.value ? (statusMutation.variables.value?.tenantId ?? null) : null,
+  )
 
   async function reconcileTenant(affectedTenantId?: string): Promise<void> {
     const systemTenantId = queries.userStore.tenantId
@@ -81,9 +78,10 @@ export function useTenantCapacityCommands(
 
   async function createTenantRecord(data: CreateTenantPayload): Promise<Tenant> {
     const intentFingerprint = createTenantIntentFingerprint(data)
-    const idempotencyKey = pendingCreateIntentFingerprint === intentFingerprint
-      ? pendingCreateIdempotencyKey ?? createIdempotencyKey('tenant-provision')
-      : createIdempotencyKey('tenant-provision')
+    const idempotencyKey =
+      pendingCreateIntentFingerprint === intentFingerprint
+        ? (pendingCreateIdempotencyKey ?? createIdempotencyKey('tenant-provision'))
+        : createIdempotencyKey('tenant-provision')
     try {
       const tenant = await saveMutation.mutateAsync({
         kind: 'create',
@@ -94,24 +92,16 @@ export function useTenantCapacityCommands(
       pendingCreateIntentFingerprint = undefined
       await reconcileTenant(tenant.tenant_id)
       return tenant
-    }
-    catch (error) {
+    } catch (error) {
       // 网络中断或 5xx 时服务端事务可能已经提交；同一用户意图必须复用原键。
       // 若用户随后修改请求，服务端会以 409 拒绝不同载荷，下一次提交再生成新键。
-      pendingCreateIdempotencyKey = shouldReuseIdempotencyKey(error)
-        ? idempotencyKey
-        : undefined
-      pendingCreateIntentFingerprint = pendingCreateIdempotencyKey
-        ? intentFingerprint
-        : undefined
+      pendingCreateIdempotencyKey = shouldReuseIdempotencyKey(error) ? idempotencyKey : undefined
+      pendingCreateIntentFingerprint = pendingCreateIdempotencyKey ? intentFingerprint : undefined
       throw error
     }
   }
 
-  async function updateTenantRecord(
-    tenantId: string,
-    data: UpdateTenantPayload,
-  ): Promise<Tenant> {
+  async function updateTenantRecord(tenantId: string, data: UpdateTenantPayload): Promise<Tenant> {
     const tenant = await saveMutation.mutateAsync({ kind: 'update', tenantId, data })
     await reconcileTenant(tenantId)
     return tenant

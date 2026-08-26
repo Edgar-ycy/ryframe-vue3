@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import {Loading} from "@element-plus/icons-vue";
+import { Loading } from '@element-plus/icons-vue'
 import { normalizeRedirectPath } from '@/router/redirect'
 
 const route = useRoute()
@@ -37,7 +37,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

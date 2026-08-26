@@ -385,43 +385,4 @@ async function confirmRevokeDelegation(delegation: ServiceDelegation): Promise<v
 }
 </script>
 
-<style scoped>
-.service-accounts-page {
-  min-width: 0;
-}
-
-.page-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.page-heading h1 {
-  margin: 0;
-  color: var(--el-text-color-primary);
-  font-size: 20px;
-}
-
-.page-heading p {
-  margin: 6px 0 0;
-  color: var(--el-text-color-secondary);
-  line-height: 1.55;
-}
-
-.management-tabs {
-  min-width: 0;
-}
-
-@media (width < 480px) {
-  .page-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .page-heading :deep(.el-button) {
-    width: 100%;
-    min-height: 44px;
-  }
-}
-</style>
+<style scoped src="./serviceAccountsPage.css"></style>

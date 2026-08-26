@@ -1,0 +1,86 @@
+.profile-exports-page,
+.exports-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.exports-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.exports-heading {
+  min-width: 0;
+
+  h2 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 18px;
+    line-height: 1.4;
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.exports-error {
+  margin-bottom: 12px;
+}
+
+.exports-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  :deep(.el-select) {
+    width: min(220px, 100%);
+  }
+}
+
+.error-job-name {
+  margin: 0 0 12px;
+  color: var(--color-text-primary);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.error-content {
+  max-height: min(52vh, 360px);
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+  color: var(--el-color-danger);
+  font: inherit;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+@media (width <= 600px) {
+  .exports-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .exports-header > .el-button {
+    align-self: flex-start;
+  }
+
+  .exports-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .exports-filters :deep(.el-select) {
+    width: 100%;
+  }
+}

@@ -392,43 +392,4 @@ function fetchRows(): void {
 }
 </script>
 
-<style scoped lang="scss">
-.drawer-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
-}
-
-.table-scroll {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.imports-table {
-  min-width: 1250px;
-}
-
-.rows-table {
-  min-width: 760px;
-}
-
-.detail-title {
-  margin: 16px 0 10px;
-  font-size: 15px;
-}
-
-.job-details {
-  max-width: 100%;
-}
-
-@media (width <= 600px) {
-  .job-details :deep(.el-descriptions__body),
-  .job-details :deep(.el-descriptions__table) {
-    min-width: 620px;
-  }
-
-  .job-details {
-    overflow-x: auto;
-  }
-}
-</style>
+<style scoped lang="scss" src="./UserImportHistoryDrawer.scss"></style>

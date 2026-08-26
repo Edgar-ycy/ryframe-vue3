@@ -1,0 +1,33 @@
+.quota-hint {
+  margin: -6px 0 14px 132px;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.form-control {
+  width: 100%;
+}
+
+@media (width <= 480px) {
+  .tenant-form :deep(.el-form-item) {
+    display: block;
+  }
+
+  .tenant-form :deep(.el-form-item__label) {
+    display: block;
+    width: 100% !important;
+    height: auto;
+    padding: 0 0 6px;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .tenant-form :deep(.el-form-item__content) {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .quota-hint {
+    margin-left: 0;
+  }
+}

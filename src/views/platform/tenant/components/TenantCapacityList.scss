@@ -1,0 +1,186 @@
+.list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.list-heading span {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.tenant-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tenant-table {
+  min-width: 1180px;
+}
+
+.tenant-name-button,
+.tenant-mobile-card header button {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  color: var(--el-color-primary);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tenant-name-button:hover strong,
+.tenant-name-button:focus-visible strong,
+.tenant-mobile-card header button:hover strong,
+.tenant-mobile-card header button:focus-visible strong {
+  text-decoration: underline;
+}
+
+.tenant-name-button:focus-visible,
+.tenant-mobile-card header button:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.tenant-name-button strong,
+.tenant-name-button small,
+.tenant-mobile-card header button strong,
+.tenant-mobile-card header button small {
+  display: block;
+}
+
+.tenant-name-button small,
+.tenant-mobile-card header button small {
+  margin-top: 4px;
+  color: var(--el-text-color-secondary);
+  overflow-wrap: anywhere;
+}
+
+.expiration-cell {
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+}
+
+.expiration-cell span {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.tenant-card-list,
+.tenant-pagination-mobile {
+  display: none;
+}
+
+.tenant-pagination {
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+@media (width <= 767px) {
+  .list-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tenant-table-wrap,
+  .tenant-pagination--desktop {
+    display: none;
+  }
+
+  .tenant-card-list {
+    display: grid;
+    gap: 12px;
+    min-height: 120px;
+  }
+
+  .tenant-mobile-card {
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--el-border-color);
+    border-radius: 10px;
+    background: var(--el-fill-color-blank);
+  }
+
+  .tenant-mobile-card header,
+  .mobile-tags,
+  .tenant-mobile-card footer {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .tenant-mobile-card header button {
+    flex: 1;
+  }
+
+  .mobile-tags {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+
+  .mobile-expiry {
+    margin: 10px 0 0;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+  }
+
+  .mobile-quotas {
+    display: grid;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--el-border-color-lighter);
+  }
+
+  .tenant-mobile-card footer {
+    align-items: stretch;
+    margin-top: 16px;
+  }
+
+  .tenant-mobile-card footer :deep(.el-button) {
+    flex: 1;
+    min-width: 0;
+    min-height: 42px;
+    margin-left: 0;
+    padding-inline: 8px;
+  }
+
+  .tenant-pagination-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .tenant-pagination-mobile > :deep(.el-select) {
+    width: 76px;
+    flex: none;
+  }
+
+  .tenant-pagination-mobile :deep(.el-pager li) {
+    display: none;
+  }
+
+  .tenant-pagination-mobile :deep(.el-pager li.is-active) {
+    display: flex;
+  }
+}
+
+@media (width <= 480px) {
+  .tenant-mobile-card footer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tenant-mobile-card footer :deep(.el-button:first-child) {
+    grid-column: 1 / -1;
+  }
+}

@@ -36,6 +36,7 @@
     "test:unit": "vitest run --config vitest.config.ts",
     "test:targeted-coverage": "vitest run --config vitest.targeted.config.ts --coverage",
     "test:browser-smoke": "playwright test --config playwright.config.ts",
+    "test:browser-real": "playwright test --config playwright.real.config.ts",
     "test:policies": "node --test scripts/tests/*.test.mjs",
     "sbom:generate": "node scripts/generate-sbom.mjs",
     "build": "vite build",
@@ -45,6 +46,7 @@
     "ci:unit": "pnpm test:unit && pnpm test:targeted-coverage",
     "ci:build": "pnpm build && pnpm check:bundle",
     "ci:browser": "pnpm test:browser-smoke",
+    "ci:browser-real": "pnpm test:browser-real",
     "check": "pnpm format:check && pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm check:imports && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm ci:unit && pnpm build && pnpm check:bundle",
     "preview": "vite preview"
   },

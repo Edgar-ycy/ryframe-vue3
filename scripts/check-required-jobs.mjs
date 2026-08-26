@@ -2,22 +2,24 @@ import process from 'node:process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const jobs = ['check', 'node-22-compatibility', 'supply-chain', 'osv-scan', 'windows-smoke']
+const ordinaryJobs = ['static', 'unit', 'build', 'browser', 'windows-smoke']
+const scheduledJobs = ['node-22-compatibility', 'supply-chain', 'osv-scan']
+const jobs = [...ordinaryJobs, ...scheduledJobs]
 const eventMatrix = {
   push: {
-    success: ['check', 'windows-smoke'],
-    skipped: ['node-22-compatibility', 'supply-chain', 'osv-scan'],
+    success: ordinaryJobs,
+    skipped: scheduledJobs,
   },
   pull_request: {
-    success: ['check', 'windows-smoke'],
-    skipped: ['node-22-compatibility', 'supply-chain', 'osv-scan'],
+    success: ordinaryJobs,
+    skipped: scheduledJobs,
   },
   schedule: {
-    success: ['node-22-compatibility', 'supply-chain', 'osv-scan'],
-    skipped: ['check', 'windows-smoke'],
+    success: scheduledJobs,
+    skipped: ordinaryJobs,
   },
   workflow_dispatch: {
-    success: ['check', 'supply-chain', 'osv-scan', 'windows-smoke'],
+    success: [...ordinaryJobs, 'supply-chain', 'osv-scan'],
     skipped: ['node-22-compatibility'],
   },
 }

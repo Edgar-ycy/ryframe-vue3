@@ -10,21 +10,30 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 function resultsFor(event) {
   const common = {
-    check: 'skipped',
+    static: 'skipped',
+    unit: 'skipped',
+    build: 'skipped',
+    browser: 'skipped',
     'node-22-compatibility': 'skipped',
     'supply-chain': 'skipped',
     'osv-scan': 'skipped',
     'windows-smoke': 'skipped',
   }
   if (event === 'push' || event === 'pull_request') {
-    common.check = 'success'
+    common.static = 'success'
+    common.unit = 'success'
+    common.build = 'success'
+    common.browser = 'success'
     common['windows-smoke'] = 'success'
   } else if (event === 'schedule') {
     common['node-22-compatibility'] = 'success'
     common['supply-chain'] = 'success'
     common['osv-scan'] = 'success'
   } else if (event === 'workflow_dispatch') {
-    common.check = 'success'
+    common.static = 'success'
+    common.unit = 'success'
+    common.build = 'success'
+    common.browser = 'success'
     common['supply-chain'] = 'success'
     common['osv-scan'] = 'success'
     common['windows-smoke'] = 'success'
@@ -40,7 +49,7 @@ test('接受每种工作流事件的精确矩阵', () => {
 
 test('拒绝把必跑 job 当作 skipped 或 failure', () => {
   const pullRequest = resultsFor('pull_request')
-  pullRequest.check = 'skipped'
+  pullRequest.static = 'skipped'
   assert.notDeepEqual(validateRequiredJobs('pull_request', pullRequest), [])
 
   const schedule = resultsFor('schedule')

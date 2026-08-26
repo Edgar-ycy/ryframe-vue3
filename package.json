@@ -40,7 +40,11 @@
     "build": "vite build",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "check:fast": "node scripts/run-fast-checks.mjs",
-    "check": "pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm check:imports && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:unit && pnpm build && pnpm check:bundle",
+    "ci:static": "pnpm format:check && pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm check:imports && pnpm api:check:upstream && pnpm lint && pnpm lint:styles && pnpm typecheck",
+    "ci:unit": "pnpm test:unit",
+    "ci:build": "pnpm build && pnpm check:bundle",
+    "ci:browser": "pnpm test:browser-smoke",
+    "check": "pnpm format:check && pnpm check:workflows && pnpm check:dependencies && pnpm test:policies && pnpm check:source-size && pnpm check:imports && pnpm api:check && pnpm lint && pnpm lint:styles && pnpm typecheck && pnpm test:unit && pnpm build && pnpm check:bundle",
     "preview": "vite preview"
   },
   "dependencies": {

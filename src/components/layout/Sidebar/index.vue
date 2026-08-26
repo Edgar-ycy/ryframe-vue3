@@ -4,7 +4,7 @@
       <span v-show="!appStore.sidebarCollapsed">RyFrame</span>
       <span v-show="appStore.sidebarCollapsed" style="font-size: 16px">R</span>
     </div>
-    <el-scrollbar>
+    <el-scrollbar :tabindex="0">
       <el-menu
         :default-active="route.path"
         :collapse="appStore.sidebarCollapsed"

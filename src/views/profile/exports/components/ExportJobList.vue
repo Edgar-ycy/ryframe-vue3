@@ -268,6 +268,13 @@ import { useI18n } from 'vue-i18n'
 import type { ExportJob } from '@/api/modules/exportJob'
 import { exportJobStatusTag, formatExportFileSize } from '@/app/exports/exportJobPresentation'
 import { formatOptionalLocalizedDate } from '@/i18n'
+import {
+  areAllExportJobsSelected,
+  areSomeExportJobsSelected,
+  terminalExportJobIds,
+  updateExportJobSelection,
+  updateVisibleExportJobSelection,
+} from './exportJobSelection'
 
 const props = defineProps<{
   cancellingJobId?: string
@@ -296,207 +303,31 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 function terminalVisibleIds(): string[] {
-  return props.visibleJobs.filter((job) => props.canDelete(job.status)).map((job) => job.id)
+  return terminalExportJobIds(props.visibleJobs, props.canDelete)
 }
 
 function allTerminalSelected(): boolean {
-  const ids = terminalVisibleIds()
-  return ids.length > 0 && ids.every((id) => props.selectedJobIds.includes(id))
+  return areAllExportJobsSelected(terminalVisibleIds(), props.selectedJobIds)
 }
 
 function someTerminalSelected(): boolean {
-  const ids = terminalVisibleIds()
-  const selectedCount = ids.filter((id) => props.selectedJobIds.includes(id)).length
-  return selectedCount > 0 && selectedCount < ids.length
+  return areSomeExportJobsSelected(terminalVisibleIds(), props.selectedJobIds)
 }
 
 function toggleJobSelection(jobId: string, checked: unknown): void {
-  if (checked) {
-    if (!props.selectedJobIds.includes(jobId)) {
-      emit('update:selectedJobIds', [...props.selectedJobIds, jobId])
-    }
-    return
-  }
+  if (checked && props.selectedJobIds.includes(jobId)) return
   emit(
     'update:selectedJobIds',
-    props.selectedJobIds.filter((id) => id !== jobId),
+    updateExportJobSelection(props.selectedJobIds, jobId, Boolean(checked)),
   )
 }
 
 function toggleVisibleSelection(checked: unknown): void {
-  const visibleIds = new Set(terminalVisibleIds())
-  if (checked) {
-    const ids = new Set(props.selectedJobIds)
-    for (const id of visibleIds) ids.add(id)
-    emit('update:selectedJobIds', Array.from(ids))
-    return
-  }
   emit(
     'update:selectedJobIds',
-    props.selectedJobIds.filter((id) => !visibleIds.has(id)),
+    updateVisibleExportJobSelection(props.selectedJobIds, terminalVisibleIds(), Boolean(checked)),
   )
 }
 </script>
 
-<style scoped lang="scss">
-.exports-table-scroll {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.exports-table {
-  min-width: 1340px;
-}
-
-.row-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-}
-
-.running-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 4px;
-  border-radius: 50%;
-  background: currentcolor;
-  animation: running-pulse 1.4s ease-in-out infinite;
-}
-
-.exports-mobile {
-  display: none;
-  min-height: 80px;
-}
-
-@keyframes running-pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .running-dot {
-    animation: none;
-  }
-}
-
-@media (width <= 600px) {
-  .exports-desktop {
-    display: none;
-  }
-
-  .exports-mobile {
-    display: grid;
-    gap: 12px;
-  }
-
-  .exports-mobile__selection {
-    padding: 10px 12px;
-    border: 1px solid var(--el-border-color-lighter);
-    border-radius: 8px;
-    background: var(--el-fill-color-lighter);
-  }
-
-  .export-card {
-    min-width: 0;
-    padding: 14px;
-    border: 1px solid var(--el-border-color-lighter);
-    border-radius: 8px;
-    background: var(--el-bg-color);
-  }
-
-  .export-card__title {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
-
-    strong {
-      min-width: 0;
-      color: var(--color-text-primary);
-      line-height: 1.5;
-      overflow-wrap: anywhere;
-    }
-
-    .el-tag {
-      flex: none;
-    }
-  }
-
-  .export-card__title-main {
-    display: flex;
-    min-width: 0;
-    align-items: flex-start;
-    gap: 8px;
-
-    strong {
-      min-width: 0;
-    }
-  }
-
-  .export-card__details {
-    display: grid;
-    gap: 8px;
-    margin: 12px 0 0;
-
-    div {
-      display: grid;
-      grid-template-columns: minmax(88px, 0.4fr) minmax(0, 1fr);
-      gap: 8px;
-    }
-
-    dt,
-    dd {
-      margin: 0;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    dt {
-      color: var(--color-text-secondary);
-    }
-
-    dd {
-      color: var(--color-text-primary);
-      overflow-wrap: anywhere;
-    }
-  }
-
-  .export-card__error {
-    display: -webkit-box;
-    width: 100%;
-    max-height: 44px;
-    margin-top: 12px;
-    padding: 0;
-    overflow: hidden;
-    border: 0;
-    background: transparent;
-    color: var(--el-color-danger);
-    font: inherit;
-    line-height: 22px;
-    text-align: left;
-    overflow-wrap: anywhere;
-    cursor: pointer;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .export-card__actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 14px;
-
-    .el-button {
-      min-height: 40px;
-      margin-left: 0;
-    }
-  }
-}
-</style>
+<style scoped lang="scss" src="./ExportJobList.scss"></style>

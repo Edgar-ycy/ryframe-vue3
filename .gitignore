@@ -35,6 +35,6 @@ openapi/.xtask-contract.lock
 
 docs
 
-# 自动生成文件（auto-imports.d.ts 需提交到版本控制系统，否则 CI 类型检查失败）
+# 自动生成文件（auto-imports.d.ts 需保留以支持类型检查）
 src/components.d.ts
 .qoder

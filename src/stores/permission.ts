@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
 import type { RouteRecordRaw } from 'vue-router'
-import type { MenuTreeNode } from '@/api/modules/menu'
-import { buildAccessibleMenus, buildRoutesFromMenuTree } from '@/router/menuRouteBuilder'
 
 interface PermissionState {
   routes: RouteRecordRaw[]
@@ -17,18 +15,7 @@ export const usePermissionStore = defineStore('permission', {
   }),
 
   actions: {
-    generateRoutes(
-      menuTree: MenuTreeNode[],
-      permissions: string[],
-      capabilities: string[],
-    ) {
-      const routes = buildRoutesFromMenuTree(menuTree)
-      const menus = buildAccessibleMenus(routes, permissions, capabilities)
-      this.applyGeneratedRoutes(routes, menus)
-      return routes
-    },
-
-    applyGeneratedRoutes(routes: RouteRecordRaw[], menus: RouteRecordRaw[]) {
+    applyRouteProjection(routes: RouteRecordRaw[], menus: RouteRecordRaw[]) {
       this.routes = routes
       this.menus = menus
       this.isRoutesLoaded = true

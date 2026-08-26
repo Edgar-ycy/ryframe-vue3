@@ -6,7 +6,10 @@ import {
   type SessionContext,
   type TenantBusinessDataContext,
 } from '@/api/modules/sessionContext'
-import { buildAccessibleMenus, buildRoutesFromMenuTree } from '@/router/menuRouteBuilder'
+import {
+  buildAccessibleMenus,
+  buildRoutesFromMenuTree,
+} from '@/app/navigation/routeProjection'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
@@ -144,7 +147,7 @@ export const useTenantContextStore = defineStore('tenant-context', {
         state.businessData = context.business_data
         state.context = context
       })
-      permissions.applyGeneratedRoutes(routes, menus)
+      permissions.applyRouteProjection(routes, menus)
     },
 
     failClosed(): void {

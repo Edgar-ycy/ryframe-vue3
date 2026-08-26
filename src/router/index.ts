@@ -5,6 +5,10 @@ import {
   type RouteRecordRaw,
 } from 'vue-router'
 import type { PermissionCode } from '@/api/generated/permissions'
+import {
+  buildAccessibleMenus,
+  buildRoutesFromMenuTree,
+} from '@/app/navigation/routeProjection'
 import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
@@ -63,11 +67,13 @@ async function buildAccessibleRoutes(
   const context = tenantContext.context
   if (!context) return undefined
   if (!permissionStore.isRoutesLoaded) {
-    permissionStore.generateRoutes(
-      context.menus,
+    const routes = buildRoutesFromMenuTree(context.menus)
+    const menus = buildAccessibleMenus(
+      routes,
       context.permissions,
       tenantContext.capabilityCodes,
     )
+    permissionStore.applyRouteProjection(routes, menus)
   }
   return permissionStore.routes
 }

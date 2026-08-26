@@ -1,6 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { ROOT_LAYOUT_ROUTE_NAME } from '@/router/layout'
-import { withRouteComponentName } from '@/router/namedRouteComponent'
+import { withRouteComponentName } from '@/shared/navigation/namedRouteComponent'
 import { withMessageCatalogs } from '@/i18n/lazyCatalog'
 
 const dashboardPage = withMessageCatalogs(

@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { isSessionContext } from '@/api/modules/sessionContext'
 import { isSessionMessage } from '@/app/session/sessionMessage'
 import { applyAuthenticatedSession } from '@/app/session/state'
-import { useTenantContextStore } from '@/app/tenant-context/store'
+import {
+  applyTenantSessionContext,
+  failClosedTenantContext,
+} from '@/app/tenant-context/coordinator'
 import { useUserStore } from '@/stores/user'
 
 function sessionContext(isSuperAdmin: boolean) {
@@ -94,15 +97,14 @@ describe('会话授权快照', () => {
     const context = sessionContext(false)
     if (!isSessionContext(context)) throw new Error('测试会话快照无效')
 
-    const tenantContext = useTenantContextStore()
     const user = useUserStore()
-    tenantContext.applySessionContext(context)
+    applyTenantSessionContext(context)
 
     expect(user.roles).toEqual(['admin'])
     expect(user.permissions).toEqual(['*:*:*'])
     expect(user.isSuperAdmin).toBe(false)
 
-    tenantContext.failClosed()
+    failClosedTenantContext()
     expect(user.roles).toEqual([])
     expect(user.permissions).toEqual([])
     expect(user.isSuperAdmin).toBe(false)

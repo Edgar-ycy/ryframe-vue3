@@ -6,7 +6,7 @@ import {
   translate,
   translateNavigationTitle,
 } from '@/i18n'
-import { getMenuPage } from '@/router/pageRegistry'
+import { getMenuPage } from '@/features/pageRegistry'
 import { messageCatalogs, messages } from '@/i18n/messages'
 
 const originalLocale = getApplicationLocale()

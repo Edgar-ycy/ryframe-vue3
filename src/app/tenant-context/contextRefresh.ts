@@ -1,5 +1,6 @@
 import type { Router } from 'vue-router'
 import type { TenantBusinessState } from '@/api/modules/sessionContext'
+import { getRouteRuntime } from '@/app/navigation/runtime'
 import {
   accessResultPath,
   matchedRouteAccessResult,
@@ -15,8 +16,11 @@ import { useUserStore } from '@/stores/user'
 import {
   assertSessionEpoch,
   getSessionEpoch,
-  getSessionRuntime,
 } from '@/app/session/state'
+import {
+  ensureTenantContextLoaded,
+  refreshTenantContext,
+} from './coordinator'
 import { useTenantContextStore } from './store'
 
 export interface TenantContextChangedFrame {
@@ -92,7 +96,7 @@ async function drainTenantContextRefreshes(generation: number): Promise<void> {
       // 响应头可能恰好在一次独立的 /auth/context 请求期间到达。先等待该快照落地，
       // 再比较版本；直接忽略会丢失在请求发出之后发生的上下文变化。
       try {
-        await context.ensureLoaded()
+        await ensureTenantContextLoaded()
       }
       catch {
         // ensureLoaded 已 fail-closed；后续显式刷新或导航会重试，不能保留旧授权。
@@ -127,12 +131,12 @@ async function performTenantContextUiSynchronization(
   const user = useUserStore()
   const tenantId = user.tenantId
   const userId = String(user.userId)
-  const runtime = getSessionRuntime()
+  const runtime = getRouteRuntime()
   if (!runtime) return
 
   if (options?.refreshContext !== false) {
     try {
-      await useTenantContextStore().refresh()
+      await refreshTenantContext()
     }
     catch (error) {
       // 强一致上下文无法取得时，不能继续保留上一个快照安装的页面与标签。

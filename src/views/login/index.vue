@@ -92,16 +92,15 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
+import { authenticateWithPassword } from '@/app/session/login'
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
-import { useUserStore } from '@/stores/user'
 import { DEFAULT_TENANT_ID, getTenantId } from '@/utils/auth'
 import { ensureAccessibleRoutes, resolveAccessibleRoute } from '@/router'
 import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
 
 const router = useRouter()
 const route = useRoute()
-const userStore = useUserStore()
 const runtimeCapabilities = useRuntimeCapabilitiesStore()
 const { t } = useI18n()
 
@@ -224,14 +223,16 @@ const handleLogin = async () => {
       return
     }
 
-    await userStore.login(
-      loginForm.value.username,
-      loginForm.value.password,
+    await authenticateWithPassword(
+      {
+        username: loginForm.value.username,
+        password: loginForm.value.password,
+        captcha_id: captchaEnabled.value ? captchaId.value : undefined,
+        captcha_code: captchaEnabled.value ? loginForm.value.captcha_code : undefined,
+      },
       runtimeCapabilities.multiTenancyEnabled
         ? loginForm.value.tenant_id.trim()
         : DEFAULT_TENANT_ID,
-      captchaEnabled.value ? captchaId.value : undefined,
-      captchaEnabled.value ? loginForm.value.captcha_code : undefined,
     )
     await ensureAccessibleRoutes({ skipAuthRefresh: true })
     ElMessage.success(t('account.signInSuccess'))

@@ -4,11 +4,19 @@ import {
   type PermissionCode,
 } from '@/api/generated/permissions'
 import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
-import { constantRoutes } from '@/router/routes/constant'
-import { getMenuPage } from '@/router/pageRegistry'
-import { withRouteComponentName } from '@/router/namedRouteComponent'
-import { hasRequiredCapabilities } from '@/router/routeAccess'
+import { getMenuPage } from '@/features/pageRegistry'
+import { hasRequiredCapabilities } from '@/shared/navigation/capabilityAccess'
+import { withRouteComponentName } from '@/shared/navigation/namedRouteComponent'
 import { hasPermission } from '@/utils/permission'
+
+let constantMenuRoutes: readonly RouteRecordRaw[] = []
+
+export function installRouteProjection(options: {
+  constantRoutes: readonly RouteRecordRaw[]
+}): void {
+  const layoutRoute = options.constantRoutes.find(route => route.path === '/' && route.children)
+  constantMenuRoutes = layoutRoute?.children ?? []
+}
 
 const SKIP_PATHS = new Set([
   '/',
@@ -56,9 +64,7 @@ export function buildAccessibleMenus(
 }
 
 function getConstantMenus(): RouteRecordRaw[] {
-  const layoutRoute = constantRoutes.find(route => route.path === '/' && route.children)
-  if (!layoutRoute) return []
-  return (layoutRoute.children || [])
+  return constantMenuRoutes
     .filter(child => !child.meta?.hidden)
     .map(child => ({
       ...child,

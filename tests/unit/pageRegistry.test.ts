@@ -5,7 +5,7 @@ import {
   getMenuPage,
   getRouteKeyByPermissionCode,
   menuPageRegistry,
-} from '@/router/pageRegistry'
+} from '@/features/pageRegistry'
 
 describe('菜单页面注册表', () => {
   it('不再识别在线代码生成器及其父级 route key', () => {

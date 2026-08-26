@@ -32,7 +32,6 @@ export interface NavigationRuntimeCapabilities {
 
 export interface NavigationTenantContext {
   capabilityCodes: string[]
-  ensureLoaded(options?: { force?: boolean }): Promise<void>
 }
 
 export interface NavigationGuardDependencies {
@@ -41,6 +40,7 @@ export interface NavigationGuardDependencies {
   getPermissionState(): NavigationPermissionState
   getRuntimeCapabilities(): NavigationRuntimeCapabilities
   getTenantContext(): NavigationTenantContext
+  ensureTenantContextLoaded(): Promise<void>
   ensureAccessibleRoutes(): Promise<unknown>
   clearSession(): Promise<void>
   isKnownRoute(path: string): boolean
@@ -77,7 +77,7 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
     if (authenticatedErrorPaths.has(target.path)) return true
 
     try {
-      await dependencies.getTenantContext().ensureLoaded()
+      await dependencies.ensureTenantContextLoaded()
       if (!dependencies.getPermissionState().isRoutesLoaded) {
         await dependencies.ensureAccessibleRoutes()
         // 重新解析原始完整地址，避免首次解析已经落入 404 的结果被复用。

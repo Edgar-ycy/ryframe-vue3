@@ -12,6 +12,7 @@ function dependencies(options?: {
   return {
     clearSession: vi.fn(async () => undefined),
     ensureAccessibleRoutes: vi.fn(async () => undefined),
+    ensureTenantContextLoaded: vi.fn(async () => undefined),
     getPermissionState: () => ({ isRoutesLoaded: true }),
     getRuntimeCapabilities: () => ({
       ensureLoaded: async () => undefined,
@@ -19,7 +20,6 @@ function dependencies(options?: {
     }),
     getTenantContext: () => ({
       capabilityCodes: options?.capabilities ?? [],
-      ensureLoaded: async () => undefined,
     }),
     getUser: () => ({
       permissions: options?.permissions ?? [],

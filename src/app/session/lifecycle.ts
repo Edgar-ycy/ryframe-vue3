@@ -1,6 +1,7 @@
 import { ElMessage } from 'element-plus'
 import { logout as logoutApi } from '@/api/modules/auth'
 import type { SessionContext } from '@/api/modules/sessionContext'
+import { getRouteRuntime } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
 import {
@@ -9,7 +10,10 @@ import {
 } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useTagsViewStore } from '@/stores/tagsView'
-import { useTenantContextStore } from '@/app/tenant-context'
+import {
+  failClosedTenantContext,
+  resetTenantContext,
+} from '@/app/tenant-context/coordinator'
 import {
   observeTenantContext,
   resetTenantContextObservation,
@@ -29,19 +33,15 @@ import { getPendingRefresh, refreshAccessToken } from './refresh'
 import {
   applyAuthenticatedSession,
   ensureRoutesAfterAuthentication,
-  getSessionRuntime,
   invalidateSessionEpoch,
   isSessionTerminating,
-  setSessionRuntime,
   setSessionTerminating,
-  type SessionRuntime,
 } from './state'
 
 let initializationPromise: Promise<void> | undefined
 let clearPromise: Promise<void> | undefined
 
-export function installSessionCoordinator(sessionRuntime: SessionRuntime): void {
-  setSessionRuntime(sessionRuntime)
+export function installSessionCoordinator(): void {
   installSessionChannel({
     isTerminating: isSessionTerminating,
     onAuthenticated: (accessToken, sessionContext) => {
@@ -117,7 +117,7 @@ async function handleRemoteLogout(): Promise<void> {
   setSessionTerminating(true)
   try {
     await clearSession()
-    const runtime = getSessionRuntime()
+    const runtime = getRouteRuntime()
     if (runtime?.router.currentRoute.value.path !== '/login') {
       await runtime?.router.replace('/login')
     }
@@ -138,7 +138,7 @@ async function handleRefreshFailure(error: HttpError): Promise<void> {
   // 非鉴权故障允许原会话稍后恢复，但旧授权投影必须立即失效。
   useUserStore().sessionStatus = 'unavailable'
   ElMessage.error(translate('shell.session.authUnavailable'))
-  const runtime = getSessionRuntime()
+  const runtime = getRouteRuntime()
   if (runtime?.router.currentRoute.value.path !== '/503') {
     await runtime?.router.replace('/503')
   }
@@ -146,9 +146,9 @@ async function handleRefreshFailure(error: HttpError): Promise<void> {
 
 function failClosedAuthorizationProjection(): void {
   clearServerState()
-  useTenantContextStore().failClosed()
+  failClosedTenantContext()
   useTagsViewStore().closeAllViews()
-  getSessionRuntime()?.resetDynamicRoutes()
+  getRouteRuntime()?.resetDynamicRoutes()
 }
 
 function reportError(error: HttpError): void {
@@ -186,12 +186,12 @@ export function clearSession(): Promise<void> {
       .then(() => {
         resetTenantContextObservation()
         clearServerState()
-        useTenantContextStore().reset()
+        resetTenantContext()
         useUserStore().resetState()
         usePermissionStore().resetRoutes()
         useTagsViewStore().closeAllViews()
         invalidateCsrfToken()
-        getSessionRuntime()?.resetDynamicRoutes()
+        getRouteRuntime()?.resetDynamicRoutes()
       })
       .finally(() => {
         if (clearPromise === pending) clearPromise = undefined
@@ -206,7 +206,7 @@ export async function terminateSession(): Promise<void> {
   try {
     await clearSession()
     broadcastLogout()
-    const runtime = getSessionRuntime()
+    const runtime = getRouteRuntime()
     if (runtime?.router.currentRoute.value.path !== '/login') {
       await runtime?.router.replace('/login')
     }

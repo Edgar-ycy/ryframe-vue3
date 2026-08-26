@@ -8,4 +8,3 @@ export {
   terminateSession,
 } from './lifecycle'
 export { refreshAccessToken } from './refresh'
-export type { SessionRuntime } from './state'

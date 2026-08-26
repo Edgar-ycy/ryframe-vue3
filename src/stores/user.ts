@@ -1,12 +1,8 @@
 import { defineStore } from 'pinia'
-import { login as loginApi, type UserInfo } from '@/api/modules/auth'
-import { isSessionContext } from '@/api/modules/sessionContext'
-import { ensureCsrfToken, publishAuthenticatedSession } from '@/app/session/sessionCoordinator'
+import type { UserInfo } from '@/api/modules/auth'
+import type { AppLocale } from '@/i18n'
 import type { Id } from '@/shared/http/types'
-import { getTenantId, setTenantId } from '@/utils/auth'
-import { clearServerState } from '@/shared/query/client'
-import { normalizeLocale, translate, type AppLocale } from '@/i18n'
-import { useSettingsStore } from '@/stores/settings'
+import { getTenantId } from '@/utils/auth'
 
 export type SessionStatus = 'initializing' | 'authenticated' | 'anonymous' | 'unavailable'
 
@@ -50,39 +46,11 @@ export const useUserStore = defineStore('user', {
   },
 
   actions: {
-    async login(
-      username: string,
-      password: string,
-      tenantId: string,
-      captchaId?: string,
-      captchaCode?: string,
+    applyIdentity(
+      userInfo: UserInfo,
+      isSuperAdmin: boolean,
+      preferredLocale: AppLocale | undefined,
     ) {
-      const csrfToken = await ensureCsrfToken()
-      const res = await loginApi(
-        { username, password, captcha_id: captchaId, captcha_code: captchaCode },
-        tenantId,
-        csrfToken,
-      )
-      const authData = res.data
-      if (!authData) throw new Error(translate('shell.session.loginResponseMissingAuth'))
-      const context = authData.session_context
-
-      if (!authData.access_token || !isSessionContext(context) || !context.user.tenant_id) {
-        throw new Error(translate('shell.session.loginResponseMissingTenant'))
-      }
-
-      clearServerState()
-      publishAuthenticatedSession(authData.access_token, context)
-      return res
-    },
-
-    applyUserInfo(userInfo: UserInfo, isSuperAdmin: boolean) {
-      if (this.userId !== userInfo.id || this.tenantId !== userInfo.tenant_id) {
-        clearServerState()
-      }
-      setTenantId(userInfo.tenant_id)
-      const preferredLocale = getPreferredLocale(userInfo)
-      if (preferredLocale) useSettingsStore().setLocale(preferredLocale)
       this.$patch({
         avatar: userInfo.avatar || '',
         email: userInfo.email || '',
@@ -123,7 +91,3 @@ export const useUserStore = defineStore('user', {
     },
   },
 })
-
-function getPreferredLocale(userInfo: UserInfo): AppLocale | undefined {
-  return normalizeLocale((userInfo as UserInfo & { preferred_locale?: unknown }).preferred_locale)
-}

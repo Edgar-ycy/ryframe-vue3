@@ -4,40 +4,23 @@ import {
   type RouteLocationRaw,
   type RouteRecordRaw,
 } from 'vue-router'
-import type { PermissionCode } from '@/api/generated/permissions'
 import {
   buildAccessibleMenus,
   buildRoutesFromMenuTree,
 } from '@/app/navigation/routeProjection'
 import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
+import {
+  ensureTenantContextLoaded,
+} from '@/app/tenant-context/coordinator'
+import { useTenantContextStore } from '@/app/tenant-context/store'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
-import { useTenantContextStore } from '@/app/tenant-context'
 import { useUserStore } from '@/stores/user'
 import { ROOT_LAYOUT_ROUTE_NAME } from './layout'
 import { createNavigationGuard } from './navigationGuard'
 import { matchedRouteAccessResult } from './routeAccess'
 import { RuntimeRouteRegistry } from './runtimeRouteRegistry'
 import { constantRoutes } from './routes/constant'
-
-declare module 'vue-router' {
-  interface RouteMeta {
-    title?: string
-    icon?: string
-    hidden?: boolean
-    affix?: boolean
-    alwaysShow?: boolean
-    permission?: PermissionCode
-    activeMenu?: string
-    noCache?: boolean
-    sort?: number
-    isFrame?: boolean
-    buttonPerms?: readonly PermissionCode[]
-    requiresPermission?: boolean
-    requiresMultiTenancy?: boolean
-    requiredCapabilities?: readonly string[]
-  }
-}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -61,7 +44,7 @@ async function buildAccessibleRoutes(
   generation: number,
 ): Promise<RouteRecordRaw[] | undefined> {
   const tenantContext = useTenantContextStore()
-  await tenantContext.ensureLoaded()
+  await ensureTenantContextLoaded()
   if (generation !== routeGeneration) return undefined
   const permissionStore = usePermissionStore()
   const context = tenantContext.context
@@ -187,6 +170,7 @@ const navigationGuard = createNavigationGuard({
   getPermissionState: usePermissionStore,
   getRuntimeCapabilities: useRuntimeCapabilitiesStore,
   getTenantContext: useTenantContextStore,
+  ensureTenantContextLoaded,
   ensureAccessibleRoutes,
   clearSession,
   isKnownRoute: (path) => {

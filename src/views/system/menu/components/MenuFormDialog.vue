@@ -90,7 +90,7 @@ import {
   type MenuUpdateInput,
 } from '@/api/modules/menu'
 import IconSelect from '@/components/common/IconSelect.vue'
-import { getRouteKeyByPermissionCode } from '@/router/pageRegistry'
+import { getRouteKeyByPermissionCode } from '@/features/pageRegistry'
 import type { Id } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useUserStore } from '@/stores/user'

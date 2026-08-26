@@ -1,28 +1,16 @@
-import type { Router } from 'vue-router'
 import type { SessionContext } from '@/api/modules/sessionContext'
+import { getRouteRuntime } from '@/app/navigation/runtime'
+import {
+  applyTenantSessionContext,
+  failClosedTenantContext,
+} from '@/app/tenant-context/coordinator'
+import { useTenantContextStore } from '@/app/tenant-context/store'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
-import { useTenantContextStore } from '@/app/tenant-context'
 
-export interface SessionRuntime {
-  router: Router
-  ensureAccessibleRoutes(options?: { skipAuthRefresh?: boolean }): Promise<unknown>
-  refreshAccessibleRoutes(options?: { skipAuthRefresh?: boolean }): Promise<unknown>
-  resetDynamicRoutes(): void
-}
-
-let runtime: SessionRuntime | undefined
 let sessionEpoch = 0
 let sessionTerminating = false
-
-export function setSessionRuntime(next: SessionRuntime): void {
-  runtime = next
-}
-
-export function getSessionRuntime(): SessionRuntime | undefined {
-  return runtime
-}
 
 export function getSessionEpoch(): number {
   return sessionEpoch
@@ -58,13 +46,13 @@ export function applyAuthenticatedSession(accessToken: string, context: SessionC
   const tenantContext = useTenantContextStore()
   const scopeChanged = hasAuthenticatedScopeChanged(userStore, tenantContext, context)
   try {
-    tenantContext.applySessionContext(context)
+    applyTenantSessionContext(context)
     userStore.token = accessToken
     userStore.sessionStatus = 'authenticated'
     return scopeChanged
   }
   catch (error) {
-    tenantContext.failClosed()
+    failClosedTenantContext()
     userStore.resetState()
     throw error
   }
@@ -73,7 +61,7 @@ export function applyAuthenticatedSession(accessToken: string, context: SessionC
 export async function ensureRoutesAfterAuthentication(
   skipAuthRefresh = false,
 ): Promise<void> {
-  await runtime?.ensureAccessibleRoutes({ skipAuthRefresh })
+  await getRouteRuntime()?.ensureAccessibleRoutes({ skipAuthRefresh })
 }
 
 function hasAuthenticatedScopeChanged(

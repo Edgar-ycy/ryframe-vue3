@@ -1,5 +1,6 @@
 import type { RouteMeta } from 'vue-router'
-import { getMenuPageByPath } from '@/router/pageRegistry'
+import { getMenuPageByPath } from '@/features/pageRegistry'
+import { hasRequiredCapabilities } from '@/shared/navigation/capabilityAccess'
 import { hasPermission } from '@/utils/permission'
 
 export type RouteAccessResult =
@@ -14,13 +15,6 @@ export interface RouteAccessContext {
   capabilities: readonly string[]
   multiTenancyEnabled: boolean
   permissions: readonly string[]
-}
-
-export function hasRequiredCapabilities(
-  capabilities: readonly string[],
-  required: readonly string[] | undefined,
-): boolean {
-  return !required?.length || required.every(code => capabilities.includes(code))
 }
 
 /** 已解析路由、静态页面识别和标签清理必须共用同一套访问判定。 */

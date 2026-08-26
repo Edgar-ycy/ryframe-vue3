@@ -30,3 +30,15 @@ test('普通浏览器门禁严格上传报告与测试结果', async () => {
   assert.match(browser, /if-no-files-found: error/u)
   assert.doesNotMatch(browser, /if-no-files-found: (?:ignore|warn)/u)
 })
+
+test('静态检查忽略浏览器和覆盖率生成物', async () => {
+  const eslint = await read('eslint.config.js')
+  for (const generated of [
+    '.local-tests/**',
+    'coverage/**',
+    'playwright-report/**',
+    'test-results/**',
+  ]) {
+    assert.match(eslint, new RegExp(`['"]${generated.replaceAll('*', '\\*')}['"]`, 'u'))
+  }
+})

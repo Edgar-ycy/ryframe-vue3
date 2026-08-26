@@ -12,13 +12,17 @@
   --color-text-primary: #1f2937;
   --color-text-regular: #4b5563;
   --color-text-secondary: #4b5563;
-  --color-text-placeholder: #d1d5db;
+  --color-text-placeholder: #6b7280;
   --border-color-base: #e5e7eb;
   --border-color-light: #f3f4f6;
   --border-radius-base: 8px;
   --border-radius-lg: 12px;
   --bg-color: #fff;
   --bg-color-page: #f3f4f6;
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: var(--color-text-regular);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-text-color-placeholder: var(--color-text-placeholder);
 
   /* 侧边栏 */
   --sidebar-bg: #22263e;

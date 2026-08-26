@@ -173,6 +173,7 @@ async function handleCommand(command: string): Promise<void> {
 .tenant-tag__value {
   display: block;
   overflow: hidden;
+  color: var(--color-text-regular);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

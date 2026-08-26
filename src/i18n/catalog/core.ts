@@ -12,6 +12,7 @@ export const coreMessages = {
       search: '搜索',
       loading: '加载中',
       noData: '暂无数据',
+      pageSize: '每页条数',
     },
     navigation: {
       dashboard: '首页',
@@ -176,6 +177,7 @@ export const coreMessages = {
       search: 'Search',
       loading: 'Loading',
       noData: 'No data',
+      pageSize: 'Rows per page',
     },
     navigation: {
       dashboard: 'Dashboard',

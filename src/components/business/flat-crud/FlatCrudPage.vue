@@ -36,6 +36,7 @@
         @remove="$emit('remove', $event)"
       />
       <el-pagination
+        v-pagination-a11y="t('common.pageSize')"
         :current-page="page"
         :page-size="pageSize"
         :page-sizes="[10, 20, 50, 100]"
@@ -69,9 +70,11 @@
   lang="ts"
   generic="TRecord extends object, TQuery extends object, TForm extends object"
 >
+import { useI18n } from 'vue-i18n'
 import FlatCrudFormDialog from './FlatCrudFormDialog.vue'
 import FlatCrudQueryForm from './FlatCrudQueryForm.vue'
 import FlatCrudTable from './FlatCrudTable.vue'
+import { paginationA11yDirective as vPaginationA11y } from '@/shared/accessibility/pagination'
 import type {
   FlatCrudColumn,
   FlatCrudFormField,
@@ -79,6 +82,8 @@ import type {
   FlatCrudPermissions,
   FlatCrudQueryField,
 } from './model'
+
+const { t } = useI18n()
 
 defineProps<{
   columns: readonly FlatCrudColumn<TRecord>[]

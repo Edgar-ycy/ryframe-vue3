@@ -199,6 +199,7 @@
 
     <el-pagination
       v-if="(tenantPage?.total ?? 0) > 0"
+      v-pagination-a11y="t('common.pageSize')"
       class="tenant-pagination tenant-pagination--desktop"
       :current-page="page"
       :page-size="pageSize"
@@ -239,6 +240,7 @@
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import type { TenantCapacity, TenantCapacityPage } from '@/api/modules/tenant'
+import { paginationA11yDirective as vPaginationA11y } from '@/shared/accessibility/pagination'
 import TenantQuotaMeter from './TenantQuotaMeter.vue'
 
 defineProps<{

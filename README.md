@@ -16,12 +16,19 @@ pnpm dev
 ## 常用命令
 
 ```bash
-pnpm check          # 完整质量门禁
-pnpm test:unit      # 确定性单元与组件测试
-pnpm test:browser-smoke # Chrome 关键流程 smoke 测试
-pnpm api:check      # 本地契约、生成物和 operation 使用检查
-pnpm build          # 生产构建
+pnpm check:fast              # 并行本地快速反馈
+pnpm check                   # 完整质量门禁
+pnpm test:unit               # 确定性单元与组件测试
+pnpm test:targeted-coverage  # 关键状态机定向覆盖率门禁
+pnpm test:browser-smoke      # Chrome 关键流程 smoke 测试
+pnpm api:check               # 本地契约、生成物和 operation 使用检查
+pnpm build                   # 生产构建
 ```
+
+CI 通过 `ci:static`、`ci:unit`、`ci:build` 和 `ci:browser` 四个稳定入口并行执行门禁，
+再由 `Required` 汇总。浏览器 smoke 按 auth-rbac、post-crud、export-flow、tenant-context
+分组；后端 CI 的定时、手动和 `v*` 发布标签门禁还会调用 `ci:browser-real`，连接真实
+API、MySQL 与 Redis 验证登录、首页、Post 和 Tenant 流程。
 
 定时 CI 还会执行生产依赖审计、OSV 扫描、许可证策略检查和 CycloneDX SBOM 生成。本地可单独运行：
 
@@ -44,6 +51,9 @@ cargo api-sync --commit HEAD
 ```
 
 `cargo api-sync` 会整组暂存、校验并安装 OpenAPI 与前端派生文件，任一步失败都会恢复原状态。无参数命令不修改正式来源元数据；`--commit` 只接受已提交的后端契约并固定完整 SHA。底层 `pnpm api:sync` 是仓库内部实现，不作为日常入口。API 模块必须使用生成的 operation descriptor，不得手写 URL、HTTP method 或重复 DTO。
+
+Post 与 Notice 的标准 CRUD、页面注册和权限聚合由资源清单生成；中央 Router、页面注册表、
+权限聚合及标准 CRUD API 不保留手工注册触点。导出和消息发布等非标准能力放在单一强类型扩展中。
 
 ## 运行配置
 

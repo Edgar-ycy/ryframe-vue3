@@ -53,6 +53,10 @@ main / composition root
 - 所有 ID 使用 `string`，时间按后端契约传递带时区值。
 - 契约破坏性变更直接同步所有调用方，不保留旧字段、旧路径或双读。
 
+Post 与 Notice 是标准资源生成链路的生产基准：标准 CRUD、页面注册和权限聚合从资源清单
+确定性生成，重复生成必须零差异；中央 Router、页面注册表、权限聚合和标准 CRUD API 的
+手工注册触点为零。导出、消息发布等资源特有行为保留为单一强类型扩展。
+
 后端候选契约由同步 consumer job 检出指定前端完整 SHA 并运行 `pnpm consumer:check`。前端最终同步只能指向包含稳定契约的后端提交。
 
 ## 会话、权限与路由
@@ -114,12 +118,19 @@ catch 只用于恢复、回滚或转换局部状态，未处理的错误继续�
 
 ## 质量门禁
 
-`pnpm check:fast` 并行运行格式、源码规模、导入边界、Lint、应用类型和确定性单测，服务于本地反馈；
+`pnpm check:fast` 并行运行格式、源码规模、导入边界、ESLint、Stylelint、应用类型和确定性单测，服务于本地反馈；
 `pnpm check` 继续覆盖工作流、依赖策略、契约与生成物、测试类型、生产构建和体积预算。
 TypeScript 与 Lint 增量缓存只写入被忽略的 `.local-tests`。源码规模门禁覆盖所有手写 TS、
 Vue SFC 和样式；SFC 上限 400 行，普通 TS 与 composable 上限 300 行，样式上限 300 行，
 生成目录与声明文件除外。Prettier 不改写生成目录，`pnpm format:check` 同时进入快速与完整门禁。
 
-CI 另用 Chrome smoke 测试验证登录、筛选导出、下载和记录删除；定时任务执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
+`pnpm test:targeted-coverage` 对 Cron、message、settings、session 和 route projection 分别要求
+语句覆盖率至少 90%、分支覆盖率至少 85%。CI 使用 `ci:static`、`ci:unit`、`ci:build`、
+`ci:browser` 四个稳定入口并行执行并由 `Required` 汇总。Chrome smoke 按 auth-rbac、
+post-crud、export-flow、tenant-context 分组；登录、首页、Post 和 Tenant 包含 axe smoke。
+
+后端 CI 的定时、手动和 `v*` 发布标签门禁调用 `ci:browser-real`，连接真实 API、MySQL 与
+Redis 验证登录、首页、Post 和 Tenant，并始终保留失败 trace、截图、视频和 HTML 报告。
+前端定时任务另执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
 
 交付前还要在真实 Chrome 完成受影响流程，检查网络请求与控制台；本次改动不得引入错误或警告。

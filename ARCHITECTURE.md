@@ -46,7 +46,7 @@ main / composition root
 
 ## 契约与请求
 
-- `openapi/openapi.json` 是已提交的后端契约快照，`openapi/source.json` 固定来源提交和摘要。
+- `openapi/openapi.json` 是后端契约快照，`openapi/source.json` 保存来源版本和摘要。
 - `src/api/generated/` 是唯一生成类型目录，只能通过 `pnpm api:sync` 更新。
 - 请求必须绑定 operationId，并由生成类型约束 path、query、body 和 response。
 - Blob、文本和 multipart 使用声明过的专用传输入口，不绕过 operation 目录。
@@ -56,8 +56,6 @@ main / composition root
 Post 与 Notice 是标准资源生成链路的生产基准：标准 CRUD、页面注册和权限聚合从资源清单
 确定性生成，重复生成必须零差异；中央 Router、页面注册表、权限聚合和标准 CRUD API 的
 手工注册触点为零。导出、消息发布等资源特有行为保留为单一强类型扩展。
-
-后端候选契约由同步 consumer job 检出指定前端完整 SHA 并运行 `pnpm consumer:check`。前端最终同步只能指向包含稳定契约的后端提交。
 
 ## 会话、权限与路由
 
@@ -102,8 +100,8 @@ catch 只用于恢复、回滚或转换局部状态，未处理的错误继续�
 
 新增 API：
 
-1. 后端更新 DTO、路由和 OpenAPI，并提交候选契约。
-2. 前端用 `pnpm api:sync` 同步精确后端提交。
+1. 后端更新 DTO、路由和 OpenAPI，生成候选契约。
+2. 前端用 `cargo api-sync` 同步并校验契约。
 3. 在 `api/modules` 添加 operation descriptor 调用，不复制 DTO。
 4. 补单元、组件或契约测试，再运行 `pnpm check`。
 
@@ -126,12 +124,8 @@ Vue SFC 和样式；SFC 上限 400 行，普通 TS、composable、测试与 i18n
 `pnpm format:check` 同时进入快速与完整门禁。
 
 `pnpm test:targeted-coverage` 对 Cron、message、settings、session 和 route projection 分别要求
-语句覆盖率至少 90%、分支覆盖率至少 85%。CI 使用 `ci:static`、`ci:unit`、`ci:build`、
-`ci:browser` 四个稳定入口并行执行并由 `Required` 汇总。Chrome smoke 按 auth-rbac、
+语句覆盖率至少 90%、分支覆盖率至少 85%。`pnpm test:browser-smoke` 按 auth-rbac、
 post-crud、export-flow、tenant-context 分组；登录、首页、Post 和 Tenant 包含 axe smoke。
-
-后端 CI 的定时、手动和 `v*` 发布标签门禁调用 `ci:browser-real`，连接真实 API、MySQL 与
-Redis 验证登录、首页、Post 和 Tenant，并始终保留失败 trace、截图、视频和 HTML 报告。
-前端定时任务另执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
+连接真实 API、MySQL 与 Redis 时运行 `pnpm test:browser-real`。
 
 交付前还要在真实 Chrome 完成受影响流程，检查网络请求与控制台；本次改动不得引入错误或警告。

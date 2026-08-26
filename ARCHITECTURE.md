@@ -120,7 +120,7 @@ catch 只用于恢复、回滚或转换局部状态，未处理的错误继续�
 
 `pnpm check:fast` 并行运行格式、源码规模、导入边界、ESLint、Stylelint、应用类型和确定性单测，服务于本地反馈；
 `pnpm check` 继续覆盖工作流、依赖策略、契约与生成物、测试类型、生产构建和体积预算。
-TypeScript 与 Lint 增量缓存只写入被忽略的 `.local-tests`。源码规模门禁覆盖所有手写 TS、
+Prettier、TypeScript 与 Lint 增量缓存只写入被忽略的 `.local-tests`。源码规模门禁覆盖所有手写 TS、
 Vue SFC 和样式；SFC 上限 400 行，普通 TS 与 composable 上限 300 行，样式上限 300 行，
 生成目录与声明文件除外。Prettier 不改写生成目录，`pnpm format:check` 同时进入快速与完整门禁。
 

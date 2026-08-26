@@ -15,6 +15,7 @@
     "lint:styles:fix": "stylelint \"src/**/*.{css,scss,vue}\" --fix --max-warnings=0 --cache --cache-location .local-tests/stylelint/cache",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "format:check:fast": "prettier --check . --cache --cache-location .local-tests/prettier/cache --cache-strategy content",
     "check:workflows": "node scripts/check-workflows.mjs",
     "check:dependencies": "node scripts/check-prerelease-dependencies.mjs",
     "check:supply-chain-policy": "node scripts/check-supply-chain-policy.mjs",

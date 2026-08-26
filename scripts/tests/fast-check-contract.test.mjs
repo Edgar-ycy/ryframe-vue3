@@ -1,6 +1,19 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { createPackageManagerInvocation } from '../fast-check-contract.mjs'
+
+test('快速格式检查复用内容缓存且完整检查保持无缓存', async () => {
+  const packageJson = JSON.parse(await readFile(new URL('../../package.json', import.meta.url)))
+  const runner = await readFile(new URL('../run-fast-checks.mjs', import.meta.url), 'utf8')
+
+  assert.equal(packageJson.scripts['format:check'], 'prettier --check .')
+  assert.match(
+    packageJson.scripts['format:check:fast'],
+    /--cache-location \.local-tests\/prettier\/cache --cache-strategy content/u,
+  )
+  assert.match(runner, /\['格式', 'format:check:fast'\]/u)
+})
 
 test('优先复用当前包管理器入口，避免 Windows cmd 包装器', () => {
   assert.deepEqual(

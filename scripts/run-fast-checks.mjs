@@ -3,7 +3,7 @@ import { performance } from 'node:perf_hooks'
 import { createPackageManagerInvocation } from './fast-check-contract.mjs'
 
 const tasks = [
-  ['格式', 'format:check'],
+  ['格式', 'format:check:fast'],
   ['源码规模', 'check:source-size'],
   ['导入边界', 'check:imports'],
   ['ESLint', 'lint'],

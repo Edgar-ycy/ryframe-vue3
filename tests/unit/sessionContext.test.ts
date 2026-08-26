@@ -17,6 +17,7 @@ import {
   applyTenantSessionContext,
   failClosedTenantContext,
 } from '@/app/tenant-context/coordinator'
+import { HttpError } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
 
 import { sessionContext } from './sessionContextFixtures'
@@ -164,10 +165,10 @@ describe('会话授权快照', () => {
     expect(isSessionTerminating()).toBe(false)
     expect(() => assertSessionEpoch(current)).not.toThrow()
     invalidateSessionEpoch()
-    expect(() => assertSessionEpoch(current)).toThrow('会话操作已取消')
+    expectCancelledSessionOperation(() => assertSessionEpoch(current))
     setSessionTerminating(true)
     expect(isSessionTerminating()).toBe(true)
-    expect(() => assertSessionEpoch(getSessionEpoch())).toThrow('会话操作已取消')
+    expectCancelledSessionOperation(() => assertSessionEpoch(getSessionEpoch()))
   })
 
   it('认证后按参数调用注入的路由运行时', async () => {
@@ -207,3 +208,14 @@ describe('会话授权快照', () => {
     expect(useUserStore().isSuperAdmin).toBe(true)
   })
 })
+
+function expectCancelledSessionOperation(operation: () => void): void {
+  let thrown: unknown
+  try {
+    operation()
+  } catch (error) {
+    thrown = error
+  }
+  expect(thrown).toBeInstanceOf(HttpError)
+  expect(thrown).toMatchObject({ kind: 'cancelled', status: 401 })
+}

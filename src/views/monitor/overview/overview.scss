@@ -1,0 +1,142 @@
+.overview-page {
+  min-width: 0;
+}
+
+.overview-header-card,
+.overview-error,
+.content-card,
+.status-grid,
+.metric-grid,
+.chart-grid {
+  margin-bottom: 12px;
+}
+
+.overview-header,
+.overview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overview-header h2,
+.overview-header p {
+  margin: 0;
+}
+
+.overview-header p,
+.overview-header small,
+.chart-card :deep(.el-card__header p) {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.overview-header p {
+  margin-top: 5px;
+}
+
+.overview-header small {
+  display: block;
+  margin-top: 6px;
+}
+
+.overview-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.status-grid,
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.status-card,
+.metric-card {
+  display: flex;
+  min-width: 0;
+  min-height: 94px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--border-color-base);
+  border-radius: 6px;
+  background: var(--bg-color);
+}
+
+.status-card > span,
+.metric-card > span,
+.status-card small {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.status-card small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-card strong {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 2.2fr);
+  gap: 12px;
+}
+
+.chart-grid--equal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.chart-card {
+  min-width: 0;
+}
+
+.chart-card :deep(.el-card__header p) {
+  margin: 4px 0 0;
+  font-weight: 400;
+}
+
+@media (width <= 1100px) {
+  .status-grid,
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-grid,
+  .chart-grid--equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 720px) {
+  .overview-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .overview-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .overview-actions :deep(.el-radio-group) {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (width <= 480px) {
+  .status-grid,
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+}

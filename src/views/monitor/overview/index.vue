@@ -185,7 +185,6 @@
 </template>
 
 <script setup lang="ts">
-import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { EChartsCoreOption } from 'echarts/core'
 import type { MonitorOverview, MonitorOverviewTrends, OverviewRange } from '@/api/modules/monitor'
@@ -200,6 +199,21 @@ import {
   scheduleChartOption,
 } from './chartOptions'
 import { cancelOverviewRequests, fetchOverviewSnapshot, fetchOverviewTrends } from './data'
+import {
+  dependencyStatusTranslationKey,
+  dependencyTag,
+  formatOverviewMemory,
+  formatOverviewPercent,
+  hasOverviewAccessData,
+  hasOverviewScheduleData,
+  hasOverviewTrendData,
+  overviewAccessSummary,
+  overviewActivitySummary,
+  overviewDependencyCards,
+  overviewJobsSummary,
+  overviewScheduleSummary,
+} from './overviewPresentation'
+import { useOverviewRefreshSchedule } from './useOverviewRefreshSchedule'
 
 interface ChartHandle {
   clear: () => void
@@ -221,72 +235,6 @@ const jobsChart = ref<ChartHandle>()
 const activityChart = ref<ChartHandle>()
 const scheduleChart = ref<ChartHandle>()
 const accessChart = ref<ChartHandle>()
-let snapshotTimer: number | undefined
-let trendsTimer: number | undefined
-let initialized = false
-let active = true
-
-onMounted(start)
-onActivated(start)
-onDeactivated(stop)
-onUnmounted(stop)
-
-function start(): void {
-  active = true
-  if (!initialized) {
-    initialized = true
-    void Promise.all([loadSnapshot(false), loadTrends(false)]).then(scheduleRefresh)
-    return
-  }
-  renderCharts()
-  scheduleRefresh()
-}
-
-function stop(): void {
-  active = false
-  clearTimers()
-  if (userStore.tenantId) void cancelOverviewRequests(userStore.tenantId)
-}
-
-function clearTimers(): void {
-  if (snapshotTimer !== undefined) window.clearTimeout(snapshotTimer)
-  if (trendsTimer !== undefined) window.clearTimeout(trendsTimer)
-  snapshotTimer = undefined
-  trendsTimer = undefined
-}
-
-function scheduleRefresh(): void {
-  clearTimers()
-  if (!active) return
-  snapshotTimer = window.setTimeout(async () => {
-    snapshotTimer = undefined
-    await loadSnapshot(true)
-    scheduleSnapshotRefresh()
-  }, 30_000)
-  trendsTimer = window.setTimeout(async () => {
-    trendsTimer = undefined
-    await loadTrends(true)
-    scheduleTrendRefresh()
-  }, 5 * 60_000)
-}
-
-function scheduleSnapshotRefresh(): void {
-  if (!active) return
-  snapshotTimer = window.setTimeout(async () => {
-    snapshotTimer = undefined
-    await loadSnapshot(true)
-    scheduleSnapshotRefresh()
-  }, 30_000)
-}
-
-function scheduleTrendRefresh(): void {
-  if (!active) return
-  trendsTimer = window.setTimeout(async () => {
-    trendsTimer = undefined
-    await loadTrends(true)
-    scheduleTrendRefresh()
-  }, 5 * 60_000)
-}
 
 async function loadSnapshot(force: boolean): Promise<void> {
   if (!userStore.tenantId || snapshotLoading.value) return
@@ -317,6 +265,15 @@ async function loadTrends(force: boolean): Promise<void> {
     trendsLoading.value = false
   }
 }
+
+const { scheduleRefresh } = useOverviewRefreshSchedule({
+  loadSnapshot,
+  loadTrends,
+  onResume: renderCharts,
+  onStop: () => {
+    if (userStore.tenantId) void cancelOverviewRequests(userStore.tenantId)
+  },
+})
 
 async function manualRefresh(): Promise<void> {
   if (snapshotLoading.value || trendsLoading.value) return
@@ -353,261 +310,51 @@ function renderTrendCharts(): void {
 }
 
 function dependencyCards() {
-  if (!snapshot.value) return []
-  return [
-    {
-      key: 'database',
-      label: t('monitor.overview.database'),
-      ...snapshot.value.dependencies.database,
-    },
-    { key: 'redis', label: t('monitor.overview.redis'), ...snapshot.value.dependencies.redis },
-    {
-      key: 'object_storage',
-      label: t('monitor.overview.objectStorage'),
-      ...snapshot.value.dependencies.object_storage,
-    },
-    {
-      key: 'messaging',
-      label: t('monitor.overview.messaging'),
-      ...snapshot.value.dependencies.messaging,
-    },
-  ]
+  return overviewDependencyCards(snapshot.value).map((card) => ({
+    ...card,
+    label: t(card.labelKey),
+  }))
 }
 
 function dependencyStatusLabel(status: string): string {
-  const key =
-    {
-      up: 'statusHealthy',
-      healthy: 'statusHealthy',
-      degraded: 'statusDegraded',
-      disabled: 'statusDisabled',
-      down: 'statusUnavailable',
-      unavailable: 'statusUnavailable',
-    }[status] ?? 'statusUnknown'
-  return t(`monitor.overview.${key}`)
-}
-
-function dependencyTag(status: string): 'danger' | 'info' | 'success' | 'warning' {
-  if (status === 'up' || status === 'healthy') return 'success'
-  if (status === 'degraded') return 'warning'
-  if (status === 'disabled') return 'info'
-  return 'danger'
+  return t(`monitor.overview.${dependencyStatusTranslationKey(status)}`)
 }
 
 function formatPercent(value: number): string {
-  return new Intl.NumberFormat(getApplicationLocale(), {
-    style: 'percent',
-    maximumFractionDigits: 1,
-  }).format(value / 100)
+  return formatOverviewPercent(value, getApplicationLocale())
 }
 
 function formatMemory(): string {
-  if (!snapshot.value) return '—'
-  return `${snapshot.value.system.used_memory_gb.toFixed(2)} / ${snapshot.value.system.total_memory_gb.toFixed(2)} GiB`
-}
-
-function sum(selector: (bucket: MonitorOverviewTrends['buckets'][number]) => number): number {
-  return (trends.value?.buckets ?? []).reduce((total, bucket) => total + selector(bucket), 0)
+  return formatOverviewMemory(snapshot.value)
 }
 
 function hasTrendData(): boolean {
-  return (
-    sum(
-      (bucket) =>
-        bucket.background_jobs_created +
-        bucket.login_success +
-        bucket.login_failure +
-        bucket.operation_success +
-        bucket.operation_failure,
-    ) > 0
-  )
+  return hasOverviewTrendData(trends.value?.buckets)
 }
 
 function hasScheduleData(): boolean {
-  return (
-    sum(
-      (bucket) =>
-        bucket.schedule_enqueued +
-        bucket.schedule_skipped_misfire +
-        bucket.schedule_skipped_concurrency +
-        bucket.schedule_target_unavailable +
-        bucket.schedule_invalid_configuration,
-    ) > 0
-  )
+  return hasOverviewScheduleData(trends.value?.buckets)
 }
 
 function hasAccessData(): boolean {
-  return (
-    sum(
-      (bucket) =>
-        bucket.login_success +
-        bucket.login_failure +
-        bucket.operation_success +
-        bucket.operation_failure,
-    ) > 0
-  )
+  return hasOverviewAccessData(trends.value?.buckets)
 }
 
 function jobsSummary(): string {
-  if (!snapshot.value) return ''
-  const jobs = snapshot.value.jobs
-  return `${t('monitor.overview.pending')} ${jobs.pending}；${t('monitor.overview.running')} ${jobs.running}；${t('monitor.overview.succeeded')} ${jobs.succeeded}；${t('monitor.overview.dead')} ${jobs.dead}`
+  return overviewJobsSummary(snapshot.value, t)
 }
 
 function activitySummary(): string {
-  return `${t('monitor.overview.jobsCreated')} ${sum((bucket) => bucket.background_jobs_created)}；${t('monitor.overview.loginTotal')} ${sum((bucket) => bucket.login_success + bucket.login_failure)}；${t('monitor.overview.operationTotal')} ${sum((bucket) => bucket.operation_success + bucket.operation_failure)}`
+  return overviewActivitySummary(trends.value?.buckets, t)
 }
 
 function scheduleSummary(): string {
-  return `${t('monitor.overview.enqueued')} ${sum((bucket) => bucket.schedule_enqueued)}；${t('monitor.overview.skippedMisfire')} ${sum((bucket) => bucket.schedule_skipped_misfire)}；${t('monitor.overview.skippedConcurrency')} ${sum((bucket) => bucket.schedule_skipped_concurrency)}`
+  return overviewScheduleSummary(trends.value?.buckets, t)
 }
 
 function accessSummary(): string {
-  return `${t('monitor.overview.loginSuccess')} ${sum((bucket) => bucket.login_success)}；${t('monitor.overview.loginFailure')} ${sum((bucket) => bucket.login_failure)}；${t('monitor.overview.operationSuccess')} ${sum((bucket) => bucket.operation_success)}；${t('monitor.overview.operationFailure')} ${sum((bucket) => bucket.operation_failure)}`
+  return overviewAccessSummary(trends.value?.buckets, t)
 }
 </script>
 
-<style scoped lang="scss">
-.overview-page {
-  min-width: 0;
-}
-
-.overview-header-card,
-.overview-error,
-.content-card,
-.status-grid,
-.metric-grid,
-.chart-grid {
-  margin-bottom: 12px;
-}
-
-.overview-header,
-.overview-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.overview-header h2,
-.overview-header p {
-  margin: 0;
-}
-
-.overview-header p,
-.overview-header small,
-.chart-card :deep(.el-card__header p) {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.overview-header p {
-  margin-top: 5px;
-}
-
-.overview-header small {
-  display: block;
-  margin-top: 6px;
-}
-
-.overview-actions {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.status-grid,
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.status-card,
-.metric-card {
-  display: flex;
-  min-width: 0;
-  min-height: 94px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 7px;
-  padding: 14px;
-  border: 1px solid var(--border-color-base);
-  border-radius: 6px;
-  background: var(--bg-color);
-}
-
-.status-card > span,
-.metric-card > span,
-.status-card small {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-}
-
-.status-card small {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.metric-card strong {
-  font-size: 20px;
-  overflow-wrap: anywhere;
-}
-
-.chart-grid {
-  display: grid;
-  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 2.2fr);
-  gap: 12px;
-}
-
-.chart-grid--equal {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.chart-card {
-  min-width: 0;
-}
-
-.chart-card :deep(.el-card__header p) {
-  margin: 4px 0 0;
-  font-weight: 400;
-}
-
-@media (width <= 1100px) {
-  .status-grid,
-  .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .chart-grid,
-  .chart-grid--equal {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (width <= 720px) {
-  .overview-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .overview-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .overview-actions :deep(.el-radio-group) {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-}
-
-@media (width <= 480px) {
-  .status-grid,
-  .metric-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+<style scoped lang="scss" src="./overview.scss"></style>

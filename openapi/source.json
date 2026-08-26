@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "backend_repository": "Edgar-ycy/ryframe",
-  "backend_commit": "75afadb38660bc38f66d2847e657714599225bb5",
+  "backend_commit": "c61a625702b8917e4669b5f9783f57f82738e12c",
   "openapi_path": "openapi/openapi.json",
   "openapi_version": "3.1.0",
   "sha256": "00a3800aa42e1cb2d245f10ec28e08eda857b4eeba4f616e0d885bf342994f24"

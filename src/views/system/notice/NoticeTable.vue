@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { NoticeRecord } from '@/api/modules/notice'
+import type { NoticeRecord } from '@/generated/resources/notice/api'
 import { formatLocalizedDate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
 

@@ -11,6 +11,7 @@ export interface FlatCrudOption {
 interface FlatCrudFieldBase<TModel extends object> {
   key: ScalarFieldKey<TModel>
   label: string
+  editOnly?: boolean
 }
 
 export type FlatCrudQueryField<TModel extends object> =
@@ -39,7 +40,6 @@ export type FlatCrudFormField<TModel extends object> =
   | (FlatCrudFieldBase<TModel> & {
       kind: 'radio'
       options: readonly FlatCrudOption[]
-      editOnly?: boolean
     })
 
 interface FlatCrudColumnBase<TRecord extends object> {

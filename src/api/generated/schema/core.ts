@@ -2143,7 +2143,15 @@ export interface components {
             jobs: components["schemas"]["MonitorOverviewJobsVo"];
             system: components["schemas"]["MonitorOverviewSystemVo"];
         };
-        /** @description 通知公告响应。 */
+        NoticeListQuery: {
+            notice_type?: string | null;
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+            status?: string | null;
+            title?: string | null;
+        };
         NoticeVo: {
             content_markdown: string;
             /** Format: date-time */

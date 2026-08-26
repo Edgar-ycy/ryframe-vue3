@@ -647,10 +647,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 通知公告列表 */
         get: operations["get_system_notices"];
         put?: never;
-        /** 创建通知公告 */
         post: operations["post_system_notices"];
         delete?: never;
         options?: never;
@@ -665,12 +663,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 通知公告详情 */
         get: operations["get_system_notices_by_id"];
-        /** 更新通知公告 */
         put: operations["put_system_notices_by_id"];
         post?: never;
-        /** 删除通知公告 */
         delete: operations["delete_system_notices_by_id"];
         options?: never;
         head?: never;
@@ -1849,7 +1844,6 @@ export interface components {
              * @description 与 HTTP 状态码一致的业务结果码。
              */
             code: number;
-            /** @description 通知公告响应。 */
             data?: {
                 content_markdown: string;
                 /** Format: date-time */
@@ -2619,7 +2613,6 @@ export interface components {
             visible?: boolean | null;
         };
         CreateNoticeDto: {
-            /** @description 公告 Markdown 原文，长度为 1 到 60,000 个 UTF-8 字节。 */
             content_markdown: string;
             notice_type?: string | null;
             title: string;
@@ -3515,7 +3508,6 @@ export interface components {
             visible?: boolean | null;
         };
         UpdateNoticeDto: {
-            /** @description 公告 Markdown 原文，长度为 1 到 60,000 个 UTF-8 字节。 */
             content_markdown: string;
             notice_type?: string | null;
             status: string;
@@ -6003,12 +5995,7 @@ export interface operations {
     get_system_notices: {
         parameters: {
             query?: {
-                /** @description 页码，从 1 开始；未提供时由运行时 TOML 策略解析。 */
                 page?: number;
-                /**
-                 * @description 公共 API 仅接受 snake_case 形式的 `page_size`，并受
-                 *     `pagination.max_page_size` 限制（默认值为 100）。
-                 */
                 page_size?: number;
                 title?: string;
                 notice_type?: string;
@@ -6020,7 +6007,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 公告列表 */
+            /** @description 列表 */
             200: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -6082,7 +6069,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 通知详情 */
+            /** @description 详情 */
             200: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */

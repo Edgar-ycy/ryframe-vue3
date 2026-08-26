@@ -6,6 +6,269 @@
 export const crudResourceCatalog = [
   {
     "access": {
+      "capability": "system.notice",
+      "owner_field": "created_by",
+      "permissions": {
+        "create": "system:notice:add",
+        "delete": "system:notice:remove",
+        "list": "system:notice:list",
+        "read": "system:notice:list",
+        "update": "system:notice:edit"
+      }
+    },
+    "api": {
+      "operations": {
+        "create": "post_system_notices",
+        "delete": "delete_system_notices_by_id",
+        "list": "get_system_notices",
+        "read": "get_system_notices_by_id",
+        "update": "put_system_notices_by_id"
+      },
+      "path": "/api/v1/system/notices"
+    },
+    "extension_permissions": {},
+    "fields": [
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Notice ID",
+          "zh_cn": "公告编号"
+        },
+        "name": "id",
+        "nullable": false,
+        "order": 10,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "i64",
+        "widget": "hidden",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Notice title",
+          "zh_cn": "公告标题"
+        },
+        "name": "title",
+        "nullable": false,
+        "order": 30,
+        "usage": {
+          "create": true,
+          "create_optional": false,
+          "filter": true,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": true,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": 200,
+          "maximum": null,
+          "min_length": 1,
+          "minimum": null,
+          "required": true
+        },
+        "value_type": "string",
+        "widget": "text",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Notice content",
+          "zh_cn": "公告内容"
+        },
+        "name": "content_markdown",
+        "nullable": false,
+        "order": 40,
+        "usage": {
+          "create": true,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": true,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "max_utf8_bytes": 60000,
+          "maximum": null,
+          "min_length": null,
+          "min_utf8_bytes": 1,
+          "minimum": null,
+          "required": true
+        },
+        "value_type": "string",
+        "widget": "text",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Notice type",
+          "zh_cn": "公告类型"
+        },
+        "name": "notice_type",
+        "nullable": true,
+        "order": 50,
+        "usage": {
+          "create": true,
+          "create_optional": false,
+          "filter": true,
+          "filter_exact": true,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": true,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "string",
+        "widget": "text",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Notice status",
+          "zh_cn": "公告状态"
+        },
+        "name": "status",
+        "nullable": false,
+        "order": 60,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": true,
+          "filter_exact": true,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": true,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "string",
+        "widget": "text",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Created by",
+          "zh_cn": "创建人"
+        },
+        "name": "created_by",
+        "nullable": true,
+        "order": 70,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "i64",
+        "widget": "hidden",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Created at",
+          "zh_cn": "创建时间"
+        },
+        "name": "created_at",
+        "nullable": false,
+        "order": 90,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": true,
+          "sort_desc": true,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "date_time",
+        "widget": "date_time",
+        "wire_type": "date_time"
+      }
+    ],
+    "labels": {
+      "en": "Notice",
+      "zh_cn": "通知公告"
+    },
+    "menu": {
+      "icon": null,
+      "key": "system.notice",
+      "labels": {
+        "en": "Notices",
+        "zh_cn": "通知公告"
+      },
+      "order": 15,
+      "parent": "system"
+    },
+    "module": "system",
+    "name": "notice",
+    "profile": "flat_crud",
+    "route": {
+      "key": "system.notice",
+      "path": "/system/notice"
+    },
+    "storage": "control_row"
+  },
+  {
+    "access": {
       "capability": "system.post",
       "permissions": {
         "create": "system:post:add",
@@ -278,7 +541,8 @@ export type CrudResourceDescriptor = typeof crudResourceCatalog[number]
 export type CrudResourceName = CrudResourceDescriptor['name']
 
 export const crudResourceCatalogByName = {
-  "post": crudResourceCatalog[0],
+  "notice": crudResourceCatalog[0],
+  "post": crudResourceCatalog[1],
 } as const satisfies Readonly<Record<CrudResourceName, CrudResourceDescriptor>>
 
 export type CrudResourceDescriptorByName<Name extends CrudResourceName> =

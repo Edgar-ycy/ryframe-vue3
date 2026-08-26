@@ -5,13 +5,13 @@ import {
   deleteNotice,
   getNotice,
   listNotice,
-  publishNoticeToMessageCenter,
   updateNotice,
   type NoticeCreateInput,
   type NoticeQuery,
   type NoticeRecord,
   type NoticeUpdateInput,
-} from '@/api/modules/notice'
+} from '@/generated/resources/notice/api'
+import { publishNoticeToMessageCenter } from '@/api/modules/noticeMessage'
 import { requireOperationData } from '@/shared/http/client'
 import type { Id, PageResponse } from '@/shared/http/types'
 import { renderMarkdown } from '@/shared/markdown/render'

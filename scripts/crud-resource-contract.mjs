@@ -36,7 +36,9 @@ const usageKeys = [
   'update',
   'update_optional',
 ]
+const optionalUsageKeys = ['filter_exact', 'sort_desc']
 const validationKeys = ['max_length', 'maximum', 'min_length', 'minimum', 'required']
+const optionalValidationKeys = ['max_utf8_bytes', 'min_utf8_bytes']
 const valueTypes = new Set(['bool', 'date', 'date_time', 'decimal', 'i32', 'i64', 'json', 'string'])
 const editableWidgets = new Set(['number', 'select', 'text'])
 const widgets = new Set([
@@ -178,12 +180,18 @@ function requireField(field, location) {
   if (!widgets.has(field.widget)) throw new Error(`${location}.widget: 不支持的控件类型`)
   requireLabels(field.labels, `${location}.labels`)
 
-  requireExactKeys(field.usage, usageKeys, `${location}.usage`)
-  for (const key of usageKeys) {
+  const presentUsageKeys = optionalUsageKeys.filter((key) => key in field.usage)
+  requireExactKeys(field.usage, [...usageKeys, ...presentUsageKeys], `${location}.usage`)
+  for (const key of [...usageKeys, ...presentUsageKeys]) {
     if (typeof field.usage[key] !== 'boolean')
       throw new Error(`${location}.usage.${key}: 必须是布尔值`)
   }
-  requireExactKeys(field.validation, validationKeys, `${location}.validation`)
+  const presentValidationKeys = optionalValidationKeys.filter((key) => key in field.validation)
+  requireExactKeys(
+    field.validation,
+    [...validationKeys, ...presentValidationKeys],
+    `${location}.validation`,
+  )
   if (typeof field.validation.required !== 'boolean') {
     throw new Error(`${location}.validation.required: 必须是布尔值`)
   }
@@ -191,6 +199,12 @@ function requireField(field, location) {
     const boundary = field.validation[key]
     if (boundary !== null && (!Number.isSafeInteger(boundary) || boundary < 0)) {
       throw new Error(`${location}.validation.${key}: 必须是非负安全整数或 null`)
+    }
+  }
+  for (const key of optionalValidationKeys) {
+    const boundary = field.validation[key]
+    if (boundary !== undefined && (!Number.isSafeInteger(boundary) || boundary < 0)) {
+      throw new Error(`${location}.validation.${key}: 必须是非负安全整数`)
     }
   }
   for (const key of ['minimum', 'maximum']) {
@@ -215,6 +229,13 @@ function requireField(field, location) {
     throw new Error(`${location}.validation: minimum 不能大于 maximum`)
   }
   if (
+    validation.min_utf8_bytes !== undefined &&
+    validation.max_utf8_bytes !== undefined &&
+    validation.min_utf8_bytes > validation.max_utf8_bytes
+  ) {
+    throw new Error(`${location}.validation: min_utf8_bytes 不能大于 max_utf8_bytes`)
+  }
+  if (
     (validation.min_length !== null || validation.max_length !== null) &&
     field.value_type !== 'string'
   ) {
@@ -226,6 +247,12 @@ function requireField(field, location) {
   ) {
     throw new Error(`${location}.validation: 数值范围只能用于 i32/i64 字段`)
   }
+  if (
+    (validation.min_utf8_bytes !== undefined || validation.max_utf8_bytes !== undefined) &&
+    field.value_type !== 'string'
+  ) {
+    throw new Error(`${location}.validation: UTF-8 字节约束只能用于 string 字段`)
+  }
   if (validation.required && field.nullable) {
     throw new Error(`${location}: nullable 与 validation.required=true 冲突`)
   }
@@ -236,6 +263,12 @@ function requireField(field, location) {
   }
   if (usage.update_optional && !usage.update) {
     throw new Error(`${location}.usage: update_optional 只能用于 update 字段`)
+  }
+  if (usage.filter_exact && (!usage.filter || field.value_type !== 'string')) {
+    throw new Error(`${location}.usage: filter_exact 只能用于 string 筛选字段`)
+  }
+  if (usage.sort_desc && !usage.sort) {
+    throw new Error(`${location}.usage: sort_desc 只能用于默认排序字段`)
   }
   if (field.nullable && usage.update_optional) {
     throw new Error(`${location}.usage: nullable 与 update_optional 无法表达明确更新语义`)
@@ -315,7 +348,9 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
   seen.paths.add(apiPath)
   requireActions(resource.api.operations, `${location}.api.operations`, operationPattern)
 
-  requireExactKeys(resource.access, ['capability', 'permissions'], `${location}.access`)
+  const accessKeys = ['capability', 'permissions']
+  if ('owner_field' in resource.access) accessKeys.push('owner_field')
+  requireExactKeys(resource.access, accessKeys, `${location}.access`)
   requireString(resource.access.capability, `${location}.access.capability`, /^[a-z0-9_.-]+$/u)
   requirePermissionActions(
     resource.access.permissions,
@@ -369,6 +404,17 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
       throw new Error(`${fieldLocation}.order: 字段顺序必须严格递增`)
     fieldNames.add(field.name)
     previousOrder = field.order
+  }
+  if ('owner_field' in resource.access) {
+    const ownerField = requireString(
+      resource.access.owner_field,
+      `${location}.access.owner_field`,
+      snakeIdentifierPattern,
+    )
+    const field = resource.fields.find((candidate) => candidate.name === ownerField)
+    if (!field || field.value_type !== 'i64') {
+      throw new Error(`${location}.access.owner_field: 必须引用 i64 字段`)
+    }
   }
 
   const operations = resource.api.operations

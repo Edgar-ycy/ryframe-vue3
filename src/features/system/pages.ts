@@ -53,12 +53,6 @@ export const pageManifest = definePageManifest({
       ],
     },
     {
-      routeKey: 'system.notice',
-      permissionCode: 'system:notice:list',
-      path: '/system/notice',
-      page: () => import('@/views/system/notice/index.vue'),
-    },
-    {
       routeKey: 'system.operlog',
       permissionCode: 'system:operlog:list',
       path: '/system/operlog',

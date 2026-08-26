@@ -85,7 +85,7 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const visibleFields = computed(() =>
-  props.fields.filter((field) => !(field.kind === 'radio' && field.editOnly) || props.editing),
+  props.fields.filter((field) => !field.editOnly || props.editing),
 )
 const rules = computed(() =>
   Object.fromEntries(

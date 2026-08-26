@@ -1,5 +1,35 @@
 import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
 
+type Translate = (key: string) => string
+
+const RESOURCE_LABEL_KEYS: Readonly<Record<string, string>> = {
+  department: 'resourceDepartments',
+  departments: 'resourceDepartments',
+  post: 'resourcePosts',
+  posts: 'resourcePosts',
+  dict_type: 'resourceDictTypes',
+  dict_types: 'resourceDictTypes',
+  dictionary_type: 'resourceDictTypes',
+  dictionary_types: 'resourceDictTypes',
+  dict_datum: 'resourceDictData',
+  dict_data: 'resourceDictData',
+  dictionary_data: 'resourceDictData',
+  config: 'resourceConfigs',
+  configs: 'resourceConfigs',
+  permission: 'resourcePermissions',
+  permissions: 'resourcePermissions',
+  menu: 'resourceMenus',
+  menus: 'resourceMenus',
+  role: 'resourceRoles',
+  roles: 'resourceRoles',
+  role_permission: 'resourceRolePermissions',
+  role_permissions: 'resourceRolePermissions',
+  role_department: 'resourceRoleDepartments',
+  role_departments: 'resourceRoleDepartments',
+  role_dept: 'resourceRoleDepartments',
+  role_depts: 'resourceRoleDepartments',
+}
+
 const ACTIVE_PACKAGE_STATUSES = new Set(['pending', 'running'])
 const ACTIVE_TRANSFER_STATUSES = new Set([
   'preview_pending',
@@ -54,4 +84,17 @@ export function canDownloadTenantConfigPackage(
   if (!bundle.expires_at) return true
   const expiresAt = Date.parse(bundle.expires_at)
   return Number.isFinite(expiresAt) && expiresAt > now
+}
+
+/** 仅保留后端返回的数值型资源计数。 */
+export function tenantConfigResourceCounts(bundle: TenantConfigBundle): [string, number][] {
+  return Object.entries(bundle.resource_counts).filter(
+    (entry): entry is [string, number] => typeof entry[1] === 'number',
+  )
+}
+
+/** 将配置资源名称投影为稳定的本地化文案。 */
+export function tenantConfigResourceLabel(resource: string, t: Translate): string {
+  const key = RESOURCE_LABEL_KEYS[resource]
+  return key ? t(`tenantConfigTransfer.${key}`) : resource
 }

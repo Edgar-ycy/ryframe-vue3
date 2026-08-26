@@ -178,7 +178,11 @@ import ConfigPackageUploadDialog from './components/ConfigPackageUploadDialog.vu
 import ConfigTransferHistoryDrawer from './components/ConfigTransferHistoryDrawer.vue'
 import ConfigTransferPlan from './components/ConfigTransferPlan.vue'
 import { useTenantConfigTransferManagement } from './composables/useTenantConfigTransferManagement'
-import { canDownloadTenantConfigPackage } from './presentation'
+import {
+  canDownloadTenantConfigPackage,
+  tenantConfigResourceCounts,
+  tenantConfigResourceLabel,
+} from './presentation'
 
 const { t } = useI18n()
 const historyVisible = ref(false)
@@ -369,40 +373,11 @@ function handleHistoryClosed(): void {
 }
 
 function resourceCounts(bundle: TenantConfigBundle): [string, number][] {
-  return Object.entries(bundle.resource_counts).filter(
-    (entry): entry is [string, number] => typeof entry[1] === 'number',
-  )
+  return tenantConfigResourceCounts(bundle)
 }
 
 function resourceLabel(resource: string): string {
-  const suffix = {
-    department: 'resourceDepartments',
-    departments: 'resourceDepartments',
-    post: 'resourcePosts',
-    posts: 'resourcePosts',
-    dict_type: 'resourceDictTypes',
-    dict_types: 'resourceDictTypes',
-    dictionary_type: 'resourceDictTypes',
-    dictionary_types: 'resourceDictTypes',
-    dict_datum: 'resourceDictData',
-    dict_data: 'resourceDictData',
-    dictionary_data: 'resourceDictData',
-    config: 'resourceConfigs',
-    configs: 'resourceConfigs',
-    permission: 'resourcePermissions',
-    permissions: 'resourcePermissions',
-    menu: 'resourceMenus',
-    menus: 'resourceMenus',
-    role: 'resourceRoles',
-    roles: 'resourceRoles',
-    role_permission: 'resourceRolePermissions',
-    role_permissions: 'resourceRolePermissions',
-    role_department: 'resourceRoleDepartments',
-    role_departments: 'resourceRoleDepartments',
-    role_dept: 'resourceRoleDepartments',
-    role_depts: 'resourceRoleDepartments',
-  }[resource]
-  return suffix ? t(`tenantConfigTransfer.${suffix}`) : resource
+  return tenantConfigResourceLabel(resource, t)
 }
 
 function canUseSelectedPackage(): boolean {
@@ -412,116 +387,4 @@ function canUseSelectedPackage(): boolean {
 }
 </script>
 
-<style scoped lang="scss">
-.config-transfer-page {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.page-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  h1 {
-    margin: 0 0 6px;
-    color: var(--color-text-primary);
-    font-size: 22px;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-  }
-}
-
-.transfer-steps {
-  margin-bottom: 16px;
-}
-
-.page-alert {
-  margin: 12px 0;
-}
-
-.selected-package-card {
-  margin-top: 12px;
-}
-
-.package-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.package-summary > div {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 5px;
-
-  > span {
-    color: var(--color-text-secondary);
-  }
-
-  > strong,
-  > code {
-    overflow-wrap: anywhere;
-  }
-}
-
-.package-summary__wide {
-  grid-column: span 2;
-}
-
-.resource-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.summary-alert {
-  margin-top: 16px;
-}
-
-.selected-package-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
-@media (width <= 767px) {
-  .page-heading {
-    flex-direction: column;
-
-    :deep(.el-button) {
-      width: 100%;
-      min-height: 40px;
-    }
-  }
-
-  .transfer-steps {
-    overflow-x: auto;
-
-    :deep(.el-steps) {
-      min-width: 620px;
-    }
-  }
-
-  .package-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .package-summary__wide {
-    grid-column: auto;
-  }
-
-  .selected-package-actions :deep(.el-button) {
-    width: 100%;
-    min-height: 40px;
-  }
-}
-</style>
+<style scoped lang="scss" src="./configTransferPage.scss"></style>

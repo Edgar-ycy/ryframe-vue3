@@ -1,29 +1,25 @@
 import { computed, getCurrentScope, onActivated, onDeactivated, onScopeDispose, ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
 import {
   createProfileServiceDelegation,
-  listProfileServiceDelegations,
-  listProfileServiceDelegationTargets,
   revokeProfileServiceDelegation,
   type CreateProfileServiceDelegationInput,
   type CreatedProfileServiceDelegation,
   type ProfileServiceDelegation,
-  type ProfileServiceDelegationTarget,
 } from '@/api/modules/profileServiceDelegation'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { queryClient, tenantQueryKey } from '@/shared/query/client'
+import { queryClient } from '@/shared/query/client'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
 import { useTenantContextStore } from '@/app/tenant-context'
 import { useUserStore } from '@/stores/user'
 import {
   PROFILE_SERVICE_DELEGATIONS_RESOURCE,
   PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
-  QUERY_GC_TIME,
   sameIdentity,
   type ProfileDelegationIdentity,
   type ProfileDelegationIdentityGuard,
 } from './serviceDelegationSupport'
+import { useServiceDelegationQueries } from './useServiceDelegationQueries'
 
 export type { ProfileDelegationIdentityGuard } from './serviceDelegationSupport'
 
@@ -116,20 +112,6 @@ export function useServiceDelegationManagement() {
     }
   }
 
-  function delegationsKey(identity = currentIdentity()) {
-    return tenantQueryKey(identity?.tenantId, PROFILE_SERVICE_DELEGATIONS_RESOURCE, {
-      scope: 'self',
-      userId: identity?.userId ?? 'anonymous',
-    })
-  }
-
-  function targetsKey(identity = currentIdentity()) {
-    return tenantQueryKey(identity?.tenantId, PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE, {
-      scope: 'self',
-      userId: identity?.userId ?? 'anonymous',
-    })
-  }
-
   const enabled = computed(
     () =>
       pageActive.value &&
@@ -137,35 +119,10 @@ export function useServiceDelegationManagement() {
       tenantContext.hasCapability(SERVICE_ACCOUNTS_CAPABILITY),
   )
 
-  const delegationsQuery = useQuery<readonly ProfileServiceDelegation[], HttpError>({
-    queryKey: computed(() => delegationsKey()),
+  const { delegationsKey, delegationsQuery, targetsQuery } = useServiceDelegationQueries(
     enabled,
-    queryFn: async ({ signal }) =>
-      requireOperationData(await listProfileServiceDelegations(signal)),
-    initialData: () => [],
-    staleTime: 0,
-    gcTime: QUERY_GC_TIME,
-    retry: false,
-    refetchInterval: false,
-    refetchOnMount: 'always',
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-  })
-
-  const targetsQuery = useQuery<readonly ProfileServiceDelegationTarget[], HttpError>({
-    queryKey: computed(() => targetsKey()),
-    enabled,
-    queryFn: async ({ signal }) =>
-      requireOperationData(await listProfileServiceDelegationTargets(signal)),
-    initialData: () => [],
-    staleTime: 0,
-    gcTime: QUERY_GC_TIME,
-    retry: false,
-    refetchInterval: false,
-    refetchOnMount: 'always',
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-  })
+    currentIdentity,
+  )
 
   const delegations = delegationsQuery.data
   const targets = targetsQuery.data

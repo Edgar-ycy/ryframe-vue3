@@ -8,70 +8,21 @@ import {
 } from '@/api/modules/auth'
 import { ensureCsrfToken, terminateSession } from '@/app/session/sessionCoordinator'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
-import { formatLocalizedDate, translate } from '@/i18n'
+import { translate } from '@/i18n'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { queryClient, tenantQueryKey } from '@/shared/query/client'
+import { queryClient } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
+import {
+  authSessionQueryKey,
+  authSessionView,
+  currentAuthSessionIdentity,
+  sameAuthSessionIdentity,
+  type AuthSessionView,
+  type SessionIdentity,
+} from './authSessionSupport'
 
-interface SessionIdentity {
-  tenantId: string
-  userId: string
-}
-
-/** 仅供个人中心展示使用，字段全部由生成的会话契约派生。 */
-export interface AuthSessionView {
-  key: AuthSession['sid']
-  current: AuthSession['current']
-  device: string
-  browser: string
-  operatingSystem: string
-  ipAddress: AuthSession['ipaddr']
-  loginLocation: string
-  loginTime: string
-  lastActivity: string
-  expiresAt: string
-}
-
-function authSessionQueryKey(identity: SessionIdentity) {
-  return tenantQueryKey(identity.tenantId, 'profile-auth-sessions', {
-    scope: 'self',
-    userId: identity.userId,
-  })
-}
-
-function currentIdentity(): SessionIdentity | undefined {
-  const user = useUserStore()
-  if (user.sessionStatus !== 'authenticated' || !user.tenantId || !user.userId) {
-    return undefined
-  }
-  return { tenantId: user.tenantId, userId: String(user.userId) }
-}
-
-function sameIdentity(
-  left: SessionIdentity | undefined,
-  right: SessionIdentity | undefined,
-): boolean {
-  return left?.tenantId === right?.tenantId && left?.userId === right?.userId
-}
-
-function sessionView(session: AuthSession): AuthSessionView {
-  const browser = session.browser || translate('profile.sessions.unknownValue')
-  const operatingSystem = session.os || translate('profile.sessions.unknownValue')
-  const knownDeviceParts = [session.browser, session.os].filter(Boolean)
-  return {
-    key: session.sid,
-    current: session.current,
-    device: knownDeviceParts.join(' · ') || translate('profile.sessions.unknownDevice'),
-    browser,
-    operatingSystem,
-    ipAddress: session.ipaddr,
-    loginLocation: session.login_location || translate('profile.sessions.unknownValue'),
-    loginTime: formatLocalizedDate(session.login_time),
-    lastActivity: formatLocalizedDate(session.last_access_time),
-    expiresAt: formatLocalizedDate(session.expires_at),
-  }
-}
+export type { AuthSessionView } from './authSessionSupport'
 
 /** 管理当前身份的登录设备，不建立轮询或跨身份缓存。 */
 export function useAuthSessionManagement() {
@@ -82,21 +33,21 @@ export function useAuthSessionManagement() {
   const revokeOthersPending = ref(false)
   let activeController: AbortController | undefined
   let activeIdentity: SessionIdentity | undefined
-  let trackedIdentity = currentIdentity()
+  let trackedIdentity = currentAuthSessionIdentity()
   let disposed = false
 
   const sessionsQuery = useQuery<AuthSession[], HttpError, AuthSessionView[]>({
     queryKey: computed(() =>
       authSessionQueryKey(
-        currentIdentity() ?? {
+        currentAuthSessionIdentity() ?? {
           tenantId: 'anonymous',
           userId: 'anonymous',
         },
       ),
     ),
-    enabled: computed(() => pageActive.value && currentIdentity() !== undefined),
+    enabled: computed(() => pageActive.value && currentAuthSessionIdentity() !== undefined),
     queryFn: async ({ signal }) => requireOperationData(await getAuthSessions(signal)),
-    select: (sessions) => sessions.map(sessionView),
+    select: (sessions) => sessions.map(authSessionView),
     initialData: () => [],
     staleTime: 0,
     gcTime: 10 * 60_000,
@@ -115,7 +66,7 @@ export function useAuthSessionManagement() {
   }
 
   async function refresh(): Promise<void> {
-    if (!pageActive.value || currentIdentity() === undefined || refreshing.value) return
+    if (!pageActive.value || currentAuthSessionIdentity() === undefined || refreshing.value) return
     refreshing.value = true
     try {
       await sessionsQuery.refetch()
@@ -125,11 +76,11 @@ export function useAuthSessionManagement() {
   }
 
   function identityStillCurrent(identity: SessionIdentity): boolean {
-    return sameIdentity(identity, currentIdentity())
+    return sameAuthSessionIdentity(identity, currentAuthSessionIdentity())
   }
 
   function requireCurrentIdentity(): SessionIdentity {
-    const identity = currentIdentity()
+    const identity = currentAuthSessionIdentity()
     if (!identity) {
       throw new HttpError(translate('shell.session.expired'), { status: 401, kind: 'http' })
     }
@@ -294,11 +245,11 @@ export function useAuthSessionManagement() {
 
   const unsubscribeUser = userStore.$subscribe(
     () => {
-      const nextIdentity = currentIdentity()
-      if (sameIdentity(trackedIdentity, nextIdentity)) return
+      const nextIdentity = currentAuthSessionIdentity()
+      if (sameAuthSessionIdentity(trackedIdentity, nextIdentity)) return
       const previousIdentity = trackedIdentity
       trackedIdentity = nextIdentity
-      if (activeIdentity && !sameIdentity(activeIdentity, nextIdentity)) {
+      if (activeIdentity && !sameAuthSessionIdentity(activeIdentity, nextIdentity)) {
         activeController?.abort()
       }
       if (!previousIdentity) return

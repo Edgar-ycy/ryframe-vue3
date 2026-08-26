@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "tsBuildInfoFile": ".local-tests/types/workspace.tsbuildinfo"
+    "tsBuildInfoFile": ".local-tests/types/app.tsbuildinfo"
   },
   "include": [
     "src/**/*.ts",
@@ -9,13 +9,7 @@
     "src/**/*.mts",
     "src/**/*.cts",
     "src/**/*.d.ts",
-    "src/**/*.vue",
-    "tests/**/*.ts",
-    "tests/**/*.tsx",
-    "tests/**/*.mts",
-    "tests/**/*.cts",
-    "vitest.config.ts",
-    "vite.config.ts"
+    "src/**/*.vue"
   ],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,21 +1,15 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "tsBuildInfoFile": ".local-tests/types/workspace.tsbuildinfo"
+    "tsBuildInfoFile": ".local-tests/types/test.tsbuildinfo"
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.mts",
-    "src/**/*.cts",
     "src/**/*.d.ts",
-    "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "tests/**/*.mts",
     "tests/**/*.cts",
     "vitest.config.ts",
     "vite.config.ts"
-  ],
-  "exclude": ["node_modules", "dist"]
+  ]
 }

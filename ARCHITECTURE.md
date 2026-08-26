@@ -18,27 +18,31 @@ src/
 └── styles/       # 设计 token 和全局布局
 ```
 
-依赖保持单向：
+目标依赖保持单向：
 
 ```text
-View / Component
-    -> app / hooks / stores
-    -> api/modules
-    -> operationRequest
-    -> shared/http
-    -> Rust API
+main / composition root
+├── router / page manifest -> views / components
+└── app / use case -> stores / feature contract / api/modules
+                                           -> operationRequest
+                                                -> shared/http -> Rust API
 ```
 
-| 边界 | 负责 | 禁止 |
-| --- | --- | --- |
-| `shared/http` | Axios、协议头、响应包络、刷新协调 | Store、Router、UI 和业务 API |
-| `api/modules` | operation descriptor 调用和语义别名 | 字面 URL、手写 method、消息与导航 |
-| `app` | 跨页面用例和服务端状态协调 | 复制传输 DTO、直接拼 HTTP 请求 |
-| `features` | 能力、页面、权限和 variant 静态关系 | 保存会话运行时状态 |
-| Store | 客户端与连接状态 | 复制 QueryClient 数据、操作 Axios 拦截器 |
-| View | 页面布局和交互 | 读写 Token、拼接后端地址 |
+| 边界                | 负责                                 | 禁止                                               |
+| ------------------- | ------------------------------------ | -------------------------------------------------- |
+| `shared/http`       | Axios、协议头、响应包络、刷新协调    | Store、Router、UI 和业务 API                       |
+| `api/modules`       | operation descriptor 调用和语义别名  | 字面 URL、手写 method、消息与导航                  |
+| `app`               | 跨页面用例和服务端状态协调           | 复制传输 DTO、直接拼 HTTP 请求                     |
+| `features` contract | capability、权限和纯展示关系         | Store、Router、View 和会话运行时状态               |
+| Store               | 客户端状态投影                       | app、Router、API 调用、QueryClient 和跨 Store 编排 |
+| Router              | 守卫、页面 manifest 和路由运行时实现 | 被 app、Store、feature contract 和 View 反向依赖   |
+| View                | 页面布局和交互                       | 读写 Token、拼接后端地址和直接操作 HTTP            |
 
-ESLint、API operation 门禁和 TypeScript 在 CI 中验证这些边界。
+`pnpm check:imports` 检查目录边界和运行时静态导入 SCC。类型导入仍受边界约束，
+但不计入运行时环；page manifest 的动态页面加载受边界约束，但不计入初始化 SCC。
+迁移期间 `scripts/import-boundary-baseline.json` 精确记录现有债务；债务消除后使用
+`node scripts/check-import-boundaries.mjs --update-baseline` 收敛基线，该命令拒绝新增债务。
+完成解环后删除基线。生成代码不作为手写层参与复杂度约束，其模板和消费契约单独验证。
 
 ## 契约与请求
 
@@ -73,6 +77,10 @@ SessionContext
 
 TanStack Query 保存按租户、主体和查询参数隔离的服务端状态。Mutation 成功后按资源失效或精确更新缓存；页面卸载后停止无意义轮询。
 
+每个失败只能有一个展示出口：普通用户命令使用全局错误提示；需要内联错误态或定制
+409/422 交互时关闭全局提示并由调用方处理；后台轮询和预取使用静默模式。用户取消不提示，
+catch 只用于恢复、回滚或转换局部状态，未处理的错误继续抛出。
+
 筛选页面区分三种状态：表单草稿、已应用查询、最后一次成功查询。导出只读取最后一次成功查询：
 
 ```text
@@ -106,6 +114,12 @@ TanStack Query 保存按租户、主体和查询参数隔离的服务端状态�
 
 ## 质量门禁
 
-`pnpm check` 覆盖工作流、依赖策略、契约与生成物、源码规模、Lint、类型、确定性测试、生产构建和体积预算。CI 另用 Chrome smoke 测试验证登录、筛选导出、下载和记录删除；定时任务执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
+`pnpm check:fast` 并行运行源码规模、导入边界、Lint、应用类型和确定性单测，服务于本地反馈；
+`pnpm check` 继续覆盖工作流、依赖策略、契约与生成物、测试类型、生产构建和体积预算。
+TypeScript 与 Lint 增量缓存只写入被忽略的 `.local-tests`。源码规模门禁覆盖所有手写 TS、
+Vue SFC 和样式；生成目录与声明文件除外。Prettier 不改写生成目录，首次全仓格式化必须使用
+独立机械提交，建立基线后再把 `pnpm format:check` 加入完整门禁。
+
+CI 另用 Chrome smoke 测试验证登录、筛选导出、下载和记录删除；定时任务执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
 
 交付前还要在真实 Chrome 完成受影响流程，检查网络请求与控制台；本次改动不得引入错误或警告。

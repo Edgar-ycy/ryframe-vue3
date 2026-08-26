@@ -1,7 +1,7 @@
 import { defineComponent, h, type Component } from 'vue'
+import type { RouteComponentLoader } from '@/shared/navigation/routeComponent'
 
-export type RouteComponentModule = { default: Component }
-export type RouteComponentLoader = () => Promise<RouteComponentModule>
+export type { RouteComponentLoader, RouteComponentModule } from '@/shared/navigation/routeComponent'
 
 /**
  * 为懒加载路由页面指定与其路由记录完全一致的名称。

@@ -1,4 +1,4 @@
-import type { RouteComponentLoader } from '@/router/namedRouteComponent'
+import type { RouteComponentLoader } from '@/shared/navigation/routeComponent'
 import { i18n } from '@/i18n'
 import type {
   MessageCatalog,

@@ -1,6 +1,6 @@
 import type { PermissionCode } from '@/api/generated/permissions'
 import type { MessageCatalogLoader } from '@/i18n/catalog'
-import type { RouteComponentLoader } from '@/router/namedRouteComponent'
+import type { RouteComponentLoader } from '@/shared/navigation/routeComponent'
 
 export interface MenuPageRegistryEntry {
   path: string

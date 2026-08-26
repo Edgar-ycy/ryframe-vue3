@@ -1,4 +1,8 @@
-import type { CreateScheduleBody } from '@/api/modules/monitor'
+import type {
+  CreateScheduleBody,
+  JobScheduleRecord,
+  UpdateScheduleBody,
+} from '@/api/modules/monitor'
 
 export type ScheduleFormModel = {
   name: string
@@ -44,6 +48,55 @@ export function createDefaultScheduleForm(browserTimezone: string): ScheduleForm
     concurrency_policy: 'forbid',
     max_runtime_seconds: 900,
   }
+}
+
+export function createScheduleForm(
+  schedule: JobScheduleRecord | undefined,
+  browserTimezone: string,
+): ScheduleFormModel {
+  if (!schedule) return createDefaultScheduleForm(browserTimezone)
+  return {
+    name: schedule.name,
+    handler_key: schedule.handler_key,
+    cron_expression: schedule.cron_expression,
+    timezone: schedule.timezone,
+    enabled: schedule.enabled,
+    misfire_policy: schedule.misfire_policy as ScheduleFormModel['misfire_policy'],
+    concurrency_policy: schedule.concurrency_policy as ScheduleFormModel['concurrency_policy'],
+    max_runtime_seconds: schedule.max_runtime_seconds,
+  }
+}
+
+export function isScheduleFormComplete(
+  form: ScheduleFormModel,
+  targetAvailable: boolean,
+  previewAvailable: boolean,
+): boolean {
+  return (
+    isValidScheduleName(form.name) &&
+    targetAvailable &&
+    previewAvailable &&
+    Number.isInteger(form.max_runtime_seconds) &&
+    form.max_runtime_seconds >= 1 &&
+    form.max_runtime_seconds <= 86400
+  )
+}
+
+export function buildSchedulePayload(
+  form: ScheduleFormModel,
+  version?: number,
+): CreateScheduleBody | UpdateScheduleBody {
+  const payload: CreateScheduleBody = {
+    name: form.name.trim(),
+    handler_key: form.handler_key,
+    cron_expression: form.cron_expression.trim(),
+    timezone: form.timezone.trim(),
+    enabled: form.enabled,
+    misfire_policy: form.misfire_policy,
+    concurrency_policy: form.concurrency_policy,
+    max_runtime_seconds: form.max_runtime_seconds,
+  }
+  return version === undefined ? payload : { ...payload, version }
 }
 
 export function byteLength(value: string): number {

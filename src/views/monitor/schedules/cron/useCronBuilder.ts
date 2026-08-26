@@ -7,11 +7,10 @@ import {
   buildCronExpression,
   createDefaultCronBuilderValues,
   daysInMonth,
+  formatCronSummary,
   hasLateMonthDay,
-  isValidCronTime,
   normalizeMonthDays,
   normalizeWeekdays,
-  padCronTime,
   range,
   recognizeCronExpression,
   type BuilderState,
@@ -67,67 +66,7 @@ export function useCronBuilder(options: CronBuilderOptions) {
   }
 
   function updateSummary(): void {
-    const current = values()
-    if (mode.value === 'interval_minutes') {
-      summary.value = current.intervalMinutes
-        ? t('monitor.schedules.summaryIntervalMinutes', { minutes: current.intervalMinutes })
-        : t('monitor.schedules.summaryIncomplete')
-      return
-    }
-    if (mode.value === 'interval_hours') {
-      summary.value =
-        current.intervalHours !== undefined && current.minute !== undefined
-          ? t('monitor.schedules.summaryIntervalHours', {
-              hours: current.intervalHours,
-              minute: current.minute,
-            })
-          : t('monitor.schedules.summaryIncomplete')
-      return
-    }
-    if (mode.value === 'daily') {
-      summary.value = isValidCronTime(current)
-        ? t('monitor.schedules.summaryDaily', {
-            time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
-          })
-        : t('monitor.schedules.summaryIncomplete')
-      return
-    }
-    if (mode.value === 'weekly') {
-      summary.value =
-        isValidCronTime(current) && current.weekdays.length
-          ? t('monitor.schedules.summaryWeekly', {
-              weekdays: current.weekdays
-                .map(weekdayLabel)
-                .join(t('monitor.schedules.listSeparator')),
-              time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
-            })
-          : t('monitor.schedules.summaryIncomplete')
-      return
-    }
-    if (mode.value === 'monthly') {
-      summary.value =
-        isValidCronTime(current) && current.monthDays.length
-          ? t('monitor.schedules.summaryMonthly', {
-              days: current.monthDays.join(t('monitor.schedules.listSeparator')),
-              time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
-            })
-          : t('monitor.schedules.summaryIncomplete')
-      return
-    }
-    if (mode.value === 'yearly') {
-      summary.value =
-        isValidCronTime(current) && current.yearlyDay <= daysInMonth(current.yearlyMonth)
-          ? t('monitor.schedules.summaryYearly', {
-              month: current.yearlyMonth,
-              day: current.yearlyDay,
-              time: `${padCronTime(current.hour)}:${padCronTime(current.minute)}`,
-            })
-          : t('monitor.schedules.summaryIncomplete')
-      return
-    }
-    summary.value = cronExpression.value.trim()
-      ? t('monitor.schedules.summaryAdvanced')
-      : t('monitor.schedules.summaryIncomplete')
+    summary.value = formatCronSummary(mode.value, values(), cronExpression.value, t)
   }
 
   function syncCronExpression(): void {

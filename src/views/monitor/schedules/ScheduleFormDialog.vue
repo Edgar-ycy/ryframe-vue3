@@ -213,8 +213,11 @@ import CronScheduleBuilder from './CronScheduleBuilder.vue'
 import type { BuilderState } from './cron/model'
 import {
   browserTimeZone,
+  buildSchedulePayload,
   buildTimezoneOptions,
+  createScheduleForm,
   createDefaultScheduleForm,
+  isScheduleFormComplete,
   isValidScheduleName,
   type ScheduleFormModel,
 } from './schedule-form/model'
@@ -286,22 +289,7 @@ const rules: FormRules<ScheduleFormModel> = {
 }
 
 function resetForm(schedule: JobScheduleRecord | undefined): void {
-  Object.assign(
-    form,
-    schedule
-      ? {
-          name: schedule.name,
-          handler_key: schedule.handler_key,
-          cron_expression: schedule.cron_expression,
-          timezone: schedule.timezone,
-          enabled: schedule.enabled,
-          misfire_policy: schedule.misfire_policy as ScheduleFormModel['misfire_policy'],
-          concurrency_policy:
-            schedule.concurrency_policy as ScheduleFormModel['concurrency_policy'],
-          max_runtime_seconds: schedule.max_runtime_seconds,
-        }
-      : createDefaultScheduleForm(browserTimezone),
-  )
+  Object.assign(form, createScheduleForm(schedule, browserTimezone))
   void nextTick(() => formRef.value?.clearValidate())
 }
 
@@ -345,15 +333,7 @@ function selectedTarget(): ScheduleTargetRecord | undefined {
 }
 
 function isFormComplete(): boolean {
-  const target = selectedTarget()
-  return (
-    isValidScheduleName(form.name) &&
-    Boolean(target?.available) &&
-    canPreview() &&
-    Number.isInteger(form.max_runtime_seconds) &&
-    form.max_runtime_seconds >= 1 &&
-    form.max_runtime_seconds <= 86400
-  )
+  return isScheduleFormComplete(form, Boolean(selectedTarget()?.available), canPreview())
 }
 
 function canSubmit(): boolean {
@@ -381,21 +361,7 @@ async function submit(): Promise<void> {
     if (succeeded) ElMessage.info(t('monitor.schedules.previewReviewBeforeSave'))
     return
   }
-  const payload: CreateScheduleBody = {
-    name: form.name.trim(),
-    handler_key: form.handler_key,
-    cron_expression: form.cron_expression.trim(),
-    timezone: form.timezone.trim(),
-    enabled: form.enabled,
-    misfire_policy: form.misfire_policy,
-    concurrency_policy: form.concurrency_policy,
-    max_runtime_seconds: form.max_runtime_seconds,
-  }
-  if (props.schedule) {
-    emit('save', { ...payload, version: props.schedule.version })
-    return
-  }
-  emit('save', payload)
+  emit('save', buildSchedulePayload(form, props.schedule?.version))
 }
 
 function targetLabel(target: ScheduleTargetRecord): string {

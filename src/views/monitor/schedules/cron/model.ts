@@ -38,6 +38,8 @@ export type CronBuilderValues = {
   yearlyDay: number
 }
 
+type Translate = (key: string, values?: Record<string, unknown>) => string
+
 export const WEEKDAY_OPTIONS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const
 export const ALL_MONTH_DAYS = range(1, 31)
 export const MONTH_OPTIONS = range(1, 12)
@@ -77,6 +79,64 @@ export function isValidCronTime(values: Pick<CronBuilderValues, 'hour' | 'minute
     values.minute >= 0 &&
     values.minute <= 59
   )
+}
+
+export function formatCronSummary(
+  mode: CronBuilderMode,
+  values: CronBuilderValues,
+  advancedExpression: string,
+  t: Translate,
+): string {
+  if (mode === 'interval_minutes') {
+    return values.intervalMinutes
+      ? t('monitor.schedules.summaryIntervalMinutes', { minutes: values.intervalMinutes })
+      : t('monitor.schedules.summaryIncomplete')
+  }
+  if (mode === 'interval_hours') {
+    return values.intervalHours !== undefined && values.minute !== undefined
+      ? t('monitor.schedules.summaryIntervalHours', {
+          hours: values.intervalHours,
+          minute: values.minute,
+        })
+      : t('monitor.schedules.summaryIncomplete')
+  }
+  if (mode === 'daily') {
+    return isValidCronTime(values)
+      ? t('monitor.schedules.summaryDaily', {
+          time: `${padCronTime(values.hour)}:${padCronTime(values.minute)}`,
+        })
+      : t('monitor.schedules.summaryIncomplete')
+  }
+  if (mode === 'weekly') {
+    return isValidCronTime(values) && values.weekdays.length
+      ? t('monitor.schedules.summaryWeekly', {
+          weekdays: values.weekdays
+            .map((value) => t(`monitor.schedules.weekday${value}`))
+            .join(t('monitor.schedules.listSeparator')),
+          time: `${padCronTime(values.hour)}:${padCronTime(values.minute)}`,
+        })
+      : t('monitor.schedules.summaryIncomplete')
+  }
+  if (mode === 'monthly') {
+    return isValidCronTime(values) && values.monthDays.length
+      ? t('monitor.schedules.summaryMonthly', {
+          days: values.monthDays.join(t('monitor.schedules.listSeparator')),
+          time: `${padCronTime(values.hour)}:${padCronTime(values.minute)}`,
+        })
+      : t('monitor.schedules.summaryIncomplete')
+  }
+  if (mode === 'yearly') {
+    return isValidCronTime(values) && values.yearlyDay <= daysInMonth(values.yearlyMonth)
+      ? t('monitor.schedules.summaryYearly', {
+          month: values.yearlyMonth,
+          day: values.yearlyDay,
+          time: `${padCronTime(values.hour)}:${padCronTime(values.minute)}`,
+        })
+      : t('monitor.schedules.summaryIncomplete')
+  }
+  return advancedExpression.trim()
+    ? t('monitor.schedules.summaryAdvanced')
+    : t('monitor.schedules.summaryIncomplete')
 }
 
 export function hasLateMonthDay(monthDays: readonly number[]): boolean {

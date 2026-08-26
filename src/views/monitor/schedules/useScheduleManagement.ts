@@ -1,24 +1,16 @@
 import {
-  createSchedule,
   getSchedule,
   listScheduleTargets,
   listSchedules,
-  removeSchedule,
-  runSchedule,
-  updateSchedule,
-  updateScheduleStatus,
-  type CreateScheduleBody,
   type JobScheduleRecord,
   type ScheduleQuery,
   type ScheduleTargetRecord,
-  type UpdateScheduleBody,
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { invalidateTenantResource, queryClient, tenantQueryKey } from '@/shared/query/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
@@ -34,9 +26,9 @@ import {
   BUILT_IN_TARGET_LABELS,
   isUpdatePayload,
   normalizeQueryParams,
-  type RunSchedulePayload,
   type ScheduleSavePayload,
 } from './scheduleManagementSupport'
+import { useScheduleMutations } from './useScheduleMutations'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
 
@@ -82,53 +74,18 @@ export function useScheduleManagement(t: Translate) {
     { refetchInterval: false },
   )
 
-  const createMutation = useTenantMutation<unknown, CreateScheduleBody>(
-    () => userStore.tenantId,
-    MONITOR_SCHEDULES_RESOURCE,
-    {
-      mutationFn: (payload) => createSchedule(payload),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.createSuccess')),
-    },
-  )
-  const updateMutation = useTenantMutation<unknown, { id: string; data: UpdateScheduleBody }>(
-    () => userStore.tenantId,
-    MONITOR_SCHEDULES_RESOURCE,
-    {
-      mutationFn: ({ id, data }) => updateSchedule(id, data),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.updateSuccess')),
-    },
-  )
-  const statusMutation = useTenantMutation<unknown, { row: JobScheduleRecord; enabled: boolean }>(
-    () => userStore.tenantId,
-    MONITOR_SCHEDULES_RESOURCE,
-    {
-      mutationFn: ({ row, enabled }) =>
-        updateScheduleStatus(row.id, { enabled, version: row.version }),
-      onSuccess: (_data, variables) => {
-        ElMessage.success(
-          variables.enabled
-            ? t('monitor.schedules.enableSuccess')
-            : t('monitor.schedules.disableSuccess'),
-        )
-      },
-    },
-  )
-  const removeMutation = useTenantMutation<unknown, JobScheduleRecord>(
-    () => userStore.tenantId,
-    MONITOR_SCHEDULES_RESOURCE,
-    {
-      mutationFn: (row) => removeSchedule(row.id, { version: row.version }),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.deleteSuccess')),
-    },
-  )
-  const runMutation = useTenantMutation<unknown, RunSchedulePayload>(
-    () => userStore.tenantId,
-    MONITOR_SCHEDULES_RESOURCE,
-    {
-      mutationFn: ({ row, idempotencyKey }) => runSchedule(row.id, idempotencyKey),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.runSuccess')),
-    },
-  )
+  const {
+    createMutation,
+    formSaving,
+    hasPendingWrite,
+    removeMutation,
+    removePendingId,
+    runMutation,
+    runPendingId,
+    statusMutation,
+    statusPendingId,
+    updateMutation,
+  } = useScheduleMutations(() => userStore.tenantId, t)
 
   const loading = schedulesQuery.isFetching
   const targetLoading = targetsQuery.isFetching
@@ -137,25 +94,6 @@ export function useScheduleManagement(t: Translate) {
   const targets = targetsQuery.data
   const targetsError = targetsQuery.error
   const targetsLoaded = targetsQuery.isSuccess
-  const formSaving = computed(() => createMutation.pending.value || updateMutation.pending.value)
-  const statusPendingId = computed(() =>
-    statusMutation.pending.value
-      ? (statusMutation.variables.value?.row.id ?? undefined)
-      : undefined,
-  )
-  const removePendingId = computed(() =>
-    removeMutation.pending.value ? (removeMutation.variables.value?.id ?? undefined) : undefined,
-  )
-  const runPendingId = computed(() =>
-    runMutation.pending.value ? (runMutation.variables.value?.row.id ?? undefined) : undefined,
-  )
-  const hasPendingWrite = computed(
-    () =>
-      formSaving.value ||
-      statusMutation.pending.value ||
-      removeMutation.pending.value ||
-      runMutation.pending.value,
-  )
   async function refresh(): Promise<void> {
     await Promise.all([
       schedulesQuery.refetch({ throwOnError: true }),

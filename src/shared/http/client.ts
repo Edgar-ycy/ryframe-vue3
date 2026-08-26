@@ -1,10 +1,11 @@
 import type { AxiosRequestConfig } from 'axios'
 import type { ApiResponse } from './types'
-import { translate } from '@/i18n'
 import { HttpError, parseEnvelope, toHttpError } from './errors'
+import { httpTranslate } from './localization'
 import { rawTransport, transport } from './transport'
 
 export { HttpError, type HttpErrorKind, type HttpErrorOptions } from './errors'
+export { configureHttpLocalization, type HttpLocalizationAdapter } from './localization'
 export { configureHttpSession, type HttpSessionAdapter } from './session'
 
 export async function request<T = unknown>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
@@ -14,7 +15,7 @@ export async function request<T = unknown>(config: AxiosRequestConfig): Promise<
 
 export function requireOperationData<T>(response: ApiResponse<T>): T {
   if (response.data === undefined) {
-    throw new HttpError(translate('shell.http.invalidResponse'), {
+    throw new HttpError(httpTranslate('shell.http.invalidResponse'), {
       code: response.code,
       request_id: response.request_id,
       kind: 'invalid_response',

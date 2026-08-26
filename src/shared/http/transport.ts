@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { getApplicationLocale } from '@/i18n'
 import { runtimeConfig } from '@/shared/config/runtimeConfig'
 import { toHttpError } from './errors'
+import { getHttpLocale } from './localization'
 import { getHttpSession, refreshSession } from './session'
 
 declare module 'axios' {
@@ -74,7 +74,7 @@ function removeJsonContentTypeForFormData(config: InternalAxiosRequestConfig): v
 
 function applyAcceptLanguage(config: InternalAxiosRequestConfig): void {
   if (!config.headers.get('Accept-Language')) {
-    config.headers.set('Accept-Language', getApplicationLocale())
+    config.headers.set('Accept-Language', getHttpLocale())
   }
 }
 

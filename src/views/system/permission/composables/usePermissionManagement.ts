@@ -5,8 +5,8 @@ import {
   type PermissionSyncReport,
   type PermissionTreeNode,
 } from '@/api/modules/permission'
+import { refreshRuntimeAccessibleRoutes } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
-import { refreshAccessibleRoutes } from '@/router'
 import type { Id } from '@/shared/http/types'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
 import { useTenantQuery } from '@/shared/query/useTenantQuery'
@@ -112,17 +112,17 @@ export function usePermissionManagement() {
     if (!confirmed) return
 
     await deleteMutation.mutateAsync(permission)
-    await Promise.all([fetchData(), refreshAccessibleRoutes()])
+    await Promise.all([fetchData(), refreshRuntimeAccessibleRoutes()])
   }
 
   async function handleSync(): Promise<void> {
     if (syncMutation.pending.value) return
     await syncMutation.mutateAsync()
-    await Promise.all([fetchData(), refreshAccessibleRoutes()])
+    await Promise.all([fetchData(), refreshRuntimeAccessibleRoutes()])
   }
 
   async function handleSaved(): Promise<void> {
-    await Promise.all([fetchData(), refreshAccessibleRoutes()])
+    await Promise.all([fetchData(), refreshRuntimeAccessibleRoutes()])
   }
 
   return {

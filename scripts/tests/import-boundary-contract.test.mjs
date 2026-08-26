@@ -2,8 +2,6 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   boundaryViolation,
-  compareImportBaseline,
-  createImportBaseline,
   extractImportSpecifiers,
   moduleArea,
   resolveInternalSpecifier,
@@ -72,6 +70,14 @@ test('边界规则允许类型 DTO 但拒绝 Store 直接调用 API', () => {
   assert.equal(
     boundaryViolation({
       kind: 'runtime',
+      source: 'src/router/index.ts',
+      target: 'src/app/session.ts',
+    }),
+    'router 不得依赖 app',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
       source: 'src/shared/http/client.ts',
       target: 'src/i18n/index.ts',
     }),
@@ -95,18 +101,4 @@ test('SCC 只统计静态运行时导入', () => {
     { kind: 'dynamic', source: 'src/c.ts', target: 'src/c.ts' },
   ]
   assert.deepEqual(runtimeCycleEdges(modules, edges), edges.slice(0, 2))
-})
-
-test('迁移基线只允许债务减少', () => {
-  const baseline = createImportBaseline(['old-edge'], ['old-cycle'])
-  const reduced = compareImportBaseline(createImportBaseline([], []), baseline)
-  assert.deepEqual(reduced.newForbiddenEdges, [])
-  assert.deepEqual(reduced.resolvedForbiddenEdges, ['old-edge'])
-
-  const increased = compareImportBaseline(
-    createImportBaseline(['new-edge'], ['new-cycle']),
-    baseline,
-  )
-  assert.deepEqual(increased.newForbiddenEdges, ['new-edge'])
-  assert.deepEqual(increased.newRuntimeCycleEdges, ['new-cycle'])
 })

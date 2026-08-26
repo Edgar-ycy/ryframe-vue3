@@ -4,7 +4,10 @@ import {
   sessionContextUserInfo,
   type SessionContext,
 } from '@/api/modules/sessionContext'
-import { buildAccessibleMenus, buildRoutesFromMenuTree } from '@/app/navigation/routeProjection'
+import {
+  buildAccessibleMenus,
+  buildRoutesFromMenuTree,
+} from '@/features/navigation/routeProjection'
 import { applyUserIdentity } from '@/app/session/userProjection'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { usePermissionStore } from '@/stores/permission'

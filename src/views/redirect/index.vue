@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Loading } from '@element-plus/icons-vue'
-import { normalizeRedirectPath } from '@/router/redirect'
+import { normalizeRedirectPath } from '@/shared/navigation/redirect'
 
 const route = useRoute()
 const router = useRouter()

@@ -10,8 +10,8 @@ import {
   type ExportDeletionAccepted,
   type ExportJob,
 } from '@/api/modules/exportJob'
-import { downloadBlobDirect } from '@/hooks/useDownload'
 import { translate } from '@/i18n'
+import { downloadBlobDirect } from '@/shared/browser/download'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { queryClient } from '@/shared/query/client'

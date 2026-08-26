@@ -1,6 +1,9 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { translate } from '@/i18n'
+import { downloadBlobDirect } from '@/shared/browser/download'
+
+export { downloadBlobDirect } from '@/shared/browser/download'
 
 interface DownloadOptions {
   /** 下载后自动生成的文件名 */
@@ -53,17 +56,4 @@ export function useDownload() {
     downloadBlob,
     downloadUrl,
   }
-}
-
-/** 纯函数：触发浏览器下载二进制数据 */
-export function downloadBlobDirect(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.style.display = 'none'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
 }

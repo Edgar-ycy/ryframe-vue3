@@ -4,7 +4,7 @@ import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
 import { getMenuPage } from '@/features/pageRegistry'
 import { hasRequiredCapabilities } from '@/shared/navigation/capabilityAccess'
 import { withRouteComponentName } from '@/shared/navigation/namedRouteComponent'
-import { hasPermission } from '@/utils/permission'
+import { hasPermission } from '@/shared/navigation/permissionAccess'
 
 let constantMenuRoutes: readonly RouteRecordRaw[] = []
 

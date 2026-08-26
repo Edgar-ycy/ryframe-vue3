@@ -4,16 +4,17 @@ import {
   type RouteLocationRaw,
   type RouteRecordRaw,
 } from 'vue-router'
-import { buildAccessibleMenus, buildRoutesFromMenuTree } from '@/app/navigation/routeProjection'
-import { clearSession, initializeSession } from '@/app/session/sessionCoordinator'
-import { ensureTenantContextLoaded } from '@/app/tenant-context/coordinator'
-import { useTenantContextStore } from '@/app/tenant-context/store'
+import type { SessionContext } from '@/api/modules/sessionContext'
+import { matchedRouteAccessResult } from '@/features/navigation/routeAccess'
+import {
+  buildAccessibleMenus,
+  buildRoutesFromMenuTree,
+} from '@/features/navigation/routeProjection'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
 import { ROOT_LAYOUT_ROUTE_NAME } from './layout'
 import { createNavigationGuard } from './navigationGuard'
-import { matchedRouteAccessResult } from './routeAccess'
 import { RuntimeRouteRegistry } from './runtimeRouteRegistry'
 import { constantRoutes } from './routes/constant'
 
@@ -24,6 +25,31 @@ const router = createRouter({
 })
 
 const runtimeRouteRegistry = new RuntimeRouteRegistry(router)
+
+interface RouterTenantContext {
+  capabilityCodes: string[]
+  context?: Pick<SessionContext, 'menus' | 'permissions'>
+}
+
+export interface RouterApplicationRuntime {
+  clearSession(): Promise<void>
+  ensureRuntimeCapabilitiesLoaded(): Promise<void>
+  ensureTenantContextLoaded(): Promise<void>
+  getTenantContext(): RouterTenantContext
+  initializeSession(): Promise<void>
+}
+
+let applicationRuntime: RouterApplicationRuntime | undefined
+
+/** 由 main 同时装配 router 与应用用例，router 不直接依赖 app 实现。 */
+export function installRouterApplicationRuntime(runtime: RouterApplicationRuntime): void {
+  applicationRuntime = runtime
+}
+
+function requireApplicationRuntime(): RouterApplicationRuntime {
+  if (!applicationRuntime) throw new Error('路由应用运行时尚未安装')
+  return applicationRuntime
+}
 
 interface RouteInstallation {
   generation: number
@@ -36,9 +62,10 @@ let routeInstallation: RouteInstallation | undefined
 let routeRefreshPromise: Promise<RouteRecordRaw[]> | undefined
 
 async function buildAccessibleRoutes(generation: number): Promise<RouteRecordRaw[] | undefined> {
-  const tenantContext = useTenantContextStore()
-  await ensureTenantContextLoaded()
+  const runtime = requireApplicationRuntime()
+  await runtime.ensureTenantContextLoaded()
   if (generation !== routeGeneration) return undefined
+  const tenantContext = runtime.getTenantContext()
   const permissionStore = usePermissionStore()
   const context = tenantContext.context
   if (!context) return undefined
@@ -143,7 +170,7 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
 
   const user = useUserStore()
   const runtimeCapabilities = useRuntimeCapabilitiesStore()
-  const tenantContext = useTenantContextStore()
+  const tenantContext = requireApplicationRuntime().getTenantContext()
   const access = matchedRouteAccessResult(
     resolved.matched.map((record) => record.meta),
     {
@@ -156,14 +183,16 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
 }
 
 const navigationGuard = createNavigationGuard({
-  initializeSession,
+  initializeSession: () => requireApplicationRuntime().initializeSession(),
   getUser: useUserStore,
   getPermissionState: usePermissionStore,
   getRuntimeCapabilities: useRuntimeCapabilitiesStore,
-  getTenantContext: useTenantContextStore,
-  ensureTenantContextLoaded,
+  ensureRuntimeCapabilitiesLoaded: () =>
+    requireApplicationRuntime().ensureRuntimeCapabilitiesLoaded(),
+  getTenantContext: () => requireApplicationRuntime().getTenantContext(),
+  ensureTenantContextLoaded: () => requireApplicationRuntime().ensureTenantContextLoaded(),
   ensureAccessibleRoutes,
-  clearSession,
+  clearSession: () => requireApplicationRuntime().clearSession(),
   isKnownRoute: (path) => {
     try {
       return router.resolve(path).matched.some((record) => record.path !== '/:pathMatch(.*)*')

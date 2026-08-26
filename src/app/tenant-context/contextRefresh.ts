@@ -7,7 +7,7 @@ import {
   registeredPageAccessResult,
   type RouteAccessContext,
   type RouteAccessResult,
-} from '@/router/routeAccess'
+} from '@/features/navigation/routeAccess'
 import type { TenantContextObservation } from '@/shared/http/session'
 import { invalidateTenantServerState } from '@/shared/query/client'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'

@@ -1,5 +1,5 @@
-import { translate } from '@/i18n'
 import { HttpError, toHttpError } from './errors'
+import { httpTranslate } from './localization'
 
 export interface HttpSessionAdapter {
   getAccessToken(): string | null
@@ -29,7 +29,7 @@ export function getHttpSession(): HttpSessionAdapter | undefined {
 
 export async function refreshSession(): Promise<string> {
   if (!sessionAdapter) {
-    throw new HttpError(translate('shell.http.sessionNotInitialized'), {
+    throw new HttpError(httpTranslate('shell.http.sessionNotInitialized'), {
       status: 401,
       kind: 'http',
     })

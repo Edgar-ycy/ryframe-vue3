@@ -4,7 +4,7 @@ import {
   accessResultPath,
   registeredPageAccessResult,
   routeMetaAccessResult,
-} from '@/router/routeAccess'
+} from '@/features/navigation/routeAccess'
 
 const emptyContext = {
   capabilities: [],

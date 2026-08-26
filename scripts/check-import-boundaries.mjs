@@ -1,11 +1,9 @@
-import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse as parseVue } from '@vue/compiler-sfc'
 import {
   boundaryViolation,
-  compareImportBaseline,
-  createImportBaseline,
   edgeKey,
   extractImportSpecifiers,
   normalizeModulePath,
@@ -15,10 +13,8 @@ import {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const sourceRoot = join(root, 'src')
-const baselinePath = join(root, 'scripts/import-boundary-baseline.json')
 const commandArguments = process.argv.slice(2)
-const unknownArgument = commandArguments.find((argument) => argument !== '--update-baseline')
-if (unknownArgument) throw new Error(`未知参数：${unknownArgument}`)
+if (commandArguments.length > 0) throw new Error(`未知参数：${commandArguments[0]}`)
 
 async function collectModules(directory) {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -64,52 +60,14 @@ const forbidden = uniqueEdges.flatMap((edge) => {
   return reason ? [edgeKey(edge, reason)] : []
 })
 const cycles = runtimeCycleEdges(modulePaths, uniqueEdges).map((edge) => edgeKey(edge))
-const current = createImportBaseline(forbidden, cycles)
-
-let baseline
-try {
-  baseline = JSON.parse(await readFile(baselinePath, 'utf8'))
-} catch (error) {
-  if (error?.code !== 'ENOENT') throw error
-  baseline = createImportBaseline([], [])
-}
-if (baseline.version !== 1) throw new Error('导入迁移基线版本必须为 1')
-
-const comparison = compareImportBaseline(current, baseline)
-const additions = [
-  ...comparison.newForbiddenEdges.map((edge) => `新增边界违规 ${edge}`),
-  ...comparison.newRuntimeCycleEdges.map((edge) => `新增运行时环内边 ${edge}`),
+const violations = [
+  ...new Set(forbidden.map((edge) => `边界违规 ${edge}`)),
+  ...new Set(cycles.map((edge) => `运行时环内边 ${edge}`)),
 ]
-if (commandArguments.includes('--update-baseline')) {
-  if (additions.length > 0) {
-    console.error('导入迁移基线拒绝扩张：')
-    for (const addition of additions) console.error(`  ${addition}`)
-    process.exitCode = 1
-  } else if (current.forbiddenEdges.length === 0 && current.runtimeCycleEdges.length === 0) {
-    console.error('债务已清零，请删除 scripts/import-boundary-baseline.json，而不是保留空基线。')
-    process.exitCode = 1
-  } else {
-    await writeFile(baselinePath, `${JSON.stringify(current, null, 2)}\n`, 'utf8')
-    console.log(
-      `导入迁移基线已收敛：${current.forbiddenEdges.length} 条边界债务，` +
-        `${current.runtimeCycleEdges.length} 条运行时环内边。`,
-    )
-  }
-} else if (additions.length > 0) {
+if (violations.length > 0) {
   console.error('导入边界检查失败：')
-  for (const addition of additions) console.error(`  ${addition}`)
-  process.exitCode = 1
-} else if (
-  comparison.resolvedForbiddenEdges.length > 0 ||
-  comparison.resolvedRuntimeCycleEdges.length > 0
-) {
-  console.error(
-    '导入迁移基线包含已消除债务；请运行 `node scripts/check-import-boundaries.mjs --update-baseline` 收敛基线。',
-  )
+  for (const violation of violations.sort()) console.error(`  ${violation}`)
   process.exitCode = 1
 } else {
-  console.log(
-    `导入边界检查通过（剩余 ${comparison.remainingForbiddenEdges} 条边界债务、` +
-      `${comparison.remainingRuntimeCycleEdges} 条运行时环内边）。`,
-  )
+  console.log('导入边界检查通过（0 条边界债务、0 条运行时环内边）。')
 }

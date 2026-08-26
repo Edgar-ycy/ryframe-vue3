@@ -89,11 +89,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
+import {
+  ensureRuntimeAccessibleRoutes,
+  resolveRuntimeAccessibleRoute,
+} from '@/app/navigation/runtime'
 import { authenticateWithPassword } from '@/app/session/login'
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { DEFAULT_TENANT_ID, getTenantId } from '@/utils/auth'
-import { ensureAccessibleRoutes, resolveAccessibleRoute } from '@/router'
 import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
 
 const router = useRouter()
@@ -239,10 +242,10 @@ const handleLogin = async () => {
         ? loginForm.value.tenant_id.trim()
         : DEFAULT_TENANT_ID,
     )
-    await ensureAccessibleRoutes({ skipAuthRefresh: true })
+    await ensureRuntimeAccessibleRoutes({ skipAuthRefresh: true })
     ElMessage.success(t('account.signInSuccess'))
     const redirect = resolveLoginRedirect(route.query.redirect)
-    await router.replace(resolveAccessibleRoute(redirect))
+    await router.replace(resolveRuntimeAccessibleRoute(redirect))
   } catch (error) {
     ElMessage.error(
       error instanceof Error && error.message ? error.message : t('shell.http.requestFailed'),

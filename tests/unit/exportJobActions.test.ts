@@ -15,7 +15,7 @@ const idempotency = vi.hoisted(() => ({
 }))
 
 vi.mock('@/api/modules/exportJob', () => api)
-vi.mock('@/hooks/useDownload', () => ({ downloadBlobDirect: vi.fn() }))
+vi.mock('@/shared/browser/download', () => ({ downloadBlobDirect: vi.fn() }))
 vi.mock('@/shared/http/idempotency', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/http/idempotency')>()),
   createIdempotencyKey: idempotency.createIdempotencyKey,

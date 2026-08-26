@@ -1,7 +1,7 @@
 import type { RouteMeta } from 'vue-router'
 import { getMenuPageByPath } from '@/features/pageRegistry'
 import { hasRequiredCapabilities } from '@/shared/navigation/capabilityAccess'
-import { hasPermission } from '@/utils/permission'
+import { hasPermission } from '@/shared/navigation/permissionAccess'
 
 export type RouteAccessResult = 'allowed' | 'forbidden' | 'capability-unavailable' | 'unknown'
 

@@ -55,7 +55,6 @@ const allowedAreaTargets = Object.freeze({
   router: new Set([
     'api-core',
     'api-modules',
-    'app',
     'components',
     'directives',
     'features',
@@ -285,29 +284,4 @@ export function runtimeCycleEdges(modules, edges) {
       const component = componentByModule.get(edge.source)
       return component?.includes(edge.target) || edge.source === edge.target
     })
-}
-
-export function createImportBaseline(forbiddenEdges, cycleEdges) {
-  return {
-    version: 1,
-    forbiddenEdges: [...new Set(forbiddenEdges)].sort(),
-    runtimeCycleEdges: [...new Set(cycleEdges)].sort(),
-  }
-}
-
-export function compareImportBaseline(current, baseline) {
-  const allowedForbidden = new Set(baseline.forbiddenEdges ?? [])
-  const allowedCycles = new Set(baseline.runtimeCycleEdges ?? [])
-  return {
-    newForbiddenEdges: current.forbiddenEdges.filter((edge) => !allowedForbidden.has(edge)),
-    newRuntimeCycleEdges: current.runtimeCycleEdges.filter((edge) => !allowedCycles.has(edge)),
-    remainingForbiddenEdges: current.forbiddenEdges.length,
-    remainingRuntimeCycleEdges: current.runtimeCycleEdges.length,
-    resolvedForbiddenEdges: [...allowedForbidden].filter(
-      (edge) => !current.forbiddenEdges.includes(edge),
-    ),
-    resolvedRuntimeCycleEdges: [...allowedCycles].filter(
-      (edge) => !current.runtimeCycleEdges.includes(edge),
-    ),
-  }
 }

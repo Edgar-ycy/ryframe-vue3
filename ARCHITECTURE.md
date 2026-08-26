@@ -40,9 +40,9 @@ main / composition root
 
 `pnpm check:imports` 检查目录边界和运行时静态导入 SCC。类型导入仍受边界约束，
 但不计入运行时环；page manifest 的动态页面加载受边界约束，但不计入初始化 SCC。
-迁移期间 `scripts/import-boundary-baseline.json` 精确记录现有债务；债务消除后使用
-`node scripts/check-import-boundaries.mjs --update-baseline` 收敛基线，该命令拒绝新增债务。
-完成解环后删除基线。生成代码不作为手写层参与复杂度约束，其模板和消费契约单独验证。
+当前边界债务与运行时 SCC 均为零，不保留迁移基线；任何新增禁止边都会直接使检查失败。
+`main` 作为组合根向 Router 注入应用用例，并向 `shared/http` 注入本地化端口，Router 与 app
+不得互相运行时导入。生成代码不作为手写层参与复杂度约束，其模板和消费契约单独验证。
 
 ## 契约与请求
 

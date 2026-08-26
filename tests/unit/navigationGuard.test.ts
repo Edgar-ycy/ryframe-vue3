@@ -9,12 +9,10 @@ function dependencies(options?: {
   return {
     clearSession: vi.fn(async () => undefined),
     ensureAccessibleRoutes: vi.fn(async () => undefined),
+    ensureRuntimeCapabilitiesLoaded: vi.fn(async () => undefined),
     ensureTenantContextLoaded: vi.fn(async () => undefined),
     getPermissionState: () => ({ isRoutesLoaded: true }),
-    getRuntimeCapabilities: () => ({
-      ensureLoaded: async () => undefined,
-      multiTenancyEnabled: true,
-    }),
+    getRuntimeCapabilities: () => ({ multiTenancyEnabled: true }),
     getTenantContext: () => ({
       capabilityCodes: options?.capabilities ?? [],
     }),

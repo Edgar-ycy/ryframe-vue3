@@ -6,7 +6,7 @@ import {
   registeredPageAccessResult,
   routeMetaAccessResult,
   type RouteAccessContext,
-} from '@/router/routeAccess'
+} from '@/features/navigation/routeAccess'
 
 export interface NavigationTarget {
   path: string
@@ -27,7 +27,6 @@ export interface NavigationPermissionState {
 
 export interface NavigationRuntimeCapabilities {
   multiTenancyEnabled: boolean
-  ensureLoaded(): Promise<void>
 }
 
 export interface NavigationTenantContext {
@@ -39,6 +38,7 @@ export interface NavigationGuardDependencies {
   getUser(): NavigationUser
   getPermissionState(): NavigationPermissionState
   getRuntimeCapabilities(): NavigationRuntimeCapabilities
+  ensureRuntimeCapabilitiesLoaded(): Promise<void>
   getTenantContext(): NavigationTenantContext
   ensureTenantContextLoaded(): Promise<void>
   ensureAccessibleRoutes(): Promise<unknown>
@@ -52,12 +52,12 @@ const publicPaths = new Set(['/login', '/reset-password'])
 
 export function createNavigationGuard(dependencies: NavigationGuardDependencies) {
   return async (target: NavigationTarget): Promise<true | RouteLocationRaw> => {
-    const runtimeCapabilities = dependencies.getRuntimeCapabilities()
     try {
-      await runtimeCapabilities.ensureLoaded()
+      await dependencies.ensureRuntimeCapabilitiesLoaded()
     } catch {
       return target.path === '/503' ? true : { path: '/503', replace: true }
     }
+    const runtimeCapabilities = dependencies.getRuntimeCapabilities()
     await dependencies.initializeSession()
     const user = dependencies.getUser()
     const originalPath = getOriginalFullPath(target)

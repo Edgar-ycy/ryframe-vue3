@@ -1,4 +1,4 @@
-import type { MessageRuntime } from './runtime'
+import type { MessageRuntime } from './messageRuntime'
 
 const MAX_DELETED_MESSAGE_TOMBSTONES = 2_000
 

@@ -78,9 +78,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { updateProfile } from '@/api/modules/auth'
+import { messageController } from '@/app/messages/messageController'
 import { normalizeLocale, type AppLocale } from '@/i18n'
 import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useMessageStore } from '@/stores/message'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import ThemePicker from './ThemePicker.vue'
@@ -91,7 +91,6 @@ type Theme = 'light' | 'dark'
 const visible = defineModel<boolean>({ default: false })
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
-const messageStore = useMessageStore()
 const { t } = useI18n()
 const localeMutation = useTenantMutation<void, AppLocale>(
   () => userStore.tenantId,
@@ -121,7 +120,7 @@ async function handleLocaleChange(value: string): Promise<void> {
 
   await localeMutation.mutateAsync(locale)
   if (settingsStore.locale === locale && userStore.sessionStatus === 'authenticated') {
-    messageStore.restartConnection()
+    messageController.restartConnection()
   }
 }
 </script>

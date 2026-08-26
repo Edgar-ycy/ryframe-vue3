@@ -1,14 +1,9 @@
-import type { MessageSocket, MessageSocketState } from '@/app/messages/messageSocket'
-import { useUserStore } from '../user'
+import type {
+  MessageSocket,
+} from '@/app/messages/socket/lifecycle'
+import { useUserStore } from '@/stores/user'
 
 export const POLL_INTERVAL_MS = 60_000
-
-export type ConnectionStatus = Exclude<MessageSocketState, 'idle' | 'stopped'> | 'disconnected'
-
-export interface MessageConnectionState {
-  connectionStatus: ConnectionStatus
-  socketError?: string
-}
 
 export interface MessageIdentity {
   tenantId: string

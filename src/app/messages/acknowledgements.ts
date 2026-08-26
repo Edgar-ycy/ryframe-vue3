@@ -1,5 +1,5 @@
 import { HttpError } from '@/shared/http/client'
-import type { MessageRuntime } from './runtime'
+import type { MessageRuntime } from './messageRuntime'
 
 export const ACK_DEBOUNCE_MS = 500
 

@@ -27,7 +27,7 @@
     :loading="inboxLoading || unreadLoading"
     :mutating="mutating"
     @drawer-open="handleDrawerOpen"
-    @retry-realtime="messageStore.restartConnection"
+    @retry-realtime="restartRealtime"
     @refresh="refresh"
     @mark-all-read="markAllRead"
     @delete-selected="deleteSelected"
@@ -48,6 +48,7 @@
 import { Bell } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { MessageInboxQuery, MessageRecord } from '@/api/modules/messages'
+import { messageController } from '@/app/messages/messageController'
 import { useMessageCenterQueries } from '@/app/messages/messageQueries'
 import MessageDetailDialog from './MessageDetailDialog.vue'
 import MessageInboxDrawer from './MessageInboxDrawer.vue'
@@ -101,12 +102,12 @@ const {
   detailSeed,
   detailVisible,
   messageCenter,
-  messageStore,
+  messageStore: messageController,
   selectedIds,
 })
 
 function acknowledgeReceivedMessages(records = currentMessages()): void {
-  messageStore.queueAcknowledgement(
+  messageController.queueAcknowledgement(
     records.filter(message => !message.acked_at).map(message => message.id),
   )
 }
@@ -115,7 +116,7 @@ watch(
   currentMessages,
   (records) => {
     const ids = records.map(message => message.id)
-    messageStore.pruneDeletedMessages(ids)
+    messageController.pruneDeletedMessages(ids)
     selectedIds.value = selectedIds.value.filter(id => ids.includes(id))
     // 无论来源是首次加载、手动刷新还是补拉，进入收件箱即自动确认送达。
     acknowledgeReceivedMessages(records)
@@ -133,14 +134,18 @@ watch(
 )
 
 onMounted(() => {
-  messageStore.bindSession()
+  messageController.bindSession()
   // 缓存命中早于 mounted 时，此处补一次确认，避免会话尚未绑定导致漏记。
   acknowledgeReceivedMessages()
 })
 
 onUnmounted(() => {
-  messageStore.unbindSession()
+  messageController.unbindSession()
 })
+
+function restartRealtime(): void {
+  messageController.restartConnection()
+}
 
 function openDrawer(): void {
   visible.value = true

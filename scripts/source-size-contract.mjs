@@ -2,12 +2,12 @@ import { extname, posix } from 'node:path'
 
 export const sourceLimits = Object.freeze({
   catalog: 600,
-  composable: 350,
+  composable: 300,
   script: 500,
   style: 300,
   test: 650,
-  typescript: 400,
-  vue: 500,
+  typescript: 300,
+  vue: 400,
 })
 
 const generatedPrefixes = ['src/api/generated/', 'src/generated/']

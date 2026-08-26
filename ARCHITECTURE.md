@@ -114,11 +114,11 @@ catch 只用于恢复、回滚或转换局部状态，未处理的错误继续�
 
 ## 质量门禁
 
-`pnpm check:fast` 并行运行源码规模、导入边界、Lint、应用类型和确定性单测，服务于本地反馈；
+`pnpm check:fast` 并行运行格式、源码规模、导入边界、Lint、应用类型和确定性单测，服务于本地反馈；
 `pnpm check` 继续覆盖工作流、依赖策略、契约与生成物、测试类型、生产构建和体积预算。
 TypeScript 与 Lint 增量缓存只写入被忽略的 `.local-tests`。源码规模门禁覆盖所有手写 TS、
-Vue SFC 和样式；生成目录与声明文件除外。Prettier 不改写生成目录，首次全仓格式化必须使用
-独立机械提交，建立基线后再把 `pnpm format:check` 加入完整门禁。
+Vue SFC 和样式；SFC 上限 400 行，普通 TS 与 composable 上限 300 行，样式上限 300 行，
+生成目录与声明文件除外。Prettier 不改写生成目录，`pnpm format:check` 同时进入快速与完整门禁。
 
 CI 另用 Chrome smoke 测试验证登录、筛选导出、下载和记录删除；定时任务执行 Node 兼容、pnpm audit、OSV、许可证策略和 CycloneDX SBOM。
 

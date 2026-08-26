@@ -4,7 +4,6 @@ dist/
 node_modules/
 openapi/
 pnpm-lock.yaml
-qodana.yaml
 src/api/generated/
 src/generated/
 src/i18n/catalog/

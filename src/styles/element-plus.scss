@@ -31,6 +31,20 @@
   }
 }
 
+.el-button.el-button--primary.is-link {
+  --el-button-text-color: var(--color-primary-readable);
+  --el-button-hover-link-text-color: var(--color-primary-readable);
+  --el-button-active-color: var(--color-primary-readable);
+  --el-button-outline-color: var(--color-primary-readable);
+
+  &:hover,
+  &:focus,
+  &:focus-visible,
+  &:active {
+    color: var(--color-primary-readable);
+  }
+}
+
 .el-table {
   border-radius: var(--border-radius-base);
   overflow: hidden;

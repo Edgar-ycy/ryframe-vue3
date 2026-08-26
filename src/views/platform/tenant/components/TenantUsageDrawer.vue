@@ -235,13 +235,8 @@
 </template>
 
 <script setup lang="ts">
-import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import type {
-  TenantCapacity,
-  TenantQuotaUsage,
-  TenantRequestWindowUsage,
-} from '@/api/modules/tenant'
+import type { TenantCapacity } from '@/api/modules/tenant'
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
 import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
 import { TENANT_DATA_PERMISSIONS } from '@/features/tenant-data/permissions'
@@ -251,6 +246,18 @@ import TenantQuotaMeter from './TenantQuotaMeter.vue'
 import TenantBackupPointsPanel from './TenantBackupPointsPanel.vue'
 import TenantDataPlacementPanel from './TenantDataPlacementPanel.vue'
 import TenantProductContextPanel from './TenantProductContextPanel.vue'
+import {
+  capacityLabelKey,
+  capacityTagType,
+  expirationLabelKey,
+  expirationTagType,
+  formatQuotaLimit,
+  formatStorageLimit,
+  isMutableTenantStatus,
+  requestWindowQuota,
+  tenantStatusLabelKey,
+  tenantStatusTagType,
+} from './tenantUsagePresentation'
 
 defineProps<{
   tenant?: TenantCapacity
@@ -300,69 +307,36 @@ function handleClosed(): void {
   emit('closed')
 }
 
-function capacityType(status: string): TagProps['type'] {
-  if (status === 'exceeded' || status === 'critical') return 'danger'
-  if (status === 'warning') return 'warning'
-  if (status === 'normal') return 'success'
-  return 'info'
+function capacityType(status: string) {
+  return capacityTagType(status)
 }
 
-function expirationType(status: string): TagProps['type'] {
-  if (status === 'expired') return 'danger'
-  if (status === 'expiring') return 'warning'
-  if (status === 'active') return 'success'
-  return 'info'
+function expirationType(status: string) {
+  return expirationTagType(status)
 }
 
 function capacityLabel(status: string): string {
-  const suffixes: Record<string, string> = {
-    normal: 'Normal',
-    warning: 'Warning',
-    critical: 'Critical',
-    exceeded: 'Exceeded',
-    unlimited: 'Unlimited',
-    unknown: 'Unknown',
-  }
-  return t(`tenantCapacity.capacity${suffixes[status] ?? 'Unknown'}`)
+  return t(capacityLabelKey(status))
 }
 
 function expirationLabel(status: string): string {
-  const suffixes: Record<string, string> = {
-    active: 'Active',
-    expiring: 'Expiring',
-    expired: 'Expired',
-    never: 'Never',
-  }
-  return t(`tenantCapacity.expiration${suffixes[status] ?? 'Active'}`)
+  return t(expirationLabelKey(status))
 }
 
 function statusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    enabled: 'statusEnabled',
-    disabled: 'statusDisabled',
-    provisioning: 'statusProvisioning',
-    provisioning_failed: 'statusProvisioningFailed',
-  }
-  return t(`tenantCapacity.${labels[status] ?? 'statusUnknown'}`)
+  return t(tenantStatusLabelKey(status))
 }
 
 function isMutableStatus(status: string): boolean {
-  return status === 'enabled' || status === 'disabled'
+  return isMutableTenantStatus(status)
 }
 
-function tenantStatusType(status: string): TagProps['type'] {
-  if (status === 'enabled') return 'success'
-  if (status === 'disabled' || status === 'provisioning_failed') return 'danger'
-  return 'warning'
+function tenantStatusType(status: string) {
+  return tenantStatusTagType(status)
 }
 
-function requestQuota(request: TenantRequestWindowUsage): TenantQuotaUsage {
-  return {
-    used: request.current ?? 0,
-    limit: request.limit,
-    percentage_basis_points: request.percentage_basis_points,
-    status: request.status,
-  }
+function requestQuota(request: Parameters<typeof requestWindowQuota>[0]) {
+  return requestWindowQuota(request)
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -370,154 +344,12 @@ function formatDate(value: string | null | undefined): string {
 }
 
 function quotaLimit(value: number): string {
-  if (value === 0) return t('tenantCapacity.unlimited')
-  return new Intl.NumberFormat(getApplicationLocale()).format(value)
+  return formatQuotaLimit(value, getApplicationLocale(), t('tenantCapacity.unlimited'))
 }
 
 function storageLimit(value: number): string {
-  if (value === 0) return t('tenantCapacity.unlimited')
-  return `${new Intl.NumberFormat(getApplicationLocale()).format(value)} MiB`
+  return formatStorageLimit(value, getApplicationLocale(), t('tenantCapacity.unlimited'))
 }
 </script>
 
-<style scoped>
-.drawer-content {
-  min-height: 220px;
-}
-
-.tenant-heading,
-.tenant-heading__tags,
-.drawer-actions,
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.tenant-heading {
-  align-items: flex-start;
-}
-
-.tenant-heading h2,
-.drawer-section h3 {
-  margin: 0;
-  color: var(--el-text-color-primary);
-}
-
-.tenant-heading p {
-  margin: 5px 0 0;
-  color: var(--el-text-color-secondary);
-  overflow-wrap: anywhere;
-}
-
-.tenant-heading__tags {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.drawer-hint,
-.section-description,
-.window-remaining {
-  color: var(--el-text-color-secondary);
-  line-height: 1.6;
-}
-
-.drawer-hint {
-  margin: 12px 0;
-}
-
-.drawer-actions {
-  justify-content: flex-end;
-  margin-bottom: 18px;
-}
-
-.drawer-section {
-  padding: 18px 0;
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-
-.drawer-section h3 {
-  font-size: 16px;
-}
-
-.section-heading {
-  align-items: baseline;
-  margin-bottom: 14px;
-}
-
-.section-heading span {
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-.details-grid,
-.auxiliary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin: 14px 0 0;
-}
-
-.details-grid > div,
-.auxiliary-grid > div {
-  min-width: 0;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
-}
-
-dt {
-  margin-bottom: 5px;
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-dd {
-  margin: 0;
-  color: var(--el-text-color-primary);
-  overflow-wrap: anywhere;
-}
-
-.quota-grid {
-  display: grid;
-  gap: 18px;
-  margin-top: 14px;
-}
-
-.section-description {
-  margin: 8px 0 14px;
-}
-
-.window-remaining {
-  margin: 8px 0 0;
-  font-size: 12px;
-  text-align: right;
-}
-
-@media (width <= 480px) {
-  .tenant-heading,
-  .section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .tenant-heading__tags {
-    justify-content: flex-start;
-  }
-
-  .drawer-actions {
-    justify-content: stretch;
-  }
-
-  .drawer-actions :deep(.el-button) {
-    flex: 1;
-    min-height: 42px;
-  }
-
-  .details-grid,
-  .auxiliary-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-</style>
+<style scoped src="./TenantUsageDrawer.scss"></style>

@@ -108,7 +108,7 @@
               type="primary"
               link
               icon="View"
-              @click="handleDetail(row)"
+              @click="showOperationLogDetail(row.id)"
               >{{ t('monitor.operationLog.details') }}</el-button
             >
           </template>
@@ -201,6 +201,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { formatOptionalLocalizedDate } from '@/i18n'
 import {
@@ -312,6 +313,11 @@ const detailRow = ref<Partial<OperLogRecord>>({})
 function handleDetail(row: OperLogRecord): void {
   detailRow.value = row
   detailVisible.value = true
+}
+
+function showOperationLogDetail(id: string): void {
+  const row = operationLogPage.value?.items.find((item) => item.id === id)
+  if (row) handleDetail(row)
 }
 
 useKeepAlivePageActive(pageActive, refreshData)

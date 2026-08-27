@@ -3,7 +3,7 @@ import { isSessionContext } from '@/api/modules/sessionContext'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 import { synchronizeTenantContextUi } from '@/app/tenant-context/contextRefresh'
 import {
   broadcastAuthenticated,

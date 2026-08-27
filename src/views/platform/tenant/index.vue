@@ -137,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import type { CreateTenantPayload, TenantCapacity, UpdateTenantPayload } from '@/api/modules/tenant'

@@ -79,6 +79,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import type { PermissionCode } from '@/api/generated/permissions'
 import { useI18n } from 'vue-i18n'
 import { getTenantProductContext, type TenantProductContext } from '@/api/modules/productPlan'

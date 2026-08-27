@@ -1,5 +1,5 @@
 <template>
-  <el-table v-loading="loading" :data="rows" border stripe>
+  <el-table v-loading="loading" :data="[...rows]" border stripe>
     <el-table-column
       v-for="column in columns"
       :key="column.key"
@@ -9,7 +9,7 @@
       :width="column.width"
       show-overflow-tooltip
     >
-      <template #default="{ row }">
+      <template #default="{ row }: { row: TRecord }">
         <el-tag
           v-if="column.display === 'status'"
           :type="cellValue(row, column) === column.positiveValue ? 'success' : 'danger'"
@@ -26,7 +26,7 @@
       </template>
     </el-table-column>
     <el-table-column :label="labels.actions" fixed="right" align="center">
-      <template #default="{ row }">
+      <template #default="{ row }: { row: TRecord }">
         <el-button
           v-perm="permissions.update"
           type="primary"

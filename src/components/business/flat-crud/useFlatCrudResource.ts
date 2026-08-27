@@ -1,3 +1,4 @@
+import { ElMessage } from 'element-plus'
 import { computed, shallowRef, watch } from 'vue'
 
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'

@@ -3,7 +3,7 @@ import { usePermission } from '@/hooks/usePermission'
 import { HttpError } from '@/shared/http/client'
 import { createIdentityOperationScope } from '@/shared/query/createIdentityOperationScope'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 import { useUserStore } from '@/stores/user'
 import {
   sameServiceAccountIdentity,

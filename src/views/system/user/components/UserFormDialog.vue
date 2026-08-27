@@ -38,7 +38,7 @@
         <el-tree-select
           v-model="form.dept_id"
           :data="deptTree"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.user.selectDepartment')"
           clearable
           check-strictly
@@ -82,6 +82,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   createUser,

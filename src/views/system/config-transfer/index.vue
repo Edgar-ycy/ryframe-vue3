@@ -169,6 +169,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
 import { formatOptionalLocalizedDate } from '@/i18n'

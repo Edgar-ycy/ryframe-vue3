@@ -1,8 +1,7 @@
-import { requestOperation } from '@/api/operationRequest'
 import {
   get_platform_data_targets,
   get_platform_data_targets_by_target_key,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/platform'
 import type { OperationData, OperationQuery } from '@/api/contract'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 
@@ -13,11 +12,11 @@ export type DataTargetDetail = OperationData<'get_platform_data_targets_by_targe
 export type DataTargetQuery = OperationQuery<'get_platform_data_targets'>
 
 export function listDataTargets(params?: DataTargetQuery, signal?: AbortSignal) {
-  return requestOperation(get_platform_data_targets, { params, signal })
+  return get_platform_data_targets({ params, signal })
 }
 
 export function getDataTarget(targetKey: string, signal?: AbortSignal) {
-  return requestOperation(get_platform_data_targets_by_target_key, {
+  return get_platform_data_targets_by_target_key({
     path: { target_key: targetKey },
     signal,
   })

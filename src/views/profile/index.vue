@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import ProfileAvatar from './components/ProfileAvatar.vue'
 import ProfileDetailsForm from './components/ProfileDetailsForm.vue'
@@ -56,7 +57,7 @@ import { useAuthSessionManagement } from './useAuthSessionManagement'
 import { useProfileManagement } from './useProfileManagement'
 import { useServiceDelegationManagement } from './useServiceDelegationManagement'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 const { t } = useI18n()
 const tenantContext = useTenantContextStore()

@@ -102,7 +102,7 @@
               type="primary"
               link
               icon="Edit"
-              @click="handleEdit(row)"
+              @click="editConfigById(row.id)"
               >{{ t('system.common.edit') }}</el-button
             >
             <el-button
@@ -111,7 +111,7 @@
               link
               icon="Delete"
               :loading="deletingId === row.id"
-              @click="handleDelete(row)"
+              @click="deleteConfigById(row.id)"
             >
               {{ t('system.common.delete') }}
             </el-button>
@@ -134,6 +134,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   deleteConfig,
@@ -254,6 +255,15 @@ async function handleEdit(row: ConfigRecord) {
   await formDialogRef.value?.openEdit(row)
 }
 
+function findConfig(id: Id): ConfigRecord | undefined {
+  return tableResponse.value?.items.find((config) => config.id === id)
+}
+
+async function editConfigById(id: Id): Promise<void> {
+  const config = findConfig(id)
+  if (config) await handleEdit(config)
+}
+
 async function handleDelete(row: ConfigRecord) {
   if (deleteMutation.pending.value) return
   const confirmed = await confirmAction(
@@ -264,5 +274,10 @@ async function handleDelete(row: ConfigRecord) {
   if (!confirmed) return
   await deleteMutation.mutateAsync(row)
   await refreshData()
+}
+
+async function deleteConfigById(id: Id): Promise<void> {
+  const config = findConfig(id)
+  if (config) await handleDelete(config)
 }
 </script>

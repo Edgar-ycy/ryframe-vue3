@@ -1,5 +1,4 @@
 import type { PermissionCode } from '@/api/generated/permissions'
-import type { MessageCatalogLoader } from '@/i18n/catalog'
 import type { RouteComponentLoader } from '@/shared/navigation/routeComponent'
 
 export interface MenuPageRegistryEntry {
@@ -13,7 +12,6 @@ export interface PageManifestEntry {
   permissionCode?: PermissionCode
   path: string
   page?: RouteComponentLoader
-  catalogs?: readonly MessageCatalogLoader[]
 }
 
 export interface PageManifest {

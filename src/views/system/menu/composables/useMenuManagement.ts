@@ -1,3 +1,4 @@
+import { ElMessage } from 'element-plus'
 import type { TagProps } from 'element-plus'
 import {
   deleteMenu,

@@ -4,10 +4,11 @@ import { fileURLToPath } from 'node:url'
 import { parse as parseVue } from '@vue/compiler-sfc'
 import {
   boundaryViolation,
+  containsDefineStoreCall,
   edgeKey,
   extractImportSpecifiers,
   normalizeModulePath,
-  resolveInternalSpecifier,
+  resolveImportTarget,
   runtimeCycleEdges,
 } from './import-boundary-contract.mjs'
 
@@ -44,14 +45,22 @@ const modulePaths = new Set(
   absoluteModules.map((path) => normalizeModulePath(relative(root, path))),
 )
 const edges = []
+const misplacedStores = []
 
 for (const absolutePath of absoluteModules.sort()) {
   const source = normalizeModulePath(relative(root, absolutePath))
   const content = moduleSource(source, await readFile(absolutePath, 'utf8'))
+  if (moduleAreaForStore(source) !== 'stores' && containsDefineStoreCall(content, source)) {
+    misplacedStores.push(`defineStore 只能出现在 src/stores/**：${source}`)
+  }
   for (const dependency of extractImportSpecifiers(content, source)) {
-    const target = resolveInternalSpecifier(source, dependency.specifier, modulePaths)
+    const target = resolveImportTarget(source, dependency.specifier, modulePaths)
     if (target) edges.push({ kind: dependency.kind, source, target })
   }
+}
+
+function moduleAreaForStore(source) {
+  return source.startsWith('src/stores/') ? 'stores' : 'other'
 }
 
 const uniqueEdges = [...new Map(edges.map((edge) => [edgeKey(edge), edge])).values()]
@@ -61,6 +70,7 @@ const forbidden = uniqueEdges.flatMap((edge) => {
 })
 const cycles = runtimeCycleEdges(modulePaths, uniqueEdges).map((edge) => edgeKey(edge))
 const violations = [
+  ...misplacedStores,
   ...new Set(forbidden.map((edge) => `边界违规 ${edge}`)),
   ...new Set(cycles.map((edge) => `运行时环内边 ${edge}`)),
 ]

@@ -22,7 +22,7 @@
     <el-empty v-else-if="items.length === 0" :description="t('serviceAccounts.emptyAudits')" />
     <template v-else>
       <div class="desktop-table" role="region" :aria-label="t('serviceAccounts.audits')">
-        <el-table :data="items" border stripe row-key="id">
+        <el-table :data="[...items]" border stripe row-key="id">
           <el-table-column
             prop="request_id"
             :label="t('serviceAccounts.requestId')"

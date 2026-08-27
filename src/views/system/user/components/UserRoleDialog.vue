@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getUser, replaceUserRoles, type UserDetail, type UserRecord } from '@/api/modules/user'
 import type { SelectOption } from '@/api/modules/option'

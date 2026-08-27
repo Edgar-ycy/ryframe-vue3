@@ -1,4 +1,3 @@
-import { requestMultipartOperation, requestOperation } from '@/api/operationRequest'
 import {
   delete_auth_sessions_by_sid,
   get_auth_captcha_config,
@@ -15,7 +14,7 @@ import {
   put_auth_profile,
   put_auth_profile_avatar,
   put_auth_profile_password,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/core'
 import type {
   ApiSchema,
   OperationData,
@@ -38,7 +37,7 @@ export type RevokeOtherSessionsResult = OperationData<'post_auth_sessions_revoke
 
 /** 登录 */
 export function getCsrfChallenge() {
-  return requestOperation(get_auth_csrf, {
+  return get_auth_csrf({
     transport: 'raw',
     skipAuthRefresh: true,
     skipTenantHeader: true,
@@ -46,7 +45,7 @@ export function getCsrfChallenge() {
 }
 
 export function login(data: LoginParams, tenantId: string, csrfToken: string) {
-  return requestOperation(post_auth_login, {
+  return post_auth_login({
     data,
     headers: {
       'X-Tenant-Id': tenantId,
@@ -58,7 +57,7 @@ export function login(data: LoginParams, tenantId: string, csrfToken: string) {
 
 /** 登出 */
 export function logout(csrfToken: string, accessToken?: string) {
-  return requestOperation(post_auth_logout, {
+  return post_auth_logout({
     headers: {
       'X-CSRF-Token': csrfToken,
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -71,7 +70,7 @@ export function logout(csrfToken: string, accessToken?: string) {
 
 /** 刷新令牌 */
 export function refreshToken(csrfToken: string) {
-  return requestOperation(post_auth_refresh, {
+  return post_auth_refresh({
     headers: { 'X-CSRF-Token': csrfToken },
     transport: 'raw',
     skipAuthRefresh: true,
@@ -81,7 +80,7 @@ export function refreshToken(csrfToken: string) {
 
 /** 完成密码重置 */
 export function completePasswordReset(data: CompletePasswordResetParams) {
-  return requestOperation(post_auth_password_reset_complete, {
+  return post_auth_password_reset_complete({
     data,
     headers: { 'X-Tenant-Id': data.tenant_id },
     skipAuthRefresh: true,
@@ -92,7 +91,7 @@ export function completePasswordReset(data: CompletePasswordResetParams) {
 
 /** 生成指定租户的验证码 */
 export function getCaptcha(tenantId: string, params?: OperationQuery<'get_auth_captcha_generate'>) {
-  return requestOperation(get_auth_captcha_generate, {
+  return get_auth_captcha_generate({
     params,
     headers: { 'X-Tenant-Id': tenantId },
     skipTenantHeader: true,
@@ -101,12 +100,12 @@ export function getCaptcha(tenantId: string, params?: OperationQuery<'get_auth_c
 
 /** 校验验证码 */
 export function verifyCaptcha(data: OperationJsonBody<'post_auth_captcha_verify'>) {
-  return requestOperation(post_auth_captcha_verify, { data })
+  return post_auth_captcha_verify({ data })
 }
 
 /** 查询指定租户的验证码开关状态（公开接口） */
 export function getCaptchaConfig(tenantId: string) {
-  return requestOperation(get_auth_captcha_config, {
+  return get_auth_captcha_config({
     headers: { 'X-Tenant-Id': tenantId },
     skipTenantHeader: true,
   })
@@ -116,22 +115,22 @@ export function getCaptchaConfig(tenantId: string) {
 
 /** 获取个人信息 */
 export function getProfile(signal?: AbortSignal) {
-  return requestOperation(get_auth_profile, { signal })
+  return get_auth_profile({ signal })
 }
 
 /** 更新个人信息 */
 export function updateProfile(data: ProfileUpdateParams) {
-  return requestOperation(put_auth_profile, { data })
+  return put_auth_profile({ data })
 }
 
 /** 修改密码 */
 export function changePassword(data: PasswordChangeParams) {
-  return requestOperation(put_auth_profile_password, { data })
+  return put_auth_profile_password({ data })
 }
 
 /** 更新头像（FormData 直接传文件，不设 Content-Type，浏览器自动加 boundary；后端返回 avatar_url） */
 export function updateAvatar(data: FormData) {
-  return requestMultipartOperation(put_auth_profile_avatar, {
+  return put_auth_profile_avatar({
     data,
     timeout: 120000,
   })
@@ -141,7 +140,7 @@ export function updateAvatar(data: FormData) {
 
 /** 获取当前租户、当前用户仍然有效的登录设备。 */
 export function getAuthSessions(signal?: AbortSignal) {
-  return requestOperation(get_auth_sessions, { signal })
+  return get_auth_sessions({ signal })
 }
 
 /** 精确撤销当前用户的一个登录设备；CSRF 挑战由调用方按当前会话取得。 */
@@ -150,7 +149,7 @@ export function revokeAuthSession(
   csrfToken: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation(delete_auth_sessions_by_sid, {
+  return delete_auth_sessions_by_sid({
     path: { sid },
     headers: { 'X-CSRF-Token': csrfToken },
     signal,
@@ -159,7 +158,7 @@ export function revokeAuthSession(
 
 /** 撤销当前用户除当前设备之外的全部登录会话。 */
 export function revokeOtherAuthSessions(csrfToken: string, signal?: AbortSignal) {
-  return requestOperation(post_auth_sessions_revoke_others, {
+  return post_auth_sessions_revoke_others({
     data: {},
     headers: { 'X-CSRF-Token': csrfToken },
     signal,

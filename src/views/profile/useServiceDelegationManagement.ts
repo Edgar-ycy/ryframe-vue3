@@ -10,7 +10,7 @@ import { HttpError, requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { queryClient, serverStateResourcePrefixForIdentity } from '@/shared/query/client'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 import { useUserStore } from '@/stores/user'
 import {
   PROFILE_SERVICE_DELEGATIONS_RESOURCE,

@@ -1,3 +1,4 @@
+import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
   createDept,

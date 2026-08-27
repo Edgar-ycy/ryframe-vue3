@@ -1,5 +1,5 @@
 import type { Directive } from 'vue'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 import { canExecuteFeaturePermission } from '@/app/tenant-context/businessDataAccess'
 import { useUserStore } from '@/stores/user'
 import { hasPermission, type PermissionValue } from '@/utils/permission'

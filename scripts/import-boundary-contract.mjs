@@ -191,10 +191,99 @@ export function resolveInternalSpecifier(source, specifier, modulePaths) {
   return candidates.find((candidate) => modulePaths.has(candidate))
 }
 
+export function externalPackageTarget(specifier) {
+  if (specifier.startsWith('.') || specifier.startsWith('@/') || specifier.startsWith('/')) {
+    return undefined
+  }
+  const [scope, name] = specifier.split('/')
+  if (!scope) return undefined
+  return `package:${scope.startsWith('@') && name ? `${scope}/${name}` : scope}`
+}
+
+export function resolveImportTarget(source, specifier, modulePaths) {
+  return (
+    resolveInternalSpecifier(source, specifier, modulePaths) ?? externalPackageTarget(specifier)
+  )
+}
+
+export function containsDefineStoreCall(source, fileName = 'module.ts') {
+  const scriptKind = fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, scriptKind)
+  const bindings = new Set(['defineStore'])
+
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.moduleSpecifier.text !== 'pinia'
+    ) {
+      continue
+    }
+    const namedBindings = statement.importClause?.namedBindings
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) continue
+    for (const element of namedBindings.elements) {
+      if ((element.propertyName?.text ?? element.name.text) === 'defineStore') {
+        bindings.add(element.name.text)
+      }
+    }
+  }
+
+  let found = false
+  function visit(node) {
+    if (
+      ts.isCallExpression(node) &&
+      ((ts.isIdentifier(node.expression) && bindings.has(node.expression.text)) ||
+        (ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === 'defineStore'))
+    ) {
+      found = true
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return found
+}
+
+function storeDomain(path) {
+  const normalized = normalizeModulePath(path)
+  if (!normalized.startsWith('src/stores/')) return undefined
+  return normalized
+    .slice('src/stores/'.length)
+    .split('/')[0]
+    .replace(/\.[^.]+$/u, '')
+}
+
+function externalBoundaryViolation(source, sourceArea, target, kind) {
+  if (!target.startsWith('package:')) return undefined
+  const packageName = target.slice('package:'.length)
+  if (sourceArea === 'stores' && kind !== 'type' && !['pinia', 'vue'].includes(packageName)) {
+    return `stores 不得依赖运行时包 ${packageName}`
+  }
+  if (sourceArea === 'api-modules') {
+    return `api-modules 不得直接依赖外部包 ${packageName}`
+  }
+  if (source.startsWith('src/shared/http/') && packageName !== 'axios') {
+    return `shared/http 不得依赖外部包 ${packageName}`
+  }
+  return undefined
+}
+
 export function boundaryViolation(edge) {
   const sourceArea = moduleArea(edge.source)
+  const externalViolation = externalBoundaryViolation(
+    edge.source,
+    sourceArea,
+    edge.target,
+    edge.kind,
+  )
+  if (externalViolation) return externalViolation
+  if (edge.target.startsWith('package:')) return undefined
   const targetArea = moduleArea(edge.target)
   if (sourceArea === 'generated') return undefined
+  if (edge.kind !== 'type' && edge.target === 'src/api/operationRequest.ts') {
+    return 'operationRequest 只能由生成 caller 调用'
+  }
   if (sourceArea === 'features' && targetArea === 'views' && edge.kind === 'dynamic') {
     return undefined
   }
@@ -207,6 +296,14 @@ export function boundaryViolation(edge) {
     edge.target.startsWith('src/shared/query/')
   ) {
     return 'stores 不得操作 QueryClient'
+  }
+  if (
+    sourceArea === 'stores' &&
+    edge.kind !== 'type' &&
+    targetArea === 'stores' &&
+    storeDomain(edge.source) !== storeDomain(edge.target)
+  ) {
+    return 'stores 不得跨 Store 编排'
   }
   if (
     edge.kind === 'type' &&
@@ -228,7 +325,9 @@ export function edgeKey(edge, reason) {
 export function stronglyConnectedComponents(modules, edges) {
   const runtimeEdges = edges.filter((edge) => edge.kind === 'runtime')
   const adjacency = new Map([...modules].map((module) => [module, []]))
-  for (const edge of runtimeEdges) adjacency.get(edge.source)?.push(edge.target)
+  for (const edge of runtimeEdges) {
+    if (modules.has(edge.target)) adjacency.get(edge.source)?.push(edge.target)
+  }
 
   let nextIndex = 0
   const indices = new Map()

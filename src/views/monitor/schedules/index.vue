@@ -156,7 +156,7 @@
                 icon="Edit"
                 :loading="editingId === row.id"
                 :disabled="hasPendingWrite"
-                @click="openEdit(row)"
+                @click="editScheduleById(row.id)"
                 >{{ t('monitor.schedules.edit') }}</el-button
               >
               <el-button
@@ -165,7 +165,7 @@
                 link
                 :loading="statusPendingId === row.id"
                 :disabled="hasPendingWrite"
-                @click="handleStatus(row, !row.enabled)"
+                @click="changeScheduleStatus(row.id, !row.enabled)"
                 >{{
                   row.enabled ? t('monitor.schedules.disable') : t('monitor.schedules.enable')
                 }}</el-button
@@ -177,7 +177,7 @@
                 icon="VideoPlay"
                 :loading="runPendingId === row.id"
                 :disabled="hasPendingWrite"
-                @click="handleRun(row)"
+                @click="runScheduleById(row.id)"
                 >{{ t('monitor.schedules.run') }}</el-button
               >
               <el-button
@@ -185,7 +185,7 @@
                 link
                 icon="Clock"
                 :disabled="hasPendingWrite"
-                @click="openHistory(row)"
+                @click="showScheduleHistory(row.id)"
                 >{{ t('monitor.schedules.history') }}</el-button
               >
               <el-button
@@ -195,7 +195,7 @@
                 icon="Delete"
                 :loading="removePendingId === row.id"
                 :disabled="hasPendingWrite"
-                @click="handleRemove(row)"
+                @click="removeScheduleById(row.id)"
                 >{{ t('monitor.schedules.delete') }}</el-button
               >
             </template>
@@ -228,6 +228,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { JobScheduleRecord } from '@/api/modules/monitor'
 import { formatOptionalLocalizedDate } from '@/i18n'
 import { usePermission } from '@/hooks/usePermission'
 import ScheduleFormDialog from './ScheduleFormDialog.vue'
@@ -269,6 +270,35 @@ const {
   targets,
   targetsError,
 } = useScheduleManagement(t)
+
+function findSchedule(id: string): JobScheduleRecord | undefined {
+  return schedules.value?.items.find((schedule) => schedule.id === id)
+}
+
+async function editScheduleById(id: string): Promise<void> {
+  const schedule = findSchedule(id)
+  if (schedule) await openEdit(schedule)
+}
+
+async function changeScheduleStatus(id: string, enabled: boolean): Promise<void> {
+  const schedule = findSchedule(id)
+  if (schedule) await handleStatus(schedule, enabled)
+}
+
+async function runScheduleById(id: string): Promise<void> {
+  const schedule = findSchedule(id)
+  if (schedule) await handleRun(schedule)
+}
+
+function showScheduleHistory(id: string): void {
+  const schedule = findSchedule(id)
+  if (schedule) openHistory(schedule)
+}
+
+async function removeScheduleById(id: string): Promise<void> {
+  const schedule = findSchedule(id)
+  if (schedule) await handleRemove(schedule)
+}
 </script>
 
 <style scoped lang="scss">

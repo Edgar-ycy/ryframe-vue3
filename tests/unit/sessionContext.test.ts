@@ -22,7 +22,7 @@ import { HttpError } from '@/shared/http/client'
 import { deactivateServerStateScope, useServerStateScope } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
-import { useTenantContextStore } from '@/app/tenant-context/store'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 import { sessionContext } from './sessionContextFixtures'
 

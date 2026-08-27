@@ -107,7 +107,7 @@
           :model-value="weekdays"
           :disabled="disabled"
           class="cron-builder__checks"
-          @update:model-value="updateWeekdays"
+          @update:model-value="handleWeekdaysChange"
         >
           <el-checkbox v-for="day in weekdayOptions" :key="day" :value="day">
             {{ weekdayLabel(day) }}
@@ -321,6 +321,10 @@ const {
   translate: t,
   emitChange: (state) => emit('change', state),
 })
+
+function handleWeekdaysChange(values: Array<string | number>): void {
+  updateWeekdays(values.map(String))
+}
 
 defineExpose({ loadExpression, applyTemplate })
 </script>

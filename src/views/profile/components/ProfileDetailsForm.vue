@@ -44,6 +44,7 @@
 </template>
 
 <script setup lang="ts">
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { type ProfileInfo, type ProfileUpdateParams } from '@/api/modules/auth'
 import { useProfileDetailsMutation } from '../useProfileMutations'

@@ -1,5 +1,4 @@
 import type { PermissionCode } from '@/api/generated/permissions'
-import type { MessageCatalogLoader } from '@/i18n/catalog'
 import type { RouteComponentLoader } from '@/shared/navigation/routeComponent'
 
 export type CapabilityCode = string
@@ -16,7 +15,6 @@ export interface FeatureManifest {
   permissionCode: PermissionCode
   path: string
   page: RouteComponentLoader
-  catalogs?: readonly MessageCatalogLoader[]
   allowedVariants: readonly string[]
   planConfigEditor: RouteComponentLoader
   /** 业务数据不可写期间应禁用的写权限；系统管理权限不得放入此集合。 */

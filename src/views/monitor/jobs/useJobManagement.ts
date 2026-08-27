@@ -1,3 +1,4 @@
+import { ElMessage } from 'element-plus'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import {
   getBackgroundJobStats,

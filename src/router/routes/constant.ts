@@ -1,27 +1,23 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { ROOT_LAYOUT_ROUTE_NAME } from '@/router/layout'
 import { withRouteComponentName } from '@/shared/navigation/namedRouteComponent'
-import { withMessageCatalogs } from '@/i18n/lazyCatalog'
+import { withRouteMessageCatalogs } from '@/i18n/lazyCatalog'
 
-const dashboardPage = withMessageCatalogs(
-  () => import('@/views/index.vue'),
-  [() => import('@/i18n/catalog/platform-operations').then((module) => module.messageCatalog)],
-)
+const dashboardPage = withRouteMessageCatalogs('home', () => import('@/views/index.vue'))
 
-const profilePage = withMessageCatalogs(
+const profilePage = withRouteMessageCatalogs(
+  'account.profile',
   () => import('@/views/profile/index.vue'),
-  [
-    () => import('@/i18n/catalog/profile-sessions').then((module) => module.messageCatalog),
-    () =>
-      import('@/i18n/catalog/profile-service-delegations').then((module) => module.messageCatalog),
-  ],
 )
 
 export const constantRoutes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: withRouteComponentName('Login', () => import('@/views/login/index.vue')),
+    component: withRouteComponentName(
+      'Login',
+      withRouteMessageCatalogs('account.login', () => import('@/views/login/index.vue')),
+    ),
     meta: { title: '登录', hidden: true },
   },
   {
@@ -29,7 +25,10 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: 'ResetPassword',
     component: withRouteComponentName(
       'ResetPassword',
-      () => import('@/views/reset-password/index.vue'),
+      withRouteMessageCatalogs(
+        'account.reset-password',
+        () => import('@/views/reset-password/index.vue'),
+      ),
     ),
     meta: { title: '重置密码', hidden: true },
   },
@@ -56,7 +55,10 @@ export const constantRoutes: RouteRecordRaw[] = [
         name: 'ProfileExports',
         component: withRouteComponentName(
           'ProfileExports',
-          () => import('@/views/profile/exports/index.vue'),
+          withRouteMessageCatalogs(
+            'account.exports',
+            () => import('@/views/profile/exports/index.vue'),
+          ),
         ),
         meta: { title: '我的导出', icon: 'Download', hidden: true },
       },
@@ -71,25 +73,37 @@ export const constantRoutes: RouteRecordRaw[] = [
   {
     path: '/404',
     name: '404',
-    component: withRouteComponentName('404', () => import('@/views/error/404.vue')),
+    component: withRouteComponentName(
+      '404',
+      withRouteMessageCatalogs('account.error', () => import('@/views/error/404.vue')),
+    ),
     meta: { title: '404', hidden: true },
   },
   {
     path: '/401',
     name: '401',
-    component: withRouteComponentName('401', () => import('@/views/error/401.vue')),
+    component: withRouteComponentName(
+      '401',
+      withRouteMessageCatalogs('account.error', () => import('@/views/error/401.vue')),
+    ),
     meta: { title: '无权限', hidden: true },
   },
   {
     path: '/403',
     name: '403',
-    component: withRouteComponentName('403', () => import('@/views/error/403.vue')),
+    component: withRouteComponentName(
+      '403',
+      withRouteMessageCatalogs('account.error', () => import('@/views/error/403.vue')),
+    ),
     meta: { title: '禁止访问', hidden: true },
   },
   {
     path: '/503',
     name: '503',
-    component: withRouteComponentName('503', () => import('@/views/error/503.vue')),
+    component: withRouteComponentName(
+      '503',
+      withRouteMessageCatalogs('account.error', () => import('@/views/error/503.vue')),
+    ),
     meta: { title: '服务暂不可用', hidden: true },
   },
   {
@@ -97,7 +111,10 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: 'FeatureUnavailable',
     component: withRouteComponentName(
       'FeatureUnavailable',
-      () => import('@/views/error/feature-unavailable.vue'),
+      withRouteMessageCatalogs(
+        'account.error',
+        () => import('@/views/error/feature-unavailable.vue'),
+      ),
     ),
     meta: { title: '功能不可用', hidden: true },
   },

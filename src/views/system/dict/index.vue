@@ -104,7 +104,7 @@
                   link
                   icon="Edit"
                   size="small"
-                  @click.stop="handleEditType(row)"
+                  @click.stop="editTypeById(row.id)"
                 >
                   {{ t('system.common.edit') }}
                 </el-button>
@@ -115,7 +115,7 @@
                   icon="Delete"
                   size="small"
                   :loading="deletingTypeId === row.id"
-                  @click.stop="handleDeleteType(row)"
+                  @click.stop="deleteTypeById(row.id)"
                 >
                   {{ t('system.common.delete') }}
                 </el-button>
@@ -183,7 +183,7 @@
                   link
                   icon="Edit"
                   size="small"
-                  @click="handleEditData(row)"
+                  @click="editDataById(row.id)"
                 >
                   {{ t('system.common.edit') }}
                 </el-button>
@@ -194,7 +194,7 @@
                   icon="Delete"
                   size="small"
                   :loading="deletingDataId === row.id"
-                  @click="handleDeleteData(row)"
+                  @click="deleteDataById(row.id)"
                 >
                   {{ t('system.common.delete') }}
                 </el-button>
@@ -218,6 +218,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { DictDataRecord, DictTypeRecord } from '@/api/modules/dict'
+import type { Id } from '@/shared/http/types'
 import DictDataDialog from './components/DictDataDialog.vue'
 import DictTypeDialog from './components/DictTypeDialog.vue'
 import { useDictManagement } from './composables/useDictManagement'
@@ -253,6 +255,34 @@ const {
   typePage,
   typePageResponse,
 } = useDictManagement()
+
+function findType(id: Id): DictTypeRecord | undefined {
+  return typePageResponse.value?.items.find((item) => item.id === id)
+}
+
+function findData(id: Id): DictDataRecord | undefined {
+  return dataList.value?.find((item) => item.id === id)
+}
+
+function editTypeById(id: Id): void {
+  const item = findType(id)
+  if (item) handleEditType(item)
+}
+
+async function deleteTypeById(id: Id): Promise<void> {
+  const item = findType(id)
+  if (item) await handleDeleteType(item)
+}
+
+function editDataById(id: Id): void {
+  const item = findData(id)
+  if (item) handleEditData(item)
+}
+
+async function deleteDataById(id: Id): Promise<void> {
+  const item = findData(id)
+  if (item) await handleDeleteData(item)
+}
 </script>
 
 <style scoped>

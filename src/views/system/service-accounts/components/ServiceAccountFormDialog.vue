@@ -40,7 +40,7 @@
       <el-form-item :label="t('serviceAccounts.department')" prop="dept_id">
         <el-tree-select
           v-model="form.dept_id"
-          :data="departmentTree"
+          :data="[...departmentTree]"
           :props="departmentProps"
           value-key="id"
           check-strictly
@@ -108,7 +108,7 @@ const emit = defineEmits<{
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const formRef = ref<FormInstance>()
-const departmentProps = { label: 'name', children: 'children', value: 'id' } as const
+const departmentProps = { label: 'name', children: 'children' } as const
 
 function emptyForm(): ServiceAccountFormState {
   return {

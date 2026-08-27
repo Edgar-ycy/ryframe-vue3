@@ -42,7 +42,7 @@
         </el-table-column>
         <el-table-column :label="t('system.userImport.progress')" min-width="190">
           <template #default="{ row }">
-            <el-progress :percentage="progress(row)" :status="progressStatus(row.status)" />
+            <el-progress :percentage="progressById(row.id)" :status="progressStatus(row.status)" />
             <small>{{ row.processed_rows }} / {{ row.total_rows || '—' }}</small>
           </template>
         </el-table-column>
@@ -66,7 +66,7 @@
         </el-table-column>
         <el-table-column :label="t('system.userImport.operation')" min-width="230" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDetails(row)">{{
+            <el-button type="primary" link @click="openDetailsById(row.id)">{{
               t('system.userImport.details')
             }}</el-button>
             <el-button
@@ -75,7 +75,7 @@
               link
               :loading="isCancelling(row.id)"
               :disabled="cancelMutation.pending.value"
-              @click="handleCancel(row)"
+              @click="cancelImportById(row.id)"
             >
               {{ t('system.userImport.cancel') }}
             </el-button>
@@ -84,7 +84,7 @@
               type="success"
               link
               :loading="reportLoadingId === row.id"
-              @click="downloadReport(row)"
+              @click="downloadReportById(row.id)"
             >
               {{ t('system.userImport.report') }}
             </el-button>
@@ -184,6 +184,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { onActivated, onDeactivated, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -305,11 +306,6 @@ async function refreshImports(): Promise<void> {
   schedulePolling()
 }
 
-function openDetails(job: UserImportJob): void {
-  selectedId.value = job.id
-  rowQuery.value = { page: 1, page_size: rowQuery.value.page_size }
-}
-
 function currentJob(): UserImportJob | undefined {
   return (
     detailQuery.data.value ??
@@ -317,9 +313,18 @@ function currentJob(): UserImportJob | undefined {
   )
 }
 
-function progress(job: UserImportJob): number {
+function progressById(id: string): number {
+  const job = importsQuery.data.value?.items.find((item) => item.id === id)
+  if (!job) return 0
   if (job.total_rows <= 0) return isActive(job.status) ? 0 : 100
   return Math.min(100, Math.round((job.processed_rows / job.total_rows) * 100))
+}
+
+function openDetailsById(id: string): void {
+  const job = importsQuery.data.value?.items.find((item) => item.id === id)
+  if (!job) return
+  selectedId.value = job.id
+  rowQuery.value = { page: 1, page_size: rowQuery.value.page_size }
 }
 
 function progressStatus(status: string): '' | 'exception' | 'success' | 'warning' {
@@ -360,8 +365,9 @@ function isCancelling(id: string): boolean {
   return cancelMutation.pending.value && cancelMutation.variables.value?.id === id
 }
 
-async function handleCancel(job: UserImportJob): Promise<void> {
-  if (cancelMutation.pending.value) return
+async function cancelImportById(id: string): Promise<void> {
+  const job = importsQuery.data.value?.items.find((item) => item.id === id)
+  if (!job || cancelMutation.pending.value) return
   const confirmed = await confirmAction(
     t('system.userImport.cancelConfirm', { name: job.source_name }),
     t('system.userImport.cancelConfirmTitle'),
@@ -372,8 +378,9 @@ async function handleCancel(job: UserImportJob): Promise<void> {
   await refreshImports()
 }
 
-async function downloadReport(job: UserImportJob): Promise<void> {
-  if (reportLoadingId.value) return
+async function downloadReportById(id: string): Promise<void> {
+  const job = importsQuery.data.value?.items.find((item) => item.id === id)
+  if (!job || reportLoadingId.value) return
   reportLoadingId.value = job.id
   try {
     const blob = await downloadUserImportReport(job.id)

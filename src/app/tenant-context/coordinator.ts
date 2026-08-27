@@ -14,8 +14,7 @@ import { HttpError, requireOperationData } from '@/shared/http/client'
 import { deactivateServerStateScope } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
-import { capabilityCodes } from './capability'
-import { useTenantContextStore } from './store'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 let loadGeneration = 0
 let loadingIdentity = ''
@@ -87,7 +86,7 @@ export function applyTenantSessionContext(
       kind: 'invalid_response',
     })
   }
-  const codes = capabilityCodes(context.capabilities)
+  const codes = context.capabilities.map((capability) => capability.code)
   if (new Set(codes).size !== codes.length) {
     throw new HttpError('会话上下文包含重复能力码', { kind: 'invalid_response' })
   }

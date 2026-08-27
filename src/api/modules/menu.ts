@@ -1,4 +1,3 @@
-import { requestOperation } from '@/api/operationRequest'
 import {
   delete_system_menus_by_id,
   get_system_menus,
@@ -6,7 +5,7 @@ import {
   get_system_menus_tree,
   post_system_menus,
   put_system_menus_by_id,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/system'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import type { Id } from '@/shared/http/types'
 
@@ -22,25 +21,25 @@ export type MenuCreateInput = OperationJsonBody<'post_system_menus'>
 export type MenuUpdateInput = OperationJsonBody<'put_system_menus_by_id'>
 
 export function getMenuTree(signal?: AbortSignal) {
-  return requestOperation(get_system_menus_tree, { signal })
+  return get_system_menus_tree({ signal })
 }
 
 export function listMenu(params?: MenuQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_menus, { params, signal })
+  return get_system_menus({ params, signal })
 }
 
 export function getMenu(id: Id, signal?: AbortSignal) {
-  return requestOperation(get_system_menus_by_id, { path: { id }, signal })
+  return get_system_menus_by_id({ path: { id }, signal })
 }
 
 export function createMenu(data: MenuCreateInput) {
-  return requestOperation(post_system_menus, { data })
+  return post_system_menus({ data })
 }
 
 export function updateMenu(id: Id, data: MenuUpdateInput) {
-  return requestOperation(put_system_menus_by_id, { path: { id }, data })
+  return put_system_menus_by_id({ path: { id }, data })
 }
 
 export function deleteMenu(id: Id) {
-  return requestOperation(delete_system_menus_by_id, { path: { id } })
+  return delete_system_menus_by_id({ path: { id } })
 }

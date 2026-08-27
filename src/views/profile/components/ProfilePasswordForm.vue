@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import type { FormInstance, FormRules } from 'element-plus'
 import type { FormItemRule } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { PASSWORD_POLICY } from '@/shared/security/passwordPolicy'

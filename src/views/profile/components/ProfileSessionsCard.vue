@@ -61,7 +61,7 @@
       <template v-if="devices.length > 0">
         <div class="sessions-table" role="region" :aria-label="t('profile.sessions.title')">
           <div class="sessions-table__inner">
-            <el-table :data="devices" row-key="key">
+            <el-table :data="[...devices]" row-key="key">
               <el-table-column :label="t('profile.sessions.device')" min-width="200">
                 <template #default="{ row }">
                   <div class="device-name">
@@ -106,7 +106,7 @@
                     :disabled="actionsPending()"
                     :title="t('profile.sessions.revokeDeviceLabel', { device: row.device })"
                     :aria-label="t('profile.sessions.revokeDeviceLabel', { device: row.device })"
-                    @click="emit('revoke', row)"
+                    @click="revokeDevice(row.key)"
                   >
                     {{ t('profile.sessions.revoke') }}
                   </el-button>
@@ -197,6 +197,11 @@ const { t } = useI18n()
 
 function actionsPending(): boolean {
   return props.refreshing || Boolean(props.pendingDeviceKey) || props.revokeOthersPending
+}
+
+function revokeDevice(key: string): void {
+  const device = props.devices.find((item) => item.key === key)
+  if (device) emit('revoke', device)
 }
 </script>
 

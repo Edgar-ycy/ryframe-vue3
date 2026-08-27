@@ -20,7 +20,7 @@
         <el-tree-select
           v-model="deptIds"
           :data="deptTree"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.role.selectDepartment')"
           multiple
           check-strictly
@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   getRole,

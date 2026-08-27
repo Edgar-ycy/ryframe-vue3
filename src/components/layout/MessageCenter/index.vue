@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { Bell } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { MessageInboxQuery, MessageRecord } from '@/api/modules/messages'

@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { Camera, UserFilled } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
 import { useI18n } from 'vue-i18n'

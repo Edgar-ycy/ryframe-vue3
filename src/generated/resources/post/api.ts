@@ -4,14 +4,13 @@
 // source-sha256: dedbe510d8f1627ba6042a31069ac37c86e72fb4fb91826adbfb3a1aff97179e
 // 请勿手工修改；修改资源清单后重新生成。
 
-import { requestOperation } from '@/api/operationRequest'
 import {
   delete_system_posts_by_id,
   get_system_posts,
   get_system_posts_by_id,
   post_system_posts,
   put_system_posts_by_id,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/system'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import type { Id } from '@/shared/http/types'
 
@@ -21,21 +20,21 @@ export type PostCreateInput = OperationJsonBody<'post_system_posts'>
 export type PostUpdateInput = OperationJsonBody<'put_system_posts_by_id'>
 
 export function listPost(params: PostQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_posts, { params, signal })
+  return get_system_posts({ params, signal })
 }
 
 export function getPost(id: Id, signal?: AbortSignal) {
-  return requestOperation(get_system_posts_by_id, { path: { id }, signal })
+  return get_system_posts_by_id({ path: { id }, signal })
 }
 
 export function createPost(data: PostCreateInput) {
-  return requestOperation(post_system_posts, { data })
+  return post_system_posts({ data })
 }
 
 export function updatePost(id: Id, data: PostUpdateInput) {
-  return requestOperation(put_system_posts_by_id, { path: { id }, data })
+  return put_system_posts_by_id({ path: { id }, data })
 }
 
 export function deletePost(id: Id) {
-  return requestOperation(delete_system_posts_by_id, { path: { id } })
+  return delete_system_posts_by_id({ path: { id } })
 }

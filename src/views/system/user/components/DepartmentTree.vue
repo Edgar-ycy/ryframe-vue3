@@ -55,7 +55,7 @@ import { Folder, FolderOpened, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
-import type { TreeInstance } from 'element-plus'
+import type { TreeInstance, TreeNodeData } from 'element-plus'
 
 const { t } = useI18n()
 
@@ -86,8 +86,8 @@ function handleFilterChange(value: string): void {
   treeRef.value?.filter(value)
 }
 
-function filterNode(value: string, node: DepartmentOption): boolean {
-  return !value || node.name.includes(value)
+function filterNode(value: string, node: TreeNodeData): boolean {
+  return !value || (typeof node.name === 'string' && node.name.includes(value))
 }
 
 function selectNode(node: DepartmentOption): void {

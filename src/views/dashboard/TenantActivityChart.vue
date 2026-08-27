@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { EChartsCoreOption } from 'echarts/core'

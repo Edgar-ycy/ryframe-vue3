@@ -16,7 +16,7 @@
 <script setup lang="ts">
 import type { AlertProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 const { t } = useI18n()
 const tenantContext = useTenantContextStore()

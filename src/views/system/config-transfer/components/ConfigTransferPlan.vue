@@ -162,7 +162,9 @@
             min-width="220"
             show-overflow-tooltip
           >
-            <template #default="{ row }">{{ detailLabel(row) }}</template>
+            <template #default="{ row }">{{
+              detailLabelByKey(row.resource_type, row.stable_key)
+            }}</template>
           </el-table-column>
         </el-table>
       </div>
@@ -230,7 +232,7 @@ import {
   tenantConfigResourceLabel,
 } from '../presentation'
 
-defineProps<{
+const props = defineProps<{
   transfer?: TenantConfigTransfer
   items: TenantConfigTransferItem[]
   itemsLoading: boolean
@@ -322,6 +324,13 @@ function detailLabel(item: TenantConfigTransferItem): string {
     route_catalog_mismatch: 'detailRouteCatalogMismatch',
   }[item.detail_code]
   return t(`tenantConfigTransfer.${suffix ?? 'detailUnknown'}`)
+}
+
+function detailLabelByKey(resourceType: string, stableKey: string): string {
+  const item = props.items.find(
+    (candidate) => candidate.resource_type === resourceType && candidate.stable_key === stableKey,
+  )
+  return item ? detailLabel(item) : '—'
 }
 </script>
 

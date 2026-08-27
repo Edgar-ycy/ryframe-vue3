@@ -105,43 +105,43 @@
         >
           <template #default="{ row }">
             <el-button
-              v-if="!isProtectedRole(row)"
+              v-if="!isProtectedRoleById(row.id)"
               v-perm="'system:role:edit'"
               type="primary"
               link
               icon="Edit"
-              @click="handleEdit(row)"
+              @click="editRoleById(row.id)"
             >
               {{ t('system.common.edit') }}
             </el-button>
             <el-button
-              v-if="!isProtectedRole(row)"
+              v-if="!isProtectedRoleById(row.id)"
               v-perm="'system:role:edit'"
               type="warning"
               link
               icon="Key"
-              @click="handleAssignPermissions(row)"
+              @click="assignPermissionsById(row.id)"
             >
               {{ t('system.role.permission') }}
             </el-button>
             <el-button
-              v-if="!isProtectedRole(row)"
+              v-if="!isProtectedRoleById(row.id)"
               v-perm="'system:role:edit'"
               type="success"
               link
               icon="DataAnalysis"
-              @click="handleDataScope(row)"
+              @click="editDataScopeById(row.id)"
             >
               {{ t('system.role.dataPermission') }}
             </el-button>
             <el-button
-              v-if="!isProtectedRole(row)"
+              v-if="!isProtectedRoleById(row.id)"
               v-perm="'system:role:remove'"
               type="danger"
               link
               icon="Delete"
               :loading="deletingId === row.id"
-              @click="handleDelete(row)"
+              @click="deleteRoleById(row.id)"
             >
               {{ t('system.common.delete') }}
             </el-button>
@@ -182,7 +182,9 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { RoleRecord } from '@/api/modules/role'
 import { formatLocalizedDate } from '@/i18n'
+import type { Id } from '@/shared/http/types'
 import RoleDataScopeDialog from './components/RoleDataScopeDialog.vue'
 import RoleFormDialog from './components/RoleFormDialog.vue'
 import RolePermissionDialog from './components/RolePermissionDialog.vue'
@@ -217,4 +219,33 @@ const {
   roleDialogVisible,
   tableResponse,
 } = useRoleManagement()
+
+function findRole(id: Id): RoleRecord | undefined {
+  return tableResponse.value?.items.find((role) => role.id === id)
+}
+
+function isProtectedRoleById(id: Id): boolean {
+  const role = findRole(id)
+  return role ? isProtectedRole(role) : true
+}
+
+function editRoleById(id: Id): void {
+  const role = findRole(id)
+  if (role) handleEdit(role)
+}
+
+function assignPermissionsById(id: Id): void {
+  const role = findRole(id)
+  if (role) handleAssignPermissions(role)
+}
+
+function editDataScopeById(id: Id): void {
+  const role = findRole(id)
+  if (role) handleDataScope(role)
+}
+
+async function deleteRoleById(id: Id): Promise<void> {
+  const role = findRole(id)
+  if (role) await handleDelete(role)
+}
 </script>

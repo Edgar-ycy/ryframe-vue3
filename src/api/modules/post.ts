@@ -1,5 +1,4 @@
-import { requestOperation } from '@/api/operationRequest'
-import { post_system_posts_exports } from '@/api/generated/operations'
+import { post_system_posts_exports } from '@/api/generated/operations/system'
 import type { OperationJsonBody } from '@/api/contract'
 import { stripPagination } from '@/shared/http/types'
 
@@ -11,7 +10,7 @@ export function exportPost(
   signal?: AbortSignal,
   confirmAll = false,
 ) {
-  return requestOperation(post_system_posts_exports, {
+  return post_system_posts_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,

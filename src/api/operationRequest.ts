@@ -2,6 +2,7 @@ import type { AxiosRequestConfig } from 'axios'
 
 import type {
   ApiOperation,
+  OperationId,
   OperationData,
   OperationJsonBody,
   OperationJsonResponse,
@@ -9,10 +10,15 @@ import type {
   OperationQuery,
   OperationTextResponse,
 } from './contract'
-import type { OperationDescriptor, OperationId } from './generated/operations'
 import request, { rawRequest, requestBlob, requestText } from '@/shared/http/client'
 
-type JsonOperationId = {
+export type OperationDescriptor<Name extends OperationId = OperationId> = Readonly<{
+  operationId: Name
+  method: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'trace'
+  path: string
+}>
+
+type JsonResponseOperationId = {
   [Name in OperationId]: [OperationJsonResponse<Name>] extends [never] ? never : Name
 }[OperationId]
 
@@ -24,9 +30,13 @@ type MultipartOperationId = {
     : never
 }[OperationId]
 
+type JsonOperationId = Exclude<JsonResponseOperationId, MultipartOperationId>
+
 type TextOperationId = {
   [Name in OperationId]: [OperationTextResponse<Name>] extends [never] ? never : Name
 }[OperationId]
+
+type BlobOperationId = Exclude<OperationId, JsonResponseOperationId | TextOperationId>
 
 type RequestTransportOptions = Omit<
   AxiosRequestConfig,
@@ -59,13 +69,29 @@ export type OperationRequestOptions<Name extends JsonOperationId> = JsonRequestT
 export type MultipartOperationRequestOptions<Name extends MultipartOperationId> =
   RequestTransportOptions & PathOptions<Name> & QueryOptions<Name> & { data: FormData }
 
-export type BlobOperationRequestOptions<Name extends OperationId> = RequestTransportOptions &
+export type BlobOperationRequestOptions<Name extends BlobOperationId> = RequestTransportOptions &
   PathOptions<Name> &
   QueryOptions<Name>
 
 export type TextOperationRequestOptions<Name extends TextOperationId> = RequestTransportOptions &
   PathOptions<Name> &
   QueryOptions<Name>
+
+export type JsonOperationCaller<Name extends JsonOperationId> = (
+  options: OperationRequestOptions<Name>,
+) => Promise<OperationJsonResponse<Name>>
+
+export type MultipartOperationCaller<Name extends MultipartOperationId> = (
+  options: MultipartOperationRequestOptions<Name>,
+) => Promise<OperationJsonResponse<Name>>
+
+export type BlobOperationCaller<Name extends BlobOperationId> = (
+  options: BlobOperationRequestOptions<Name>,
+) => Promise<Blob>
+
+export type TextOperationCaller<Name extends TextOperationId> = (
+  options: TextOperationRequestOptions<Name>,
+) => Promise<OperationTextResponse<Name>>
 
 function resolveOperationPath(
   template: string,
@@ -83,98 +109,99 @@ function resolveOperationPath(
   })
 }
 
-export async function requestOperation<Name extends JsonOperationId>(
+export function bindJsonOperation<Name extends JsonOperationId>(
   operation: OperationDescriptor<Name>,
-  options: OperationRequestOptions<Name>,
-): Promise<OperationJsonResponse<Name>> {
-  const {
-    path: pathParameters,
-    params,
-    data,
-    transport = 'session',
-    ...transportOptions
-  } = options as JsonRequestTransportOptions & {
-    path?: Record<string, unknown>
-    params?: unknown
-    data?: unknown
+): JsonOperationCaller<Name> {
+  return async (options) => {
+    const {
+      path: pathParameters,
+      params,
+      data,
+      transport = 'session',
+      ...transportOptions
+    } = options as JsonRequestTransportOptions & {
+      path?: Record<string, unknown>
+      params?: unknown
+      data?: unknown
+    }
+    const config: AxiosRequestConfig = {
+      ...transportOptions,
+      method: operation.method,
+      url: resolveOperationPath(operation.path, pathParameters),
+    }
+    if (params !== undefined) config.params = params
+    if (data !== undefined) config.data = data
+    return transport === 'raw'
+      ? (rawRequest<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>)
+      : (request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>)
   }
-  const config: AxiosRequestConfig = {
-    ...transportOptions,
-    method: operation.method,
-    url: resolveOperationPath(operation.path, pathParameters),
-  }
-  if (params !== undefined) config.params = params
-  if (data !== undefined) config.data = data
-  return transport === 'raw'
-    ? (rawRequest<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>)
-    : (request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>)
 }
 
-/** 使用 OpenAPI operationId 发送 multipart 请求，避免业务模块重复维护方法和路径。 */
-export async function requestMultipartOperation<Name extends MultipartOperationId>(
+export function bindMultipartOperation<Name extends MultipartOperationId>(
   operation: OperationDescriptor<Name>,
-  options: MultipartOperationRequestOptions<Name>,
-): Promise<OperationJsonResponse<Name>> {
-  const {
-    path: pathParameters,
-    params,
-    data,
-    ...transportOptions
-  } = options as RequestTransportOptions & {
-    path?: Record<string, unknown>
-    params?: unknown
-    data: FormData
+): MultipartOperationCaller<Name> {
+  return async (options) => {
+    const {
+      path: pathParameters,
+      params,
+      data,
+      ...transportOptions
+    } = options as RequestTransportOptions & {
+      path?: Record<string, unknown>
+      params?: unknown
+      data: FormData
+    }
+    const config: AxiosRequestConfig = {
+      ...transportOptions,
+      data,
+      method: operation.method,
+      url: resolveOperationPath(operation.path, pathParameters),
+    }
+    if (params !== undefined) config.params = params
+    return request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
   }
-  const config: AxiosRequestConfig = {
-    ...transportOptions,
-    data,
-    method: operation.method,
-    url: resolveOperationPath(operation.path, pathParameters),
-  }
-  if (params !== undefined) config.params = params
-  return request<OperationData<Name>>(config) as Promise<OperationJsonResponse<Name>>
 }
 
-/** 使用 OpenAPI operationId 下载二进制响应。 */
-export async function requestBlobOperation<Name extends OperationId>(
+export function bindBlobOperation<Name extends BlobOperationId>(
   operation: OperationDescriptor<Name>,
-  options: BlobOperationRequestOptions<Name>,
-): Promise<Blob> {
-  const {
-    path: pathParameters,
-    params,
-    ...transportOptions
-  } = options as RequestTransportOptions & {
-    path?: Record<string, unknown>
-    params?: unknown
+): BlobOperationCaller<Name> {
+  return async (options) => {
+    const {
+      path: pathParameters,
+      params,
+      ...transportOptions
+    } = options as RequestTransportOptions & {
+      path?: Record<string, unknown>
+      params?: unknown
+    }
+    const config: AxiosRequestConfig = {
+      ...transportOptions,
+      method: operation.method,
+      url: resolveOperationPath(operation.path, pathParameters),
+    }
+    if (params !== undefined) config.params = params
+    return requestBlob(config)
   }
-  const config: AxiosRequestConfig = {
-    ...transportOptions,
-    method: operation.method,
-    url: resolveOperationPath(operation.path, pathParameters),
-  }
-  if (params !== undefined) config.params = params
-  return requestBlob(config)
 }
 
-/** 使用 OpenAPI operationId 获取文本响应。 */
-export async function requestTextOperation<Name extends TextOperationId>(
+export function bindTextOperation<Name extends TextOperationId>(
   operation: OperationDescriptor<Name>,
-  options: TextOperationRequestOptions<Name>,
-): Promise<OperationTextResponse<Name>> {
-  const {
-    path: pathParameters,
-    params,
-    ...transportOptions
-  } = options as RequestTransportOptions & {
-    path?: Record<string, unknown>
-    params?: unknown
+): TextOperationCaller<Name> {
+  return async (options) => {
+    const {
+      path: pathParameters,
+      params,
+      ...transportOptions
+    } = options as RequestTransportOptions & {
+      path?: Record<string, unknown>
+      params?: unknown
+    }
+    const config: AxiosRequestConfig = {
+      ...transportOptions,
+      method: operation.method,
+      url: resolveOperationPath(operation.path, pathParameters),
+    }
+    if (params !== undefined) config.params = params
+    return requestText(config) as Promise<OperationTextResponse<Name>>
   }
-  const config: AxiosRequestConfig = {
-    ...transportOptions,
-    method: operation.method,
-    url: resolveOperationPath(operation.path, pathParameters),
-  }
-  if (params !== undefined) config.params = params
-  return requestText(config) as Promise<OperationTextResponse<Name>>
 }

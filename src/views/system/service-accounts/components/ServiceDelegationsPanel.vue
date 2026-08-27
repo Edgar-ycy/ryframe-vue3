@@ -22,7 +22,7 @@
     <el-empty v-else-if="items.length === 0" :description="t('serviceAccounts.emptyDelegations')" />
     <template v-else>
       <div class="desktop-table" role="region" :aria-label="t('serviceAccounts.delegations')">
-        <el-table :data="items" border stripe row-key="id">
+        <el-table :data="[...items]" border stripe row-key="id">
           <el-table-column prop="id" label="ID" min-width="90" />
           <el-table-column
             prop="account_id"
@@ -47,7 +47,9 @@
           />
           <el-table-column :label="t('serviceAccounts.status')" width="105">
             <template #default="{ row }">
-              <el-tag :type="delegationStatusType(row)">{{ delegationStatusLabel(row) }}</el-tag>
+              <el-tag :type="delegationStatusTypeById(row.id)">{{
+                delegationStatusLabelById(row.id)
+              }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column :label="t('serviceAccounts.expiresAt')" min-width="180">
@@ -56,13 +58,13 @@
           <el-table-column :label="t('serviceAccounts.actions')" width="110" fixed="right">
             <template #default="{ row }">
               <el-button
-                v-if="isDelegationActive(row)"
+                v-if="isDelegationActiveById(row.id)"
                 v-perm="'system:service-delegation:revoke'"
                 type="danger"
                 link
                 :loading="revokingId === row.id"
                 :disabled="Boolean(revokingId)"
-                @click="emit('revoke', row)"
+                @click="revokeDelegation(row.id)"
               >
                 {{ t('serviceAccounts.revoke') }}
               </el-button>
@@ -137,7 +139,7 @@ import { useI18n } from 'vue-i18n'
 import type { ServiceDelegation } from '@/api/modules/serviceAccount'
 import { formatLocalizedDate } from '@/i18n'
 
-defineProps<{
+const props = defineProps<{
   items: readonly ServiceDelegation[]
   total: number
   loading: boolean
@@ -169,6 +171,30 @@ function delegationStatusType(item: ServiceDelegation): TagProps['type'] {
   if (item.revoked_at || item.status === 'revoked') return 'info'
   if (Date.parse(item.expires_at) <= Date.now()) return 'warning'
   return 'success'
+}
+
+function findDelegation(id: string): ServiceDelegation | undefined {
+  return props.items.find((delegation) => delegation.id === id)
+}
+
+function isDelegationActiveById(id: string): boolean {
+  const delegation = findDelegation(id)
+  return delegation ? isDelegationActive(delegation) : false
+}
+
+function delegationStatusLabelById(id: string): string {
+  const delegation = findDelegation(id)
+  return delegation ? delegationStatusLabel(delegation) : t('serviceAccounts.expired')
+}
+
+function delegationStatusTypeById(id: string): TagProps['type'] {
+  const delegation = findDelegation(id)
+  return delegation ? delegationStatusType(delegation) : 'info'
+}
+
+function revokeDelegation(id: string): void {
+  const delegation = findDelegation(id)
+  if (delegation) emit('revoke', delegation)
 }
 </script>
 

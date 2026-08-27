@@ -5,7 +5,7 @@
       :model-value="props.modelValue"
       :predefine="props.presetColors"
       :aria-label="props.label || t('settings.themeColor')"
-      @update:model-value="(value: string) => emit('update:modelValue', value)"
+      @update:model-value="updateColor"
     />
     <div class="theme-presets">
       <button
@@ -59,6 +59,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 function selectPreset(color: string): void {
   emit('update:modelValue', color)
+}
+
+function updateColor(color: string | null): void {
+  if (color) emit('update:modelValue', color)
 }
 </script>
 

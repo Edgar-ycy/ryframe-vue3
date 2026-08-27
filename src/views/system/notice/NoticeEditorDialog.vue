@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="visible" :title="title" width="600px" @close="emit('close')">
-    <el-form :ref="handleFormRef" :model="form" :rules="rules" label-width="80px">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="t('system.notice.title')" prop="title">
         <el-input
           :model-value="form.title"
@@ -97,13 +97,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const visible = defineModel<boolean>('visible', { required: true })
+const formRef = ref<FormInstance>()
 
-function handleFormRef(instance: FormInstance | null): void {
-  emit('form-ready', instance ?? undefined)
-}
+watch(formRef, (instance) => emit('form-ready', instance))
+onBeforeUnmount(() => emit('form-ready', undefined))
 
-function updateField(key: keyof NoticeForm, value: string): void {
-  emit('update:form', { ...props.form, [key]: value })
+function updateField(key: keyof NoticeForm, value: unknown): void {
+  if (typeof value === 'string') emit('update:form', { ...props.form, [key]: value })
 }
 </script>
 

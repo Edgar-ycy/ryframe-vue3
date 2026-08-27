@@ -13,7 +13,8 @@ src/
 ├── stores/       # 客户端跨页面状态
 ├── features/     # 页面、能力、权限和变体声明
 ├── router/       # 导航守卫与运行时路由
-├── api/modules/  # 按业务资源组织的请求函数
+├── api/generated/operations/ # 按 core/system/platform/monitor/agent 生成的 typed caller
+├── api/modules/  # 只组织规范化、幂等、分页、校验和 raw session 策略
 ├── shared/       # HTTP、查询、安全和其他通用能力
 └── styles/       # 设计 token 与全局布局
 ```
@@ -40,15 +41,27 @@ src/
 
 后端接口变化后先在后端仓库运行 `cargo api-sync`。同步完成后：
 
-1. 在 `src/api/generated/operations.ts` 查找 operation descriptor。
-2. 在 `src/api/modules/` 对应资源文件中添加语义化请求函数。
-3. 使用 `requestOperation` 传入 path、query、body、header 或 signal。
+1. 在 `src/api/generated/operations/` 对应领域文件查找 typed caller。
+2. JSON、multipart、文本和 Blob 传输由契约媒体类型自动绑定；媒体类型不唯一时生成会失败。
+3. 业务只需在 `src/api/modules/` 中保留规范化、幂等键、分页、响应校验或 raw session 策略；
+   没有这些策略时可直接调用生成 caller。
 4. 从 `src/api/contract.ts` 取得 operation 的请求与响应类型。
 5. 在页面 composable 或应用用例中调用请求函数。
 6. 运行 `pnpm api:check` 和相关单元测试。
 
-可参考 `src/api/modules/post.ts` 中的导出请求。Blob、文本和 multipart 请求可参考已有同类
-module 的调用方式。
+可参考 `src/api/modules/post.ts` 中的导出筛选规范化。业务模块不得手写 URL、HTTP method，
+也不得直接调用 `operationRequest`；运行 `pnpm api:generate` 会更新五个领域 caller，连续生成
+应保持零差异。
+
+## 导入与状态边界
+
+脚本中的 Vue Router、Pinia、Element Plus 服务和类型必须显式导入。自动导入只覆盖 Vue
+composition primitives；模板组件仍由 Vite 自动解析，组件类型写入 `src/components.d.ts`。
+
+所有 `defineStore` 必须位于 `src/stores/`。Store 保持被动，不运行时导入 app、router、业务
+API、QueryClient 或其他 Store；跨状态副作用放入 `src/app/` coordinator。API module 不直接依赖
+外部 package，也不依赖 Router、Store、Query 或 UI；`src/shared/http/` 只依赖 Axios 和同层纯模块。`pnpm check:imports`
+同时检查内部路径、外部 package、运行时环和 Store 定义位置。
 
 ## 管理状态
 

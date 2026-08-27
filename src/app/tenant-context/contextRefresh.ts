@@ -15,7 +15,7 @@ import { useTagsViewStore } from '@/stores/tagsView'
 import { useUserStore } from '@/stores/user'
 import { assertSessionEpoch, getSessionEpoch } from '@/app/session/state'
 import { ensureTenantContextLoaded, refreshTenantContext } from './coordinator'
-import { useTenantContextStore } from './store'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 export interface TenantContextChangedFrame {
   v: 1

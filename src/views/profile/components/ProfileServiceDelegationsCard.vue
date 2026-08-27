@@ -49,7 +49,7 @@
           role="region"
           :aria-label="t('profile.serviceDelegations.title')"
         >
-          <el-table :data="delegations" row-key="id">
+          <el-table :data="[...delegations]" row-key="id">
             <el-table-column
               :label="t('profile.serviceDelegations.serviceAccount')"
               min-width="190"
@@ -73,7 +73,7 @@
             />
             <el-table-column :label="t('profile.serviceDelegations.status')" width="100">
               <template #default="{ row }">
-                <el-tag :type="statusType(row)">{{ statusLabel(row) }}</el-tag>
+                <el-tag :type="statusTypeById(row.id)">{{ statusLabelById(row.id) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column :label="t('profile.serviceDelegations.expiresAt')" min-width="180">
@@ -86,12 +86,12 @@
             >
               <template #default="{ row }">
                 <el-button
-                  v-if="canRevoke(row)"
+                  v-if="canRevokeById(row.id)"
                   type="danger"
                   link
                   :loading="revokingId === row.id"
                   :disabled="Boolean(revokingId)"
-                  @click="confirmRevoke(row)"
+                  @click="confirmRevokeById(row.id)"
                 >
                   {{ t('profile.serviceDelegations.revoke') }}
                 </el-button>
@@ -227,6 +227,25 @@ function canRevoke(item: ProfileServiceDelegation): boolean {
   return !item.revoked_at && item.status !== 'revoked'
 }
 
+function findDelegation(id: string): ProfileServiceDelegation | undefined {
+  return props.delegations.find((delegation) => delegation.id === id)
+}
+
+function statusLabelById(id: string): string {
+  const delegation = findDelegation(id)
+  return delegation ? statusLabel(delegation) : t('profile.serviceDelegations.expired')
+}
+
+function statusTypeById(id: string): TagProps['type'] {
+  const delegation = findDelegation(id)
+  return delegation ? statusType(delegation) : 'info'
+}
+
+function canRevokeById(id: string): boolean {
+  const delegation = findDelegation(id)
+  return delegation ? canRevoke(delegation) : false
+}
+
 function openCreateDialog(): void {
   createIdentitySnapshot = props.captureIdentity?.()
   createDialogVisible.value = true
@@ -250,6 +269,11 @@ async function confirmRevoke(delegation: ProfileServiceDelegation): Promise<void
     { type: 'error', confirmButtonText: t('profile.serviceDelegations.revoke') },
   )
   if (confirmed) emit('revoke', delegation, identitySnapshot)
+}
+
+async function confirmRevokeById(id: string): Promise<void> {
+  const delegation = findDelegation(id)
+  if (delegation) await confirmRevoke(delegation)
 }
 
 onBeforeUnmount(() => {

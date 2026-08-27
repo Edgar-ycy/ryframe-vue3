@@ -11,7 +11,7 @@
         <el-tree-select
           v-model="form.parent_id"
           :data="parentOptions"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.menu.rootPlaceholder')"
           clearable
           check-strictly
@@ -83,6 +83,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { isPermissionCode } from '@/api/generated/permissions'
 import {

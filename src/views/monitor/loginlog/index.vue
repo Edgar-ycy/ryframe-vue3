@@ -105,7 +105,7 @@
               type="primary"
               link
               icon="View"
-              @click="handleDetail(row)"
+              @click="showLoginLogDetail(row.id)"
               >{{ t('monitor.loginLog.details') }}</el-button
             >
           </template>
@@ -160,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { formatOptionalLocalizedDate } from '@/i18n'
 import {
@@ -271,6 +272,11 @@ const detailRow = ref<Partial<LoginLogRecord>>({})
 function handleDetail(row: LoginLogRecord): void {
   detailRow.value = row
   detailVisible.value = true
+}
+
+function showLoginLogDetail(id: string): void {
+  const row = loginLogPage.value?.items.find((item) => item.id === id)
+  if (row) handleDetail(row)
 }
 
 useKeepAlivePageActive(pageActive, refreshData)

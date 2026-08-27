@@ -118,7 +118,7 @@
               type="primary"
               link
               icon="Edit"
-              @click="handleEdit(row)"
+              @click="editPermissionById(row.id)"
             >
               {{ t('system.common.edit') }}
             </el-button>
@@ -128,7 +128,7 @@
               link
               icon="Delete"
               :loading="deletingId === row.id"
-              @click="handleDelete(row)"
+              @click="deletePermissionById(row.id)"
             >
               {{ t('system.common.delete') }}
             </el-button>
@@ -152,6 +152,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { PermissionTreeNode } from '@/api/modules/permission'
+import type { Id } from '@/shared/http/types'
 import PermissionFormDialog from './components/PermissionFormDialog.vue'
 import { usePermissionManagement } from './composables/usePermissionManagement'
 
@@ -175,6 +177,32 @@ const {
   syncReportTitle,
   tableData,
 } = usePermissionManagement()
+
+function findPermission(
+  nodes: readonly PermissionTreeNode[],
+  id: Id,
+): PermissionTreeNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    const child = findPermission(node.children, id)
+    if (child) return child
+  }
+  return undefined
+}
+
+function currentPermission(id: Id): PermissionTreeNode | undefined {
+  return findPermission(tableData.value ?? [], id)
+}
+
+function editPermissionById(id: Id): void {
+  const permission = currentPermission(id)
+  if (permission) handleEdit(permission)
+}
+
+async function deletePermissionById(id: Id): Promise<void> {
+  const permission = currentPermission(id)
+  if (permission) await handleDelete(permission)
+}
 </script>
 
 <style scoped>

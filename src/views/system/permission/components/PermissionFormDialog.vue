@@ -11,7 +11,7 @@
         <el-tree-select
           v-model="form.parent_id"
           :data="parentTree"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.permission.selectParent')"
           clearable
           check-strictly
@@ -49,7 +49,7 @@
         <el-input-number v-model="form.sort" :min="0" :max="9999" />
       </el-form-item>
       <el-form-item :label="t('system.common.status')">
-        <el-radio-group v-model="form.status">
+        <el-radio-group :model-value="form.status ?? '1'" @update:model-value="updateStatus">
           <el-radio value="1">{{ t('system.common.normal') }}</el-radio>
           <el-radio value="0">{{ t('system.common.disabled') }}</el-radio>
         </el-radio-group>
@@ -70,6 +70,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   createPermission,
@@ -159,6 +161,10 @@ function populateForm(): void {
     return
   }
   form.value.parent_id = props.parentId ?? null
+}
+
+function updateStatus(value: string | number | boolean | undefined): void {
+  if (value === '0' || value === '1') form.value.status = value
 }
 
 async function submit(): Promise<void> {

@@ -39,13 +39,14 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import {
   genFileId,
   type UploadFile,
-  type UploadFiles,
   type UploadInstance,
   type UploadRawFile,
+  type UploadUserFile,
 } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
@@ -82,7 +83,7 @@ function handleFileRemove(): void {
   selectedFile.value = undefined
 }
 
-function handleExceed(files: File[], uploadFiles: UploadFiles): void {
+function handleExceed(files: File[], uploadFiles: UploadUserFile[]): void {
   const file = files[0] as UploadRawFile | undefined
   uploadRef.value?.clearFiles()
   if (file && validateFile(file)) {

@@ -24,13 +24,13 @@
               v-if="canDelete(row.status)"
               :model-value="selectedJobIds.includes(row.id)"
               :disabled="deletingJobIds.length > 0"
-              :aria-label="t('exportCenter.selectJob', { name: displayName(row) })"
+              :aria-label="t('exportCenter.selectJob', { name: displayNameById(row.id) })"
               @change="toggleJobSelection(row.id, $event)"
             />
           </template>
         </el-table-column>
         <el-table-column :label="t('exportCenter.fileName')" min-width="190" show-overflow-tooltip>
-          <template #default="{ row }">{{ displayName(row) }}</template>
+          <template #default="{ row }">{{ displayNameById(row.id) }}</template>
         </el-table-column>
         <el-table-column :label="t('exportCenter.resource')" min-width="120">
           <template #default="{ row }">{{ resourceLabel(row.resource) }}</template>
@@ -63,7 +63,7 @@
         </el-table-column>
         <el-table-column :label="t('exportCenter.errorSummary')" min-width="140">
           <template #default="{ row }">
-            <el-button v-if="row.error_message" type="danger" link @click="emit('error', row)">
+            <el-button v-if="row.error_message" type="danger" link @click="showErrorById(row.id)">
               {{ t('exportCenter.viewError') }}
             </el-button>
             <span v-else>{{ t('exportCenter.noError') }}</span>
@@ -79,7 +79,7 @@
             <div
               class="row-actions"
               role="group"
-              :aria-label="t('exportCenter.ariaActions', { name: displayName(row) })"
+              :aria-label="t('exportCenter.ariaActions', { name: displayNameById(row.id) })"
             >
               <el-button
                 v-if="canCancel(row.status)"
@@ -91,7 +91,7 @@
                   downloadingJobId === row.id ||
                   deletingJobIds.includes(row.id)
                 "
-                @click="emit('cancel', row)"
+                @click="cancelById(row.id)"
               >
                 {{ t('exportCenter.cancel') }}
               </el-button>
@@ -101,20 +101,20 @@
                 link
                 :loading="downloadingJobId === row.id"
                 :disabled="
-                  isDownloadUnavailable(row) ||
+                  isDownloadUnavailableById(row.id) ||
                   Boolean(downloadingJobId) ||
                   cancellingJobId === row.id ||
                   deletingJobIds.includes(row.id)
                 "
                 :title="
-                  isDownloadUnavailable(row)
+                  isDownloadUnavailableById(row.id)
                     ? t('exportCenter.downloadExpired')
                     : t('exportCenter.download')
                 "
-                @click="emit('download', row)"
+                @click="downloadById(row.id)"
               >
                 {{
-                  isDownloadUnavailable(row)
+                  isDownloadUnavailableById(row.id)
                     ? t('exportCenter.expired')
                     : t('exportCenter.download')
                 }}
@@ -129,7 +129,7 @@
                   cancellingJobId === row.id ||
                   downloadingJobId === row.id
                 "
-                @click="emit('delete', row)"
+                @click="deleteById(row.id)"
               >
                 {{ t('exportCenter.delete') }}
               </el-button>
@@ -327,6 +327,40 @@ function toggleVisibleSelection(checked: unknown): void {
     'update:selectedJobIds',
     updateVisibleExportJobSelection(props.selectedJobIds, terminalVisibleIds(), Boolean(checked)),
   )
+}
+
+function findVisibleJob(id: string): ExportJob | undefined {
+  return props.visibleJobs.find((job) => job.id === id)
+}
+
+function displayNameById(id: string): string {
+  const job = findVisibleJob(id)
+  return job ? props.displayName(job) : ''
+}
+
+function isDownloadUnavailableById(id: string): boolean {
+  const job = findVisibleJob(id)
+  return job ? props.isDownloadUnavailable(job) : true
+}
+
+function showErrorById(id: string): void {
+  const job = findVisibleJob(id)
+  if (job) emit('error', job)
+}
+
+function cancelById(id: string): void {
+  const job = findVisibleJob(id)
+  if (job) emit('cancel', job)
+}
+
+function downloadById(id: string): void {
+  const job = findVisibleJob(id)
+  if (job) emit('download', job)
+}
+
+function deleteById(id: string): void {
+  const job = findVisibleJob(id)
+  if (job) emit('delete', job)
 }
 </script>
 

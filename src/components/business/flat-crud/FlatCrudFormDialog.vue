@@ -16,7 +16,7 @@
         <el-input
           v-if="field.kind === 'text'"
           :disabled="editing && field.disabledOnEdit"
-          :model-value="fieldValue(field)"
+          :model-value="textValue(field)"
           :placeholder="field.placeholder"
           @update:model-value="updateField(field, $event)"
         />
@@ -29,7 +29,7 @@
         />
         <el-radio-group
           v-else
-          :model-value="fieldValue(field)"
+          :model-value="optionValue(field)"
           @update:model-value="updateField(field, $event)"
         >
           <el-radio
@@ -107,6 +107,16 @@ function fieldValue(field: FlatCrudFormField<TModel>): FlatCrudScalar {
 function numberValue(field: FlatCrudFormField<TModel>): number | undefined {
   const value = fieldValue(field)
   return typeof value === 'number' ? value : undefined
+}
+
+function textValue(field: FlatCrudFormField<TModel>): string | number | null | undefined {
+  const value = fieldValue(field)
+  if (typeof value === 'boolean') throw new Error(`文本字段 ${field.key} 不能使用布尔值`)
+  return value
+}
+
+function optionValue(field: FlatCrudFormField<TModel>): string | number | boolean | undefined {
+  return fieldValue(field) ?? undefined
 }
 
 function updateField(field: FlatCrudFormField<TModel>, value: FlatCrudScalar): void {

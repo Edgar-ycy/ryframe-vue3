@@ -1,7 +1,7 @@
 import type { PermissionCode } from '@/api/generated/permissions'
 import type { FeatureManifest } from '@/features/manifest'
 import type { MenuPageRegistryEntry, PageManifest, PageManifestEntry } from '@/features/pages'
-import { withMessageCatalogs } from '@/i18n/lazyCatalog'
+import { withRouteMessageCatalogs } from '@/i18n/lazyCatalog'
 
 interface FeatureModule {
   featureManifest: FeatureManifest
@@ -34,7 +34,7 @@ function addPage(
   if (registry[entry.routeKey]) throw new Error(`重复的页面 route_key：${entry.routeKey}`)
   registry[entry.routeKey] = {
     path: entry.path,
-    ...(entry.page ? { component: withMessageCatalogs(entry.page, entry.catalogs) } : {}),
+    ...(entry.page ? { component: withRouteMessageCatalogs(entry.routeKey, entry.page) } : {}),
   }
   if (!entry.permissionCode) return
   if (permissions[entry.permissionCode]) throw new Error(`重复的页面权限：${entry.permissionCode}`)
@@ -51,7 +51,6 @@ for (const feature of featureManifests) {
     permissionCode: feature.permissionCode,
     path: feature.path,
     page: feature.page,
-    catalogs: feature.catalogs,
   })
   menuPages[feature.routeKey].requiredCapabilities = [feature.capabilityCode]
 }

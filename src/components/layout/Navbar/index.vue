@@ -93,6 +93,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowDown,
   Expand,
@@ -128,8 +130,8 @@ const { imageSrc: avatarSrc } = useAuthenticatedImage(() => userStore.avatar)
 const settingsVisible = ref(false)
 const breadcrumbs = computed(() => route.matched.filter((item) => item.meta?.title))
 
-function setDarkMode(value: boolean): void {
-  settingsStore.setTheme(value ? 'dark' : 'light')
+function setDarkMode(value: string | number | boolean): void {
+  settingsStore.setTheme(value === true ? 'dark' : 'light')
 }
 
 async function toggleFullscreen(): Promise<void> {

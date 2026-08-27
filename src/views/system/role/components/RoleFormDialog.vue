@@ -49,6 +49,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   createRole,

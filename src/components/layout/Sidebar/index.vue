@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router'
 import type { RouteMeta, RouteRecordRaw } from 'vue-router'
 import { translateNavigationTitle } from '@/i18n'
 import { resolveElementIcon } from '@/shared/ui/icons'

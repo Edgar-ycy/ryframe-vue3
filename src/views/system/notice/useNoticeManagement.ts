@@ -1,3 +1,4 @@
+import { ElMessage } from 'element-plus'
 import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {

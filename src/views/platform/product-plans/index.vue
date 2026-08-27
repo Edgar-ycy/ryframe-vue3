@@ -36,7 +36,7 @@
           :data="plans?.items ?? []"
           row-key="id"
           highlight-current-row
-          @current-change="selectPlan"
+          @current-change="selectPlanById"
         >
           <el-table-column prop="key" :label="t('productPlans.code')" min-width="130" />
           <el-table-column
@@ -52,7 +52,7 @@
           </el-table-column>
           <el-table-column v-if="canEdit" width="88" fixed="right">
             <template #default="{ row }">
-              <el-button link type="primary" @click.stop="openPlanDialog(row)">
+              <el-button link type="primary" @click.stop="openPlanDialogById(row.id)">
                 {{ t('productPlans.editPlan') }}
               </el-button>
             </template>
@@ -115,7 +115,7 @@
                 v-if="canEdit && row.status === 'draft'"
                 link
                 type="primary"
-                @click="openVersionDialog(row)"
+                @click="openVersionDialogById(row.id)"
               >
                 {{ t('productPlans.editVersion') }}
               </el-button>
@@ -124,7 +124,7 @@
                 link
                 type="primary"
                 :loading="publishPending"
-                @click="handlePublish(row)"
+                @click="publishVersionById(row.id)"
               >
                 {{ t('productPlans.publish') }}
               </el-button>
@@ -133,7 +133,7 @@
                 link
                 type="danger"
                 :loading="retirePending"
-                @click="handleRetire(row)"
+                @click="retireVersionById(row.id)"
               >
                 {{ t('productPlans.retire') }}
               </el-button>
@@ -160,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import type {
@@ -211,8 +212,21 @@ watch([canAdd, canEdit], () => {
   if (versionDialogVisible.value && !canEdit.value) versionDialogVisible.value = false
 })
 
-function selectPlan(plan?: ProductPlan): void {
-  selectedPlan.value = plan
+function findPlan(id: string): ProductPlan | undefined {
+  return plans.value?.items.find((plan) => plan.id === id)
+}
+
+function findVersion(id: string): ProductPlanVersion | undefined {
+  return versions.value?.find((version) => version.id === id)
+}
+
+function selectPlanById(row: { id?: unknown } | null): void {
+  selectedPlan.value = typeof row?.id === 'string' ? findPlan(row.id) : undefined
+}
+
+function openPlanDialogById(id: string): void {
+  const plan = findPlan(id)
+  if (plan) openPlanDialog(plan)
 }
 
 function openPlanDialog(plan?: ProductPlan): void {
@@ -229,6 +243,11 @@ async function handleSavePlan(data: ProductPlanFormInput): Promise<void> {
 function openVersionDialog(version?: ProductPlanVersion): void {
   editingVersion.value = version
   versionDialogVisible.value = true
+}
+
+function openVersionDialogById(id: string): void {
+  const version = findVersion(id)
+  if (version) openVersionDialog(version)
 }
 
 async function handleSaveVersion(data: ProductPlanVersionInput): Promise<void> {
@@ -253,6 +272,11 @@ async function handlePublish(version: ProductPlanVersion): Promise<void> {
   ElMessage.success(t('productPlans.publishedSuccess'))
 }
 
+async function publishVersionById(id: string): Promise<void> {
+  const version = findVersion(id)
+  if (version) await handlePublish(version)
+}
+
 async function handleRetire(version: ProductPlanVersion): Promise<void> {
   if (!selectedPlan.value || retirePending.value) return
   const confirmed = await confirmAction(
@@ -266,6 +290,11 @@ async function handleRetire(version: ProductPlanVersion): Promise<void> {
   if (!confirmed || retirePending.value) return
   await retireVersion(version)
   ElMessage.success(t('productPlans.retiredSuccess'))
+}
+
+async function retireVersionById(id: string): Promise<void> {
+  const version = findVersion(id)
+  if (version) await handleRetire(version)
 }
 
 async function handleRefresh(): Promise<void> {

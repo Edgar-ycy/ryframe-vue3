@@ -5,7 +5,6 @@ import ts from 'typescript'
 
 const root = process.cwd()
 const modulesRoot = path.join(root, 'src', 'api', 'modules')
-const allowlistPath = path.join(root, 'scripts', 'api-operation-allowlist.json')
 const directHttpExports = new Set(['default', 'rawRequest', 'requestBlob', 'requestText'])
 
 function relative(absolute) {
@@ -46,12 +45,27 @@ function inspectSource(absolute, source) {
   )
   const bindings = new Map()
   const directImports = new Set()
+  const operationRequestImports = new Set()
+  const legacyOperationImports = new Set()
 
   for (const statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement)) continue
     if (!ts.isStringLiteral(statement.moduleSpecifier)) continue
-    if (statement.moduleSpecifier.text !== '@/shared/http/client') continue
+    const moduleName = statement.moduleSpecifier.text
     const clause = statement.importClause
+    if (moduleName === '@/api/generated/operations') {
+      legacyOperationImports.add(moduleName)
+    }
+    if (moduleName === '@/api/operationRequest' && !clause?.isTypeOnly) {
+      if (clause?.name) operationRequestImports.add('default')
+      for (const element of clause?.namedBindings && ts.isNamedImports(clause.namedBindings)
+        ? clause.namedBindings.elements
+        : []) {
+        if (!element.isTypeOnly)
+          operationRequestImports.add(element.propertyName?.text ?? element.name.text)
+      }
+    }
+    if (moduleName !== '@/shared/http/client') continue
     if (!clause?.isTypeOnly && clause?.name) {
       bindings.set(clause.name.text, 'request')
       directImports.add('request')
@@ -97,6 +111,8 @@ function inspectSource(absolute, source) {
       Object.entries(directCalls).sort(([left], [right]) => left.localeCompare(right)),
     ),
     pathLiterals,
+    legacyOperationImports: [...legacyOperationImports].sort(),
+    operationRequestImports: [...operationRequestImports].sort(),
     urlProperties,
     methodProperties,
   }
@@ -105,15 +121,13 @@ function inspectSource(absolute, source) {
 function hasLegacyUsage(inventory) {
   return (
     inventory.directImports.length > 0 ||
+    inventory.legacyOperationImports.length > 0 ||
+    inventory.operationRequestImports.length > 0 ||
     Object.keys(inventory.directCalls).length > 0 ||
     inventory.pathLiterals > 0 ||
     inventory.urlProperties > 0 ||
     inventory.methodProperties > 0
   )
-}
-
-function sameInventory(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right)
 }
 
 function formatCalls(calls) {
@@ -123,7 +137,6 @@ function formatCalls(calls) {
     : '无直连调用'
 }
 
-const allowlist = JSON.parse(await readFile(allowlistPath, 'utf8'))
 const current = {}
 
 for (const absolute of await collectTypeScriptFiles(modulesRoot)) {
@@ -131,19 +144,13 @@ for (const absolute of await collectTypeScriptFiles(modulesRoot)) {
   if (hasLegacyUsage(inventory)) current[relative(absolute)] = inventory
 }
 
-const mismatches = [...new Set([...Object.keys(allowlist), ...Object.keys(current)])]
-  .sort()
-  .filter((file) => !sameInventory(allowlist[file], current[file]))
+const violations = Object.keys(current).sort()
 
-if (mismatches.length > 0) {
-  console.error('API operation 使用门禁失败：发现未登记的新旧式请求，或过渡 allowlist 已过期。')
-  for (const file of mismatches) {
-    if (!allowlist[file]) console.error(`  - 新增违规：${file}`)
-    else if (!current[file]) console.error(`  - 已完成迁移但未移出 allowlist：${file}`)
-    else console.error(`  - 违规基线发生变化：${file}`)
-  }
-  console.error('仅在完成对应迁移后收紧 allowlist；不得用扩大基线掩盖新增手写请求。')
-  console.error('当前完整基线如下：')
+if (violations.length > 0) {
+  console.error('API operation 使用门禁失败：发现通用传输、旧 operation 入口或手写请求。')
+  for (const file of violations) console.error(`  - ${file}`)
+  console.error('API 模块必须调用分域生成的 typed caller，不接受违规基线。')
+  console.error('当前完整违规清单如下：')
   console.error(`${JSON.stringify(current, null, 2)}\n`)
   process.exitCode = 1
 } else {
@@ -155,7 +162,7 @@ if (mismatches.length > 0) {
   )
   const pathLiteralCount = files.reduce((total, [, item]) => total + item.pathLiterals, 0)
   console.log(
-    `API operation 使用门禁通过；剩余迁移 ${files.length} 个模块、${directCallCount} 个直连请求、${pathLiteralCount} 个手写路径。`,
+    `API operation 使用门禁通过；${files.length} 个违规模块、${directCallCount} 个直连请求、${pathLiteralCount} 个手写路径。`,
   )
   for (const [file, item] of files) {
     console.log(

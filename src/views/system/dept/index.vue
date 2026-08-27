@@ -48,7 +48,7 @@
               type="primary"
               link
               icon="Edit"
-              @click="handleEdit(row)"
+              @click="editDepartmentById(row.id)"
             >
               {{ t('system.common.edit') }}
             </el-button>
@@ -58,7 +58,7 @@
               link
               icon="Delete"
               :loading="deletingId === row.id"
-              @click="handleDelete(row)"
+              @click="deleteDepartmentById(row.id)"
             >
               {{ t('system.common.delete') }}
             </el-button>
@@ -80,7 +80,7 @@
           <el-tree-select
             v-model="form.parent_id"
             :data="deptOptions ?? []"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
+            :props="{ label: 'name', children: 'children' }"
             :placeholder="t('system.department.rootPlaceholder')"
             clearable
             check-strictly
@@ -127,6 +127,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { DeptNode } from '@/api/modules/dept'
+import type { Id } from '@/shared/http/types'
 import { useDeptManagement } from './composables/useDeptManagement'
 
 const { t } = useI18n()
@@ -148,4 +150,27 @@ const {
   tableData,
 } = useDeptManagement(t)
 void formRef
+
+function findDepartment(nodes: readonly DeptNode[], id: Id): DeptNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    const child = findDepartment(node.children, id)
+    if (child) return child
+  }
+  return undefined
+}
+
+function currentDepartment(id: Id): DeptNode | undefined {
+  return findDepartment(tableData.value ?? [], id)
+}
+
+async function editDepartmentById(id: Id): Promise<void> {
+  const department = currentDepartment(id)
+  if (department) await handleEdit(department)
+}
+
+async function deleteDepartmentById(id: Id): Promise<void> {
+  const department = currentDepartment(id)
+  if (department) await handleDelete(department)
+}
 </script>

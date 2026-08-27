@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
+import { promisify } from 'node:util'
 
 import {
   canonicalJson,
@@ -13,6 +15,8 @@ import {
 import { parseArguments, validateConsumerState } from '../check-consumer-contract.mjs'
 
 const commit = '0123456789abcdef0123456789abcdef01234567'
+const execFileAsync = promisify(execFile)
+const syncScript = path.resolve('scripts/sync-api-contract.mjs')
 
 function contract(description = '正式契约') {
   return {
@@ -67,6 +71,34 @@ async function createFormalRoot() {
   await writeFile(path.join(root, 'openapi', 'openapi.json'), bytes)
   await writeFile(path.join(root, 'openapi', 'source.json'), canonicalJson(sourceMetadata(bytes)))
   return root
+}
+
+async function createBackendRepository(openapiBytes) {
+  const root = await mkdtemp(path.join(tmpdir(), 'ryframe-contract-backend-'))
+  await mkdir(path.join(root, 'openapi'), { recursive: true })
+  await writeFile(path.join(root, 'openapi', 'openapi.json'), openapiBytes)
+  await execFileAsync('git', ['init'], { cwd: root })
+  await execFileAsync('git', ['add', '--', 'openapi/openapi.json'], { cwd: root })
+  await execFileAsync(
+    'git',
+    [
+      '-c',
+      'user.name=RyFrame Contract Test',
+      '-c',
+      'user.email=contract-test@invalid.example',
+      '-c',
+      'commit.gpgsign=false',
+      'commit',
+      '-m',
+      'test contract',
+    ],
+    { cwd: root },
+  )
+  const { stdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
+  return { root, commit: stdout.trim() }
 }
 
 async function enterCandidateState(root) {
@@ -135,6 +167,26 @@ test('正式同步恢复契约并最后删除候选 marker', async (t) => {
     () => readFile(path.join(frontend, 'openapi', 'candidate.json')),
     (error) => error.code === 'ENOENT',
   )
+})
+
+test('上游校验优先读取已配置后端工作树中的未推送提交', async (t) => {
+  const bytes = Buffer.from(canonicalJson(contract()), 'utf8')
+  const backend = await createBackendRepository(bytes)
+  const frontend = await createFormalRoot()
+  t.after(() => rm(backend.root, { recursive: true, force: true }))
+  t.after(() => rm(frontend, { recursive: true, force: true }))
+  await writeFile(
+    path.join(frontend, 'openapi', 'source.json'),
+    canonicalJson(sourceMetadata(bytes, backend.commit)),
+  )
+
+  const { stdout } = await execFileAsync(process.execPath, [syncScript, '--verify-upstream'], {
+    cwd: frontend,
+    encoding: 'utf8',
+    env: { ...process.env, RYFRAME_BACKEND_WORKTREE: backend.root },
+  })
+
+  assert.match(stdout, new RegExp(`@${backend.commit} 一致`, 'u'))
 })
 
 test('consumer:check 显式区分 candidate 和 formal，并仅在正式态要求提交 pin', async (t) => {

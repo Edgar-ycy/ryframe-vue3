@@ -82,6 +82,13 @@ async function readPinnedSource(metadata) {
   }
 }
 
+function pinnedSourceLabel(metadata) {
+  const backendWorktree = process.env.RYFRAME_BACKEND_WORKTREE?.trim()
+  return backendWorktree
+    ? `${path.resolve(backendWorktree)} Git 对象 ${metadata.backend_commit}:${metadata.openapi_path}`
+    : sourceUrl(metadata)
+}
+
 function requireSyncMetadata() {
   return {
     schema_version: 1,
@@ -101,9 +108,7 @@ async function sync() {
     )
   }
 
-  const source = process.env.RYFRAME_BACKEND_WORKTREE?.trim()
-    ? `${path.resolve(process.env.RYFRAME_BACKEND_WORKTREE)} Git 对象 ${metadata.backend_commit}:${metadata.openapi_path}`
-    : sourceUrl(metadata)
+  const source = pinnedSourceLabel(metadata)
   const document = parseContract(await readPinnedSource(metadata), source)
   const sourceMetadata = await writeFormalContract(root, document, metadata)
   console.log(
@@ -116,7 +121,8 @@ async function verifyUpstream() {
   if (local.mode !== 'formal') {
     throw new Error('候选契约不能执行 --verify-upstream；请先运行 cargo api-sync --commit <提交>')
   }
-  const upstream = parseContract(await readRemoteSource(local.metadata), sourceUrl(local.metadata))
+  const source = pinnedSourceLabel(local.metadata)
+  const upstream = parseContract(await readPinnedSource(local.metadata), source)
   const upstreamBytes = Buffer.from(canonicalJson(upstream), 'utf8')
   if (!upstreamBytes.equals(local.bytes)) {
     throw new Error('固定的上游 OpenAPI 与 openapi/openapi.json 不一致；请重新正式同步')

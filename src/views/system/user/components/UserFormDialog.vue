@@ -38,7 +38,7 @@
         <el-tree-select
           v-model="form.dept_id"
           :data="deptTree"
-          :props="{ label: 'name', children: 'children' }"
+          :props="departmentTreeProps"
           :placeholder="t('system.user.selectDepartment')"
           clearable
           check-strictly
@@ -103,6 +103,8 @@ import { useUserStore } from '@/stores/user'
 import { useRoleOptions } from '../composables/useRoleOptions'
 
 const { t } = useI18n()
+
+const departmentTreeProps = { value: 'id', label: 'name', children: 'children' } as const
 
 interface UserFormState {
   username: string

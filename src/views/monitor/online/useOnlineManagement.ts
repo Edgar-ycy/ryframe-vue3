@@ -6,8 +6,8 @@ import {
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -24,8 +24,7 @@ export function useOnlineManagement(t: Translate) {
   })
   const activeQueryParams = ref<OnlineUserQuery>({ ...queryParams.value })
 
-  const onlineUsersQuery = useTenantQuery<PageResponse<OnlineUserRecord>>(
-    () => userStore.tenantId,
+  const onlineUsersQuery = useServerStateQuery<PageResponse<OnlineUserRecord>>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     'monitor-online-users',
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
@@ -34,18 +33,14 @@ export function useOnlineManagement(t: Translate) {
       return response.data ?? emptyPageResponse<OnlineUserRecord>(activeQueryParams.value)
     },
   )
-  const logoutMutation = useTenantMutation<void, OnlineUserRecord>(
-    () => userStore.tenantId,
-    'monitor-online-users',
-    {
-      mutationFn: async (user) => {
-        await forceLogout(user.sid)
-      },
-      onSuccess: () => {
-        ElMessage.success(t('monitor.online.forceLogoutSuccess'))
-      },
+  const logoutMutation = useServerStateMutation<void, OnlineUserRecord>('monitor-online-users', {
+    mutationFn: async (user) => {
+      await forceLogout(user.sid)
     },
-  )
+    onSuccess: () => {
+      ElMessage.success(t('monitor.online.forceLogoutSuccess'))
+    },
+  })
 
   const loading = onlineUsersQuery.isFetching
   const onlineUsers = onlineUsersQuery.data

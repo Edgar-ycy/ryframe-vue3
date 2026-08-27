@@ -1,11 +1,11 @@
 import { Clock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { useMutation } from '@tanstack/vue-query'
 import { getCurrentScope, onScopeDispose } from 'vue'
 import type { ExportJob } from '@/api/modules/exportJob'
 import { publishExportJobEvent } from '@/app/exports/exportJobChannel'
 import {
   exportJobListQueryKey,
+  EXPORT_JOBS_RESOURCE,
   prependExportJob,
   type ExportJobIdentity,
 } from '@/app/exports/exportJobCache'
@@ -14,6 +14,7 @@ import { HttpError, requireOperationData } from '@/shared/http/client'
 import type { ApiResponse } from '@/shared/http/types'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { queryClient } from '@/shared/query/client'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useUserStore } from '@/stores/user'
 
 export type CreateExportJob = (
@@ -61,11 +62,15 @@ export function useExportJobRequest() {
   let scopeDisposed = false
   let unsubscribeUser = () => {}
 
-  const mutation = useMutation<ExportJob, HttpError, SubmitExportVariables>({
-    mutationKey: ['export-job-create'],
+  const mutation = useServerStateMutation<ExportJob, SubmitExportVariables>(EXPORT_JOBS_RESOURCE, {
     meta: { errorMode: 'global' },
-    mutationFn: async (variables) =>
-      requireOperationData(await variables.create(variables.idempotencyKey, variables.signal)),
+    mutationFn: async (variables, context) =>
+      requireOperationData(
+        await variables.create(
+          variables.idempotencyKey,
+          AbortSignal.any([variables.signal, context.signal]),
+        ),
+      ),
     onSuccess: async (job, variables) => {
       intentKeys.delete(variables.intentSignature)
       if (!identityMatchesCurrent(user, variables.identity)) return

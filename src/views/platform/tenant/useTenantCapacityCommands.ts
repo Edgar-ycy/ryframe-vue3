@@ -10,8 +10,8 @@ import {
 } from '@/api/modules/tenant'
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { invalidateTenantResource } from '@/shared/query/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { invalidateActiveServerStateResource } from '@/shared/query/client'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import {
   LEGACY_TENANTS_RESOURCE,
   TENANT_CAPACITY_DETAIL_RESOURCE,
@@ -31,8 +31,7 @@ type TenantStatusCommand = { tenantId: string; status: TenantStatus }
 export function useTenantCapacityCommands(queries: ReturnType<typeof useTenantCapacityQueries>) {
   let pendingCreateIdempotencyKey: string | undefined
   let pendingCreateIntentFingerprint: string | undefined
-  const saveMutation = useTenantMutation<Tenant, SaveTenantCommand>(
-    () => queries.userStore.tenantId,
+  const saveMutation = useServerStateMutation<Tenant, SaveTenantCommand>(
     TENANT_CAPACITY_PAGE_RESOURCE,
     {
       meta: { errorMode: 'silent' },
@@ -44,8 +43,7 @@ export function useTenantCapacityCommands(queries: ReturnType<typeof useTenantCa
         ),
     },
   )
-  const statusMutation = useTenantMutation<void, TenantStatusCommand>(
-    () => queries.userStore.tenantId,
+  const statusMutation = useServerStateMutation<void, TenantStatusCommand>(
     TENANT_CAPACITY_PAGE_RESOURCE,
     {
       meta: { errorMode: 'silent' },
@@ -60,13 +58,11 @@ export function useTenantCapacityCommands(queries: ReturnType<typeof useTenantCa
   )
 
   async function reconcileTenant(affectedTenantId?: string): Promise<void> {
-    const systemTenantId = queries.userStore.tenantId
-    if (!systemTenantId) return
     await Promise.all([
-      invalidateTenantResource(systemTenantId, TENANT_CAPACITY_PAGE_RESOURCE),
-      invalidateTenantResource(systemTenantId, TENANT_CAPACITY_DETAIL_RESOURCE),
-      invalidateTenantResource(systemTenantId, TENANT_USAGE_RESOURCE),
-      invalidateTenantResource(systemTenantId, LEGACY_TENANTS_RESOURCE),
+      invalidateActiveServerStateResource(TENANT_CAPACITY_PAGE_RESOURCE),
+      invalidateActiveServerStateResource(TENANT_CAPACITY_DETAIL_RESOURCE),
+      invalidateActiveServerStateResource(TENANT_USAGE_RESOURCE),
+      invalidateActiveServerStateResource(LEGACY_TENANTS_RESOURCE),
     ])
     if (queries.queryEnabled.value) {
       await queries.tenantPageQuery.refetch({ throwOnError: true })

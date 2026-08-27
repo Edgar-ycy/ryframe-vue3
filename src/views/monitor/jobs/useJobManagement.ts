@@ -9,8 +9,8 @@ import {
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import { MONITOR_JOBS_RESOURCE, MONITOR_JOB_STATS_RESOURCE } from '../queryResources'
@@ -67,8 +67,7 @@ export function useJobManagement(
   const selectedError = ref<BackgroundJobRecord | undefined>()
   const errorDialogVisible = ref(false)
 
-  const jobsQuery = useTenantQuery<PageResponse<BackgroundJobRecord>>(
-    () => userStore.tenantId,
+  const jobsQuery = useServerStateQuery<PageResponse<BackgroundJobRecord>>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_JOBS_RESOURCE,
     () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
@@ -78,8 +77,7 @@ export function useJobManagement(
       return response.data ?? emptyPageResponse<BackgroundJobRecord>(params)
     },
   )
-  const statsQuery = useTenantQuery<BackgroundJobStats>(
-    () => userStore.tenantId,
+  const statsQuery = useServerStateQuery<BackgroundJobStats>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_JOB_STATS_RESOURCE,
     () => ({ scope: 'summary' }),
@@ -88,8 +86,7 @@ export function useJobManagement(
       return response.data ?? EMPTY_STATS
     },
   )
-  const retryMutation = useTenantMutation<unknown, BackgroundJobRecord>(
-    () => userStore.tenantId,
+  const retryMutation = useServerStateMutation<unknown, BackgroundJobRecord>(
     MONITOR_JOBS_RESOURCE,
     {
       mutationFn: (row) => retryBackgroundJob(row.id),

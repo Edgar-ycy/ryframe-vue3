@@ -53,8 +53,8 @@ import { useI18n } from 'vue-i18n'
 import { getUser, replaceUserRoles, type UserDetail, type UserRecord } from '@/api/modules/user'
 import type { SelectOption } from '@/api/modules/option'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { useRoleOptions } from '../composables/useRoleOptions'
 
@@ -83,8 +83,7 @@ const {
   remoteMethod: remoteRoleSearch,
   resetSearch: resetRoleSearch,
 } = useRoleOptions(() => visible.value, selectedRoleOptions)
-const detailQuery = useTenantQuery<UserDetail>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<UserDetail>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.user !== null,
   'users',
   () => ({ scope: 'detail', id: props.user?.id ?? null }),
@@ -96,18 +95,14 @@ const detailQuery = useTenantQuery<UserDetail>(
     return response.data
   },
 )
-const assignmentMutation = useTenantMutation<void, { userId: Id; roleIds: Id[] }>(
-  () => userStore.tenantId,
-  'users',
-  {
-    mutationFn: async (variables) => {
-      await replaceUserRoles(variables.userId, variables.roleIds)
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.user.roleAssigned'))
-    },
+const assignmentMutation = useServerStateMutation<void, { userId: Id; roleIds: Id[] }>('users', {
+  mutationFn: async (variables) => {
+    await replaceUserRoles(variables.userId, variables.roleIds)
   },
-)
+  onSuccess: () => {
+    ElMessage.success(t('system.user.roleAssigned'))
+  },
+})
 const loading = detailQuery.isFetching
 const submitting = assignmentMutation.pending
 

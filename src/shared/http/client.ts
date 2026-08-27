@@ -6,7 +6,7 @@ import { rawTransport, transport } from './transport'
 
 export { HttpError, type HttpErrorKind, type HttpErrorOptions } from './errors'
 export { configureHttpLocalization, type HttpLocalizationAdapter } from './localization'
-export { configureHttpSession, type HttpSessionAdapter } from './session'
+export { configureHttpSession, type HttpSessionAdapter, type HttpSessionSnapshot } from './session'
 
 export async function request<T = unknown>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
   const response = await transport.request<ApiResponse<T>>(config)

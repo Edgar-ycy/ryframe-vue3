@@ -1,5 +1,4 @@
 import { getCurrentScope, onScopeDispose } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
 import {
   getAuthSessions,
   revokeAuthSession,
@@ -11,6 +10,7 @@ import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { translate } from '@/i18n'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import {
@@ -36,27 +36,23 @@ export function useAuthSessionManagement() {
   let trackedIdentity = currentAuthSessionIdentity()
   let disposed = false
 
-  const sessionsQuery = useQuery<AuthSession[], HttpError, AuthSessionView[]>({
-    queryKey: computed(() =>
-      authSessionQueryKey(
-        currentAuthSessionIdentity() ?? {
-          tenantId: 'anonymous',
-          userId: 'anonymous',
-        },
-      ),
-    ),
-    enabled: computed(() => pageActive.value && currentAuthSessionIdentity() !== undefined),
-    queryFn: async ({ signal }) => requireOperationData(await getAuthSessions(signal)),
-    select: (sessions) => sessions.map(authSessionView),
-    initialData: () => [],
-    staleTime: 0,
-    gcTime: 10 * 60_000,
-    refetchInterval: false,
-    refetchOnMount: 'always',
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-    meta: { errorMode: 'silent' },
-  })
+  const sessionsQuery = useServerStateQuery<AuthSession[], AuthSessionView[]>(
+    () => pageActive.value && currentAuthSessionIdentity() !== undefined,
+    'profile-auth-sessions',
+    () => ({ scope: 'self', userId: String(userStore.userId || 'anonymous') }),
+    async (signal) => requireOperationData(await getAuthSessions(signal)),
+    {
+      select: (sessions) => sessions.map(authSessionView),
+      initialData: () => [],
+      staleTime: 0,
+      gcTime: 10 * 60_000,
+      refetchInterval: false,
+      refetchOnMount: 'always',
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      meta: { errorMode: 'silent' },
+    },
+  )
 
   const devices = sessionsQuery.data
   const loading = sessionsQuery.isFetching

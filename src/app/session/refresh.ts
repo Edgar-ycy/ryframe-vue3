@@ -23,6 +23,11 @@ import {
 
 let refreshPromise: Promise<string> | undefined
 
+interface RefreshResult {
+  token: string
+  sessionEpoch: number
+}
+
 export function getPendingRefresh(): Promise<string> | undefined {
   return refreshPromise
 }
@@ -56,8 +61,8 @@ export async function refreshAccessToken(): Promise<string> {
     const refreshEpoch = getSessionEpoch()
     const operation = startLocalRefreshOperation()
     const pending = performRefresh(refreshEpoch)
-      .then((token) => {
-        assertSessionEpoch(refreshEpoch)
+      .then((result) => {
+        assertSessionEpoch(result.sessionEpoch)
         const context = useTenantContextStore().context
         if (!context) {
           throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
@@ -65,8 +70,8 @@ export async function refreshAccessToken(): Promise<string> {
             kind: 'invalid_response',
           })
         }
-        broadcastAuthenticated(operation, token, context)
-        return token
+        broadcastAuthenticated(operation, result.token, context)
+        return result.token
       })
       .catch((error: unknown) => {
         if (refreshEpoch === getSessionEpoch()) {
@@ -82,7 +87,7 @@ export async function refreshAccessToken(): Promise<string> {
   return refreshPromise
 }
 
-async function performRefresh(refreshEpoch: number): Promise<string> {
+async function performRefresh(refreshEpoch: number): Promise<RefreshResult> {
   const tokenBeforeRefresh = useUserStore().token
   try {
     return await requestRefresh(false, refreshEpoch)
@@ -94,13 +99,13 @@ async function performRefresh(refreshEpoch: number): Promise<string> {
     assertSessionEpoch(refreshEpoch)
     const tokenFromAnotherTab = useUserStore().token
     if (tokenFromAnotherTab && tokenFromAnotherTab !== tokenBeforeRefresh) {
-      return tokenFromAnotherTab
+      return { token: tokenFromAnotherTab, sessionEpoch: getSessionEpoch() }
     }
     return requestRefresh(true, refreshEpoch)
   }
 }
 
-async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise<string> {
+async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise<RefreshResult> {
   const challenge = await ensureCsrfToken(forceCsrf)
   try {
     assertSessionEpoch(refreshEpoch)
@@ -114,11 +119,12 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
       })
     }
     const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.session_context)
+    const appliedEpoch = getSessionEpoch()
     if (scopeChanged) {
       await synchronizeTenantContextUi({ skipAuthRefresh: true, refreshContext: false })
     } else await ensureRoutesAfterAuthentication(true)
-    assertSessionEpoch(refreshEpoch)
-    return auth.access_token
+    assertSessionEpoch(appliedEpoch)
+    return { token: auth.access_token, sessionEpoch: appliedEpoch }
   } finally {
     // 后端在刷新失败时会清理认证 Cookie；本次双提交挑战也必须同步作废，
     // 避免登录或后续刷新继续复用已经失去 Cookie 配对的内存令牌。

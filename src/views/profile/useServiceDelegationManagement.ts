@@ -8,7 +8,7 @@ import {
 } from '@/api/modules/profileServiceDelegation'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { queryClient } from '@/shared/query/client'
+import { queryClient, serverStateResourcePrefixForIdentity } from '@/shared/query/client'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
 import { useTenantContextStore } from '@/app/tenant-context'
 import { useUserStore } from '@/stores/user'
@@ -220,7 +220,11 @@ export function useServiceDelegationManagement() {
       PROFILE_SERVICE_DELEGATIONS_RESOURCE,
       PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
     ]) {
-      const prefix = ['server-state', identity.tenantId, resource]
+      const prefix = serverStateResourcePrefixForIdentity(
+        identity.tenantId,
+        identity.userId,
+        resource,
+      )
       void queryClient.cancelQueries({ queryKey: prefix })
       if (remove) queryClient.removeQueries({ queryKey: prefix })
     }

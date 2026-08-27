@@ -1,7 +1,7 @@
 import { computed, onScopeDispose, ref, toValue, type MaybeRefOrGetter } from 'vue'
 import { listRoleOptions } from '@/api/modules/role'
 import type { SelectOption, SelectOptionList } from '@/api/modules/option'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const ROLE_OPTION_LIMIT = 50
@@ -27,8 +27,7 @@ export function useRoleOptions(
     }
   }
 
-  const rolesQuery = useTenantQuery<SelectOptionList>(
-    () => userStore.tenantId,
+  const rolesQuery = useServerStateQuery<SelectOptionList>(
     () => userStore.sessionStatus === 'authenticated' && toValue(enabled),
     'role-options',
     currentParams,

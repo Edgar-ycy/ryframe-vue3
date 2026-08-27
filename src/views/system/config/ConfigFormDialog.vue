@@ -74,8 +74,8 @@ import {
 } from '@/api/modules/config'
 import { refreshShellSettings } from '@/app/settings/shellSettingsQuery'
 import { type Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
   buildConfigCreateInput,
@@ -98,8 +98,7 @@ const rules = computed<FormRules>(() => ({
   value: [{ required: true, message: t('system.config.enterValue'), trigger: 'blur' }],
 }))
 
-const detailQuery = useTenantQuery<ConfigRecord>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<ConfigRecord>(
   () => userStore.sessionStatus === 'authenticated' && editingConfig.value !== null,
   'configs',
   () => ({ scope: 'detail', id: editingConfig.value?.id ?? null }),
@@ -116,24 +115,20 @@ type SaveConfigCommand =
   | { kind: 'create'; data: ConfigCreateInput }
   | { kind: 'update'; id: Id; key: string; data: ConfigUpdateInput }
 
-const saveMutation = useTenantMutation<void, SaveConfigCommand>(
-  () => userStore.tenantId,
-  'configs',
-  {
-    mutationFn: async (command) => {
-      if (command.kind === 'create') await createConfig(command.data)
-      else await updateConfig(command.id, command.data)
-    },
-    onSuccess: async (_data, command) => {
-      ElMessage.success(
-        t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
-      )
-      if (command.kind === 'update' && isShellSettingKey(command.key)) {
-        await refreshShellSettings(userStore.tenantId)
-      }
-    },
+const saveMutation = useServerStateMutation<void, SaveConfigCommand>('configs', {
+  mutationFn: async (command) => {
+    if (command.kind === 'create') await createConfig(command.data)
+    else await updateConfig(command.id, command.data)
   },
-)
+  onSuccess: async (_data, command) => {
+    ElMessage.success(
+      t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
+    )
+    if (command.kind === 'update' && isShellSettingKey(command.key)) {
+      await refreshShellSettings()
+    }
+  },
+})
 const submitLoading = saveMutation.pending
 
 function resetForm(): void {

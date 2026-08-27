@@ -7,7 +7,7 @@ import {
   onScopeDispose,
   type Ref,
 } from 'vue'
-import { queryClient } from '@/shared/query/client'
+import { queryClient, serverStateResourcePrefixForIdentity } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
 import {
   TENANT_CONFIG_PACKAGES_RESOURCE,
@@ -65,7 +65,11 @@ export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLi
       TENANT_CONFIG_TRANSFERS_RESOURCE,
       TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
     ]) {
-      const prefix = ['server-state', identity.tenantId, resource]
+      const prefix = serverStateResourcePrefixForIdentity(
+        identity.tenantId,
+        identity.userId,
+        resource,
+      )
       void queryClient.cancelQueries({ queryKey: prefix })
       queryClient.removeQueries({ queryKey: prefix })
     }
@@ -79,7 +83,8 @@ export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLi
       !options.pageActive.value ||
       key[0] !== 'server-state' ||
       key[1] !== identity.tenantId ||
-      ![TENANT_CONFIG_PACKAGES_RESOURCE, TENANT_CONFIG_TRANSFERS_RESOURCE].includes(String(key[2]))
+      key[2] !== identity.userId ||
+      ![TENANT_CONFIG_PACKAGES_RESOURCE, TENANT_CONFIG_TRANSFERS_RESOURCE].includes(String(key[4]))
     )
       return
     options.activeTracking.scheduleActiveCycle()

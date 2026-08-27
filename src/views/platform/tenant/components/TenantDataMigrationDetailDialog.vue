@@ -169,9 +169,8 @@ import { useActivePolling } from '@/features/tenant-data/useActivePolling'
 import { formatLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
-import { useUserStore } from '@/stores/user'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { confirmAction } from '@/utils/confirmAction'
 
 const props = defineProps<{
@@ -184,12 +183,10 @@ const props = defineProps<{
 const emit = defineEmits<{ updated: [migration: TenantDataMigration] }>()
 const visible = defineModel<boolean>({ required: true })
 const { t, te } = useI18n()
-const userStore = useUserStore()
 let pendingCancelKey: string | undefined
 let pendingFinalizeKey: string | undefined
 
-const detailQuery = useTenantQuery<TenantDataMigration>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<TenantDataMigration>(
   () => props.active && visible.value && Boolean(props.migrationId),
   'platform-tenant-data-migration-detail',
   () => ({ tenant_id: props.tenantId, migration_id: props.migrationId }),
@@ -213,28 +210,18 @@ const cutoverStarted = computed(() =>
   ),
 )
 
-const cancelMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-data-migrations',
-  {
-    meta: { errorMode: 'silent' },
-    mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
-      requireOperationData(
-        await cancelTenantDataMigration(input.migrationId, input.idempotencyKey),
-      ),
-  },
-)
-const finalizeMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-data-migrations',
-  {
-    meta: { errorMode: 'silent' },
-    mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
-      requireOperationData(
-        await finalizeTenantDataMigration(input.migrationId, input.idempotencyKey),
-      ),
-  },
-)
+const cancelMutation = useServerStateMutation('platform-tenant-data-migrations', {
+  meta: { errorMode: 'silent' },
+  mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
+    requireOperationData(await cancelTenantDataMigration(input.migrationId, input.idempotencyKey)),
+})
+const finalizeMutation = useServerStateMutation('platform-tenant-data-migrations', {
+  meta: { errorMode: 'silent' },
+  mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
+    requireOperationData(
+      await finalizeTenantDataMigration(input.migrationId, input.idempotencyKey),
+    ),
+})
 const actionPending = computed(() => cancelMutation.pending.value || finalizeMutation.pending.value)
 const actionError = computed(() => cancelMutation.error.value ?? finalizeMutation.error.value)
 

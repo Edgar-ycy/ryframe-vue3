@@ -1,16 +1,17 @@
-import { computed, getCurrentScope, onScopeDispose, type MaybeRefOrGetter } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { getCurrentScope, onScopeDispose, type MaybeRefOrGetter } from 'vue'
 import {
   getUnreadExportNotificationCount,
   markExportNotificationsRead,
   type ExportJob,
 } from '@/api/modules/exportJob'
-import { HttpError, requireOperationData } from '@/shared/http/client'
+import { requireOperationData } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { publishExportJobEvent } from '../exportJobChannel'
 import {
   exportJobUnreadQueryKey,
+  EXPORT_JOB_NOTIFICATIONS_RESOURCE,
   isUnreadExportNotification,
   markExportNotificationsReadInCache,
   type ExportJobIdentity,
@@ -19,21 +20,21 @@ import { currentExportJobIdentity, sameExportJobIdentity, shouldEnableExportJobs
 
 export function useExportNotificationState(enabled: MaybeRefOrGetter<boolean> = true) {
   const user = useUserStore()
-  const unreadQuery = useQuery<number, HttpError>({
-    queryKey: computed(() =>
-      exportJobUnreadQueryKey(user.tenantId || 'anonymous', String(user.userId || 'anonymous')),
-    ),
-    enabled: computed(() => shouldEnableExportJobs(enabled)),
-    queryFn: async ({ signal }) =>
-      requireOperationData(await getUnreadExportNotificationCount(signal)),
-    staleTime: Number.POSITIVE_INFINITY,
-    gcTime: 10 * 60_000,
-    refetchInterval: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-    meta: { errorMode: 'silent' },
-  })
+  const unreadQuery = useServerStateQuery<number>(
+    () => shouldEnableExportJobs(enabled),
+    EXPORT_JOB_NOTIFICATIONS_RESOURCE,
+    () => ({ scope: 'unread-count' }),
+    async (signal) => requireOperationData(await getUnreadExportNotificationCount(signal)),
+    {
+      staleTime: Number.POSITIVE_INFINITY,
+      gcTime: 10 * 60_000,
+      refetchInterval: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      meta: { errorMode: 'silent' },
+    },
+  )
   let readController: AbortController | undefined
   let readIdentity: ExportJobIdentity | undefined
 

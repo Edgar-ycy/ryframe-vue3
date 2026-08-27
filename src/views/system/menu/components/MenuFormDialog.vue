@@ -96,8 +96,7 @@ import {
 import IconSelect from '@/components/common/IconSelect.vue'
 import { getRouteKeyByPermissionCode } from '@/features/pageRegistry'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { excludeMenuSubtree, type PermissionOption } from '../menuTree'
 
 const { t } = useI18n()
@@ -133,8 +132,7 @@ function isEdit(): boolean {
   return props.menu !== null
 }
 const formRef = ref<FormInstance>()
-const userStore = useUserStore()
-const saveMutation = useTenantMutation<void, SaveMenuCommand>(() => userStore.tenantId, 'menus', {
+const saveMutation = useServerStateMutation<void, SaveMenuCommand>('menus', {
   mutationFn: async (command) => {
     if (command.kind === 'update') await updateMenu(command.id, command.data)
     else await createMenu(command.data)

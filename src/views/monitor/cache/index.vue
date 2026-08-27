@@ -153,7 +153,7 @@ import {
   type CacheInfo,
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -165,8 +165,7 @@ interface CacheSnapshot {
   info: CacheInfo | null
 }
 
-const cacheQuery = useTenantQuery<CacheSnapshot>(
-  () => userStore.tenantId,
+const cacheQuery = useServerStateQuery<CacheSnapshot>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-cache',
   () => ({ scope: 'overview' }),

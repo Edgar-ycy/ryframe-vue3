@@ -1,5 +1,9 @@
 import type { QueryClient, QueryKey } from '@tanstack/vue-query'
 import type { ExportJob } from '@/api/modules/exportJob'
+import { serverStateQueryKeyForIdentity } from '@/shared/query/client'
+
+export const EXPORT_JOBS_RESOURCE = 'export-jobs'
+export const EXPORT_JOB_NOTIFICATIONS_RESOURCE = 'export-job-notifications'
 
 export interface ExportJobIdentity {
   tenantId: string
@@ -7,15 +11,22 @@ export interface ExportJobIdentity {
 }
 
 export function exportJobListQueryKey(tenantId: string, userId: string): QueryKey {
-  return ['tenant', tenantId, 'user', userId, 'export-jobs']
+  return serverStateQueryKeyForIdentity(tenantId, userId, EXPORT_JOBS_RESOURCE, {
+    scope: 'list',
+  })
 }
 
 export function exportJobDetailQueryKey(tenantId: string, userId: string, jobId: string): QueryKey {
-  return [...exportJobListQueryKey(tenantId, userId), jobId]
+  return serverStateQueryKeyForIdentity(tenantId, userId, EXPORT_JOBS_RESOURCE, {
+    scope: 'detail',
+    jobId,
+  })
 }
 
 export function exportJobUnreadQueryKey(tenantId: string, userId: string): QueryKey {
-  return [...exportJobListQueryKey(tenantId, userId), 'notifications', 'unread-count']
+  return serverStateQueryKeyForIdentity(tenantId, userId, EXPORT_JOB_NOTIFICATIONS_RESOURCE, {
+    scope: 'unread-count',
+  })
 }
 
 /** 将最新任务写入列表顶部，同时保持服务端“最近一百条”的上限。 */

@@ -7,6 +7,7 @@ import {
   type MessageInboxQuery,
 } from '@/api/modules/messages'
 import { HttpError } from '@/shared/http/client'
+import { executeServerStateMutation } from '@/shared/query/useServerStateMutation'
 import {
   acknowledgeCachedMessages,
   type AcknowledgeVariables,
@@ -28,7 +29,7 @@ export async function cancelMessageState(
 ): Promise<void> {
   await Promise.all([
     client.cancelQueries({
-      queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
+      queryKey: resourceQueryKey(tenantId, userId, MESSAGE_INBOX_RESOURCE),
       predicate: (query) => isInboxKeyForUser(query.queryKey, userId),
     }),
     client.cancelQueries({ queryKey: messageUnreadQueryKey(tenantId, userId) }),
@@ -98,7 +99,6 @@ export function normalizeMessageIds(ids: readonly string[], action: string): str
 
 export function acknowledgeMutationOptions(client: QueryClient) {
   return {
-    mutationKey: ['message-acknowledge'],
     meta: { errorMode: 'silent' as const },
     mutationFn: (variables: AcknowledgeVariables) => acknowledgeMessages(variables.ids),
     onSuccess: async (
@@ -123,6 +123,10 @@ export async function executeMessageAcknowledgement(
   const normalized = normalizeMessageIds(ids, '确认')
   if (normalized.length === 0) return
   const variables = { tenantId, userId, ids: normalized }
-  const mutation = client.getMutationCache().build(client, acknowledgeMutationOptions(client))
-  await mutation.execute(variables)
+  await executeServerStateMutation(
+    client,
+    MESSAGE_INBOX_RESOURCE,
+    variables,
+    acknowledgeMutationOptions(client),
+  )
 }

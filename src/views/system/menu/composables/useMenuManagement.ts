@@ -11,8 +11,8 @@ import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permis
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import { flattenPermissionOptions } from '../menuTree'
@@ -32,8 +32,7 @@ export function useMenuManagement() {
   const userStore = useUserStore()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
 
-  const menusQuery = useTenantQuery<MenuTreeNode[]>(
-    () => userStore.tenantId,
+  const menusQuery = useServerStateQuery<MenuTreeNode[]>(
     authenticated,
     'menus',
     () => ({ scope: 'tree' }),
@@ -42,8 +41,7 @@ export function useMenuManagement() {
       return response.data ?? []
     },
   )
-  const permissionsQuery = useTenantQuery<PermissionTreeNode[]>(
-    () => userStore.tenantId,
+  const permissionsQuery = useServerStateQuery<PermissionTreeNode[]>(
     authenticated,
     'permissions',
     () => ({ scope: 'tree' }),
@@ -58,7 +56,7 @@ export function useMenuManagement() {
   )
   const loading = menusQuery.isFetching
 
-  const statusMutation = useTenantMutation<void, StatusCommand>(() => userStore.tenantId, 'menus', {
+  const statusMutation = useServerStateMutation<void, StatusCommand>('menus', {
     mutationFn: async (variables) => {
       await updateMenu(variables.menu.id, toUpdateInput(variables.menu, variables.status))
     },
@@ -73,7 +71,7 @@ export function useMenuManagement() {
       )
     },
   })
-  const deleteMutation = useTenantMutation<void, MenuTreeNode>(() => userStore.tenantId, 'menus', {
+  const deleteMutation = useServerStateMutation<void, MenuTreeNode>('menus', {
     mutationFn: async (menu) => {
       await deleteMenu(menu.id)
     },

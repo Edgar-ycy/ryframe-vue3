@@ -13,8 +13,8 @@ import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -54,8 +54,7 @@ export function useDictManagement() {
     { flush: 'sync' },
   )
 
-  const typesQuery = useTenantQuery<PageResponse<DictTypeRecord>>(
-    () => userStore.tenantId,
+  const typesQuery = useServerStateQuery<PageResponse<DictTypeRecord>>(
     authenticated,
     'dict-types',
     () => ({ scope: 'list', filters: { ...appliedTypeQuery.value } }),
@@ -78,8 +77,7 @@ export function useDictManagement() {
       currentTypeId.value = value?.id ?? null
     },
   })
-  const dataQuery = useTenantQuery<DictDataRecord[]>(
-    () => userStore.tenantId,
+  const dataQuery = useServerStateQuery<DictDataRecord[]>(
     () => authenticated() && currentType.value !== null,
     'dict-data',
     () => ({ scope: 'list', typeCode: currentType.value?.code ?? null }),
@@ -95,30 +93,22 @@ export function useDictManagement() {
   const dataList = dataQuery.data
   const dataLoading = dataQuery.isFetching
 
-  const deleteTypeMutation = useTenantMutation<void, DictTypeRecord>(
-    () => userStore.tenantId,
-    'dict-types',
-    {
-      mutationFn: async (dictType) => {
-        await deleteDictType(dictType.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(translate('system.common.deleteSuccess'))
-      },
+  const deleteTypeMutation = useServerStateMutation<void, DictTypeRecord>('dict-types', {
+    mutationFn: async (dictType) => {
+      await deleteDictType(dictType.id)
     },
-  )
-  const deleteDataMutation = useTenantMutation<void, DictDataRecord>(
-    () => userStore.tenantId,
-    'dict-data',
-    {
-      mutationFn: async (dictData) => {
-        await deleteDictData(dictData.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(translate('system.common.deleteSuccess'))
-      },
+    onSuccess: () => {
+      ElMessage.success(translate('system.common.deleteSuccess'))
     },
-  )
+  })
+  const deleteDataMutation = useServerStateMutation<void, DictDataRecord>('dict-data', {
+    mutationFn: async (dictData) => {
+      await deleteDictData(dictData.id)
+    },
+    onSuccess: () => {
+      ElMessage.success(translate('system.common.deleteSuccess'))
+    },
+  })
   const deletingTypeId = computed<Id | null>(() =>
     deleteTypeMutation.pending.value ? (deleteTypeMutation.variables.value?.id ?? null) : null,
   )

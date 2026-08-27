@@ -59,8 +59,8 @@ import {
   type RoleUpdateInput,
 } from '@/api/modules/role'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -89,8 +89,7 @@ function isEdit(): boolean {
 }
 const userStore = useUserStore()
 const formRef = ref<FormInstance>()
-const detailQuery = useTenantQuery<RoleRecord>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<RoleRecord>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
   'roles',
   () => ({ scope: 'detail', id: props.role?.id ?? null }),
@@ -102,7 +101,7 @@ const detailQuery = useTenantQuery<RoleRecord>(
     return response.data
   },
 )
-const saveMutation = useTenantMutation<void, SaveRoleCommand>(() => userStore.tenantId, 'roles', {
+const saveMutation = useServerStateMutation<void, SaveRoleCommand>('roles', {
   mutationFn: async (command) => {
     if (command.kind === 'update') await updateRole(command.id, command.data)
     else await createRole(command.data)

@@ -1,8 +1,8 @@
 import { computed, shallowRef, watch } from 'vue'
 
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import type { PageQuery, PageResponse, Id } from '@/shared/http/types'
@@ -37,8 +37,7 @@ export function useFlatCrudResource<
     { flush: 'sync' },
   )
 
-  const listQuery = useTenantQuery<PageResponse<TRecord>>(
-    () => userStore.tenantId,
+  const listQuery = useServerStateQuery<PageResponse<TRecord>>(
     authenticated,
     resource.key,
     () => ({ scope: 'list', filters: { ...appliedQuery.value } }),
@@ -55,8 +54,7 @@ export function useFlatCrudResource<
   const dialogVisible = shallowRef(false)
   const form = shallowRef<TForm>(resource.emptyForm())
 
-  const detailQuery = useTenantQuery<TRecord>(
-    () => userStore.tenantId,
+  const detailQuery = useServerStateQuery<TRecord>(
     () => authenticated() && editingRecord.value !== undefined,
     resource.key,
     () => ({ scope: 'detail', id: currentEditId.value }),
@@ -67,25 +65,19 @@ export function useFlatCrudResource<
     },
   )
 
-  const saveMutation = useTenantMutation<void, SaveCommand<TCreate, TUpdate>>(
-    () => userStore.tenantId,
-    resource.key,
-    {
-      mutationFn: (command) =>
-        command.kind === 'create'
-          ? resource.adapter.create(command.input)
-          : resource.adapter.update(command.id, command.input),
-      onSuccess: (_data, command) => {
-        ElMessage.success(
-          command.kind === 'create'
-            ? resource.messages.addSuccess
-            : resource.messages.updateSuccess,
-        )
-      },
+  const saveMutation = useServerStateMutation<void, SaveCommand<TCreate, TUpdate>>(resource.key, {
+    mutationFn: (command) =>
+      command.kind === 'create'
+        ? resource.adapter.create(command.input)
+        : resource.adapter.update(command.id, command.input),
+    onSuccess: (_data, command) => {
+      ElMessage.success(
+        command.kind === 'create' ? resource.messages.addSuccess : resource.messages.updateSuccess,
+      )
     },
-  )
+  })
 
-  const deleteMutation = useTenantMutation<void, TRecord>(() => userStore.tenantId, resource.key, {
+  const deleteMutation = useServerStateMutation<void, TRecord>(resource.key, {
     mutationFn: (record) => resource.adapter.remove(resource.recordId(record)),
     onSuccess: () => ElMessage.success(resource.messages.deleteSuccess),
   })

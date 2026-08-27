@@ -1,6 +1,9 @@
 import type { QueryClient, QueryKey } from '@tanstack/vue-query'
 import type { MessageInboxQuery } from '@/api/modules/messages'
-import { tenantQueryKey } from '@/shared/query/client'
+import {
+  serverStateQueryKeyForIdentity,
+  serverStateResourcePrefixForIdentity,
+} from '@/shared/query/client'
 
 export const MESSAGE_INBOX_RESOURCE = 'message-inbox'
 export const MESSAGE_UNREAD_RESOURCE = 'message-unread-count'
@@ -49,15 +52,22 @@ export function messageInboxQueryKey(
   userId: string,
   query: MessageInboxQuery,
 ): QueryKey {
-  return tenantQueryKey(tenantId, MESSAGE_INBOX_RESOURCE, messageInboxKeyParams(userId, query))
+  return serverStateQueryKeyForIdentity(
+    tenantId,
+    userId,
+    MESSAGE_INBOX_RESOURCE,
+    messageInboxKeyParams(userId, query),
+  )
 }
 
 export function messageUnreadQueryKey(tenantId: string, userId: string): QueryKey {
-  return tenantQueryKey(tenantId, MESSAGE_UNREAD_RESOURCE, { user_id: userId })
+  return serverStateQueryKeyForIdentity(tenantId, userId, MESSAGE_UNREAD_RESOURCE, {
+    user_id: userId,
+  })
 }
 
-export function resourceQueryKey(tenantId: string, resource: string): QueryKey {
-  return tenantQueryKey(tenantId, resource).slice(0, 3)
+export function resourceQueryKey(tenantId: string, userId: string, resource: string): QueryKey {
+  return serverStateResourcePrefixForIdentity(tenantId, userId, resource)
 }
 
 export function invalidateUserInbox(
@@ -66,18 +76,18 @@ export function invalidateUserInbox(
   userId: string,
 ): Promise<void> {
   return client.invalidateQueries({
-    queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
+    queryKey: resourceQueryKey(tenantId, userId, MESSAGE_INBOX_RESOURCE),
     predicate: (query) => isInboxKeyForUser(query.queryKey, userId),
   })
 }
 
 export function isInboxKeyForUser(queryKey: QueryKey, userId: string): boolean {
-  const params = queryKey[3]
+  const params = queryKey[5]
   return isRecord(params) && params.user_id === userId
 }
 
 export function inboxParamsFromKey(queryKey: QueryKey): MessageInboxKeyParams | undefined {
-  const params = queryKey[3]
+  const params = queryKey[5]
   if (!isRecord(params)) return undefined
   if (
     typeof params.user_id !== 'string' ||

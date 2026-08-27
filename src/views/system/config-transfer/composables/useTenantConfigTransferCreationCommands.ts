@@ -7,7 +7,7 @@ import {
   type TenantConfigTransfer,
 } from '@/api/modules/tenantConfigTransfer'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import {
   TENANT_CONFIG_PACKAGES_RESOURCE,
   TENANT_CONFIG_TRANSFERS_RESOURCE,
@@ -30,8 +30,7 @@ export function useTenantConfigTransferCreationCommands(
   context: ReturnType<typeof useTenantConfigTransferCommandContext>,
 ) {
   const createTransferBusy = ref(false)
-  const packageMutation = useTenantMutation<TenantConfigBundle, PackageCommand>(
-    () => context.currentIdentity()?.tenantId,
+  const packageMutation = useServerStateMutation<TenantConfigBundle, PackageCommand>(
     TENANT_CONFIG_PACKAGES_RESOURCE,
     {
       meta: { errorMode: 'silent' },
@@ -41,28 +40,27 @@ export function useTenantConfigTransferCreationCommands(
         ),
     },
   )
-  const createTransferMutation = useTenantMutation<TenantConfigTransfer, CreateTransferCommand>(
-    () => context.currentIdentity()?.tenantId,
-    TENANT_CONFIG_TRANSFERS_RESOURCE,
-    {
-      meta: { errorMode: 'silent' },
-      mutationFn: async (command) => {
-        const response =
-          command.kind === 'upload'
-            ? await uploadTenantConfigTransfer(
-                command.file,
-                command.idempotencyKey,
-                command.controller.signal,
-              )
-            : await createTenantConfigTransferFromPackage(
-                command.bundleId,
-                command.idempotencyKey,
-                command.controller.signal,
-              )
-        return requireOperationData(response)
-      },
+  const createTransferMutation = useServerStateMutation<
+    TenantConfigTransfer,
+    CreateTransferCommand
+  >(TENANT_CONFIG_TRANSFERS_RESOURCE, {
+    meta: { errorMode: 'silent' },
+    mutationFn: async (command) => {
+      const response =
+        command.kind === 'upload'
+          ? await uploadTenantConfigTransfer(
+              command.file,
+              command.idempotencyKey,
+              command.controller.signal,
+            )
+          : await createTenantConfigTransferFromPackage(
+              command.bundleId,
+              command.idempotencyKey,
+              command.controller.signal,
+            )
+      return requireOperationData(response)
     },
-  )
+  })
 
   async function createPackage(): Promise<TenantConfigBundle> {
     if (packageMutation.pending.value) {

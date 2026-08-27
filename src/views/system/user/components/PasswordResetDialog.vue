@@ -50,8 +50,7 @@ import {
   type PasswordResetRequestResult,
 } from '@/api/modules/user'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 
 const { t } = useI18n()
 
@@ -63,11 +62,10 @@ const visible = defineModel<boolean>({ required: true })
 const formRef = ref<FormInstance>()
 const form = ref({ reason: '' })
 const resetLink = ref('')
-const userStore = useUserStore()
-const resetMutation = useTenantMutation<
+const resetMutation = useServerStateMutation<
   PasswordResetRequestResult,
   { userId: Id; data: PasswordResetRequestInput }
->(() => userStore.tenantId, 'users', {
+>('users', {
   mutationFn: async (variables) => {
     const response = await requestPasswordReset(variables.userId, variables.data)
     if (!response.data) throw new Error(t('system.user.resetResponseMissing'))

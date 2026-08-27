@@ -95,8 +95,8 @@ import {
 import type { SelectOption } from '@/api/modules/option'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { useRoleOptions } from '../composables/useRoleOptions'
 
@@ -137,8 +137,7 @@ const {
 } = useRoleOptions(() => visible.value && !isEdit(), selectedRoleOptions)
 
 const formRef = ref<FormInstance>()
-const detailQuery = useTenantQuery<UserDetail>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<UserDetail>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.user !== null,
   'users',
   () => ({ scope: 'detail', id: props.user?.id ?? null }),
@@ -151,7 +150,7 @@ const detailQuery = useTenantQuery<UserDetail>(
   },
 )
 const detailLoading = detailQuery.isFetching
-const saveMutation = useTenantMutation<void, SaveUserCommand>(() => userStore.tenantId, 'users', {
+const saveMutation = useServerStateMutation<void, SaveUserCommand>('users', {
   mutationFn: async (command) => {
     if (command.kind === 'update') {
       await updateUser(command.id, command.data)

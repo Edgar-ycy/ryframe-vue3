@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 import { getConfigByKey } from '@/api/modules/config'
-import { queryClient, tenantQueryKey } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { getServerStateScope, queryClient, serverStateQueryKey } from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useSettingsStore, type ShellServerSettings } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 
@@ -9,10 +9,12 @@ const SHELL_SETTINGS_RESOURCE = 'configs'
 const SHELL_SETTINGS_PARAMS = { scope: 'shell-theme' }
 
 /** 刷新 Shell 已订阅的服务端主题设置。 */
-export async function refreshShellSettings(tenantId: string | undefined): Promise<void> {
+export async function refreshShellSettings(): Promise<void> {
+  const scope = getServerStateScope()
+  if (!scope) return
   await queryClient.refetchQueries(
     {
-      queryKey: tenantQueryKey(tenantId, SHELL_SETTINGS_RESOURCE, SHELL_SETTINGS_PARAMS),
+      queryKey: serverStateQueryKey(scope, SHELL_SETTINGS_RESOURCE, SHELL_SETTINGS_PARAMS),
       type: 'active',
     },
     { throwOnError: true },
@@ -22,8 +24,7 @@ export async function refreshShellSettings(tenantId: string | undefined): Promis
 export function useShellSettingsQuery() {
   const settingsStore = useSettingsStore()
   const userStore = useUserStore()
-  const settingsQuery = useTenantQuery<ShellServerSettings>(
-    () => userStore.tenantId,
+  const settingsQuery = useServerStateQuery<ShellServerSettings>(
     () => userStore.sessionStatus === 'authenticated',
     SHELL_SETTINGS_RESOURCE,
     () => SHELL_SETTINGS_PARAMS,

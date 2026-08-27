@@ -147,8 +147,8 @@ import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { formatLocalizedDate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import ConfigFormDialog from './ConfigFormDialog.vue'
@@ -181,8 +181,7 @@ watch(
   { flush: 'sync' },
 )
 
-const configsQuery = useTenantQuery<PageResponse<ConfigRecord>>(
-  () => userStore.tenantId,
+const configsQuery = useServerStateQuery<PageResponse<ConfigRecord>>(
   authenticated,
   'configs',
   () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
@@ -235,7 +234,7 @@ async function refreshData(): Promise<void> {
   })
 }
 
-const deleteMutation = useTenantMutation<void, ConfigRecord>(() => userStore.tenantId, 'configs', {
+const deleteMutation = useServerStateMutation<void, ConfigRecord>('configs', {
   mutationFn: async (config) => {
     await deleteConfig(config.id)
   },

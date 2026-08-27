@@ -173,7 +173,7 @@ import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -206,8 +206,7 @@ watch(
   { flush: 'sync' },
 )
 
-const loginLogsQuery = useTenantQuery<PageResponse<LoginLogRecord>>(
-  () => userStore.tenantId,
+const loginLogsQuery = useServerStateQuery<PageResponse<LoginLogRecord>>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-login-logs',
   () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),

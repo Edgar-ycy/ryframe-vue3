@@ -200,8 +200,8 @@ import { usePermission } from '@/hooks/usePermission'
 import { formatLocalizedDate, formatOptionalLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -216,8 +216,7 @@ const rowQuery = ref({ page: 1, page_size: 10 })
 const reportLoadingId = ref('')
 let pollTimer: number | undefined
 
-const importsQuery = useTenantQuery<PageResponse<UserImportJob>>(
-  () => userStore.tenantId,
+const importsQuery = useServerStateQuery<PageResponse<UserImportJob>>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && queryReady.value,
   'user-imports',
   () => ({ scope: 'list', ...query.value }),
@@ -228,8 +227,7 @@ const importsQuery = useTenantQuery<PageResponse<UserImportJob>>(
   { refetchInterval: false },
 )
 
-const detailQuery = useTenantQuery<UserImportJob>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<UserImportJob>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(selectedId.value),
   'user-import-detail',
   () => ({ id: selectedId.value }),
@@ -237,8 +235,7 @@ const detailQuery = useTenantQuery<UserImportJob>(
   { refetchInterval: false },
 )
 
-const rowsQuery = useTenantQuery<PageResponse<UserImportRow>>(
-  () => userStore.tenantId,
+const rowsQuery = useServerStateQuery<PageResponse<UserImportRow>>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(selectedId.value),
   'user-import-rows',
   () => ({ id: selectedId.value, ...rowQuery.value }),
@@ -250,7 +247,7 @@ const rowsQuery = useTenantQuery<PageResponse<UserImportRow>>(
   { refetchInterval: false },
 )
 
-const cancelMutation = useTenantMutation(() => userStore.tenantId, 'user-imports', {
+const cancelMutation = useServerStateMutation('user-imports', {
   mutationFn: (job: UserImportJob) => cancelUserImport(job.id),
   onSuccess: () => ElMessage.success(t('system.userImport.cancelSuccess')),
 })

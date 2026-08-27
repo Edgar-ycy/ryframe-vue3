@@ -10,8 +10,14 @@ import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { invalidateTenantResource, queryClient, tenantQueryKey } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import {
+  assertServerStateScopeCurrent,
+  getServerStateScope,
+  invalidateActiveServerStateResource,
+  queryClient,
+  serverStateQueryKey,
+} from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import {
@@ -51,8 +57,7 @@ export function useScheduleManagement(t: Translate) {
   const editingId = ref<string>()
   const pendingRunKeys = new Map<string, string>()
 
-  const schedulesQuery = useTenantQuery<PageResponse<JobScheduleRecord>>(
-    () => userStore.tenantId,
+  const schedulesQuery = useServerStateQuery<PageResponse<JobScheduleRecord>>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_SCHEDULES_RESOURCE,
     () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
@@ -62,8 +67,7 @@ export function useScheduleManagement(t: Translate) {
       return response.data ?? emptyPageResponse<JobScheduleRecord>(params)
     },
   )
-  const targetsQuery = useTenantQuery<ScheduleTargetRecord[]>(
-    () => userStore.tenantId,
+  const targetsQuery = useServerStateQuery<ScheduleTargetRecord[]>(
     () => userStore.sessionStatus === 'authenticated',
     MONITOR_SCHEDULE_TARGETS_RESOURCE,
     () => ({ scope: 'catalog' }),
@@ -85,7 +89,7 @@ export function useScheduleManagement(t: Translate) {
     statusMutation,
     statusPendingId,
     updateMutation,
-  } = useScheduleMutations(() => userStore.tenantId, t)
+  } = useScheduleMutations(t)
 
   const loading = schedulesQuery.isFetching
   const targetLoading = targetsQuery.isFetching
@@ -136,15 +140,19 @@ export function useScheduleManagement(t: Translate) {
 
   async function openEdit(row: JobScheduleRecord): Promise<void> {
     if (editingId.value || hasPendingWrite.value) return
+    const scope = getServerStateScope()
+    if (!scope) return
     editingId.value = row.id
     try {
       const detail = await queryClient.fetchQuery<JobScheduleRecord>({
-        queryKey: tenantQueryKey(userStore.tenantId, MONITOR_SCHEDULE_DETAIL_RESOURCE, {
+        queryKey: serverStateQueryKey(scope, MONITOR_SCHEDULE_DETAIL_RESOURCE, {
           id: row.id,
         }),
-        queryFn: async ({ signal }) => requireOperationData(await getSchedule(row.id, signal)),
+        queryFn: async ({ signal }) =>
+          requireOperationData(await getSchedule(row.id, AbortSignal.any([signal, scope.signal]))),
         staleTime: 0,
       })
+      assertServerStateScopeCurrent(scope)
       editingSchedule.value = detail
       formVisible.value = true
     } finally {
@@ -234,14 +242,12 @@ export function useScheduleManagement(t: Translate) {
   }
 
   async function invalidateRelatedResources(): Promise<void> {
-    const tenantId = userStore.tenantId
-    if (!tenantId) return
     await Promise.all([
-      invalidateTenantResource(tenantId, MONITOR_SCHEDULES_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_SCHEDULE_DETAIL_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_SCHEDULE_EXECUTIONS_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_JOBS_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_JOB_STATS_RESOURCE),
+      invalidateActiveServerStateResource(MONITOR_SCHEDULES_RESOURCE),
+      invalidateActiveServerStateResource(MONITOR_SCHEDULE_DETAIL_RESOURCE),
+      invalidateActiveServerStateResource(MONITOR_SCHEDULE_EXECUTIONS_RESOURCE),
+      invalidateActiveServerStateResource(MONITOR_JOBS_RESOURCE),
+      invalidateActiveServerStateResource(MONITOR_JOB_STATS_RESOURCE),
     ])
   }
 

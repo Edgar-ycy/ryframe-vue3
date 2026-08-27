@@ -11,8 +11,8 @@ import {
   type DeptUpdateInput,
 } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -32,8 +32,7 @@ export function useDeptManagement(t: Translate) {
     status: '1',
   })
 
-  const departmentsQuery = useTenantQuery<DeptNode[]>(
-    () => userStore.tenantId,
+  const departmentsQuery = useServerStateQuery<DeptNode[]>(
     () => userStore.sessionStatus === 'authenticated',
     'departments',
     () => ({ scope: 'tree' }),
@@ -42,8 +41,7 @@ export function useDeptManagement(t: Translate) {
       return response.data ?? []
     },
   )
-  const detailQuery = useTenantQuery<DeptRecord>(
-    () => userStore.tenantId,
+  const detailQuery = useServerStateQuery<DeptRecord>(
     () =>
       userStore.sessionStatus === 'authenticated' &&
       dialog.value.visible &&
@@ -59,33 +57,25 @@ export function useDeptManagement(t: Translate) {
       return response.data
     },
   )
-  const saveMutation = useTenantMutation<void, SaveDeptCommand>(
-    () => userStore.tenantId,
-    'departments',
-    {
-      mutationFn: async (command) => {
-        if (command.kind === 'update') await updateDept(command.id, command.data)
-        else await createDept(command.data)
-      },
-      onSuccess: (_data, command) => {
-        ElMessage.success(
-          t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
-        )
-      },
+  const saveMutation = useServerStateMutation<void, SaveDeptCommand>('departments', {
+    mutationFn: async (command) => {
+      if (command.kind === 'update') await updateDept(command.id, command.data)
+      else await createDept(command.data)
     },
-  )
-  const deleteMutation = useTenantMutation<void, DeptNode>(
-    () => userStore.tenantId,
-    'departments',
-    {
-      mutationFn: async (department) => {
-        await deleteDept(department.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(t('system.common.deleteSuccess'))
-      },
+    onSuccess: (_data, command) => {
+      ElMessage.success(
+        t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+      )
     },
-  )
+  })
+  const deleteMutation = useServerStateMutation<void, DeptNode>('departments', {
+    mutationFn: async (department) => {
+      await deleteDept(department.id)
+    },
+    onSuccess: () => {
+      ElMessage.success(t('system.common.deleteSuccess'))
+    },
+  })
 
   const loading = departmentsQuery.isFetching
   const tableData = departmentsQuery.data

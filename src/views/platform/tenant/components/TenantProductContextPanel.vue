@@ -84,7 +84,7 @@ import { useI18n } from 'vue-i18n'
 import { getTenantProductContext, type TenantProductContext } from '@/api/modules/productPlan'
 import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import TenantProductChangeDialog from './TenantProductChangeDialog.vue'
@@ -97,8 +97,7 @@ const can = (permission: PermissionCode) => hasPermission(userStore.permissions,
 const canView = computed(() => can(TENANT_PRODUCT_PERMISSIONS.view))
 const canAssign = computed(() => can(TENANT_PRODUCT_PERMISSIONS.assign))
 const canOverride = computed(() => can(TENANT_PRODUCT_PERMISSIONS.override))
-const contextQuery = useTenantQuery<TenantProductContext>(
-  () => userStore.tenantId,
+const contextQuery = useServerStateQuery<TenantProductContext>(
   () => props.active && userStore.tenantId === 'system' && canView.value && Boolean(props.tenantId),
   'platform-tenant-product-context',
   () => ({ tenant_id: props.tenantId }),

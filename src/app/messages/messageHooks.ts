@@ -1,5 +1,4 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
 import {
   deleteMessages as deleteReceivedMessages,
   getUnreadMessageCount,
@@ -10,7 +9,8 @@ import {
 } from '@/api/modules/messages'
 import { HttpError } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
   type DeleteVariables,
@@ -65,8 +65,7 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
     return String(userStore.userId || '')
   }
 
-  const inboxQuery = useTenantQuery<MessageInboxPage>(
-    () => userStore.tenantId,
+  const inboxQuery = useServerStateQuery<MessageInboxPage>(
     isMessageSessionActive,
     MESSAGE_INBOX_RESOURCE,
     () => messageInboxKeyParams(currentUserId(), toValue(query)),
@@ -78,8 +77,7 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
     },
     MESSAGE_QUERY_POLICY,
   )
-  const unreadQuery = useTenantQuery<number>(
-    () => userStore.tenantId,
+  const unreadQuery = useServerStateQuery<number>(
     isMessageSessionActive,
     MESSAGE_UNREAD_RESOURCE,
     () => ({ user_id: currentUserId() }),
@@ -93,8 +91,11 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
     MESSAGE_QUERY_POLICY,
   )
 
-  const acknowledgeMutation = useMutation(acknowledgeMutationOptions(queryClient))
-  const markReadMutation = useMutation({
+  const acknowledgeMutation = useServerStateMutation(
+    MESSAGE_INBOX_RESOURCE,
+    acknowledgeMutationOptions(queryClient),
+  )
+  const markReadMutation = useServerStateMutation(MESSAGE_INBOX_RESOURCE, {
     meta: { errorMode: 'silent' },
     mutationFn: (variables: MarkReadVariables) => markMessageRead(variables.id),
     onSuccess: async (_response, variables) => {
@@ -119,7 +120,7 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
       }
     },
   })
-  const markAllReadMutation = useMutation({
+  const markAllReadMutation = useServerStateMutation(MESSAGE_INBOX_RESOURCE, {
     meta: { errorMode: 'silent' },
     mutationFn: (_identity: MessageIdentity) => markAllMessagesRead(),
     onSuccess: async (_response, identity) => {
@@ -133,8 +134,7 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
       ])
     },
   })
-  const deleteMutation = useMutation({
-    mutationKey: ['message-delete'],
+  const deleteMutation = useServerStateMutation(MESSAGE_INBOX_RESOURCE, {
     meta: { errorMode: 'silent' },
     mutationFn: (variables: DeleteVariables) => deleteReceivedMessages(variables.ids),
     onSuccess: async (response, variables) => {

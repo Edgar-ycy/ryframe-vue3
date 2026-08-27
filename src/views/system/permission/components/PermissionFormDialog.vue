@@ -78,8 +78,7 @@ import {
   type PermissionTreeNode,
 } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 
 const { t } = useI18n()
 
@@ -98,9 +97,7 @@ function isEdit(): boolean {
   return props.permission !== null
 }
 const formRef = ref<FormInstance>()
-const userStore = useUserStore()
-const saveMutation = useTenantMutation<void, { id?: Id; payload: PermissionForm }>(
-  () => userStore.tenantId,
+const saveMutation = useServerStateMutation<void, { id?: Id; payload: PermissionForm }>(
   'permissions',
   {
     mutationFn: async (variables) => {

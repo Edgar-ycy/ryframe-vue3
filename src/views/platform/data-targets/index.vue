@@ -135,7 +135,7 @@ import { TENANT_DATA_PERMISSIONS } from '@/features/tenant-data/permissions'
 import { healthTagType } from '@/features/tenant-data/presentation'
 import { formatLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import DataTargetList from './DataTargetList.vue'
@@ -153,8 +153,7 @@ const canView = computed(() =>
   hasPermission(userStore.permissions, TENANT_DATA_PERMISSIONS.placementView),
 )
 
-const targetsQuery = useTenantQuery<DataTargetPage>(
-  () => userStore.tenantId,
+const targetsQuery = useServerStateQuery<DataTargetPage>(
   () => userStore.tenantId === 'system' && canView.value,
   'platform-data-targets',
   () => ({ page: page.value, page_size: pageSize.value, q: appliedKeyword.value }),
@@ -174,8 +173,7 @@ const targetsQuery = useTenantQuery<DataTargetPage>(
 
 const targetPage = targetsQuery.data
 const targets = computed(() => targetPage.value?.items ?? [])
-const detailQuery = useTenantQuery<DataTargetDetail>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<DataTargetDetail>(
   () =>
     userStore.tenantId === 'system' &&
     canView.value &&

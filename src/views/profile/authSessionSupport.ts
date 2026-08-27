@@ -1,6 +1,6 @@
 import type { AuthSession } from '@/api/modules/auth'
 import { formatLocalizedDate, translate } from '@/i18n'
-import { tenantQueryKey } from '@/shared/query/client'
+import { serverStateQueryKeyForIdentity } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
 
 export interface SessionIdentity {
@@ -23,10 +23,15 @@ export interface AuthSessionView {
 }
 
 export function authSessionQueryKey(identity: SessionIdentity) {
-  return tenantQueryKey(identity.tenantId, 'profile-auth-sessions', {
-    scope: 'self',
-    userId: identity.userId,
-  })
+  return serverStateQueryKeyForIdentity(
+    identity.tenantId,
+    identity.userId,
+    'profile-auth-sessions',
+    {
+      scope: 'self',
+      userId: identity.userId,
+    },
+  )
 }
 
 export function currentAuthSessionIdentity(): SessionIdentity | undefined {

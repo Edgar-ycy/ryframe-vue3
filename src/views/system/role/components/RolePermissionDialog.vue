@@ -62,8 +62,8 @@ import { useI18n } from 'vue-i18n'
 import { replaceRolePermissions, type RoleRecord } from '@/api/modules/role'
 import { getRolePermissions, type PermissionTreeNode } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -83,8 +83,7 @@ const checkedKeys = ref<Id[]>([])
 const expandedAll = ref(false)
 const cascadeEnabled = ref(true)
 const userStore = useUserStore()
-const assignmentsQuery = useTenantQuery<Id[]>(
-  () => userStore.tenantId,
+const assignmentsQuery = useServerStateQuery<Id[]>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
   'roles',
   () => ({ scope: 'permissions', id: props.role?.id ?? null }),
@@ -95,8 +94,7 @@ const assignmentsQuery = useTenantQuery<Id[]>(
     return response.data ?? []
   },
 )
-const assignmentMutation = useTenantMutation<void, { roleId: Id; permissionIds: Id[] }>(
-  () => userStore.tenantId,
+const assignmentMutation = useServerStateMutation<void, { roleId: Id; permissionIds: Id[] }>(
   'roles',
   {
     mutationFn: async (variables) => {

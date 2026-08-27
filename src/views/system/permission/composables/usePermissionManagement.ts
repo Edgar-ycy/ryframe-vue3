@@ -8,8 +8,8 @@ import {
 import { refreshRuntimeAccessibleRoutes } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -20,8 +20,7 @@ export function usePermissionManagement() {
   const parentPermissionId = ref<Id>()
   const userStore = useUserStore()
 
-  const permissionsQuery = useTenantQuery<PermissionTreeNode[]>(
-    () => userStore.tenantId,
+  const permissionsQuery = useServerStateQuery<PermissionTreeNode[]>(
     () => userStore.sessionStatus === 'authenticated',
     'permissions',
     () => ({ scope: 'tree' }),
@@ -33,33 +32,25 @@ export function usePermissionManagement() {
   const tableData = permissionsQuery.data
   const loading = permissionsQuery.isFetching
 
-  const deleteMutation = useTenantMutation<void, PermissionTreeNode>(
-    () => userStore.tenantId,
-    'permissions',
-    {
-      mutationFn: async (permission) => {
-        await deletePermission(permission.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(translate('system.common.deleteSuccess'))
-      },
+  const deleteMutation = useServerStateMutation<void, PermissionTreeNode>('permissions', {
+    mutationFn: async (permission) => {
+      await deletePermission(permission.id)
     },
-  )
-  const syncMutation = useTenantMutation<PermissionSyncReport, void>(
-    () => userStore.tenantId,
-    'permissions',
-    {
-      mutationFn: async () => {
-        const response = await syncApiPermissions()
-        if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
-        return response.data
-      },
-      onSuccess: (report) => {
-        syncReport.value = report
-        ElMessage.success(translate('system.permission.syncSuccess', { count: report.created }))
-      },
+    onSuccess: () => {
+      ElMessage.success(translate('system.common.deleteSuccess'))
     },
-  )
+  })
+  const syncMutation = useServerStateMutation<PermissionSyncReport, void>('permissions', {
+    mutationFn: async () => {
+      const response = await syncApiPermissions()
+      if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
+      return response.data
+    },
+    onSuccess: (report) => {
+      syncReport.value = report
+      ElMessage.success(translate('system.permission.syncSuccess', { count: report.created }))
+    },
+  })
 
   const deletingId = computed<Id | null>(() =>
     deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,

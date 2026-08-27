@@ -167,8 +167,8 @@ import {
 } from '@/api/modules/tenantData'
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps<{
@@ -187,8 +187,7 @@ const targetError = ref('')
 const confirmationError = ref('')
 let pendingIdempotencyKey: string | undefined
 
-const targetsQuery = useTenantQuery<DataTargetSummary[]>(
-  () => userStore.tenantId,
+const targetsQuery = useServerStateQuery<DataTargetSummary[]>(
   () => props.active && visible.value && userStore.tenantId === 'system',
   'platform-tenant-migration-targets',
   () => ({ tenant_id: props.tenantId }),
@@ -211,39 +210,31 @@ const previewAllowed = computed(() =>
   Boolean(preview.value?.eligible && preview.value.blockers.length === 0),
 )
 
-const previewMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-data-migration-preview',
-  {
-    meta: { errorMode: 'silent' },
-    mutationFn: async () =>
-      requireOperationData(
-        await previewTenantDataMigration(props.tenantId, {
-          target_key: selectedTargetKey.value,
-          expected_placement_generation: props.placement.placement_generation,
-        }),
+const previewMutation = useServerStateMutation('platform-tenant-data-migration-preview', {
+  meta: { errorMode: 'silent' },
+  mutationFn: async () =>
+    requireOperationData(
+      await previewTenantDataMigration(props.tenantId, {
+        target_key: selectedTargetKey.value,
+        expected_placement_generation: props.placement.placement_generation,
+      }),
+    ),
+})
+const createMutation = useServerStateMutation('platform-tenant-data-migrations', {
+  meta: { errorMode: 'silent' },
+  mutationFn: async (input: { preview: TenantDataMigrationPreview; idempotencyKey: string }) =>
+    requireOperationData(
+      await createTenantDataMigration(
+        props.tenantId,
+        {
+          target_key: input.preview.target_target_key,
+          plan_hash: input.preview.plan_hash,
+          expected_placement_generation: input.preview.expected_placement_generation,
+        },
+        input.idempotencyKey,
       ),
-  },
-)
-const createMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-data-migrations',
-  {
-    meta: { errorMode: 'silent' },
-    mutationFn: async (input: { preview: TenantDataMigrationPreview; idempotencyKey: string }) =>
-      requireOperationData(
-        await createTenantDataMigration(
-          props.tenantId,
-          {
-            target_key: input.preview.target_target_key,
-            plan_hash: input.preview.plan_hash,
-            expected_placement_generation: input.preview.expected_placement_generation,
-          },
-          input.idempotencyKey,
-        ),
-      ),
-  },
-)
+    ),
+})
 const submitting = computed(() => previewMutation.pending.value || createMutation.pending.value)
 const operationError = computed(() => previewMutation.error.value ?? createMutation.error.value)
 

@@ -241,7 +241,7 @@ async function loadSnapshot(force: boolean): Promise<void> {
   snapshotLoading.value = true
   snapshotError.value = ''
   try {
-    snapshot.value = await fetchOverviewSnapshot(userStore.tenantId, force)
+    snapshot.value = await fetchOverviewSnapshot(force)
     await nextTick()
     renderCharts()
   } catch (error) {
@@ -256,7 +256,7 @@ async function loadTrends(force: boolean): Promise<void> {
   trendsLoading.value = true
   trendsError.value = ''
   try {
-    trends.value = await fetchOverviewTrends(userStore.tenantId, range.value, force)
+    trends.value = await fetchOverviewTrends(range.value, force)
     await nextTick()
     renderTrendCharts()
   } catch (error) {
@@ -271,7 +271,7 @@ const { scheduleRefresh } = useOverviewRefreshSchedule({
   loadTrends,
   onResume: renderCharts,
   onStop: () => {
-    if (userStore.tenantId) void cancelOverviewRequests(userStore.tenantId)
+    void cancelOverviewRequests()
   },
 })
 

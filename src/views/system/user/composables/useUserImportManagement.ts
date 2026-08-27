@@ -3,8 +3,7 @@ import { downloadImportTemplate } from '@/api/modules/user'
 import { downloadBlobDirect } from '@/hooks/useDownload'
 import { translate } from '@/i18n'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 
 interface ImportCommand {
   file: File
@@ -14,13 +13,12 @@ interface ImportCommand {
 
 /** 用户页的模板下载、异步导入创建和历史抽屉状态。 */
 export function useUserImportManagement(refreshUsers: () => void | Promise<unknown>) {
-  const userStore = useUserStore()
   const importDialogVisible = ref(false)
   const importHistoryVisible = ref(false)
   const templateLoading = ref(false)
   const pendingKeys = new Map<string, string>()
 
-  const importMutation = useTenantMutation(() => userStore.tenantId, 'user-imports', {
+  const importMutation = useServerStateMutation('user-imports', {
     mutationFn: ({ file, idempotencyKey }: ImportCommand) => createUserImport(file, idempotencyKey),
     onSuccess: () => ElMessage.success(translate('system.userImport.createSuccess')),
   })

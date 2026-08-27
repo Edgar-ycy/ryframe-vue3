@@ -16,8 +16,8 @@ import { requireOperationData } from '@/shared/http/client'
 import type { Id, PageResponse } from '@/shared/http/types'
 import { renderMarkdown } from '@/shared/markdown/render'
 import { NOTICE_POLICY, validateNoticeMarkdown } from '@/shared/markdown/noticePolicy'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -49,8 +49,7 @@ export function useNoticeManagement() {
   const { t } = useI18n()
   const userStore = useUserStore()
   const authenticated = () => userStore.sessionStatus === 'authenticated'
-  const noticesQuery = useTenantQuery<PageResponse<NoticeRecord>>(
-    () => userStore.tenantId,
+  const noticesQuery = useServerStateQuery<PageResponse<NoticeRecord>>(
     authenticated,
     'notices',
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
@@ -130,8 +129,7 @@ export function useNoticeManagement() {
     formRef.value = instance
   }
 
-  const detailQuery = useTenantQuery<NoticeRecord>(
-    () => userStore.tenantId,
+  const detailQuery = useServerStateQuery<NoticeRecord>(
     () => authenticated() && editingNotice.value !== null,
     'notices',
     () => ({ scope: 'detail', id: editingNotice.value?.id ?? null }),
@@ -143,54 +141,42 @@ export function useNoticeManagement() {
     },
   )
 
-  const saveMutation = useTenantMutation<void, SaveNoticeCommand>(
-    () => userStore.tenantId,
-    'notices',
-    {
-      mutationFn: async (command) => {
-        if (command.kind === 'create') {
-          await createNotice(command.data)
-        } else {
-          await updateNotice(command.id, command.data)
-        }
-      },
-      onSuccess: (_data, command) => {
-        ElMessage.success(
-          t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
-        )
-      },
+  const saveMutation = useServerStateMutation<void, SaveNoticeCommand>('notices', {
+    mutationFn: async (command) => {
+      if (command.kind === 'create') {
+        await createNotice(command.data)
+      } else {
+        await updateNotice(command.id, command.data)
+      }
     },
-  )
+    onSuccess: (_data, command) => {
+      ElMessage.success(
+        t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
+      )
+    },
+  })
   const submitLoading = saveMutation.pending
 
-  const publishMutation = useTenantMutation<void, NoticeRecord>(
-    () => userStore.tenantId,
-    'messages',
-    {
-      mutationFn: async (notice) => {
-        await publishNoticeToMessageCenter(notice.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(t('system.notice.publishMessageSuccess'))
-      },
+  const publishMutation = useServerStateMutation<void, NoticeRecord>('messages', {
+    mutationFn: async (notice) => {
+      await publishNoticeToMessageCenter(notice.id)
     },
-  )
+    onSuccess: () => {
+      ElMessage.success(t('system.notice.publishMessageSuccess'))
+    },
+  })
   const publishingId = computed<Id | null>(() =>
     publishMutation.pending.value ? (publishMutation.variables.value?.id ?? null) : null,
   )
 
-  const deleteMutation = useTenantMutation<void, NoticeRecord>(
-    () => userStore.tenantId,
-    'notices',
-    {
-      mutationFn: async (notice) => {
-        await deleteNotice(notice.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(t('system.common.deleteSuccess'))
-      },
+  const deleteMutation = useServerStateMutation<void, NoticeRecord>('notices', {
+    mutationFn: async (notice) => {
+      await deleteNotice(notice.id)
     },
-  )
+    onSuccess: () => {
+      ElMessage.success(t('system.common.deleteSuccess'))
+    },
+  })
   const deletingId = computed<Id | null>(() =>
     deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
   )

@@ -1,6 +1,6 @@
 import { getProfile, type ProfileInfo, type ProfileUpdateParams } from '@/api/modules/auth'
 import { normalizeLocale } from '@/i18n'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 
@@ -28,8 +28,7 @@ export function useProfileManagement(t: Translate) {
   }
 
   const profile = ref<ProfileInfo>(initialProfile())
-  const profileQuery = useTenantQuery<ProfileInfo>(
-    () => userStore.tenantId,
+  const profileQuery = useServerStateQuery<ProfileInfo>(
     () => userStore.sessionStatus === 'authenticated' && Boolean(userStore.userId),
     'profile',
     () => ({ scope: 'self', userId: String(userStore.userId || 'anonymous') }),

@@ -61,7 +61,7 @@ export function findCachedMessage(
   id: string,
 ): MessageRecord | undefined {
   const entries = client.getQueriesData<MessageInboxPage>({
-    queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
+    queryKey: resourceQueryKey(tenantId, userId, MESSAGE_INBOX_RESOURCE),
   })
   for (const [key, page] of entries) {
     if (!page || !isInboxKeyForUser(key, userId)) continue
@@ -93,7 +93,7 @@ export function cacheMessageDelivery(
   const previous = findCachedMessage(client, tenantId, userId, incoming.id)
   const merged = mergeMessage(previous, incoming)
   const entries = client.getQueriesData<MessageInboxPage>({
-    queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
+    queryKey: resourceQueryKey(tenantId, userId, MESSAGE_INBOX_RESOURCE),
   })
 
   for (const [key, page] of entries) {
@@ -137,7 +137,7 @@ function updateCachedMessages(
   update: (message: MessageRecord, params: MessageInboxKeyParams) => MessageRecord | undefined,
 ): void {
   const entries = client.getQueriesData<MessageInboxPage>({
-    queryKey: resourceQueryKey(identity.tenantId, MESSAGE_INBOX_RESOURCE),
+    queryKey: resourceQueryKey(identity.tenantId, identity.userId, MESSAGE_INBOX_RESOURCE),
   })
   for (const [key, page] of entries) {
     const params = inboxParamsFromKey(key)

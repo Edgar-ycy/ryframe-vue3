@@ -80,14 +80,13 @@ import { getServerInfo, type ServerInfo } from '@/api/modules/monitor'
 import { Cpu, Monitor, Odometer } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 const userStore = useUserStore()
 const pageActive = ref(true)
-const serverQuery = useTenantQuery<ServerInfo | null>(
-  () => userStore.tenantId,
+const serverQuery = useServerStateQuery<ServerInfo | null>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-server',
   () => ({ scope: 'overview' }),

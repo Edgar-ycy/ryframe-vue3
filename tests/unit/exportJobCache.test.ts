@@ -3,6 +3,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { ExportJob } from '@/api/modules/exportJob'
 import {
+  deactivateServerStateScope,
+  getServerStateScope,
+  transitionServerStateScope,
+} from '@/shared/query/client'
+import {
   exportJobDetailQueryKey,
   exportJobListQueryKey,
   exportJobUnreadQueryKey,
@@ -34,6 +39,15 @@ function exportJob(id: string, status = 'queued', overrides: Partial<ExportJob> 
 let client: QueryClient
 
 beforeEach(() => {
+  transitionServerStateScope(
+    {
+      tenantId: identity.tenantId,
+      subjectId: identity.userId,
+      authorizationFingerprint: 'export-job-cache-test',
+    },
+    () => undefined,
+    { force: true },
+  )
   client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -41,33 +55,35 @@ beforeEach(() => {
 
 afterEach(() => {
   client.clear()
+  deactivateServerStateScope()
 })
 
 describe('导出任务缓存', () => {
   it('查询键同时隔离租户、用户、列表、详情和未读计数', () => {
+    const epoch = getServerStateScope()?.sessionEpoch
     expect(exportJobListQueryKey('tenant-a', 'user-a')).toEqual([
-      'tenant',
+      'server-state',
       'tenant-a',
-      'user',
       'user-a',
+      epoch,
       'export-jobs',
+      { scope: 'list' },
     ])
     expect(exportJobDetailQueryKey('tenant-a', 'user-a', 'job-1')).toEqual([
-      'tenant',
+      'server-state',
       'tenant-a',
-      'user',
       'user-a',
+      epoch,
       'export-jobs',
-      'job-1',
+      { scope: 'detail', jobId: 'job-1' },
     ])
     expect(exportJobUnreadQueryKey('tenant-a', 'user-a')).toEqual([
-      'tenant',
+      'server-state',
       'tenant-a',
-      'user',
       'user-a',
-      'export-jobs',
-      'notifications',
-      'unread-count',
+      epoch,
+      'export-job-notifications',
+      { scope: 'unread-count' },
     ])
   })
 

@@ -86,7 +86,7 @@ import { useI18n } from 'vue-i18n'
 import { updateProfile } from '@/api/modules/auth'
 import { messageController } from '@/app/messages/messageController'
 import { normalizeLocale, type AppLocale } from '@/i18n'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import ThemePicker from './ThemePicker.vue'
@@ -98,7 +98,7 @@ const visible = defineModel<boolean>({ default: false })
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const { t } = useI18n()
-const localeMutation = useTenantMutation<void, AppLocale>(() => userStore.tenantId, 'profile', {
+const localeMutation = useServerStateMutation<void, AppLocale>('profile', {
   mutationFn: async (locale) => {
     await updateProfile({
       nickname: userStore.nickname,

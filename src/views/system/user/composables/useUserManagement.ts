@@ -16,8 +16,8 @@ import { useUserStore } from '@/stores/user'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { confirmAction } from '@/utils/confirmAction'
 
 const USER_STATUS_KEYS: Record<UserStatus, string> = {
@@ -65,8 +65,7 @@ export function useUserManagement() {
     { flush: 'sync' },
   )
 
-  const usersQuery = useTenantQuery<PageResponse<UserRecord>>(
-    () => userStore.tenantId,
+  const usersQuery = useServerStateQuery<PageResponse<UserRecord>>(
     authenticated,
     'users',
     () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
@@ -77,8 +76,7 @@ export function useUserManagement() {
         return response.data ?? emptyPageResponse<UserRecord>(params)
       }),
   )
-  const departmentsQuery = useTenantQuery<DeptNode[]>(
-    () => userStore.tenantId,
+  const departmentsQuery = useServerStateQuery<DeptNode[]>(
     authenticated,
     'departments',
     () => ({ scope: 'tree' }),
@@ -93,7 +91,7 @@ export function useUserManagement() {
   const deptTree = departmentsQuery.data
   const deptTreeLoading = departmentsQuery.isFetching
 
-  const statusMutation = useTenantMutation<void, StatusCommand>(() => userStore.tenantId, 'users', {
+  const statusMutation = useServerStateMutation<void, StatusCommand>('users', {
     mutationFn: async ({ row, status }) => {
       await updateUserStatus(row.id, status)
     },
@@ -104,7 +102,7 @@ export function useUserManagement() {
       ElMessage.success(translate('system.user.actionSuccess', { action: variables.action }))
     },
   })
-  const deleteMutation = useTenantMutation<void, UserRecord>(() => userStore.tenantId, 'users', {
+  const deleteMutation = useServerStateMutation<void, UserRecord>('users', {
     mutationFn: async (user) => {
       await deleteUser(user.id)
     },

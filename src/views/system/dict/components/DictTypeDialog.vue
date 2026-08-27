@@ -49,8 +49,7 @@ import {
   type DictTypeUpdateInput,
 } from '@/api/modules/dict'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 
 const { t } = useI18n()
 
@@ -77,22 +76,17 @@ function isEdit(): boolean {
   return props.dictType !== null
 }
 const formRef = ref<FormInstance>()
-const userStore = useUserStore()
-const saveMutation = useTenantMutation<void, SaveDictTypeCommand>(
-  () => userStore.tenantId,
-  'dict-types',
-  {
-    mutationFn: async (command) => {
-      if (command.kind === 'update') await updateDictType(command.id, command.data)
-      else await createDictType(command.data)
-    },
-    onSuccess: (_data, command) => {
-      ElMessage.success(
-        t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
-      )
-    },
+const saveMutation = useServerStateMutation<void, SaveDictTypeCommand>('dict-types', {
+  mutationFn: async (command) => {
+    if (command.kind === 'update') await updateDictType(command.id, command.data)
+    else await createDictType(command.data)
   },
-)
+  onSuccess: (_data, command) => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
+  },
+})
 const submitting = saveMutation.pending
 
 function initialForm(): DictTypeFormState {

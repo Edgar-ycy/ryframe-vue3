@@ -235,9 +235,9 @@ import { formatLocalizedDate, formatOptionalLocalizedDate, getApplicationLocale 
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { invalidateTenantResource } from '@/shared/query/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { invalidateActiveServerStateResource } from '@/shared/query/client'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import {
@@ -268,8 +268,7 @@ const previewError = ref('')
 let previewController: AbortController | undefined
 let pendingRunKey: string | undefined
 
-const overviewQuery = useTenantQuery(
-  () => userStore.tenantId,
+const overviewQuery = useServerStateQuery(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   MONITOR_RETENTION_RESOURCE,
   () => ({ scope: 'policy' }),
@@ -277,8 +276,7 @@ const overviewQuery = useTenantQuery(
   { refetchInterval: false },
 )
 
-const runsQuery = useTenantQuery<PageResponse<DataRetentionRunRecord>>(
-  () => userStore.tenantId,
+const runsQuery = useServerStateQuery<PageResponse<DataRetentionRunRecord>>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   MONITOR_RETENTION_RUNS_RESOURCE,
   () => ({ scope: 'list', ...query.value }),
@@ -288,7 +286,7 @@ const runsQuery = useTenantQuery<PageResponse<DataRetentionRunRecord>>(
   },
 )
 
-const runMutation = useTenantMutation(() => userStore.tenantId, MONITOR_RETENTION_RUNS_RESOURCE, {
+const runMutation = useServerStateMutation(MONITOR_RETENTION_RUNS_RESOURCE, {
   mutationFn: (idempotencyKey: string) => runDataRetention(idempotencyKey),
   onSuccess: () => ElMessage.success(t('monitor.retention.runSuccess')),
 })
@@ -368,8 +366,8 @@ async function handleRun(): Promise<void> {
   }
   await Promise.all([
     refreshRuns(),
-    invalidateTenantResource(userStore.tenantId!, MONITOR_JOBS_RESOURCE),
-    invalidateTenantResource(userStore.tenantId!, MONITOR_JOB_STATS_RESOURCE),
+    invalidateActiveServerStateResource(MONITOR_JOBS_RESOURCE),
+    invalidateActiveServerStateResource(MONITOR_JOB_STATS_RESOURCE),
   ])
 }
 

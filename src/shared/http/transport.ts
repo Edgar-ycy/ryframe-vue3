@@ -1,6 +1,11 @@
-import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import axios, {
+  type AxiosError,
+  type AxiosResponse,
+  type GenericAbortSignal,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 import { runtimeConfig } from '@/shared/config/runtimeConfig'
-import { toHttpError } from './errors'
+import { HttpError, toHttpError } from './errors'
 import { getHttpLocale } from './localization'
 import { getHttpSession, refreshSession } from './session'
 
@@ -8,12 +13,14 @@ declare module 'axios' {
   interface AxiosRequestConfig {
     skipAuthRefresh?: boolean
     skipTenantHeader?: boolean
+    sessionEpoch?: number
   }
 
   interface InternalAxiosRequestConfig {
     skipAuthRefresh?: boolean
     skipTenantHeader?: boolean
     retryAfterRefresh?: boolean
+    sessionEpoch?: number
   }
 }
 
@@ -39,7 +46,10 @@ const TENANT_CONTEXT_HEADERS = Object.freeze({
 function observeResponseTenantContext(response: AxiosResponse | undefined): void {
   const session = getHttpSession()
   if (!session) return
-  const accessToken = session.getAccessToken()
+  const snapshot = session.getSnapshot()
+  if (response?.config.sessionEpoch !== snapshot.sessionEpoch || snapshot.signal?.aborted === true)
+    return
+  const accessToken = snapshot.accessToken
   const requestAuthorization = response?.config.headers.get('Authorization')
   if (!accessToken || requestAuthorization !== `Bearer ${accessToken}`) return
   const authorizationEpoch = decimalHeader(response, TENANT_CONTEXT_HEADERS.authorizationEpoch)
@@ -81,10 +91,21 @@ function applyAcceptLanguage(config: InternalAxiosRequestConfig): void {
 transport.interceptors.request.use((config) => {
   applyAcceptLanguage(config)
   const sessionAdapter = getHttpSession()
-  const token = sessionAdapter?.getAccessToken()
+  const snapshot = sessionAdapter?.getSnapshot()
+  if (
+    config.sessionEpoch !== undefined &&
+    (snapshot?.sessionEpoch !== config.sessionEpoch || snapshot.signal?.aborted === true)
+  ) {
+    throw cancelledSessionError()
+  }
+  if (snapshot) {
+    config.sessionEpoch ??= snapshot.sessionEpoch
+    config.signal = combineAbortSignals(config.signal, snapshot.signal)
+  }
+  const token = snapshot?.accessToken
   if (token && !config.headers.Authorization) config.headers.Authorization = `Bearer ${token}`
   if (!config.skipTenantHeader && !config.headers['X-Tenant-Id']) {
-    config.headers['X-Tenant-Id'] = sessionAdapter?.getTenantId()
+    config.headers['X-Tenant-Id'] = snapshot?.tenantId
   }
   removeJsonContentTypeForFormData(config)
   return config
@@ -98,6 +119,7 @@ rawTransport.interceptors.request.use((config) => {
 
 transport.interceptors.response.use(
   (response) => {
+    if (!requestSessionIsCurrent(response.config)) throw cancelledSessionError()
     observeResponseTenantContext(response)
     return response
   },
@@ -106,6 +128,14 @@ transport.interceptors.response.use(
     const config = error.config
     const status = error.response?.status
     const sessionAdapter = getHttpSession()
+    const snapshot = sessionAdapter?.getSnapshot()
+
+    if (
+      config?.sessionEpoch !== undefined &&
+      (snapshot?.sessionEpoch !== config.sessionEpoch || snapshot.signal?.aborted === true)
+    ) {
+      return Promise.reject(cancelledSessionError(error))
+    }
 
     if (
       status === 401 &&
@@ -113,12 +143,17 @@ transport.interceptors.response.use(
       !config.skipAuthRefresh &&
       !config.retryAfterRefresh &&
       sessionAdapter &&
-      sessionAdapter.getAccessToken()
+      snapshot?.accessToken &&
+      config.sessionEpoch !== undefined
     ) {
       config.retryAfterRefresh = true
-      const token = await refreshSession()
+      const token = await refreshSession(config.sessionEpoch)
+      const refreshed = sessionAdapter.getSnapshot()
+      if (refreshed.sessionEpoch !== config.sessionEpoch || refreshed.signal?.aborted === true) {
+        return Promise.reject(cancelledSessionError())
+      }
       config.headers.Authorization = `Bearer ${token}`
-      config.headers['X-Tenant-Id'] = getHttpSession()?.getTenantId()
+      if (!config.skipTenantHeader) config.headers['X-Tenant-Id'] = refreshed.tenantId
       return transport(config)
     }
 
@@ -127,9 +162,32 @@ transport.interceptors.response.use(
       await sessionAdapter.handleRefreshFailure(httpError)
       return Promise.reject(httpError)
     }
-    if (status === 401 && !config?.skipAuthRefresh && !sessionAdapter?.getAccessToken()) {
+    if (status === 401 && !config?.skipAuthRefresh && !snapshot?.accessToken) {
       return Promise.reject(httpError)
     }
     return Promise.reject(httpError)
   },
 )
+
+function requestSessionIsCurrent(config: InternalAxiosRequestConfig): boolean {
+  if (config.sessionEpoch === undefined) return true
+  const snapshot = getHttpSession()?.getSnapshot()
+  return snapshot?.sessionEpoch === config.sessionEpoch && snapshot.signal?.aborted !== true
+}
+
+function combineAbortSignals(
+  requestSignal: GenericAbortSignal | undefined,
+  sessionSignal: AbortSignal | undefined,
+): GenericAbortSignal | undefined {
+  if (!requestSignal) return sessionSignal
+  if (!sessionSignal || requestSignal === sessionSignal) return requestSignal
+  return AbortSignal.any([requestSignal as AbortSignal, sessionSignal])
+}
+
+function cancelledSessionError(cause?: unknown): HttpError {
+  return new HttpError('会话已切换，请求已取消', {
+    status: 401,
+    kind: 'cancelled',
+    cause,
+  })
+}

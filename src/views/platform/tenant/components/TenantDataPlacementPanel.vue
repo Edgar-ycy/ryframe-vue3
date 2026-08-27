@@ -197,7 +197,7 @@ import { isMigrationInProgress, stateTagType } from '@/features/tenant-data/pres
 import { useActivePolling } from '@/features/tenant-data/useActivePolling'
 import { formatLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import TenantDataMigrationDetailDialog from './TenantDataMigrationDetailDialog.vue'
@@ -216,16 +216,14 @@ const canCreate = computed(() => can(TENANT_DATA_PERMISSIONS.migrationCreate))
 const canCancel = computed(() => can(TENANT_DATA_PERMISSIONS.migrationCancel))
 const canFinalize = computed(() => can(TENANT_DATA_PERMISSIONS.migrationFinalize))
 
-const placementQuery = useTenantQuery<TenantDataPlacement>(
-  () => userStore.tenantId,
+const placementQuery = useServerStateQuery<TenantDataPlacement>(
   () => props.active && userStore.tenantId === 'system' && canViewPlacement.value,
   'platform-tenant-data-placement',
   () => ({ tenant_id: props.tenantId }),
   async (signal) => requireOperationData(await getTenantDataPlacement(props.tenantId, signal)),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
-const migrationQuery = useTenantQuery<TenantDataMigration[]>(
-  () => userStore.tenantId,
+const migrationQuery = useServerStateQuery<TenantDataMigration[]>(
   () => props.active && userStore.tenantId === 'system' && canListMigrations.value,
   'platform-tenant-data-migrations',
   () => ({ tenant_id: props.tenantId }),

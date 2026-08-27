@@ -13,8 +13,8 @@ import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -55,8 +55,7 @@ export function useRoleManagement() {
     { flush: 'sync' },
   )
 
-  const rolesQuery = useTenantQuery<PageResponse<RoleRecord>>(
-    () => userStore.tenantId,
+  const rolesQuery = useServerStateQuery<PageResponse<RoleRecord>>(
     authenticated,
     'roles',
     () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
@@ -67,8 +66,7 @@ export function useRoleManagement() {
         return response.data ?? emptyPageResponse<RoleRecord>(params)
       }),
   )
-  const departmentsQuery = useTenantQuery<DeptNode[]>(
-    () => userStore.tenantId,
+  const departmentsQuery = useServerStateQuery<DeptNode[]>(
     authenticated,
     'departments',
     () => ({ scope: 'tree' }),
@@ -77,8 +75,7 @@ export function useRoleManagement() {
       return response.data ?? []
     },
   )
-  const permissionsQuery = useTenantQuery<PermissionTreeNode[]>(
-    () => userStore.tenantId,
+  const permissionsQuery = useServerStateQuery<PermissionTreeNode[]>(
     authenticated,
     'permissions',
     () => ({ scope: 'tree' }),
@@ -93,7 +90,7 @@ export function useRoleManagement() {
   const deptTree = departmentsQuery.data
   const permissionTree = permissionsQuery.data
 
-  const deleteMutation = useTenantMutation<void, RoleRecord>(() => userStore.tenantId, 'roles', {
+  const deleteMutation = useServerStateMutation<void, RoleRecord>('roles', {
     mutationFn: async (role) => {
       await deleteRole(role.id)
     },

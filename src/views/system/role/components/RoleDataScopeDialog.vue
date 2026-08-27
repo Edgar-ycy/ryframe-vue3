@@ -48,8 +48,8 @@ import {
 } from '@/api/modules/role'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -67,8 +67,7 @@ const visible = defineModel<boolean>({ required: true })
 const dataScope = ref<RoleDataScope>('1')
 const deptIds = ref<Id[]>([])
 const userStore = useUserStore()
-const detailQuery = useTenantQuery<RoleRecord>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<RoleRecord>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
   'roles',
   () => ({ scope: 'detail', id: props.role?.id ?? null }),
@@ -80,10 +79,10 @@ const detailQuery = useTenantQuery<RoleRecord>(
     return response.data
   },
 )
-const dataScopeMutation = useTenantMutation<
+const dataScopeMutation = useServerStateMutation<
   void,
   { roleId: Id; dataScope: RoleDataScope; deptIds: Id[] }
->(() => userStore.tenantId, 'roles', {
+>('roles', {
   mutationFn: async (variables) => {
     await replaceRoleDataScope(variables.roleId, {
       data_scope: variables.dataScope,

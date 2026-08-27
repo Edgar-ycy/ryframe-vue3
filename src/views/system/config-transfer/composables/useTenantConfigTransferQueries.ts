@@ -13,8 +13,8 @@ import {
 } from '@/api/modules/tenantConfigTransfer'
 import { requireOperationData } from '@/shared/http/client'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { queryClient, tenantQueryKey } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { queryClient, serverStateQueryKeyForIdentity } from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
   TENANT_CONFIG_PACKAGES_RESOURCE,
@@ -82,15 +82,24 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   }
 
   function packageListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(identity.tenantId, TENANT_CONFIG_PACKAGES_RESOURCE, packageListParams())
+    return serverStateQueryKeyForIdentity(
+      identity.tenantId,
+      identity.userId,
+      TENANT_CONFIG_PACKAGES_RESOURCE,
+      packageListParams(),
+    )
   }
 
   function transferListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(identity.tenantId, TENANT_CONFIG_TRANSFERS_RESOURCE, transferListParams())
+    return serverStateQueryKeyForIdentity(
+      identity.tenantId,
+      identity.userId,
+      TENANT_CONFIG_TRANSFERS_RESOURCE,
+      transferListParams(),
+    )
   }
 
-  const packagesQuery = useTenantQuery<PageResponse<TenantConfigBundle>>(
-    () => userStore.tenantId,
+  const packagesQuery = useServerStateQuery<PageResponse<TenantConfigBundle>>(
     () => queryEnabled() && options.canListPackages(),
     TENANT_CONFIG_PACKAGES_RESOURCE,
     packageListParams,
@@ -108,8 +117,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     },
   )
 
-  const transfersQuery = useTenantQuery<PageResponse<TenantConfigTransfer>>(
-    () => userStore.tenantId,
+  const transfersQuery = useServerStateQuery<PageResponse<TenantConfigTransfer>>(
     queryEnabled,
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     transferListParams,
@@ -125,8 +133,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     },
   )
 
-  const itemsQuery = useTenantQuery<PageResponse<TenantConfigTransferItem>>(
-    () => userStore.tenantId,
+  const itemsQuery = useServerStateQuery<PageResponse<TenantConfigTransferItem>>(
     () => queryEnabled() && selectedTransfer.value !== undefined,
     TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
     transferItemParams,

@@ -6,7 +6,7 @@ import type { SelectOptionList } from '@/api/modules/option'
 import { listUserOptions } from '@/api/modules/user'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
@@ -53,8 +53,7 @@ export function useAuthorizationDiagnostics(t: Translate) {
     if (userSearchTimer !== undefined) window.clearTimeout(userSearchTimer)
   })
 
-  const usersQuery = useTenantQuery<SelectOptionList>(
-    () => userStore.tenantId,
+  const usersQuery = useServerStateQuery<SelectOptionList>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     'user-options',
     () => ({ q: userSearch.value, limit: 50 }),
@@ -68,8 +67,7 @@ export function useAuthorizationDiagnostics(t: Translate) {
     { refetchInterval: false },
   )
 
-  const diagnosticQuery = useTenantQuery<AuthorizationDiagnostic>(
-    () => userStore.tenantId,
+  const diagnosticQuery = useServerStateQuery<AuthorizationDiagnostic>(
     () =>
       userStore.sessionStatus === 'authenticated' &&
       pageActive.value &&

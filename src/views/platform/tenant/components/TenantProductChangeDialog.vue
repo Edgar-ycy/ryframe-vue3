@@ -99,8 +99,8 @@ import {
   type TenantProductContext,
 } from '@/api/modules/productPlan'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import DiffSummary from './TenantProductDiffSummary.vue'
 import TenantCapabilityOverrideEditor from './TenantCapabilityOverrideEditor.vue'
@@ -122,16 +122,14 @@ const overrideError = ref('')
 const preview = ref<ProductChangePreview>()
 const enabled = computed(() => visible.value && userStore.tenantId === 'system')
 
-const plansQuery = useTenantQuery(
-  () => userStore.tenantId,
+const plansQuery = useServerStateQuery(
   enabled,
   'platform-product-plan-options',
   () => ({ page: 1, page_size: 100 }),
   async (signal) =>
     requireOperationData(await listProductPlans({ page: 1, page_size: 100 }, signal)),
 )
-const versionsQuery = useTenantQuery(
-  () => userStore.tenantId,
+const versionsQuery = useServerStateQuery(
   () => enabled.value && Boolean(selectedPlanId.value),
   'platform-product-plan-version-options',
   () => ({ plan_id: selectedPlanId.value }),
@@ -139,37 +137,29 @@ const versionsQuery = useTenantQuery(
     requireOperationData(await getProductPlan(selectedPlanId.value, signal)).versions,
 )
 
-const previewMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-product-change-preview',
-  {
-    mutationFn: async (input: { planVersionId: string; overrides: CapabilityOverrideInput[] }) =>
-      requireOperationData(
-        await previewTenantProductChange(props.tenantId, {
-          plan_version_id: input.planVersionId,
-          overrides: input.overrides,
-        }),
-      ),
-  },
-)
-const applyMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-product-context',
-  {
-    mutationFn: async (input: {
-      preview: ProductChangePreview
-      overrides: CapabilityOverrideInput[]
-    }) =>
-      requireOperationData(
-        await applyTenantProductChange(props.tenantId, {
-          plan_version_id: planVersionId.value,
-          overrides: input.overrides,
-          plan_hash: input.preview.plan_hash,
-          preview_runtime_epoch: input.preview.runtime_epoch,
-        }),
-      ),
-  },
-)
+const previewMutation = useServerStateMutation('platform-tenant-product-change-preview', {
+  mutationFn: async (input: { planVersionId: string; overrides: CapabilityOverrideInput[] }) =>
+    requireOperationData(
+      await previewTenantProductChange(props.tenantId, {
+        plan_version_id: input.planVersionId,
+        overrides: input.overrides,
+      }),
+    ),
+})
+const applyMutation = useServerStateMutation('platform-tenant-product-context', {
+  mutationFn: async (input: {
+    preview: ProductChangePreview
+    overrides: CapabilityOverrideInput[]
+  }) =>
+    requireOperationData(
+      await applyTenantProductChange(props.tenantId, {
+        plan_version_id: planVersionId.value,
+        overrides: input.overrides,
+        plan_hash: input.preview.plan_hash,
+        preview_runtime_epoch: input.preview.runtime_epoch,
+      }),
+    ),
+})
 
 const plans = plansQuery.data
 const versionsLoading = versionsQuery.isFetching

@@ -17,8 +17,8 @@ import {
 } from '@/api/modules/productPlan'
 import { PRODUCT_PLAN_PERMISSIONS } from '@/features/product-plans/permissions'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 
@@ -43,8 +43,7 @@ export function useProductPlanManagement() {
       canList.value,
   )
 
-  const plansQuery = useTenantQuery(
-    () => userStore.tenantId,
+  const plansQuery = useServerStateQuery(
     queryEnabled,
     PLANS_RESOURCE,
     () => ({ page: page.value, page_size: pageSize.value }),
@@ -61,8 +60,7 @@ export function useProductPlanManagement() {
     { staleTime: 0 },
   )
 
-  const versionsQuery = useTenantQuery<ProductPlanVersion[]>(
-    () => userStore.tenantId,
+  const versionsQuery = useServerStateQuery<ProductPlanVersion[]>(
     () => queryEnabled.value && selectedPlan.value !== undefined,
     VERSIONS_RESOURCE,
     () => ({ plan_id: selectedPlan.value?.id ?? null }),
@@ -74,28 +72,23 @@ export function useProductPlanManagement() {
     { staleTime: 0 },
   )
 
-  const savePlanMutation = useTenantMutation<ProductPlan, SavePlanCommand>(
-    () => userStore.tenantId,
-    PLANS_RESOURCE,
-    {
-      mutationFn: async (command) =>
-        requireOperationData(
-          command.planId
-            ? await updateProductPlan(command.planId, {
-                name: command.data.name,
-                description: command.data.description,
-                status: command.data.status,
-              })
-            : await createProductPlan({
-                key: command.data.key,
-                name: command.data.name,
-                description: command.data.description,
-              }),
-        ),
-    },
-  )
-  const createVersionMutation = useTenantMutation<ProductPlanVersion, VersionCommand>(
-    () => userStore.tenantId,
+  const savePlanMutation = useServerStateMutation<ProductPlan, SavePlanCommand>(PLANS_RESOURCE, {
+    mutationFn: async (command) =>
+      requireOperationData(
+        command.planId
+          ? await updateProductPlan(command.planId, {
+              name: command.data.name,
+              description: command.data.description,
+              status: command.data.status,
+            })
+          : await createProductPlan({
+              key: command.data.key,
+              name: command.data.name,
+              description: command.data.description,
+            }),
+      ),
+  })
+  const createVersionMutation = useServerStateMutation<ProductPlanVersion, VersionCommand>(
     VERSIONS_RESOURCE,
     {
       mutationFn: async (command) =>
@@ -106,16 +99,14 @@ export function useProductPlanManagement() {
         ),
     },
   )
-  const publishMutation = useTenantMutation<ProductPlanVersion, VersionStatusCommand>(
-    () => userStore.tenantId,
+  const publishMutation = useServerStateMutation<ProductPlanVersion, VersionStatusCommand>(
     VERSIONS_RESOURCE,
     {
       mutationFn: async (command) =>
         requireOperationData(await publishProductPlanVersion(command.planId, command.version)),
     },
   )
-  const retireMutation = useTenantMutation<ProductPlanVersion, VersionStatusCommand>(
-    () => userStore.tenantId,
+  const retireMutation = useServerStateMutation<ProductPlanVersion, VersionStatusCommand>(
     VERSIONS_RESOURCE,
     {
       mutationFn: async (command) =>

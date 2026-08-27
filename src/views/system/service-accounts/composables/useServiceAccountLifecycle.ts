@@ -1,5 +1,5 @@
 import { getCurrentScope, onActivated, onDeactivated, onScopeDispose } from 'vue'
-import { queryClient } from '@/shared/query/client'
+import { queryClient, serverStateResourcePrefixForIdentity } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
 import { SERVICE_ACCOUNT_RESOURCES } from '../queryResources'
 import {
@@ -22,7 +22,11 @@ export function useServiceAccountLifecycle(options: ServiceAccountLifecycleOptio
 
   function cancelIdentityQueries(identity: ServiceAccountIdentity, remove: boolean): void {
     for (const resource of SERVICE_ACCOUNT_RESOURCES) {
-      const prefix = ['server-state', identity.tenantId, resource]
+      const prefix = serverStateResourcePrefixForIdentity(
+        identity.tenantId,
+        identity.userId,
+        resource,
+      )
       void queryClient.cancelQueries({ queryKey: prefix })
       if (remove) queryClient.removeQueries({ queryKey: prefix })
     }

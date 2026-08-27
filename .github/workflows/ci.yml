@@ -39,13 +39,13 @@ jobs:
         uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Lint GitHub Actions workflows
         uses: docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9
 
       - name: Run stable static gate
-        run: pnpm ci:static
+        run: corepack pnpm ci:static
 
   unit:
     name: Unit Tests (Node 24)
@@ -64,10 +64,10 @@ jobs:
         uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Run stable unit gate
-        run: pnpm ci:unit
+        run: corepack pnpm ci:unit
 
   build:
     name: Production Build (Node 24)
@@ -86,10 +86,10 @@ jobs:
         uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Run stable build gate
-        run: pnpm ci:build
+        run: corepack pnpm ci:build
         env:
           VITE_APP_BUILD_COMMIT: ${{ github.sha }}
 
@@ -110,7 +110,7 @@ jobs:
         uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Restore Playwright Chromium
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
@@ -119,10 +119,10 @@ jobs:
           key: v1-playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install browser for deterministic smoke tests
-        run: pnpm exec playwright install --with-deps chromium
+        run: corepack pnpm exec playwright install --with-deps chromium
 
       - name: Run stable browser gate
-        run: pnpm ci:browser
+        run: corepack pnpm ci:browser
 
       - name: Upload browser failure artifacts
         if: ${{ always() }}
@@ -152,16 +152,16 @@ jobs:
         uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: TypeScript type check
-        run: pnpm typecheck
+        run: corepack pnpm typecheck
 
       - name: Run deterministic unit tests
-        run: pnpm test:unit
+        run: corepack pnpm test:unit
 
       - name: Production build
-        run: pnpm build
+        run: corepack pnpm build
 
   supply-chain:
     name: Supply Chain and SBOM
@@ -180,16 +180,16 @@ jobs:
         uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Audit production dependencies
-        run: pnpm audit --prod --audit-level high
+        run: corepack pnpm audit --prod --audit-level high
 
       - name: Check dependency licenses
-        run: pnpm check:supply-chain-policy
+        run: corepack pnpm check:supply-chain-policy
 
       - name: Generate CycloneDX SBOM
-        run: pnpm sbom:generate -- --output "${RUNNER_TEMP}/ryframe-vue3.cdx.json"
+        run: corepack pnpm sbom:generate -- --output "${RUNNER_TEMP}/ryframe-vue3.cdx.json"
 
       - name: Upload CycloneDX SBOM
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -230,17 +230,17 @@ jobs:
         uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       # Windows 验证策略脚本、契约路径、类型和单元测试；浏览器 smoke 由 Linux 主门禁覆盖。
       - name: Run Windows policy tests
-        run: pnpm test:policies
+        run: corepack pnpm test:policies
 
       - name: Check Windows API contract paths
-        run: pnpm api:check
+        run: corepack pnpm api:check
 
       - name: Run Windows static smoke
-        run: pnpm typecheck && pnpm test:unit
+        run: corepack pnpm typecheck && corepack pnpm test:unit
 
   # 分支保护只绑定这个稳定名称；事件不适用的 job 可以 skipped，失败和取消均拒绝。
   required:

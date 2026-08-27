@@ -16,13 +16,13 @@ export function createPackageManagerInvocation(script, options = {}) {
 
   if (platform === 'win32') {
     return {
-      args: ['/d', '/s', '/c', `pnpm run ${script}`],
+      args: ['/d', '/s', '/c', `corepack pnpm run ${script}`],
       command: options.comSpec ?? process.env.ComSpec ?? 'cmd.exe',
     }
   }
 
   return {
-    args: ['run', script],
-    command: 'pnpm',
+    args: ['pnpm', 'run', script],
+    command: 'corepack',
   }
 }

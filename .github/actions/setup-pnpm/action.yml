@@ -1,5 +1,5 @@
 name: Setup pnpm
-description: Install the pnpm version declared by package.json without installer bootstrapping
+description: Activate the exact pnpm version declared by package.json through Corepack
 
 inputs:
   working-directory:
@@ -10,7 +10,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install declared pnpm version
+    - name: Activate declared pnpm version
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -23,9 +23,9 @@ runs:
         process.stdout.write(match[1])
         NODE
         )"
-        npm install --global "pnpm@${pnpm_version}" \
-          --no-audit --no-fund --no-update-notifier
-        test "$(pnpm --version)" = "$pnpm_version"
+        corepack enable
+        corepack prepare "pnpm@${pnpm_version}" --activate
+        test "$(corepack pnpm --version)" = "$pnpm_version"
 
     - name: Configure deterministic pnpm store
       id: store

@@ -29,7 +29,7 @@ test('优先复用当前包管理器入口，避免 Windows cmd 包装器', () =
   )
 })
 
-test('Windows 直接执行时通过 ComSpec 调用 pnpm', () => {
+test('Windows 直接执行时通过 ComSpec 调用 Corepack 固定 pnpm', () => {
   assert.deepEqual(
     createPackageManagerInvocation('lint', {
       comSpec: 'C:\\Windows\\System32\\cmd.exe',
@@ -37,21 +37,21 @@ test('Windows 直接执行时通过 ComSpec 调用 pnpm', () => {
       platform: 'win32',
     }),
     {
-      args: ['/d', '/s', '/c', 'pnpm run lint'],
+      args: ['/d', '/s', '/c', 'corepack pnpm run lint'],
       command: 'C:\\Windows\\System32\\cmd.exe',
     },
   )
 })
 
-test('POSIX 直接执行时调用 pnpm 可执行文件', () => {
+test('POSIX 直接执行时通过 Corepack 调用 pnpm', () => {
   assert.deepEqual(
     createPackageManagerInvocation('test:unit', {
       npmExecPath: '',
       platform: 'linux',
     }),
     {
-      args: ['run', 'test:unit'],
-      command: 'pnpm',
+      args: ['pnpm', 'run', 'test:unit'],
+      command: 'corepack',
     },
   )
 })

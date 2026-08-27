@@ -47,10 +47,10 @@ src/
    没有这些策略时可直接调用生成 caller。
 4. 从 `src/api/contract.ts` 取得 operation 的请求与响应类型。
 5. 在页面 composable 或应用用例中调用请求函数。
-6. 运行 `pnpm api:check` 和相关单元测试。
+6. 运行 `corepack pnpm api:check` 和相关单元测试。
 
 可参考 `src/api/modules/post.ts` 中的导出筛选规范化。业务模块不得手写 URL、HTTP method，
-也不得直接调用 `operationRequest`；运行 `pnpm api:generate` 会更新五个领域 caller，连续生成
+也不得直接调用 `operationRequest`；运行 `corepack pnpm api:generate` 会更新五个领域 caller，连续生成
 应保持零差异。
 
 ## 导入与状态边界
@@ -60,7 +60,7 @@ composition primitives；模板组件仍由 Vite 自动解析，组件类型写�
 
 所有 `defineStore` 必须位于 `src/stores/`。Store 保持被动，不运行时导入 app、router、业务
 API、QueryClient 或其他 Store；跨状态副作用放入 `src/app/` coordinator。API module 不直接依赖
-外部 package，也不依赖 Router、Store、Query 或 UI；`src/shared/http/` 只依赖 Axios 和同层纯模块。`pnpm check:imports`
+外部 package，也不依赖 Router、Store、Query 或 UI；`src/shared/http/` 只依赖 Axios 和同层纯模块。`corepack pnpm check:imports`
 同时检查内部路径、外部 package、运行时环和 Store 定义位置。
 
 ## 管理状态
@@ -94,6 +94,12 @@ SessionContext
 `src/router/`。开发身份或租户切换流程时，可在这些目录中分别定位会话编排、路由计算和路由
 运行时处理。
 
+路由页面所需文案由 `src/i18n/routeCatalogRegistry.ts` 按 route namespace 选择。首屏同步安装
+`core`、`shell` 和全局导出中心文案，其余 catalog 与页面组件并行加载；同一 catalog 的并发请求
+共享 pending promise，失败后清除 pending，下一次导航可以重试。每个 catalog 同时包含中英文，
+因此已加载页面的语言切换保持同步，无需再次请求资源。新增业务页面时，应把默认 catalog 登记到
+对应 namespace；跨域页面只显式追加确有需要的 catalog。
+
 按钮展示可使用 `v-perm`，页面可访问性由页面声明中的权限和 capability 参与计算。403、功能
 不可用和 404 页面可用于分别验证权限不足、能力缺失和未知路由。
 
@@ -107,20 +113,20 @@ SessionContext
 开发时可先运行相邻测试：
 
 ```bash
-pnpm test:unit tests/unit/postPage.component.test.ts
-pnpm typecheck:app
-pnpm check:fast
+corepack pnpm test:unit tests/unit/postPage.component.test.ts
+corepack pnpm typecheck:app
+corepack pnpm check:fast
 ```
 
 修改路由、会话、消息、Cron 或设置流程后，可运行定向测试与浏览器 smoke：
 
 ```bash
-pnpm test:targeted-coverage
-pnpm test:browser-smoke
+corepack pnpm test:targeted-coverage
+corepack pnpm test:browser-smoke
 ```
 
 准备生产构建时运行：
 
 ```bash
-pnpm check
+corepack pnpm check
 ```

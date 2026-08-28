@@ -1,10 +1,10 @@
-import type { UserInfo } from '@/api/modules/auth'
+import type { SessionContextUserInfo } from '@/shared/session/contracts'
 import { normalizeLocale, type AppLocale } from '@/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import { setTenantId } from '@/utils/auth'
 
-export function applyUserIdentity(userInfo: UserInfo, isSuperAdmin: boolean): void {
+export function applyUserIdentity(userInfo: SessionContextUserInfo, isSuperAdmin: boolean): void {
   const user = useUserStore()
   setTenantId(userInfo.tenant_id)
   const preferredLocale = getPreferredLocale(userInfo)
@@ -12,6 +12,6 @@ export function applyUserIdentity(userInfo: UserInfo, isSuperAdmin: boolean): vo
   user.applyIdentity(userInfo, isSuperAdmin, preferredLocale)
 }
 
-function getPreferredLocale(userInfo: UserInfo): AppLocale | undefined {
-  return normalizeLocale((userInfo as UserInfo & { preferred_locale?: unknown }).preferred_locale)
+function getPreferredLocale(userInfo: SessionContextUserInfo): AppLocale | undefined {
+  return normalizeLocale(userInfo.preferred_locale)
 }

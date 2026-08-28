@@ -51,7 +51,9 @@ export function login(data: LoginParams, tenantId: string, csrfToken: string) {
       'X-Tenant-Id': tenantId,
       'X-CSRF-Token': csrfToken,
     },
+    transport: 'raw',
     skipAuthRefresh: true,
+    skipTenantHeader: true,
   })
 }
 
@@ -124,8 +126,8 @@ export function updateProfile(data: ProfileUpdateParams) {
 }
 
 /** 修改密码 */
-export function changePassword(data: PasswordChangeParams) {
-  return put_auth_profile_password({ data })
+export function changePassword(data: PasswordChangeParams, signal?: AbortSignal) {
+  return put_auth_profile_password({ data, signal })
 }
 
 /** 更新头像（FormData 直接传文件，不设 Content-Type，浏览器自动加 boundary；后端返回 avatar_url） */

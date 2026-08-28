@@ -1,5 +1,5 @@
 import type { Router } from 'vue-router'
-import type { TenantBusinessState } from '@/api/modules/sessionContext'
+import type { TenantBusinessState } from '@/shared/session/contracts'
 import { getRouteRuntime } from '@/app/navigation/runtime'
 import {
   accessResultPath,

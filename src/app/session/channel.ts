@@ -1,4 +1,4 @@
-import type { SessionContext } from '@/api/modules/sessionContext'
+import type { SessionContext } from '@/shared/session/contracts'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import {

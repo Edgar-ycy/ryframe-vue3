@@ -1,4 +1,4 @@
-import type { SessionContext } from '@/api/modules/sessionContext'
+import type { SessionContext } from '@/shared/session/contracts'
 import type { ApiFixtureOptions } from './types'
 
 function menuItem(

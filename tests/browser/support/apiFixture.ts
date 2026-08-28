@@ -10,6 +10,7 @@ function createState(): ApiFixtureState {
   return {
     deletionBodies: [],
     exportBodies: [],
+    messageSockets: [],
     postCreateBodies: [],
     postDeleteIds: [],
     postExportBodies: [],
@@ -33,6 +34,7 @@ export async function installApiFixture(
   ]
 
   await page.routeWebSocket(/\/api\/v1\/ws(?:\?|$)/u, (socket) => {
+    state.messageSockets.push(socket)
     socket.onMessage((message) => {
       if (String(message).includes('"type":"ping"')) {
         socket.send(JSON.stringify({ type: 'pong', v: 1 }))

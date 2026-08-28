@@ -1,3 +1,5 @@
+import type { WebSocketRoute } from '@playwright/test'
+
 export interface ExportJobFixture {
   completed_at?: string | null
   content_type?: string | null
@@ -33,6 +35,7 @@ export interface RequestContext {
 export interface ApiFixtureState {
   deletionBodies: unknown[]
   exportBodies: unknown[]
+  messageSockets: WebSocketRoute[]
   postCreateBodies: unknown[]
   postDeleteIds: string[]
   postExportBodies: unknown[]

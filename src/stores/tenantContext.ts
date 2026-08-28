@@ -3,7 +3,7 @@ import type {
   EffectiveSessionCapability,
   SessionContext,
   TenantBusinessDataContext,
-} from '@/api/modules/sessionContext'
+} from '@/shared/session/contracts'
 
 export type TenantContextStatus = 'idle' | 'loading' | 'loaded' | 'failed'
 

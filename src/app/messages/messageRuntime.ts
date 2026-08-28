@@ -1,4 +1,5 @@
 import type { MessageSocket } from '@/app/messages/socket/lifecycle'
+import { getServerStateScope } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
 
 export const POLL_INTERVAL_MS = 60_000
@@ -6,6 +7,7 @@ export const POLL_INTERVAL_MS = 60_000
 export interface MessageIdentity {
   tenantId: string
   userId: string
+  sessionEpoch: number
   sessionKey: string
 }
 
@@ -44,14 +46,17 @@ export function getRuntime(): MessageRuntime {
 
 export function currentIdentity(): MessageIdentity | undefined {
   const user = useUserStore()
+  const scope = getServerStateScope()
   if (user.sessionStatus !== 'authenticated' || !user.token || !user.tenantId || !user.userId) {
     return undefined
   }
   const userId = String(user.userId)
+  if (!scope || scope.tenantId !== user.tenantId || scope.subjectId !== userId) return undefined
   return {
     tenantId: user.tenantId,
     userId,
-    sessionKey: [user.tenantId, userId].join('\u0000'),
+    sessionEpoch: scope.sessionEpoch,
+    sessionKey: [user.tenantId, userId, scope.sessionEpoch].join('\u0000'),
   }
 }
 

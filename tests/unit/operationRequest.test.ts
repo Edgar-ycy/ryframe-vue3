@@ -112,13 +112,13 @@ describe('operation 请求传输模式', () => {
     expect(httpClient.request).not.toHaveBeenCalled()
   })
 
-  it('登录保留显式租户与 CSRF 头且不触发会话刷新', async () => {
-    httpClient.request.mockResolvedValue(versionResponse)
+  it('登录使用 raw 传输保留显式租户与 CSRF 头，不携带旧会话', async () => {
+    httpClient.rawRequest.mockResolvedValue(versionResponse)
     const data = { username: 'admin', password: 'secret' }
 
     await login(data, 'tenant-a', 'csrf-token')
 
-    expect(httpClient.request).toHaveBeenCalledWith({
+    expect(httpClient.rawRequest).toHaveBeenCalledWith({
       data,
       headers: {
         'X-CSRF-Token': 'csrf-token',
@@ -126,9 +126,10 @@ describe('operation 请求传输模式', () => {
       },
       method: 'post',
       skipAuthRefresh: true,
+      skipTenantHeader: true,
       url: '/auth/login',
     })
-    expect(httpClient.rawRequest).not.toHaveBeenCalled()
+    expect(httpClient.request).not.toHaveBeenCalled()
   })
 
   it('multipart operation 保留 FormData 与超时配置', async () => {

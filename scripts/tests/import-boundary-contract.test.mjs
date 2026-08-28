@@ -48,12 +48,20 @@ test('解析别名、相对路径和目录入口', () => {
   assert.equal(moduleArea('src/api/generated/operations/system.ts'), 'generated')
 })
 
-test('边界规则允许类型 DTO 但拒绝 Store 直接调用 API', () => {
+test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', () => {
   assert.equal(
     boundaryViolation({
       kind: 'type',
       source: 'src/stores/user.ts',
       target: 'src/api/modules/auth.ts',
+    }),
+    'stores 不得依赖 api-modules',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'type',
+      source: 'src/stores/user.ts',
+      target: 'src/shared/session/contracts.ts',
     }),
     undefined,
   )

@@ -1,3 +1,4 @@
+import { watch } from 'vue'
 import { getMessageWebSocketTicket } from '@/api/modules/messages'
 import {
   cancelMessageState,
@@ -9,9 +10,8 @@ import type { MessageSocketProtocolError } from '@/app/messages/socket/frameCode
 import { MessageSocket } from '@/app/messages/socket/lifecycle'
 import { notifyTenantContextChanged } from '@/app/tenant-context/contextRefresh'
 import { HttpError } from '@/shared/http/client'
-import { queryClient } from '@/shared/query/client'
+import { queryClient, useServerStateScope } from '@/shared/query/client'
 import { useMessageStore } from '@/stores/message'
-import { useUserStore } from '@/stores/user'
 import {
   ACK_DEBOUNCE_MS,
   acknowledgementRetryDelay,
@@ -37,16 +37,9 @@ class MessageController {
   bindSession(): void {
     const runtime = getRuntime()
     if (runtime.unsubscribe) return
-    let previousKey = currentIdentity()?.sessionKey
-    runtime.unsubscribe = useUserStore().$subscribe(
-      () => {
-        const nextKey = currentIdentity()?.sessionKey
-        if (nextKey === previousKey) return
-        previousKey = nextKey
-        this.connectCurrentSession()
-      },
-      { flush: 'sync', detached: true },
-    )
+    runtime.unsubscribe = watch(useServerStateScope(), () => this.connectCurrentSession(), {
+      flush: 'sync',
+    })
     this.connectCurrentSession()
   }
 

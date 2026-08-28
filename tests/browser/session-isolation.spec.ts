@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import type { SessionContext } from '@/api/modules/sessionContext'
+import type { SessionContext } from '@/shared/session/contracts'
 import { installApiFixture } from './support/apiFixture'
 import { expectCleanDiagnostics, observeDiagnostics } from './support/diagnostics'
 import { loginWithFixture, openSidebarPage } from './support/navigation'
@@ -18,7 +18,7 @@ function menuProjection(
   return [{ ...parent, children }]
 }
 
-test('跨标签刷新原子隔离同租户主体、权限和跨租户请求范围', async ({ page }) => {
+test('跨标签刷新原子隔离同主体授权、同租户主体和跨租户范围', async ({ page }) => {
   const diagnostics = observeDiagnostics(page)
   const fixture = await installApiFixture(page, diagnostics, {
     multiTenancyEnabled: true,
@@ -27,36 +27,52 @@ test('跨标签刷新原子隔离同租户主体、权限和跨租户请求范�
 
   await loginWithFixture(page)
   await expect(page.getByRole('heading', { name: /测试用户/u })).toBeVisible()
+  await expect.poll(() => fixture.messageSockets.length).toBeGreaterThan(0)
 
   const initial = createSessionContext({ tenantId: 'default' })
-  const downgraded: SessionContext = {
+  const initialSocketCount = fixture.messageSockets.length
+  const permissionLowered: SessionContext = {
     ...initial,
     authorization_epoch: '12',
     menus: menuProjection(initial, 'system', 'system.post'),
     permissions: ['system:post:list'],
     roles: ['reader'],
-    user: { ...initial.user, id: '43', nickname: '同租户用户乙' },
   }
-  await publishRemoteAuthenticatedSession(page, 1, 'access-token-user-b', downgraded)
+  await publishRemoteAuthenticatedSession(
+    page,
+    1,
+    'access-token-permission-lowered',
+    permissionLowered,
+  )
 
-  await expect(page.getByRole('heading', { name: /同租户用户乙/u })).toBeVisible()
-  await expect(page.getByRole('heading', { name: /测试用户/u })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: /测试用户/u })).toBeVisible()
   const sidebar = page.locator('.sidebar-container')
   await sidebar.getByText('系统管理', { exact: true }).click()
   await expect(sidebar.getByText('岗位管理', { exact: true })).toBeVisible()
   await expect(sidebar.getByText('用户管理', { exact: true })).toHaveCount(0)
+  await expect.poll(() => fixture.messageSockets.length).toBeGreaterThan(initialSocketCount)
+
+  const subjectChanged: SessionContext = {
+    ...permissionLowered,
+    authorization_epoch: '13',
+    user: { ...initial.user, id: '43', nickname: '同租户用户乙' },
+  }
+  await publishRemoteAuthenticatedSession(page, 2, 'access-token-user-b', subjectChanged)
+
+  await expect(page.getByRole('heading', { name: /同租户用户乙/u })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /测试用户/u })).toHaveCount(0)
 
   const systemTenant = createSessionContext({ tenantId: 'system' })
   const crossTenant: SessionContext = {
     ...systemTenant,
-    authorization_epoch: '13',
+    authorization_epoch: '14',
     menus: menuProjection(systemTenant, 'platform', 'platform.tenant'),
     permissions: ['tenant:list', 'tenant:usage:list'],
     roles: ['tenant-auditor'],
     runtime_epoch: '8',
     user: { ...systemTenant.user, id: '44', nickname: '系统租户用户丙' },
   }
-  await publishRemoteAuthenticatedSession(page, 2, 'access-token-system', crossTenant)
+  await publishRemoteAuthenticatedSession(page, 3, 'access-token-system', crossTenant)
 
   await expect(page.getByRole('heading', { name: /系统租户用户丙/u })).toBeVisible()
   await openSidebarPage(page, '平台管理', '租户管理')

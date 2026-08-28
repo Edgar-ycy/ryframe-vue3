@@ -305,11 +305,7 @@ export function boundaryViolation(edge) {
   ) {
     return 'stores 不得跨 Store 编排'
   }
-  if (
-    edge.kind === 'type' &&
-    (sourceArea === 'features' || sourceArea === 'stores') &&
-    targetArea === 'api-modules'
-  ) {
+  if (edge.kind === 'type' && sourceArea === 'features' && targetArea === 'api-modules') {
     return undefined
   }
   if (allowedAreaTargets[sourceArea] && !allowedAreaTargets[sourceArea].has(targetArea)) {

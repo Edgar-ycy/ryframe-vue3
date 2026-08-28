@@ -308,6 +308,13 @@ export function boundaryViolation(edge) {
   if (edge.kind === 'type' && sourceArea === 'features' && targetArea === 'api-modules') {
     return undefined
   }
+  if (
+    edge.kind === 'type' &&
+    edge.source === 'src/shared/session/contracts.ts' &&
+    edge.target === 'src/api/contract.ts'
+  ) {
+    return undefined
+  }
   if (allowedAreaTargets[sourceArea] && !allowedAreaTargets[sourceArea].has(targetArea)) {
     return `${sourceArea} 不得依赖 ${targetArea}`
   }

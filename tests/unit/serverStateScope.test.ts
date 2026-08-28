@@ -186,11 +186,16 @@ describe('服务端状态会话范围', () => {
     const operation = deferred<string>()
     const onSuccess = vi.fn()
     const onError = vi.fn()
+    const onSettled = vi.fn()
+    const reportError = vi.fn()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+    configureServerStateErrorReporter(reportError)
     const { result: mutation, scope } = runComposable(() =>
       useServerStateMutation<string, void>('slow-mutation', {
         mutationFn: () => operation.promise,
         onSuccess,
         onError,
+        onSettled,
       }),
     )
 
@@ -210,6 +215,9 @@ describe('服务端状态会话范围', () => {
     await expect(pending).rejects.toMatchObject({ kind: 'cancelled' })
     expect(onSuccess).not.toHaveBeenCalled()
     expect(onError).not.toHaveBeenCalled()
+    expect(onSettled).not.toHaveBeenCalled()
+    expect(invalidateQueries).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
     expect(mutation.data.value).toBeUndefined()
     scope.stop()
   })

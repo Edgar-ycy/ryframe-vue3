@@ -1,6 +1,13 @@
+import type { SessionContext } from '@/api/modules/sessionContext'
 import type { ApiFixtureOptions } from './types'
 
-function menuItem(id: string, name: string, routeKey: string, permission: string, sort: number) {
+function menuItem(
+  id: string,
+  name: string,
+  routeKey: string,
+  permission: string,
+  sort: number,
+): SessionContext['menus'][number] {
   return {
     children: [],
     icon: '',
@@ -16,7 +23,7 @@ function menuItem(id: string, name: string, routeKey: string, permission: string
   }
 }
 
-export function createSessionContext(options: ApiFixtureOptions = {}) {
+export function createSessionContext(options: ApiFixtureOptions = {}): SessionContext {
   const tenantId = options.tenantId ?? 'default'
   return {
     authorization_epoch: '11',

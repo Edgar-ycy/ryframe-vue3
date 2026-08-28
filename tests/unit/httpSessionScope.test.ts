@@ -7,7 +7,7 @@ import {
 } from 'axios'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { configureHttpSession, type HttpSessionSnapshot } from '@/shared/http/client'
+import { configureHttpSession, type HttpSessionRequestContext } from '@/shared/http/client'
 import { transport } from '@/shared/http/transport'
 
 function response(
@@ -38,7 +38,7 @@ function deferred() {
 
 afterEach(() => {
   configureHttpSession({
-    getSnapshot: () => ({ accessToken: null, tenantId: '', sessionEpoch: -1 }),
+    getSnapshot: () => undefined,
     observeTenantContext: () => undefined,
     refreshAccessToken: async () => '',
     handleRefreshFailure: async () => undefined,
@@ -46,9 +46,29 @@ afterEach(() => {
 })
 
 describe('HTTP 会话范围守卫', () => {
+  it('缺少已认证原子上下文时不拼接会话请求头', async () => {
+    let captured: InternalAxiosRequestConfig | undefined
+    configureHttpSession({
+      getSnapshot: () => undefined,
+      observeTenantContext: vi.fn(),
+      refreshAccessToken: vi.fn(async () => 'unused'),
+      handleRefreshFailure: vi.fn(async () => undefined),
+    })
+    const adapter: AxiosAdapter = async (config) => {
+      captured = config
+      return response(config)
+    }
+
+    await transport.get('/anonymous-scope-test', { adapter })
+
+    expect(captured?.headers.get('Authorization')).toBeUndefined()
+    expect(captured?.headers.get('X-Tenant-Id')).toBeUndefined()
+    expect(captured?.sessionEpoch).toBeUndefined()
+  })
+
   it('慢响应跨越会话纪元时即使适配器忽略 signal 也会被拒绝', async () => {
     const firstController = new AbortController()
-    let snapshot: HttpSessionSnapshot = {
+    let snapshot: HttpSessionRequestContext = {
       accessToken: 'token-a',
       tenantId: 'tenant-a',
       sessionEpoch: 10,
@@ -89,7 +109,7 @@ describe('HTTP 会话范围守卫', () => {
 
   it('旧纪元的 401 不会触发新会话刷新或重试', async () => {
     const oldController = new AbortController()
-    let snapshot: HttpSessionSnapshot = {
+    let snapshot: HttpSessionRequestContext = {
       accessToken: 'token-a',
       tenantId: 'tenant-a',
       sessionEpoch: 20,
@@ -123,7 +143,7 @@ describe('HTTP 会话范围守卫', () => {
 
   it('只轮换 token 且纪元不变时允许刷新后重试', async () => {
     const controller = new AbortController()
-    let snapshot: HttpSessionSnapshot = {
+    let snapshot: HttpSessionRequestContext = {
       accessToken: 'token-a',
       tenantId: 'tenant-a',
       sessionEpoch: 30,

@@ -2,17 +2,17 @@ import { HttpError, toHttpError } from './errors'
 import { httpTranslate } from './localization'
 
 export interface HttpSessionAdapter {
-  getSnapshot(): HttpSessionSnapshot
+  getSnapshot(): HttpSessionRequestContext | undefined
   observeTenantContext(observation: TenantContextObservation): void
   refreshAccessToken(): Promise<string>
   handleRefreshFailure(error: HttpError): Promise<void>
 }
 
-export interface HttpSessionSnapshot {
-  accessToken: string | null
+export interface HttpSessionRequestContext {
+  accessToken: string
   tenantId: string
   sessionEpoch: number
-  signal?: AbortSignal
+  signal: AbortSignal
 }
 
 export interface TenantContextObservation {
@@ -36,7 +36,7 @@ export function getHttpSession(): HttpSessionAdapter | undefined {
 
 export function isHttpSessionEpochCurrent(expected: number): boolean {
   const snapshot = sessionAdapter?.getSnapshot()
-  return snapshot?.sessionEpoch === expected && snapshot.signal?.aborted !== true
+  return snapshot?.sessionEpoch === expected && snapshot.signal.aborted !== true
 }
 
 export async function refreshSession(expectedEpoch: number): Promise<string> {

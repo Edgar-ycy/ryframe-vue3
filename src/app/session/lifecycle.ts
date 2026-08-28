@@ -4,11 +4,7 @@ import type { SessionContext } from '@/api/modules/sessionContext'
 import { getRouteRuntime } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
-import {
-  configureServerStateErrorReporter,
-  getServerStateScope,
-  getServerStateSessionEpoch,
-} from '@/shared/query/client'
+import { configureServerStateErrorReporter, getServerStateScope } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useTagsViewStore } from '@/stores/tagsView'
 import { failClosedTenantContext, resetTenantContext } from '@/app/tenant-context/coordinator'
@@ -18,7 +14,6 @@ import {
   synchronizeTenantContextUi,
 } from '@/app/tenant-context/contextRefresh'
 import { useUserStore } from '@/stores/user'
-import { getTenantId } from '@/utils/auth'
 import {
   broadcastAuthenticated,
   broadcastLogout,
@@ -66,11 +61,13 @@ export function installSessionCoordinator(): void {
   configureHttpSession({
     getSnapshot: () => {
       const scope = getServerStateScope()
+      const accessToken = useUserStore().token
+      if (!scope || !accessToken) return undefined
       return {
-        accessToken: useUserStore().token || null,
-        tenantId: scope?.tenantId ?? getTenantId(),
-        sessionEpoch: getServerStateSessionEpoch(),
-        signal: scope?.signal,
+        accessToken,
+        tenantId: scope.tenantId,
+        sessionEpoch: scope.sessionEpoch,
+        signal: scope.signal,
       }
     },
     observeTenantContext,

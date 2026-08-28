@@ -47,7 +47,11 @@ function observeResponseTenantContext(response: AxiosResponse | undefined): void
   const session = getHttpSession()
   if (!session) return
   const snapshot = session.getSnapshot()
-  if (response?.config.sessionEpoch !== snapshot.sessionEpoch || snapshot.signal?.aborted === true)
+  if (
+    !snapshot ||
+    response?.config.sessionEpoch !== snapshot.sessionEpoch ||
+    snapshot.signal.aborted
+  )
     return
   const accessToken = snapshot.accessToken
   const requestAuthorization = response?.config.headers.get('Authorization')
@@ -94,7 +98,7 @@ transport.interceptors.request.use((config) => {
   const snapshot = sessionAdapter?.getSnapshot()
   if (
     config.sessionEpoch !== undefined &&
-    (snapshot?.sessionEpoch !== config.sessionEpoch || snapshot.signal?.aborted === true)
+    (snapshot?.sessionEpoch !== config.sessionEpoch || snapshot.signal.aborted)
   ) {
     throw cancelledSessionError()
   }
@@ -132,7 +136,7 @@ transport.interceptors.response.use(
 
     if (
       config?.sessionEpoch !== undefined &&
-      (snapshot?.sessionEpoch !== config.sessionEpoch || snapshot.signal?.aborted === true)
+      (snapshot?.sessionEpoch !== config.sessionEpoch || snapshot.signal.aborted)
     ) {
       return Promise.reject(cancelledSessionError(error))
     }
@@ -149,7 +153,11 @@ transport.interceptors.response.use(
       config.retryAfterRefresh = true
       const token = await refreshSession(config.sessionEpoch)
       const refreshed = sessionAdapter.getSnapshot()
-      if (refreshed.sessionEpoch !== config.sessionEpoch || refreshed.signal?.aborted === true) {
+      if (
+        !refreshed ||
+        refreshed.sessionEpoch !== config.sessionEpoch ||
+        refreshed.signal.aborted
+      ) {
         return Promise.reject(cancelledSessionError())
       }
       config.headers.Authorization = `Bearer ${token}`
@@ -172,7 +180,7 @@ transport.interceptors.response.use(
 function requestSessionIsCurrent(config: InternalAxiosRequestConfig): boolean {
   if (config.sessionEpoch === undefined) return true
   const snapshot = getHttpSession()?.getSnapshot()
-  return snapshot?.sessionEpoch === config.sessionEpoch && snapshot.signal?.aborted !== true
+  return snapshot?.sessionEpoch === config.sessionEpoch && snapshot.signal.aborted !== true
 }
 
 function combineAbortSignals(

@@ -14,19 +14,21 @@ import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
   type DeleteVariables,
-  findCachedMessage,
   invalidateUserInbox,
-  markAllCachedMessagesRead,
-  markCachedMessageRead,
   MESSAGE_INBOX_RESOURCE,
   MESSAGE_UNREAD_RESOURCE,
   type MessageIdentity,
   messageInboxKeyParams,
   messageUnreadQueryKey,
+  type MarkReadVariables,
+} from './messageCache/queryKeys'
+import {
+  findCachedMessage,
+  markAllCachedMessagesRead,
+  markCachedMessageRead,
   removeCachedMessages,
   setUnreadCount,
-  type MarkReadVariables,
-} from './messageCache'
+} from './messageCache/mutations'
 import {
   acknowledgeMutationOptions,
   fetchMessageInboxPage,

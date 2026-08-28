@@ -9,17 +9,16 @@ import {
 import { HttpError } from '@/shared/http/client'
 import { executeServerStateMutation } from '@/shared/query/useServerStateMutation'
 import {
-  acknowledgeCachedMessages,
   type AcknowledgeVariables,
   isInboxKeyForUser,
   invalidateUserInbox,
-  mergeMessagePage,
   MESSAGE_INBOX_RESOURCE,
   messageInboxKeyParams,
   messageInboxQueryKey,
   messageUnreadQueryKey,
   resourceQueryKey,
-} from './messageCache'
+} from './messageCache/queryKeys'
+import { acknowledgeCachedMessages, mergeMessagePage } from './messageCache/mutations'
 
 /** 取消指定身份的消息读取，防止会话切换后旧响应写回缓存。 */
 export async function cancelMessageState(

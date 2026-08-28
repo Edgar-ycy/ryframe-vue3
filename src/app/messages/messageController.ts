@@ -2,10 +2,9 @@ import { getMessageWebSocketTicket } from '@/api/modules/messages'
 import {
   cancelMessageState,
   executeMessageAcknowledgement,
-  receiveMessageDelivery,
   synchronizeMessageState,
-} from '@/app/messages/messageQueries'
-import { removeCachedMessages } from '@/app/messages/messageCache'
+} from '@/app/messages/messageSync'
+import { receiveMessageDelivery, removeCachedMessages } from '@/app/messages/messageCache/mutations'
 import type { MessageSocketProtocolError } from '@/app/messages/socket/frameCodec'
 import { MessageSocket } from '@/app/messages/socket/lifecycle'
 import { notifyTenantContextChanged } from '@/app/tenant-context/contextRefresh'

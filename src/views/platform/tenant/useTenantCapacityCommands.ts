@@ -13,7 +13,6 @@ import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/i
 import { invalidateActiveServerStateResource } from '@/shared/query/client'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import {
-  LEGACY_TENANTS_RESOURCE,
   TENANT_CAPACITY_DETAIL_RESOURCE,
   TENANT_CAPACITY_PAGE_RESOURCE,
   TENANT_USAGE_RESOURCE,
@@ -62,7 +61,6 @@ export function useTenantCapacityCommands(queries: ReturnType<typeof useTenantCa
       invalidateActiveServerStateResource(TENANT_CAPACITY_PAGE_RESOURCE),
       invalidateActiveServerStateResource(TENANT_CAPACITY_DETAIL_RESOURCE),
       invalidateActiveServerStateResource(TENANT_USAGE_RESOURCE),
-      invalidateActiveServerStateResource(LEGACY_TENANTS_RESOURCE),
     ])
     if (queries.queryEnabled.value) {
       await queries.tenantPageQuery.refetch({ throwOnError: true })

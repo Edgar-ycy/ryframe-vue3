@@ -2,6 +2,7 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createApp, effectScope, nextTick, type EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { HttpError } from '@/shared/http/client'
 import {
   assertServerStateScopeCurrent,
   configureServerStateErrorReporter,
@@ -184,6 +185,7 @@ describe('服务端状态会话范围', () => {
   it('慢 Mutation 在范围切换后重置 observer，并屏蔽旧成功回调', async () => {
     activate('user-a', 'permission-a')
     const operation = deferred<string>()
+    let requestSignal: AbortSignal | undefined
     const onSuccess = vi.fn()
     const onError = vi.fn()
     const onSettled = vi.fn()
@@ -192,7 +194,10 @@ describe('服务端状态会话范围', () => {
     configureServerStateErrorReporter(reportError)
     const { result: mutation, scope } = runComposable(() =>
       useServerStateMutation<string, void>('slow-mutation', {
-        mutationFn: () => operation.promise,
+        mutationFn: (_variables, context) => {
+          requestSignal = context.signal
+          return operation.promise
+        },
         onSuccess,
         onError,
         onSettled,
@@ -211,6 +216,7 @@ describe('服务端状态会话范围', () => {
     )
     await nextTick()
     expect(mutation.pending.value).toBe(false)
+    expect(requestSignal?.aborted).toBe(true)
     operation.resolve('stale-success')
     await expect(pending).rejects.toMatchObject({ kind: 'cancelled' })
     expect(onSuccess).not.toHaveBeenCalled()
@@ -219,6 +225,37 @@ describe('服务端状态会话范围', () => {
     expect(invalidateQueries).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
     expect(mutation.data.value).toBeUndefined()
+    scope.stop()
+  })
+
+  it('Mutation 统一组合调用方取消信号与当前会话信号', async () => {
+    activate('user-a', 'permission-a')
+    const caller = new AbortController()
+    let requestSignal: AbortSignal | undefined
+    const { result: mutation, scope } = runComposable(() =>
+      useServerStateMutation<void, { signal: AbortSignal }>('caller-cancellable', {
+        meta: { errorMode: 'silent' },
+        callerSignal: (variables) => variables.signal,
+        mutationFn: (_variables, context) => {
+          requestSignal = context.signal
+          return new Promise((_, reject) => {
+            context.signal.addEventListener(
+              'abort',
+              () => reject(new HttpError('调用方已取消', { kind: 'cancelled' })),
+              { once: true },
+            )
+          })
+        },
+      }),
+    )
+
+    const pending = mutation.mutateAsync({ signal: caller.signal })
+    await vi.waitFor(() => expect(requestSignal).toBeDefined())
+    expect(requestSignal).not.toBe(caller.signal)
+    expect(requestSignal?.aborted).toBe(false)
+    caller.abort()
+    expect(requestSignal?.aborted).toBe(true)
+    await expect(pending).rejects.toMatchObject({ kind: 'cancelled' })
     scope.stop()
   })
 

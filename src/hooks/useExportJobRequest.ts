@@ -64,13 +64,9 @@ export function useExportJobRequest() {
 
   const mutation = useServerStateMutation<ExportJob, SubmitExportVariables>(EXPORT_JOBS_RESOURCE, {
     meta: { errorMode: 'global' },
+    callerSignal: (variables) => variables.signal,
     mutationFn: async (variables, context) =>
-      requireOperationData(
-        await variables.create(
-          variables.idempotencyKey,
-          AbortSignal.any([variables.signal, context.signal]),
-        ),
-      ),
+      requireOperationData(await variables.create(variables.idempotencyKey, context.signal)),
     onSuccess: async (job, variables) => {
       intentKeys.delete(variables.intentSignature)
       if (!identityMatchesCurrent(user, variables.identity)) return

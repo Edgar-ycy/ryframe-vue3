@@ -65,8 +65,17 @@ API、QueryClient 或其他 Store；跨状态副作用放入 `src/app/` coordina
 
 ## 管理状态
 
-服务端列表、详情和 mutation 使用 TanStack Query。查询 key 可组合租户、当前主体和筛选参数，
-mutation 成功后按页面需要失效查询或更新缓存。
+服务端列表、详情和 mutation 使用 TanStack Query。已认证服务端状态的 Query Key 固定为
+`server-state / tenantId / subjectId / sessionEpoch / resource / params`；业务代码只通过
+`serverStateScopePrefix()`、`serverStateResourcePrefix()` 和完整 Key helper 操作缓存，不切片或手写
+前缀。普通 access token 轮换不改变 `sessionEpoch`，主体、租户、授权或运行 epoch、角色、权限、
+capability 与菜单投影变化时才进入新一代范围。
+
+切换会话时先中止旧 scope 的 signal，再递增 `sessionEpoch`、清理旧 Query/Mutation，应用已校验的
+用户、租户与权限投影，最后发布新 scope。HTTP 请求同时绑定调用方 signal 与会话 signal；旧 epoch
+响应不能更新上下文，旧 epoch 的 401 不能借用新 token 刷新或重放。Mutation 开始时捕获 scope，
+完成后再次校验；过期 Mutation 统一按取消处理，不执行成功或失败回调、提示、缓存写入和失效操作。
+请求在服务端仍可能已经提交，客户端保证的是旧结果不会写回新会话。
 
 Pinia 适合主题、标签页和客户端投影等跨页面状态。登录、刷新、租户切换、消息连接和导出任务
 这类包含多个状态源的流程，可放入 `src/app/` 由 coordinator 组织。

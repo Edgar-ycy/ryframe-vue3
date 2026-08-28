@@ -22,6 +22,8 @@ export type ServerStateMutationOptions<TData, TVariables, TOnMutateResult = unkn
   MutationOptions<TData, HttpError, TVariables, TOnMutateResult>,
   'mutationFn' | 'mutationKey' | 'onSuccess' | 'onError' | 'onSettled'
 > & {
+  /** 从本次调用变量取得主动取消信号，由统一入口与会话信号组合。 */
+  callerSignal?: (variables: Readonly<TVariables>) => AbortSignal | undefined
   mutationFn: (variables: TVariables, context: ServerStateMutationContext) => Promise<TData>
   onSuccess?: NonNullable<
     MutationOptions<TData, HttpError, TVariables, TOnMutateResult>['onSuccess']
@@ -51,14 +53,18 @@ function guardedMutationOptions<TData, TVariables, TOnMutateResult>(
   options: ServerStateMutationOptions<TData, TVariables, TOnMutateResult>,
   scope: ActiveServerStateScope,
 ): MutationOptions<TData, HttpError, TVariables, TOnMutateResult> {
-  const { mutationFn, onSuccess, onError, onSettled, ...mutationOptions } = options
+  const { callerSignal, mutationFn, onSuccess, onError, onSettled, ...mutationOptions } = options
   return {
     ...mutationOptions,
     mutationKey: serverStateMutationKey(scope, resource),
     mutationFn: async (variables, context) => {
       assertServerStateScopeCurrent(scope)
       try {
-        const data = await mutationFn(variables, { ...context, signal: scope.signal })
+        const requestedSignal = callerSignal?.(variables)
+        const signal = requestedSignal
+          ? AbortSignal.any([requestedSignal, scope.signal])
+          : scope.signal
+        const data = await mutationFn(variables, { ...context, signal })
         assertServerStateScopeCurrent(scope)
         return data
       } catch (error) {

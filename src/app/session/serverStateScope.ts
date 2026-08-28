@@ -1,4 +1,4 @@
-import type { SessionContext } from '@/shared/session/contracts'
+import type { SessionContext } from '@/features/session/contracts'
 import { transitionServerStateScope } from '@/shared/query/client'
 
 /** 将权威会话上下文归一成服务端状态范围；令牌轮换本身不改变范围。 */

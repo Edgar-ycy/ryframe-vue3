@@ -61,14 +61,14 @@ test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', 
     boundaryViolation({
       kind: 'type',
       source: 'src/stores/user.ts',
-      target: 'src/shared/session/contracts.ts',
+      target: 'src/features/session/contracts.ts',
     }),
     undefined,
   )
   assert.equal(
     boundaryViolation({
       kind: 'type',
-      source: 'src/shared/session/contracts.ts',
+      source: 'src/features/session/contracts.ts',
       target: 'src/api/contract.ts',
     }),
     undefined,
@@ -76,10 +76,10 @@ test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', 
   assert.equal(
     boundaryViolation({
       kind: 'type',
-      source: 'src/shared/other.ts',
-      target: 'src/api/contract.ts',
+      source: 'src/stores/user.ts',
+      target: 'src/features/navigation/contracts.ts',
     }),
-    'shared 不得依赖 api-core',
+    'stores 不得依赖 features',
   )
   assert.equal(
     boundaryViolation({

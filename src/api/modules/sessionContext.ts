@@ -1,11 +1,10 @@
 import { isPermissionCode } from '@/api/generated/permissions'
-import type {
-  SessionContext,
-  SessionContextUserInfo,
-  SessionUser,
-  TenantBusinessDataContext,
-  TenantBusinessState,
-} from '@/shared/session/contracts'
+import type { ApiSchema, OperationData } from '@/api/contract'
+
+type DecodedSessionContext = OperationData<'get_auth_context'> & { is_super_admin: boolean }
+type DecodedSessionUser = DecodedSessionContext['user']
+type DecodedBusinessData = DecodedSessionContext['business_data']
+type DecodedBusinessState = DecodedBusinessData['state']
 
 const sessionContextKeys = [
   'authorization_epoch',
@@ -32,14 +31,14 @@ const sessionUserKeys = new Set([
   'username',
 ])
 
-const businessStates = new Set<TenantBusinessState>([
+const businessStates = new Set<DecodedBusinessState>([
   'provisioning',
   'active',
   'maintenance',
   'failed',
 ])
 
-export function sessionContextUserInfo(context: SessionContext): SessionContextUserInfo {
+export function sessionContextUserInfo(context: DecodedSessionContext): ApiSchema<'UserInfo'> {
   return {
     ...context.user,
     roles: [...context.roles],
@@ -48,7 +47,7 @@ export function sessionContextUserInfo(context: SessionContext): SessionContextU
 }
 
 /** 所有会话入口共用同一个严格运行时边界；字段缺失或类型错误时必须失败关闭。 */
-export function isSessionContext(value: unknown): value is SessionContext {
+export function isSessionContext(value: unknown): value is DecodedSessionContext {
   if (!isRecord(value) || !hasExactKeys(value, sessionContextKeys)) return false
   return (
     isSessionUser(value.user) &&
@@ -65,7 +64,7 @@ export function isSessionContext(value: unknown): value is SessionContext {
   )
 }
 
-function isSessionUser(value: unknown): value is SessionUser {
+function isSessionUser(value: unknown): value is DecodedSessionUser {
   if (!isRecord(value)) return false
   const keys = Reflect.ownKeys(value)
   if (!keys.every((key) => typeof key === 'string' && sessionUserKeys.has(key))) return false
@@ -105,10 +104,10 @@ function isSessionCapability(value: unknown): boolean {
   )
 }
 
-function isBusinessData(value: unknown): value is TenantBusinessDataContext {
+function isBusinessData(value: unknown): value is DecodedBusinessData {
   if (!isRecord(value) || !hasExactKeys(value, ['placement_generation', 'state'])) return false
   return (
-    businessStates.has(value.state as TenantBusinessState) &&
+    businessStates.has(value.state as DecodedBusinessState) &&
     isDecimalString(value.placement_generation)
   )
 }

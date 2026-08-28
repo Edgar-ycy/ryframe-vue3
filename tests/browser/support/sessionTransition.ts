@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import type { SessionContext } from '@/shared/session/contracts'
+import type { SessionContext } from '@/features/session/contracts'
 
 const SESSION_CHANNEL = 'ryframe-auth-v0.5'
 

@@ -1,4 +1,4 @@
-import type { SessionContextUserInfo } from '@/shared/session/contracts'
+import type { SessionContextUserInfo } from '@/features/session/contracts'
 import { normalizeLocale, type AppLocale } from '@/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'

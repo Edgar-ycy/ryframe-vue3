@@ -1,6 +1,6 @@
 import { ElMessage } from 'element-plus'
 import { logout as logoutApi } from '@/api/modules/auth'
-import type { SessionContext } from '@/shared/session/contracts'
+import type { SessionContext } from '@/features/session/contracts'
 import { getRouteRuntime } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
 import { configureHttpSession, HttpError } from '@/shared/http/client'

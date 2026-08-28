@@ -1,5 +1,5 @@
 import { isSessionContext } from '@/api/modules/sessionContext'
-import type { SessionContext } from '@/shared/session/contracts'
+import type { SessionContext } from '@/features/session/contracts'
 
 export type SessionMessage =
   | { type: 'refresh-start'; source: string; operationId: string; startedAt: number }

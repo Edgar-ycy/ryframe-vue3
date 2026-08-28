@@ -4,7 +4,7 @@ import {
   type RouteLocationRaw,
   type RouteRecordRaw,
 } from 'vue-router'
-import type { SessionContext } from '@/shared/session/contracts'
+import type { SessionContext } from '@/features/session/contracts'
 import { matchedRouteAccessResult } from '@/features/navigation/routeAccess'
 import {
   buildAccessibleMenus,

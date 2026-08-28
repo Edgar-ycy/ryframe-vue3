@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { SessionContextUserInfo } from '@/shared/session/contracts'
+import type { SessionContextUserInfo } from '@/features/session/contracts'
 import type { AppLocale } from '@/i18n'
 import type { Id } from '@/shared/http/types'
 import { getTenantId } from '@/utils/auth'

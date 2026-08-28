@@ -1,6 +1,6 @@
 import { getAuthContext } from '@/api/modules/authContext'
 import { isSessionContext, sessionContextUserInfo } from '@/api/modules/sessionContext'
-import type { SessionContext } from '@/shared/session/contracts'
+import type { SessionContext } from '@/features/session/contracts'
 import {
   buildAccessibleMenus,
   buildRoutesFromMenuTree,

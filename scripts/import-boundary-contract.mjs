@@ -310,7 +310,14 @@ export function boundaryViolation(edge) {
   }
   if (
     edge.kind === 'type' &&
-    edge.source === 'src/shared/session/contracts.ts' &&
+    sourceArea === 'stores' &&
+    edge.target === 'src/features/session/contracts.ts'
+  ) {
+    return undefined
+  }
+  if (
+    edge.kind === 'type' &&
+    edge.source === 'src/features/session/contracts.ts' &&
     edge.target === 'src/api/contract.ts'
   ) {
     return undefined

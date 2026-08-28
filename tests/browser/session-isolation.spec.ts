@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import type { SessionContext } from '@/shared/session/contracts'
+import type { SessionContext } from '@/features/session/contracts'
 import { installApiFixture } from './support/apiFixture'
 import { expectCleanDiagnostics, observeDiagnostics } from './support/diagnostics'
 import { loginWithFixture, openSidebarPage } from './support/navigation'

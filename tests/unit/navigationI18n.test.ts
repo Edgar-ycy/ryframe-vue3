@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { menuRouteCatalog } from '@/api/generated/menuRoutes'
 import {
   getApplicationLocale,
@@ -9,6 +9,15 @@ import {
 import { getMenuPage } from '@/features/pageRegistry'
 import { ensureRouteMessageCatalogs } from '@/i18n/lazyCatalog'
 import { initialMessageCatalogs, messages } from '@/i18n/messages'
+
+vi.mock('@/views/system/role/index.vue', () => ({ default: { name: 'RolePageStub' } }))
+vi.mock('@/views/monitor/jobs/index.vue', () => ({ default: { name: 'JobPageStub' } }))
+vi.mock('@/views/system/service-accounts/index.vue', () => ({
+  default: { name: 'ServiceAccountPageStub' },
+}))
+vi.mock('@/views/platform/data-targets/index.vue', () => ({
+  default: { name: 'DataTargetPageStub' },
+}))
 
 const originalLocale = getApplicationLocale()
 

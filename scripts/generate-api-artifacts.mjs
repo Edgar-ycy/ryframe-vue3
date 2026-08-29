@@ -94,7 +94,7 @@ async function checkArtifacts(stagingRoot, artifacts, previousOwnership) {
   }
   if (stale.length > 0) {
     throw new Error(
-      `以下 OpenAPI 派生文件不是最新版本：\n  - ${stale.sort().join('\n  - ')}\n请运行 pnpm api:generate`,
+      `以下 OpenAPI 派生文件不是最新版本：\n  - ${stale.sort().join('\n  - ')}\n请运行 corepack pnpm api:generate`,
     )
   }
 }

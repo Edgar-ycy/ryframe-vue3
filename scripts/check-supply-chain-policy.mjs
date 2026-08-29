@@ -172,7 +172,7 @@ function parseArguments(argv) {
 async function loadLicenseReport(licensesPath) {
   if (licensesPath) return JSON.parse(await readFile(licensesPath, 'utf8'))
   const pnpmCli = process.env.npm_execpath
-  if (!pnpmCli) throw new Error('请通过 pnpm check:supply-chain-policy 运行许可证检查')
+  if (!pnpmCli) throw new Error('请通过 corepack pnpm check:supply-chain-policy 运行许可证检查')
   const { stdout } = await execFileAsync(
     process.execPath,
     [pnpmCli, 'licenses', 'list', '--prod', '--json'],

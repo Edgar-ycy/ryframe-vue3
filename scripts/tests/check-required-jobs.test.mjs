@@ -81,3 +81,17 @@ test('开发脚本与 CI 只通过 Corepack 调用固定 pnpm', async () => {
   assert.match(action, /corepack prepare "pnpm@\$\{pnpm_version\}" --activate/u)
   assert.doesNotMatch(action, /npm install --global/u)
 })
+
+test('可执行错误提示也通过 Corepack 给出 pnpm 命令', async () => {
+  const prompts = [
+    ['scripts/generate-api-artifacts.mjs', 'corepack pnpm api:generate'],
+    ['scripts/check-supply-chain-policy.mjs', 'corepack pnpm check:supply-chain-policy'],
+    ['scripts/generate-sbom.mjs', 'corepack pnpm sbom:generate'],
+  ]
+
+  for (const [file, command] of prompts) {
+    const source = await readFile(path.join(root, file), 'utf8')
+    assert.ok(source.includes(command), `${file} 未给出 Corepack 命令`)
+    assert.doesNotMatch(source, /请(?:运行|通过) pnpm\s/u, `${file} 仍提示裸 pnpm 命令`)
+  }
+})

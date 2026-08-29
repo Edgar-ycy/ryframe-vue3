@@ -62,10 +62,19 @@ if (i18nCoreGzip > limits.i18nCoreGzip) {
 if (apiCoreGzip > limits.apiCoreGzip) {
   failures.push(`api-core gzip JS ${apiCoreGzip} > ${limits.apiCoreGzip}`)
 }
-const catalogFiles = await readdir(path.resolve('src/i18n/catalog'), { withFileTypes: true })
-const catalogSources = catalogFiles
-  .filter((entry) => entry.isFile() && entry.name.endsWith('.ts'))
-  .map((entry) => `src/i18n/catalog/${entry.name}`)
+async function collectCatalogSources(directory) {
+  const sources = []
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name)
+    if (entry.isDirectory()) sources.push(...(await collectCatalogSources(entryPath)))
+    else if (entry.isFile() && entry.name.endsWith('.ts')) {
+      sources.push(path.relative(process.cwd(), entryPath).replaceAll('\\', '/'))
+    }
+  }
+  return sources
+}
+
+const catalogSources = await collectCatalogSources(path.resolve('src/i18n/catalog'))
 failures.push(...businessCatalogIsolationFailures(manifest, initialGraph, catalogSources))
 for (const domain of ['system', 'platform', 'monitor', 'agent']) {
   const chunk = findOptionalNamedChunk(manifest, `api-${domain}`)

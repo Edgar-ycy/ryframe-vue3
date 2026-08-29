@@ -1,5 +1,6 @@
 import { posix } from 'node:path'
 import ts from 'typescript'
+import { businessCatalogImportViolation } from './bundle-manifest-policy.mjs'
 
 const allowedAreaTargets = Object.freeze({
   app: new Set([
@@ -279,6 +280,8 @@ export function boundaryViolation(edge) {
   const externalViolation = externalBoundaryViolation(edge.source, sourceArea, edge.target)
   if (externalViolation) return externalViolation
   if (edge.target.startsWith('package:')) return undefined
+  const catalogViolation = businessCatalogImportViolation(edge)
+  if (catalogViolation) return catalogViolation
   const targetArea = moduleArea(edge.target)
   if (sourceArea === 'generated') return undefined
   if (edge.kind !== 'type' && edge.target === 'src/api/operationRequest.ts') {

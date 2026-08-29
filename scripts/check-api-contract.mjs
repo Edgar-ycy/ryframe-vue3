@@ -12,7 +12,6 @@ import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 
 const contractPath = new URL('../openapi/openapi.json', import.meta.url)
 const packagePath = new URL('../package.json', import.meta.url)
-const pageRegistryPath = new URL('../src/router/pageRegistry.ts', import.meta.url)
 const featuresPath = new URL('../src/features/', import.meta.url)
 const passwordPolicyPath = new URL(
   '../src/shared/security/passwordPolicy.generated.json',
@@ -66,7 +65,6 @@ const { contractRoutes, featureRegistry } = await validatePageRegistryContract({
   document,
   errors,
   featuresPath,
-  pageRegistryPath,
 })
 validateOpenApiExtensions({
   document,

@@ -27,7 +27,6 @@ test('拆分后的 OpenAPI 契约模块保持正式文档一致', async () => {
     document,
     errors,
     featuresPath: new URL('src/features/', root),
-    pageRegistryPath: new URL('src/router/pageRegistry.ts', root),
   })
   validateOpenApiExtensions({
     document,

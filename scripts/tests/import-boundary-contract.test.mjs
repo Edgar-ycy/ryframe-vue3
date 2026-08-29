@@ -16,7 +16,7 @@ test('区分运行时、类型和动态导入', () => {
     import value from '@/stores/user'
     import type { User } from '@/api/modules/auth'
     import { type Id } from '@/shared/http/types'
-    export type { Route } from '@/router/pageRegistry'
+    export type { Route } from '@/features/pageRegistry'
     export { type Menu } from '@/api/modules/menu'
     const page = import('@/views/index.vue')
   `)
@@ -24,7 +24,7 @@ test('区分运行时、类型和动态导入', () => {
     { kind: 'runtime', specifier: '@/stores/user' },
     { kind: 'type', specifier: '@/api/modules/auth' },
     { kind: 'type', specifier: '@/shared/http/types' },
-    { kind: 'type', specifier: '@/router/pageRegistry' },
+    { kind: 'type', specifier: '@/features/pageRegistry' },
     { kind: 'type', specifier: '@/api/modules/menu' },
     { kind: 'dynamic', specifier: '@/views/index.vue' },
   ])
@@ -210,6 +210,25 @@ test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', 
       target: 'src/views/system/user/index.vue',
     }),
     undefined,
+  )
+})
+
+test('业务 catalog 子模块只能由对应顶层入口静态导入', () => {
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/i18n/catalog/monitor-tools.ts',
+      target: 'src/i18n/catalog/monitor-tools/en-US.ts',
+    }),
+    undefined,
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/i18n/messages.ts',
+      target: 'src/i18n/catalog/monitor-tools/en-US.ts',
+    }),
+    'business catalog child must be statically imported by src/i18n/catalog/monitor-tools.ts: src/i18n/catalog/monitor-tools/en-US.ts',
   )
 })
 

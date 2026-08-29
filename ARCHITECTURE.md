@@ -68,11 +68,13 @@ coordinator。API module 不直接依赖外部 package，也不依赖 Router、S
 
 ## 管理状态
 
-服务端列表、详情和 mutation 使用 TanStack Query。已认证服务端状态的 Query Key 固定为
-`server-state / tenantId / subjectId / sessionEpoch / resource / params`；业务代码只通过
-`serverStateScopePrefix()`、`serverStateResourcePrefix()` 和完整 Key helper 操作缓存，不切片或手写
-前缀。普通 access token 轮换不改变 `sessionEpoch`，主体、租户、授权或运行 epoch、角色、权限、
-capability 与菜单投影变化时才进入新一代范围。
+服务端列表、详情和 mutation 使用 TanStack Query。已认证服务端状态统一通过
+`useServerStateQuery()` 和 `useServerStateMutation()` 接入；组件外的命令式 mutation 使用
+`executeServerStateMutation()`，不要直接用原始 `useQuery()` / `useMutation()` 自建租户级缓存。Query Key
+固定为 `server-state / tenantId / subjectId / sessionEpoch / resource / params`；业务代码只通过
+`serverStateScopePrefix()`、`serverStateResourcePrefix()` 和完整 Key helper 操作缓存，不切片或手写前缀。
+普通 access token 轮换不改变 `sessionEpoch`，主体、租户、授权或运行 epoch、角色、权限、capability
+与菜单投影变化时才进入新一代范围。
 
 切换会话时先中止旧 scope 的 signal，再递增 `sessionEpoch`、清理旧 Query/Mutation，应用已校验的
 用户、租户与权限投影，最后发布新 scope。HTTP 请求同时绑定调用方 signal 与会话 signal；旧 epoch
@@ -91,7 +93,8 @@ Pinia 适合主题、标签页和客户端投影等跨页面状态。登录、�
 
 ## 会话与路由
 
-登录和刷新从 `/auth/context` 获取 `SessionContext`，随后更新用户、租户、权限和动态路由。
+登录和刷新响应直接携带同构的 `SessionContext`；`GET /auth/context` 返回相同结构，用于恢复或重新
+校验当前会话。客户端只在完整快照校验通过后原子更新用户、租户、权限和动态路由。
 运行时路由由页面声明与服务端菜单共同投影：
 
 ```text

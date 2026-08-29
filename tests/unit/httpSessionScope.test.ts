@@ -7,7 +7,7 @@ import {
 } from 'axios'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { configureHttpSession, type HttpSessionRequestContext } from '@/shared/http/client'
+import { configureHttpSession, request, type HttpSessionRequestContext } from '@/shared/http/client'
 import { transport } from '@/shared/http/transport'
 
 function response(
@@ -105,6 +105,56 @@ describe('HTTP 会话范围守卫', () => {
     }
     gate.resolve()
     await expect(request).rejects.toMatchObject({ kind: 'cancelled', status: 401 })
+  })
+
+  it('请求入口在异步拦截器前固定纪元、凭据和旧会话取消信号', async () => {
+    const oldController = new AbortController()
+    let snapshot: HttpSessionRequestContext = {
+      accessToken: 'token-a',
+      tenantId: 'tenant-a',
+      sessionEpoch: 15,
+      signal: oldController.signal,
+    }
+    configureHttpSession({
+      getSnapshot: () => snapshot,
+      observeTenantContext: vi.fn(),
+      refreshAccessToken: vi.fn(async () => 'unused'),
+      handleRefreshFailure: vi.fn(async () => undefined),
+    })
+
+    const interceptorStarted = deferred()
+    const releaseInterceptor = deferred()
+    let capturedBeforeSessionInterceptor: InternalAxiosRequestConfig | undefined
+    const delayingInterceptor = transport.interceptors.request.use(async (config) => {
+      capturedBeforeSessionInterceptor = config
+      interceptorStarted.resolve()
+      await releaseInterceptor.promise
+      return config
+    })
+    const adapter = vi.fn<AxiosAdapter>(async (config) => response(config))
+
+    try {
+      const pending = request({ adapter, url: '/scope-before-interceptor' })
+      await interceptorStarted.promise
+      expect(capturedBeforeSessionInterceptor?.sessionEpoch).toBe(15)
+      expect(capturedBeforeSessionInterceptor?.headers.get('Authorization')).toBe('Bearer token-a')
+      expect(capturedBeforeSessionInterceptor?.headers.get('X-Tenant-Id')).toBe('tenant-a')
+
+      oldController.abort()
+      snapshot = {
+        accessToken: 'token-b',
+        tenantId: 'tenant-b',
+        sessionEpoch: 16,
+        signal: new AbortController().signal,
+      }
+      releaseInterceptor.resolve()
+
+      await expect(pending).rejects.toMatchObject({ kind: 'cancelled', status: 401 })
+      expect(adapter).not.toHaveBeenCalled()
+    } finally {
+      releaseInterceptor.resolve()
+      transport.interceptors.request.eject(delayingInterceptor)
+    }
   })
 
   it('旧纪元的 401 不会触发新会话刷新或重试', async () => {

@@ -1,8 +1,11 @@
 import axios, {
+  AxiosHeaders,
   type AxiosError,
+  type AxiosRequestConfig,
   type AxiosResponse,
   type GenericAbortSignal,
   type InternalAxiosRequestConfig,
+  type RawAxiosHeaders,
 } from 'axios'
 import { runtimeConfig } from '@/shared/config/runtimeConfig'
 import { HttpError, toHttpError } from './errors'
@@ -20,6 +23,7 @@ declare module 'axios' {
     skipAuthRefresh?: boolean
     skipTenantHeader?: boolean
     retryAfterRefresh?: boolean
+    sessionContextCaptured?: boolean
     sessionEpoch?: number
   }
 }
@@ -35,6 +39,8 @@ function createTransport() {
 
 export const transport = createTransport()
 export const rawTransport = createTransport()
+
+type CapturedSessionRequestConfig = AxiosRequestConfig & { sessionContextCaptured: true }
 
 const TENANT_CONTEXT_HEADERS = Object.freeze({
   authorizationEpoch: 'X-Authorization-Epoch',
@@ -92,6 +98,43 @@ function applyAcceptLanguage(config: InternalAxiosRequestConfig): void {
   }
 }
 
+/**
+ * 在 Axios 异步请求拦截器运行前固定原子会话快照。这样旧 Mutation 即使恰好在
+ * 调用请求后切换会话，也只会携带旧纪元和旧取消信号，不能借用新身份发出请求。
+ * 匿名请求同样标记为已捕获，并克隆调用方 headers，防止后续会话或复用配置污染它。
+ */
+export function captureHttpSessionRequest(config: AxiosRequestConfig): AxiosRequestConfig {
+  const snapshot = getHttpSession()?.getSnapshot()
+  const headers = new AxiosHeaders(config.headers as RawAxiosHeaders | AxiosHeaders | undefined)
+  if (!snapshot) {
+    if (config.sessionEpoch !== undefined) throw cancelledSessionError()
+    headers.delete('Authorization')
+    const captured: CapturedSessionRequestConfig = {
+      ...config,
+      headers,
+      sessionContextCaptured: true,
+    }
+    return captured
+  }
+  if (
+    snapshot.signal.aborted ||
+    (config.sessionEpoch !== undefined && config.sessionEpoch !== snapshot.sessionEpoch)
+  ) {
+    throw cancelledSessionError()
+  }
+
+  headers.set('Authorization', `Bearer ${snapshot.accessToken}`)
+  if (!config.skipTenantHeader) headers.set('X-Tenant-Id', snapshot.tenantId)
+  const captured: CapturedSessionRequestConfig = {
+    ...config,
+    headers,
+    sessionContextCaptured: true,
+    sessionEpoch: snapshot.sessionEpoch,
+    signal: combineAbortSignals(config.signal, snapshot.signal),
+  }
+  return captured
+}
+
 transport.interceptors.request.use((config) => {
   applyAcceptLanguage(config)
   const sessionAdapter = getHttpSession()
@@ -102,14 +145,11 @@ transport.interceptors.request.use((config) => {
   ) {
     throw cancelledSessionError()
   }
-  if (snapshot) {
+  if (snapshot && !config.sessionContextCaptured) {
     config.sessionEpoch ??= snapshot.sessionEpoch
     config.signal = combineAbortSignals(config.signal, snapshot.signal)
-  }
-  const token = snapshot?.accessToken
-  if (token && !config.headers.Authorization) config.headers.Authorization = `Bearer ${token}`
-  if (!config.skipTenantHeader && !config.headers['X-Tenant-Id']) {
-    config.headers['X-Tenant-Id'] = snapshot?.tenantId
+    config.headers.set('Authorization', `Bearer ${snapshot.accessToken}`)
+    if (!config.skipTenantHeader) config.headers.set('X-Tenant-Id', snapshot.tenantId)
   }
   removeJsonContentTypeForFormData(config)
   return config
@@ -151,7 +191,7 @@ transport.interceptors.response.use(
       config.sessionEpoch !== undefined
     ) {
       config.retryAfterRefresh = true
-      const token = await refreshSession(config.sessionEpoch)
+      await refreshSession(config.sessionEpoch)
       const refreshed = sessionAdapter.getSnapshot()
       if (
         !refreshed ||
@@ -160,13 +200,27 @@ transport.interceptors.response.use(
       ) {
         return Promise.reject(cancelledSessionError())
       }
-      config.headers.Authorization = `Bearer ${token}`
-      if (!config.skipTenantHeader) config.headers['X-Tenant-Id'] = refreshed.tenantId
+      config.headers.set('Authorization', `Bearer ${refreshed.accessToken}`)
+      if (!config.skipTenantHeader) config.headers.set('X-Tenant-Id', refreshed.tenantId)
       return transport(config)
     }
 
     const httpError = await toHttpError(error)
+    if (config?.sessionEpoch !== undefined && !requestSessionIsCurrent(config)) {
+      return Promise.reject(cancelledSessionError(error))
+    }
     if (status === 401 && config?.retryAfterRefresh && sessionAdapter) {
+      const current = sessionAdapter.getSnapshot()
+      // 同纪元 token 可能已由其他标签页更新，旧 token 的失败不能终止当前会话。
+      if (
+        !current ||
+        config.sessionEpoch === undefined ||
+        current.sessionEpoch !== config.sessionEpoch ||
+        current.signal.aborted ||
+        config.headers.get('Authorization') !== `Bearer ${current.accessToken}`
+      ) {
+        return Promise.reject(cancelledSessionError(error))
+      }
       await sessionAdapter.handleRefreshFailure(httpError)
       return Promise.reject(httpError)
     }

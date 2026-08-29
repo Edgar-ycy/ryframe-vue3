@@ -147,8 +147,10 @@ import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/expor
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { formatLocalizedDate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
@@ -162,7 +164,6 @@ type ConfigFormDialogInstance = {
 const { t } = useI18n()
 const userStore = useUserStore()
 const formDialogRef = ref<ConfigFormDialogInstance>()
-const authenticated = () => userStore.sessionStatus === 'authenticated'
 
 const {
   appliedQuery: appliedQueryParams,
@@ -175,12 +176,9 @@ const {
   runAppliedQuery,
 } = useAppliedListQuery<ConfigQuery>({ page: 1, page_size: 10, name: '', key: '' })
 const { pending: exportLoading, submitExport } = useExportJobRequest()
-
-watch(
-  () => [userStore.tenantId, userStore.userId] as const,
-  () => clearSuccessfulQuery(),
-  { flush: 'sync' },
-)
+const pageLifecycle = useServerStatePageLifecycle(clearSuccessfulQuery)
+const authenticated = () =>
+  pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
 const configsQuery = useServerStateQuery<PageResponse<ConfigRecord>>(
   authenticated,
@@ -203,10 +201,13 @@ async function handleExport(): Promise<void> {
     return
   }
   const intent = normalizeExportIntent('configs', successfulQuery)
-  await confirmAndSubmitExportIntent(intent, (scope) =>
-    submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-      exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
-    ),
+  await confirmAndSubmitExportIntent(
+    intent,
+    (scope) =>
+      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+        exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
+      ),
+    { ownsOperation: pageLifecycle.captureOwnership() },
   )
 }
 
@@ -239,9 +240,6 @@ const deleteMutation = useServerStateMutation<void, ConfigRecord>('configs', {
   mutationFn: async (config) => {
     await deleteConfig(config.id)
   },
-  onSuccess: () => {
-    ElMessage.success(t('system.common.deleteSuccess'))
-  },
 })
 const deletingId = computed<Id | null>(() =>
   deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
@@ -266,13 +264,19 @@ async function editConfigById(id: Id): Promise<void> {
 
 async function handleDelete(row: ConfigRecord) {
   if (deleteMutation.pending.value) return
-  const confirmed = await confirmAction(
-    t('system.config.deleteConfirm', { name: row.name }),
-    t('system.common.warning'),
-    { type: 'warning' },
+  const ownsOperation = pageLifecycle.captureOwnership()
+  const operation = await confirmServerStatePageOperation(
+    () =>
+      confirmAction(
+        t('system.config.deleteConfirm', { name: row.name }),
+        t('system.common.warning'),
+        { type: 'warning' },
+      ),
+    ownsOperation,
   )
-  if (!confirmed) return
+  if (!operation) return
   await deleteMutation.mutateAsync(row)
+  operation.apply(() => ElMessage.success(t('system.common.deleteSuccess')), ownsOperation)
   await refreshData()
 }
 

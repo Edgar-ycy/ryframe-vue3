@@ -75,7 +75,10 @@ import {
 } from '@/api/modules/config'
 import { refreshShellSettings } from '@/app/settings/shellSettingsQuery'
 import { type Id } from '@/shared/http/types'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
@@ -98,9 +101,13 @@ const rules = computed<FormRules>(() => ({
   key: [{ required: true, message: t('system.config.enterKey'), trigger: 'blur' }],
   value: [{ required: true, message: t('system.config.enterValue'), trigger: 'blur' }],
 }))
+const pageLifecycle = useServerStatePageLifecycle(resetDialog)
 
 const detailQuery = useServerStateQuery<ConfigRecord>(
-  () => userStore.sessionStatus === 'authenticated' && editingConfig.value !== null,
+  () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    editingConfig.value !== null,
   'configs',
   () => ({ scope: 'detail', id: editingConfig.value?.id ?? null }),
   async (signal) => {
@@ -121,14 +128,6 @@ const saveMutation = useServerStateMutation<void, SaveConfigCommand>('configs', 
     if (command.kind === 'create') await createConfig(command.data)
     else await updateConfig(command.id, command.data)
   },
-  onSuccess: async (_data, command) => {
-    ElMessage.success(
-      t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
-    )
-    if (command.kind === 'update' && isShellSettingKey(command.key)) {
-      await refreshShellSettings()
-    }
-  },
 })
 const submitLoading = saveMutation.pending
 
@@ -141,6 +140,7 @@ function resetDialog(): void {
   resetForm()
   currentEditId.value = null
   editingConfig.value = null
+  dialog.value = { visible: false, title: '', isEdit: false }
 }
 
 function openAdd(): void {
@@ -150,13 +150,18 @@ function openAdd(): void {
 
 async function openEdit(config: ConfigRecord): Promise<void> {
   if (saveMutation.pending.value) return
+  const operation = beginServerStatePageOperation()
+  const ownsPage = pageLifecycle.captureOwnership()
+  const ownsEdit = () => ownsPage() && editingConfig.value?.id === config.id
   currentEditId.value = config.id
   editingConfig.value = config
   dialog.value.title = t('system.config.editTitle')
   dialog.value.isEdit = true
   resetForm()
   await nextTick()
+  operation.assertCurrent(ownsEdit)
   const result = await detailQuery.refetch({ throwOnError: true })
+  operation.assertCurrent(ownsEdit)
   const detail = result.data
   if (!detail) throw new Error(t('system.config.detailMissing'))
   Object.assign(form.value, {
@@ -171,8 +176,19 @@ async function openEdit(config: ConfigRecord): Promise<void> {
 
 async function handleSubmit(): Promise<void> {
   if (saveMutation.pending.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedEditId = currentEditId.value
+  const expectedIsEdit = dialog.value.isEdit
+  const ownsDialog = () =>
+    ownsPage() &&
+    dialog.value.visible &&
+    dialog.value.isEdit === expectedIsEdit &&
+    currentEditId.value === expectedEditId
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation) return
   const command: SaveConfigCommand = dialog.value.isEdit
     ? {
         kind: 'update',
@@ -182,6 +198,14 @@ async function handleSubmit(): Promise<void> {
       }
     : { kind: 'create', data: buildConfigCreateInput(form.value) }
   await saveMutation.mutateAsync(command)
+  operation.assertCurrent(ownsDialog)
+  if (command.kind === 'update' && isShellSettingKey(command.key)) {
+    await refreshShellSettings()
+    operation.assertCurrent(ownsDialog)
+  }
+  ElMessage.success(
+    t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
+  )
   dialog.value.visible = false
   await props.afterSaved()
 }

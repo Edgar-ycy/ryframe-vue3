@@ -49,7 +49,9 @@ import {
   type DictDataUpdateInput,
 } from '@/api/modules/dict'
 import type { Id } from '@/shared/http/types'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 
 const { t } = useI18n()
 
@@ -78,15 +80,11 @@ function isEdit(): boolean {
   return props.dictData !== null
 }
 const formRef = ref<FormInstance>()
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
 const saveMutation = useServerStateMutation<void, SaveDictDataCommand>('dict-data', {
   mutationFn: async (command) => {
     if (command.kind === 'update') await updateDictData(command.id, command.data)
     else await createDictData(command.data)
-  },
-  onSuccess: (_data, command) => {
-    ElMessage.success(
-      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
-    )
   },
 })
 const submitting = saveMutation.pending
@@ -106,6 +104,11 @@ function resetForm(): void {
   formRef.value?.clearValidate()
 }
 
+function resetPageState(): void {
+  visible.value = false
+  resetForm()
+}
+
 function populateForm(): void {
   resetForm()
   if (!props.dictData) return
@@ -119,8 +122,19 @@ function populateForm(): void {
 
 async function submit(): Promise<void> {
   if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedDataId = props.dictData?.id ?? null
+  const expectedTypeCode = props.typeCode
+  const ownsDialog = () =>
+    ownsPage() &&
+    visible.value &&
+    (props.dictData?.id ?? null) === expectedDataId &&
+    props.typeCode === expectedTypeCode
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation) return
   if (!props.dictData && !props.typeCode) throw new Error(t('system.dict.typeRequired'))
 
   const command: SaveDictDataCommand = props.dictData
@@ -144,7 +158,12 @@ async function submit(): Promise<void> {
         },
       }
   await saveMutation.mutateAsync(command)
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

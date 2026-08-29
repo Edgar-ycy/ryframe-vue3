@@ -49,7 +49,9 @@ import {
 } from '@/api/modules/role'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -68,8 +70,13 @@ const visible = defineModel<boolean>({ required: true })
 const dataScope = ref<RoleDataScope>('1')
 const deptIds = ref<Id[]>([])
 const userStore = useUserStore()
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
 const detailQuery = useServerStateQuery<RoleRecord>(
-  () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
+  () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    visible.value &&
+    props.role !== null,
   'roles',
   () => ({ scope: 'detail', id: props.role?.id ?? null }),
   async (signal) => {
@@ -90,9 +97,6 @@ const dataScopeMutation = useServerStateMutation<
       dept_ids: variables.deptIds,
     })
   },
-  onSuccess: () => {
-    ElMessage.success(t('system.role.dataScopeUpdated'))
-  },
 })
 const loading = detailQuery.isFetching
 const submitting = dataScopeMutation.pending
@@ -100,6 +104,11 @@ const submitting = dataScopeMutation.pending
 function reset(): void {
   dataScope.value = '1'
   deptIds.value = []
+}
+
+function resetPageState(): void {
+  visible.value = false
+  reset()
 }
 
 function populateDataScope(role: RoleRecord): void {
@@ -127,12 +136,20 @@ async function submit(): Promise<void> {
     return
   }
 
+  const operation = beginServerStatePageOperation()
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedRoleId = props.role.id
+  const ownsDialog = () => ownsPage() && visible.value && props.role?.id === expectedRoleId
+  operation.assertCurrent(ownsDialog)
   await dataScopeMutation.mutateAsync({
-    roleId: props.role.id,
+    roleId: expectedRoleId,
     dataScope: dataScope.value,
     deptIds: dataScope.value === '2' ? [...deptIds.value] : [],
   })
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(t('system.role.dataScopeUpdated'))
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

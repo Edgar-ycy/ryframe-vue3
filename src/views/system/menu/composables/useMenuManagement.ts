@@ -12,14 +12,15 @@ import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permis
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import { flattenPermissionOptions } from '../menuTree'
 
 interface StatusCommand {
-  action: string
   menu: MenuTreeNode
   previousStatus: string
   status: string
@@ -31,7 +32,9 @@ export function useMenuManagement() {
   const parentMenuId = ref<Id>()
   const { hasPermission } = usePermission()
   const userStore = useUserStore()
-  const authenticated = () => userStore.sessionStatus === 'authenticated'
+  const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+  const authenticated = () =>
+    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
   const menusQuery = useServerStateQuery<MenuTreeNode[]>(
     authenticated,
@@ -64,20 +67,10 @@ export function useMenuManagement() {
     onError: (_error, variables) => {
       variables.menu.status = variables.previousStatus
     },
-    onSuccess: (_data, variables) => {
-      ElMessage.success(
-        translate('system.common.actionSuccess', {
-          action: variables.action,
-        }),
-      )
-    },
   })
   const deleteMutation = useServerStateMutation<void, MenuTreeNode>('menus', {
     mutationFn: async (menu) => {
       await deleteMenu(menu.id)
-    },
-    onSuccess: () => {
-      ElMessage.success(translate('system.common.deleteSuccess'))
     },
   })
   const deletingId = computed<Id | null>(() =>
@@ -86,6 +79,12 @@ export function useMenuManagement() {
   const statusUpdatingId = computed<Id | null>(() =>
     statusMutation.pending.value ? (statusMutation.variables.value?.menu.id ?? null) : null,
   )
+
+  function resetPageState(): void {
+    dialogVisible.value = false
+    editingMenu.value = null
+    parentMenuId.value = undefined
+  }
 
   async function fetchData(): Promise<void> {
     await menusQuery.refetch({ throwOnError: true })
@@ -135,17 +134,26 @@ export function useMenuManagement() {
       return
     }
     const action = translate(status === '1' ? 'system.common.enable' : 'system.common.disable')
-    const confirmed = await confirmAction(
-      translate('system.menu.statusChangeConfirm', { action, name: menu.name }),
-      translate('system.common.prompt'),
-      { type: 'warning' },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.menu.statusChangeConfirm', { action, name: menu.name }),
+          translate('system.common.prompt'),
+          { type: 'warning' },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) {
+    if (!operation) {
       menu.status = previousStatus
       return
     }
 
-    await statusMutation.mutateAsync({ action, menu, previousStatus, status })
+    await statusMutation.mutateAsync({ menu, previousStatus, status })
+    operation.apply(
+      () => ElMessage.success(translate('system.common.actionSuccess', { action })),
+      ownsOperation,
+    )
     await menusQuery.refetch({ throwOnError: true })
   }
 
@@ -163,17 +171,26 @@ export function useMenuManagement() {
 
   async function handleDelete(menu: MenuTreeNode): Promise<void> {
     if (deleteMutation.pending.value) return
-    const confirmed = await confirmAction(
-      translate('system.menu.deleteConfirm', { name: menu.name }),
-      translate('system.common.warning'),
-      {
-        type: 'warning',
-        confirmButtonText: translate('system.common.confirmDelete'),
-      },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.menu.deleteConfirm', { name: menu.name }),
+          translate('system.common.warning'),
+          {
+            type: 'warning',
+            confirmButtonText: translate('system.common.confirmDelete'),
+          },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteMutation.mutateAsync(menu)
+    operation.apply(
+      () => ElMessage.success(translate('system.common.deleteSuccess')),
+      ownsOperation,
+    )
     await menusQuery.refetch({ throwOnError: true })
   }
 

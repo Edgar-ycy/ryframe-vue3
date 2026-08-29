@@ -97,7 +97,9 @@ import {
 import type { SelectOption } from '@/api/modules/option'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { useRoleOptions } from '../composables/useRoleOptions'
@@ -133,16 +135,24 @@ function isEdit(): boolean {
 }
 const userStore = useUserStore()
 const selectedRoleOptions = ref<SelectOption[]>([])
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
 const {
   loading: roleOptionsLoading,
   options: roleOptions,
   remoteMethod: remoteRoleSearch,
   resetSearch: resetRoleSearch,
-} = useRoleOptions(() => visible.value && !isEdit(), selectedRoleOptions)
+} = useRoleOptions(
+  () => pageLifecycle.pageActive.value && visible.value && !isEdit(),
+  selectedRoleOptions,
+)
 
 const formRef = ref<FormInstance>()
 const detailQuery = useServerStateQuery<UserDetail>(
-  () => userStore.sessionStatus === 'authenticated' && visible.value && props.user !== null,
+  () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    visible.value &&
+    props.user !== null,
   'users',
   () => ({ scope: 'detail', id: props.user?.id ?? null }),
   async (signal) => {
@@ -162,11 +172,6 @@ const saveMutation = useServerStateMutation<void, SaveUserCommand>('users', {
     }
     const response = await createUser(command.data)
     if (!response.data) throw new Error(t('system.user.createResponseMissing'))
-  },
-  onSuccess: (_data, command) => {
-    ElMessage.success(
-      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.user.createdPending'),
-    )
   },
 })
 const submitting = saveMutation.pending
@@ -194,6 +199,11 @@ function resetForm() {
   selectedRoleOptions.value = []
   resetRoleSearch()
   formRef.value?.clearValidate()
+}
+
+function resetPageState(): void {
+  visible.value = false
+  resetForm()
 }
 
 function syncSelectedRoleOptions(): void {
@@ -230,9 +240,16 @@ watch(
 
 async function submit() {
   if (submitting.value) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedUserId = props.user?.id ?? null
+  const ownsDialog = () =>
+    ownsPage() && visible.value && (props.user?.id ?? null) === expectedUserId
   const fields = isEdit() ? ['nickname'] : ['username', 'nickname']
-  const valid = await formRef.value?.validateField(fields).catch(() => false)
-  if (valid === false) return
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validateField(fields).catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation) return
   const editingUser = props.user
   const command: SaveUserCommand = editingUser
     ? {
@@ -258,7 +275,12 @@ async function submit() {
       }
 
   await saveMutation.mutateAsync(command)
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.user.createdPending'),
+    )
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

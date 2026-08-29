@@ -7,7 +7,6 @@ import {
   type UserQuery,
   type UserManageableStatus,
   type UserRecord,
-  type UserStatus,
 } from '@/api/modules/user'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
@@ -16,27 +15,33 @@ import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { confirmAction } from '@/utils/confirmAction'
-
-const USER_STATUS_KEYS: Record<UserStatus, string> = {
-  0: 'system.common.disabled',
-  1: 'system.common.normal',
-  pending_activation: 'system.user.pendingActivation',
-}
+import { useUserPageProjection } from '../useUserPageProjection'
+import { isManageableStatus, userStatusLabel, userStatusTag } from '../userStatusPresentation'
 
 interface StatusCommand {
-  action: string
   previousStatus: UserManageableStatus
   row: UserRecord
   status: UserManageableStatus
 }
 
 export function useUserManagement() {
-  const selectedDeptId = ref<Id>()
-  const selectedDeptName = ref('')
+  const {
+    editingUser,
+    passwordDialogVisible,
+    passwordResetUserId,
+    resetUserPageProjection,
+    roleDialogVisible,
+    roleEditingUser,
+    selectedDeptId,
+    selectedDeptName,
+    userDialogVisible,
+  } = useUserPageProjection()
   const {
     appliedQuery: appliedQueryParams,
     applyDraft,
@@ -47,24 +52,12 @@ export function useUserManagement() {
     refreshApplied,
     runAppliedQuery,
   } = useAppliedListQuery<UserQuery>({ page: 1, page_size: 10 })
-
-  const userDialogVisible = ref(false)
-  const editingUser = ref<UserRecord | null>(null)
-  const passwordDialogVisible = ref(false)
-  const passwordResetUserId = ref<Id | null>(null)
-  const roleDialogVisible = ref(false)
-  const roleEditingUser = ref<UserRecord | null>(null)
-
   const { hasPermission } = usePermission()
   const userStore = useUserStore()
   const { pending: exportLoading, submitExport } = useExportJobRequest()
-  const authenticated = () => userStore.sessionStatus === 'authenticated'
-
-  watch(
-    () => [userStore.tenantId, userStore.userId] as const,
-    () => clearSuccessfulQuery(),
-    { flush: 'sync' },
-  )
+  const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+  const authenticated = () =>
+    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
   const usersQuery = useServerStateQuery<PageResponse<UserRecord>>(
     authenticated,
@@ -99,16 +92,10 @@ export function useUserManagement() {
     onError: (_error, variables) => {
       variables.row.status = variables.previousStatus
     },
-    onSuccess: (_data, variables) => {
-      ElMessage.success(translate('system.user.actionSuccess', { action: variables.action }))
-    },
   })
   const deleteMutation = useServerStateMutation<void, UserRecord>('users', {
     mutationFn: async (user) => {
       await deleteUser(user.id)
-    },
-    onSuccess: () => {
-      ElMessage.success(translate('system.common.deleteSuccess'))
     },
   })
 
@@ -118,6 +105,11 @@ export function useUserManagement() {
   const statusUpdatingId = computed<Id | null>(() =>
     statusMutation.pending.value ? (statusMutation.variables.value?.row.id ?? null) : null,
   )
+
+  function resetPageState(): void {
+    clearSuccessfulQuery()
+    resetUserPageProjection()
+  }
 
   async function fetchData(): Promise<void> {
     if (applyDraft()) return
@@ -160,25 +152,14 @@ export function useUserManagement() {
       return
     }
     const intent = normalizeExportIntent('users', successfulQuery)
-    await confirmAndSubmitExportIntent(intent, (scope) =>
-      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-        exportUser(intent.filter, idempotencyKey, signal, intent.isEmpty),
-      ),
+    await confirmAndSubmitExportIntent(
+      intent,
+      (scope) =>
+        submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+          exportUser(intent.filter, idempotencyKey, signal, intent.isEmpty),
+        ),
+      { ownsOperation: pageLifecycle.captureOwnership() },
     )
-  }
-
-  function isManageableStatus(status: UserStatus): status is UserManageableStatus {
-    return status === '0' || status === '1'
-  }
-
-  function userStatusLabel(status: UserStatus): string {
-    return translate(USER_STATUS_KEYS[status])
-  }
-
-  function userStatusTag(status: UserStatus): 'danger' | 'success' | 'warning' {
-    if (status === '1') return 'success'
-    if (status === '0') return 'danger'
-    return 'warning'
   }
 
   async function handleChangeStatus(row: UserRecord, status: UserManageableStatus): Promise<void> {
@@ -190,22 +171,29 @@ export function useUserManagement() {
 
     const actionKey = status === '1' ? 'system.common.enable' : 'system.common.disable'
     const action = translate(actionKey)
-    const confirmed = await confirmAction(
-      translate('system.user.statusChangeConfirm', {
-        action,
-        name: row.username,
-      }),
-      translate('system.common.prompt'),
-      {
-        type: 'warning',
-      },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.user.statusChangeConfirm', {
+            action,
+            name: row.username,
+          }),
+          translate('system.common.prompt'),
+          { type: 'warning' },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) {
+    if (!operation) {
       row.status = previousStatus
       return
     }
 
-    await statusMutation.mutateAsync({ action, previousStatus, row, status })
+    await statusMutation.mutateAsync({ previousStatus, row, status })
+    operation.apply(
+      () => ElMessage.success(translate('system.user.actionSuccess', { action })),
+      ownsOperation,
+    )
     await refreshData()
   }
 
@@ -226,19 +214,26 @@ export function useUserManagement() {
 
   async function handleDelete(user: UserRecord): Promise<void> {
     if (deleteMutation.pending.value) return
-    const confirmed = await confirmAction(
-      translate('system.user.deleteConfirm', {
-        name: user.username,
-      }),
-      translate('system.common.warning'),
-      {
-        type: 'warning',
-        confirmButtonText: translate('system.common.confirmDelete'),
-      },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.user.deleteConfirm', { name: user.username }),
+          translate('system.common.warning'),
+          {
+            type: 'warning',
+            confirmButtonText: translate('system.common.confirmDelete'),
+          },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteMutation.mutateAsync(user)
+    operation.apply(
+      () => ElMessage.success(translate('system.common.deleteSuccess')),
+      ownsOperation,
+    )
     await refreshData()
   }
 

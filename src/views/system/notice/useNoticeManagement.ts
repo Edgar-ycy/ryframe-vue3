@@ -1,5 +1,5 @@
 import { ElMessage } from 'element-plus'
-import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
+import type { FormInstance } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   createNotice,
@@ -16,18 +16,17 @@ import { publishNoticeToMessageCenter } from '@/api/modules/noticeMessage'
 import { requireOperationData } from '@/shared/http/client'
 import type { Id, PageResponse } from '@/shared/http/types'
 import { renderMarkdown } from '@/shared/markdown/render'
-import { NOTICE_POLICY, validateNoticeMarkdown } from '@/shared/markdown/noticePolicy'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import {
+  confirmServerStatePageOperation,
+  validateServerStatePageOperation,
+} from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
-
-export interface NoticeForm {
-  title: string
-  notice_type: string
-  content_markdown: string
-  status: string
-}
+import { createEmptyNoticeForm, createNoticeRules, type NoticeForm } from './noticeFormModel'
 
 interface NoticeDialogState {
   visible: boolean
@@ -49,7 +48,9 @@ export function useNoticeManagement() {
   const activeQueryParams = ref<NoticeQuery>({ ...queryParams.value })
   const { t } = useI18n()
   const userStore = useUserStore()
-  const authenticated = () => userStore.sessionStatus === 'authenticated'
+  const pageLifecycle = useServerStatePageLifecycle(resetDialog)
+  const authenticated = () =>
+    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
   const noticesQuery = useServerStateQuery<PageResponse<NoticeRecord>>(
     authenticated,
     'notices',
@@ -87,36 +88,12 @@ export function useNoticeManagement() {
   const formRef = ref<FormInstance>()
   const currentEditId = ref<Id | null>(null)
   const editingNotice = ref<NoticeRecord | null>(null)
-  const form = ref<NoticeForm>({
-    title: '',
-    notice_type: 'notice',
-    content_markdown: '',
-    status: '1',
-  })
+  const form = ref<NoticeForm>(createEmptyNoticeForm())
   const renderedContent = computed(() => renderMarkdown(form.value.content_markdown))
-  const validateMarkdown: FormItemRule['validator'] = (_rule, value, callback) => {
-    const result = validateNoticeMarkdown(typeof value === 'string' ? value : '')
-    if (result === 'required') {
-      callback(new Error(t('system.notice.enterContent')))
-    } else if (result === 'too_long') {
-      callback(
-        new Error(
-          t('system.notice.contentTooLong', {
-            max: NOTICE_POLICY.content_markdown.max_utf8_bytes,
-          }),
-        ),
-      )
-    } else {
-      callback()
-    }
-  }
-  const rules = computed<FormRules>(() => ({
-    title: [{ required: true, message: t('system.notice.enterTitle'), trigger: 'blur' }],
-    content_markdown: [{ validator: validateMarkdown, trigger: 'blur' }],
-  }))
+  const rules = computed(() => createNoticeRules(t))
 
   function resetForm() {
-    form.value = { title: '', notice_type: 'notice', content_markdown: '', status: '1' }
+    form.value = createEmptyNoticeForm()
     formRef.value?.clearValidate()
   }
 
@@ -124,6 +101,7 @@ export function useNoticeManagement() {
     resetForm()
     currentEditId.value = null
     editingNotice.value = null
+    dialog.value = { visible: false, title: '', isEdit: false }
   }
 
   function setFormRef(instance: FormInstance | undefined): void {
@@ -150,20 +128,12 @@ export function useNoticeManagement() {
         await updateNotice(command.id, command.data)
       }
     },
-    onSuccess: (_data, command) => {
-      ElMessage.success(
-        t(command.kind === 'create' ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
-      )
-    },
   })
   const submitLoading = saveMutation.pending
 
   const publishMutation = useServerStateMutation<void, NoticeRecord>('messages', {
     mutationFn: async (notice) => {
       await publishNoticeToMessageCenter(notice.id)
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.notice.publishMessageSuccess'))
     },
   })
   const publishingId = computed<Id | null>(() =>
@@ -173,9 +143,6 @@ export function useNoticeManagement() {
   const deleteMutation = useServerStateMutation<void, NoticeRecord>('notices', {
     mutationFn: async (notice) => {
       await deleteNotice(notice.id)
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.common.deleteSuccess'))
     },
   })
   const deletingId = computed<Id | null>(() =>
@@ -193,13 +160,18 @@ export function useNoticeManagement() {
 
   async function handleEdit(row: NoticeRecord) {
     if (saveMutation.pending.value) return
+    const operation = beginServerStatePageOperation()
+    const ownsPage = pageLifecycle.captureOwnership()
+    const ownsEdit = () => ownsPage() && editingNotice.value?.id === row.id
     currentEditId.value = row.id
     editingNotice.value = row
     dialog.value.title = t('system.notice.editTitle')
     dialog.value.isEdit = true
     resetForm()
     await nextTick()
+    operation.assertCurrent(ownsEdit)
     const result = await detailQuery.refetch({ throwOnError: true })
+    operation.assertCurrent(ownsEdit)
     const detail = result.data
     if (!detail) throw new Error(t('system.notice.detailMissing'))
     form.value = {
@@ -213,8 +185,19 @@ export function useNoticeManagement() {
 
   async function handleSubmit() {
     if (saveMutation.pending.value) return
-    const valid = await formRef.value?.validate().catch(() => false)
-    if (!valid) return
+    const ownsPage = pageLifecycle.captureOwnership()
+    const expectedEditId = currentEditId.value
+    const expectedIsEdit = dialog.value.isEdit
+    const ownsDialog = () =>
+      ownsPage() &&
+      dialog.value.visible &&
+      dialog.value.isEdit === expectedIsEdit &&
+      currentEditId.value === expectedEditId
+    const operation = await validateServerStatePageOperation(
+      () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+      ownsDialog,
+    )
+    if (!operation) return
     const data = {
       title: form.value.title,
       content_markdown: form.value.content_markdown,
@@ -229,32 +212,51 @@ export function useNoticeManagement() {
     } else {
       await saveMutation.mutateAsync({ kind: 'create', data })
     }
+    operation.assertCurrent(ownsDialog)
+    ElMessage.success(
+      t(expectedIsEdit ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
     dialog.value.visible = false
     await noticesQuery.refetch({ throwOnError: true })
   }
 
   async function handlePublishMessage(row: NoticeRecord) {
     if (publishMutation.pending.value) return
-    const confirmed = await confirmAction(
-      t('system.notice.publishMessageConfirm', { title: row.title }),
-      t('system.common.prompt'),
-      { type: 'warning' },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          t('system.notice.publishMessageConfirm', { title: row.title }),
+          t('system.common.prompt'),
+          { type: 'warning' },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await publishMutation.mutateAsync(row)
+    operation.apply(
+      () => ElMessage.success(t('system.notice.publishMessageSuccess')),
+      ownsOperation,
+    )
   }
 
   async function handleDelete(row: NoticeRecord) {
     if (deleteMutation.pending.value) return
-    const confirmed = await confirmAction(
-      t('system.notice.deleteConfirm', { name: row.title }),
-      t('system.common.warning'),
-      { type: 'warning' },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          t('system.notice.deleteConfirm', { name: row.title }),
+          t('system.common.warning'),
+          { type: 'warning' },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteMutation.mutateAsync(row)
+    operation.apply(() => ElMessage.success(t('system.common.deleteSuccess')), ownsOperation)
     await noticesQuery.refetch({ throwOnError: true })
   }
 

@@ -12,7 +12,12 @@ import {
   type DeptUpdateInput,
 } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
+import {
+  confirmServerStatePageOperation,
+  validateServerStatePageOperation,
+} from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
@@ -23,6 +28,7 @@ type SaveDeptCommand =
 
 export function useDeptManagement(t: Translate) {
   const userStore = useUserStore()
+  const pageLifecycle = useServerStatePageLifecycle(resetPageState)
   const dialog = ref({ visible: false, title: '', isEdit: false })
   const formRef = ref<FormInstance>()
   const currentEditId = ref<Id | null>(null)
@@ -34,7 +40,7 @@ export function useDeptManagement(t: Translate) {
   })
 
   const departmentsQuery = useServerStateQuery<DeptNode[]>(
-    () => userStore.sessionStatus === 'authenticated',
+    () => pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated',
     'departments',
     () => ({ scope: 'tree' }),
     async (signal) => {
@@ -45,6 +51,7 @@ export function useDeptManagement(t: Translate) {
   const detailQuery = useServerStateQuery<DeptRecord>(
     () =>
       userStore.sessionStatus === 'authenticated' &&
+      pageLifecycle.pageActive.value &&
       dialog.value.visible &&
       dialog.value.isEdit &&
       currentEditId.value !== null,
@@ -63,18 +70,10 @@ export function useDeptManagement(t: Translate) {
       if (command.kind === 'update') await updateDept(command.id, command.data)
       else await createDept(command.data)
     },
-    onSuccess: (_data, command) => {
-      ElMessage.success(
-        t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
-      )
-    },
   })
   const deleteMutation = useServerStateMutation<void, DeptNode>('departments', {
     mutationFn: async (department) => {
       await deleteDept(department.id)
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.common.deleteSuccess'))
     },
   })
 
@@ -97,6 +96,12 @@ export function useDeptManagement(t: Translate) {
   function resetForm(): void {
     form.value = { parent_id: undefined, name: '', sort: 0, status: '1' }
     formRef.value?.clearValidate()
+  }
+
+  function resetPageState(): void {
+    resetForm()
+    currentEditId.value = null
+    dialog.value = { visible: false, title: '', isEdit: false }
   }
 
   function handleAdd(parentId?: Id): void {
@@ -139,8 +144,19 @@ export function useDeptManagement(t: Translate) {
 
   async function handleSubmit(): Promise<void> {
     if (submitLoading.value) return
-    const valid = await formRef.value?.validate().catch(() => false)
-    if (!valid) return
+    const ownsPage = pageLifecycle.captureOwnership()
+    const expectedEditId = currentEditId.value
+    const expectedIsEdit = dialog.value.isEdit
+    const ownsDialog = () =>
+      ownsPage() &&
+      dialog.value.visible &&
+      dialog.value.isEdit === expectedIsEdit &&
+      currentEditId.value === expectedEditId
+    const operation = await validateServerStatePageOperation(
+      () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+      ownsDialog,
+    )
+    if (!operation) return
     const data = {
       name: form.value.name,
       parent_id: form.value.parent_id,
@@ -155,20 +171,30 @@ export function useDeptManagement(t: Translate) {
           }
         : { kind: 'create', data }
     await saveMutation.mutateAsync(command)
+    operation.assertCurrent(ownsDialog)
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
     dialog.value.visible = false
     await fetchData()
   }
 
   async function handleDelete(row: DeptNode): Promise<void> {
     if (deleteMutation.pending.value) return
-    const confirmed = await confirmAction(
-      t('system.department.deleteConfirm', { name: row.name }),
-      t('system.common.warning'),
-      { type: 'warning' },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          t('system.department.deleteConfirm', { name: row.name }),
+          t('system.common.warning'),
+          { type: 'warning' },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteMutation.mutateAsync(row)
+    operation.apply(() => ElMessage.success(t('system.common.deleteSuccess')), ownsOperation)
     await fetchData()
   }
 

@@ -13,8 +13,10 @@ import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
@@ -48,13 +50,9 @@ export function useRoleManagement() {
   const { isSuperAdmin } = usePermission()
   const userStore = useUserStore()
   const { pending: exportLoading, submitExport } = useExportJobRequest()
-  const authenticated = () => userStore.sessionStatus === 'authenticated'
-
-  watch(
-    () => [userStore.tenantId, userStore.userId] as const,
-    () => clearSuccessfulQuery(),
-    { flush: 'sync' },
-  )
+  const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+  const authenticated = () =>
+    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
   const rolesQuery = useServerStateQuery<PageResponse<RoleRecord>>(
     authenticated,
@@ -95,13 +93,20 @@ export function useRoleManagement() {
     mutationFn: async (role) => {
       await deleteRole(role.id)
     },
-    onSuccess: () => {
-      ElMessage.success(translate('system.common.deleteSuccess'))
-    },
   })
   const deletingId = computed<Id | null>(() =>
     deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
   )
+
+  function resetPageState(): void {
+    clearSuccessfulQuery()
+    roleDialogVisible.value = false
+    editingRole.value = null
+    permissionDialogVisible.value = false
+    permissionRole.value = null
+    dataScopeDialogVisible.value = false
+    dataScopeRole.value = null
+  }
 
   async function fetchData(): Promise<void> {
     if (applyDraft()) return
@@ -137,10 +142,13 @@ export function useRoleManagement() {
       return
     }
     const intent = normalizeExportIntent('roles', successfulQuery)
-    await confirmAndSubmitExportIntent(intent, (scope) =>
-      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-        exportRole(intent.filter, idempotencyKey, signal, intent.isEmpty),
-      ),
+    await confirmAndSubmitExportIntent(
+      intent,
+      (scope) =>
+        submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+          exportRole(intent.filter, idempotencyKey, signal, intent.isEmpty),
+        ),
+      { ownsOperation: pageLifecycle.captureOwnership() },
     )
   }
 
@@ -179,17 +187,26 @@ export function useRoleManagement() {
 
   async function handleDelete(role: RoleRecord): Promise<void> {
     if (deleteMutation.pending.value || !guardRole(role)) return
-    const confirmed = await confirmAction(
-      translate('system.role.deleteConfirm', { name: role.name }),
-      translate('system.common.warning'),
-      {
-        type: 'warning',
-        confirmButtonText: translate('system.common.confirmDelete'),
-      },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.role.deleteConfirm', { name: role.name }),
+          translate('system.common.warning'),
+          {
+            type: 'warning',
+            confirmButtonText: translate('system.common.confirmDelete'),
+          },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteMutation.mutateAsync(role)
+    operation.apply(
+      () => ElMessage.success(translate('system.common.deleteSuccess')),
+      ownsOperation,
+    )
     await refreshData()
   }
 

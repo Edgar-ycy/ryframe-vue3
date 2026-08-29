@@ -48,7 +48,7 @@ describe('导出确认会话范围', () => {
         await http(scope)
         ui()
       },
-      () => confirmation.promise,
+      { requestConfirmation: () => confirmation.promise },
     )
     activate('user-b', 'authorization-b')
     confirmation.resolve(true)
@@ -70,7 +70,7 @@ describe('导出确认会话范围', () => {
         await http(scope)
         ui()
       },
-      () => confirmation.promise,
+      { requestConfirmation: () => confirmation.promise },
     )
     activate('user-a', 'authorization-b')
     confirmation.resolve(true)
@@ -92,5 +92,22 @@ describe('导出确认会话范围', () => {
       subjectId: expected.subjectId,
       sessionEpoch: expected.sessionEpoch,
     })
+  })
+
+  it('KeepAlive 页面失活后旧确认不触发提交', async () => {
+    const confirmation = deferred<boolean>()
+    const submit = vi.fn(async () => undefined)
+    let pageActive = true
+    activate('user-a', 'authorization-a')
+
+    const pending = confirmAndSubmitExportIntent({ isEmpty: true }, submit, {
+      ownsOperation: () => pageActive,
+      requestConfirmation: () => confirmation.promise,
+    })
+    pageActive = false
+    confirmation.resolve(true)
+    await pending
+
+    expect(submit).not.toHaveBeenCalled()
   })
 })

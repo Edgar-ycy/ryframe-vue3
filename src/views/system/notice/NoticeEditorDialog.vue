@@ -77,7 +77,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { NoticeForm } from './useNoticeManagement'
+import type { NoticeForm } from './noticeFormModel'
 
 const props = defineProps<{
   form: NoticeForm

@@ -13,8 +13,10 @@ import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/expor
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
@@ -44,16 +46,9 @@ export function useDictManagement() {
 
   const userStore = useUserStore()
   const { pending: exportLoading, submitExport } = useExportJobRequest()
-  const authenticated = () => userStore.sessionStatus === 'authenticated'
-
-  watch(
-    () => [userStore.tenantId, userStore.userId] as const,
-    () => {
-      clearSuccessfulQuery()
-      clearCurrentType()
-    },
-    { flush: 'sync' },
-  )
+  const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+  const authenticated = () =>
+    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
   const typesQuery = useServerStateQuery<PageResponse<DictTypeRecord>>(
     authenticated,
@@ -98,16 +93,10 @@ export function useDictManagement() {
     mutationFn: async (dictType) => {
       await deleteDictType(dictType.id)
     },
-    onSuccess: () => {
-      ElMessage.success(translate('system.common.deleteSuccess'))
-    },
   })
   const deleteDataMutation = useServerStateMutation<void, DictDataRecord>('dict-data', {
     mutationFn: async (dictData) => {
       await deleteDictData(dictData.id)
-    },
-    onSuccess: () => {
-      ElMessage.success(translate('system.common.deleteSuccess'))
     },
   })
   const deletingTypeId = computed<Id | null>(() =>
@@ -119,6 +108,15 @@ export function useDictManagement() {
 
   function clearCurrentType(): void {
     currentTypeId.value = null
+  }
+
+  function resetPageState(): void {
+    clearSuccessfulQuery()
+    clearCurrentType()
+    typeDialogVisible.value = false
+    editingType.value = null
+    dataDialogVisible.value = false
+    editingData.value = null
   }
 
   async function fetchTypeList(): Promise<void> {
@@ -144,10 +142,13 @@ export function useDictManagement() {
       return
     }
     const intent = normalizeExportIntent('dict-types', successfulQuery)
-    await confirmAndSubmitExportIntent(intent, (scope) =>
-      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-        exportDictType(intent.filter, idempotencyKey, signal, intent.isEmpty),
-      ),
+    await confirmAndSubmitExportIntent(
+      intent,
+      (scope) =>
+        submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+          exportDictType(intent.filter, idempotencyKey, signal, intent.isEmpty),
+        ),
+      { ownsOperation: pageLifecycle.captureOwnership() },
     )
   }
 
@@ -189,17 +190,26 @@ export function useDictManagement() {
 
   async function handleDeleteType(dictType: DictTypeRecord): Promise<void> {
     if (deleteTypeMutation.pending.value) return
-    const confirmed = await confirmAction(
-      translate('system.dict.deleteTypeConfirm', { name: dictType.name }),
-      translate('system.common.warning'),
-      {
-        type: 'warning',
-        confirmButtonText: translate('system.common.confirmDelete'),
-      },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.dict.deleteTypeConfirm', { name: dictType.name }),
+          translate('system.common.warning'),
+          {
+            type: 'warning',
+            confirmButtonText: translate('system.common.confirmDelete'),
+          },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteTypeMutation.mutateAsync(dictType)
+    operation.apply(
+      () => ElMessage.success(translate('system.common.deleteSuccess')),
+      ownsOperation,
+    )
     if (currentType.value?.id === dictType.id) clearCurrentType()
     await refreshTypeList()
   }
@@ -221,17 +231,26 @@ export function useDictManagement() {
 
   async function handleDeleteData(dictData: DictDataRecord): Promise<void> {
     if (deleteDataMutation.pending.value) return
-    const confirmed = await confirmAction(
-      translate('system.dict.deleteDataConfirm', { name: dictData.label }),
-      translate('system.common.warning'),
-      {
-        type: 'warning',
-        confirmButtonText: translate('system.common.confirmDelete'),
-      },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.dict.deleteDataConfirm', { name: dictData.label }),
+          translate('system.common.warning'),
+          {
+            type: 'warning',
+            confirmButtonText: translate('system.common.confirmDelete'),
+          },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteDataMutation.mutateAsync(dictData)
+    operation.apply(
+      () => ElMessage.success(translate('system.common.deleteSuccess')),
+      ownsOperation,
+    )
     await fetchDataList()
   }
 

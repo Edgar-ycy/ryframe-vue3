@@ -1,6 +1,9 @@
 import { translate } from '@/i18n'
+import {
+  confirmServerStatePageOperation,
+  type OwnsServerStateOperation,
+} from '@/shared/query/scopedConfirmation'
 import type { ServerStateScope } from '@/shared/query/scope'
-import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
 import { confirmAction } from '@/utils/confirmAction'
 
 const PAGINATION_KEYS = new Set(['page', 'page_size'])
@@ -19,6 +22,11 @@ interface ExportIntentState {
 
 type ExportAllConfirmation = () => Promise<boolean>
 type SubmitScopedExport = (scope: ServerStateScope) => Promise<unknown>
+
+interface ConfirmExportIntentOptions {
+  ownsOperation?: OwnsServerStateOperation
+  requestConfirmation?: ExportAllConfirmation
+}
 
 /** 将最后一次成功查询整理为稳定、无分页字段的导出意图。 */
 export function normalizeExportIntent<TQuery extends object>(
@@ -77,10 +85,12 @@ export async function confirmExportIntent(
 export async function confirmAndSubmitExportIntent(
   intent: ExportIntentState,
   submit: SubmitScopedExport,
-  requestConfirmation: ExportAllConfirmation = requestExportAllConfirmation,
+  options: ConfirmExportIntentOptions = {},
 ): Promise<void> {
-  const operation = beginServerStatePageOperation()
-  if (!(await confirmExportIntent(intent, requestConfirmation))) return
-  if (!operation.isCurrent()) return
+  const operation = await confirmServerStatePageOperation(
+    () => confirmExportIntent(intent, options.requestConfirmation),
+    options.ownsOperation,
+  )
+  if (!operation) return
   await submit(operation.scope)
 }

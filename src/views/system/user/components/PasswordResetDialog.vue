@@ -52,7 +52,10 @@ import {
   type PasswordResetRequestResult,
 } from '@/api/modules/user'
 import type { Id } from '@/shared/http/types'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 
 const { t } = useI18n()
 
@@ -64,6 +67,7 @@ const visible = defineModel<boolean>({ required: true })
 const formRef = ref<FormInstance>()
 const form = ref({ reason: '' })
 const resetLink = ref('')
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
 const resetMutation = useServerStateMutation<
   PasswordResetRequestResult,
   { userId: Id; data: PasswordResetRequestInput }
@@ -72,10 +76,6 @@ const resetMutation = useServerStateMutation<
     const response = await requestPasswordReset(variables.userId, variables.data)
     if (!response.data) throw new Error(t('system.user.resetResponseMissing'))
     return response.data
-  },
-  onSuccess: (data) => {
-    resetLink.value = new URL(data.reset_url, window.location.origin).toString()
-    ElMessage.success(t('system.user.resetRequested'))
   },
 })
 const submitting = resetMutation.pending
@@ -89,23 +89,42 @@ function reset() {
   formRef.value?.clearValidate()
 }
 
+function resetPageState(): void {
+  visible.value = false
+  reset()
+}
+
 async function submit() {
   if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid || !props.userId) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedUserId = props.userId
+  const ownsDialog = () => ownsPage() && visible.value && props.userId === expectedUserId
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation || !props.userId) return
 
-  await resetMutation.mutateAsync({
+  const result = await resetMutation.mutateAsync({
     userId: props.userId,
     data: {
       reason: form.value.reason.trim(),
     },
   })
+  operation.apply(() => {
+    resetLink.value = new URL(result.reset_url, window.location.origin).toString()
+    ElMessage.success(t('system.user.resetRequested'))
+  }, ownsDialog)
 }
 
 async function copyResetLink() {
   if (!resetLink.value) return
-  await navigator.clipboard.writeText(resetLink.value)
-  ElMessage.success(t('system.user.resetLinkCopied'))
+  const operation = beginServerStatePageOperation()
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedLink = resetLink.value
+  const ownsDialog = () => ownsPage() && visible.value && resetLink.value === expectedLink
+  await navigator.clipboard.writeText(expectedLink)
+  operation.apply(() => ElMessage.success(t('system.user.resetLinkCopied')), ownsDialog)
 }
 </script>
 

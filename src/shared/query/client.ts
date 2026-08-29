@@ -41,16 +41,25 @@ function errorMode(meta: ServerStateMeta | undefined): ServerStateErrorMode {
   return meta?.errorMode ?? 'global'
 }
 
+function normalizeServerStateError(error: unknown): HttpError {
+  return error instanceof HttpError
+    ? error
+    : new HttpError(error instanceof Error ? error.message : '服务端状态请求失败', {
+        kind: 'unknown',
+        cause: error,
+      })
+}
+
+/** 页面显式接管错误展示时仍复用全局 reporter，并返回规范化错误供继续传播。 */
+export function reportServerStatePageError(error: unknown): HttpError {
+  const normalized = normalizeServerStateError(error)
+  if (normalized.kind !== 'cancelled') errorReporter?.(normalized)
+  return normalized
+}
+
 function reportServerStateError(error: unknown, meta: ServerStateMeta | undefined): void {
   if (errorMode(meta) === 'silent') return
-  const normalized =
-    error instanceof HttpError
-      ? error
-      : new HttpError(error instanceof Error ? error.message : '服务端状态请求失败', {
-          kind: 'unknown',
-          cause: error,
-        })
-  if (normalized.kind !== 'cancelled') errorReporter?.(normalized)
+  reportServerStatePageError(error)
 }
 
 function shouldRetry(failureCount: number, error: unknown): boolean {

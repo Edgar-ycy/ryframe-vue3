@@ -201,7 +201,7 @@ const executionsQuery = useServerStateQuery<PageResponse<JobScheduleExecutionRec
     const response = await listScheduleExecutions(props.schedule.id, params, signal)
     return response.data ?? emptyPageResponse<JobScheduleExecutionRecord>(params)
   },
-  { refetchInterval: false },
+  { refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 
 const loading = executionsQuery.isFetching

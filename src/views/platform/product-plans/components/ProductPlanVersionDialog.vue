@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import type { FormInstance } from 'element-plus'
+import { onBeforeUnmount, onDeactivated, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type {
   ProductCapability,
@@ -42,9 +43,12 @@ import type {
   ProductPlanVersionInput,
 } from '@/api/modules/productPlan'
 import ProductCapabilityEditor from './ProductCapabilityEditor.vue'
+import { useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
 
 const props = defineProps<{ submitting: boolean; version?: ProductPlanVersion }>()
-const emit = defineEmits<{ save: [data: ProductPlanVersionInput] }>()
+const emit = defineEmits<{ save: [data: ProductPlanVersionInput, scope: ServerStateScope] }>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const formRef = ref<FormInstance>()
@@ -71,6 +75,7 @@ function reset(): void {
 
 function submit(): void {
   if (props.submitting) return
+  const operation = beginServerStatePageOperation()
   if (!capabilityEditorRef.value?.validate()) {
     capabilityError.value = t('productPlans.capabilitiesInvalid')
     return
@@ -80,15 +85,27 @@ function submit(): void {
     nameError.value = t('productPlans.versionNameRequired')
     return
   }
-  emit('save', {
-    name,
-    description: form.description.trim() || undefined,
-    capabilities: form.capabilities.map((capability) => ({
-      ...capability,
-      config: { ...capability.config },
-    })),
-  })
+  emit(
+    'save',
+    {
+      name,
+      description: form.description.trim() || undefined,
+      capabilities: form.capabilities.map((capability) => ({
+        ...capability,
+        config: { ...capability.config },
+      })),
+    },
+    operation.scope,
+  )
 }
+
+function invalidateForm(): void {
+  visible.value = false
+}
+
+watch(useServerStateScope(), invalidateForm, { flush: 'sync' })
+onDeactivated(invalidateForm)
+onBeforeUnmount(invalidateForm)
 </script>
 
 <style scoped>

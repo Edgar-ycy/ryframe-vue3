@@ -24,6 +24,8 @@ export type ServerStateMutationOptions<TData, TVariables, TOnMutateResult = unkn
 > & {
   /** 从本次调用变量取得主动取消信号，由统一入口与会话信号组合。 */
   callerSignal?: (variables: Readonly<TVariables>) => AbortSignal | undefined
+  /** 关闭统一资源失效，由持有页面操作所有权的调用方显式处理。 */
+  invalidateOnSuccess?: boolean
   mutationFn: (variables: TVariables, context: ServerStateMutationContext) => Promise<TData>
   onSuccess?: NonNullable<
     MutationOptions<TData, HttpError, TVariables, TOnMutateResult>['onSuccess']
@@ -53,7 +55,15 @@ function guardedMutationOptions<TData, TVariables, TOnMutateResult>(
   options: ServerStateMutationOptions<TData, TVariables, TOnMutateResult>,
   scope: ActiveServerStateScope,
 ): MutationOptions<TData, HttpError, TVariables, TOnMutateResult> {
-  const { callerSignal, mutationFn, onSuccess, onError, onSettled, ...mutationOptions } = options
+  const {
+    callerSignal,
+    invalidateOnSuccess = true,
+    mutationFn,
+    onSuccess,
+    onError,
+    onSettled,
+    ...mutationOptions
+  } = options
   return {
     ...mutationOptions,
     mutationKey: serverStateMutationKey(scope, resource),
@@ -75,7 +85,9 @@ function guardedMutationOptions<TData, TVariables, TOnMutateResult>(
     onSuccess: async (data, variables, onMutateResult, context) => {
       if (!isServerStateScopeCurrent(scope)) return
       await onSuccess?.(data, variables, onMutateResult, context)
-      if (isServerStateScopeCurrent(scope)) await invalidateServerStateResource(scope, resource)
+      if (invalidateOnSuccess && isServerStateScopeCurrent(scope)) {
+        await invalidateServerStateResource(scope, resource)
+      }
     },
     onError: async (error, variables, onMutateResult, context) => {
       if (!isServerStateScopeCurrent(scope)) return

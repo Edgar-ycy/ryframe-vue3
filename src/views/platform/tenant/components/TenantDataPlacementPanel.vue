@@ -186,6 +186,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import type { PermissionCode } from '@/api/generated/permissions'
+import { onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getTenantDataPlacement,
@@ -198,11 +199,19 @@ import { isMigrationInProgress, stateTagType } from '@/features/tenant-data/pres
 import { useActivePolling } from '@/features/tenant-data/useActivePolling'
 import { formatLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
+import { isServerStateScopeCurrent, useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import TenantDataMigrationDetailDialog from './TenantDataMigrationDetailDialog.vue'
 import TenantDataMigrationDialog from './TenantDataMigrationDialog.vue'
+import {
+  invalidateTenantMigrationResources,
+  TENANT_DATA_MIGRATIONS_RESOURCE,
+  TENANT_DATA_PLACEMENT_RESOURCE,
+} from './tenantDataMigrationCommand'
 
 const props = defineProps<{ active: boolean; tenantId: string }>()
 const { t, te } = useI18n()
@@ -210,6 +219,7 @@ const userStore = useUserStore()
 const migrationVisible = ref(false)
 const detailVisible = ref(false)
 const selectedMigrationId = ref<string>()
+const pageGeneration = ref(0)
 const can = (permission: PermissionCode) => hasPermission(userStore.permissions, permission)
 const canViewPlacement = computed(() => can(TENANT_DATA_PERMISSIONS.placementView))
 const canListMigrations = computed(() => can(TENANT_DATA_PERMISSIONS.migrationList))
@@ -219,14 +229,14 @@ const canFinalize = computed(() => can(TENANT_DATA_PERMISSIONS.migrationFinalize
 
 const placementQuery = useServerStateQuery<TenantDataPlacement>(
   () => props.active && userStore.tenantId === 'system' && canViewPlacement.value,
-  'platform-tenant-data-placement',
+  TENANT_DATA_PLACEMENT_RESOURCE,
   () => ({ tenant_id: props.tenantId }),
   async (signal) => requireOperationData(await getTenantDataPlacement(props.tenantId, signal)),
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const migrationQuery = useServerStateQuery<TenantDataMigration[]>(
   () => props.active && userStore.tenantId === 'system' && canListMigrations.value,
-  'platform-tenant-data-migrations',
+  TENANT_DATA_MIGRATIONS_RESOURCE,
   () => ({ tenant_id: props.tenantId }),
   async (signal) =>
     requireOperationData(await listTenantDataMigrations(props.tenantId, undefined, signal)),
@@ -256,14 +266,22 @@ useActivePolling(
   },
 )
 
+function resetMigrationProjection(): void {
+  pageGeneration.value += 1
+  migrationVisible.value = false
+  detailVisible.value = false
+  selectedMigrationId.value = undefined
+}
+
 watch(
   () => props.active,
-  (active) => {
-    if (active) return
-    migrationVisible.value = false
-    detailVisible.value = false
-  },
+  (active) => !active && resetMigrationProjection(),
+  { flush: 'sync' },
 )
+watch(useServerStateScope(), resetMigrationProjection, { flush: 'sync' })
+watch(() => props.tenantId, resetMigrationProjection, { flush: 'sync' })
+onDeactivated(resetMigrationProjection)
+onBeforeUnmount(resetMigrationProjection)
 
 watch(canCreate, (allowed) => {
   if (!allowed) migrationVisible.value = false
@@ -295,105 +313,43 @@ function openMigration(id: string): void {
   detailVisible.value = true
 }
 
-async function handleMigrationCreated(migration: TenantDataMigration): Promise<void> {
+async function handleMigrationCreated(
+  migration: TenantDataMigration,
+  expectedScope: ServerStateScope,
+): Promise<void> {
+  if (migration.tenant_id !== props.tenantId) return
+  if (!isServerStateScopeCurrent(expectedScope)) return
+  const tenantId = props.tenantId
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    props.active && pageGeneration.value === generation && props.tenantId === tenantId
+  operation.assertCurrent(ownsOperation)
+  await invalidateTenantMigrationResources(operation.scope)
+  operation.assertCurrent(ownsOperation)
+  await Promise.all([placementQuery.refetch(), migrationQuery.refetch()])
+  if (!operation.isCurrent(ownsOperation)) return
   ElMessage.success(t('tenantData.migrationCreated'))
   selectedMigrationId.value = migration.id
   detailVisible.value = true
-  await Promise.all([placementQuery.refetch(), migrationQuery.refetch()])
 }
 
-async function handleMigrationUpdated(): Promise<void> {
+async function handleMigrationUpdated(
+  migration: TenantDataMigration,
+  expectedScope: ServerStateScope,
+): Promise<void> {
+  if (migration.tenant_id !== props.tenantId) return
+  if (!isServerStateScopeCurrent(expectedScope)) return
+  const tenantId = props.tenantId
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    props.active && pageGeneration.value === generation && props.tenantId === tenantId
+  operation.assertCurrent(ownsOperation)
+  await invalidateTenantMigrationResources(operation.scope)
+  operation.assertCurrent(ownsOperation)
   await Promise.all([placementQuery.refetch(), migrationQuery.refetch()])
 }
 </script>
 
-<style scoped>
-.tenant-data-panel,
-section {
-  display: grid;
-  gap: 14px;
-}
-
-section + section {
-  padding-top: 18px;
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-
-.section-heading,
-.migration-card header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.section-heading h3,
-.section-heading p {
-  margin: 0;
-}
-
-.section-heading p {
-  margin-top: 6px;
-  color: var(--el-text-color-secondary);
-  line-height: 1.5;
-}
-
-.migration-table-wrap {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.migration-table {
-  min-width: 820px;
-}
-
-.migration-card-list {
-  display: none;
-}
-
-@media (width <= 640px) {
-  .section-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .section-heading :deep(.el-button) {
-    min-height: 42px;
-  }
-
-  .migration-table-wrap {
-    display: none;
-  }
-
-  .migration-card-list {
-    display: grid;
-    gap: 12px;
-    min-height: 100px;
-  }
-
-  .migration-card {
-    display: grid;
-    gap: 10px;
-    padding: 14px;
-    border: 1px solid var(--el-border-color);
-    border-radius: 10px;
-  }
-
-  .migration-card strong,
-  .migration-card p {
-    overflow-wrap: anywhere;
-  }
-
-  .migration-card p {
-    margin: 0;
-  }
-
-  .migration-card small {
-    color: var(--el-text-color-secondary);
-  }
-
-  .migration-card :deep(.el-button) {
-    min-height: 42px;
-  }
-}
-</style>
+<style scoped src="./TenantDataPlacementPanel.scss"></style>

@@ -3,6 +3,7 @@ import {
   assertServerStateScopeCurrent,
   getServerStateScope,
   isServerStateScopeCurrent,
+  reportServerStatePageError,
 } from './client'
 import type { ServerStateScope } from './scope'
 
@@ -42,4 +43,16 @@ export function beginServerStatePageOperation(): ServerStatePageOperation {
     assertCurrent,
     isCurrent: (ownsOperation = () => true) => isServerStateScopeCurrent(scope) && ownsOperation(),
   }
+}
+
+/** MutationCache 静默后，仅由仍持有页面所有权的调用方上报一次并继续传播。 */
+export function propagateServerStatePageOperationError(
+  error: unknown,
+  operation: ServerStatePageOperation,
+  ownsOperation: () => boolean = () => true,
+): never {
+  if (!operation.isCurrent(ownsOperation)) {
+    throw new HttpError('页面或登录身份已经切换', { kind: 'cancelled', cause: error })
+  }
+  throw reportServerStatePageError(error)
 }

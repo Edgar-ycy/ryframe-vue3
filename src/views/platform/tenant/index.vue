@@ -95,6 +95,13 @@
       :closable="false"
       class="permission-alert"
     />
+    <el-alert
+      v-if="tenantPageError"
+      :title="tenantPageError.message"
+      type="error"
+      show-icon
+      :closable="false"
+    />
 
     <TenantCapacityList
       :can-view-usage="canViewUsage"
@@ -127,6 +134,7 @@
     <TenantUsageDrawer
       v-model="detailVisible"
       :tenant="detail"
+      :error="detailError"
       :loading="detailLoading"
       :refreshing="detailRefreshing"
       @closed="closeDetail"
@@ -138,22 +146,34 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import type { TagProps } from 'element-plus'
+import { onBeforeUnmount, onDeactivated, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CreateTenantPayload, TenantCapacity, UpdateTenantPayload } from '@/api/modules/tenant'
-import { formatLocalizedDate } from '@/i18n'
-import { HttpError } from '@/shared/http/client'
+import { useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { confirmAction } from '@/utils/confirmAction'
 import TenantCapacityList from './components/TenantCapacityList.vue'
 import TenantFormDialog from './components/TenantFormDialog.vue'
 import TenantUsageDrawer from './components/TenantUsageDrawer.vue'
-import { capacityStatusType } from './presentation'
+import { tenantPagePresentation } from './tenantPagePresentation'
 import { useTenantCapacityManagement } from './useTenantCapacityManagement'
 
 const { t } = useI18n()
+const {
+  capacityLabel,
+  capacityType,
+  expirationLabel,
+  expirationType,
+  formatDate,
+  showError,
+  statusLabel,
+} = tenantPagePresentation(t)
 const formVisible = ref(false)
 const detailVisible = ref(false)
 const editingTenant = ref<TenantCapacity>()
+const pageGeneration = ref(0)
 
 const {
   canViewUsage,
@@ -162,12 +182,14 @@ const {
   closeDetail,
   createTenantRecord,
   detail,
+  detailError,
   detailLoading,
   detailRefreshing,
   filters,
   loading,
   openDetail,
   page,
+  pageActive,
   pageSize,
   refresh,
   refreshing,
@@ -176,18 +198,36 @@ const {
   savePending,
   statusPending,
   tenantPage,
+  tenantPageError,
   togglingTenantId,
   toggleTenantStatus,
   updateTenantRecord,
   applyFilters,
 } = useTenantCapacityManagement()
 
+function invalidatePageProjection(): void {
+  pageGeneration.value += 1
+  formVisible.value = false
+  detailVisible.value = false
+  editingTenant.value = undefined
+  void closeDetail()
+}
+
+watch(useServerStateScope(), invalidatePageProjection, { flush: 'sync' })
+watch(formVisible, (visible, previous) => !visible && previous && (pageGeneration.value += 1), {
+  flush: 'sync',
+})
+onDeactivated(invalidatePageProjection)
+onBeforeUnmount(invalidatePageProjection)
+
 function openCreate(): void {
+  pageGeneration.value += 1
   editingTenant.value = undefined
   formVisible.value = true
 }
 
 function openEdit(tenant: TenantCapacity): void {
+  pageGeneration.value += 1
   editingTenant.value = tenant
   formVisible.value = true
 }
@@ -197,23 +237,41 @@ function openEditFromDrawer(tenant: TenantCapacity): void {
   openEdit(tenant)
 }
 
-async function handleCreate(payload: CreateTenantPayload): Promise<void> {
+async function handleCreate(payload: CreateTenantPayload, scope: ServerStateScope): Promise<void> {
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    pageActive.value && formVisible.value && pageGeneration.value === generation
   try {
-    await createTenantRecord(payload)
-    formVisible.value = false
-    ElMessage.success(t('tenantCapacity.tenantCreated'))
+    operation.assertCurrent(ownsOperation)
+    await createTenantRecord(payload, scope, () => operation.assertCurrent(ownsOperation))
+    operation.apply(() => {
+      formVisible.value = false
+      ElMessage.success(t('tenantCapacity.tenantCreated'))
+    }, ownsOperation)
   } catch (error) {
-    showError(error)
+    if (operation.isCurrent(ownsOperation)) showError(error)
   }
 }
 
-async function handleUpdate(tenantId: string, payload: UpdateTenantPayload): Promise<void> {
+async function handleUpdate(
+  tenantId: string,
+  payload: UpdateTenantPayload,
+  scope: ServerStateScope,
+): Promise<void> {
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    pageActive.value && formVisible.value && pageGeneration.value === generation
   try {
-    await updateTenantRecord(tenantId, payload)
-    formVisible.value = false
-    ElMessage.success(t('tenantCapacity.tenantUpdated'))
+    operation.assertCurrent(ownsOperation)
+    await updateTenantRecord(tenantId, payload, scope, () => operation.assertCurrent(ownsOperation))
+    operation.apply(() => {
+      formVisible.value = false
+      ElMessage.success(t('tenantCapacity.tenantUpdated'))
+    }, ownsOperation)
   } catch (error) {
-    showError(error)
+    if (operation.isCurrent(ownsOperation)) showError(error)
   }
 }
 
@@ -225,114 +283,65 @@ async function handleToggle(tenant: TenantCapacity): Promise<void> {
     return
   }
   const nextEnabled = tenant.status !== 'enabled'
-  const confirmed = await confirmAction(
-    t('tenantCapacity.statusConfirm', {
-      name: tenant.name || tenant.tenant_id,
-      status: nextEnabled ? t('tenantCapacity.statusEnabled') : t('tenantCapacity.statusDisabled'),
-    }),
-    t('tenantCapacity.statusConfirmTitle'),
-    { type: 'warning' },
+  const generation = pageGeneration.value
+  const ownsOperation = () => pageActive.value && pageGeneration.value === generation
+  const operation = await confirmServerStatePageOperation(
+    () =>
+      confirmAction(
+        t('tenantCapacity.statusConfirm', {
+          name: tenant.name || tenant.tenant_id,
+          status: nextEnabled
+            ? t('tenantCapacity.statusEnabled')
+            : t('tenantCapacity.statusDisabled'),
+        }),
+        t('tenantCapacity.statusConfirmTitle'),
+        { type: 'warning' },
+      ),
+    ownsOperation,
   )
-  if (!confirmed || statusPending.value) return
+  if (!operation || statusPending.value) return
   try {
-    await toggleTenantStatus(tenant.tenant_id, nextEnabled ? 'enabled' : 'disabled')
-    ElMessage.success(t('tenantCapacity.tenantStatusUpdated'))
+    operation.assertCurrent(ownsOperation)
+    await toggleTenantStatus(
+      tenant.tenant_id,
+      nextEnabled ? 'enabled' : 'disabled',
+      operation.scope,
+      () => operation.assertCurrent(ownsOperation),
+    )
+    operation.apply(() => ElMessage.success(t('tenantCapacity.tenantStatusUpdated')), ownsOperation)
   } catch (error) {
-    showError(error)
+    if (operation.isCurrent(ownsOperation)) showError(error)
   }
 }
 
 async function handleSearch(): Promise<void> {
-  try {
-    await applyFilters()
-  } catch (error) {
-    showError(error)
-  }
+  await applyFilters().catch(() => undefined)
 }
 
 async function handleReset(): Promise<void> {
-  try {
-    await resetFilters()
-  } catch (error) {
-    showError(error)
-  }
+  await resetFilters().catch(() => undefined)
 }
 
 async function handleRefresh(): Promise<void> {
-  try {
-    await refresh()
-  } catch (error) {
-    showError(error)
-  }
+  await refresh().catch(() => undefined)
 }
 
 async function showDetail(tenantId: string): Promise<void> {
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () => pageActive.value && pageGeneration.value === generation
   detailVisible.value = true
   try {
+    operation.assertCurrent(ownsOperation)
     await openDetail(tenantId)
-  } catch (error) {
-    showError(error)
+    operation.assertCurrent(ownsOperation)
+  } catch {
+    return
   }
 }
 
 async function handleRefreshDetail(): Promise<void> {
-  try {
-    await refreshDetail()
-  } catch (error) {
-    showError(error)
-  }
-}
-
-function showError(error: unknown): void {
-  if (error instanceof HttpError && error.kind === 'cancelled') return
-  ElMessage.error(error instanceof Error ? error.message : t('shell.http.requestFailed'))
-}
-
-function formatDate(value: string | null | undefined): string {
-  return value ? formatLocalizedDate(value) : t('tenantCapacity.notAvailable')
-}
-
-function statusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    enabled: 'statusEnabled',
-    disabled: 'statusDisabled',
-    provisioning: 'statusProvisioning',
-    provisioning_failed: 'statusProvisioningFailed',
-  }
-  return t(`tenantCapacity.${labels[status] ?? 'statusUnknown'}`)
-}
-
-function capacityType(status: string | null | undefined): TagProps['type'] {
-  return capacityStatusType(status)
-}
-
-function capacityLabel(status: string | null | undefined): string {
-  const suffixes: Record<string, string> = {
-    normal: 'Normal',
-    warning: 'Warning',
-    critical: 'Critical',
-    exceeded: 'Exceeded',
-    unlimited: 'Unlimited',
-    unknown: 'Unknown',
-  }
-  return t(`tenantCapacity.capacity${status ? (suffixes[status] ?? 'Unknown') : 'Unknown'}`)
-}
-
-function expirationType(status: string): TagProps['type'] {
-  if (status === 'expired') return 'danger'
-  if (status === 'expiring') return 'warning'
-  if (status === 'active') return 'success'
-  return 'info'
-}
-
-function expirationLabel(status: string): string {
-  const suffixes: Record<string, string> = {
-    active: 'Active',
-    expiring: 'Expiring',
-    expired: 'Expired',
-    never: 'Never',
-  }
-  return t(`tenantCapacity.expiration${suffixes[status] ?? 'Active'}`)
+  await refreshDetail().catch(() => undefined)
 }
 </script>
 

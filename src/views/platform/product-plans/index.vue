@@ -162,6 +162,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import type { TagProps } from 'element-plus'
+import { onActivated, onBeforeUnmount, onDeactivated, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type {
   ProductPlan,
@@ -171,6 +172,10 @@ import type {
   ProductPlanVersionStatus,
 } from '@/api/modules/productPlan'
 import { formatOptionalLocalizedDate } from '@/i18n'
+import { useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { confirmAction } from '@/utils/confirmAction'
 import ProductPlanFormDialog from './components/ProductPlanFormDialog.vue'
 import ProductPlanVersionDialog from './components/ProductPlanVersionDialog.vue'
@@ -181,6 +186,8 @@ const planDialogVisible = ref(false)
 const versionDialogVisible = ref(false)
 const editingPlan = ref<ProductPlan>()
 const editingVersion = ref<ProductPlanVersion>()
+const pageActive = ref(true)
+const pageGeneration = ref(0)
 const {
   canAdd,
   canEdit,
@@ -211,6 +218,35 @@ watch([canAdd, canEdit], () => {
   }
   if (versionDialogVisible.value && !canEdit.value) versionDialogVisible.value = false
 })
+watch(
+  planDialogVisible,
+  (visible, previous) => !visible && previous && (pageGeneration.value += 1),
+  {
+    flush: 'sync',
+  },
+)
+watch(
+  versionDialogVisible,
+  (visible, previous) => !visible && previous && (pageGeneration.value += 1),
+  { flush: 'sync' },
+)
+
+function invalidatePageProjection(): void {
+  pageGeneration.value += 1
+  planDialogVisible.value = false
+  versionDialogVisible.value = false
+  editingPlan.value = undefined
+  editingVersion.value = undefined
+  selectedPlan.value = undefined
+}
+
+watch(useServerStateScope(), invalidatePageProjection, { flush: 'sync' })
+onActivated(() => (pageActive.value = true))
+onDeactivated(() => {
+  pageActive.value = false
+  invalidatePageProjection()
+})
+onBeforeUnmount(invalidatePageProjection)
 
 function findPlan(id: string): ProductPlan | undefined {
   return plans.value?.items.find((plan) => plan.id === id)
@@ -230,17 +266,26 @@ function openPlanDialogById(id: string): void {
 }
 
 function openPlanDialog(plan?: ProductPlan): void {
+  pageGeneration.value += 1
   editingPlan.value = plan
   planDialogVisible.value = true
 }
 
-async function handleSavePlan(data: ProductPlanFormInput): Promise<void> {
-  await savePlan(data, editingPlan.value)
-  planDialogVisible.value = false
-  ElMessage.success(t('productPlans.saved'))
+async function handleSavePlan(data: ProductPlanFormInput, scope: ServerStateScope): Promise<void> {
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    pageActive.value && planDialogVisible.value && pageGeneration.value === generation
+  operation.assertCurrent(ownsOperation)
+  await savePlan(data, scope, editingPlan.value, () => operation.assertCurrent(ownsOperation))
+  operation.apply(() => {
+    planDialogVisible.value = false
+    ElMessage.success(t('productPlans.saved'))
+  }, ownsOperation)
 }
 
 function openVersionDialog(version?: ProductPlanVersion): void {
+  pageGeneration.value += 1
   editingVersion.value = version
   versionDialogVisible.value = true
 }
@@ -250,26 +295,49 @@ function openVersionDialogById(id: string): void {
   if (version) openVersionDialog(version)
 }
 
-async function handleSaveVersion(data: ProductPlanVersionInput): Promise<void> {
+async function handleSaveVersion(
+  data: ProductPlanVersionInput,
+  scope: ServerStateScope,
+): Promise<void> {
+  const planId = selectedPlan.value?.id
+  if (!planId) return
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    pageActive.value &&
+    versionDialogVisible.value &&
+    pageGeneration.value === generation &&
+    selectedPlan.value?.id === planId
+  operation.assertCurrent(ownsOperation)
   const editing = editingVersion.value
-  await saveVersion(data, editing)
-  versionDialogVisible.value = false
-  ElMessage.success(t(editing ? 'productPlans.versionUpdated' : 'productPlans.versionCreated'))
+  await saveVersion(data, scope, editing, () => operation.assertCurrent(ownsOperation))
+  operation.apply(() => {
+    versionDialogVisible.value = false
+    ElMessage.success(t(editing ? 'productPlans.versionUpdated' : 'productPlans.versionCreated'))
+  }, ownsOperation)
 }
 
 async function handlePublish(version: ProductPlanVersion): Promise<void> {
   if (!selectedPlan.value || publishPending.value) return
-  const confirmed = await confirmAction(
-    t('productPlans.publishConfirm', {
-      name: selectedPlan.value.name,
-      version: version.version,
-    }),
-    t('productPlans.publishTitle'),
-    { type: 'warning' },
+  const plan = selectedPlan.value
+  const generation = pageGeneration.value
+  const ownsOperation = () =>
+    pageActive.value && pageGeneration.value === generation && selectedPlan.value?.id === plan.id
+  const operation = await confirmServerStatePageOperation(
+    () =>
+      confirmAction(
+        t('productPlans.publishConfirm', { name: plan.name, version: version.version }),
+        t('productPlans.publishTitle'),
+        { type: 'warning' },
+      ),
+    ownsOperation,
   )
-  if (!confirmed) return
-  await publishVersion(version)
-  ElMessage.success(t('productPlans.publishedSuccess'))
+  if (!operation || publishPending.value) return
+  operation.assertCurrent(ownsOperation)
+  await publishVersion(plan.id, version, operation.scope, () =>
+    operation.assertCurrent(ownsOperation),
+  )
+  operation.apply(() => ElMessage.success(t('productPlans.publishedSuccess')), ownsOperation)
 }
 
 async function publishVersionById(id: string): Promise<void> {
@@ -279,17 +347,25 @@ async function publishVersionById(id: string): Promise<void> {
 
 async function handleRetire(version: ProductPlanVersion): Promise<void> {
   if (!selectedPlan.value || retirePending.value) return
-  const confirmed = await confirmAction(
-    t('productPlans.retireConfirm', {
-      name: selectedPlan.value.name,
-      version: version.version,
-    }),
-    t('productPlans.retireTitle'),
-    { type: 'warning' },
+  const plan = selectedPlan.value
+  const generation = pageGeneration.value
+  const ownsOperation = () =>
+    pageActive.value && pageGeneration.value === generation && selectedPlan.value?.id === plan.id
+  const operation = await confirmServerStatePageOperation(
+    () =>
+      confirmAction(
+        t('productPlans.retireConfirm', { name: plan.name, version: version.version }),
+        t('productPlans.retireTitle'),
+        { type: 'warning' },
+      ),
+    ownsOperation,
   )
-  if (!confirmed || retirePending.value) return
-  await retireVersion(version)
-  ElMessage.success(t('productPlans.retiredSuccess'))
+  if (!operation || retirePending.value) return
+  operation.assertCurrent(ownsOperation)
+  await retireVersion(plan.id, version, operation.scope, () =>
+    operation.assertCurrent(ownsOperation),
+  )
+  operation.apply(() => ElMessage.success(t('productPlans.retiredSuccess')), ownsOperation)
 }
 
 async function retireVersionById(id: string): Promise<void> {
@@ -312,74 +388,4 @@ function formatDate(value: string | null | undefined): string {
 }
 </script>
 
-<style scoped>
-.product-plans-page,
-.panel-card {
-  min-width: 0;
-}
-
-.page-heading,
-.heading-actions,
-.panel-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.page-heading {
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.page-heading h1,
-.page-heading p {
-  margin: 0;
-}
-
-.page-heading p {
-  margin-top: 7px;
-  color: var(--el-text-color-secondary);
-}
-
-.management-grid {
-  display: grid;
-  grid-template-columns: minmax(420px, 0.9fr) minmax(520px, 1.1fr);
-  gap: 16px;
-}
-
-.panel-heading > div {
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-}
-
-.panel-heading span {
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
-.pagination {
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
-@media (width <= 1100px) {
-  .management-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (width <= 640px) {
-  .page-heading,
-  .heading-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .heading-actions :deep(.el-button) {
-    width: 100%;
-    margin-left: 0;
-  }
-}
-</style>
+<style scoped src="./productPlansPage.scss"></style>

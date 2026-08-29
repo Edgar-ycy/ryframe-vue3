@@ -5,6 +5,7 @@
     width="min(560px, calc(100vw - 24px))"
     destroy-on-close
     @open="populate"
+    @closed="invalidateForm"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
       <el-form-item :label="t('productPlans.code')" prop="key">
@@ -42,14 +43,19 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
+import { onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ProductPlan, ProductPlanFormInput } from '@/api/modules/productPlan'
+import { useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
 
 const props = defineProps<{ plan?: ProductPlan; submitting: boolean }>()
-const emit = defineEmits<{ save: [data: ProductPlanFormInput] }>()
+const emit = defineEmits<{ save: [data: ProductPlanFormInput, scope: ServerStateScope] }>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const formRef = ref<FormInstance>()
+const pageGeneration = ref(0)
 const form = reactive<{
   key: string
   name: string
@@ -73,13 +79,30 @@ function populate(): void {
 
 async function submit(): Promise<void> {
   if (props.submitting) return
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () => visible.value && pageGeneration.value === generation
   const valid = await formRef.value?.validate().catch(() => false)
+  operation.assertCurrent(ownsOperation)
   if (!valid) return
-  emit('save', {
-    key: form.key.trim(),
-    name: form.name.trim(),
-    description: form.description.trim() || undefined,
-    status: form.status,
-  })
+  emit(
+    'save',
+    {
+      key: form.key.trim(),
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      status: form.status,
+    },
+    operation.scope,
+  )
 }
+
+function invalidateForm(): void {
+  pageGeneration.value += 1
+  visible.value = false
+}
+
+watch(useServerStateScope(), invalidateForm, { flush: 'sync' })
+onDeactivated(invalidateForm)
+onBeforeUnmount(invalidateForm)
 </script>

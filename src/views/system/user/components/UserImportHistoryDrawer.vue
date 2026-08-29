@@ -184,27 +184,23 @@
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
-import { onActivated, onDeactivated, onUnmounted } from 'vue'
+import { onActivated, onDeactivated, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  cancelUserImport,
-  downloadUserImportReport,
   getUserImport,
   listUserImportRows,
   listUserImports,
   type UserImportJob,
   type UserImportRow,
 } from '@/api/modules/userImport'
-import { downloadBlobDirect } from '@/hooks/useDownload'
 import { usePermission } from '@/hooks/usePermission'
 import { formatLocalizedDate, formatOptionalLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateScope } from '@/shared/query/client'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
-import { confirmAction } from '@/utils/confirmAction'
+import { useUserImportHistoryActions } from './useUserImportHistoryActions'
 
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
@@ -214,7 +210,6 @@ const queryReady = ref(false)
 const selectedId = ref('')
 const query = ref({ page: 1, page_size: 10 })
 const rowQuery = ref({ page: 1, page_size: 10 })
-const reportLoadingId = ref('')
 let pollTimer: number | undefined
 
 const importsQuery = useServerStateQuery<PageResponse<UserImportJob>>(
@@ -248,16 +243,21 @@ const rowsQuery = useServerStateQuery<PageResponse<UserImportRow>>(
   { refetchInterval: false },
 )
 
-const cancelMutation = useServerStateMutation('user-imports', {
-  mutationFn: (job: UserImportJob) => cancelUserImport(job.id),
-  onSuccess: () => ElMessage.success(t('system.userImport.cancelSuccess')),
-})
+const {
+  cancelImportById,
+  cancelMutation,
+  downloadReportById,
+  invalidate: invalidateHistoryActions,
+  isCancelling,
+  reportLoadingId,
+} = useUserImportHistoryActions({ findJob, refresh: refreshImports, t, visible })
 
 onActivated(() => {
   if (visible.value) void refreshImports()
 })
-onDeactivated(clearPolling)
-onUnmounted(clearPolling)
+onDeactivated(resetHistoryState)
+onUnmounted(resetHistoryState)
+watch(useServerStateScope(), resetHistoryState, { flush: 'sync' })
 
 function isActive(status: string): boolean {
   return status === 'pending' || status === 'running'
@@ -291,6 +291,15 @@ function handleOpen(): void {
 }
 
 function handleClosed(): void {
+  invalidateHistoryActions()
+  queryReady.value = false
+  selectedId.value = ''
+  clearPolling()
+}
+
+function resetHistoryState(): void {
+  invalidateHistoryActions()
+  visible.value = false
   queryReady.value = false
   selectedId.value = ''
   clearPolling()
@@ -311,6 +320,10 @@ function currentJob(): UserImportJob | undefined {
     detailQuery.data.value ??
     importsQuery.data.value?.items.find((job) => job.id === selectedId.value)
   )
+}
+
+function findJob(id: string): UserImportJob | undefined {
+  return importsQuery.data.value?.items.find((item) => item.id === id)
 }
 
 function progressById(id: string): number {
@@ -359,36 +372,6 @@ function outcomeLabel(outcome: string): string {
   return t(
     outcome === 'skipped' ? 'system.userImport.outcomeSkipped' : 'system.userImport.outcomeFailed',
   )
-}
-
-function isCancelling(id: string): boolean {
-  return cancelMutation.pending.value && cancelMutation.variables.value?.id === id
-}
-
-async function cancelImportById(id: string): Promise<void> {
-  const job = importsQuery.data.value?.items.find((item) => item.id === id)
-  if (!job || cancelMutation.pending.value) return
-  const confirmed = await confirmAction(
-    t('system.userImport.cancelConfirm', { name: job.source_name }),
-    t('system.userImport.cancelConfirmTitle'),
-    { type: 'warning' },
-  )
-  if (!confirmed || cancelMutation.pending.value) return
-  await cancelMutation.mutateAsync(job)
-  await refreshImports()
-}
-
-async function downloadReportById(id: string): Promise<void> {
-  const job = importsQuery.data.value?.items.find((item) => item.id === id)
-  if (!job || reportLoadingId.value) return
-  reportLoadingId.value = job.id
-  try {
-    const blob = await downloadUserImportReport(job.id)
-    downloadBlobDirect(blob, `${job.source_name.replace(/\.xlsx$/iu, '')}-report.xlsx`)
-    ElMessage.success(t('shell.download.success'))
-  } finally {
-    reportLoadingId.value = ''
-  }
 }
 
 function fetchRows(): void {

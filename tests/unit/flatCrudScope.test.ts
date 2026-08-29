@@ -8,6 +8,7 @@ const lifecycle = vi.hoisted(() => ({
   deactivated: [] as Array<() => void>,
 }))
 const message = vi.hoisted(() => ({ success: vi.fn() }))
+const reporter = vi.hoisted(() => vi.fn())
 vi.mock('vue', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue')>()
   return {
@@ -26,8 +27,10 @@ import {
   type ServerStatePageOperation,
 } from '@/shared/query/pageOperationScope'
 import {
+  configureServerStateErrorReporter,
   deactivateServerStateScope,
   queryClient,
+  serverStateQueryKey,
   transitionServerStateScope,
 } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
@@ -44,6 +47,16 @@ interface QueryValue {
 
 interface FormValue {
   name: string
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, reject, resolve }
 }
 
 function resource(key: string) {
@@ -114,12 +127,15 @@ describe('Post/Notice 平面资源会话范围', () => {
     lifecycle.activated.length = 0
     lifecycle.deactivated.length = 0
     message.success.mockClear()
+    reporter.mockClear()
+    configureServerStateErrorReporter(reporter)
   })
 
   afterEach(() => {
     while (scopes.length > 0) scopes.pop()?.stop()
     queryClient.clear()
     deactivateServerStateScope()
+    configureServerStateErrorReporter(undefined)
   })
 
   it.each([
@@ -175,4 +191,69 @@ describe('Post/Notice 平面资源会话范围', () => {
       expect(message.success).not.toHaveBeenCalled()
     },
   )
+
+  it.each(['posts', 'notices'])('%s 写请求进行中失活时不提示、不失效且不刷新列表', async (key) => {
+    const pendingCreate = deferred<void>()
+    const current = resource(key)
+    current.adapter.create.mockImplementation(() => pendingCreate.promise)
+    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    scopes.push(composable.scope)
+    await vi.waitFor(() => expect(current.adapter.list).toHaveBeenCalledTimes(1))
+    composable.result.add()
+    composable.result.form.value = { name: '新记录' }
+
+    const submitPromise = composable.result.submit(beginServerStatePageOperation())
+    await vi.waitFor(() => expect(current.adapter.create).toHaveBeenCalledTimes(1))
+    lifecycle.deactivated[0]!()
+    const listCallsAfterDeactivation = current.adapter.list.mock.calls.length
+    pendingCreate.resolve()
+
+    await expect(submitPromise).rejects.toMatchObject({ kind: 'cancelled' })
+    expect(current.adapter.list).toHaveBeenCalledTimes(listCallsAfterDeactivation)
+    expect(composable.result.dialogVisible.value).toBe(false)
+    expect(message.success).not.toHaveBeenCalled()
+  })
+
+  it('活跃页面 mutation 失败由统一 reporter 恰好提示一次', async () => {
+    const current = resource('posts')
+    current.adapter.create.mockRejectedValueOnce(new Error('save failed'))
+    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    scopes.push(composable.scope)
+    composable.result.add()
+
+    await expect(composable.result.submit(beginServerStatePageOperation())).rejects.toMatchObject({
+      message: 'save failed',
+    })
+    expect(reporter).toHaveBeenCalledTimes(1)
+  })
+
+  it('失活页面的非 cancelled mutation 失败转为 cancelled 且零提示', async () => {
+    const pendingCreate = deferred<void>()
+    const current = resource('posts')
+    current.adapter.create.mockReturnValueOnce(pendingCreate.promise)
+    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    scopes.push(composable.scope)
+    composable.result.add()
+    const pending = composable.result.submit(beginServerStatePageOperation())
+    await vi.waitFor(() => expect(current.adapter.create).toHaveBeenCalledOnce())
+    lifecycle.deactivated[0]!()
+    pendingCreate.reject(new Error('late failure'))
+
+    await expect(pending).rejects.toMatchObject({ kind: 'cancelled' })
+    expect(reporter).not.toHaveBeenCalled()
+  })
+
+  it('成功写入会按完整 scope 失效同资源的其他缓存变体', async () => {
+    const current = resource('posts')
+    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    scopes.push(composable.scope)
+    const operation = beginServerStatePageOperation()
+    const otherKey = serverStateQueryKey(operation.scope, 'posts', { scope: 'other' })
+    queryClient.setQueryData(otherKey, { id: 'cached' })
+    composable.result.add()
+
+    await composable.result.submit(operation)
+
+    expect(queryClient.getQueryState(otherKey)?.isInvalidated).toBe(true)
+  })
 })

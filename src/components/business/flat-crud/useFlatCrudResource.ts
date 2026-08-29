@@ -2,9 +2,14 @@ import { ElMessage } from 'element-plus'
 import { computed, onActivated, onDeactivated, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useServerStateScope } from '@/shared/query/client'
+import {
+  assertServerStateScopeCurrent,
+  invalidateServerStateResource,
+  useServerStateScope,
+} from '@/shared/query/client'
 import {
   beginServerStatePageOperation,
+  propagateServerStatePageOperationError,
   type ServerStatePageOperation,
 } from '@/shared/query/pageOperationScope'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
@@ -12,10 +17,17 @@ import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import type { PageQuery, PageResponse, Id } from '@/shared/http/types'
+import type { ServerStateScope } from '@/shared/query/scope'
 import type { FlatCrudResource } from './resource'
 
 type SaveCommand<TCreate extends object, TUpdate extends object> =
-  { kind: 'create'; input: TCreate } | { kind: 'update'; id: Id; input: TUpdate }
+  | { kind: 'create'; input: TCreate; scope: ServerStateScope }
+  | { kind: 'update'; id: Id; input: TUpdate; scope: ServerStateScope }
+
+interface DeleteCommand<TRecord extends object> {
+  record: TRecord
+  scope: ServerStateScope
+}
 
 export function useFlatCrudResource<
   TRecord extends object,
@@ -68,20 +80,23 @@ export function useFlatCrudResource<
   )
 
   const saveMutation = useServerStateMutation<void, SaveCommand<TCreate, TUpdate>>(resource.key, {
-    mutationFn: (command) =>
-      command.kind === 'create'
+    invalidateOnSuccess: false,
+    meta: { errorMode: 'silent' },
+    mutationFn: (command) => {
+      assertServerStateScopeCurrent(command.scope)
+      return command.kind === 'create'
         ? resource.adapter.create(command.input)
-        : resource.adapter.update(command.id, command.input),
-    onSuccess: (_data, command) => {
-      ElMessage.success(
-        command.kind === 'create' ? resource.messages.addSuccess : resource.messages.updateSuccess,
-      )
+        : resource.adapter.update(command.id, command.input)
     },
   })
 
-  const deleteMutation = useServerStateMutation<void, TRecord>(resource.key, {
-    mutationFn: (record) => resource.adapter.remove(resource.recordId(record)),
-    onSuccess: () => ElMessage.success(resource.messages.deleteSuccess),
+  const deleteMutation = useServerStateMutation<void, DeleteCommand<TRecord>>(resource.key, {
+    invalidateOnSuccess: false,
+    meta: { errorMode: 'silent' },
+    mutationFn: (command) => {
+      assertServerStateScopeCurrent(command.scope)
+      return resource.adapter.remove(resource.recordId(command.record))
+    },
   })
 
   const page = computed({
@@ -97,8 +112,8 @@ export function useFlatCrudResource<
     },
   })
   const deletingKey = computed(() => {
-    const record = deleteMutation.variables.value
-    return deleteMutation.pending.value && record ? resource.recordId(record) : null
+    const command = deleteMutation.variables.value
+    return deleteMutation.pending.value && command ? resource.recordId(command.record) : null
   })
 
   function setQuery(query: TQuery): void {
@@ -188,23 +203,33 @@ export function useFlatCrudResource<
     const ownsDialog = () => ownsPage() && dialogVisible.value
     operation.assertCurrent(ownsDialog)
     const id = currentEditId.value
-    if (id) {
-      await saveMutation.mutateAsync({
-        kind: 'update',
-        id,
-        input: resource.updateInput(form.value),
-      })
-    } else {
-      await saveMutation.mutateAsync({
-        kind: 'create',
-        input: resource.createInput(form.value),
-      })
+    const successMessage = id ? resource.messages.updateSuccess : resource.messages.addSuccess
+    try {
+      if (id) {
+        await saveMutation.mutateAsync({
+          kind: 'update',
+          id,
+          input: resource.updateInput(form.value),
+          scope: operation.scope,
+        })
+      } else {
+        await saveMutation.mutateAsync({
+          kind: 'create',
+          input: resource.createInput(form.value),
+          scope: operation.scope,
+        })
+      }
+    } catch (error) {
+      propagateServerStatePageOperationError(error, operation, ownsDialog)
     }
+    operation.assertCurrent(ownsDialog)
+    await invalidateServerStateResource(operation.scope, resource.key)
+    operation.assertCurrent(ownsDialog)
+    await refresh()
     operation.apply(() => {
       dialogVisible.value = false
+      ElMessage.success(successMessage)
     }, ownsDialog)
-    operation.assertCurrent(ownsPage)
-    await refresh()
   }
 
   async function remove(record: TRecord): Promise<void> {
@@ -219,9 +244,16 @@ export function useFlatCrudResource<
     )
     if (!confirmed) return
     operation.assertCurrent(ownsOperation)
-    await deleteMutation.mutateAsync(record)
+    try {
+      await deleteMutation.mutateAsync({ record, scope: operation.scope })
+    } catch (error) {
+      propagateServerStatePageOperationError(error, operation, ownsOperation)
+    }
+    operation.assertCurrent(ownsOperation)
+    await invalidateServerStateResource(operation.scope, resource.key)
     operation.assertCurrent(ownsOperation)
     await refresh()
+    operation.apply(() => ElMessage.success(resource.messages.deleteSuccess), ownsOperation)
   }
 
   return {

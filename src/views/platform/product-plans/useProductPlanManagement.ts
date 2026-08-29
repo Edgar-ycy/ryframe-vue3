@@ -17,17 +17,28 @@ import {
 } from '@/api/modules/productPlan'
 import { PRODUCT_PLAN_PERMISSIONS } from '@/features/product-plans/permissions'
 import { requireOperationData } from '@/shared/http/client'
+import { assertServerStateScopeCurrent } from '@/shared/query/client'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
+import {
+  invalidateProductPlanResources,
+  PRODUCT_PLAN_VERSIONS_RESOURCE,
+  PRODUCT_PLANS_RESOURCE,
+  propagateProductPlanMutationError,
+  type AssertProductPlanPageCurrent,
+} from './productPlanMutationScope'
 
-const PLANS_RESOURCE = 'platform-product-plans'
-const VERSIONS_RESOURCE = 'platform-product-plan-versions'
-
-type SavePlanCommand = { planId?: string; data: ProductPlanFormInput }
-type VersionCommand = { planId: string; version?: number; data: ProductPlanVersionInput }
-type VersionStatusCommand = { planId: string; version: number }
+type SavePlanCommand = { planId?: string; data: ProductPlanFormInput; scope: ServerStateScope }
+type VersionCommand = {
+  planId: string
+  version?: number
+  data: ProductPlanVersionInput
+  scope: ServerStateScope
+}
+type VersionStatusCommand = { planId: string; version: number; scope: ServerStateScope }
 
 export function useProductPlanManagement() {
   const userStore = useUserStore()
@@ -45,7 +56,7 @@ export function useProductPlanManagement() {
 
   const plansQuery = useServerStateQuery(
     queryEnabled,
-    PLANS_RESOURCE,
+    PRODUCT_PLANS_RESOURCE,
     () => ({ page: page.value, page_size: pageSize.value }),
     async (signal) =>
       requireOperationData(
@@ -62,7 +73,7 @@ export function useProductPlanManagement() {
 
   const versionsQuery = useServerStateQuery<ProductPlanVersion[]>(
     () => queryEnabled.value && selectedPlan.value !== undefined,
-    VERSIONS_RESOURCE,
+    PRODUCT_PLAN_VERSIONS_RESOURCE,
     () => ({ plan_id: selectedPlan.value?.id ?? null }),
     async (signal) => {
       const planId = selectedPlan.value?.id
@@ -72,45 +83,66 @@ export function useProductPlanManagement() {
     { staleTime: 0 },
   )
 
-  const savePlanMutation = useServerStateMutation<ProductPlan, SavePlanCommand>(PLANS_RESOURCE, {
-    mutationFn: async (command) =>
-      requireOperationData(
-        command.planId
-          ? await updateProductPlan(command.planId, {
-              name: command.data.name,
-              description: command.data.description,
-              status: command.data.status,
-            })
-          : await createProductPlan({
-              key: command.data.key,
-              name: command.data.name,
-              description: command.data.description,
-            }),
-      ),
-  })
-  const createVersionMutation = useServerStateMutation<ProductPlanVersion, VersionCommand>(
-    VERSIONS_RESOURCE,
+  const savePlanMutation = useServerStateMutation<ProductPlan, SavePlanCommand>(
+    PRODUCT_PLANS_RESOURCE,
     {
-      mutationFn: async (command) =>
-        requireOperationData(
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: async (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return requireOperationData(
+          command.planId
+            ? await updateProductPlan(command.planId, {
+                name: command.data.name,
+                description: command.data.description,
+                status: command.data.status,
+              })
+            : await createProductPlan({
+                key: command.data.key,
+                name: command.data.name,
+                description: command.data.description,
+              }),
+        )
+      },
+    },
+  )
+  const createVersionMutation = useServerStateMutation<ProductPlanVersion, VersionCommand>(
+    PRODUCT_PLAN_VERSIONS_RESOURCE,
+    {
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: async (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return requireOperationData(
           command.version === undefined
             ? await createProductPlanVersion(command.planId, command.data)
             : await updateProductPlanVersionDraft(command.planId, command.version, command.data),
-        ),
+        )
+      },
     },
   )
   const publishMutation = useServerStateMutation<ProductPlanVersion, VersionStatusCommand>(
-    VERSIONS_RESOURCE,
+    PRODUCT_PLAN_VERSIONS_RESOURCE,
     {
-      mutationFn: async (command) =>
-        requireOperationData(await publishProductPlanVersion(command.planId, command.version)),
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: async (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return requireOperationData(
+          await publishProductPlanVersion(command.planId, command.version),
+        )
+      },
     },
   )
   const retireMutation = useServerStateMutation<ProductPlanVersion, VersionStatusCommand>(
-    VERSIONS_RESOURCE,
+    PRODUCT_PLAN_VERSIONS_RESOURCE,
     {
-      mutationFn: async (command) =>
-        requireOperationData(await retireProductPlanVersion(command.planId, command.version)),
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: async (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return requireOperationData(await retireProductPlanVersion(command.planId, command.version))
+      },
     },
   )
 
@@ -119,40 +151,105 @@ export function useProductPlanManagement() {
     if (selectedPlan.value) await versionsQuery.refetch({ throwOnError: true })
   }
 
-  async function savePlan(data: ProductPlanFormInput, plan?: ProductPlan): Promise<ProductPlan> {
-    const saved = await savePlanMutation.mutateAsync({ planId: plan?.id, data })
+  async function savePlan(
+    data: ProductPlanFormInput,
+    scope: ServerStateScope,
+    plan?: ProductPlan,
+    assertPageCurrent: AssertProductPlanPageCurrent = () => undefined,
+  ): Promise<ProductPlan> {
+    assertPageCurrent()
+    assertServerStateScopeCurrent(scope)
+    let saved: ProductPlan
+    try {
+      saved = await savePlanMutation.mutateAsync({ planId: plan?.id, data, scope })
+    } catch (error) {
+      propagateProductPlanMutationError(error, scope, assertPageCurrent)
+    }
+    assertServerStateScopeCurrent(scope)
+    assertPageCurrent()
     if (selectedPlan.value?.id === saved.id) selectedPlan.value = saved
+    await invalidateProductPlanResources(scope, false, assertPageCurrent)
     await plansQuery.refetch({ throwOnError: true })
+    assertPageCurrent()
     return saved
   }
 
   async function saveVersion(
     data: ProductPlanVersionInput,
+    scope: ServerStateScope,
     current?: ProductPlanVersion,
+    assertPageCurrent: AssertProductPlanPageCurrent = () => undefined,
   ): Promise<ProductPlanVersion> {
+    assertPageCurrent()
+    assertServerStateScopeCurrent(scope)
     const planId = selectedPlan.value?.id
     if (!planId) throw new Error('创建套餐版本前必须先选择套餐')
-    const version = await createVersionMutation.mutateAsync({
-      planId,
-      version: current?.version,
-      data,
-    })
-    await versionsQuery.refetch({ throwOnError: true })
+    let version: ProductPlanVersion
+    try {
+      version = await createVersionMutation.mutateAsync({
+        planId,
+        version: current?.version,
+        data,
+        scope,
+      })
+    } catch (error) {
+      propagateProductPlanMutationError(error, scope, assertPageCurrent)
+    }
+    assertServerStateScopeCurrent(scope)
+    assertPageCurrent()
+    await invalidateProductPlanResources(scope, true, assertPageCurrent)
+    await Promise.all([
+      plansQuery.refetch({ throwOnError: true }),
+      versionsQuery.refetch({ throwOnError: true }),
+    ])
+    assertPageCurrent()
     return version
   }
 
-  async function publishVersion(version: ProductPlanVersion): Promise<void> {
-    const planId = selectedPlan.value?.id
-    if (!planId) return
-    await publishMutation.mutateAsync({ planId, version: version.version })
-    await versionsQuery.refetch({ throwOnError: true })
+  async function publishVersion(
+    planId: string,
+    version: ProductPlanVersion,
+    scope: ServerStateScope,
+    assertPageCurrent: AssertProductPlanPageCurrent = () => undefined,
+  ): Promise<void> {
+    assertPageCurrent()
+    assertServerStateScopeCurrent(scope)
+    try {
+      await publishMutation.mutateAsync({ planId, version: version.version, scope })
+    } catch (error) {
+      propagateProductPlanMutationError(error, scope, assertPageCurrent)
+    }
+    assertServerStateScopeCurrent(scope)
+    assertPageCurrent()
+    await invalidateProductPlanResources(scope, true, assertPageCurrent)
+    await Promise.all([
+      plansQuery.refetch({ throwOnError: true }),
+      versionsQuery.refetch({ throwOnError: true }),
+    ])
+    assertPageCurrent()
   }
 
-  async function retireVersion(version: ProductPlanVersion): Promise<void> {
-    const planId = selectedPlan.value?.id
-    if (!planId) return
-    await retireMutation.mutateAsync({ planId, version: version.version })
-    await versionsQuery.refetch({ throwOnError: true })
+  async function retireVersion(
+    planId: string,
+    version: ProductPlanVersion,
+    scope: ServerStateScope,
+    assertPageCurrent: AssertProductPlanPageCurrent = () => undefined,
+  ): Promise<void> {
+    assertPageCurrent()
+    assertServerStateScopeCurrent(scope)
+    try {
+      await retireMutation.mutateAsync({ planId, version: version.version, scope })
+    } catch (error) {
+      propagateProductPlanMutationError(error, scope, assertPageCurrent)
+    }
+    assertServerStateScopeCurrent(scope)
+    assertPageCurrent()
+    await invalidateProductPlanResources(scope, true, assertPageCurrent)
+    await Promise.all([
+      plansQuery.refetch({ throwOnError: true }),
+      versionsQuery.refetch({ throwOnError: true }),
+    ])
+    assertPageCurrent()
   }
 
   return {

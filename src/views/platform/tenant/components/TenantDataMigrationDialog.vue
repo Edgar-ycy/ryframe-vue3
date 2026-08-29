@@ -14,7 +14,10 @@
       <el-step :title="t('tenantData.confirmTenantId')" />
     </el-steps>
 
-    <el-form label-position="top" @submit.prevent="handlePrimaryAction">
+    <el-form
+      label-position="top"
+      @submit.prevent="previewAllowed ? handleCreate() : handlePreview()"
+    >
       <el-form-item :label="t('tenantData.selectTarget')" :error="targetError">
         <el-select
           v-model="selectedTargetKey"
@@ -156,27 +159,34 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { listAllDataTargetOptions, type DataTargetSummary } from '@/api/modules/dataTarget'
 import {
-  createTenantDataMigration,
-  previewTenantDataMigration,
   type TenantDataMigration,
   type TenantDataMigrationPreview,
   type TenantDataPlacement,
 } from '@/api/modules/tenantData'
-import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { isServerStateScopeCurrent, useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
+import {
+  invalidateTenantMigrationResources,
+  tenantMigrationRetryOwner,
+  useTenantDataMigrationCommands,
+} from './tenantDataMigrationCommand'
 
 const props = defineProps<{
   active: boolean
   tenantId: string
   placement: TenantDataPlacement
 }>()
-const emit = defineEmits<{ created: [migration: TenantDataMigration] }>()
+const emit = defineEmits<{
+  created: [migration: TenantDataMigration, scope: ServerStateScope]
+}>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -185,7 +195,8 @@ const preview = ref<TenantDataMigrationPreview>()
 const confirmation = ref('')
 const targetError = ref('')
 const confirmationError = ref('')
-let pendingIdempotencyKey: string | undefined
+const pageGeneration = ref(0)
+const pendingIdempotencyKeys = new Map<string, string>()
 
 const targetsQuery = useServerStateQuery<DataTargetSummary[]>(
   () => props.active && visible.value && userStore.tenantId === 'system',
@@ -206,79 +217,99 @@ const eligibleTargets = computed(() =>
     (target) => target.eligible && target.key !== props.placement.current_target_key,
   ),
 )
-const previewAllowed = computed(() =>
-  Boolean(preview.value?.eligible && preview.value.blockers.length === 0),
-)
-
-const previewMutation = useServerStateMutation('platform-tenant-data-migration-preview', {
-  meta: { errorMode: 'silent' },
-  mutationFn: async () =>
-    requireOperationData(
-      await previewTenantDataMigration(props.tenantId, {
-        target_key: selectedTargetKey.value,
-        expected_placement_generation: props.placement.placement_generation,
-      }),
-    ),
-})
-const createMutation = useServerStateMutation('platform-tenant-data-migrations', {
-  meta: { errorMode: 'silent' },
-  mutationFn: async (input: { preview: TenantDataMigrationPreview; idempotencyKey: string }) =>
-    requireOperationData(
-      await createTenantDataMigration(
-        props.tenantId,
-        {
-          target_key: input.preview.target_target_key,
-          plan_hash: input.preview.plan_hash,
-          expected_placement_generation: input.preview.expected_placement_generation,
-        },
-        input.idempotencyKey,
-      ),
-    ),
-})
+const previewAllowed = computed(() => preview.value?.eligible && !preview.value.blockers.length)
+const { createMutation, previewMutation } = useTenantDataMigrationCommands()
 const submitting = computed(() => previewMutation.pending.value || createMutation.pending.value)
 const operationError = computed(() => previewMutation.error.value ?? createMutation.error.value)
 
-watch(
-  () => props.placement.placement_generation,
-  (generation) => {
-    if (preview.value && preview.value.expected_placement_generation !== generation) clearPreview()
-  },
-)
-
 function reset(): void {
+  pageGeneration.value += 1
   selectedTargetKey.value = ''
-  clearPreview()
+  resetPreviewProjection()
   void targetsQuery.refetch()
 }
 
 function clearPreview(): void {
+  pageGeneration.value += 1
+  resetPreviewProjection()
+}
+
+function resetPreviewProjection(): void {
   preview.value = undefined
   confirmation.value = ''
   targetError.value = ''
   confirmationError.value = ''
-  pendingIdempotencyKey = undefined
   previewMutation.reset()
   createMutation.reset()
 }
+
+function invalidatePage(clearRetry: boolean): void {
+  pageGeneration.value += 1
+  selectedTargetKey.value = ''
+  resetPreviewProjection()
+  if (clearRetry) pendingIdempotencyKeys.clear()
+  visible.value = false
+}
+
+watch(useServerStateScope(), () => invalidatePage(true), { flush: 'sync' })
+watch(
+  () => props.active,
+  (active) => !active && invalidatePage(false),
+  { flush: 'sync' },
+)
+watch(
+  () => props.tenantId,
+  () => invalidatePage(true),
+  { flush: 'sync' },
+)
+watch(
+  () => props.placement.placement_generation,
+  () => invalidatePage(false),
+  { flush: 'sync' },
+)
+watch(visible, (current, previous) => !current && previous && invalidatePage(false), {
+  flush: 'sync',
+})
+onDeactivated(() => invalidatePage(false))
+onBeforeUnmount(() => invalidatePage(true))
 
 function targetLabel(target: DataTargetSummary): string {
   return [target.key, target.mode, target.kind, target.region].filter(Boolean).join(' · ')
 }
 
-function handlePrimaryAction(): void {
-  if (previewAllowed.value) void handleCreate()
-  else void handlePreview()
-}
-
 async function handlePreview(): Promise<void> {
-  if (!selectedTargetKey.value || submitting.value) {
+  const targetKey = selectedTargetKey.value
+  if (!targetKey || submitting.value) {
     targetError.value = t('tenantData.targetRequired')
     return
   }
   targetError.value = ''
   confirmation.value = ''
-  pendingIdempotencyKey = undefined
-  preview.value = await previewMutation.mutateAsync(undefined)
+  preview.value = undefined
+  const tenantId = props.tenantId
+  const expectedPlacementGeneration = props.placement.placement_generation
+  const generation = ++pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    props.active &&
+    visible.value &&
+    pageGeneration.value === generation &&
+    props.tenantId === tenantId &&
+    props.placement.placement_generation === expectedPlacementGeneration &&
+    selectedTargetKey.value === targetKey
+  operation.assertCurrent(ownsOperation)
+  try {
+    const result = await previewMutation.mutateAsync({
+      expectedPlacementGeneration,
+      scope: operation.scope,
+      targetKey,
+      tenantId,
+    })
+    if (!operation.isCurrent(ownsOperation)) return
+    preview.value = result
+  } catch {
+    // 错误由对话框内联状态展示；会话或页面失效时不产生额外副作用。
+  }
 }
 
 async function handleCreate(): Promise<void> {
@@ -287,73 +318,42 @@ async function handleCreate(): Promise<void> {
     confirmationError.value = t('tenantData.confirmTenantIdMismatch')
     return
   }
-  const key = pendingIdempotencyKey ?? createIdempotencyKey('tenant-data-migration')
+  const snapshot = structuredClone(preview.value)
+  const tenantId = props.tenantId
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    props.active &&
+    visible.value &&
+    pageGeneration.value === generation &&
+    props.tenantId === tenantId &&
+    preview.value?.plan_hash === snapshot.plan_hash
+  const owner = tenantMigrationRetryOwner(operation.scope, tenantId, snapshot)
+  const key = pendingIdempotencyKeys.get(owner) ?? createIdempotencyKey('tenant-data-migration')
+  let migration: TenantDataMigration
   try {
-    const migration = await createMutation.mutateAsync({
-      preview: preview.value,
+    operation.assertCurrent(ownsOperation)
+    migration = await createMutation.mutateAsync({
       idempotencyKey: key,
+      preview: snapshot,
+      scope: operation.scope,
+      tenantId,
     })
-    pendingIdempotencyKey = undefined
-    emit('created', migration)
-    visible.value = false
+    pendingIdempotencyKeys.delete(owner)
   } catch (error) {
-    pendingIdempotencyKey = shouldReuseIdempotencyKey(error) ? key : undefined
+    if (isServerStateScopeCurrent(operation.scope)) {
+      if (shouldReuseIdempotencyKey(error)) pendingIdempotencyKeys.set(owner, key)
+      else pendingIdempotencyKeys.delete(owner)
+    }
+    return
   }
+  operation.assertCurrent(ownsOperation)
+  await invalidateTenantMigrationResources(operation.scope)
+  operation.apply(() => {
+    emit('created', migration, operation.scope)
+    visible.value = false
+  }, ownsOperation)
 }
 </script>
 
-<style scoped>
-.migration-steps {
-  margin-bottom: 20px;
-}
-
-.full-width {
-  width: 100%;
-}
-
-.preview-panel {
-  display: grid;
-  gap: 14px;
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-
-.preview-panel h3 {
-  margin: 0;
-}
-
-.preview-panel ul {
-  margin: 8px 0 0;
-  padding-left: 18px;
-}
-
-.confirmation-field {
-  margin-bottom: 0;
-}
-
-.operation-error {
-  margin-top: 14px;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-@media (width <= 640px) {
-  .migration-steps {
-    display: none;
-  }
-
-  :deep(.el-descriptions__body .el-descriptions__table) {
-    table-layout: fixed;
-  }
-}
-</style>
+<style scoped src="./TenantDataMigrationDialog.scss"></style>

@@ -1,15 +1,15 @@
-import type { RouteRecordRaw } from 'vue-router'
 import { isPermissionCode, type PermissionCode } from '@/api/generated/permissions'
 import type { MenuTreeNode, MenuType } from '@/api/modules/menu'
 import { getMenuPage } from '@/features/pageRegistry'
 import { hasRequiredCapabilities } from '@/shared/navigation/capabilityAccess'
 import { withRouteComponentName } from '@/shared/navigation/namedRouteComponent'
 import { hasPermission } from '@/shared/navigation/permissionAccess'
+import type { RouteProjection } from '@/shared/navigation/routeProjection'
 
-let constantMenuRoutes: readonly RouteRecordRaw[] = []
+let constantMenuRoutes: readonly RouteProjection[] = []
 
 export function installRouteProjection(options: {
-  constantRoutes: readonly RouteRecordRaw[]
+  constantRoutes: readonly RouteProjection[]
 }): void {
   const layoutRoute = options.constantRoutes.find((route) => route.path === '/' && route.children)
   constantMenuRoutes = layoutRoute?.children ?? []
@@ -31,8 +31,8 @@ const SKIP_PATHS = new Set([
 export function buildRoutesFromMenuTree(
   nodes: readonly MenuTreeNode[],
   parentPath?: string,
-): RouteRecordRaw[] {
-  const routes: RouteRecordRaw[] = []
+): RouteProjection[] {
+  const routes: RouteProjection[] = []
 
   for (const node of nodes) {
     if (!isNodeEnabled(node)) continue
@@ -50,14 +50,14 @@ export function buildRoutesFromMenuTree(
 }
 
 export function buildAccessibleMenus(
-  routes: readonly RouteRecordRaw[],
+  routes: readonly RouteProjection[],
   permissions: readonly string[],
   capabilities: readonly string[],
-): RouteRecordRaw[] {
+): RouteProjection[] {
   return [...getConstantMenus(), ...filterAccessibleRoutes(routes, permissions, capabilities)]
 }
 
-function getConstantMenus(): RouteRecordRaw[] {
+function getConstantMenus(): RouteProjection[] {
   return constantMenuRoutes
     .filter((child) => !child.meta?.hidden)
     .map((child) => ({
@@ -86,14 +86,14 @@ function iconPascalCase(icon: string): string {
     .join('')
 }
 
-function nodeToRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw | null {
+function nodeToRoute(node: MenuTreeNode, parentPath?: string): RouteProjection | null {
   const type = getMenuType(node)
   if (type === 'M') return buildDirectoryRoute(node)
   if (type === 'C') return buildMenuRoute(node, parentPath)
   return null
 }
 
-function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw | null {
+function buildDirectoryRoute(node: MenuTreeNode): RouteProjection | null {
   const page = getMenuPage(node.route_key)
   const directoryPath = normalizePath(page?.path || `/menu-${node.id}`)
   const children = node.children?.length
@@ -124,7 +124,7 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteRecordRaw | null {
   }
 }
 
-function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteRecordRaw | null {
+function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteProjection | null {
   const page = getMenuPage(node.route_key)
   if (!page?.component) return null
   const routeName = getRouteName(node)
@@ -173,11 +173,11 @@ function getRouteName(node: MenuTreeNode): string {
 }
 
 function filterAccessibleRoutes(
-  routes: readonly RouteRecordRaw[],
+  routes: readonly RouteProjection[],
   permissions: readonly string[],
   capabilities: readonly string[],
-): RouteRecordRaw[] {
-  const result: RouteRecordRaw[] = []
+): RouteProjection[] {
+  const result: RouteProjection[] = []
 
   for (const route of routes) {
     if (route.meta?.hidden) continue
@@ -202,7 +202,7 @@ function filterAccessibleRoutes(
     result.push({
       ...route,
       children: children.length ? children : undefined,
-    } as RouteRecordRaw)
+    })
   }
 
   return result

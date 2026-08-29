@@ -48,6 +48,30 @@ test('解析别名、相对路径和目录入口', () => {
   assert.equal(moduleArea('src/api/generated/operations/system.ts'), 'generated')
 })
 
+test('ImportTypeNode 不能绕过 Store 的外部类型边界', () => {
+  const source = 'src/stores/bypass.ts'
+  const imports = extractImportSpecifiers(
+    `
+      type Router = import('vue-router').Router
+      type QueryClient = import('@tanstack/vue-query').QueryClient
+      type Message = import('element-plus').MessageParams
+    `,
+    source,
+  )
+  assert.deepEqual(imports, [
+    { kind: 'type', specifier: 'vue-router' },
+    { kind: 'type', specifier: '@tanstack/vue-query' },
+    { kind: 'type', specifier: 'element-plus' },
+  ])
+  for (const dependency of imports) {
+    const target = resolveImportTarget(source, dependency.specifier, new Set())
+    assert.equal(
+      boundaryViolation({ ...dependency, source, target }),
+      `stores 不得依赖外部包 ${dependency.specifier}`,
+    )
+  }
+})
+
 test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', () => {
   assert.equal(
     boundaryViolation({
@@ -95,8 +119,18 @@ test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', 
       source: 'src/stores/user.ts',
       target: 'package:element-plus',
     }),
-    'stores 不得依赖运行时包 element-plus',
+    'stores 不得依赖外部包 element-plus',
   )
+  for (const packageName of ['vue-router', '@tanstack/vue-query', 'element-plus']) {
+    assert.equal(
+      boundaryViolation({
+        kind: 'type',
+        source: 'src/stores/user.ts',
+        target: `package:${packageName}`,
+      }),
+      `stores 不得依赖外部包 ${packageName}`,
+    )
+  }
   assert.equal(
     boundaryViolation({
       kind: 'runtime',

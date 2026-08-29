@@ -25,6 +25,7 @@ import { configureHttpLocalization } from '@/shared/http/client'
 import directives from './directives'
 import { queryClient } from '@/shared/query/client'
 import { constantRoutes } from '@/router/routes/constant'
+import { projectRouteRecords } from '@/router/routeProjectionAdapter'
 import './styles/index.scss'
 import 'element-plus/es/components/message/style/css'
 import 'element-plus/es/components/message-box/style/css'
@@ -36,7 +37,7 @@ configureHttpLocalization({
 
 const app = createApp(App)
 
-installRouteProjection({ constantRoutes })
+installRouteProjection({ constantRoutes: projectRouteRecords(constantRoutes) })
 
 app.use(pinia)
 app.use(i18n)

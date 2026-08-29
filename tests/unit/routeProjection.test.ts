@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RouteRecordRaw } from 'vue-router'
 import type { MenuTreeNode } from '@/api/modules/menu'
+import type { RouteProjection, RouteProjectionMeta } from '@/shared/navigation/routeProjection'
 
 vi.mock('@/features/pageRegistry', () => {
   const component = () => Promise.resolve({ default: {} })
@@ -50,10 +50,10 @@ function menu(
 
 function route(
   path: string,
-  meta?: RouteRecordRaw['meta'],
-  children?: RouteRecordRaw[],
-): RouteRecordRaw {
-  return { path, component: {}, meta, children } as RouteRecordRaw
+  meta?: RouteProjectionMeta,
+  children?: RouteProjection[],
+): RouteProjection {
+  return { path, meta, children }
 }
 
 describe('菜单树路由投影', () => {
@@ -167,12 +167,12 @@ describe('可访问菜单投影', () => {
   })
 
   it('逐项拒绝隐藏、缺能力、缺权限和无可见子节点的路由', () => {
-    const routes: RouteRecordRaw[] = [
+    const routes: RouteProjection[] = [
       route('/hidden', { hidden: true }),
       route('/capability', { requiredCapabilities: ['feature-a'] }),
       route('/missing-permission', { requiresPermission: true }),
       route('/invalid-permission', {
-        permission: 'invalid' as never,
+        permission: 'invalid',
         requiresPermission: true,
       }),
       route('/denied', { permission: 'system:user:list', requiresPermission: true }),
@@ -183,7 +183,7 @@ describe('可访问菜单投影', () => {
   })
 
   it('保留满足能力和权限要求的父子菜单并移除空 children', () => {
-    const routes: RouteRecordRaw[] = [
+    const routes: RouteProjection[] = [
       route('/system', { alwaysShow: true }, [
         route('user', { permission: 'system:user:list', requiresPermission: true }),
         route('service', {

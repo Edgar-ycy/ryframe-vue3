@@ -59,9 +59,12 @@ src/
 composition primitives；模板组件仍由 Vite 自动解析，组件类型写入 `src/components.d.ts`。
 
 所有 `defineStore` 必须位于 `src/stores/`。Store 保持被动，不运行时导入 app、router、业务
-API、QueryClient 或其他 Store；跨状态副作用放入 `src/app/` coordinator。API module 不直接依赖
-外部 package，也不依赖 Router、Store、Query 或 UI；`src/shared/http/` 只依赖 Axios 和同层纯模块。`corepack pnpm check:imports`
-同时检查内部路径、外部 package、运行时环和 Store 定义位置。
+API、QueryClient 或其他 Store；也不以 type-only import 引入 Vue Router、TanStack Query 或
+Element Plus。权限 Store 只保存 `src/shared/navigation/routeProjection.ts` 定义的中立路由投影，
+`src/router/routeProjectionAdapter.ts` 负责在 Router 边界转换。跨状态副作用放入 `src/app/`
+coordinator。API module 不直接依赖外部 package，也不依赖 Router、Store、Query 或 UI；
+`src/shared/http/` 只依赖 Axios 和同层纯模块。`corepack pnpm check:imports` 同时检查内部路径、
+外部 package、运行时环和 Store 定义位置。
 
 ## 管理状态
 

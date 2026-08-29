@@ -10,11 +10,13 @@ import {
   buildAccessibleMenus,
   buildRoutesFromMenuTree,
 } from '@/features/navigation/routeProjection'
+import type { RouteProjection } from '@/shared/navigation/routeProjection'
 import { usePermissionStore } from '@/stores/permission'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useUserStore } from '@/stores/user'
 import { ROOT_LAYOUT_ROUTE_NAME } from './layout'
 import { createNavigationGuard } from './navigationGuard'
+import { restoreRouteRecords } from './routeProjectionAdapter'
 import { RuntimeRouteRegistry } from './runtimeRouteRegistry'
 import { constantRoutes } from './routes/constant'
 
@@ -61,7 +63,7 @@ let installedGeneration = -1
 let routeInstallation: RouteInstallation | undefined
 let routeRefreshPromise: Promise<RouteRecordRaw[]> | undefined
 
-async function buildAccessibleRoutes(generation: number): Promise<RouteRecordRaw[] | undefined> {
+async function buildAccessibleRoutes(generation: number): Promise<RouteProjection[] | undefined> {
   const runtime = requireApplicationRuntime()
   await runtime.ensureTenantContextLoaded()
   if (generation !== routeGeneration) return undefined
@@ -86,7 +88,7 @@ export function ensureAccessibleRoutes(options?: {
   void options
   const permissionStore = usePermissionStore()
   if (permissionStore.isRoutesLoaded && installedGeneration === routeGeneration) {
-    return Promise.resolve(permissionStore.routes)
+    return Promise.resolve(restoreRouteRecords(permissionStore.routes))
   }
 
   const generation = routeGeneration
@@ -94,8 +96,9 @@ export function ensureAccessibleRoutes(options?: {
 
   const promise = (async () => {
     try {
-      const routes = await buildAccessibleRoutes(generation)
-      if (!routes || generation !== routeGeneration) return []
+      const projection = await buildAccessibleRoutes(generation)
+      if (!projection || generation !== routeGeneration) return []
+      const routes = restoreRouteRecords(projection)
       runtimeRouteRegistry.add(ROOT_LAYOUT_ROUTE_NAME, routes)
       installedGeneration = generation
       return routes

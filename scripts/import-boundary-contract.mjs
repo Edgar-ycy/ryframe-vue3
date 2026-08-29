@@ -124,6 +124,11 @@ export function extractImportSpecifiers(source, fileName = 'module.ts') {
         kind: exportDeclarationKind(node),
         specifier: node.moduleSpecifier.text,
       })
+    } else if (ts.isImportTypeNode(node)) {
+      const argument = node.argument
+      if (ts.isLiteralTypeNode(argument) && ts.isStringLiteral(argument.literal)) {
+        imports.push({ kind: 'type', specifier: argument.literal.text })
+      }
     } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
       const [argument] = node.arguments
       if (argument && ts.isStringLiteral(argument)) {
@@ -254,11 +259,11 @@ function storeDomain(path) {
     .replace(/\.[^.]+$/u, '')
 }
 
-function externalBoundaryViolation(source, sourceArea, target, kind) {
+function externalBoundaryViolation(source, sourceArea, target) {
   if (!target.startsWith('package:')) return undefined
   const packageName = target.slice('package:'.length)
-  if (sourceArea === 'stores' && kind !== 'type' && !['pinia', 'vue'].includes(packageName)) {
-    return `stores 不得依赖运行时包 ${packageName}`
+  if (sourceArea === 'stores' && !['pinia', 'vue'].includes(packageName)) {
+    return `stores 不得依赖外部包 ${packageName}`
   }
   if (sourceArea === 'api-modules') {
     return `api-modules 不得直接依赖外部包 ${packageName}`
@@ -271,12 +276,7 @@ function externalBoundaryViolation(source, sourceArea, target, kind) {
 
 export function boundaryViolation(edge) {
   const sourceArea = moduleArea(edge.source)
-  const externalViolation = externalBoundaryViolation(
-    edge.source,
-    sourceArea,
-    edge.target,
-    edge.kind,
-  )
+  const externalViolation = externalBoundaryViolation(edge.source, sourceArea, edge.target)
   if (externalViolation) return externalViolation
   if (edge.target.startsWith('package:')) return undefined
   const targetArea = moduleArea(edge.target)

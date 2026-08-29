@@ -4,8 +4,9 @@ import {
 } from '@/api/modules/authorizationDiagnostic'
 import type { SelectOptionList } from '@/api/modules/option'
 import { listUserOptions } from '@/api/modules/user'
-import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
+import { onActivated, ref } from 'vue'
 import { requireOperationData } from '@/shared/http/client'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -42,16 +43,25 @@ const REASON_KEYS: Record<string, string> = {
 /** 授权诊断页面的查询、筛选与展示投影。 */
 export function useAuthorizationDiagnostics(t: Translate) {
   const userStore = useUserStore()
-  const pageActive = ref(true)
   const selectedUserId = ref('')
   const userSearch = ref('')
   const permissionSearch = ref('')
   const menuSearch = ref('')
-  let userSearchTimer: number | undefined
+  let userSearchTimer: ReturnType<typeof setTimeout> | undefined
 
-  onUnmounted(() => {
-    if (userSearchTimer !== undefined) window.clearTimeout(userSearchTimer)
+  function clearUserSearchTimer(): void {
+    if (userSearchTimer !== undefined) clearTimeout(userSearchTimer)
+    userSearchTimer = undefined
+  }
+
+  const pageLifecycle = useServerStatePageLifecycle(() => {
+    clearUserSearchTimer()
+    selectedUserId.value = ''
+    userSearch.value = ''
+    permissionSearch.value = ''
+    menuSearch.value = ''
   })
+  const pageActive = pageLifecycle.pageActive
 
   const usersQuery = useServerStateQuery<SelectOptionList>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
@@ -85,13 +95,13 @@ export function useAuthorizationDiagnostics(t: Translate) {
     await Promise.all(requests)
   }
 
-  useKeepAlivePageActive(pageActive, refreshActiveData)
+  onActivated(() => void refreshActiveData())
 
   function searchUsers(value: string): void {
-    if (userSearchTimer !== undefined) window.clearTimeout(userSearchTimer)
-    userSearchTimer = window.setTimeout(() => {
-      userSearch.value = value.trim()
+    clearUserSearchTimer()
+    userSearchTimer = setTimeout(() => {
       userSearchTimer = undefined
+      if (pageActive.value) userSearch.value = value.trim()
     }, 300)
   }
 
@@ -203,6 +213,7 @@ export function useAuthorizationDiagnostics(t: Translate) {
     scopeSources,
     searchUsers,
     selectedUserId,
+    userSearch,
     usersQuery,
     warningLabel,
     yesNo,

@@ -106,7 +106,6 @@ import {
   UserFilled,
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import { logoutSession } from '@/app/session/sessionCoordinator'
 import { translateNavigationTitle } from '@/i18n'
 import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 import { useAppStore } from '@/stores/app'
@@ -117,6 +116,7 @@ import { confirmAction } from '@/utils/confirmAction'
 import ExportCenter from '../ExportCenter/index.vue'
 import MessageCenter from '../MessageCenter/index.vue'
 import Settings from '../Settings/index.vue'
+import { confirmAndLogoutCurrentSession } from './logoutAction'
 
 const route = useRoute()
 const router = useRouter()
@@ -149,11 +149,9 @@ async function toggleFullscreen(): Promise<void> {
 async function handleCommand(command: string): Promise<void> {
   switch (command) {
     case 'logout':
-      if (
-        !(await confirmAction(t('navbar.logoutConfirm'), t('navbar.prompt'), { type: 'warning' }))
+      await confirmAndLogoutCurrentSession(() =>
+        confirmAction(t('navbar.logoutConfirm'), t('navbar.prompt'), { type: 'warning' }),
       )
-        return
-      await logoutSession()
       break
     case 'profile':
       await router.push('/profile')

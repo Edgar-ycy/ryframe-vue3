@@ -124,6 +124,7 @@
 </template>
 
 <script setup lang="ts">
+import { onActivated } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getDataTarget,
@@ -139,6 +140,7 @@ import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import DataTargetList from './DataTargetList.vue'
+import { useDataTargetPageScope } from './useDataTargetPageScope'
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -146,15 +148,14 @@ const keyword = ref('')
 const appliedKeyword = ref('')
 const page = ref(1)
 const pageSize = ref(20)
-const detailVisible = ref(false)
-const selectedTargetKey = ref('')
-let searchTimer: ReturnType<typeof setTimeout> | undefined
+const { detailVisible, openTargetDetail, pageActive, scheduleSearch, selectedTargetKey } =
+  useDataTargetPageScope()
 const canView = computed(() =>
   hasPermission(userStore.permissions, TENANT_DATA_PERMISSIONS.placementView),
 )
 
 const targetsQuery = useServerStateQuery<DataTargetPage>(
-  () => userStore.tenantId === 'system' && canView.value,
+  () => pageActive.value && userStore.tenantId === 'system' && canView.value,
   'platform-data-targets',
   () => ({ page: page.value, page_size: pageSize.value, q: appliedKeyword.value }),
   async (signal) =>
@@ -175,6 +176,7 @@ const targetPage = targetsQuery.data
 const targets = computed(() => targetPage.value?.items ?? [])
 const detailQuery = useServerStateQuery<DataTargetDetail>(
   () =>
+    pageActive.value &&
     userStore.tenantId === 'system' &&
     canView.value &&
     detailVisible.value &&
@@ -187,18 +189,13 @@ const detailQuery = useServerStateQuery<DataTargetDetail>(
 const targetDetail = detailQuery.data
 
 watch(keyword, (value) => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
+  scheduleSearch(value, (nextKeyword) => {
     page.value = 1
-    appliedKeyword.value = value.trim()
-    searchTimer = undefined
-  }, 300)
+    appliedKeyword.value = nextKeyword
+  })
 })
 watch(pageSize, () => {
   page.value = 1
-})
-onBeforeUnmount(() => {
-  if (searchTimer) clearTimeout(searchTimer)
 })
 
 function healthLabel(health: string): string {
@@ -216,11 +213,6 @@ function formatDate(value: string | null | undefined): string {
   return value ? formatLocalizedDate(value) : t('tenantData.notAvailable')
 }
 
-function openTargetDetail(targetKey: string): void {
-  selectedTargetKey.value = targetKey
-  detailVisible.value = true
-}
-
 async function refreshTargetDetail(): Promise<void> {
   await detailQuery.refetch()
 }
@@ -228,6 +220,8 @@ async function refreshTargetDetail(): Promise<void> {
 async function refreshTargets(): Promise<void> {
   await targetsQuery.refetch()
 }
+
+onActivated(() => void refreshTargets())
 </script>
 
 <style scoped>

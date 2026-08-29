@@ -26,6 +26,7 @@ import { getMetrics } from '@/api/modules/monitor'
 import * as postExtension from '@/api/modules/post'
 import * as generatedPostApi from '@/generated/resources/post/api'
 import { getApiVersion } from '@/api/modules/version'
+import { bindBlobOperation, bindTextOperation } from '@/api/operationRequest'
 
 const versionResponse = {
   code: 200,
@@ -192,6 +193,42 @@ describe('operation 请求传输模式', () => {
     expect(httpClient.requestText).toHaveBeenNthCalledWith(2, {
       method: 'get',
       url: '/monitor/metrics',
+    })
+  })
+
+  it('blob 与 text operation 均保留 JSON 请求体', async () => {
+    const data = { password: 'secret', username: 'admin' }
+    const descriptor = {
+      method: 'post',
+      operationId: 'post_auth_login',
+      path: '/auth/login',
+    } as const
+    const blob = new Blob(['content'])
+    httpClient.requestBlob.mockResolvedValue(blob)
+    httpClient.requestText.mockResolvedValue('accepted')
+    const callBlob = Reflect.apply(bindBlobOperation, undefined, [descriptor]) as (options: {
+      data: typeof data
+      timeout: number
+    }) => Promise<Blob>
+    const callText = Reflect.apply(bindTextOperation, undefined, [descriptor]) as (options: {
+      data: typeof data
+      timeout: number
+    }) => Promise<string>
+
+    await callBlob({ data, timeout: 5000 })
+    await callText({ data, timeout: 5000 })
+
+    expect(httpClient.requestBlob).toHaveBeenCalledWith({
+      data,
+      method: 'post',
+      timeout: 5000,
+      url: '/auth/login',
+    })
+    expect(httpClient.requestText).toHaveBeenCalledWith({
+      data,
+      method: 'post',
+      timeout: 5000,
+      url: '/auth/login',
     })
   })
 })

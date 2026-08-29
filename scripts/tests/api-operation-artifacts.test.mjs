@@ -100,3 +100,38 @@ test('请求或成功响应媒体类型不唯一时生成失败', () => {
   }
   assert.throws(() => createOperationCallers(ambiguousResponse), /成功响应媒体类型必须唯一/u)
 })
+
+test('JSON 请求体与 blob 或 text 成功响应分别选择专用 caller', () => {
+  const blobResponse = structuredClone(document)
+  blobResponse.paths['/api/v1/auth/login'].post.responses['200'].content = {
+    'application/octet-stream': {
+      schema: { items: { format: 'int32', type: 'integer' }, type: 'array' },
+    },
+  }
+  assert.equal(
+    createOperationCallers(blobResponse)
+      .get('core')
+      .find((operation) => operation.operationId === 'post_auth_login')?.binder,
+    'bindBlobOperation',
+  )
+
+  const textResponse = structuredClone(document)
+  textResponse.paths['/api/v1/auth/login'].post.responses['200'].content = {
+    'text/plain': { schema: { type: 'string' } },
+  }
+  assert.equal(
+    createOperationCallers(textResponse)
+      .get('core')
+      .find((operation) => operation.operationId === 'post_auth_login')?.binder,
+    'bindTextOperation',
+  )
+})
+
+test('唯一但未知的成功响应媒体类型生成失败', () => {
+  const unknownResponse = structuredClone(document)
+  unknownResponse.paths['/api/v1/version'].get.responses['200'].content = {
+    'application/xml': { schema: { type: 'string' } },
+  }
+
+  assert.throws(() => createOperationCallers(unknownResponse), /不支持成功响应媒体类型/u)
+})

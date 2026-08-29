@@ -10,9 +10,11 @@ import { get_monitor_metrics } from '@/api/generated/operations/monitor'
 import type {
   BlobOperationRequestOptions,
   MultipartOperationRequestOptions,
+  OperationBodyOptions,
   OperationRequestOptions,
   TextOperationRequestOptions,
 } from '@/api/operationRequest'
+import type { OperationJsonBody } from '@/api/contract'
 
 it('生成 caller 按 JSON、raw、multipart、text 与 blob 约束参数类型', () => {
   expectTypeOf<Parameters<typeof get_version>[0]>().toEqualTypeOf<
@@ -27,6 +29,12 @@ it('生成 caller 按 JSON、raw、multipart、text 与 blob 约束参数类型'
   expectTypeOf<Parameters<typeof get_common_file_download>[0]>().toEqualTypeOf<
     BlobOperationRequestOptions<'get_common_file_download'>
   >()
+  expectTypeOf<OperationBodyOptions<'post_auth_login'>>().toEqualTypeOf<{
+    data: OperationJsonBody<'post_auth_login'>
+  }>()
+  expectTypeOf<OperationBodyOptions<'get_common_file_download'>>().toEqualTypeOf<{
+    data?: never
+  }>()
 
   const rawOptions: Parameters<typeof get_version>[0] = { transport: 'raw' }
   const uploadOptions: Parameters<typeof post_common_upload>[0] = { data: new FormData() }

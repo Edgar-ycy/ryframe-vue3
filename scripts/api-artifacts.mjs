@@ -46,6 +46,12 @@ const generatedHeader = `/**
 `
 const httpMethods = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace']
 const infrastructurePaths = new Set(['/livez', '/readyz'])
+const blobResponseMediaTypes = new Set([
+  'application/octet-stream',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip',
+  'image/png',
+])
 
 function canonicalJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`
@@ -89,7 +95,8 @@ function classifyOperationBinder(operation, location) {
   }
   if (responseMediaType === 'application/json') return 'bindJsonOperation'
   if (responseMediaType === 'text/plain') return 'bindTextOperation'
-  return 'bindBlobOperation'
+  if (blobResponseMediaTypes.has(responseMediaType)) return 'bindBlobOperation'
+  throw new Error(`${location} 不支持成功响应媒体类型：${responseMediaType}`)
 }
 
 export function createOperationCallers(document) {

@@ -57,25 +57,29 @@ type QueryOptions<Name extends OperationId> = [OperationQuery<Name>] extends [ne
   ? { params?: never }
   : { params?: OperationQuery<Name> }
 
-type BodyOptions<Name extends OperationId> = [OperationJsonBody<Name>] extends [never]
+export type OperationBodyOptions<Name extends OperationId> = [OperationJsonBody<Name>] extends [
+  never,
+]
   ? { data?: never }
   : { data: OperationJsonBody<Name> }
 
 export type OperationRequestOptions<Name extends JsonOperationId> = JsonRequestTransportOptions &
   PathOptions<Name> &
   QueryOptions<Name> &
-  BodyOptions<Name>
+  OperationBodyOptions<Name>
 
 export type MultipartOperationRequestOptions<Name extends MultipartOperationId> =
   RequestTransportOptions & PathOptions<Name> & QueryOptions<Name> & { data: FormData }
 
 export type BlobOperationRequestOptions<Name extends BlobOperationId> = RequestTransportOptions &
   PathOptions<Name> &
-  QueryOptions<Name>
+  QueryOptions<Name> &
+  OperationBodyOptions<Name>
 
 export type TextOperationRequestOptions<Name extends TextOperationId> = RequestTransportOptions &
   PathOptions<Name> &
-  QueryOptions<Name>
+  QueryOptions<Name> &
+  OperationBodyOptions<Name>
 
 export type JsonOperationCaller<Name extends JsonOperationId> = (
   options: OperationRequestOptions<Name>,
@@ -169,10 +173,12 @@ export function bindBlobOperation<Name extends BlobOperationId>(
     const {
       path: pathParameters,
       params,
+      data,
       ...transportOptions
     } = options as RequestTransportOptions & {
       path?: Record<string, unknown>
       params?: unknown
+      data?: unknown
     }
     const config: AxiosRequestConfig = {
       ...transportOptions,
@@ -180,6 +186,7 @@ export function bindBlobOperation<Name extends BlobOperationId>(
       url: resolveOperationPath(operation.path, pathParameters),
     }
     if (params !== undefined) config.params = params
+    if (data !== undefined) config.data = data
     return requestBlob(config)
   }
 }
@@ -191,10 +198,12 @@ export function bindTextOperation<Name extends TextOperationId>(
     const {
       path: pathParameters,
       params,
+      data,
       ...transportOptions
     } = options as RequestTransportOptions & {
       path?: Record<string, unknown>
       params?: unknown
+      data?: unknown
     }
     const config: AxiosRequestConfig = {
       ...transportOptions,
@@ -202,6 +211,7 @@ export function bindTextOperation<Name extends TextOperationId>(
       url: resolveOperationPath(operation.path, pathParameters),
     }
     if (params !== undefined) config.params = params
+    if (data !== undefined) config.data = data
     return requestText(config) as Promise<OperationTextResponse<Name>>
   }
 }

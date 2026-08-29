@@ -1,4 +1,3 @@
-import { ElMessage } from 'element-plus'
 import {
   changePassword,
   updateAvatar,
@@ -8,8 +7,12 @@ import {
 } from '@/api/modules/auth'
 import { terminateSession } from '@/app/session/sessionCoordinator'
 import { HttpError } from '@/shared/http/client'
-import { getServerStateScope, isServerStateScopeCurrent } from '@/shared/query/client'
-import type { ActiveServerStateScope } from '@/shared/query/scope'
+import {
+  assertServerStateScopeCurrent,
+  getServerStateScope,
+  isServerStateScopeCurrent,
+} from '@/shared/query/client'
+import type { ActiveServerStateScope, ServerStateScope } from '@/shared/query/scope'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 
 type Translate = (key: string) => string
@@ -22,9 +25,19 @@ interface PasswordChangeCommand {
   scope: ActiveServerStateScope
 }
 
-function capturePasswordChangeScope(): ActiveServerStateScope {
+interface ProfileUpdateCommand {
+  profile: ProfileUpdateParams
+  scope: ServerStateScope
+}
+
+interface AvatarUpdateCommand {
+  formData: FormData
+  scope: ServerStateScope
+}
+
+function capturePasswordChangeScope(expectedScope: ServerStateScope): ActiveServerStateScope {
   const scope = getServerStateScope()
-  if (!scope || scope.signal.aborted) {
+  if (!scope || scope.signal.aborted || !isServerStateScopeCurrent(expectedScope)) {
     throw new HttpError('会话已切换，改密操作已取消', { status: 401, kind: 'cancelled' })
   }
   return scope
@@ -52,75 +65,71 @@ function waitForPasswordSignOut(scope: ActiveServerStateScope): Promise<boolean>
   })
 }
 
-export function useProfileDetailsMutation(
-  t: Translate,
-  onSaved: (profile: ProfileUpdateParams) => MaybePromise<void>,
-) {
-  const mutation = useServerStateMutation<void, ProfileUpdateParams>('profile', {
-    mutationFn: async (profile) => {
-      await updateProfile(profile)
-    },
-    onSuccess: async (_data, profile) => {
-      ElMessage.success(t('profile.saveSuccess'))
-      await onSaved(profile)
+export function useProfileDetailsMutation() {
+  const mutation = useServerStateMutation<void, ProfileUpdateCommand>('profile', {
+    mutationFn: async (command) => {
+      // Mutation 观察器可能已随身份切到新 scope，变量中的旧 scope 仍须在 HTTP 前拒绝。
+      assertServerStateScopeCurrent(command.scope)
+      await updateProfile(command.profile)
     },
   })
 
-  async function saveProfile(profile: ProfileUpdateParams): Promise<void> {
+  async function saveProfile(
+    profile: ProfileUpdateParams,
+    expectedScope: ServerStateScope,
+  ): Promise<void> {
     if (mutation.pending.value) return
-    await mutation.mutateAsync(profile)
+    await mutation.mutateAsync({ profile, scope: expectedScope })
   }
 
   return { saveProfile, submitting: mutation.pending }
 }
 
-export function useProfilePasswordMutation(
-  t: Translate,
-  onPasswordChanged: () => MaybePromise<void>,
-) {
+export function useProfilePasswordMutation() {
   const mutation = useServerStateMutation<void, PasswordChangeCommand>('profile-password', {
     mutationFn: async (command, { signal }) => {
+      assertServerStateScopeCurrent(command.scope)
       await changePassword(command.password, signal)
-    },
-    onSuccess: async (_data, command) => {
-      if (!isServerStateScopeCurrent(command.scope)) return
-      ElMessage.success(t('account.passwordChangedSignInAgain'))
-      await onPasswordChanged()
-      if (!isServerStateScopeCurrent(command.scope)) return
-      if (!(await waitForPasswordSignOut(command.scope))) return
-      if (!isServerStateScopeCurrent(command.scope)) return
-      await terminateSession()
     },
   })
 
-  async function savePassword(password: PasswordChangeParams): Promise<void> {
+  async function savePassword(
+    password: PasswordChangeParams,
+    expectedScope: ServerStateScope,
+    onPasswordChanged: () => MaybePromise<void>,
+  ): Promise<void> {
     if (mutation.pending.value) return
-    await mutation.mutateAsync({ password, scope: capturePasswordChangeScope() })
+    const scope = capturePasswordChangeScope(expectedScope)
+    await mutation.mutateAsync({ password, scope })
+    if (!isServerStateScopeCurrent(scope)) return
+    await onPasswordChanged()
+    if (!isServerStateScopeCurrent(scope)) return
+    if (!(await waitForPasswordSignOut(scope))) return
+    if (isServerStateScopeCurrent(scope)) await terminateSession()
   }
 
   return { savePassword, submitting: mutation.pending }
 }
 
-export function useProfileAvatarMutation(
-  t: Translate,
-  onUpdated: (avatarUrl: string) => MaybePromise<void>,
-) {
-  const mutation = useServerStateMutation<string, FormData>('profile', {
-    mutationFn: async (formData) => {
-      const response = await updateAvatar(formData)
+export function useProfileAvatarMutation(t: Translate) {
+  const mutation = useServerStateMutation<string, AvatarUpdateCommand>('profile', {
+    mutationFn: async (command) => {
+      assertServerStateScopeCurrent(command.scope)
+      const response = await updateAvatar(command.formData)
       const avatarUrl = response.data?.avatar_url
       if (!avatarUrl) throw new Error(t('account.avatarResponseMissing'))
       return avatarUrl
     },
-    onSuccess: async (avatarUrl) => {
-      await onUpdated(avatarUrl)
-      ElMessage.success(t('account.avatarUpdated'))
-    },
   })
 
-  async function uploadAvatar(formData: FormData): Promise<void> {
-    if (mutation.pending.value) return
-    await mutation.mutateAsync(formData)
+  async function uploadAvatar(
+    formData: FormData,
+    expectedScope: ServerStateScope,
+  ): Promise<string> {
+    if (mutation.pending.value) {
+      throw new HttpError('头像上传正在进行', { status: 409, kind: 'http' })
+    }
+    return mutation.mutateAsync({ formData, scope: expectedScope })
   }
 
   return { uploading: mutation.pending, uploadAvatar }

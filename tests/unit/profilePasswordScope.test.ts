@@ -20,6 +20,7 @@ import {
 } from '@/views/profile/useProfileMutations'
 import {
   deactivateServerStateScope,
+  getServerStateScope,
   queryClient,
   transitionServerStateScope,
 } from '@/shared/query/client'
@@ -85,15 +86,19 @@ describe('个人中心改密会话范围', () => {
       callbackStarted.resolve()
       await releaseCallback.promise
     })
-    const composable = runComposable(() =>
-      useProfilePasswordMutation((key) => key, onPasswordChanged),
-    )
+    const composable = runComposable(() => useProfilePasswordMutation())
     scopes.push(composable.scope)
+    const expectedScope = getServerStateScope()
+    if (!expectedScope) throw new Error('测试缺少会话范围')
 
-    const pending = composable.result.savePassword({
-      new_password: 'NewSecret1!',
-      old_password: 'OldSecret1!',
-    })
+    const pending = composable.result.savePassword(
+      {
+        new_password: 'NewSecret1!',
+        old_password: 'OldSecret1!',
+      },
+      expectedScope,
+      onPasswordChanged,
+    )
     await callbackStarted.promise
     releaseCallback.resolve()
     await waitForSignOutTimer()
@@ -105,23 +110,24 @@ describe('个人中心改密会话范围', () => {
 
     expect(requestSignal.aborted).toBe(true)
     expect(session.terminateSession).not.toHaveBeenCalled()
-    expect(message.success).toHaveBeenCalledOnce()
+    expect(onPasswordChanged).toHaveBeenCalledOnce()
   })
 
   it('会话未变时在固定延时后终止当前会话', async () => {
     activate('user-a', 'authorization-a')
-    const composable = runComposable(() =>
-      useProfilePasswordMutation(
-        (key) => key,
-        () => undefined,
-      ),
-    )
+    const composable = runComposable(() => useProfilePasswordMutation())
     scopes.push(composable.scope)
+    const expectedScope = getServerStateScope()
+    if (!expectedScope) throw new Error('测试缺少会话范围')
 
-    const pending = composable.result.savePassword({
-      new_password: 'NewSecret1!',
-      old_password: 'OldSecret1!',
-    })
+    const pending = composable.result.savePassword(
+      {
+        new_password: 'NewSecret1!',
+        old_password: 'OldSecret1!',
+      },
+      expectedScope,
+      () => undefined,
+    )
     await waitForSignOutTimer()
     await vi.advanceTimersByTimeAsync(PASSWORD_SIGN_OUT_DELAY_MS)
     await pending

@@ -34,6 +34,9 @@ import { Camera, UserFilled } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
+import { HttpError } from '@/shared/http/client'
+import { useServerStateScope } from '@/shared/query/client'
+import { createProfileAvatarCommandScope } from '../profileAvatarCommand'
 import { useProfileAvatarMutation } from '../useProfileMutations'
 
 const props = defineProps<{
@@ -46,9 +49,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { imageSrc } = useAuthenticatedImage(() => props.src)
-const { uploadAvatar, uploading } = useProfileAvatarMutation(t, (avatarUrl) => {
-  emit('updated', avatarUrl)
-})
+const { uploadAvatar, uploading } = useProfileAvatarMutation(t)
+const serverStateScope = useServerStateScope()
+const avatarCommand = createProfileAvatarCommandScope()
 const acceptedTypes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 const maxAvatarBytes = 5 * 1024 * 1024
 
@@ -61,15 +64,34 @@ function beforeUpload(file: File): boolean {
     ElMessage.error(t('account.avatarTooLarge'))
     return false
   }
+  try {
+    avatarCommand.capture(file)
+  } catch (error) {
+    if (error instanceof HttpError && error.kind === 'cancelled') return false
+    throw error
+  }
   return true
 }
 
 async function upload(options: UploadRequestOptions): Promise<void> {
   if (uploading.value) return
-  const formData = new FormData()
-  formData.append('file', options.file)
-  await uploadAvatar(formData)
+  await avatarCommand.run(
+    options.file,
+    (scope) => {
+      const formData = new FormData()
+      formData.append('file', options.file)
+      return uploadAvatar(formData, scope)
+    },
+    (avatarUrl) => {
+      emit('updated', avatarUrl)
+      ElMessage.success(t('account.avatarUpdated'))
+    },
+  )
 }
+
+watch(serverStateScope, avatarCommand.invalidate, { flush: 'sync' })
+onDeactivated(avatarCommand.invalidate)
+onBeforeUnmount(avatarCommand.invalidate)
 </script>
 
 <style scoped>

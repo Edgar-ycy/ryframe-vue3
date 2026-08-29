@@ -41,7 +41,6 @@ import {
 } from '@/shared/query/client'
 import type { ServerStateScope } from '@/shared/query/scope'
 import { useUserStore } from '@/stores/user'
-
 const identity = { tenantId: 'tenant-a', userId: 'user-a' }
 
 function response<T>(data: T): ApiResponse<T> {

@@ -396,5 +396,4 @@ function invalidatePageOperations(): void {
   errorDialogVisible.value = false
 }
 </script>
-
 <style scoped lang="scss" src="./exportsPage.scss"></style>

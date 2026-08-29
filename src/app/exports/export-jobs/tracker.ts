@@ -281,7 +281,6 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
       stopScopeWatch()
     })
   }
-
   return {
     listQuery: list.listQuery,
     jobs: list.jobs,

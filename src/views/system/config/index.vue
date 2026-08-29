@@ -143,7 +143,7 @@ import {
   type ConfigQuery,
   type ConfigRecord,
 } from '@/api/modules/config'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { formatLocalizedDate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
@@ -203,10 +203,10 @@ async function handleExport(): Promise<void> {
     return
   }
   const intent = normalizeExportIntent('configs', successfulQuery)
-  if (!(await confirmExportIntent(intent))) return
-
-  await submitExport(intent.signature, (idempotencyKey, signal) =>
-    exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
+  await confirmAndSubmitExportIntent(intent, (scope) =>
+    submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+      exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
+    ),
   )
 }
 

@@ -10,7 +10,7 @@ import {
   type UserStatus,
 } from '@/api/modules/user'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
@@ -160,10 +160,10 @@ export function useUserManagement() {
       return
     }
     const intent = normalizeExportIntent('users', successfulQuery)
-    if (!(await confirmExportIntent(intent))) return
-
-    await submitExport(intent.signature, (idempotencyKey, signal) =>
-      exportUser(intent.filter, idempotencyKey, signal, intent.isEmpty),
+    await confirmAndSubmitExportIntent(intent, (scope) =>
+      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+        exportUser(intent.filter, idempotencyKey, signal, intent.isEmpty),
+      ),
     )
   }
 

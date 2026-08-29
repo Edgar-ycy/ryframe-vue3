@@ -13,6 +13,7 @@ import { HttpError, requireOperationData } from '@/shared/http/client'
 import type { ApiResponse } from '@/shared/http/types'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import {
+  assertServerStateScopeCurrent,
   getServerStateScope,
   isServerStateScopeCurrent,
   queryClient,
@@ -91,8 +92,16 @@ export function useExportJobRequest() {
     },
   })
 
-  function submitExport(intentSignature: string, create: CreateExportJob): Promise<ExportJob> {
+  function submitExport(
+    expectedScope: ServerStateScope,
+    intentSignature: string,
+    create: CreateExportJob,
+  ): Promise<ExportJob> {
+    assertServerStateScopeCurrent(expectedScope)
     const scope = currentScope(user)
+    if (!sameServerStateScope(expectedScope, scope)) {
+      throw new HttpError('会话已切换，导出已取消', { status: 401, kind: 'cancelled' })
+    }
     if (activePromise && sameServerStateScope(activeScope, scope)) return activePromise
     if (activePromise) activeController?.abort()
     const scopedIntent = `${scope.tenantId}\u0000${scope.subjectId}\u0000${scope.sessionEpoch}\u0000${intentSignature}`

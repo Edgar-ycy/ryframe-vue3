@@ -8,7 +8,7 @@ import {
 } from '@/api/modules/role'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permission'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
@@ -137,10 +137,10 @@ export function useRoleManagement() {
       return
     }
     const intent = normalizeExportIntent('roles', successfulQuery)
-    if (!(await confirmExportIntent(intent))) return
-
-    await submitExport(intent.signature, (idempotencyKey, signal) =>
-      exportRole(intent.filter, idempotencyKey, signal, intent.isEmpty),
+    await confirmAndSubmitExportIntent(intent, (scope) =>
+      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+        exportRole(intent.filter, idempotencyKey, signal, intent.isEmpty),
+      ),
     )
   }
 

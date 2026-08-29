@@ -210,7 +210,7 @@ import {
   type OperLogQuery,
   type OperLogRecord,
 } from '@/api/modules/monitor'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
@@ -270,10 +270,10 @@ async function handleExport(): Promise<void> {
     return
   }
   const intent = normalizeExportIntent('operlogs', successfulQuery)
-  if (!(await confirmExportIntent(intent))) return
-
-  await submitExport(intent.signature, (idempotencyKey, signal) =>
-    exportOperLog(intent.filter, idempotencyKey, signal, intent.isEmpty),
+  await confirmAndSubmitExportIntent(intent, (scope) =>
+    submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+      exportOperLog(intent.filter, idempotencyKey, signal, intent.isEmpty),
+    ),
   )
 }
 

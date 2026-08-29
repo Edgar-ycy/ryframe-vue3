@@ -106,7 +106,7 @@ describe('导出创建请求会话范围', () => {
     const composable = runComposable(() => useExportJobRequest())
     scopes.push(composable.scope)
 
-    const oldPromise = composable.result.submitExport('same-intent', createOld)
+    const oldPromise = composable.result.submitExport(oldScope, 'same-intent', createOld)
     const oldOutcome = oldPromise.then(
       (value) => value,
       (error: unknown) => error,
@@ -114,7 +114,7 @@ describe('导出创建请求会话范围', () => {
     await vi.waitFor(() => expect(createOld).toHaveBeenCalledOnce())
     const newScope = activate('authorization-b')
     await nextTick()
-    const newPromise = composable.result.submitExport('same-intent', createNew)
+    const newPromise = composable.result.submitExport(newScope, 'same-intent', createNew)
 
     expect(newPromise).not.toBe(oldPromise)
     await vi.waitFor(() => expect(createNew).toHaveBeenCalledOnce())
@@ -138,5 +138,22 @@ describe('导出创建请求会话范围', () => {
     expect(queryClient.getQueryData(exportJobListQueryKey(newScope))).toEqual([freshJob])
     expect(channel.publishExportJobEvent).toHaveBeenCalledOnce()
     expect(message).toHaveBeenCalledOnce()
+  })
+
+  it('拒绝以旧 scope 启动新请求且不产生缓存、事件或提示', async () => {
+    const oldScope = activate('authorization-a')
+    const create = vi.fn(async () => response(exportJob('job-old')))
+    const composable = runComposable(() => useExportJobRequest())
+    scopes.push(composable.scope)
+
+    activate('authorization-b')
+
+    expect(() => composable.result.submitExport(oldScope, 'old-intent', create)).toThrowError(
+      expect.objectContaining({ kind: 'cancelled' }),
+    )
+    expect(create).not.toHaveBeenCalled()
+    expect(queryClient.getQueryData(exportJobListQueryKey(oldScope))).toBeUndefined()
+    expect(channel.publishExportJobEvent).not.toHaveBeenCalled()
+    expect(message).not.toHaveBeenCalled()
   })
 })

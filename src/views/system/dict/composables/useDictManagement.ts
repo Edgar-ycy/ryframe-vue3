@@ -9,7 +9,7 @@ import {
   type DictTypeQuery,
   type DictTypeRecord,
 } from '@/api/modules/dict'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
@@ -144,10 +144,10 @@ export function useDictManagement() {
       return
     }
     const intent = normalizeExportIntent('dict-types', successfulQuery)
-    if (!(await confirmExportIntent(intent))) return
-
-    await submitExport(intent.signature, (idempotencyKey, signal) =>
-      exportDictType(intent.filter, idempotencyKey, signal, intent.isEmpty),
+    await confirmAndSubmitExportIntent(intent, (scope) =>
+      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+        exportDictType(intent.filter, idempotencyKey, signal, intent.isEmpty),
+      ),
     )
   }
 

@@ -1,4 +1,6 @@
 import { translate } from '@/i18n'
+import type { ServerStateScope } from '@/shared/query/scope'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
 import { confirmAction } from '@/utils/confirmAction'
 
 const PAGINATION_KEYS = new Set(['page', 'page_size'])
@@ -16,6 +18,7 @@ interface ExportIntentState {
 }
 
 type ExportAllConfirmation = () => Promise<boolean>
+type SubmitScopedExport = (scope: ServerStateScope) => Promise<unknown>
 
 /** 将最后一次成功查询整理为稳定、无分页字段的导出意图。 */
 export function normalizeExportIntent<TQuery extends object>(
@@ -68,4 +71,16 @@ export async function confirmExportIntent(
   requestConfirmation: ExportAllConfirmation = requestExportAllConfirmation,
 ): Promise<boolean> {
   return !intent.isEmpty || requestConfirmation()
+}
+
+/** 在显示确认框前固定完整会话范围，过期确认不得触发导出请求。 */
+export async function confirmAndSubmitExportIntent(
+  intent: ExportIntentState,
+  submit: SubmitScopedExport,
+  requestConfirmation: ExportAllConfirmation = requestExportAllConfirmation,
+): Promise<void> {
+  const operation = beginServerStatePageOperation()
+  if (!(await confirmExportIntent(intent, requestConfirmation))) return
+  if (!operation.isCurrent()) return
+  await submit(operation.scope)
 }

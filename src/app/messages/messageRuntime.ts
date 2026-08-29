@@ -1,20 +1,17 @@
 import type { MessageSocket } from '@/app/messages/socket/lifecycle'
-import { getServerStateScope } from '@/shared/query/client'
+import type { MessageIdentity } from '@/app/messages/messageCache/queryKeys'
+import { getServerStateScope, isServerStateScopeCurrent } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
 
 export const POLL_INTERVAL_MS = 60_000
 
-export interface MessageIdentity {
-  tenantId: string
-  userId: string
-  sessionEpoch: number
+export interface MessageSessionIdentity extends MessageIdentity {
   sessionKey: string
 }
 
 export interface MessageRuntime {
   sessionKey?: string
-  tenantId?: string
-  userId?: string
+  scope?: MessageIdentity
   generation: number
   socket?: MessageSocket
   pollTimer?: ReturnType<typeof setInterval>
@@ -44,19 +41,27 @@ export function getRuntime(): MessageRuntime {
   return messageRuntime
 }
 
-export function currentIdentity(): MessageIdentity | undefined {
+export function currentIdentity(): MessageSessionIdentity | undefined {
   const user = useUserStore()
   const scope = getServerStateScope()
   if (user.sessionStatus !== 'authenticated' || !user.token || !user.tenantId || !user.userId) {
     return undefined
   }
-  const userId = String(user.userId)
-  if (!scope || scope.tenantId !== user.tenantId || scope.subjectId !== userId) return undefined
+  const subjectId = String(user.userId)
+  if (!scope || scope.tenantId !== user.tenantId || scope.subjectId !== subjectId) return undefined
   return {
-    tenantId: user.tenantId,
-    userId,
+    tenantId: scope.tenantId,
+    subjectId: scope.subjectId,
     sessionEpoch: scope.sessionEpoch,
-    sessionKey: [user.tenantId, userId, scope.sessionEpoch].join('\u0000'),
+    sessionKey: [scope.tenantId, scope.subjectId, scope.sessionEpoch].join('\u0000'),
+  }
+}
+
+export function messageServerStateScope(identity: MessageSessionIdentity): MessageIdentity {
+  return {
+    tenantId: identity.tenantId,
+    subjectId: identity.subjectId,
+    sessionEpoch: identity.sessionEpoch,
   }
 }
 
@@ -65,5 +70,10 @@ export function isCurrentSession(
   sessionKey: string,
   generation: number,
 ): boolean {
-  return runtime.sessionKey === sessionKey && runtime.generation === generation
+  return (
+    runtime.sessionKey === sessionKey &&
+    runtime.generation === generation &&
+    runtime.scope !== undefined &&
+    isServerStateScopeCurrent(runtime.scope)
+  )
 }

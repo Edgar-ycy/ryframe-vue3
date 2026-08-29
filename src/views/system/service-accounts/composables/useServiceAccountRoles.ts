@@ -13,12 +13,19 @@ export function useServiceAccountRoles(context: ReturnType<typeof useServiceAcco
     detailQuery,
     ensureOperationContext,
     finishController,
+    onIdentityChanged,
     requireIdentity,
     requireOperationContext,
     roleIds,
     selectedAccount,
   } = context
   const rolesPending = ref(false)
+  let rolesController: AbortController | undefined
+
+  onIdentityChanged(() => {
+    rolesController = undefined
+    rolesPending.value = false
+  })
 
   async function saveRoles(
     accountId: string,
@@ -28,6 +35,7 @@ export function useServiceAccountRoles(context: ReturnType<typeof useServiceAcco
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
     const controller = beginController()
+    rolesController = controller
     rolesPending.value = true
     try {
       await replaceServiceAccountRoles(accountId, nextRoleIds, controller.signal)
@@ -42,7 +50,10 @@ export function useServiceAccountRoles(context: ReturnType<typeof useServiceAcco
       void accountsQuery.refetch({ throwOnError: false })
     } finally {
       finishController(controller)
-      rolesPending.value = false
+      if (rolesController === controller) {
+        rolesController = undefined
+        rolesPending.value = false
+      }
     }
   }
 

@@ -1,4 +1,5 @@
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, type Ref } from 'vue'
+import type { QueryKey } from '@tanstack/vue-query'
 import {
   createServiceAccount,
   deleteServiceAccount,
@@ -10,18 +11,54 @@ import {
   type ServiceAccountStatus,
   type UpdateServiceAccountInput,
 } from '@/api/modules/serviceAccount'
-import { requireOperationData } from '@/shared/http/client'
+import { HttpError, requireOperationData } from '@/shared/http/client'
 import { queryClient } from '@/shared/query/client'
 import {
   copyServiceAccountQuery,
   sameServiceAccountPageQuery,
-  useServiceAccountContext,
+  type ServiceAccountIdentityGuard,
+  type ServiceAccountScope,
+  type ServiceResourcePageState,
 } from './useServiceAccountContext'
 
 type SaveServiceAccountInput = CreateServiceAccountInput | UpdateServiceAccountInput
 
+interface DirectoryQuery {
+  refetch: (options: { throwOnError: boolean }) => Promise<unknown>
+}
+
+interface ServiceAccountDirectoryContext {
+  accountsQuery: DirectoryQuery
+  activeQueryParams: ServiceResourcePageState
+  beginController: () => AbortController
+  canListAccounts: Readonly<Ref<boolean>>
+  captureIdentity: () => ServiceAccountIdentityGuard | undefined
+  credentialsKey: (scope: ServiceAccountScope, accountId: string | null) => QueryKey
+  currentIdentity: () => ServiceAccountScope | undefined
+  detailKey: (scope: ServiceAccountScope, accountId: string | null) => QueryKey
+  detailQuery: DirectoryQuery
+  ensureOperationContext: (scope: ServiceAccountScope, guard: ServiceAccountIdentityGuard) => void
+  featureAvailable: Readonly<Ref<boolean>>
+  finishController: (controller: AbortController) => void
+  onIdentityChanged: (callback: () => void) => () => void
+  pageActive: Ref<boolean>
+  queryParams: ServiceResourcePageState
+  removeAccountFromPage: (scope: ServiceAccountScope, accountId: string) => void
+  requireIdentity: () => ServiceAccountScope
+  requireOperationContext: (
+    guard: ServiceAccountIdentityGuard | undefined,
+  ) => ServiceAccountIdentityGuard
+  roleIds: Ref<readonly string[]>
+  selectedAccount: Ref<ServiceAccount | null>
+  updateAccountPage: (
+    scope: ServiceAccountScope,
+    account: ServiceAccount,
+    mode: 'create' | 'update',
+  ) => void
+}
+
 /** 服务账号目录查询与账号生命周期命令。 */
-export function useServiceAccountDirectory(context: ReturnType<typeof useServiceAccountContext>) {
+export function useServiceAccountDirectory(context: ServiceAccountDirectoryContext) {
   const {
     accountsQuery,
     activeQueryParams,
@@ -34,6 +71,7 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     detailQuery,
     ensureOperationContext,
     finishController,
+    onIdentityChanged,
     pageActive,
     queryParams,
     removeAccountFromPage,
@@ -47,6 +85,22 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
   const savePending = ref(false)
   const statusPending = ref(false)
   const removePending = ref(false)
+  let saveController: AbortController | undefined
+  let statusController: AbortController | undefined
+  let removeController: AbortController | undefined
+  let selectionController: AbortController | undefined
+  let selectionGeneration = 0
+
+  onIdentityChanged(() => {
+    saveController = undefined
+    statusController = undefined
+    removeController = undefined
+    selectionController = undefined
+    selectionGeneration += 1
+    savePending.value = false
+    statusPending.value = false
+    removePending.value = false
+  })
 
   async function fetchAccounts(): Promise<void> {
     if (
@@ -70,27 +124,54 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     await fetchAccounts()
   }
 
-  async function selectAccount(account: ServiceAccount | null): Promise<void> {
-    const identity = currentIdentity()
+  async function selectAccount(
+    account: ServiceAccount | null,
+    expectedIdentity = captureIdentity(),
+  ): Promise<void> {
+    const operationContext = requireOperationContext(expectedIdentity)
+    const identity = requireIdentity()
+    selectionController?.abort()
+    const controller = beginController()
+    selectionController = controller
+    selectionGeneration += 1
+    const generation = selectionGeneration
+    const ensureSelectionCurrent = (): void => {
+      ensureOperationContext(identity, operationContext)
+      if (
+        controller.signal.aborted ||
+        selectionController !== controller ||
+        selectionGeneration !== generation
+      ) {
+        throw new HttpError('账号选择已被更新操作取代', { kind: 'cancelled' })
+      }
+    }
     const previousId = selectedAccount.value?.id ?? null
     const nextId = account?.id ?? null
-    if (identity && previousId && previousId !== nextId) {
-      await Promise.all([
-        queryClient.cancelQueries({ queryKey: detailKey(identity, previousId), exact: true }),
-        queryClient.cancelQueries({
-          queryKey: credentialsKey(identity, previousId),
-          exact: true,
-        }),
-      ])
-    }
-    const sameAccount = previousId !== null && previousId === nextId
-    selectedAccount.value = account
-    roleIds.value = account
-      ? (queryClient.getQueryData<ServiceAccountDetail>(detailKey(identity, account.id))
-          ?.role_ids ?? [])
-      : []
-    if (sameAccount && pageActive.value) {
-      await detailQuery.refetch({ throwOnError: true })
+    try {
+      if (previousId && previousId !== nextId) {
+        await Promise.all([
+          queryClient.cancelQueries({ queryKey: detailKey(identity, previousId), exact: true }),
+          queryClient.cancelQueries({
+            queryKey: credentialsKey(identity, previousId),
+            exact: true,
+          }),
+        ])
+        ensureSelectionCurrent()
+      }
+      ensureSelectionCurrent()
+      const sameAccount = previousId !== null && previousId === nextId
+      selectedAccount.value = account
+      roleIds.value = account
+        ? (queryClient.getQueryData<ServiceAccountDetail>(detailKey(identity, account.id))
+            ?.role_ids ?? [])
+        : []
+      if (sameAccount && pageActive.value) {
+        await detailQuery.refetch({ throwOnError: true })
+        ensureSelectionCurrent()
+      }
+    } finally {
+      finishController(controller)
+      if (selectionController === controller) selectionController = undefined
     }
   }
 
@@ -112,6 +193,7 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
     const controller = beginController()
+    saveController = controller
     savePending.value = true
     try {
       const response = id
@@ -126,7 +208,10 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
       return account
     } finally {
       finishController(controller)
-      savePending.value = false
+      if (saveController === controller) {
+        saveController = undefined
+        savePending.value = false
+      }
     }
   }
 
@@ -138,6 +223,7 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
     const controller = beginController()
+    statusController = controller
     statusPending.value = true
     try {
       await updateServiceAccountStatus(account.id, status, controller.signal)
@@ -156,7 +242,10 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
       }
     } finally {
       finishController(controller)
-      statusPending.value = false
+      if (statusController === controller) {
+        statusController = undefined
+        statusPending.value = false
+      }
     }
   }
 
@@ -167,6 +256,7 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
     const controller = beginController()
+    removeController = controller
     removePending.value = true
     try {
       await deleteServiceAccount(account.id, controller.signal)
@@ -176,7 +266,10 @@ export function useServiceAccountDirectory(context: ReturnType<typeof useService
       void accountsQuery.refetch({ throwOnError: false })
     } finally {
       finishController(controller)
-      removePending.value = false
+      if (removeController === controller) {
+        removeController = undefined
+        removePending.value = false
+      }
     }
   }
 

@@ -5,6 +5,8 @@ export interface ServerStateScope {
   sessionEpoch: number
 }
 
+export type ServerStateQueryKey = readonly ['server-state', string, string, number, string, unknown]
+
 /** 活跃范围额外携带统一取消信号，但信号不参与缓存键。 */
 export interface ActiveServerStateScope extends ServerStateScope {
   signal: AbortSignal

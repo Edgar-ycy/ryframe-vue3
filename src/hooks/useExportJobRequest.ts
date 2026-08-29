@@ -1,19 +1,24 @@
 import { Clock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { getCurrentScope, onScopeDispose } from 'vue'
+import { getCurrentScope, onScopeDispose, watch } from 'vue'
 import type { ExportJob } from '@/api/modules/exportJob'
 import { publishExportJobEvent } from '@/app/exports/exportJobChannel'
 import {
   exportJobListQueryKey,
   EXPORT_JOBS_RESOURCE,
   prependExportJob,
-  type ExportJobIdentity,
 } from '@/app/exports/exportJobCache'
 import { translate } from '@/i18n'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import type { ApiResponse } from '@/shared/http/types'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { queryClient } from '@/shared/query/client'
+import {
+  getServerStateScope,
+  isServerStateScopeCurrent,
+  queryClient,
+  useServerStateScope,
+} from '@/shared/query/client'
+import { sameServerStateScope, type ServerStateScope } from '@/shared/query/scope'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useUserStore } from '@/stores/user'
 
@@ -25,27 +30,22 @@ export type CreateExportJob = (
 interface SubmitExportVariables {
   create: CreateExportJob
   idempotencyKey: string
-  identity: ExportJobIdentity
+  scope: ServerStateScope
   intentSignature: string
   signal: AbortSignal
 }
 
-function currentIdentity(user = useUserStore()): ExportJobIdentity {
+function currentScope(user = useUserStore()): ServerStateScope {
   if (user.sessionStatus !== 'authenticated' || !user.tenantId || !user.userId) {
     throw new HttpError(translate('shell.session.expired'), { status: 401, kind: 'http' })
   }
-  return { tenantId: user.tenantId, userId: String(user.userId) }
-}
-
-function identityMatchesCurrent(
-  user: ReturnType<typeof useUserStore>,
-  identity: ExportJobIdentity,
-): boolean {
-  try {
-    const current = currentIdentity(user)
-    return current.tenantId === identity.tenantId && current.userId === identity.userId
-  } catch {
-    return false
+  const scope = getServerStateScope()
+  if (!scope || scope.tenantId !== user.tenantId || scope.subjectId !== String(user.userId))
+    throw new HttpError(translate('shell.session.expired'), { status: 401, kind: 'http' })
+  return {
+    tenantId: scope.tenantId,
+    subjectId: scope.subjectId,
+    sessionEpoch: scope.sessionEpoch,
   }
 }
 
@@ -58,9 +58,9 @@ export function useExportJobRequest() {
   const intentKeys = new Map<string, string>()
   let activePromise: Promise<ExportJob> | undefined
   let activeController: AbortController | undefined
-  let activeIdentity: ExportJobIdentity | undefined
+  let activeScope: ServerStateScope | undefined
   let scopeDisposed = false
-  let unsubscribeUser = () => {}
+  let stopScopeWatch = () => {}
 
   const mutation = useServerStateMutation<ExportJob, SubmitExportVariables>(EXPORT_JOBS_RESOURCE, {
     meta: { errorMode: 'global' },
@@ -69,14 +69,14 @@ export function useExportJobRequest() {
       requireOperationData(await variables.create(variables.idempotencyKey, context.signal)),
     onSuccess: async (job, variables) => {
       intentKeys.delete(variables.intentSignature)
-      if (!identityMatchesCurrent(user, variables.identity)) return
+      if (!isServerStateScopeCurrent(variables.scope)) return
       await queryClient.cancelQueries({
-        queryKey: exportJobListQueryKey(variables.identity.tenantId, variables.identity.userId),
+        queryKey: exportJobListQueryKey(variables.scope),
         exact: true,
       })
-      if (!identityMatchesCurrent(user, variables.identity)) return
-      prependExportJob(queryClient, variables.identity, job)
-      publishExportJobEvent({ type: 'created', ...variables.identity, jobId: job.id })
+      if (!isServerStateScopeCurrent(variables.scope)) return
+      prependExportJob(queryClient, variables.scope, job)
+      publishExportJobEvent({ type: 'created', ...variables.scope, jobId: job.id })
       ElMessage({
         message: translate('exportCenter.submitted'),
         type: 'info',
@@ -92,45 +92,44 @@ export function useExportJobRequest() {
   })
 
   function submitExport(intentSignature: string, create: CreateExportJob): Promise<ExportJob> {
-    if (activePromise) return activePromise
-
-    const identity = currentIdentity(user)
-    const scopedIntent = `${identity.tenantId}\u0000${identity.userId}\u0000${intentSignature}`
+    const scope = currentScope(user)
+    if (activePromise && sameServerStateScope(activeScope, scope)) return activePromise
+    if (activePromise) activeController?.abort()
+    const scopedIntent = `${scope.tenantId}\u0000${scope.subjectId}\u0000${scope.sessionEpoch}\u0000${intentSignature}`
     const idempotencyKey = intentKeys.get(scopedIntent) ?? createIdempotencyKey('export')
     intentKeys.set(scopedIntent, idempotencyKey)
     const controller = new AbortController()
     activeController = controller
-    activeIdentity = identity
+    activeScope = scope
     const promise = mutation
       .mutateAsync({
         create,
         idempotencyKey,
-        identity,
+        scope,
         intentSignature: scopedIntent,
         signal: controller.signal,
       })
       .finally(() => {
+        if (!isServerStateScopeCurrent(scope)) intentKeys.delete(scopedIntent)
         if (activePromise === promise) {
           activePromise = undefined
           activeController = undefined
-          activeIdentity = undefined
-          if (scopeDisposed) unsubscribeUser()
+          activeScope = undefined
+          if (scopeDisposed) stopScopeWatch()
         }
       })
     activePromise = promise
     return promise
   }
 
-  unsubscribeUser = user.$subscribe(
-    (_mutation, state) => {
-      if (!activeController || !activeIdentity) return
-      const nextUserId = String(state.userId || '')
-      if (
-        state.sessionStatus !== 'authenticated' ||
-        state.tenantId !== activeIdentity.tenantId ||
-        nextUserId !== activeIdentity.userId
-      )
+  stopScopeWatch = watch(
+    useServerStateScope(),
+    () => {
+      // 网络结果未知的幂等键只能由原 scope 复用，切换后无条件丢弃旧意图。
+      intentKeys.clear()
+      if (activeController && activeScope && !isServerStateScopeCurrent(activeScope)) {
         activeController.abort()
+      }
     },
     { flush: 'sync' },
   )
@@ -138,7 +137,8 @@ export function useExportJobRequest() {
   if (getCurrentScope()) {
     onScopeDispose(() => {
       scopeDisposed = true
-      if (!activePromise) unsubscribeUser()
+      intentKeys.clear()
+      if (!activePromise) stopScopeWatch()
     })
   }
 

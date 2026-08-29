@@ -1,5 +1,5 @@
 import { ElMessage } from 'element-plus'
-import { getCurrentScope, onScopeDispose } from 'vue'
+import { getCurrentScope, onScopeDispose, watch } from 'vue'
 import {
   getAuthSessions,
   revokeAuthSession,
@@ -10,17 +10,17 @@ import { ensureCsrfToken, terminateSession } from '@/app/session/sessionCoordina
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { translate } from '@/i18n'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { queryClient } from '@/shared/query/client'
+import { isServerStateScopeCurrent, queryClient, useServerStateScope } from '@/shared/query/client'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import {
   authSessionQueryKey,
   authSessionView,
-  currentAuthSessionIdentity,
-  sameAuthSessionIdentity,
+  currentAuthSessionScope,
+  sameAuthSessionScope,
   type AuthSessionView,
-  type SessionIdentity,
 } from './authSessionSupport'
 
 export type { AuthSessionView } from './authSessionSupport'
@@ -33,12 +33,13 @@ export function useAuthSessionManagement() {
   const pendingDeviceKey = ref<string>()
   const revokeOthersPending = ref(false)
   let activeController: AbortController | undefined
-  let activeIdentity: SessionIdentity | undefined
-  let trackedIdentity = currentAuthSessionIdentity()
+  let activeScope: ServerStateScope | undefined
+  let trackedScope = currentAuthSessionScope()
+  let refreshGeneration = 0
   let disposed = false
 
   const sessionsQuery = useServerStateQuery<AuthSession[], AuthSessionView[]>(
-    () => pageActive.value && currentAuthSessionIdentity() !== undefined,
+    () => pageActive.value && currentAuthSessionScope() !== undefined,
     'profile-auth-sessions',
     () => ({ scope: 'self', userId: String(userStore.userId || 'anonymous') }),
     async (signal) => requireOperationData(await getAuthSessions(signal)),
@@ -63,53 +64,52 @@ export function useAuthSessionManagement() {
   }
 
   async function refresh(): Promise<void> {
-    if (!pageActive.value || currentAuthSessionIdentity() === undefined || refreshing.value) return
+    if (!pageActive.value || currentAuthSessionScope() === undefined || refreshing.value) return
+    const generation = ++refreshGeneration
     refreshing.value = true
     try {
       await sessionsQuery.refetch()
     } finally {
-      refreshing.value = false
+      if (refreshGeneration === generation) refreshing.value = false
     }
   }
 
-  function identityStillCurrent(identity: SessionIdentity): boolean {
-    return sameAuthSessionIdentity(identity, currentAuthSessionIdentity())
-  }
-
-  function requireCurrentIdentity(): SessionIdentity {
-    const identity = currentAuthSessionIdentity()
-    if (!identity) {
+  function requireCurrentScope(): ServerStateScope {
+    const scope = currentAuthSessionScope()
+    if (!scope) {
       throw new HttpError(translate('shell.session.expired'), { status: 401, kind: 'http' })
     }
-    return identity
+    return scope
   }
 
-  function ensureIdentityUnchanged(identity: SessionIdentity): void {
-    if (!identityStillCurrent(identity)) {
+  function ensureScopeCurrent(scope: ServerStateScope): void {
+    if (!isServerStateScopeCurrent(scope)) {
       throw new HttpError(translate('shell.http.requestFailed'), { kind: 'cancelled' })
     }
   }
 
   async function withCsrfRetry<T>(
-    identity: SessionIdentity,
+    scope: ServerStateScope,
     execute: (csrfToken: string) => Promise<T>,
   ): Promise<T> {
     const csrfToken = await ensureCsrfToken()
-    ensureIdentityUnchanged(identity)
+    ensureScopeCurrent(scope)
     try {
       return await execute(csrfToken)
     } catch (error) {
       if (!(error instanceof HttpError) || error.status !== 403) throw error
-      ensureIdentityUnchanged(identity)
+      ensureScopeCurrent(scope)
       const renewedCsrfToken = await ensureCsrfToken(true)
-      ensureIdentityUnchanged(identity)
+      ensureScopeCurrent(scope)
       return execute(renewedCsrfToken)
     }
   }
 
-  async function removeCachedSession(identity: SessionIdentity, sid: string): Promise<void> {
-    const key = authSessionQueryKey(identity)
+  async function removeCachedSession(scope: ServerStateScope, sid: string): Promise<void> {
+    if (!isServerStateScopeCurrent(scope)) return
+    const key = authSessionQueryKey(scope)
     await queryClient.cancelQueries({ queryKey: key, exact: true })
+    if (!isServerStateScopeCurrent(scope)) return
     queryClient.setQueryData<AuthSession[]>(
       key,
       (current) => current?.filter((session) => session.sid !== sid) ?? [],
@@ -131,7 +131,7 @@ export function useAuthSessionManagement() {
 
   async function revokeSession(device: AuthSessionView): Promise<void> {
     if (activeController || revokeOthersPending.value || pendingDeviceKey.value) return
-    const identity = requireCurrentIdentity()
+    const scope = requireCurrentScope()
     const confirmed = await confirmAction(
       translate(
         device.current
@@ -145,7 +145,7 @@ export function useAuthSessionManagement() {
     if (
       !confirmed ||
       disposed ||
-      !identityStillCurrent(identity) ||
+      !isServerStateScopeCurrent(scope) ||
       activeController ||
       revokeOthersPending.value ||
       pendingDeviceKey.value
@@ -154,23 +154,26 @@ export function useAuthSessionManagement() {
 
     const controller = new AbortController()
     activeController = controller
-    activeIdentity = identity
+    activeScope = scope
     pendingDeviceKey.value = device.key
     try {
-      await withCsrfRetry(identity, (csrfToken) =>
+      await withCsrfRetry(scope, (csrfToken) =>
         revokeAuthSession(device.key, csrfToken, controller.signal),
       )
-      ensureIdentityUnchanged(identity)
+      ensureScopeCurrent(scope)
       if (device.current) {
         ElMessage.success(translate('profile.sessions.revokeCurrentSuccess'))
         await terminateSession()
         return
       }
-      await removeCachedSession(identity, device.key)
+      await removeCachedSession(scope, device.key)
+      ensureScopeCurrent(scope)
       ElMessage.success(translate('profile.sessions.revokeSuccess'))
     } catch (error) {
-      if (error instanceof HttpError && error.status === 404 && identityStillCurrent(identity)) {
-        await removeCachedSession(identity, device.key)
+      if (!isServerStateScopeCurrent(scope)) return
+      if (error instanceof HttpError && error.status === 404 && isServerStateScopeCurrent(scope)) {
+        await removeCachedSession(scope, device.key)
+        ensureScopeCurrent(scope)
         ElMessage.info(translate('profile.sessions.alreadyGone'))
       } else {
         reportWriteError(error)
@@ -178,7 +181,7 @@ export function useAuthSessionManagement() {
     } finally {
       if (activeController === controller) {
         activeController = undefined
-        activeIdentity = undefined
+        activeScope = undefined
         pendingDeviceKey.value = undefined
       }
     }
@@ -186,7 +189,7 @@ export function useAuthSessionManagement() {
 
   async function revokeOtherSessions(): Promise<void> {
     if (activeController || revokeOthersPending.value || pendingDeviceKey.value) return
-    const identity = requireCurrentIdentity()
+    const scope = requireCurrentScope()
     const confirmed = await confirmAction(
       translate('profile.sessions.revokeOthersConfirm'),
       translate('profile.sessions.confirmTitle'),
@@ -195,7 +198,7 @@ export function useAuthSessionManagement() {
     if (
       !confirmed ||
       disposed ||
-      !identityStillCurrent(identity) ||
+      !isServerStateScopeCurrent(scope) ||
       activeController ||
       revokeOthersPending.value ||
       pendingDeviceKey.value
@@ -204,21 +207,22 @@ export function useAuthSessionManagement() {
 
     const controller = new AbortController()
     activeController = controller
-    activeIdentity = identity
+    activeScope = scope
     revokeOthersPending.value = true
     try {
       const result = requireOperationData(
-        await withCsrfRetry(identity, (csrfToken) =>
+        await withCsrfRetry(scope, (csrfToken) =>
           revokeOtherAuthSessions(csrfToken, controller.signal),
         ),
       )
-      ensureIdentityUnchanged(identity)
+      ensureScopeCurrent(scope)
       await queryClient.cancelQueries({
-        queryKey: authSessionQueryKey(identity),
+        queryKey: authSessionQueryKey(scope),
         exact: true,
       })
+      ensureScopeCurrent(scope)
       queryClient.setQueryData<AuthSession[]>(
-        authSessionQueryKey(identity),
+        authSessionQueryKey(scope),
         (current) => current?.filter((session) => session.current) ?? [],
       )
       ElMessage.success(
@@ -230,27 +234,34 @@ export function useAuthSessionManagement() {
       // 当前缓存已经只保留本设备，后续手动刷新或页面重新激活会继续对账。
       void sessionsQuery.refetch()
     } catch (error) {
-      reportWriteError(error)
+      if (isServerStateScopeCurrent(scope)) reportWriteError(error)
     } finally {
       if (activeController === controller) {
         activeController = undefined
-        activeIdentity = undefined
+        activeScope = undefined
         revokeOthersPending.value = false
       }
     }
   }
 
-  const unsubscribeUser = userStore.$subscribe(
+  const stopScopeWatch = watch(
+    useServerStateScope(),
     () => {
-      const nextIdentity = currentAuthSessionIdentity()
-      if (sameAuthSessionIdentity(trackedIdentity, nextIdentity)) return
-      const previousIdentity = trackedIdentity
-      trackedIdentity = nextIdentity
-      if (activeIdentity && !sameAuthSessionIdentity(activeIdentity, nextIdentity)) {
+      const nextScope = currentAuthSessionScope()
+      if (sameAuthSessionScope(trackedScope, nextScope)) return
+      const previousScope = trackedScope
+      trackedScope = nextScope
+      if (activeScope && !isServerStateScopeCurrent(activeScope)) {
         activeController?.abort()
+        activeController = undefined
+        activeScope = undefined
+        pendingDeviceKey.value = undefined
+        revokeOthersPending.value = false
       }
-      if (!previousIdentity) return
-      const previousKey = authSessionQueryKey(previousIdentity)
+      refreshGeneration += 1
+      refreshing.value = false
+      if (!previousScope) return
+      const previousKey = authSessionQueryKey(previousScope)
       void queryClient.cancelQueries({ queryKey: previousKey, exact: true })
       queryClient.removeQueries({ queryKey: previousKey, exact: true })
     },
@@ -263,7 +274,7 @@ export function useAuthSessionManagement() {
     onScopeDispose(() => {
       disposed = true
       activeController?.abort()
-      unsubscribeUser()
+      stopScopeWatch()
     })
   }
 

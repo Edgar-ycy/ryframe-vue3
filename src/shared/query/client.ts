@@ -1,7 +1,12 @@
 import { readonly, shallowRef, type DeepReadonly, type Ref } from 'vue'
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/vue-query'
 import { HttpError } from '@/shared/http/client'
-import type { ActiveServerStateScope, ServerStateScope, ServerStateScopeIdentity } from './scope'
+import type {
+  ActiveServerStateScope,
+  ServerStateQueryKey,
+  ServerStateScope,
+  ServerStateScopeIdentity,
+} from './scope'
 import { sameServerStateScope } from './scope'
 
 const SERVER_STATE_PREFIX = 'server-state'
@@ -173,54 +178,16 @@ export function serverStateResourcePrefix(scope: ServerStateScope, resource: str
 }
 
 /** 请求参数保持普通值，使 Vue Query 能确定性比较完整会话范围。 */
-export function serverStateQueryKey(scope: ServerStateScope, resource: string, params?: unknown) {
+export function serverStateQueryKey(
+  scope: ServerStateScope,
+  resource: string,
+  params?: unknown,
+): ServerStateQueryKey {
   return [...serverStateResourcePrefix(scope, resource), params ?? null] as const
 }
 
 export function serverStateMutationKey(scope: ServerStateScope, resource: string) {
   return [...serverStateResourcePrefix(scope, resource), 'mutation'] as const
-}
-
-/**
- * 供带显式业务身份的缓存辅助函数使用。身份不属于当前范围时只返回禁用键，
- * 从而让延迟事件无法命中新会话缓存。
- */
-export function serverStateQueryKeyForIdentity(
-  tenantId: string | undefined,
-  subjectId: string | undefined,
-  resource: string,
-  params?: unknown,
-) {
-  const scope = activeScope.value
-  if (scope && scope.tenantId === tenantId && scope.subjectId === subjectId) {
-    return serverStateQueryKey(scope, resource, params)
-  }
-  return [
-    'server-state-inactive',
-    tenantId ?? 'anonymous',
-    subjectId ?? 'anonymous',
-    sessionEpoch,
-    resource,
-    params ?? null,
-  ] as const
-}
-
-export function serverStateResourcePrefixForIdentity(
-  tenantId: string | undefined,
-  subjectId: string | undefined,
-  resource: string,
-) {
-  const scope = activeScope.value
-  if (scope && scope.tenantId === tenantId && scope.subjectId === subjectId) {
-    return serverStateResourcePrefix(scope, resource)
-  }
-  return [
-    'server-state-inactive',
-    tenantId ?? 'anonymous',
-    subjectId ?? 'anonymous',
-    sessionEpoch,
-    resource,
-  ] as const
 }
 
 export function invalidateServerStateScope(scope: ServerStateScope): Promise<void> {

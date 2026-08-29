@@ -1,4 +1,12 @@
-import { computed, getCurrentScope, onActivated, onDeactivated, onScopeDispose, ref } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  onActivated,
+  onDeactivated,
+  onScopeDispose,
+  ref,
+  watch,
+} from 'vue'
 import {
   createProfileServiceDelegation,
   revokeProfileServiceDelegation,
@@ -7,8 +15,14 @@ import {
   type ProfileServiceDelegation,
 } from '@/api/modules/profileServiceDelegation'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { queryClient, serverStateResourcePrefixForIdentity } from '@/shared/query/client'
+import { createIdempotencyKey } from '@/shared/http/idempotency'
+import {
+  getServerStateScope,
+  isServerStateScopeCurrent,
+  queryClient,
+  serverStateResourcePrefix,
+  useServerStateScope,
+} from '@/shared/query/client'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
 import { useTenantContextStore } from '@/stores/tenantContext'
 import { useUserStore } from '@/stores/user'
@@ -16,9 +30,10 @@ import {
   PROFILE_SERVICE_DELEGATIONS_RESOURCE,
   PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
   sameIdentity,
-  type ProfileDelegationIdentity,
+  type ProfileDelegationScope,
   type ProfileDelegationIdentityGuard,
 } from './serviceDelegationSupport'
+import { createServiceDelegationOperationState } from './serviceDelegationOperationState'
 import { useServiceDelegationQueries } from './useServiceDelegationQueries'
 
 export type { ProfileDelegationIdentityGuard } from './serviceDelegationSupport'
@@ -28,25 +43,30 @@ export function useServiceDelegationManagement() {
   const userStore = useUserStore()
   const tenantContext = useTenantContextStore()
   const pageActive = ref(true)
-  const createPending = ref(false)
-  const revokingId = ref<string>()
-  const pendingControllers = new Set<AbortController>()
-  const pendingKeys = new Map<string, string>()
+  const operations = createServiceDelegationOperationState()
   const identityChangedCallbacks = new Set<() => void>()
   const contextNonce = createIdempotencyKey('profile-delegation-context')
   let contextGeneration = 0
-  let trackedIdentity = currentIdentity()
+  let trackedScope = currentIdentity()
 
-  function currentIdentity(): ProfileDelegationIdentity | undefined {
+  function currentIdentity(): ProfileDelegationScope | undefined {
     if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId)
       return undefined
+    const active = getServerStateScope()
+    if (
+      !active ||
+      active.tenantId !== userStore.tenantId ||
+      active.subjectId !== String(userStore.userId)
+    )
+      return undefined
     return {
-      tenantId: userStore.tenantId,
-      userId: String(userStore.userId),
+      tenantId: active.tenantId,
+      subjectId: active.subjectId,
+      sessionEpoch: active.sessionEpoch,
     }
   }
 
-  function requireIdentity(): ProfileDelegationIdentity {
+  function requireIdentity(): ProfileDelegationScope {
     const identity = currentIdentity()
     if (!identity) {
       throw new HttpError('当前登录身份已失效', { status: 401, kind: 'http' })
@@ -54,8 +74,8 @@ export function useServiceDelegationManagement() {
     return identity
   }
 
-  function ensureCurrentIdentity(identity: ProfileDelegationIdentity): void {
-    if (!sameIdentity(identity, currentIdentity())) {
+  function ensureCurrentIdentity(scope: ProfileDelegationScope): void {
+    if (!isServerStateScopeCurrent(scope)) {
       throw new HttpError('登录身份已经切换', { kind: 'cancelled' })
     }
   }
@@ -89,7 +109,7 @@ export function useServiceDelegationManagement() {
   }
 
   function ensureOperationContext(
-    identity: ProfileDelegationIdentity,
+    identity: ProfileDelegationScope,
     snapshot: ProfileDelegationIdentityGuard,
   ): void {
     ensureCurrentIdentity(identity)
@@ -130,16 +150,6 @@ export function useServiceDelegationManagement() {
   const targetsLoading = targetsQuery.isFetching
   const error = delegationsQuery.error
 
-  function beginController(): AbortController {
-    const controller = new AbortController()
-    pendingControllers.add(controller)
-    return controller
-  }
-
-  function finishController(controller: AbortController): void {
-    pendingControllers.delete(controller)
-  }
-
   async function refresh(): Promise<void> {
     if (!enabled.value) return
     await Promise.all([
@@ -154,14 +164,11 @@ export function useServiceDelegationManagement() {
   ): Promise<CreatedProfileServiceDelegation> {
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
-    const signature = JSON.stringify(input)
-    const idempotencyKey =
-      pendingKeys.get(signature) ?? createIdempotencyKey('profile-service-delegation')
-    const controller = beginController()
-    createPending.value = true
+    const intent = operations.intent(identity, input)
+    const controller = operations.beginCreate()
     try {
       const result = requireOperationData(
-        await createProfileServiceDelegation(input, idempotencyKey, controller.signal),
+        await createProfileServiceDelegation(input, intent.idempotencyKey, controller.signal),
       )
       ensureOperationContext(identity, operationContext)
       // 只写入不含 Token 的委托元数据；完整 Token 仅返回给发起调用的局部对话框。
@@ -172,18 +179,13 @@ export function useServiceDelegationManagement() {
           ...(current ?? []).filter((item) => item.id !== result.delegation.id),
         ],
       )
-      pendingKeys.delete(signature)
+      operations.completeIntent(intent)
       return result
     } catch (error) {
-      if (sameIdentity(identity, currentIdentity()) && shouldReuseIdempotencyKey(error)) {
-        pendingKeys.set(signature, idempotencyKey)
-      } else {
-        pendingKeys.delete(signature)
-      }
+      operations.failIntent(intent, error, isServerStateScopeCurrent(identity))
       throw error
     } finally {
-      finishController(controller)
-      createPending.value = false
+      operations.finishCreate(controller)
     }
   }
 
@@ -193,8 +195,7 @@ export function useServiceDelegationManagement() {
   ): Promise<void> {
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
-    const controller = beginController()
-    revokingId.value = delegation.id
+    const controller = operations.beginRevoke(delegation.id)
     try {
       await revokeProfileServiceDelegation(delegation.id, controller.signal)
       ensureOperationContext(identity, operationContext)
@@ -210,38 +211,32 @@ export function useServiceDelegationManagement() {
       void delegationsQuery.refetch({ throwOnError: false })
       void targetsQuery.refetch({ throwOnError: false })
     } finally {
-      finishController(controller)
-      if (revokingId.value === delegation.id) revokingId.value = undefined
+      operations.finishRevoke(controller)
     }
   }
 
-  function cancelIdentityQueries(identity: ProfileDelegationIdentity, remove: boolean): void {
+  function cancelScopeQueries(scope: ProfileDelegationScope, remove: boolean): void {
     for (const resource of [
       PROFILE_SERVICE_DELEGATIONS_RESOURCE,
       PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
     ]) {
-      const prefix = serverStateResourcePrefixForIdentity(
-        identity.tenantId,
-        identity.userId,
-        resource,
-      )
+      const prefix = serverStateResourcePrefix(scope, resource)
       void queryClient.cancelQueries({ queryKey: prefix })
       if (remove) queryClient.removeQueries({ queryKey: prefix })
     }
   }
 
-  const unsubscribeUser = userStore.$subscribe(
+  const stopScopeWatch = watch(
+    useServerStateScope(),
     () => {
-      const nextIdentity = currentIdentity()
-      if (sameIdentity(trackedIdentity, nextIdentity)) return
-      const previousIdentity = trackedIdentity
-      trackedIdentity = nextIdentity
+      const nextScope = currentIdentity()
+      if (sameIdentity(trackedScope, nextScope)) return
+      const previousScope = trackedScope
+      trackedScope = nextScope
       contextGeneration += 1
       notifyIdentityChanged()
-      for (const controller of pendingControllers) controller.abort()
-      pendingControllers.clear()
-      pendingKeys.clear()
-      if (previousIdentity) cancelIdentityQueries(previousIdentity, true)
+      operations.invalidate(true)
+      if (previousScope) cancelScopeQueries(previousScope, true)
     },
     { flush: 'sync' },
   )
@@ -255,10 +250,9 @@ export function useServiceDelegationManagement() {
     pageActive.value = false
     contextGeneration += 1
     notifyIdentityChanged()
-    for (const controller of pendingControllers) controller.abort()
-    pendingControllers.clear()
-    const identity = currentIdentity()
-    if (identity) cancelIdentityQueries(identity, false)
+    operations.invalidate(false)
+    const scope = currentIdentity()
+    if (scope) cancelScopeQueries(scope, false)
   })
 
   if (getCurrentScope()) {
@@ -266,17 +260,15 @@ export function useServiceDelegationManagement() {
       pageActive.value = false
       contextGeneration += 1
       notifyIdentityChanged()
-      for (const controller of pendingControllers) controller.abort()
-      pendingControllers.clear()
-      pendingKeys.clear()
+      operations.invalidate(true)
       identityChangedCallbacks.clear()
-      unsubscribeUser()
+      stopScopeWatch()
     })
   }
 
   return {
     captureIdentity,
-    createPending,
+    createPending: operations.createPending,
     delegations,
     error,
     issueDelegation,
@@ -287,7 +279,7 @@ export function useServiceDelegationManagement() {
     pageActive,
     refresh,
     revokeDelegation,
-    revokingId,
+    revokingId: operations.revokingId,
     targets,
     targetsError: targetsQuery.error,
     targetsLoading,

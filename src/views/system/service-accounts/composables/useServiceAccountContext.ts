@@ -4,11 +4,11 @@ import { useServiceAccountQueries } from './useServiceAccountQueries'
 
 export {
   copyServiceAccountQuery,
-  sameServiceAccountIdentity,
+  sameServiceAccountScope,
   sameServiceAccountPageQuery,
 } from './serviceAccountContextTypes'
 export type {
-  ServiceAccountIdentity,
+  ServiceAccountScope,
   ServiceAccountIdentityGuard,
   ServiceResourcePageState,
 } from './serviceAccountContextTypes'

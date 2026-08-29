@@ -1,12 +1,8 @@
 import type { AuthSession } from '@/api/modules/auth'
 import { formatLocalizedDate, translate } from '@/i18n'
-import { serverStateQueryKeyForIdentity } from '@/shared/query/client'
+import { getServerStateScope, serverStateQueryKey } from '@/shared/query/client'
+import { sameServerStateScope, type ServerStateScope } from '@/shared/query/scope'
 import { useUserStore } from '@/stores/user'
-
-export interface SessionIdentity {
-  tenantId: string
-  userId: string
-}
 
 /** 仅供个人中心展示使用，字段全部由生成的会话契约派生。 */
 export interface AuthSessionView {
@@ -22,29 +18,32 @@ export interface AuthSessionView {
   expiresAt: string
 }
 
-export function authSessionQueryKey(identity: SessionIdentity) {
-  return serverStateQueryKeyForIdentity(
-    identity.tenantId,
-    identity.userId,
-    'profile-auth-sessions',
-    {
-      scope: 'self',
-      userId: identity.userId,
-    },
-  )
+export function authSessionQueryKey(scope: ServerStateScope) {
+  return serverStateQueryKey(scope, 'profile-auth-sessions', {
+    scope: 'self',
+    userId: scope.subjectId,
+  })
 }
 
-export function currentAuthSessionIdentity(): SessionIdentity | undefined {
+export function currentAuthSessionScope(): ServerStateScope | undefined {
   const user = useUserStore()
   if (user.sessionStatus !== 'authenticated' || !user.tenantId || !user.userId) return undefined
-  return { tenantId: user.tenantId, userId: String(user.userId) }
+  const active = getServerStateScope()
+  if (!active || active.tenantId !== user.tenantId || active.subjectId !== String(user.userId)) {
+    return undefined
+  }
+  return {
+    tenantId: active.tenantId,
+    subjectId: active.subjectId,
+    sessionEpoch: active.sessionEpoch,
+  }
 }
 
-export function sameAuthSessionIdentity(
-  left: SessionIdentity | undefined,
-  right: SessionIdentity | undefined,
+export function sameAuthSessionScope(
+  left: ServerStateScope | undefined,
+  right: ServerStateScope | undefined,
 ): boolean {
-  return left?.tenantId === right?.tenantId && left?.userId === right?.userId
+  return sameServerStateScope(left, right)
 }
 
 export function authSessionView(session: AuthSession): AuthSessionView {

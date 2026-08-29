@@ -51,8 +51,14 @@ import { useI18n } from 'vue-i18n'
 import type { MessageInboxQuery, MessageRecord } from '@/api/modules/messages'
 import { messageController } from '@/app/messages/messageController'
 import { useMessageCenterQueries } from '@/app/messages/messageHooks'
+import { useServerStateScope } from '@/shared/query/client'
 import MessageDetailDialog from './MessageDetailDialog.vue'
 import MessageInboxDrawer from './MessageInboxDrawer.vue'
+import {
+  resetMessageCenterUiState,
+  resolveMessageDetail,
+  type MessageDetailSeed,
+} from './messageCenterState'
 import { useMessageCenterActions } from './useMessageCenterActions'
 import { useMessageStore } from '@/stores/message'
 
@@ -66,7 +72,9 @@ const { inboxData, unreadData, inboxLoading, unreadLoading, mutating } = message
 const visible = ref(false)
 const selectedIds = ref<string[]>([])
 const detailVisible = ref(false)
-const detailSeed = ref<MessageRecord>()
+const detailSeed = ref<MessageDetailSeed>()
+const pageGeneration = ref(0)
+const serverStateScope = useServerStateScope()
 const { t } = useI18n()
 
 function badgeValue(): string | number {
@@ -91,8 +99,7 @@ function currentMessages(): MessageRecord[] {
 }
 
 function detailMessage(): MessageRecord | undefined {
-  const id = detailSeed.value?.id
-  return currentMessages().find((message) => message.id === id) ?? detailSeed.value
+  return resolveMessageDetail(serverStateScope.value, currentMessages(), detailSeed.value)
 }
 
 const { deleteOne, deleteSelected, markAllRead, openDetail, refresh } = useMessageCenterActions({
@@ -100,8 +107,25 @@ const { deleteOne, deleteSelected, markAllRead, openDetail, refresh } = useMessa
   detailVisible,
   messageCenter,
   messageStore: messageController,
+  pageGeneration,
   selectedIds,
 })
+
+function resetUiState(): void {
+  resetMessageCenterUiState({
+    detailSeed,
+    detailVisible,
+    pageGeneration,
+    selectedIds,
+    visible,
+  })
+}
+
+watch(
+  () => serverStateScope.value?.sessionEpoch,
+  () => resetUiState(),
+  { flush: 'sync' },
+)
 
 function acknowledgeReceivedMessages(records = currentMessages()): void {
   messageController.queueAcknowledgement(
@@ -137,8 +161,11 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  resetUiState()
   messageController.unbindSession()
 })
+
+onDeactivated(resetUiState)
 
 function restartRealtime(): void {
   messageController.restartConnection()

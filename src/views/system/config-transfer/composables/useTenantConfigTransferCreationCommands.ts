@@ -30,6 +30,12 @@ export function useTenantConfigTransferCreationCommands(
   context: ReturnType<typeof useTenantConfigTransferCommandContext>,
 ) {
   const createTransferBusy = ref(false)
+  let createTransferToken: symbol | undefined
+
+  context.operationScope.onInvalidated(() => {
+    createTransferToken = undefined
+    createTransferBusy.value = false
+  })
   const packageMutation = useServerStateMutation<TenantConfigBundle, PackageCommand>(
     TENANT_CONFIG_PACKAGES_RESOURCE,
     {
@@ -75,8 +81,10 @@ export function useTenantConfigTransferCreationCommands(
       'tenant-config-export',
       (idempotencyKey, controller) => packageMutation.mutateAsync({ idempotencyKey, controller }),
     )
-    await context.selectFirstListPage('package')
+    await context.selectFirstListPage(identity, guard, 'package')
+    context.ensureOperationContext(identity, guard)
     await context.cancelListBeforeMerge(identity, guard, 'package')
+    context.ensureOperationContext(identity, guard)
     context.mergePackage(identity, bundle)
     context.scheduleActiveCycle()
     return bundle
@@ -86,6 +94,8 @@ export function useTenantConfigTransferCreationCommands(
     if (createTransferBusy.value) {
       throw new HttpError('配置迁移正在创建', { status: 409, kind: 'http' })
     }
+    const token = Symbol('create-transfer')
+    createTransferToken = token
     createTransferBusy.value = true
     try {
       const identity = context.requireIdentity()
@@ -103,14 +113,19 @@ export function useTenantConfigTransferCreationCommands(
             controller,
           }),
       )
-      await context.selectFirstListPage('transfer')
+      await context.selectFirstListPage(identity, guard, 'transfer')
+      context.ensureOperationContext(identity, guard)
       await context.cancelListBeforeMerge(identity, guard, 'transfer')
+      context.ensureOperationContext(identity, guard)
       context.mergeTransfer(identity, transfer)
       context.selectedTransfer.value = transfer
       context.scheduleActiveCycle()
       return transfer
     } finally {
-      createTransferBusy.value = false
+      if (createTransferToken === token) {
+        createTransferToken = undefined
+        createTransferBusy.value = false
+      }
     }
   }
 
@@ -118,6 +133,8 @@ export function useTenantConfigTransferCreationCommands(
     if (createTransferBusy.value) {
       throw new HttpError('配置迁移正在创建', { status: 409, kind: 'http' })
     }
+    const token = Symbol('upload-transfer')
+    createTransferToken = token
     createTransferBusy.value = true
     try {
       const identity = context.requireIdentity()
@@ -137,14 +154,19 @@ export function useTenantConfigTransferCreationCommands(
             controller,
           }),
       )
-      await context.selectFirstListPage('transfer')
+      await context.selectFirstListPage(identity, guard, 'transfer')
+      context.ensureOperationContext(identity, guard)
       await context.cancelListBeforeMerge(identity, guard, 'transfer')
+      context.ensureOperationContext(identity, guard)
       context.mergeTransfer(identity, transfer)
       context.selectedTransfer.value = transfer
       context.scheduleActiveCycle()
       return transfer
     } finally {
-      createTransferBusy.value = false
+      if (createTransferToken === token) {
+        createTransferToken = undefined
+        createTransferBusy.value = false
+      }
     }
   }
 

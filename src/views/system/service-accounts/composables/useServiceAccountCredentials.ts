@@ -9,7 +9,7 @@ import {
 import { requireOperationData } from '@/shared/http/client'
 import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { queryClient } from '@/shared/query/client'
-import { sameServiceAccountIdentity, useServiceAccountContext } from './useServiceAccountContext'
+import { sameServiceAccountScope, useServiceAccountContext } from './useServiceAccountContext'
 
 /** Credential 元数据、幂等签发与撤销；一次性 Secret 只经函数结果返回。 */
 export function useServiceAccountCredentials(context: ReturnType<typeof useServiceAccountContext>) {
@@ -22,6 +22,7 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
     currentIdentity,
     ensureOperationContext,
     finishController,
+    onIdentityChanged,
     pageActive,
     requireIdentity,
     requireOperationContext,
@@ -30,6 +31,16 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
   const issueCredentialPending = ref(false)
   const revokingCredentialId = ref<string>()
   const pendingCredentialKeys = new Map<string, string>()
+  let issueController: AbortController | undefined
+  let revokeController: AbortController | undefined
+
+  onIdentityChanged(() => {
+    issueController = undefined
+    revokeController = undefined
+    issueCredentialPending.value = false
+    revokingCredentialId.value = undefined
+    pendingCredentialKeys.clear()
+  })
 
   async function issueCredential(
     accountId: string,
@@ -38,10 +49,11 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
   ): Promise<CreatedServiceCredential> {
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
-    const signature = JSON.stringify({ accountId, input })
+    const signature = `${identity.tenantId}\u0000${identity.subjectId}\u0000${identity.sessionEpoch}\u0000${JSON.stringify({ accountId, input })}`
     const idempotencyKey =
       pendingCredentialKeys.get(signature) ?? createIdempotencyKey('service-credential')
     const controller = beginController()
+    issueController = controller
     issueCredentialPending.value = true
     try {
       const result = requireOperationData(
@@ -60,7 +72,7 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
       return result
     } catch (error) {
       if (
-        sameServiceAccountIdentity(identity, currentIdentity()) &&
+        sameServiceAccountScope(identity, currentIdentity()) &&
         shouldReuseIdempotencyKey(error)
       ) {
         pendingCredentialKeys.set(signature, idempotencyKey)
@@ -70,7 +82,10 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
       throw error
     } finally {
       finishController(controller)
-      issueCredentialPending.value = false
+      if (issueController === controller) {
+        issueController = undefined
+        issueCredentialPending.value = false
+      }
     }
   }
 
@@ -88,6 +103,7 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
     const controller = beginController()
+    revokeController = controller
     revokingCredentialId.value = credential.id
     try {
       await revokeServiceCredential(accountId, credential.id, controller.signal)
@@ -106,7 +122,8 @@ export function useServiceAccountCredentials(context: ReturnType<typeof useServi
       }
     } finally {
       finishController(controller)
-      if (revokingCredentialId.value === credential.id) {
+      if (revokeController === controller) {
+        revokeController = undefined
         revokingCredentialId.value = undefined
       }
     }

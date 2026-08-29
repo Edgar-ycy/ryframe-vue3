@@ -6,42 +6,38 @@ import {
   type ProfileServiceDelegationTarget,
 } from '@/api/modules/profileServiceDelegation'
 import { requireOperationData } from '@/shared/http/client'
-import { serverStateQueryKeyForIdentity } from '@/shared/query/client'
+import { serverStateQueryKey } from '@/shared/query/client'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import {
   PROFILE_SERVICE_DELEGATIONS_RESOURCE,
   PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
   QUERY_GC_TIME,
-  type ProfileDelegationIdentity,
+  type ProfileDelegationScope,
 } from './serviceDelegationSupport'
 
 /** 个人服务委托与候选服务账号的只读查询。 */
 export function useServiceDelegationQueries(
   enabled: ComputedRef<boolean>,
-  currentIdentity: () => ProfileDelegationIdentity | undefined,
+  currentIdentity: () => ProfileDelegationScope | undefined,
 ) {
-  function delegationsKey(identity = currentIdentity()) {
-    return serverStateQueryKeyForIdentity(
-      identity?.tenantId,
-      identity?.userId,
-      PROFILE_SERVICE_DELEGATIONS_RESOURCE,
-      { scope: 'self', userId: identity?.userId ?? 'anonymous' },
-    )
+  function delegationsKey(scope: ProfileDelegationScope) {
+    return serverStateQueryKey(scope, PROFILE_SERVICE_DELEGATIONS_RESOURCE, {
+      scope: 'self',
+      userId: scope.subjectId,
+    })
   }
 
-  function targetsKey(identity = currentIdentity()) {
-    return serverStateQueryKeyForIdentity(
-      identity?.tenantId,
-      identity?.userId,
-      PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
-      { scope: 'self', userId: identity?.userId ?? 'anonymous' },
-    )
+  function targetsKey(scope: ProfileDelegationScope) {
+    return serverStateQueryKey(scope, PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE, {
+      scope: 'self',
+      userId: scope.subjectId,
+    })
   }
 
   const delegationsQuery = useServerStateQuery<readonly ProfileServiceDelegation[]>(
     enabled,
     PROFILE_SERVICE_DELEGATIONS_RESOURCE,
-    () => ({ scope: 'self', userId: currentIdentity()?.userId ?? 'anonymous' }),
+    () => ({ scope: 'self', userId: currentIdentity()?.subjectId ?? 'anonymous' }),
     async (signal) => requireOperationData(await listProfileServiceDelegations(signal)),
     {
       initialData: () => [],
@@ -58,7 +54,7 @@ export function useServiceDelegationQueries(
   const targetsQuery = useServerStateQuery<readonly ProfileServiceDelegationTarget[]>(
     enabled,
     PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
-    () => ({ scope: 'self', userId: currentIdentity()?.userId ?? 'anonymous' }),
+    () => ({ scope: 'self', userId: currentIdentity()?.subjectId ?? 'anonymous' }),
     async (signal) => requireOperationData(await listProfileServiceDelegationTargets(signal)),
     {
       initialData: () => [],

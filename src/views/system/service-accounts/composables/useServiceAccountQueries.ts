@@ -16,7 +16,7 @@ import {
 } from '@/api/modules/serviceAccount'
 import { HttpError, requireOperationData } from '@/shared/http/client'
 import type { PageResponse } from '@/shared/http/types'
-import { serverStateQueryKeyForIdentity } from '@/shared/query/client'
+import { serverStateQueryKey } from '@/shared/query/client'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import {
   SERVICE_ACCESS_AUDITS_RESOURCE,
@@ -28,7 +28,7 @@ import {
   copyServiceAccountQuery,
   SERVICE_ACCOUNT_DEFAULT_PAGE_SIZE,
   SERVICE_ACCOUNT_QUERY_GC_TIME,
-  type ServiceAccountIdentity,
+  type ServiceAccountScope,
   type ServiceResourcePageState,
 } from './serviceAccountContextTypes'
 import { useServiceAccountIdentityContext } from './useServiceAccountIdentityContext'
@@ -57,82 +57,54 @@ export function useServiceAccountQueries(
   const selectedAccount = ref<ServiceAccount | null>(null)
   const roleIds = ref<readonly string[]>([])
 
-  function identityParams(identity = identityContext.currentIdentity()) {
-    return { userId: identity?.userId ?? 'anonymous' }
+  function identityParams(scope = identityContext.currentIdentity()) {
+    return { userId: scope?.subjectId ?? 'anonymous' }
   }
 
-  function accountsKey(
-    identity = identityContext.currentIdentity(),
-    query: ServiceAccountQuery = activeQueryParams,
-  ) {
-    return serverStateQueryKeyForIdentity(
-      identity?.tenantId,
-      identity?.userId,
-      SERVICE_ACCOUNTS_RESOURCE,
-      {
-        ...identityParams(identity),
-        query: copyServiceAccountQuery(query),
-        scope: 'list',
-      },
-    )
+  function accountsKey(scope: ServiceAccountScope, query: ServiceAccountQuery = activeQueryParams) {
+    return serverStateQueryKey(scope, SERVICE_ACCOUNTS_RESOURCE, {
+      ...identityParams(scope),
+      query: copyServiceAccountQuery(query),
+      scope: 'list',
+    })
   }
 
-  function detailKey(identity: ServiceAccountIdentity | undefined, accountId: string | null) {
-    return serverStateQueryKeyForIdentity(
-      identity?.tenantId,
-      identity?.userId,
-      SERVICE_ACCOUNTS_RESOURCE,
-      {
-        ...identityParams(identity),
-        accountId,
-        scope: 'detail',
-      },
-    )
+  function detailKey(scope: ServiceAccountScope, accountId: string | null) {
+    return serverStateQueryKey(scope, SERVICE_ACCOUNTS_RESOURCE, {
+      ...identityParams(scope),
+      accountId,
+      scope: 'detail',
+    })
   }
 
-  function credentialsKey(identity: ServiceAccountIdentity | undefined, accountId: string | null) {
-    return serverStateQueryKeyForIdentity(
-      identity?.tenantId,
-      identity?.userId,
-      SERVICE_CREDENTIALS_RESOURCE,
-      {
-        ...identityParams(identity),
-        accountId,
-        scope: 'list',
-      },
-    )
+  function credentialsKey(scope: ServiceAccountScope, accountId: string | null) {
+    return serverStateQueryKey(scope, SERVICE_CREDENTIALS_RESOURCE, {
+      ...identityParams(scope),
+      accountId,
+      scope: 'list',
+    })
   }
 
   function delegationsKey(
-    identity = identityContext.currentIdentity(),
+    scope: ServiceAccountScope,
     query: ServiceDelegationQuery = activeDelegationsQueryParams,
   ) {
-    return serverStateQueryKeyForIdentity(
-      identity?.tenantId,
-      identity?.userId,
-      SERVICE_DELEGATIONS_RESOURCE,
-      {
-        ...identityParams(identity),
-        query: copyServiceAccountQuery(query),
-        scope: 'list',
-      },
-    )
+    return serverStateQueryKey(scope, SERVICE_DELEGATIONS_RESOURCE, {
+      ...identityParams(scope),
+      query: copyServiceAccountQuery(query),
+      scope: 'list',
+    })
   }
 
   function auditsKey(
-    identity = identityContext.currentIdentity(),
+    scope: ServiceAccountScope,
     query: ServiceAccessAuditQuery = activeAuditsQueryParams,
   ) {
-    return serverStateQueryKeyForIdentity(
-      identity?.tenantId,
-      identity?.userId,
-      SERVICE_ACCESS_AUDITS_RESOURCE,
-      {
-        ...identityParams(identity),
-        query: copyServiceAccountQuery(query),
-        scope: 'list',
-      },
-    )
+    return serverStateQueryKey(scope, SERVICE_ACCESS_AUDITS_RESOURCE, {
+      ...identityParams(scope),
+      query: copyServiceAccountQuery(query),
+      scope: 'list',
+    })
   }
 
   const accountsQuery = useServerStateQuery<PageResponse<ServiceAccount>>(

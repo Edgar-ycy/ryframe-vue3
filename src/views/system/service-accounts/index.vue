@@ -127,20 +127,11 @@
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
 import type { TabsPaneContext } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
-import type {
-  CreateServiceAccountInput,
-  CreateServiceCredentialInput,
-  ServiceAccount,
-  ServiceCredential,
-  ServiceDelegation,
-  UpdateServiceAccountInput,
-} from '@/api/modules/serviceAccount'
+import type { ServiceAccount } from '@/api/modules/serviceAccount'
 import OneTimeMaterialDialog from '@/components/common/OneTimeMaterialDialog.vue'
-import { confirmAction } from '@/utils/confirmAction'
 import IssueCredentialDialog from './components/IssueCredentialDialog.vue'
 import ServiceAccessAuditsPanel from './components/ServiceAccessAuditsPanel.vue'
 import ServiceAccountDetailDrawer from './components/ServiceAccountDetailDrawer.vue'
@@ -148,6 +139,7 @@ import ServiceAccountFormDialog from './components/ServiceAccountFormDialog.vue'
 import ServiceAccountList from './components/ServiceAccountList.vue'
 import ServiceDelegationsPanel from './components/ServiceDelegationsPanel.vue'
 import { useServiceAccountManagement } from './composables/useServiceAccountManagement'
+import { createServiceAccountPageActions } from './serviceAccountPageActions'
 
 const { t } = useI18n()
 const activeTab = ref('accounts')
@@ -165,6 +157,7 @@ let departmentTreeController: AbortController | undefined
 const accountFormIdentity = ref<string>()
 const detailIdentity = ref<string>()
 
+const serviceAccountManagement = useServiceAccountManagement()
 const {
   accounts,
   accountsError,
@@ -191,28 +184,20 @@ const {
   fetchAudits,
   fetchCredentials,
   fetchDelegations,
-  issueCredential,
   issueCredentialPending,
   identityMatches,
   onIdentityChanged,
   queryParams,
   refresh,
-  removeAccount,
   removePending,
-  revokeCredential,
-  revokeDelegation,
   revokingCredentialId,
   revokingDelegationId,
   roleIds,
   rolesPending,
-  saveAccount,
   savePending,
-  saveRoles,
-  selectAccount,
   selectedAccount,
-  setAccountStatus,
   statusPending,
-} = useServiceAccountManagement()
+} = serviceAccountManagement
 
 function clearSensitiveMaterial(): void {
   credentialMaterialDialogRef.value?.clearNow()
@@ -273,117 +258,31 @@ function openEditDialog(account: ServiceAccount): void {
   if (canListDepartments.value && departmentTree.value.length === 0) void loadDepartmentTree()
 }
 
-async function submitAccount(
-  input: CreateServiceAccountInput | UpdateServiceAccountInput,
-): Promise<void> {
-  const guard = accountFormIdentity.value
-  if (!identityMatches(guard)) return
-  const account = await saveAccount(input, editingAccount.value?.id, guard)
-  ElMessage.success(t(editingAccount.value ? 'serviceAccounts.updated' : 'serviceAccounts.created'))
-  editingAccount.value = account
-  accountDialogVisible.value = false
-}
-
-async function openDetails(account: ServiceAccount): Promise<void> {
-  detailIdentity.value = captureIdentity()
-  await selectAccount(account)
-  detailDrawerVisible.value = true
-}
-
-async function closeDetails(): Promise<void> {
-  detailDrawerVisible.value = false
-  detailIdentity.value = undefined
-  await selectAccount(null)
-}
-
-async function confirmStatusChange(account: ServiceAccount): Promise<void> {
-  const guard = captureIdentity()
-  const nextStatus = account.status === '1' ? 'disabled' : 'enabled'
-  const confirmed = await confirmAction(
-    t('serviceAccounts.statusConfirm', {
-      name: account.name,
-      status: t(nextStatus === 'enabled' ? 'serviceAccounts.enabled' : 'serviceAccounts.disabled'),
-    }),
-    t('serviceAccounts.statusConfirmTitle'),
-    {
-      type: 'warning',
-      confirmButtonText: t(
-        nextStatus === 'enabled' ? 'serviceAccounts.enable' : 'serviceAccounts.disable',
-      ),
-    },
-  )
-  if (!confirmed || !identityMatches(guard)) return
-  pendingAccountId.value = account.id
-  try {
-    await setAccountStatus(account, nextStatus, guard)
-    ElMessage.success(t('serviceAccounts.statusUpdated'))
-  } finally {
-    pendingAccountId.value = undefined
-  }
-}
-
-async function confirmRemove(account: ServiceAccount): Promise<void> {
-  const guard = captureIdentity()
-  const confirmed = await confirmAction(
-    t('serviceAccounts.removeConfirm', { name: account.name }),
-    t('serviceAccounts.removeConfirmTitle'),
-    { type: 'error', confirmButtonText: t('serviceAccounts.remove') },
-  )
-  if (!confirmed || !identityMatches(guard)) return
-  pendingAccountId.value = account.id
-  try {
-    await removeAccount(account, guard)
-    ElMessage.success(t('serviceAccounts.removed'))
-  } finally {
-    pendingAccountId.value = undefined
-  }
-}
-
-async function submitRoles(nextRoleIds: string[]): Promise<void> {
-  const guard = detailIdentity.value
-  const accountId = selectedAccount.value?.id
-  if (!accountId || !identityMatches(guard)) return
-  await saveRoles(accountId, nextRoleIds, guard)
-  ElMessage.success(t('serviceAccounts.rolesSaved'))
-}
-
-async function submitCredential(input: CreateServiceCredentialInput): Promise<void> {
-  const guard = detailIdentity.value
-  const accountId = selectedAccount.value?.id
-  if (!accountId || !identityMatches(guard)) return
-  const result = await issueCredential(accountId, input, guard)
-  credentialDialogVisible.value = false
-  ElMessage.success(t('serviceAccounts.credentialCreated'))
-  credentialSecret.value = result.secret ?? null
-  await nextTick()
-  secretDialogVisible.value = true
-}
-
-async function confirmRevokeCredential(credential: ServiceCredential): Promise<void> {
-  const guard = detailIdentity.value
-  const accountId = selectedAccount.value?.id
-  if (!accountId || !identityMatches(guard)) return
-  const confirmed = await confirmAction(
-    t('serviceAccounts.revokeCredentialConfirm', { label: credential.label }),
-    t('serviceAccounts.revokeCredentialTitle'),
-    { type: 'error', confirmButtonText: t('serviceAccounts.revoke') },
-  )
-  if (!confirmed || !identityMatches(guard)) return
-  await revokeCredential(accountId, credential, guard)
-  ElMessage.success(t('serviceAccounts.credentialRevoked'))
-}
-
-async function confirmRevokeDelegation(delegation: ServiceDelegation): Promise<void> {
-  const guard = captureIdentity()
-  const confirmed = await confirmAction(
-    t('serviceAccounts.revokeDelegationConfirm'),
-    t('serviceAccounts.revokeDelegationTitle'),
-    { type: 'error', confirmButtonText: t('serviceAccounts.revoke') },
-  )
-  if (!confirmed || !identityMatches(guard)) return
-  await revokeDelegation(delegation, guard)
-  ElMessage.success(t('serviceAccounts.delegationRevoked'))
-}
+const {
+  closeDetails,
+  confirmRemove,
+  confirmRevokeCredential,
+  confirmRevokeDelegation,
+  confirmStatusChange,
+  openDetails,
+  submitAccount,
+  submitCredential,
+  submitRoles,
+} = createServiceAccountPageActions({
+  management: serviceAccountManagement,
+  state: {
+    accountDialogVisible,
+    accountFormIdentity,
+    credentialDialogVisible,
+    credentialSecret,
+    detailDrawerVisible,
+    detailIdentity,
+    editingAccount,
+    pendingAccountId,
+    secretDialogVisible,
+  },
+  t,
+})
 </script>
 
 <style scoped src="./serviceAccountsPage.css"></style>

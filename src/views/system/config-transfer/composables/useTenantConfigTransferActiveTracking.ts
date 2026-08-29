@@ -40,6 +40,7 @@ export function useTenantConfigTransferActiveTracking(
   let activeTimer: ReturnType<typeof globalThis.setTimeout> | undefined
   let activeCycleController: AbortController | undefined
   let activeCycleRunning = false
+  let cycleGeneration = 0
 
   async function refreshPackageDetail(
     identity: TenantConfigIdentity,
@@ -81,7 +82,9 @@ export function useTenantConfigTransferActiveTracking(
             requireOperationData(await getTenantConfigTransfer(id, signal)),
           )
         } catch {
-          await transfersQuery.refetch({ throwOnError: false })
+          if (options.isCurrentIdentity(identity)) {
+            await transfersQuery.refetch({ throwOnError: false })
+          }
         }
       }
     }
@@ -105,9 +108,11 @@ export function useTenantConfigTransferActiveTracking(
   function abortActiveRequest(): void {
     activeCycleController?.abort()
     activeCycleController = undefined
+    activeCycleRunning = false
   }
 
   function stopActiveCycle(): void {
+    cycleGeneration += 1
     if (activeTimer !== undefined) globalThis.clearTimeout(activeTimer)
     activeTimer = undefined
     abortActiveRequest()
@@ -119,9 +124,9 @@ export function useTenantConfigTransferActiveTracking(
     if (!identity) return
     const details = activeDetails()
     if (details.length === 0) return
-    activeCycleRunning = true
     const controller = new AbortController()
     abortActiveRequest()
+    activeCycleRunning = true
     activeCycleController = controller
     let cursor = 0
     try {
@@ -142,8 +147,10 @@ export function useTenantConfigTransferActiveTracking(
       )
       await Promise.all(workers)
     } finally {
-      if (activeCycleController === controller) activeCycleController = undefined
-      activeCycleRunning = false
+      if (activeCycleController === controller) {
+        activeCycleController = undefined
+        activeCycleRunning = false
+      }
     }
   }
 
@@ -151,11 +158,13 @@ export function useTenantConfigTransferActiveTracking(
     if (activeTimer !== undefined) globalThis.clearTimeout(activeTimer)
     activeTimer = undefined
     if (!canTrackActiveDetails() || activeDetails().length === 0) return
+    const generation = cycleGeneration
     activeTimer = globalThis.setTimeout(
       async () => {
+        if (generation !== cycleGeneration) return
         activeTimer = undefined
         await refreshActiveDetails()
-        scheduleActiveCycle()
+        if (generation === cycleGeneration) scheduleActiveCycle()
       },
       immediate ? 0 : ACTIVE_REFRESH_INTERVAL_MS,
     )

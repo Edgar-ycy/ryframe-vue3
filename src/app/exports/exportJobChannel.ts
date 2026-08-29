@@ -1,8 +1,8 @@
-import type { ExportJobIdentity } from './exportJobCache'
+import type { ServerStateScope } from '@/shared/query/scope'
 
-const CHANNEL_NAME = 'ryframe-export-jobs-v1'
+const CHANNEL_NAME = 'ryframe-export-jobs-v2'
 
-export type ExportJobEvent = ExportJobIdentity &
+export type ExportJobEvent = ServerStateScope &
   (
     | { type: 'created' | 'cancelled'; jobId: string }
     | { type: 'deleted'; jobIds: string[] }
@@ -17,7 +17,13 @@ let channel: BroadcastChannel | undefined
 function isExportJobEvent(value: unknown): value is ExportJobEvent {
   if (typeof value !== 'object' || value === null) return false
   const event = value as Record<string, unknown>
-  if (typeof event.tenantId !== 'string' || typeof event.userId !== 'string') return false
+  if (
+    typeof event.tenantId !== 'string' ||
+    typeof event.subjectId !== 'string' ||
+    !Number.isSafeInteger(event.sessionEpoch) ||
+    Number(event.sessionEpoch) < 0
+  )
+    return false
   if (event.type === 'created' || event.type === 'cancelled') {
     return typeof event.jobId === 'string'
   }

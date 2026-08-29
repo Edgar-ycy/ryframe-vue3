@@ -159,6 +159,45 @@
   </el-card>
 </template>
 
+<script lang="ts">
+interface SensitiveMaterialBindings {
+  clearDialog: () => void
+  setCreateDialogVisible: (visible: boolean) => void
+  setMaterial: (material: string | null) => void
+  setMaterialDialogVisible: (visible: boolean) => void
+}
+
+/** 将一次性材料的写入与延迟展示绑定到同一个本地代次。 */
+export function createSensitiveMaterialScope(
+  bindings: SensitiveMaterialBindings,
+  schedule: (effect: () => void) => Promise<void>,
+) {
+  let generation = 0
+
+  function captureCompletion(): (material: string | null) => void {
+    const capturedGeneration = generation
+    return (material) => {
+      if (capturedGeneration !== generation) return
+      bindings.setCreateDialogVisible(false)
+      bindings.setMaterial(material)
+      void schedule(() => {
+        if (capturedGeneration === generation) bindings.setMaterialDialogVisible(true)
+      }).catch(() => undefined)
+    }
+  }
+
+  function clear(): void {
+    generation += 1
+    bindings.clearDialog()
+    bindings.setMaterialDialogVisible(false)
+    bindings.setCreateDialogVisible(false)
+    bindings.setMaterial(null)
+  }
+
+  return { captureCompletion, clear }
+}
+</script>
+
 <script setup lang="ts">
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
@@ -198,8 +237,16 @@ const createDialogVisible = ref(false)
 const tokenDialogVisible = ref(false)
 const delegationToken = ref<string | null>(null)
 const delegationMaterialDialogRef = ref<{ clearNow: () => void }>()
-let observedSensitiveGeneration = props.sensitiveMaterialGeneration ?? 0
 let createIdentitySnapshot: string | undefined
+const sensitiveMaterialScope = createSensitiveMaterialScope(
+  {
+    clearDialog: () => delegationMaterialDialogRef.value?.clearNow(),
+    setCreateDialogVisible: (visible) => (createDialogVisible.value = visible),
+    setMaterial: (material) => (delegationToken.value = material),
+    setMaterialDialogVisible: (visible) => (tokenDialogVisible.value = visible),
+  },
+  (effect) => nextTick(effect),
+)
 
 function accountLabel(accountId: string): string {
   const target = props.targets.find((item) => item.account_id === accountId)
@@ -252,13 +299,7 @@ function openCreateDialog(): void {
 }
 
 function createDelegation(input: CreateProfileServiceDelegationInput): void {
-  emit('create', input, createIdentitySnapshot, (token) => {
-    createDialogVisible.value = false
-    delegationToken.value = token
-    nextTick(() => {
-      tokenDialogVisible.value = true
-    }).catch(() => undefined)
-  })
+  emit('create', input, createIdentitySnapshot, sensitiveMaterialScope.captureCompletion())
 }
 
 async function confirmRevoke(delegation: ProfileServiceDelegation): Promise<void> {
@@ -281,20 +322,12 @@ onBeforeUnmount(() => {
 })
 
 function clearSensitiveMaterial(): void {
-  delegationMaterialDialogRef.value?.clearNow()
-  tokenDialogVisible.value = false
-  createDialogVisible.value = false
-  delegationToken.value = null
+  sensitiveMaterialScope.clear()
   createIdentitySnapshot = undefined
 }
 
 onDeactivated(clearSensitiveMaterial)
-onUpdated(() => {
-  const nextGeneration = props.sensitiveMaterialGeneration ?? 0
-  if (nextGeneration === observedSensitiveGeneration) return
-  observedSensitiveGeneration = nextGeneration
-  clearSensitiveMaterial()
-})
+watch(() => props.sensitiveMaterialGeneration, clearSensitiveMaterial, { flush: 'sync' })
 
 defineExpose({ clearSensitiveMaterial })
 </script>

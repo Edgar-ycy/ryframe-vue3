@@ -49,12 +49,9 @@ import ProfileDetailsForm from './components/ProfileDetailsForm.vue'
 import ProfilePasswordForm from './components/ProfilePasswordForm.vue'
 import ProfileSessionsCard from './components/ProfileSessionsCard.vue'
 import ProfileServiceDelegationsCard from './components/ProfileServiceDelegationsCard.vue'
-import type {
-  CreateProfileServiceDelegationInput,
-  ProfileServiceDelegation,
-} from '@/api/modules/profileServiceDelegation'
 import { useAuthSessionManagement } from './useAuthSessionManagement'
 import { useProfileManagement } from './useProfileManagement'
+import { createProfileServiceDelegationPageActions } from './serviceDelegationPageActions'
 import { useServiceDelegationManagement } from './useServiceDelegationManagement'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
 import { useTenantContextStore } from '@/stores/tenantContext'
@@ -109,25 +106,14 @@ onBeforeUnmount(() => {
   unsubscribeServiceDelegationIdentity()
 })
 
-async function createServiceDelegation(
-  input: CreateProfileServiceDelegationInput,
-  guard: string | undefined,
-  done: (token: string | null) => void,
-): Promise<void> {
-  if (!serviceDelegationIdentityMatches(guard)) return
-  const result = await issueDelegation(input, guard)
-  ElMessage.success(t('profile.serviceDelegations.created'))
-  done(result.token ?? null)
-}
-
-async function revokeServiceDelegation(
-  delegation: ProfileServiceDelegation,
-  guard: string | undefined,
-): Promise<void> {
-  if (!serviceDelegationIdentityMatches(guard)) return
-  await revokeDelegation(delegation, guard)
-  ElMessage.success(t('profile.serviceDelegations.revokedSuccess'))
-}
+const { createServiceDelegation, revokeServiceDelegation } =
+  createProfileServiceDelegationPageActions({
+    identityMatches: serviceDelegationIdentityMatches,
+    issueDelegation,
+    notifyCreated: () => ElMessage.success(t('profile.serviceDelegations.created')),
+    notifyRevoked: () => ElMessage.success(t('profile.serviceDelegations.revokedSuccess')),
+    revokeDelegation,
+  })
 </script>
 
 <style scoped>

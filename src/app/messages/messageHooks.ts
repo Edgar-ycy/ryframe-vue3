@@ -8,13 +8,19 @@ import {
   type MessageInboxQuery,
 } from '@/api/modules/messages'
 import { HttpError } from '@/shared/http/client'
-import { queryClient } from '@/shared/query/client'
+import {
+  assertServerStateScopeCurrent,
+  getServerStateScope,
+  isServerStateScopeCurrent,
+  queryClient,
+} from '@/shared/query/client'
+import { sameServerStateScope, type ServerStateScope } from '@/shared/query/scope'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
   type DeleteVariables,
-  invalidateUserInbox,
+  invalidateMessageInbox,
   MESSAGE_INBOX_RESOURCE,
   MESSAGE_UNREAD_RESOURCE,
   type MessageIdentity,
@@ -45,10 +51,28 @@ const MESSAGE_QUERY_POLICY = {
 
 function currentMessageIdentity(): MessageIdentity {
   const userStore = useUserStore()
+  const scope = getServerStateScope()
   if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId) {
     throw new HttpError('消息会话尚未就绪', { status: 401, kind: 'http' })
   }
-  return { tenantId: userStore.tenantId, userId: String(userStore.userId) }
+  const subjectId = String(userStore.userId)
+  if (!scope || scope.tenantId !== userStore.tenantId || scope.subjectId !== subjectId) {
+    throw new HttpError('消息会话已切换', { status: 401, kind: 'cancelled' })
+  }
+  return {
+    tenantId: scope.tenantId,
+    subjectId: scope.subjectId,
+    sessionEpoch: scope.sessionEpoch,
+  }
+}
+
+function expectedMessageIdentity(expectedScope: ServerStateScope): MessageIdentity {
+  assertServerStateScopeCurrent(expectedScope)
+  const current = currentMessageIdentity()
+  if (!sameServerStateScope(current, expectedScope)) {
+    throw new HttpError('消息会话已切换', { status: 401, kind: 'cancelled' })
+  }
+  return expectedScope
 }
 
 /** 消息中心状态统一由 Vue Query 管理，实时投递与显式补拉负责更新缓存。 */
@@ -72,10 +96,9 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
     MESSAGE_INBOX_RESOURCE,
     () => messageInboxKeyParams(currentUserId(), toValue(query)),
     async (signal) => {
-      const tenantId = userStore.tenantId
-      const requestedUserId = currentUserId()
+      const identity = currentMessageIdentity()
       const requestedQuery = toValue(query)
-      return fetchMessageInboxPage(queryClient, tenantId, requestedUserId, requestedQuery, signal)
+      return fetchMessageInboxPage(queryClient, identity, requestedQuery, signal)
     },
     MESSAGE_QUERY_POLICY,
   )
@@ -99,68 +122,83 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
   )
   const markReadMutation = useServerStateMutation(MESSAGE_INBOX_RESOURCE, {
     meta: { errorMode: 'silent' },
-    mutationFn: (variables: MarkReadVariables) => markMessageRead(variables.id),
+    mutationFn: (variables: MarkReadVariables) => {
+      assertServerStateScopeCurrent(variables)
+      return markMessageRead(variables.id)
+    },
     onSuccess: async (_response, variables) => {
+      if (!isServerStateScopeCurrent(variables)) return
       markCachedMessageRead(queryClient, variables, new Date().toISOString())
       if (variables.wasUnread === true) {
-        if (
-          !setUnreadCount(
-            queryClient,
-            variables.tenantId,
-            variables.userId,
-            (current) => current - 1,
-          )
-        ) {
+        if (!setUnreadCount(queryClient, variables, (current) => current - 1)) {
+          if (!isServerStateScopeCurrent(variables)) return
           await queryClient.invalidateQueries({
-            queryKey: messageUnreadQueryKey(variables.tenantId, variables.userId),
+            queryKey: messageUnreadQueryKey(variables),
           })
         }
       } else if (variables.wasUnread === undefined) {
+        if (!isServerStateScopeCurrent(variables)) return
         await queryClient.invalidateQueries({
-          queryKey: messageUnreadQueryKey(variables.tenantId, variables.userId),
+          queryKey: messageUnreadQueryKey(variables),
         })
       }
     },
   })
   const markAllReadMutation = useServerStateMutation(MESSAGE_INBOX_RESOURCE, {
     meta: { errorMode: 'silent' },
-    mutationFn: (_identity: MessageIdentity) => markAllMessagesRead(),
+    mutationFn: (identity: MessageIdentity) => {
+      assertServerStateScopeCurrent(identity)
+      return markAllMessagesRead()
+    },
     onSuccess: async (_response, identity) => {
+      if (!isServerStateScopeCurrent(identity)) return
       markAllCachedMessagesRead(queryClient, identity, new Date().toISOString())
-      queryClient.setQueryData<number>(messageUnreadQueryKey(identity.tenantId, identity.userId), 0)
+      if (!isServerStateScopeCurrent(identity)) return
+      queryClient.setQueryData<number>(messageUnreadQueryKey(identity), 0)
       await Promise.all([
-        invalidateUserInbox(queryClient, identity.tenantId, identity.userId),
-        queryClient.invalidateQueries({
-          queryKey: messageUnreadQueryKey(identity.tenantId, identity.userId),
-        }),
+        invalidateMessageInbox(queryClient, identity),
+        isServerStateScopeCurrent(identity)
+          ? queryClient.invalidateQueries({ queryKey: messageUnreadQueryKey(identity) })
+          : Promise.resolve(),
       ])
     },
   })
   const deleteMutation = useServerStateMutation(MESSAGE_INBOX_RESOURCE, {
     meta: { errorMode: 'silent' },
-    mutationFn: (variables: DeleteVariables) => deleteReceivedMessages(variables.ids),
+    mutationFn: (variables: DeleteVariables) => {
+      assertServerStateScopeCurrent(variables)
+      return deleteReceivedMessages(variables.ids)
+    },
     onSuccess: async (response, variables) => {
+      if (!isServerStateScopeCurrent(variables)) return
       removeCachedMessages(queryClient, variables)
       if (response.data !== variables.ids.length) {
         await Promise.all([
-          invalidateUserInbox(queryClient, variables.tenantId, variables.userId),
-          queryClient.invalidateQueries({
-            queryKey: messageUnreadQueryKey(variables.tenantId, variables.userId),
-          }),
+          invalidateMessageInbox(queryClient, variables),
+          isServerStateScopeCurrent(variables)
+            ? queryClient.invalidateQueries({ queryKey: messageUnreadQueryKey(variables) })
+            : Promise.resolve(),
         ])
       }
     },
   })
 
-  async function acknowledge(ids: readonly string[]): Promise<void> {
+  async function acknowledge(
+    ids: readonly string[],
+    expectedScope: ServerStateScope,
+  ): Promise<void> {
+    const identity = expectedMessageIdentity(expectedScope)
     const normalized = normalizeMessageIds(ids, '确认')
     if (normalized.length === 0) return
-    await acknowledgeMutation.mutateAsync({ ...currentMessageIdentity(), ids: normalized })
+    await acknowledgeMutation.mutateAsync({
+      ...identity,
+      ids: normalized,
+    })
   }
 
-  async function markRead(id: string): Promise<void> {
-    const identity = currentMessageIdentity()
-    const message = findCachedMessage(queryClient, identity.tenantId, identity.userId, id)
+  async function markRead(id: string, expectedScope: ServerStateScope): Promise<void> {
+    const identity = expectedMessageIdentity(expectedScope)
+    const message = findCachedMessage(queryClient, identity, id)
     if (message?.read_at) return
     await markReadMutation.mutateAsync({
       ...identity,
@@ -169,27 +207,30 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
     })
   }
 
-  async function markAllRead(): Promise<void> {
-    const identity = currentMessageIdentity()
+  async function markAllRead(expectedScope: ServerStateScope): Promise<void> {
+    const identity = expectedMessageIdentity(expectedScope)
     if ((unreadQuery.data.value ?? 0) === 0) return
     await markAllReadMutation.mutateAsync(identity)
   }
 
-  async function remove(ids: readonly string[]): Promise<number> {
+  async function remove(ids: readonly string[], expectedScope: ServerStateScope): Promise<number> {
+    const identity = expectedMessageIdentity(expectedScope)
     const normalized = normalizeMessageIds(ids, '删除')
     if (normalized.length === 0) return 0
     const response = await deleteMutation.mutateAsync({
-      ...currentMessageIdentity(),
+      ...identity,
       ids: normalized,
     })
     return response.data ?? 0
   }
 
-  async function refresh(): Promise<void> {
+  async function refresh(expectedScope: ServerStateScope): Promise<void> {
+    expectedMessageIdentity(expectedScope)
     await Promise.all([
       inboxQuery.refetch({ throwOnError: true }),
       unreadQuery.refetch({ throwOnError: true }),
     ])
+    expectedMessageIdentity(expectedScope)
   }
 
   return {

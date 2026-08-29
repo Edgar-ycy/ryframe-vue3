@@ -60,6 +60,7 @@ describe('消息连接会话范围', () => {
     setActivePinia(createPinia())
     messageController.unbindSession()
     deactivateServerStateScope()
+    vi.clearAllMocks()
     socketRuntime.instances.length = 0
     useUserStore().$patch({
       sessionStatus: 'authenticated',
@@ -76,7 +77,8 @@ describe('消息连接会话范围', () => {
 
   it('令牌轮换复用连接，同主体授权代次变化重连并忽略旧帧', () => {
     expect(transition('authorization-1')).toBe(true)
-    const firstEpoch = getServerStateScope()?.sessionEpoch
+    const firstScope = getServerStateScope()
+    const firstEpoch = firstScope?.sessionEpoch
     messageController.bindSession()
 
     expect(socketRuntime.instances).toHaveLength(1)
@@ -89,9 +91,22 @@ describe('消息连接会话范围', () => {
     expect(firstSocket.stop).not.toHaveBeenCalled()
 
     expect(transition('authorization-2')).toBe(true)
-    expect(getServerStateScope()?.sessionEpoch).toBeGreaterThan(firstEpoch ?? 0)
+    const currentScope = getServerStateScope()
+    expect(currentScope?.sessionEpoch).toBeGreaterThan(firstEpoch ?? 0)
     expect(firstSocket.stop).toHaveBeenCalledOnce()
     expect(socketRuntime.instances).toHaveLength(2)
+    expect(messageSync.cancelMessageState).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: firstScope?.tenantId,
+        subjectId: firstScope?.subjectId,
+        sessionEpoch: firstEpoch,
+      }),
+    )
+    expect(messageSync.cancelMessageState).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sessionEpoch: currentScope?.sessionEpoch }),
+    )
 
     const currentSocket = socketRuntime.instances[1]!
     const message: MessageRecord = {
@@ -104,6 +119,13 @@ describe('消息连接会话范围', () => {
 
     currentSocket.options.onDelivery(message)
     expect(messageCache.receiveMessageDelivery).toHaveBeenCalledOnce()
-    expect(messageCache.receiveMessageDelivery).toHaveBeenCalledWith('tenant-a', '42', message)
+    expect(messageCache.receiveMessageDelivery).toHaveBeenCalledWith(
+      {
+        tenantId: 'tenant-a',
+        subjectId: '42',
+        sessionEpoch: currentScope?.sessionEpoch,
+      },
+      message,
+    )
   })
 })

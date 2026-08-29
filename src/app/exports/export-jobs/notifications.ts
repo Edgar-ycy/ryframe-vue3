@@ -1,25 +1,23 @@
-import { getCurrentScope, onScopeDispose, type MaybeRefOrGetter } from 'vue'
+import { getCurrentScope, onScopeDispose, watch, type MaybeRefOrGetter } from 'vue'
 import {
   getUnreadExportNotificationCount,
   markExportNotificationsRead,
   type ExportJob,
 } from '@/api/modules/exportJob'
 import { requireOperationData } from '@/shared/http/client'
-import { queryClient } from '@/shared/query/client'
+import { isServerStateScopeCurrent, queryClient, useServerStateScope } from '@/shared/query/client'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
-import { useUserStore } from '@/stores/user'
 import { publishExportJobEvent } from '../exportJobChannel'
 import {
   exportJobUnreadQueryKey,
   EXPORT_JOB_NOTIFICATIONS_RESOURCE,
   isUnreadExportNotification,
   markExportNotificationsReadInCache,
-  type ExportJobIdentity,
 } from '../exportJobCache'
-import { currentExportJobIdentity, sameExportJobIdentity, shouldEnableExportJobs } from './identity'
+import { currentExportJobScope, shouldEnableExportJobs } from './identity'
 
 export function useExportNotificationState(enabled: MaybeRefOrGetter<boolean> = true) {
-  const user = useUserStore()
   const unreadQuery = useServerStateQuery<number>(
     () => shouldEnableExportJobs(enabled),
     EXPORT_JOB_NOTIFICATIONS_RESOURCE,
@@ -36,12 +34,7 @@ export function useExportNotificationState(enabled: MaybeRefOrGetter<boolean> = 
     },
   )
   let readController: AbortController | undefined
-  let readIdentity: ExportJobIdentity | undefined
-
-  function identityStillCurrent(identity: ExportJobIdentity): boolean {
-    const latest = currentExportJobIdentity()
-    return latest !== undefined && sameExportJobIdentity(identity, latest)
-  }
+  let readScope: ServerStateScope | undefined
 
   async function refreshUnread(): Promise<void> {
     if (!shouldEnableExportJobs(enabled)) return
@@ -49,8 +42,8 @@ export function useExportNotificationState(enabled: MaybeRefOrGetter<boolean> = 
   }
 
   async function markVisibleNotificationsRead(jobs: readonly ExportJob[]): Promise<void> {
-    const identity = currentExportJobIdentity()
-    if (!identity) return
+    const scope = currentExportJobScope()
+    if (!scope) return
     const ids = jobs
       .filter(isUnreadExportNotification)
       .map((job) => job.id)
@@ -59,31 +52,35 @@ export function useExportNotificationState(enabled: MaybeRefOrGetter<boolean> = 
     readController?.abort()
     const controller = new AbortController()
     readController = controller
-    readIdentity = identity
+    readScope = scope
     try {
       const affected = requireOperationData(
         await markExportNotificationsRead(ids, controller.signal),
       )
-      if (!identityStillCurrent(identity)) return
+      if (!isServerStateScopeCurrent(scope)) return
       const readAt = new Date().toISOString()
-      markExportNotificationsReadInCache(queryClient, identity, ids, readAt)
-      queryClient.setQueryData(
-        exportJobUnreadQueryKey(identity.tenantId, identity.userId),
-        (current: number | undefined) => Math.max(0, (current ?? affected) - affected),
+      markExportNotificationsReadInCache(queryClient, scope, ids, readAt)
+      queryClient.setQueryData(exportJobUnreadQueryKey(scope), (current: number | undefined) =>
+        Math.max(0, (current ?? affected) - affected),
       )
-      publishExportJobEvent({ type: 'notifications-read', ...identity, jobIds: ids, readAt })
+      publishExportJobEvent({ type: 'notifications-read', ...scope, jobIds: ids, readAt })
       await refreshUnread().catch(() => undefined)
     } finally {
       if (readController === controller) {
         readController = undefined
-        readIdentity = undefined
+        readScope = undefined
       }
     }
   }
 
-  const unsubscribeUser = user.$subscribe(
+  const stopScopeWatch = watch(
+    useServerStateScope(),
     () => {
-      if (readIdentity && !identityStillCurrent(readIdentity)) readController?.abort()
+      if (readScope && !isServerStateScopeCurrent(readScope)) {
+        readController?.abort()
+        readController = undefined
+        readScope = undefined
+      }
     },
     { flush: 'sync' },
   )
@@ -91,7 +88,7 @@ export function useExportNotificationState(enabled: MaybeRefOrGetter<boolean> = 
   if (getCurrentScope()) {
     onScopeDispose(() => {
       readController?.abort()
-      unsubscribeUser()
+      stopScopeWatch()
     })
   }
 

@@ -1,29 +1,29 @@
 import { HttpError } from '@/shared/http/client'
-import type { ExportJobIdentity } from '../exportJobCache'
+import type { ServerStateScope } from '@/shared/query/scope'
 
 const activeJobActions = new Set<string>()
 
-function jobActionKey(identity: ExportJobIdentity, jobId: string): string {
-  return `${identity.tenantId}\u0000${identity.userId}\u0000${jobId}`
+function jobActionKey(scope: ServerStateScope, jobId: string): string {
+  return `${scope.tenantId}\u0000${scope.subjectId}\u0000${scope.sessionEpoch}\u0000${jobId}`
 }
 
-export function reserveJobActions(identity: ExportJobIdentity, jobIds: readonly string[]): boolean {
-  const keys = jobIds.map((jobId) => jobActionKey(identity, jobId))
+export function reserveJobActions(scope: ServerStateScope, jobIds: readonly string[]): boolean {
+  const keys = jobIds.map((jobId) => jobActionKey(scope, jobId))
   if (keys.some((key) => activeJobActions.has(key))) return false
   for (const key of keys) activeJobActions.add(key)
   return true
 }
 
-export function releaseJobActions(identity: ExportJobIdentity, jobIds: readonly string[]): void {
-  for (const jobId of jobIds) activeJobActions.delete(jobActionKey(identity, jobId))
+export function releaseJobActions(scope: ServerStateScope, jobIds: readonly string[]): void {
+  for (const jobId of jobIds) activeJobActions.delete(jobActionKey(scope, jobId))
 }
 
-export function jobActionIsReserved(identity: ExportJobIdentity, jobId: string): boolean {
-  return activeJobActions.has(jobActionKey(identity, jobId))
+export function jobActionIsReserved(scope: ServerStateScope, jobId: string): boolean {
+  return activeJobActions.has(jobActionKey(scope, jobId))
 }
 
-export function deletionRequestKey(identity: ExportJobIdentity, ids: readonly string[]): string {
-  return `${identity.tenantId}\u0000${identity.userId}\u0000${ids.join('\u0000')}`
+export function deletionRequestKey(scope: ServerStateScope, ids: readonly string[]): string {
+  return `${scope.tenantId}\u0000${scope.subjectId}\u0000${scope.sessionEpoch}\u0000${ids.join('\u0000')}`
 }
 
 export function normalizeDeletionIds(jobIds: readonly string[], errorMessage: string): string[] {

@@ -6,8 +6,13 @@ import {
   type TenantConfigTransfer,
 } from '@/api/modules/tenantConfigTransfer'
 import { usePermission } from '@/hooks/usePermission'
-import { requireOperationData } from '@/shared/http/client'
-import { createIdentityOperationScope } from '@/shared/query/createIdentityOperationScope'
+import { HttpError, requireOperationData } from '@/shared/http/client'
+import { getServerStateScope } from '@/shared/query/client'
+import {
+  createIdentityOperationScope,
+  type IdentityOperationGuard,
+} from '@/shared/query/createIdentityOperationScope'
+import { sameServerStateScope } from '@/shared/query/scope'
 import { useUserStore } from '@/stores/user'
 import { useTenantConfigTransferActiveTracking } from './useTenantConfigTransferActiveTracking'
 import { useTenantConfigTransferCommands } from './useTenantConfigTransferCommands'
@@ -26,14 +31,34 @@ export function useTenantConfigTransferManagement() {
   function currentIdentity(): TenantConfigIdentity | undefined {
     if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId)
       return undefined
-    return { tenantId: userStore.tenantId, userId: String(userStore.userId) }
+    const active = getServerStateScope()
+    if (
+      !active ||
+      active.tenantId !== userStore.tenantId ||
+      active.subjectId !== String(userStore.userId)
+    )
+      return undefined
+    return {
+      tenantId: active.tenantId,
+      subjectId: active.subjectId,
+      sessionEpoch: active.sessionEpoch,
+    }
   }
 
   const operationScope = createIdentityOperationScope({
     currentIdentity,
     isActive: () => pageActive.value,
-    sameIdentity: (left, right) =>
-      left?.tenantId === right?.tenantId && left?.userId === right?.userId,
+    sameIdentity: sameServerStateScope,
+  })
+  let packageSelectionController: AbortController | undefined
+  let packageSelectionGeneration = 0
+  let transferSelectionController: AbortController | undefined
+  let transferSelectionGeneration = 0
+  operationScope.onInvalidated(() => {
+    packageSelectionController = undefined
+    packageSelectionGeneration += 1
+    transferSelectionController = undefined
+    transferSelectionGeneration += 1
   })
   const isCurrentIdentity = (identity: TenantConfigIdentity) =>
     operationScope.isCurrentIdentity(identity)
@@ -105,41 +130,82 @@ export function useTenantConfigTransferManagement() {
     void fetchData()
   }
 
-  async function selectPackage(bundle: TenantConfigBundle | undefined): Promise<void> {
-    queries.selectedPackage.value = bundle
-    if (!bundle || !canListPackages()) return
+  async function selectPackage(
+    bundle: TenantConfigBundle | undefined,
+    expectedGuard?: IdentityOperationGuard,
+  ): Promise<void> {
     const identity = commands.requireIdentity()
-    const guard = commands.requireOperationContext()
+    const guard = expectedGuard ?? commands.requireOperationContext()
+    commands.ensureOperationContext(identity, guard)
+    packageSelectionController?.abort()
     const controller = operationScope.beginController()
+    packageSelectionController = controller
+    packageSelectionGeneration += 1
+    const generation = packageSelectionGeneration
+    const ensureSelectionCurrent = (): void => {
+      commands.ensureOperationContext(identity, guard)
+      if (
+        controller.signal.aborted ||
+        packageSelectionController !== controller ||
+        packageSelectionGeneration !== generation
+      ) {
+        throw new HttpError('配置包选择已被更新操作取代', { kind: 'cancelled' })
+      }
+    }
     try {
+      ensureSelectionCurrent()
+      queries.selectedPackage.value = bundle
+      if (!bundle || !canListPackages()) return
       const latest = requireOperationData(
         await getTenantConfigPackage(bundle.id, controller.signal),
       )
-      commands.ensureOperationContext(identity, guard)
+      ensureSelectionCurrent()
       queries.mergePackage(identity, latest)
     } finally {
       operationScope.finishController(controller)
+      if (packageSelectionController === controller) packageSelectionController = undefined
     }
   }
 
-  async function selectTransfer(transfer: TenantConfigTransfer | undefined): Promise<void> {
-    queries.selectedTransfer.value = transfer
-    queries.itemQueryParams.value.page = 1
-    if (!transfer) return
+  async function selectTransfer(
+    transfer: TenantConfigTransfer | undefined,
+    expectedGuard?: IdentityOperationGuard,
+  ): Promise<void> {
     const identity = commands.requireIdentity()
-    const guard = commands.requireOperationContext()
+    const guard = expectedGuard ?? commands.requireOperationContext()
+    commands.ensureOperationContext(identity, guard)
+    transferSelectionController?.abort()
     const controller = operationScope.beginController()
+    transferSelectionController = controller
+    transferSelectionGeneration += 1
+    const generation = transferSelectionGeneration
+    const ensureSelectionCurrent = (): void => {
+      commands.ensureOperationContext(identity, guard)
+      if (
+        controller.signal.aborted ||
+        transferSelectionController !== controller ||
+        transferSelectionGeneration !== generation
+      ) {
+        throw new HttpError('配置迁移选择已被更新操作取代', { kind: 'cancelled' })
+      }
+    }
     try {
+      ensureSelectionCurrent()
+      queries.selectedTransfer.value = transfer
+      queries.itemQueryParams.value.page = 1
+      if (!transfer) return
       const latest = requireOperationData(
         await getTenantConfigTransfer(transfer.id, controller.signal),
       )
-      commands.ensureOperationContext(identity, guard)
+      ensureSelectionCurrent()
       commands.mergeTransfer(identity, latest)
       await nextTick()
-      commands.ensureOperationContext(identity, guard)
+      ensureSelectionCurrent()
       await queries.itemsQuery.refetch({ throwOnError: false })
+      ensureSelectionCurrent()
     } finally {
       operationScope.finishController(controller)
+      if (transferSelectionController === controller) transferSelectionController = undefined
     }
   }
 
@@ -160,6 +226,7 @@ export function useTenantConfigTransferManagement() {
     applyPending: commands.applyPending,
     applyTransfer: commands.applyTransfer,
     canListPackages,
+    captureIdentity: operationScope.capture,
     createFromPackage: commands.createFromPackage,
     createPackage: commands.createPackage,
     createPackagePending: commands.createPackagePending,
@@ -175,6 +242,7 @@ export function useTenantConfigTransferManagement() {
     items: queries.itemsQuery.data,
     itemsError: queries.itemsQuery.error,
     itemsLoading: queries.itemsQuery.isFetching,
+    identityMatches: operationScope.matches,
     operationKind: commands.operationKind,
     packageQueryParams: queries.packageQueryParams,
     packages: queries.packagesQuery.data,

@@ -55,7 +55,7 @@
       :page-sizes="[10, 20, 50]"
       layout="total, sizes, prev, pager, next"
       background
-      @change="fetchPackages"
+      @change="refreshPackages"
     />
 
     <el-card v-if="selectedPackage" shadow="never" class="selected-package-card">
@@ -169,16 +169,15 @@
 </template>
 
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
+import type { TenantConfigBundle } from '@/api/modules/tenantConfigTransfer'
 import { formatOptionalLocalizedDate } from '@/i18n'
-import { HttpError } from '@/shared/http/client'
 import ConfigPackagePanel from './components/ConfigPackagePanel.vue'
 import ConfigPackageUploadDialog from './components/ConfigPackageUploadDialog.vue'
 import ConfigTransferHistoryDrawer from './components/ConfigTransferHistoryDrawer.vue'
 import ConfigTransferPlan from './components/ConfigTransferPlan.vue'
 import { useTenantConfigTransferManagement } from './composables/useTenantConfigTransferManagement'
+import { createConfigTransferPageActions } from './configTransferPageActions'
 import {
   canDownloadTenantConfigPackage,
   tenantConfigResourceCounts,
@@ -189,19 +188,13 @@ const { t } = useI18n()
 const historyVisible = ref(false)
 const uploadVisible = ref(false)
 
+const configTransferManagement = useTenantConfigTransferManagement()
 const {
   applyPending,
-  applyTransfer,
   canListPackages,
-  createFromPackage,
-  createPackage,
   createPackagePending,
   createTransferPending,
-  downloadPackage,
   downloadingPackageId,
-  fetchData,
-  fetchItems,
-  fetchPackages,
   itemQueryParams,
   items,
   itemsError,
@@ -211,18 +204,13 @@ const {
   packages,
   packagesError,
   packagesLoading,
-  previewTransfer,
   queryParams,
-  rollbackTransfer,
-  selectPackage,
   selectedPackage,
   selectedTransfer,
-  selectTransfer,
   transfers,
   transfersError,
   transfersLoading,
-  uploadPackage,
-} = useTenantConfigTransferManagement()
+} = configTransferManagement
 
 function activeStep(): number {
   if (!selectedPackage.value && !selectedTransfer.value) return 0
@@ -236,138 +224,26 @@ function operationIs(kind: 'preview' | 'apply' | 'rollback'): boolean {
   return applyPending.value && operationKind.value?.kind === kind
 }
 
-function showError(error: unknown): void {
-  if (error instanceof HttpError && error.kind === 'cancelled') return
-  const message = error instanceof Error ? error.message : t('shell.http.requestFailed')
-  ElMessage.error(message)
-}
-
-async function refreshPackages(): Promise<void> {
-  try {
-    await fetchPackages()
-  } catch (error) {
-    showError(error)
-  }
-}
-
-async function refreshTransfers(): Promise<void> {
-  try {
-    await fetchData()
-  } catch (error) {
-    showError(error)
-  }
-}
-
-async function handleGeneratePackage(): Promise<void> {
-  try {
-    const bundle = await createPackage()
-    await selectPackage(bundle)
-    ElMessage.success(t('tenantConfigTransfer.createPackageSuccess'))
-  } catch (error) {
-    showError(error)
-  }
-}
-
-function handleSelectPackage(bundle: TenantConfigBundle): void {
-  void selectPackage(bundle).catch(showError)
-}
-
-async function handleCreateFromPackage(bundle: TenantConfigBundle): Promise<void> {
-  try {
-    await selectPackage(bundle)
-    await createFromPackage(bundle)
-    ElMessage.success(t('tenantConfigTransfer.createTransferSuccess'))
-  } catch (error) {
-    showError(error)
-  }
-}
-
-async function handleUploadPackage(file: File): Promise<void> {
-  try {
-    await uploadPackage(file)
-    uploadVisible.value = false
-    ElMessage.success(t('tenantConfigTransfer.uploadSuccess'))
-  } catch (error) {
-    showError(error)
-  }
-}
-
-async function handleDownloadPackage(bundle: TenantConfigBundle): Promise<void> {
-  try {
-    await downloadPackage(bundle)
-    ElMessage.success(t('tenantConfigTransfer.downloadSuccess'))
-  } catch (error) {
-    showError(error)
-  }
-}
-
-async function handlePreview(transfer: TenantConfigTransfer): Promise<void> {
-  try {
-    await previewTransfer(transfer)
-    ElMessage.success(t('tenantConfigTransfer.previewSubmitted'))
-  } catch (error) {
-    showError(error)
-  }
-}
-
-async function handleApply(transfer: TenantConfigTransfer): Promise<void> {
-  try {
-    await ElMessageBox.confirm(
-      t('tenantConfigTransfer.applyConfirm'),
-      t('tenantConfigTransfer.applyConfirmTitle'),
-      {
-        type: 'warning',
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-      },
-    )
-    await applyTransfer(transfer)
-    ElMessage.success(t('tenantConfigTransfer.applySubmitted'))
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    showError(error)
-  }
-}
-
-async function handleRollback(transfer: TenantConfigTransfer): Promise<void> {
-  try {
-    await ElMessageBox.confirm(
-      t('tenantConfigTransfer.rollbackConfirm'),
-      t('tenantConfigTransfer.rollbackConfirmTitle'),
-      {
-        type: 'warning',
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-      },
-    )
-    await rollbackTransfer(transfer)
-    ElMessage.success(t('tenantConfigTransfer.rollbackSubmitted'))
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    showError(error)
-  }
-}
-
-function handleItemsPageChange(page: number, pageSize: number): void {
-  itemQueryParams.value.page = page
-  itemQueryParams.value.page_size = pageSize
-  void fetchItems().catch(showError)
-}
-
-function handleHistoryPageChange(page: number, pageSize: number): void {
-  queryParams.value.page = page
-  queryParams.value.page_size = pageSize
-  void fetchData().catch(showError)
-}
-
-async function handleSelectTransfer(transfer: TenantConfigTransfer): Promise<void> {
-  try {
-    await selectTransfer(transfer)
-    historyVisible.value = false
-  } catch (error) {
-    showError(error)
-  }
-}
+const {
+  handleApply,
+  handleCreateFromPackage,
+  handleDownloadPackage,
+  handleGeneratePackage,
+  handleHistoryPageChange,
+  handleItemsPageChange,
+  handlePreview,
+  handleRollback,
+  handleSelectPackage,
+  handleSelectTransfer,
+  handleUploadPackage,
+  refreshPackages,
+  refreshTransfers,
+} = createConfigTransferPageActions({
+  historyVisible,
+  management: configTransferManagement,
+  t,
+  uploadVisible,
+})
 
 function handleHistoryClosed(): void {
   return

@@ -29,7 +29,7 @@ beforeEach(() => {
 })
 
 describe('导出任务跨标签事件', () => {
-  it('只接收身份完整且数量合法的 deleted 事件', async () => {
+  it('只接收完整 scope 且数量合法的 deleted 事件', async () => {
     const { publishExportJobEvent, subscribeExportJobEvents } =
       await import('@/app/exports/exportJobChannel')
     const received: unknown[] = []
@@ -37,17 +37,27 @@ describe('导出任务跨标签事件', () => {
     const event = {
       type: 'deleted' as const,
       tenantId: 'tenant-a',
-      userId: 'user-a',
+      subjectId: 'user-a',
+      sessionEpoch: 7,
       jobIds: ['job-1', 'job-2'],
     }
 
     publishExportJobEvent(event)
 
-    expect(FakeBroadcastChannel.latest?.name).toBe('ryframe-export-jobs-v1')
+    expect(FakeBroadcastChannel.latest?.name).toBe('ryframe-export-jobs-v2')
     expect(FakeBroadcastChannel.latest?.posted).toEqual([event])
     FakeBroadcastChannel.latest?.receive(event)
     FakeBroadcastChannel.latest?.receive({ ...event, jobIds: [] })
     FakeBroadcastChannel.latest?.receive({ ...event, tenantId: undefined })
+    FakeBroadcastChannel.latest?.receive({ ...event, subjectId: undefined })
+    FakeBroadcastChannel.latest?.receive({ ...event, sessionEpoch: undefined })
+    FakeBroadcastChannel.latest?.receive({ ...event, sessionEpoch: 1.5 })
+    FakeBroadcastChannel.latest?.receive({
+      type: 'deleted',
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+      jobIds: ['job-1'],
+    })
     expect(received).toEqual([event])
     unsubscribe()
   })

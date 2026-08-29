@@ -21,11 +21,18 @@ export function useServiceAccountDelegations(context: ReturnType<typeof useServi
     delegationsQueryParams,
     ensureOperationContext,
     finishController,
+    onIdentityChanged,
     pageActive,
     requireIdentity,
     requireOperationContext,
   } = context
   const revokingDelegationId = ref<string>()
+  let revokeController: AbortController | undefined
+
+  onIdentityChanged(() => {
+    revokeController = undefined
+    revokingDelegationId.value = undefined
+  })
 
   async function fetchDelegations(): Promise<void> {
     if (!pageActive.value || !currentIdentity() || !canListDelegations.value) return
@@ -44,6 +51,7 @@ export function useServiceAccountDelegations(context: ReturnType<typeof useServi
     const operationContext = requireOperationContext(expectedIdentity)
     const identity = requireIdentity()
     const controller = beginController()
+    revokeController = controller
     revokingDelegationId.value = delegation.id
     try {
       await revokeServiceDelegation(delegation.id, controller.signal)
@@ -65,7 +73,8 @@ export function useServiceAccountDelegations(context: ReturnType<typeof useServi
       void delegationsQuery.refetch({ throwOnError: false })
     } finally {
       finishController(controller)
-      if (revokingDelegationId.value === delegation.id) {
+      if (revokeController === controller) {
+        revokeController = undefined
         revokingDelegationId.value = undefined
       }
     }

@@ -18,6 +18,7 @@ interface CommandOperationScope {
   capture: () => IdentityOperationGuard | undefined
   finishController: (controller: AbortController) => void
   matches: (guard: IdentityOperationGuard | undefined) => boolean
+  onInvalidated: (callback: () => void) => () => void
 }
 
 export interface TenantConfigTransferCommandsOptions {
@@ -50,18 +51,24 @@ export function useTenantConfigTransferCommandContext(
     transfersQuery,
   } = queries
 
+  function scopedIntentKey(identity: TenantConfigIdentity, signature: string): string {
+    return `${identity.tenantId}\u0000${identity.subjectId}\u0000${identity.sessionEpoch}\u0000${signature}`
+  }
+
   function mergeTransfer(identity: TenantConfigIdentity, transfer: TenantConfigTransfer): void {
     mergeTransferCache(identity, transfer)
     if (isActiveTenantConfigTransfer(transfer)) return
-    pendingIntentKeys.delete(`preview:${transfer.id}`)
+    pendingIntentKeys.delete(scopedIntentKey(identity, `preview:${transfer.id}`))
     if (transfer.status === 'applied' || transfer.status === 'failed') {
+      const prefix = scopedIntentKey(identity, `apply:${transfer.id}:`)
       for (const signature of pendingIntentKeys.keys()) {
-        if (signature.startsWith(`apply:${transfer.id}:`)) pendingIntentKeys.delete(signature)
+        if (signature.startsWith(prefix)) pendingIntentKeys.delete(signature)
       }
     }
     if (transfer.status === 'rolled_back' || transfer.status === 'failed') {
+      const prefix = scopedIntentKey(identity, `rollback:${transfer.id}:`)
       for (const signature of pendingIntentKeys.keys()) {
-        if (signature.startsWith(`rollback:${transfer.id}:`)) pendingIntentKeys.delete(signature)
+        if (signature.startsWith(prefix)) pendingIntentKeys.delete(signature)
       }
     }
   }
@@ -109,7 +116,12 @@ export function useTenantConfigTransferCommandContext(
     options.abortActiveCycle()
   }
 
-  async function selectFirstListPage(kind: 'package' | 'transfer'): Promise<void> {
+  async function selectFirstListPage(
+    identity: TenantConfigIdentity,
+    guard: IdentityOperationGuard,
+    kind: 'package' | 'transfer',
+  ): Promise<void> {
+    ensureOperationContext(identity, guard)
     if (kind === 'package') {
       packageQueryParams.value.page = 1
       activePackageQueryParams.value = { ...packageQueryParams.value }
@@ -118,6 +130,7 @@ export function useTenantConfigTransferCommandContext(
       activeQueryParams.value = { ...queryParams.value }
     }
     await nextTick()
+    ensureOperationContext(identity, guard)
   }
 
   async function runIdempotent<T>(
@@ -127,19 +140,20 @@ export function useTenantConfigTransferCommandContext(
     prefix: string,
     execute: (idempotencyKey: string, controller: AbortController) => Promise<T>,
   ): Promise<T> {
-    const idempotencyKey = pendingIntentKeys.get(signature) ?? createIdempotencyKey(prefix)
+    const intentKey = scopedIntentKey(identity, signature)
+    const idempotencyKey = pendingIntentKeys.get(intentKey) ?? createIdempotencyKey(prefix)
     const controller = options.operationScope.beginController()
     try {
       const result = await execute(idempotencyKey, controller)
       ensureOperationContext(identity, guard)
-      pendingIntentKeys.delete(signature)
+      pendingIntentKeys.delete(intentKey)
       return result
     } catch (error) {
       // 页面失活时服务端结果可能已提交，同一身份保留幂等键供恢复后重试。
       if (options.isCurrentIdentity(identity) && shouldReuseIdempotencyKey(error)) {
-        pendingIntentKeys.set(signature, idempotencyKey)
+        pendingIntentKeys.set(intentKey, idempotencyKey)
       } else {
-        pendingIntentKeys.delete(signature)
+        pendingIntentKeys.delete(intentKey)
       }
       throw error
     } finally {

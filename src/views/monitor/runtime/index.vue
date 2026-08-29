@@ -146,6 +146,7 @@ const runtimeQuery = useServerStateQuery<RuntimeStatus | null>(
     const response = await getRuntimeStatus(signal)
     return response.data ?? null
   },
+  { meta: { errorMode: 'silent' } },
 )
 const loading = runtimeQuery.isFetching
 const runtime = runtimeQuery.data

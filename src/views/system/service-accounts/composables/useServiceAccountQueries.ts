@@ -129,6 +129,7 @@ export function useServiceAccountQueries(
       staleTime: 0,
       gcTime: SERVICE_ACCOUNT_QUERY_GC_TIME,
       retry: false,
+      meta: { errorMode: 'silent' },
       refetchInterval: false,
       refetchOnMount: 'always',
       refetchOnReconnect: false,
@@ -210,6 +211,7 @@ export function useServiceAccountQueries(
     {
       gcTime: SERVICE_ACCOUNT_QUERY_GC_TIME,
       retry: false,
+      meta: { errorMode: 'silent' },
       refetchInterval: false,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
@@ -231,6 +233,7 @@ export function useServiceAccountQueries(
     {
       gcTime: SERVICE_ACCOUNT_QUERY_GC_TIME,
       retry: false,
+      meta: { errorMode: 'silent' },
       refetchInterval: false,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,

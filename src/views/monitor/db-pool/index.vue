@@ -95,6 +95,7 @@ const poolQuery = useServerStateQuery<DbPoolInfo | null>(
     const response = await getDbPool(signal)
     return response.data ?? null
   },
+  { meta: { errorMode: 'silent' } },
 )
 const loading = poolQuery.isFetching
 const poolInfo = poolQuery.data

@@ -179,6 +179,7 @@ const cacheQuery = useServerStateQuery<CacheSnapshot>(
       info: infoResponse.data ?? null,
     }
   },
+  { meta: { errorMode: 'silent' } },
 )
 
 const loading = cacheQuery.isFetching

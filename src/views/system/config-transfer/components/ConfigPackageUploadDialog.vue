@@ -49,6 +49,7 @@ import {
   type UploadUserFile,
 } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import { resetConfigPackageUploadSelection } from '../configTransferOverlayState'
 
 const props = defineProps<{ loading: boolean }>()
 const emit = defineEmits<{ submit: [file: File] }>()
@@ -98,14 +99,19 @@ function handleExceed(files: File[], uploadFiles: UploadUserFile[]): void {
 
 function reset(): void {
   if (props.loading) return
-  selectedFile.value = undefined
-  uploadRef.value?.clearFiles()
+  resetNow()
+}
+
+function resetNow(): void {
+  resetConfigPackageUploadSelection(selectedFile, () => uploadRef.value?.clearFiles())
 }
 
 function submit(): void {
   if (props.loading || !selectedFile.value) return
   emit('submit', selectedFile.value)
 }
+
+defineExpose({ resetNow })
 </script>
 
 <style scoped>

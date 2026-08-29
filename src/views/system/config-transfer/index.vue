@@ -146,6 +146,7 @@
     />
 
     <ConfigPackageUploadDialog
+      ref="uploadDialogRef"
       v-model="uploadVisible"
       :loading="createTransferPending"
       @submit="handleUploadPackage"
@@ -179,14 +180,31 @@ import ConfigTransferPlan from './components/ConfigTransferPlan.vue'
 import { useTenantConfigTransferManagement } from './composables/useTenantConfigTransferManagement'
 import { createConfigTransferPageActions } from './configTransferPageActions'
 import {
+  resetConfigTransferOverlays,
+  type ConfigPackageUploadDialogController,
+} from './configTransferOverlayState'
+import {
   canDownloadTenantConfigPackage,
   tenantConfigResourceCounts,
   tenantConfigResourceLabel,
 } from './presentation'
+import { useServerStateScope } from '@/shared/query/client'
 
 const { t } = useI18n()
 const historyVisible = ref(false)
 const uploadVisible = ref(false)
+const uploadDialogRef = ref<ConfigPackageUploadDialogController>()
+
+function resetOverlays(): void {
+  resetConfigTransferOverlays({ historyVisible, uploadDialog: uploadDialogRef, uploadVisible })
+}
+
+const stopScopeWatch = watch(useServerStateScope(), resetOverlays, { flush: 'sync' })
+onDeactivated(resetOverlays)
+onBeforeUnmount(() => {
+  resetOverlays()
+  stopScopeWatch()
+})
 
 const configTransferManagement = useTenantConfigTransferManagement()
 const {

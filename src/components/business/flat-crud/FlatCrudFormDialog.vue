@@ -58,6 +58,8 @@
 
 <script setup lang="ts" generic="TModel extends object">
 import type { FormInstance } from 'element-plus'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStatePageOperation } from '@/shared/query/pageOperationScope'
 
 import type {
   FlatCrudFormField,
@@ -80,10 +82,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: TModel]
   'update:visible': [value: boolean]
-  submit: []
+  submit: [operation: ServerStatePageOperation]
 }>()
 
 const formRef = ref<FormInstance>()
+let submissionGeneration = 0
 const visibleFields = computed(() =>
   props.fields.filter((field) => !field.editOnly || props.editing),
 )
@@ -124,7 +127,18 @@ function updateField(field: FlatCrudFormField<TModel>, value: FlatCrudScalar): v
 }
 
 async function submit(): Promise<void> {
+  const operation = beginServerStatePageOperation()
+  const generation = submissionGeneration
   if (!(await formRef.value?.validate().catch(() => false))) return
-  emit('submit')
+  if (!operation.isCurrent(() => props.visible && generation === submissionGeneration)) return
+  emit('submit', operation)
 }
+
+watch(
+  () => props.visible,
+  () => {
+    submissionGeneration += 1
+  },
+  { flush: 'sync' },
+)
 </script>

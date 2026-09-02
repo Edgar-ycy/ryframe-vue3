@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  allowedDocumentNames,
+  documentLimits,
+  historicalDocuments,
   lineCount,
   scriptLimit,
   sourceLimit,
@@ -8,6 +11,12 @@ import {
   sourceSizeAssessment,
   sourceSizeViolation,
 } from '../source-size-contract.mjs'
+
+test('变更日志属于发布历史且不受使用文档行数上限约束', () => {
+  assert.deepEqual(allowedDocumentNames(), ['ARCHITECTURE.md', 'CHANGELOG.md', 'README.md'])
+  assert.deepEqual(historicalDocuments, ['CHANGELOG.md'])
+  assert.equal(documentLimits['CHANGELOG.md'], undefined)
+})
 
 test('所有手写 TypeScript 都会获得规模上限', () => {
   assert.equal(sourceLimits.test, 300)

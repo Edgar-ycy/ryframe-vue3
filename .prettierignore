@@ -2,6 +2,7 @@
 coverage/
 dist/
 node_modules/
+CHANGELOG.md
 openapi/
 pnpm-lock.yaml
 src/api/generated/

@@ -9,6 +9,17 @@ export const sourceLimits = Object.freeze({
   vue: 400,
 })
 
+export const documentLimits = Object.freeze({
+  'ARCHITECTURE.md': 160,
+  'README.md': 120,
+})
+
+export const historicalDocuments = Object.freeze(['CHANGELOG.md'])
+
+export function allowedDocumentNames() {
+  return [...Object.keys(documentLimits), ...historicalDocuments].sort()
+}
+
 const generatedPrefixes = ['src/api/generated/', 'src/generated/']
 const typescriptExtensions = new Set(['.cts', '.mts', '.ts', '.tsx'])
 

@@ -2,6 +2,8 @@ import { readdir, readFile } from 'node:fs/promises'
 import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  allowedDocumentNames,
+  documentLimits,
   lineCount,
   scriptLimit,
   sourceLimit,
@@ -19,11 +21,6 @@ const excludedRepositoryDirectories = new Set([
   'node_modules',
   'openapi',
 ])
-const documentLimits = new Map([
-  ['ARCHITECTURE.md', 160],
-  ['README.md', 120],
-])
-
 async function collectMarkdownFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true })
   const files = []
@@ -83,7 +80,7 @@ for (const path of repositoryFiles.sort()) {
 
 const documentFiles = await collectMarkdownFiles(root)
 const documentNames = documentFiles.map(normalizedRelative).sort()
-const expectedDocumentNames = [...documentLimits.keys()].sort()
+const expectedDocumentNames = allowedDocumentNames()
 if (JSON.stringify(documentNames) !== JSON.stringify(expectedDocumentNames)) {
   violations.push({
     limit: expectedDocumentNames.join('、'),
@@ -92,7 +89,7 @@ if (JSON.stringify(documentNames) !== JSON.stringify(expectedDocumentNames)) {
   })
 }
 
-for (const [path, limit] of documentLimits) {
+for (const [path, limit] of Object.entries(documentLimits)) {
   const lines = lineCount(await readFile(join(root, path), 'utf8'))
   if (lines > limit) violations.push({ limit, lines, path })
 }

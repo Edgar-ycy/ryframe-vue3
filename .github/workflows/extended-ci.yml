@@ -1,0 +1,70 @@
+name: Extended CI
+
+on:
+  schedule:
+    - cron: '43 3 * * 3'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GIT_CONFIG_COUNT: '1'
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
+
+jobs:
+  compatibility-supply-chain:
+    name: Node 22 Compatibility & Supply Chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: 安装 Node.js 22.22
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 22.22.2
+          package-manager-cache: false
+
+      - name: 安装 pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: 安装依赖
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: 验证 Node.js 22 类型、单测与生产构建
+        run: corepack pnpm typecheck && corepack pnpm test:unit && corepack pnpm build
+
+      - name: 审计生产依赖
+        run: corepack pnpm audit --prod --audit-level high
+
+      - name: 校验依赖许可证
+        run: corepack pnpm check:supply-chain-policy
+
+      - name: 生成 CycloneDX 物料清单
+        run: corepack pnpm sbom:generate -- --output "${RUNNER_TEMP}/ryframe-vue3.cdx.json"
+
+      - name: 保存 CycloneDX 物料清单
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ryframe-vue3-cyclonedx
+          path: ${{ runner.temp }}/ryframe-vue3.cdx.json
+          if-no-files-found: error
+          retention-days: 14
+
+  osv-scan:
+    name: OSV Vulnerability Scan
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@0c58c542420dfd23fcac08dd9c8ca3cca9c36f1a
+    with:
+      scan-args: |-
+        --include-git-root
+        -r
+        ./

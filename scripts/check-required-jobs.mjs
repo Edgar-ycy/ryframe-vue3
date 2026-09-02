@@ -3,24 +3,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ordinaryJobs = ['static', 'unit', 'build', 'browser', 'windows-smoke']
-const scheduledJobs = ['node-22-compatibility', 'supply-chain', 'osv-scan']
-const jobs = [...ordinaryJobs, ...scheduledJobs]
+const jobs = ordinaryJobs
 const eventMatrix = {
   push: {
     success: ordinaryJobs,
-    skipped: scheduledJobs,
+    skipped: [],
   },
   pull_request: {
     success: ordinaryJobs,
-    skipped: scheduledJobs,
-  },
-  schedule: {
-    success: scheduledJobs,
-    skipped: ordinaryJobs,
-  },
-  workflow_dispatch: {
-    success: [...ordinaryJobs, 'supply-chain', 'osv-scan'],
-    skipped: ['node-22-compatibility'],
+    skipped: [],
   },
 }
 

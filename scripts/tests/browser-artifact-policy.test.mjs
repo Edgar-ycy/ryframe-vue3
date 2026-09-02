@@ -22,7 +22,7 @@ test('普通与真实浏览器测试保留完整失败产物', async () => {
 
 test('普通浏览器门禁严格上传报告与测试结果', async () => {
   const workflow = await read('.github/workflows/ci.yml')
-  const browser = workflow.split('\n  browser:\n', 2)[1].split('\n  node-22-compatibility:\n', 1)[0]
+  const browser = workflow.split('\n  browser:\n', 2)[1].split('\n  windows-smoke:\n', 1)[0]
 
   assert.match(browser, /if: \$\{\{ always\(\) \}\}/u)
   assert.match(browser, /\.local-tests\/playwright\/report/u)

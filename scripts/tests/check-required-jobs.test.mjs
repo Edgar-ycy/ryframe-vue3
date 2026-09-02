@@ -15,9 +15,6 @@ function resultsFor(event) {
     unit: 'skipped',
     build: 'skipped',
     browser: 'skipped',
-    'node-22-compatibility': 'skipped',
-    'supply-chain': 'skipped',
-    'osv-scan': 'skipped',
     'windows-smoke': 'skipped',
   }
   if (event === 'push' || event === 'pull_request') {
@@ -26,24 +23,12 @@ function resultsFor(event) {
     common.build = 'success'
     common.browser = 'success'
     common['windows-smoke'] = 'success'
-  } else if (event === 'schedule') {
-    common['node-22-compatibility'] = 'success'
-    common['supply-chain'] = 'success'
-    common['osv-scan'] = 'success'
-  } else if (event === 'workflow_dispatch') {
-    common.static = 'success'
-    common.unit = 'success'
-    common.build = 'success'
-    common.browser = 'success'
-    common['supply-chain'] = 'success'
-    common['osv-scan'] = 'success'
-    common['windows-smoke'] = 'success'
   }
   return common
 }
 
 test('接受每种工作流事件的精确矩阵', () => {
-  for (const event of ['push', 'pull_request', 'schedule', 'workflow_dispatch']) {
+  for (const event of ['push', 'pull_request']) {
     assert.deepEqual(validateRequiredJobs(event, resultsFor(event)), [])
   }
 })
@@ -53,14 +38,26 @@ test('拒绝把必跑 job 当作 skipped 或 failure', () => {
   pullRequest.static = 'skipped'
   assert.notDeepEqual(validateRequiredJobs('pull_request', pullRequest), [])
 
-  const schedule = resultsFor('schedule')
-  schedule['osv-scan'] = 'failure'
-  assert.notDeepEqual(validateRequiredJobs('schedule', schedule), [])
+  const push = resultsFor('push')
+  push.browser = 'failure'
+  assert.notDeepEqual(validateRequiredJobs('push', push), [])
 })
 
 test('工作流通过受测脚本执行汇总', async () => {
   const workflow = await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')
   assert.match(workflow, /node scripts\/check-required-jobs\.mjs/u)
+})
+
+test('低频兼容与供应链检查只进入扩展 CI', async () => {
+  const daily = await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')
+  const extended = await readFile(path.join(root, '.github/workflows/extended-ci.yml'), 'utf8')
+  for (const job of ['node-22-compatibility:', 'supply-chain:', 'osv-scan:']) {
+    assert.doesNotMatch(daily, new RegExp(`\\n {2}${job}`, 'u'))
+  }
+  assert.match(extended, /\n {2}compatibility-supply-chain:/u)
+  assert.match(extended, /\n {2}osv-scan:/u)
+  assert.match(extended, /schedule:/u)
+  assert.match(extended, /workflow_dispatch:/u)
 })
 
 test('pnpm 缓存指纹覆盖完整工作区定义', async () => {

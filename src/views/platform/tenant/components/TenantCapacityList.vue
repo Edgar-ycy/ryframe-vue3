@@ -102,7 +102,7 @@
               link
               icon="Edit"
               :disabled="statusPending || !isMutableStatus(row.status)"
-              @click="emit('edit', row)"
+              @click="requestEdit(row.tenant_id)"
             >
               {{ t('tenantCapacity.edit') }}
             </el-button>
@@ -114,7 +114,7 @@
               :disabled="
                 row.tenant_id === 'system' || statusPending || !isMutableStatus(row.status)
               "
-              @click="emit('toggle', row)"
+              @click="requestToggle(row.tenant_id)"
             >
               {{ statusActionLabel(row.status) }}
             </el-button>
@@ -243,7 +243,7 @@ import type { TenantCapacity, TenantCapacityPage } from '@/api/modules/tenant'
 import { paginationA11yDirective as vPaginationA11y } from '@/shared/accessibility/pagination'
 import TenantQuotaMeter from './TenantQuotaMeter.vue'
 
-defineProps<{
+const props = defineProps<{
   canViewUsage: boolean
   loading: boolean
   page: number
@@ -271,6 +271,20 @@ const { t } = useI18n()
 
 function isMutableStatus(status: string): boolean {
   return status === 'enabled' || status === 'disabled'
+}
+
+function findTenant(tenantId: string): TenantCapacity | undefined {
+  return props.tenantPage?.items.find((tenant) => tenant.tenant_id === tenantId)
+}
+
+function requestEdit(tenantId: string): void {
+  const tenant = findTenant(tenantId)
+  if (tenant) emit('edit', tenant)
+}
+
+function requestToggle(tenantId: string): void {
+  const tenant = findTenant(tenantId)
+  if (tenant) emit('toggle', tenant)
 }
 
 function tenantStatusType(status: string): TagProps['type'] {

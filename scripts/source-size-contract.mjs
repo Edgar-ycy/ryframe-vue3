@@ -52,7 +52,15 @@ export function scriptLimit(path) {
 }
 
 export function sourceSizeViolation(path, content, limit = sourceLimit(path)) {
+  const assessment = sourceSizeAssessment(path, content, limit)
+  return assessment?.severity === 'error' ? assessment : undefined
+}
+
+export function sourceSizeAssessment(path, content, limit = sourceLimit(path)) {
   if (limit === undefined) return undefined
   const lines = lineCount(content)
-  return lines > limit ? { limit, lines, path: normalizeRepositoryPath(path) } : undefined
+  const ratio = lines / limit
+  const severity =
+    ratio >= 1 ? 'error' : ratio >= 0.9 ? 'warning' : ratio >= 0.8 ? 'notice' : undefined
+  return severity ? { limit, lines, path: normalizeRepositoryPath(path), severity } : undefined
 }

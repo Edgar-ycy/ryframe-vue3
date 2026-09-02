@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/vue-query'
 import type { MessageInboxPage, MessageRecord } from '@/api/modules/messages'
-import { queryClient } from '@/shared/query/client'
+import { isServerStateScopeCurrent, queryClient } from '@/shared/query/client'
 import {
   type AcknowledgeVariables,
   type DeleteVariables,
@@ -8,10 +8,10 @@ import {
   type MessageIdentity,
   type MessageInboxKeyParams,
   inboxParamsFromKey,
-  isInboxKeyForUser,
+  isInboxKeyForSubject,
   MESSAGE_INBOX_RESOURCE,
+  messageResourcePrefix,
   messageUnreadQueryKey,
-  resourceQueryKey,
 } from './queryKeys'
 
 function sortMessages(left: MessageRecord, right: MessageRecord): number {
@@ -56,15 +56,14 @@ export function mergeMessagePage(
 
 export function findCachedMessage(
   client: QueryClient,
-  tenantId: string,
-  userId: string,
+  scope: MessageIdentity,
   id: string,
 ): MessageRecord | undefined {
   const entries = client.getQueriesData<MessageInboxPage>({
-    queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
+    queryKey: messageResourcePrefix(scope, MESSAGE_INBOX_RESOURCE),
   })
   for (const [key, page] of entries) {
-    if (!page || !isInboxKeyForUser(key, userId)) continue
+    if (!page || !isInboxKeyForSubject(key, scope.subjectId)) continue
     const message = page.records.find((record) => record.id === id)
     if (message) return message
   }
@@ -73,12 +72,13 @@ export function findCachedMessage(
 
 export function setUnreadCount(
   client: QueryClient,
-  tenantId: string,
-  userId: string,
+  scope: MessageIdentity,
   update: (current: number) => number,
 ): boolean {
-  const key = messageUnreadQueryKey(tenantId, userId)
+  if (!isServerStateScopeCurrent(scope)) return false
+  const key = messageUnreadQueryKey(scope)
   if (client.getQueryData<number>(key) === undefined) return false
+  if (!isServerStateScopeCurrent(scope)) return false
   client.setQueryData<number>(key, (current) => Math.max(0, update(current ?? 0)))
   return true
 }
@@ -86,19 +86,19 @@ export function setUnreadCount(
 /** 将 WebSocket 投递合并到当前租户和用户的收件箱缓存。 */
 export function cacheMessageDelivery(
   client: QueryClient,
-  tenantId: string,
-  userId: string,
+  scope: MessageIdentity,
   incoming: MessageRecord,
 ): void {
-  const previous = findCachedMessage(client, tenantId, userId, incoming.id)
+  if (!isServerStateScopeCurrent(scope)) return
+  const previous = findCachedMessage(client, scope, incoming.id)
   const merged = mergeMessage(previous, incoming)
   const entries = client.getQueriesData<MessageInboxPage>({
-    queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
+    queryKey: messageResourcePrefix(scope, MESSAGE_INBOX_RESOURCE),
   })
 
   for (const [key, page] of entries) {
     const params = inboxParamsFromKey(key)
-    if (!page || !params || params.user_id !== userId) continue
+    if (!page || !params || params.user_id !== scope.subjectId) continue
     const existing = page.records.some((message) => message.id === incoming.id)
     const belongsToFirstPage = params.cursor === null && (!params.unread_only || !merged.read_at)
     if (!existing && !belongsToFirstPage) continue
@@ -109,6 +109,7 @@ export function cacheMessageDelivery(
       .filter((message) => !params.unread_only || !message.read_at)
       .sort(sortMessages)
       .slice(0, params.limit)
+    if (!isServerStateScopeCurrent(scope)) return
     client.setQueryData<MessageInboxPage>(key, { ...page, records })
   }
 
@@ -117,18 +118,15 @@ export function cacheMessageDelivery(
     : Number(!merged.read_at)
   if (
     unreadDelta !== 0 &&
-    !setUnreadCount(client, tenantId, userId, (current) => current + unreadDelta)
+    !setUnreadCount(client, scope, (current) => current + unreadDelta) &&
+    isServerStateScopeCurrent(scope)
   ) {
-    void client.invalidateQueries({ queryKey: messageUnreadQueryKey(tenantId, userId) })
+    void client.invalidateQueries({ queryKey: messageUnreadQueryKey(scope) })
   }
 }
 
-export function receiveMessageDelivery(
-  tenantId: string,
-  userId: string,
-  message: MessageRecord,
-): void {
-  cacheMessageDelivery(queryClient, tenantId, userId, message)
+export function receiveMessageDelivery(scope: MessageIdentity, message: MessageRecord): void {
+  cacheMessageDelivery(queryClient, scope, message)
 }
 
 function updateCachedMessages(
@@ -136,16 +134,18 @@ function updateCachedMessages(
   identity: MessageIdentity,
   update: (message: MessageRecord, params: MessageInboxKeyParams) => MessageRecord | undefined,
 ): void {
+  if (!isServerStateScopeCurrent(identity)) return
   const entries = client.getQueriesData<MessageInboxPage>({
-    queryKey: resourceQueryKey(identity.tenantId, MESSAGE_INBOX_RESOURCE),
+    queryKey: messageResourcePrefix(identity, MESSAGE_INBOX_RESOURCE),
   })
   for (const [key, page] of entries) {
     const params = inboxParamsFromKey(key)
-    if (!page || !params || params.user_id !== identity.userId) continue
+    if (!page || !params || params.user_id !== identity.subjectId) continue
     const records = page.records.flatMap((message) => {
       const changed = update(message, params)
       return changed ? [changed] : []
     })
+    if (!isServerStateScopeCurrent(identity)) return
     client.setQueryData<MessageInboxPage>(key, { ...page, records })
   }
 }
@@ -195,20 +195,16 @@ export function markAllCachedMessagesRead(
 
 /** 从所有收件箱变体中移除消息，并按缓存中的真实未读状态修正角标。 */
 export function removeCachedMessages(client: QueryClient, variables: DeleteVariables): number {
+  if (!isServerStateScopeCurrent(variables)) return 0
   const ids = new Set(variables.ids)
   const unreadRemoved = variables.ids.reduce((count, id) => {
-    const message = findCachedMessage(client, variables.tenantId, variables.userId, id)
+    const message = findCachedMessage(client, variables, id)
     return count + Number(Boolean(message && !message.read_at))
   }, 0)
 
   updateCachedMessages(client, variables, (message) => (ids.has(message.id) ? undefined : message))
   if (unreadRemoved > 0) {
-    setUnreadCount(
-      client,
-      variables.tenantId,
-      variables.userId,
-      (current) => current - unreadRemoved,
-    )
+    setUnreadCount(client, variables, (current) => current - unreadRemoved)
   }
   return unreadRemoved
 }

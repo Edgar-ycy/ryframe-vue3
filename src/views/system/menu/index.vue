@@ -44,7 +44,7 @@
           show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ permissionLabel(row) }}
+            {{ permissionLabelById(row.id) }}
           </template>
         </el-table-column>
         <el-table-column prop="sort" :label="t('system.common.sort')" align="center" />
@@ -59,12 +59,12 @@
           <template #default="{ row }">
             <el-switch
               v-if="hasPermission('system:menu:edit')"
-              v-model="row.status"
+              :model-value="row.status"
               active-value="1"
               inactive-value="0"
               :loading="statusUpdatingId === row.id"
               :disabled="statusUpdatingId !== null"
-              @change="(value: string) => handleChangeStatus(row, value)"
+              @change="changeMenuStatus(row.id, $event)"
             />
             <el-tag v-else :type="row.status === '1' ? 'success' : 'danger'" size="small">
               {{ row.status === '1' ? t('system.common.normal') : t('system.common.disabled') }}
@@ -92,7 +92,7 @@
               type="primary"
               link
               icon="Edit"
-              @click="handleEdit(row)"
+              @click="editMenuById(row.id)"
             >
               {{ t('system.common.edit') }}
             </el-button>
@@ -102,7 +102,7 @@
               link
               icon="Delete"
               :loading="deletingId === row.id"
-              @click="handleDelete(row)"
+              @click="deleteMenuById(row.id)"
             >
               {{ t('system.common.delete') }}
             </el-button>
@@ -127,6 +127,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { MenuTreeNode } from '@/api/modules/menu'
+import type { Id } from '@/shared/http/types'
 import MenuFormDialog from './components/MenuFormDialog.vue'
 import { useMenuManagement } from './composables/useMenuManagement'
 import { resolveElementIcon } from '@/shared/ui/icons'
@@ -152,4 +154,40 @@ const {
   statusUpdatingId,
   tableData,
 } = useMenuManagement()
+
+function findMenu(nodes: readonly MenuTreeNode[], id: Id): MenuTreeNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    const child = findMenu(node.children, id)
+    if (child) return child
+  }
+  return undefined
+}
+
+function currentMenu(id: Id): MenuTreeNode | undefined {
+  return findMenu(tableData.value ?? [], id)
+}
+
+function permissionLabelById(id: Id): string {
+  const menu = currentMenu(id)
+  return menu ? permissionLabel(menu) : '—'
+}
+
+async function changeMenuStatus(
+  id: Id,
+  value: string | number | boolean | undefined,
+): Promise<void> {
+  const menu = currentMenu(id)
+  if (menu && (value === '0' || value === '1')) await handleChangeStatus(menu, value)
+}
+
+function editMenuById(id: Id): void {
+  const menu = currentMenu(id)
+  if (menu) handleEdit(menu)
+}
+
+async function deleteMenuById(id: Id): Promise<void> {
+  const menu = currentMenu(id)
+  if (menu) await handleDelete(menu)
+}
 </script>

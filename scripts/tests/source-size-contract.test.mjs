@@ -5,6 +5,7 @@ import {
   scriptLimit,
   sourceLimit,
   sourceLimits,
+  sourceSizeAssessment,
   sourceSizeViolation,
 } from '../source-size-contract.mjs'
 
@@ -42,11 +43,24 @@ test('行数统计兼容 LF、CRLF 和末尾换行', () => {
   assert.equal(lineCount('a\r\nb\r\n'), 2)
 })
 
-test('只为超过上限的源码返回违规', () => {
-  assert.equal(sourceSizeViolation('src/example.ts', 'a\nb', 2), undefined)
+test('达到硬上限即违规，80% 与 90% 分别提示和强警告', () => {
+  assert.deepEqual(sourceSizeViolation('src/example.ts', 'a\nb', 2), {
+    limit: 2,
+    lines: 2,
+    path: 'src/example.ts',
+    severity: 'error',
+  })
   assert.deepEqual(sourceSizeViolation('src/example.ts', 'a\nb\nc', 2), {
     limit: 2,
     lines: 3,
     path: 'src/example.ts',
+    severity: 'error',
   })
+  assert.equal(sourceSizeAssessment('src/example.ts', 'a\nb\nc', 4), undefined)
+  assert.equal(sourceSizeAssessment('src/example.ts', 'a\nb\nc\nd', 5)?.severity, 'notice')
+  assert.equal(sourceSizeAssessment('src/example.ts', 'a\nb\nc\nd\ne', 5)?.severity, 'error')
+  assert.equal(
+    sourceSizeAssessment('src/example.ts', 'a\nb\nc\nd\ne\nf\ng\nh\ni', 10)?.severity,
+    'warning',
+  )
 })

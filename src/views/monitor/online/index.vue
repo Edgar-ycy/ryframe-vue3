@@ -71,7 +71,7 @@
               icon="SwitchButton"
               :loading="forcingSid === row.sid"
               :disabled="forceLogoutPending"
-              @click="handleForceLogout(row)"
+              @click="forceLogoutBySid(row.sid)"
             >
               {{ t('monitor.online.forceLogout') }}
             </el-button>
@@ -108,4 +108,9 @@ const {
   onlineUsers,
   queryParams,
 } = useOnlineManagement(t)
+
+async function forceLogoutBySid(sid: string): Promise<void> {
+  const row = onlineUsers.value?.items.find((item) => item.sid === sid)
+  if (row) await handleForceLogout(row)
+}
 </script>

@@ -62,7 +62,7 @@
                 :model-value="selectedPackageId"
                 :value="row.id"
                 :aria-label="t('tenantConfigTransfer.usePackage')"
-                @change="emit('select', row)"
+                @change="selectPackage(row.id)"
               >
                 <span class="visually-hidden">{{ t('tenantConfigTransfer.usePackage') }}</span>
               </el-radio>
@@ -109,8 +109,8 @@
                 type="primary"
                 link
                 :loading="creatingTransfer && selectedPackageId === row.id"
-                :disabled="creatingTransfer || !canDownloadTenantConfigPackage(row)"
-                @click="emit('use', row)"
+                :disabled="creatingTransfer || !canDownloadPackageById(row.id)"
+                @click="usePackage(row.id)"
               >
                 {{ t('tenantConfigTransfer.usePackage') }}
               </el-button>
@@ -119,8 +119,8 @@
                 v-perm="'system:config-package:download'"
                 link
                 :loading="downloadingPackageId === row.id"
-                :disabled="Boolean(downloadingPackageId) || !canDownloadTenantConfigPackage(row)"
-                @click="emit('download', row)"
+                :disabled="Boolean(downloadingPackageId) || !canDownloadPackageById(row.id)"
+                @click="downloadPackage(row.id)"
               >
                 {{ t('tenantConfigTransfer.downloadPackage') }}
               </el-button>
@@ -198,7 +198,7 @@ import type { TenantConfigBundle } from '@/api/modules/tenantConfigTransfer'
 import { formatLocalizedDate } from '@/i18n'
 import { canDownloadTenantConfigPackage } from '../presentation'
 
-defineProps<{
+const props = defineProps<{
   packages: TenantConfigBundle[]
   canList: boolean
   loading: boolean
@@ -218,6 +218,30 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function findPackage(id: string): TenantConfigBundle | undefined {
+  return props.packages.find((item) => item.id === id)
+}
+
+function selectPackage(id: string): void {
+  const item = findPackage(id)
+  if (item) emit('select', item)
+}
+
+function usePackage(id: string): void {
+  const item = findPackage(id)
+  if (item) emit('use', item)
+}
+
+function downloadPackage(id: string): void {
+  const item = findPackage(id)
+  if (item) emit('download', item)
+}
+
+function canDownloadPackageById(id: string): boolean {
+  const item = findPackage(id)
+  return item ? canDownloadTenantConfigPackage(item) : false
+}
 
 function originLabel(origin: string): string {
   return t(`tenantConfigTransfer.${origin === 'generated' ? 'originGenerated' : 'originUploaded'}`)
@@ -243,139 +267,4 @@ function packageStatusTag(status: string): TagProps['type'] {
 }
 </script>
 
-<style scoped lang="scss">
-.transfer-card {
-  min-width: 0;
-}
-
-.panel-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-
-  h2 {
-    margin: 0 0 4px;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-weight: 400;
-  }
-}
-
-.panel-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.security-alert {
-  margin-bottom: 16px;
-}
-
-.desktop-package-table {
-  max-width: 100%;
-  overflow-x: auto;
-
-  :deep(.el-table) {
-    min-width: 1060px;
-  }
-}
-
-.secondary-line {
-  display: block;
-  margin-top: 3px;
-  color: var(--color-text-secondary);
-}
-
-.mobile-package-list {
-  display: none;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-@media (width <= 767px) {
-  .panel-header {
-    flex-direction: column;
-  }
-
-  .panel-actions {
-    width: 100%;
-    justify-content: flex-start;
-
-    :deep(.el-button) {
-      min-height: 40px;
-      margin-left: 0;
-    }
-  }
-
-  .desktop-package-table {
-    display: none;
-  }
-
-  .mobile-package-list {
-    display: grid;
-    gap: 10px;
-  }
-
-  .mobile-package-card {
-    padding: 12px;
-    border: 1px solid var(--border-color-base);
-    border-radius: 10px;
-    background: var(--el-fill-color-blank);
-
-    &.is-selected {
-      border-color: var(--el-color-primary);
-      box-shadow: 0 0 0 1px var(--el-color-primary) inset;
-    }
-
-    header,
-    footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    dl {
-      display: grid;
-      gap: 8px;
-      margin: 12px 0;
-    }
-
-    dl > div {
-      display: grid;
-      grid-template-columns: minmax(90px, 0.8fr) minmax(0, 1.2fr);
-      gap: 8px;
-    }
-
-    dt {
-      color: var(--color-text-secondary);
-    }
-
-    dd {
-      min-width: 0;
-      margin: 0;
-      overflow-wrap: anywhere;
-      text-align: right;
-    }
-
-    footer :deep(.el-button) {
-      flex: 1;
-      min-height: 40px;
-    }
-  }
-}
-</style>
+<style scoped lang="scss" src="./ConfigPackagePanel.scss"></style>

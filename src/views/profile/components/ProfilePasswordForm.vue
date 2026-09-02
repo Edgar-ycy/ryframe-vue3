@@ -47,15 +47,18 @@
 </template>
 
 <script setup lang="ts">
-import type { FormItemRule } from 'element-plus'
+import { ElMessage, type FormInstance, type FormItemRule, type FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import { useServerStateScope } from '@/shared/query/client'
 import { PASSWORD_POLICY } from '@/shared/security/passwordPolicy'
+import { createProfilePasswordSubmission } from '../profilePasswordSubmission'
 import { useProfilePasswordMutation } from '../useProfileMutations'
 
 const formRef = ref<FormInstance>()
 const form = ref({ old_password: '', new_password: '', confirm_password: '' })
 const { t } = useI18n()
-const { savePassword, submitting } = useProfilePasswordMutation(t, resetPasswordForm)
+const { savePassword, submitting } = useProfilePasswordMutation()
+const serverStateScope = useServerStateScope()
 
 const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) => {
   const password = String(value ?? '')
@@ -83,15 +86,30 @@ const rules = computed<FormRules>(() => ({
   ],
 }))
 
-async function submit(): Promise<void> {
-  if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
-
-  await savePassword({
+const submission = createProfilePasswordSubmission({
+  validate: async () => (await formRef.value?.validate().catch(() => false)) === true,
+  password: () => ({
     old_password: form.value.old_password,
     new_password: form.value.new_password,
-  })
+  }),
+  save: savePassword,
+  applied: () => {
+    ElMessage.success(t('account.passwordChangedSignInAgain'))
+    resetPasswordForm()
+  },
+})
+
+function invalidatePasswordForm(): void {
+  submission.invalidate()
+  resetPasswordForm()
+}
+
+watch(serverStateScope, invalidatePasswordForm, { flush: 'sync' })
+onDeactivated(invalidatePasswordForm)
+onBeforeUnmount(invalidatePasswordForm)
+
+async function submit(): Promise<void> {
+  if (!submitting.value) await submission.submit()
 }
 
 function resetPasswordForm(): void {

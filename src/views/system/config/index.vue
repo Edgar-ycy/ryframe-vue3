@@ -102,7 +102,7 @@
               type="primary"
               link
               icon="Edit"
-              @click="handleEdit(row)"
+              @click="editConfigById(row.id)"
               >{{ t('system.common.edit') }}</el-button
             >
             <el-button
@@ -111,7 +111,7 @@
               link
               icon="Delete"
               :loading="deletingId === row.id"
-              @click="handleDelete(row)"
+              @click="deleteConfigById(row.id)"
             >
               {{ t('system.common.delete') }}
             </el-button>
@@ -134,6 +134,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   deleteConfig,
@@ -142,13 +143,15 @@ import {
   type ConfigQuery,
   type ConfigRecord,
 } from '@/api/modules/config'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { formatLocalizedDate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import ConfigFormDialog from './ConfigFormDialog.vue'
@@ -161,7 +164,6 @@ type ConfigFormDialogInstance = {
 const { t } = useI18n()
 const userStore = useUserStore()
 const formDialogRef = ref<ConfigFormDialogInstance>()
-const authenticated = () => userStore.sessionStatus === 'authenticated'
 
 const {
   appliedQuery: appliedQueryParams,
@@ -174,15 +176,11 @@ const {
   runAppliedQuery,
 } = useAppliedListQuery<ConfigQuery>({ page: 1, page_size: 10, name: '', key: '' })
 const { pending: exportLoading, submitExport } = useExportJobRequest()
+const pageLifecycle = useServerStatePageLifecycle(clearSuccessfulQuery)
+const authenticated = () =>
+  pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
-watch(
-  () => [userStore.tenantId, userStore.userId] as const,
-  () => clearSuccessfulQuery(),
-  { flush: 'sync' },
-)
-
-const configsQuery = useTenantQuery<PageResponse<ConfigRecord>>(
-  () => userStore.tenantId,
+const configsQuery = useServerStateQuery<PageResponse<ConfigRecord>>(
   authenticated,
   'configs',
   () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
@@ -203,10 +201,13 @@ async function handleExport(): Promise<void> {
     return
   }
   const intent = normalizeExportIntent('configs', successfulQuery)
-  if (!(await confirmExportIntent(intent))) return
-
-  await submitExport(intent.signature, (idempotencyKey, signal) =>
-    exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
+  await confirmAndSubmitExportIntent(
+    intent,
+    (scope) =>
+      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+        exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
+      ),
+    { ownsOperation: pageLifecycle.captureOwnership() },
   )
 }
 
@@ -235,12 +236,9 @@ async function refreshData(): Promise<void> {
   })
 }
 
-const deleteMutation = useTenantMutation<void, ConfigRecord>(() => userStore.tenantId, 'configs', {
+const deleteMutation = useServerStateMutation<void, ConfigRecord>('configs', {
   mutationFn: async (config) => {
     await deleteConfig(config.id)
-  },
-  onSuccess: () => {
-    ElMessage.success(t('system.common.deleteSuccess'))
   },
 })
 const deletingId = computed<Id | null>(() =>
@@ -255,15 +253,35 @@ async function handleEdit(row: ConfigRecord) {
   await formDialogRef.value?.openEdit(row)
 }
 
+function findConfig(id: Id): ConfigRecord | undefined {
+  return tableResponse.value?.items.find((config) => config.id === id)
+}
+
+async function editConfigById(id: Id): Promise<void> {
+  const config = findConfig(id)
+  if (config) await handleEdit(config)
+}
+
 async function handleDelete(row: ConfigRecord) {
   if (deleteMutation.pending.value) return
-  const confirmed = await confirmAction(
-    t('system.config.deleteConfirm', { name: row.name }),
-    t('system.common.warning'),
-    { type: 'warning' },
+  const ownsOperation = pageLifecycle.captureOwnership()
+  const operation = await confirmServerStatePageOperation(
+    () =>
+      confirmAction(
+        t('system.config.deleteConfirm', { name: row.name }),
+        t('system.common.warning'),
+        { type: 'warning' },
+      ),
+    ownsOperation,
   )
-  if (!confirmed) return
+  if (!operation) return
   await deleteMutation.mutateAsync(row)
+  operation.apply(() => ElMessage.success(t('system.common.deleteSuccess')), ownsOperation)
   await refreshData()
+}
+
+async function deleteConfigById(id: Id): Promise<void> {
+  const config = findConfig(id)
+  if (config) await handleDelete(config)
 }
 </script>

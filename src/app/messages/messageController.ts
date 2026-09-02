@@ -1,18 +1,17 @@
+import { watch } from 'vue'
 import { getMessageWebSocketTicket } from '@/api/modules/messages'
 import {
   cancelMessageState,
   executeMessageAcknowledgement,
-  receiveMessageDelivery,
   synchronizeMessageState,
-} from '@/app/messages/messageQueries'
-import { removeCachedMessages } from '@/app/messages/messageCache'
+} from '@/app/messages/messageSync'
+import { receiveMessageDelivery, removeCachedMessages } from '@/app/messages/messageCache/mutations'
 import type { MessageSocketProtocolError } from '@/app/messages/socket/frameCodec'
 import { MessageSocket } from '@/app/messages/socket/lifecycle'
 import { notifyTenantContextChanged } from '@/app/tenant-context/contextRefresh'
 import { HttpError } from '@/shared/http/client'
-import { queryClient } from '@/shared/query/client'
+import { queryClient, useServerStateScope } from '@/shared/query/client'
 import { useMessageStore } from '@/stores/message'
-import { useUserStore } from '@/stores/user'
 import {
   ACK_DEBOUNCE_MS,
   acknowledgementRetryDelay,
@@ -27,8 +26,9 @@ import {
   currentIdentity,
   getRuntime,
   isCurrentSession,
-  type MessageIdentity,
+  messageServerStateScope,
   type MessageRuntime,
+  type MessageSessionIdentity,
 } from './messageRuntime'
 import { forgetDeletedAcknowledgements, rememberDeletedMessages } from './tombstones'
 
@@ -38,16 +38,9 @@ class MessageController {
   bindSession(): void {
     const runtime = getRuntime()
     if (runtime.unsubscribe) return
-    let previousKey = currentIdentity()?.sessionKey
-    runtime.unsubscribe = useUserStore().$subscribe(
-      () => {
-        const nextKey = currentIdentity()?.sessionKey
-        if (nextKey === previousKey) return
-        previousKey = nextKey
-        this.connectCurrentSession()
-      },
-      { flush: 'sync', detached: true },
-    )
+    runtime.unsubscribe = watch(useServerStateScope(), () => this.connectCurrentSession(), {
+      flush: 'sync',
+    })
     this.connectCurrentSession()
   }
 
@@ -76,9 +69,9 @@ class MessageController {
     if (runtime.sessionKey === identity.sessionKey && runtime.socket) return
 
     this.stopTransport(runtime)
+    const scope = messageServerStateScope(identity)
     runtime.sessionKey = identity.sessionKey
-    runtime.tenantId = identity.tenantId
-    runtime.userId = identity.userId
+    runtime.scope = scope
     const generation = runtime.generation
     const state = useMessageStore()
     state.setConnectionStatus('connecting')
@@ -94,7 +87,7 @@ class MessageController {
       onDelivery: (message) => {
         if (!this.isCurrentSession(runtime, identity.sessionKey, generation)) return
         if (runtime.deletedMessageIds.has(message.id)) return
-        receiveMessageDelivery(identity.tenantId, identity.userId, message)
+        receiveMessageDelivery(scope, message)
         if (!message.acked_at) this.queueAcknowledgement([message.id])
       },
       onTenantContextChanged: (frame) => {
@@ -129,15 +122,14 @@ class MessageController {
     const runtime = getRuntime()
     this.stopTransport(runtime)
     runtime.sessionKey = undefined
-    runtime.tenantId = undefined
-    runtime.userId = undefined
+    runtime.scope = undefined
     useMessageStore().resetConnectionState()
   }
 
   private stopTransport(runtime: MessageRuntime): void {
     runtime.generation += 1
-    if (runtime.tenantId && runtime.userId) {
-      void cancelMessageState(queryClient, runtime.tenantId, runtime.userId)
+    if (runtime.scope) {
+      void cancelMessageState(queryClient, runtime.scope)
     }
     if (runtime.pollTimer !== undefined) {
       clearInterval(runtime.pollTimer)
@@ -149,10 +141,10 @@ class MessageController {
     runtime.socket = undefined
   }
 
-  private async pullFor(identity: MessageIdentity, generation: number): Promise<void> {
+  private async pullFor(identity: MessageSessionIdentity, generation: number): Promise<void> {
     const runtime = getRuntime()
     if (!this.isCurrentSession(runtime, identity.sessionKey, generation)) return
-    const page = await synchronizeMessageState(queryClient, identity.tenantId, identity.userId, {
+    const page = await synchronizeMessageState(queryClient, messageServerStateScope(identity), {
       limit: 100,
       unread_only: false,
     })
@@ -196,8 +188,7 @@ class MessageController {
     const deletedIds = visibleIds.filter((id) => runtime.deletedMessageIds.has(id))
     if (deletedIds.length === 0) return
     removeCachedMessages(queryClient, {
-      tenantId: identity.tenantId,
-      userId: identity.userId,
+      ...messageServerStateScope(identity),
       ids: deletedIds,
     })
   }
@@ -232,7 +223,7 @@ class MessageController {
     if (ids.length === 0) return
     runtime.ackInFlight = true
     try {
-      await executeMessageAcknowledgement(queryClient, identity.tenantId, identity.userId, ids)
+      await executeMessageAcknowledgement(queryClient, messageServerStateScope(identity), ids)
       // 旧会话的在途响应不能修改新身份复用的确认队列。
       if (!this.isCurrentSession(runtime, sessionKey, generation)) return
       runtime.ackInFlight = false

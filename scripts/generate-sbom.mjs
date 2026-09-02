@@ -35,7 +35,7 @@ export function validateSbom(sbom) {
 
 async function runPnpmSbom(output) {
   const pnpmCli = process.env.npm_execpath
-  if (!pnpmCli) throw new Error('请通过 pnpm sbom:generate 生成 SBOM')
+  if (!pnpmCli) throw new Error('请通过 corepack pnpm sbom:generate 生成 SBOM')
   await mkdir(path.dirname(output), { recursive: true })
   const temporary = `${output}.tmp-${process.pid}`
   const handle = await open(temporary, 'w')

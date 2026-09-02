@@ -15,7 +15,10 @@ if (!new Set(['--write', '--check']).has(mode) || process.argv.length > 3) {
 }
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const legacyArtifactPaths = Object.freeze(['src/api/generated/schema.ts'])
+const legacyArtifactPaths = Object.freeze([
+  'src/api/generated/operations.ts',
+  'src/api/generated/schema.ts',
+])
 const generatedSet = new Set(generatedArtifactPaths)
 const sharedGeneratedPaths = new Set([
   'src/shared/security/passwordPolicy.generated.json',
@@ -52,7 +55,7 @@ async function readPreviousOwnership() {
     if (manifest?.version !== 1 || !Array.isArray(manifest.files)) {
       throw new Error('OpenAPI ownership manifest 必须是 version=1 且包含 files 数组')
     }
-    return new Set(manifest.files.map(requireOwnedPath))
+    return new Set([...manifest.files.map(requireOwnedPath), ...legacyArtifactPaths])
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error
     return new Set([...legacyArtifactPaths, ...generatedArtifactPaths])
@@ -91,7 +94,7 @@ async function checkArtifacts(stagingRoot, artifacts, previousOwnership) {
   }
   if (stale.length > 0) {
     throw new Error(
-      `以下 OpenAPI 派生文件不是最新版本：\n  - ${stale.sort().join('\n  - ')}\n请运行 pnpm api:generate`,
+      `以下 OpenAPI 派生文件不是最新版本：\n  - ${stale.sort().join('\n  - ')}\n请运行 corepack pnpm api:generate`,
     )
   }
 }

@@ -7,8 +7,8 @@ import {
 } from '@/api/modules/tenant'
 import { usePermission } from '@/hooks/usePermission'
 import { requireOperationData } from '@/shared/http/client'
-import { queryClient, tenantQueryKey } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { getServerStateScope, queryClient, serverStateResourcePrefix } from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { TENANT_CAPACITY_DETAIL_RESOURCE, TENANT_CAPACITY_PAGE_RESOURCE } from './queryResources'
 import {
@@ -42,8 +42,7 @@ export function useTenantCapacityQueries() {
       canListTenants.value,
   )
 
-  const tenantPageQuery = useTenantQuery<TenantCapacityPage>(
-    () => userStore.tenantId,
+  const tenantPageQuery = useServerStateQuery<TenantCapacityPage>(
     queryEnabled,
     TENANT_CAPACITY_PAGE_RESOURCE,
     () => ({
@@ -77,8 +76,7 @@ export function useTenantCapacityQueries() {
     },
   )
 
-  const detailQuery = useTenantQuery<TenantCapacity>(
-    () => userStore.tenantId,
+  const detailQuery = useServerStateQuery<TenantCapacity>(
     () => queryEnabled.value && selectedTenantId.value !== null,
     TENANT_CAPACITY_DETAIL_RESOURCE,
     () => ({
@@ -149,11 +147,11 @@ export function useTenantCapacityQueries() {
   }
 
   async function closeDetail(): Promise<void> {
-    const tenantId = userStore.tenantId
     selectedTenantId.value = null
-    if (!tenantId) return
+    const scope = getServerStateScope()
+    if (!scope) return
     await queryClient.cancelQueries({
-      queryKey: tenantQueryKey(tenantId, TENANT_CAPACITY_DETAIL_RESOURCE).slice(0, 3),
+      queryKey: serverStateResourcePrefix(scope, TENANT_CAPACITY_DETAIL_RESOURCE),
     })
   }
 
@@ -165,15 +163,15 @@ export function useTenantCapacityQueries() {
   async function setPageActive(active: boolean): Promise<void> {
     if (pageActive.value === active) return
     pageActive.value = active
-    const tenantId = userStore.tenantId
-    if (!tenantId) return
+    const scope = getServerStateScope()
+    if (!scope) return
     if (!active) {
       await Promise.all([
         queryClient.cancelQueries({
-          queryKey: tenantQueryKey(tenantId, TENANT_CAPACITY_PAGE_RESOURCE).slice(0, 3),
+          queryKey: serverStateResourcePrefix(scope, TENANT_CAPACITY_PAGE_RESOURCE),
         }),
         queryClient.cancelQueries({
-          queryKey: tenantQueryKey(tenantId, TENANT_CAPACITY_DETAIL_RESOURCE).slice(0, 3),
+          queryKey: serverStateResourcePrefix(scope, TENANT_CAPACITY_DETAIL_RESOURCE),
         }),
       ])
       return
@@ -189,6 +187,7 @@ export function useTenantCapacityQueries() {
     changePageSize,
     closeDetail,
     detail: detailQuery.data,
+    detailError: detailQuery.error,
     detailLoading: detailQuery.isPending,
     detailQuery,
     detailRefreshing: detailQuery.isFetching,
@@ -205,6 +204,7 @@ export function useTenantCapacityQueries() {
     selectedTenantId,
     setPageActive,
     tenantPage: tenantPageQuery.data,
+    tenantPageError: tenantPageQuery.error,
     tenantPageQuery,
     refreshing: tenantPageQuery.isFetching,
     userStore,

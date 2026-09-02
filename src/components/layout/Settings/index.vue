@@ -13,7 +13,7 @@
           <el-radio-group
             :model-value="settingsStore.locale"
             :disabled="localeSaving"
-            @change="(value: string) => void handleLocaleChange(value)"
+            @change="handleLocaleChange"
           >
             <el-radio-button value="zh-CN">{{ t('shell.locale.zhCn') }}</el-radio-button>
             <el-radio-button value="en-US">{{ t('shell.locale.enUs') }}</el-radio-button>
@@ -22,10 +22,7 @@
 
         <div class="setting-section">
           <div class="setting-label">{{ t('settings.theme') }}</div>
-          <el-radio-group
-            :model-value="settingsStore.theme"
-            @change="(value: string) => settingsStore.setTheme(value as Theme)"
-          >
+          <el-radio-group :model-value="settingsStore.theme" @change="handleThemeChange">
             <el-radio-button value="light">{{ t('settings.light') }}</el-radio-button>
             <el-radio-button value="dark">{{ t('settings.dark') }}</el-radio-button>
           </el-radio-group>
@@ -43,7 +40,7 @@
           <div class="setting-label">{{ t('settings.componentSize') }}</div>
           <el-radio-group
             :model-value="settingsStore.componentSize"
-            @change="(value: string) => settingsStore.setComponentSize(value as ComponentSize)"
+            @change="handleComponentSizeChange"
           >
             <el-radio-button value="large">{{ t('settings.large') }}</el-radio-button>
             <el-radio-button value="default">{{ t('settings.default') }}</el-radio-button>
@@ -86,7 +83,7 @@ import { useI18n } from 'vue-i18n'
 import { updateProfile } from '@/api/modules/auth'
 import { messageController } from '@/app/messages/messageController'
 import { normalizeLocale, type AppLocale } from '@/i18n'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import ThemePicker from './ThemePicker.vue'
@@ -98,7 +95,7 @@ const visible = defineModel<boolean>({ default: false })
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const { t } = useI18n()
-const localeMutation = useTenantMutation<void, AppLocale>(() => userStore.tenantId, 'profile', {
+const localeMutation = useServerStateMutation<void, AppLocale>('profile', {
   mutationFn: async (locale) => {
     await updateProfile({
       nickname: userStore.nickname,
@@ -113,7 +110,8 @@ const localeMutation = useTenantMutation<void, AppLocale>(() => userStore.tenant
 })
 const localeSaving = localeMutation.pending
 
-async function handleLocaleChange(value: string): Promise<void> {
+async function handleLocaleChange(value: string | number | boolean | undefined): Promise<void> {
+  if (typeof value !== 'string') return
   const locale = normalizeLocale(value)
   if (!locale || locale === settingsStore.locale || localeMutation.pending.value) return
 
@@ -123,6 +121,16 @@ async function handleLocaleChange(value: string): Promise<void> {
   await localeMutation.mutateAsync(locale)
   if (settingsStore.locale === locale && userStore.sessionStatus === 'authenticated') {
     messageController.restartConnection()
+  }
+}
+
+function handleThemeChange(value: string | number | boolean | undefined): void {
+  if (value === 'light' || value === 'dark') settingsStore.setTheme(value satisfies Theme)
+}
+
+function handleComponentSizeChange(value: string | number | boolean | undefined): void {
+  if (value === 'large' || value === 'default' || value === 'small') {
+    settingsStore.setComponentSize(value satisfies ComponentSize)
   }
 }
 </script>

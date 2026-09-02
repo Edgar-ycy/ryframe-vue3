@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
-import type { RouteRecordRaw } from 'vue-router'
+import type { RouteProjection } from '@/shared/navigation/routeProjection'
 
 interface PermissionState {
-  routes: RouteRecordRaw[]
-  menus: RouteRecordRaw[]
+  routes: RouteProjection[]
+  menus: RouteProjection[]
   isRoutesLoaded: boolean
 }
 
@@ -15,7 +15,7 @@ export const usePermissionStore = defineStore('permission', {
   }),
 
   actions: {
-    applyRouteProjection(routes: RouteRecordRaw[], menus: RouteRecordRaw[]) {
+    applyRouteProjection(routes: RouteProjection[], menus: RouteProjection[]) {
       this.routes = routes
       this.menus = menus
       this.isRoutesLoaded = true

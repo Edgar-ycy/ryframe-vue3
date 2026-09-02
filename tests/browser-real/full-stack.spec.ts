@@ -90,6 +90,14 @@ test('真实后端完成登录、首页、岗位与租户基本流程', async ({
   await page.locator('.search-card').getByRole('button', { name: '搜索', exact: true }).click()
   await expectSuccessfulResponse(await postSearchResponse)
 
+  const userListResponse = waitForApiResponse(page, 'GET', '/api/v1/system/users')
+  await page.goto('/system/user')
+  await expectSuccessfulResponse(await userListResponse)
+  await page.getByRole('button', { name: '新增', exact: true }).click()
+  const userDialog = page.getByRole('dialog', { name: '新增用户' })
+  await expect(userDialog).toBeVisible()
+  await userDialog.getByRole('button', { name: '取消', exact: true }).click()
+
   const tenantListResponse = waitForApiResponse(page, 'GET', '/api/v1/platform/tenants/page')
   await page.goto('/platform/tenants')
   await expectSuccessfulResponse(await tenantListResponse)

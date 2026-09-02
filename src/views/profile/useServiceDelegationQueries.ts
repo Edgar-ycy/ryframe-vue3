@@ -1,68 +1,74 @@
 import type { ComputedRef } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
 import {
   listProfileServiceDelegations,
   listProfileServiceDelegationTargets,
   type ProfileServiceDelegation,
   type ProfileServiceDelegationTarget,
 } from '@/api/modules/profileServiceDelegation'
-import { HttpError, requireOperationData } from '@/shared/http/client'
-import { tenantQueryKey } from '@/shared/query/client'
+import { requireOperationData } from '@/shared/http/client'
+import { serverStateQueryKey } from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import {
   PROFILE_SERVICE_DELEGATIONS_RESOURCE,
   PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
   QUERY_GC_TIME,
-  type ProfileDelegationIdentity,
+  type ProfileDelegationScope,
 } from './serviceDelegationSupport'
 
 /** 个人服务委托与候选服务账号的只读查询。 */
 export function useServiceDelegationQueries(
   enabled: ComputedRef<boolean>,
-  currentIdentity: () => ProfileDelegationIdentity | undefined,
+  currentIdentity: () => ProfileDelegationScope | undefined,
 ) {
-  function delegationsKey(identity = currentIdentity()) {
-    return tenantQueryKey(identity?.tenantId, PROFILE_SERVICE_DELEGATIONS_RESOURCE, {
+  function delegationsKey(scope: ProfileDelegationScope) {
+    return serverStateQueryKey(scope, PROFILE_SERVICE_DELEGATIONS_RESOURCE, {
       scope: 'self',
-      userId: identity?.userId ?? 'anonymous',
+      userId: scope.subjectId,
     })
   }
 
-  function targetsKey(identity = currentIdentity()) {
-    return tenantQueryKey(identity?.tenantId, PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE, {
+  function targetsKey(scope: ProfileDelegationScope) {
+    return serverStateQueryKey(scope, PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE, {
       scope: 'self',
-      userId: identity?.userId ?? 'anonymous',
+      userId: scope.subjectId,
     })
   }
 
-  const delegationsQuery = useQuery<readonly ProfileServiceDelegation[], HttpError>({
-    queryKey: computed(() => delegationsKey()),
+  const delegationsQuery = useServerStateQuery<readonly ProfileServiceDelegation[]>(
     enabled,
-    queryFn: async ({ signal }) =>
-      requireOperationData(await listProfileServiceDelegations(signal)),
-    initialData: () => [],
-    staleTime: 0,
-    gcTime: QUERY_GC_TIME,
-    retry: false,
-    refetchInterval: false,
-    refetchOnMount: 'always',
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-  })
+    PROFILE_SERVICE_DELEGATIONS_RESOURCE,
+    () => ({ scope: 'self', userId: currentIdentity()?.subjectId ?? 'anonymous' }),
+    async (signal) => requireOperationData(await listProfileServiceDelegations(signal)),
+    {
+      initialData: () => [],
+      staleTime: 0,
+      gcTime: QUERY_GC_TIME,
+      retry: false,
+      meta: { errorMode: 'silent' },
+      refetchInterval: false,
+      refetchOnMount: 'always',
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
+  )
 
-  const targetsQuery = useQuery<readonly ProfileServiceDelegationTarget[], HttpError>({
-    queryKey: computed(() => targetsKey()),
+  const targetsQuery = useServerStateQuery<readonly ProfileServiceDelegationTarget[]>(
     enabled,
-    queryFn: async ({ signal }) =>
-      requireOperationData(await listProfileServiceDelegationTargets(signal)),
-    initialData: () => [],
-    staleTime: 0,
-    gcTime: QUERY_GC_TIME,
-    retry: false,
-    refetchInterval: false,
-    refetchOnMount: 'always',
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-  })
+    PROFILE_SERVICE_DELEGATION_TARGETS_RESOURCE,
+    () => ({ scope: 'self', userId: currentIdentity()?.subjectId ?? 'anonymous' }),
+    async (signal) => requireOperationData(await listProfileServiceDelegationTargets(signal)),
+    {
+      initialData: () => [],
+      staleTime: 0,
+      gcTime: QUERY_GC_TIME,
+      retry: false,
+      meta: { errorMode: 'silent' },
+      refetchInterval: false,
+      refetchOnMount: 'always',
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
+  )
 
   return { delegationsKey, delegationsQuery, targetsKey, targetsQuery }
 }

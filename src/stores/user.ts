@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { UserInfo } from '@/api/modules/auth'
+import type { SessionContextUserInfo } from '@/features/session/contracts'
 import type { AppLocale } from '@/i18n'
 import type { Id } from '@/shared/http/types'
 import { getTenantId } from '@/utils/auth'
@@ -47,7 +47,7 @@ export const useUserStore = defineStore('user', {
 
   actions: {
     applyIdentity(
-      userInfo: UserInfo,
+      userInfo: SessionContextUserInfo,
       isSuperAdmin: boolean,
       preferredLocale: AppLocale | undefined,
     ) {

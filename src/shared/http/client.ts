@@ -2,14 +2,19 @@ import type { AxiosRequestConfig } from 'axios'
 import type { ApiResponse } from './types'
 import { HttpError, parseEnvelope, toHttpError } from './errors'
 import { httpTranslate } from './localization'
-import { rawTransport, transport } from './transport'
+import { captureHttpSessionRequest, rawTransport, transport } from './transport'
 
 export { HttpError, type HttpErrorKind, type HttpErrorOptions } from './errors'
 export { configureHttpLocalization, type HttpLocalizationAdapter } from './localization'
-export { configureHttpSession, type HttpSessionAdapter } from './session'
+export {
+  configureHttpSession,
+  type AccessTokenApplied,
+  type HttpSessionAdapter,
+  type HttpSessionRequestContext,
+} from './session'
 
 export async function request<T = unknown>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
-  const response = await transport.request<ApiResponse<T>>(config)
+  const response = await transport.request<ApiResponse<T>>(captureHttpSessionRequest(config))
   return parseEnvelope(response)
 }
 
@@ -34,12 +39,16 @@ export async function rawRequest<T>(config: AxiosRequestConfig): Promise<ApiResp
 }
 
 export async function requestBlob(config: AxiosRequestConfig): Promise<Blob> {
-  const response = await transport.request<Blob>({ ...config, responseType: 'blob' })
+  const response = await transport.request<Blob>(
+    captureHttpSessionRequest({ ...config, responseType: 'blob' }),
+  )
   return response.data
 }
 
 export async function requestText(config: AxiosRequestConfig): Promise<string> {
-  const response = await transport.request<string>({ ...config, responseType: 'text' })
+  const response = await transport.request<string>(
+    captureHttpSessionRequest({ ...config, responseType: 'text' }),
+  )
   return response.data
 }
 

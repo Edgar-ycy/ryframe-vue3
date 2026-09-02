@@ -1,3 +1,4 @@
+import { onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import {
   getSchedule,
   listScheduleTargets,
@@ -8,27 +9,26 @@ import {
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { requireOperationData } from '@/shared/http/client'
-import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { invalidateTenantResource, queryClient, tenantQueryKey } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
-import { useUserStore } from '@/stores/user'
-import { confirmAction } from '@/utils/confirmAction'
 import {
-  MONITOR_JOBS_RESOURCE,
-  MONITOR_JOB_STATS_RESOURCE,
+  getServerStateScope,
+  queryClient,
+  serverStateQueryKey,
+  useServerStateScope,
+} from '@/shared/query/client'
+import {
+  beginServerStatePageOperation,
+  propagateServerStatePageOperationError,
+} from '@/shared/query/pageOperationScope'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
+import { useUserStore } from '@/stores/user'
+import {
   MONITOR_SCHEDULE_DETAIL_RESOURCE,
-  MONITOR_SCHEDULE_EXECUTIONS_RESOURCE,
   MONITOR_SCHEDULES_RESOURCE,
   MONITOR_SCHEDULE_TARGETS_RESOURCE,
 } from '../queryResources'
-import {
-  BUILT_IN_TARGET_LABELS,
-  isUpdatePayload,
-  normalizeQueryParams,
-  type ScheduleSavePayload,
-} from './scheduleManagementSupport'
-import { useScheduleMutations } from './useScheduleMutations'
+import { BUILT_IN_TARGET_LABELS, normalizeQueryParams } from './scheduleManagementSupport'
+import { useSchedulePageActions } from './useSchedulePageActions'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
 
@@ -49,10 +49,9 @@ export function useScheduleManagement(t: Translate) {
   const editingSchedule = ref<JobScheduleRecord>()
   const historySchedule = ref<JobScheduleRecord>()
   const editingId = ref<string>()
-  const pendingRunKeys = new Map<string, string>()
+  const pageGeneration = ref(0)
 
-  const schedulesQuery = useTenantQuery<PageResponse<JobScheduleRecord>>(
-    () => userStore.tenantId,
+  const schedulesQuery = useServerStateQuery<PageResponse<JobScheduleRecord>>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_SCHEDULES_RESOURCE,
     () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
@@ -61,9 +60,9 @@ export function useScheduleManagement(t: Translate) {
       const response = await listSchedules(params, signal)
       return response.data ?? emptyPageResponse<JobScheduleRecord>(params)
     },
+    { meta: { errorMode: 'silent' } },
   )
-  const targetsQuery = useTenantQuery<ScheduleTargetRecord[]>(
-    () => userStore.tenantId,
+  const targetsQuery = useServerStateQuery<ScheduleTargetRecord[]>(
     () => userStore.sessionStatus === 'authenticated',
     MONITOR_SCHEDULE_TARGETS_RESOURCE,
     () => ({ scope: 'catalog' }),
@@ -71,21 +70,29 @@ export function useScheduleManagement(t: Translate) {
       const response = await listScheduleTargets(signal)
       return response.data ?? []
     },
-    { refetchInterval: false },
+    { refetchInterval: false, meta: { errorMode: 'silent' } },
   )
 
+  const actions = useSchedulePageActions({
+    editingSchedule,
+    formVisible,
+    pageActive,
+    pageGeneration,
+    refetchSchedules: () => schedulesQuery.refetch({ throwOnError: true }),
+    t,
+  })
   const {
-    createMutation,
+    clearRetryKeys,
     formSaving,
     hasPendingWrite,
-    removeMutation,
+    handleRemove,
+    handleRun,
+    handleStatus,
     removePendingId,
-    runMutation,
     runPendingId,
-    statusMutation,
+    saveSchedule,
     statusPendingId,
-    updateMutation,
-  } = useScheduleMutations(() => userStore.tenantId, t)
+  } = actions
 
   const loading = schedulesQuery.isFetching
   const targetLoading = targetsQuery.isFetching
@@ -102,6 +109,29 @@ export function useScheduleManagement(t: Translate) {
   }
 
   useKeepAlivePageActive(pageActive, refresh)
+
+  function invalidatePageProjection(): void {
+    pageGeneration.value += 1
+    formVisible.value = false
+    historyVisible.value = false
+    editingSchedule.value = undefined
+    historySchedule.value = undefined
+    editingId.value = undefined
+  }
+
+  watch(
+    useServerStateScope(),
+    () => {
+      clearRetryKeys()
+      invalidatePageProjection()
+    },
+    { flush: 'sync' },
+  )
+  watch(formVisible, (visible, previous) => !visible && previous && (pageGeneration.value += 1), {
+    flush: 'sync',
+  })
+  onDeactivated(invalidatePageProjection)
+  onBeforeUnmount(invalidatePageProjection)
 
   async function fetchData(): Promise<void> {
     const nextParams = normalizeQueryParams(queryParams.value)
@@ -130,119 +160,46 @@ export function useScheduleManagement(t: Translate) {
 
   function openCreate(): void {
     if (!availableTargets().length) return
+    pageGeneration.value += 1
     editingSchedule.value = undefined
     formVisible.value = true
   }
 
   async function openEdit(row: JobScheduleRecord): Promise<void> {
     if (editingId.value || hasPendingWrite.value) return
+    const scope = getServerStateScope()
+    if (!scope) return
+    pageGeneration.value += 1
+    const generation = pageGeneration.value
+    const operation = beginServerStatePageOperation()
+    const ownsOperation = () => pageActive.value && pageGeneration.value === generation
     editingId.value = row.id
     try {
       const detail = await queryClient.fetchQuery<JobScheduleRecord>({
-        queryKey: tenantQueryKey(userStore.tenantId, MONITOR_SCHEDULE_DETAIL_RESOURCE, {
+        queryKey: serverStateQueryKey(operation.scope, MONITOR_SCHEDULE_DETAIL_RESOURCE, {
           id: row.id,
         }),
-        queryFn: async ({ signal }) => requireOperationData(await getSchedule(row.id, signal)),
+        queryFn: async ({ signal }) =>
+          requireOperationData(await getSchedule(row.id, AbortSignal.any([signal, scope.signal]))),
+        meta: { errorMode: 'silent' },
         staleTime: 0,
       })
-      editingSchedule.value = detail
-      formVisible.value = true
+      operation.apply(() => {
+        editingSchedule.value = detail
+        formVisible.value = true
+      }, ownsOperation)
+    } catch (error) {
+      propagateServerStatePageOperationError(error, operation, ownsOperation)
     } finally {
-      editingId.value = undefined
+      if (operation.isCurrent(ownsOperation) && editingId.value === row.id) {
+        editingId.value = undefined
+      }
     }
   }
 
   function openHistory(row: JobScheduleRecord): void {
     historySchedule.value = row
     historyVisible.value = true
-  }
-
-  async function saveSchedule(payload: ScheduleSavePayload): Promise<void> {
-    if (formSaving.value) return
-    if (isUpdatePayload(payload)) {
-      const schedule = editingSchedule.value
-      if (!schedule) return
-      if (payload.enabled !== schedule.enabled) {
-        const message = payload.enabled
-          ? t('monitor.schedules.enableConfirm', { name: schedule.name })
-          : t('monitor.schedules.disableConfirm', { name: schedule.name })
-        const confirmed = await confirmAction(message, t('monitor.schedules.statusConfirmTitle'), {
-          type: 'warning',
-        })
-        if (!confirmed || formSaving.value) return
-      }
-      await updateMutation.mutateAsync({ id: schedule.id, data: payload })
-    } else {
-      await createMutation.mutateAsync(payload)
-    }
-    formVisible.value = false
-    await refreshScheduleState()
-  }
-
-  async function handleStatus(row: JobScheduleRecord, enabled: boolean): Promise<void> {
-    if (statusMutation.pending.value || hasPendingWrite.value) return
-    const message = enabled
-      ? t('monitor.schedules.enableConfirm', { name: row.name })
-      : t('monitor.schedules.disableConfirm', { name: row.name })
-    const confirmed = await confirmAction(message, t('monitor.schedules.statusConfirmTitle'), {
-      type: 'warning',
-    })
-    if (!confirmed || hasPendingWrite.value) return
-    await statusMutation.mutateAsync({ row, enabled })
-    await refreshScheduleState()
-  }
-
-  async function handleRun(row: JobScheduleRecord): Promise<void> {
-    if (runMutation.pending.value || hasPendingWrite.value) return
-    const confirmed = await confirmAction(
-      t('monitor.schedules.runConfirm', { name: row.name }),
-      t('monitor.schedules.runConfirmTitle'),
-      { type: 'warning' },
-    )
-    if (!confirmed || hasPendingWrite.value) return
-    const idempotencyKey = pendingRunKeys.get(row.id) ?? createIdempotencyKey('schedule')
-    try {
-      await runMutation.mutateAsync({ row, idempotencyKey })
-      pendingRunKeys.delete(row.id)
-    } catch (error) {
-      if (shouldReuseIdempotencyKey(error)) {
-        pendingRunKeys.set(row.id, idempotencyKey)
-      } else {
-        pendingRunKeys.delete(row.id)
-      }
-      throw error
-    }
-    await invalidateRelatedResources()
-    await schedulesQuery.refetch({ throwOnError: true })
-  }
-
-  async function handleRemove(row: JobScheduleRecord): Promise<void> {
-    if (removeMutation.pending.value || hasPendingWrite.value) return
-    const confirmed = await confirmAction(
-      t('monitor.schedules.deleteConfirm', { name: row.name }),
-      t('monitor.schedules.deleteConfirmTitle'),
-      { type: 'warning' },
-    )
-    if (!confirmed || hasPendingWrite.value) return
-    await removeMutation.mutateAsync(row)
-    await refreshScheduleState()
-  }
-
-  async function refreshScheduleState(): Promise<void> {
-    await invalidateRelatedResources()
-    await schedulesQuery.refetch({ throwOnError: true })
-  }
-
-  async function invalidateRelatedResources(): Promise<void> {
-    const tenantId = userStore.tenantId
-    if (!tenantId) return
-    await Promise.all([
-      invalidateTenantResource(tenantId, MONITOR_SCHEDULES_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_SCHEDULE_DETAIL_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_SCHEDULE_EXECUTIONS_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_JOBS_RESOURCE),
-      invalidateTenantResource(tenantId, MONITOR_JOB_STATS_RESOURCE),
-    ])
   }
 
   function targetName(handlerKey: string): string {

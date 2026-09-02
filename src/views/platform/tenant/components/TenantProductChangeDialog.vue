@@ -87,30 +87,41 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  applyTenantProductChange,
   getProductPlan,
   listProductPlans,
-  previewTenantProductChange,
   type ProductChangePreview,
   type CapabilityOverrideInput,
   type TenantCapabilityOverride,
   type TenantProductContext,
 } from '@/api/modules/productPlan'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateScope } from '@/shared/query/client'
+import {
+  beginServerStatePageOperation,
+  propagateServerStatePageOperationError,
+} from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import DiffSummary from './TenantProductDiffSummary.vue'
 import TenantCapabilityOverrideEditor from './TenantCapabilityOverrideEditor.vue'
+import {
+  invalidateTenantProductContext,
+  useTenantProductChangeCommands,
+} from './tenantProductChangeCommands'
 
 const props = defineProps<{
+  active: boolean
   canOverride: boolean
   context: TenantProductContext
   tenantId: string
 }>()
-const emit = defineEmits<{ applied: [context: TenantProductContext] }>()
+const emit = defineEmits<{
+  applied: [context: TenantProductContext, scope: ServerStateScope]
+}>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -120,18 +131,17 @@ const overrides = ref<CapabilityOverrideInput[]>([])
 const overrideEditorRef = ref<{ validate: () => boolean }>()
 const overrideError = ref('')
 const preview = ref<ProductChangePreview>()
-const enabled = computed(() => visible.value && userStore.tenantId === 'system')
+const pageGeneration = ref(0)
+const enabled = computed(() => props.active && visible.value && userStore.tenantId === 'system')
 
-const plansQuery = useTenantQuery(
-  () => userStore.tenantId,
+const plansQuery = useServerStateQuery(
   enabled,
   'platform-product-plan-options',
   () => ({ page: 1, page_size: 100 }),
   async (signal) =>
     requireOperationData(await listProductPlans({ page: 1, page_size: 100 }, signal)),
 )
-const versionsQuery = useTenantQuery(
-  () => userStore.tenantId,
+const versionsQuery = useServerStateQuery(
   () => enabled.value && Boolean(selectedPlanId.value),
   'platform-product-plan-version-options',
   () => ({ plan_id: selectedPlanId.value }),
@@ -139,37 +149,7 @@ const versionsQuery = useTenantQuery(
     requireOperationData(await getProductPlan(selectedPlanId.value, signal)).versions,
 )
 
-const previewMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-product-change-preview',
-  {
-    mutationFn: async (input: { planVersionId: string; overrides: CapabilityOverrideInput[] }) =>
-      requireOperationData(
-        await previewTenantProductChange(props.tenantId, {
-          plan_version_id: input.planVersionId,
-          overrides: input.overrides,
-        }),
-      ),
-  },
-)
-const applyMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-product-context',
-  {
-    mutationFn: async (input: {
-      preview: ProductChangePreview
-      overrides: CapabilityOverrideInput[]
-    }) =>
-      requireOperationData(
-        await applyTenantProductChange(props.tenantId, {
-          plan_version_id: planVersionId.value,
-          overrides: input.overrides,
-          plan_hash: input.preview.plan_hash,
-          preview_runtime_epoch: input.preview.runtime_epoch,
-        }),
-      ),
-  },
-)
+const { applyMutation, previewMutation } = useTenantProductChangeCommands()
 
 const plans = plansQuery.data
 const versionsLoading = versionsQuery.isFetching
@@ -196,11 +176,14 @@ const permissionDiff = computed(() => ({
 }))
 
 function reset(): void {
+  pageGeneration.value += 1
   selectedPlanId.value = ''
   planVersionId.value = ''
   overrides.value = props.context.overrides.map(toOverrideInput)
   overrideError.value = ''
   preview.value = undefined
+  previewMutation.reset()
+  applyMutation.reset()
 }
 
 function handlePlanChange(): void {
@@ -209,6 +192,7 @@ function handlePlanChange(): void {
 }
 
 function clearPreview(): void {
+  pageGeneration.value += 1
   preview.value = undefined
   overrideError.value = ''
 }
@@ -225,7 +209,33 @@ watch(
     overrides.value = props.context.overrides.map(toOverrideInput)
     clearPreview()
   },
+  { flush: 'sync' },
 )
+
+function invalidatePage(): void {
+  pageGeneration.value += 1
+  selectedPlanId.value = ''
+  planVersionId.value = ''
+  overrides.value = []
+  overrideError.value = ''
+  preview.value = undefined
+  previewMutation.reset()
+  applyMutation.reset()
+  visible.value = false
+}
+
+watch(useServerStateScope(), invalidatePage, { flush: 'sync' })
+watch(
+  () => props.active,
+  (active) => !active && invalidatePage(),
+  { flush: 'sync' },
+)
+watch(() => [props.tenantId, props.context.runtime_epoch] as const, invalidatePage, {
+  flush: 'sync',
+})
+watch(visible, (current, previous) => !current && previous && invalidatePage(), { flush: 'sync' })
+onDeactivated(invalidatePage)
+onBeforeUnmount(invalidatePage)
 
 function toOverrideInput(value: TenantCapabilityOverride): CapabilityOverrideInput {
   return {
@@ -233,21 +243,43 @@ function toOverrideInput(value: TenantCapabilityOverride): CapabilityOverrideInp
     enabled: value.enabled,
     variant_code: value.variant_code,
     schema_version: value.schema_version,
-    config: value.config,
+    config: { ...value.config },
   }
 }
 
 async function handlePreview(): Promise<void> {
-  if (!planVersionId.value || submitting.value) return
+  const targetVersionId = planVersionId.value
+  if (!targetVersionId || submitting.value) return
   const overrides = parseOverrides()
   if (!overrides) {
     overrideError.value = t('productPlans.overrideInvalid')
     return
   }
-  preview.value = await previewMutation.mutateAsync({
-    planVersionId: planVersionId.value,
-    overrides,
-  })
+  const tenantId = props.tenantId
+  const runtimeEpoch = props.context.runtime_epoch
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    props.active &&
+    visible.value &&
+    pageGeneration.value === generation &&
+    props.tenantId === tenantId &&
+    props.context.runtime_epoch === runtimeEpoch &&
+    planVersionId.value === targetVersionId
+  operation.assertCurrent(ownsOperation)
+  let result: ProductChangePreview
+  try {
+    result = await previewMutation.mutateAsync({
+      overrides: structuredClone(overrides),
+      planVersionId: targetVersionId,
+      scope: operation.scope,
+      tenantId,
+    })
+  } catch (error) {
+    propagateServerStatePageOperationError(error, operation, ownsOperation)
+  }
+  if (!operation.isCurrent(ownsOperation)) return
+  preview.value = result
 }
 
 async function handleApply(): Promise<void> {
@@ -257,8 +289,37 @@ async function handleApply(): Promise<void> {
     overrideError.value = t('productPlans.overrideInvalid')
     return
   }
-  const context = await applyMutation.mutateAsync({ preview: preview.value, overrides })
-  emit('applied', context)
+  const snapshot = structuredClone(preview.value)
+  const targetVersionId = planVersionId.value
+  const tenantId = props.tenantId
+  const runtimeEpoch = props.context.runtime_epoch
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    props.active &&
+    visible.value &&
+    pageGeneration.value === generation &&
+    props.tenantId === tenantId &&
+    props.context.runtime_epoch === runtimeEpoch &&
+    preview.value?.plan_hash === snapshot.plan_hash &&
+    planVersionId.value === targetVersionId
+  operation.assertCurrent(ownsOperation)
+  let context: TenantProductContext
+  try {
+    context = await applyMutation.mutateAsync({
+      overrides: structuredClone(overrides),
+      planVersionId: targetVersionId,
+      preview: snapshot,
+      scope: operation.scope,
+      tenantId,
+    })
+  } catch (error) {
+    propagateServerStatePageOperationError(error, operation, ownsOperation)
+  }
+  operation.assertCurrent(ownsOperation)
+  await invalidateTenantProductContext(operation.scope)
+  operation.assertCurrent(ownsOperation)
+  emit('applied', context, operation.scope)
   visible.value = false
 }
 </script>

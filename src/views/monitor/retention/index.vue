@@ -38,7 +38,7 @@
               v-perm="'monitor:retention:run'"
               type="danger"
               icon="Delete"
-              :loading="runMutation.pending.value"
+              :loading="runPending"
               :disabled="previewLoading"
               @click="handleRun"
             >
@@ -220,32 +220,20 @@
 </template>
 
 <script setup lang="ts">
-import { onDeactivated, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
   getDataRetention,
   listDataRetentionRuns,
-  previewDataRetention,
-  runDataRetention,
-  type DataRetentionPreview,
   type DataRetentionRunRecord,
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { formatLocalizedDate, formatOptionalLocalizedDate, getApplicationLocale } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
-import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { invalidateTenantResource } from '@/shared/query/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
-import { confirmAction } from '@/utils/confirmAction'
-import {
-  MONITOR_JOBS_RESOURCE,
-  MONITOR_JOB_STATS_RESOURCE,
-  MONITOR_RETENTION_RESOURCE,
-  MONITOR_RETENTION_RUNS_RESOURCE,
-} from '../queryResources'
+import { MONITOR_RETENTION_RESOURCE, MONITOR_RETENTION_RUNS_RESOURCE } from '../queryResources'
 import {
   countEntries,
   countSummary as summarizeCounts,
@@ -256,20 +244,15 @@ import {
   retentionTriggerKey,
   totalCount,
 } from './presentation'
+import { useRetentionPageActions } from './useRetentionPageActions'
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 const pageActive = ref(true)
 const query = ref({ page: 1, page_size: 10 })
-const preview = ref<DataRetentionPreview>()
-const previewLoading = ref(false)
-const previewError = ref('')
-let previewController: AbortController | undefined
-let pendingRunKey: string | undefined
 
-const overviewQuery = useTenantQuery(
-  () => userStore.tenantId,
+const overviewQuery = useServerStateQuery(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   MONITOR_RETENTION_RESOURCE,
   () => ({ scope: 'policy' }),
@@ -277,8 +260,7 @@ const overviewQuery = useTenantQuery(
   { refetchInterval: false },
 )
 
-const runsQuery = useTenantQuery<PageResponse<DataRetentionRunRecord>>(
-  () => userStore.tenantId,
+const runsQuery = useServerStateQuery<PageResponse<DataRetentionRunRecord>>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   MONITOR_RETENTION_RUNS_RESOURCE,
   () => ({ scope: 'list', ...query.value }),
@@ -288,15 +270,10 @@ const runsQuery = useTenantQuery<PageResponse<DataRetentionRunRecord>>(
   },
 )
 
-const runMutation = useTenantMutation(() => userStore.tenantId, MONITOR_RETENTION_RUNS_RESOURCE, {
-  mutationFn: (idempotencyKey: string) => runDataRetention(idempotencyKey),
-  onSuccess: () => ElMessage.success(t('monitor.retention.runSuccess')),
-})
+const { handleRun, loadPreview, preview, previewError, previewLoading, runPending } =
+  useRetentionPageActions(t, pageActive, refreshRuns)
 
 useKeepAlivePageActive(pageActive, refresh)
-
-onDeactivated(cancelPreview)
-onUnmounted(cancelPreview)
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat(getApplicationLocale()).format(value)
@@ -321,56 +298,6 @@ function statusLabel(value: string): string {
 
 function statusTag(value: string): 'danger' | 'info' | 'primary' | 'success' | 'warning' {
   return retentionStatusTag(value)
-}
-
-function cancelPreview(): void {
-  previewController?.abort()
-  previewController = undefined
-  previewLoading.value = false
-}
-
-async function loadPreview(): Promise<void> {
-  cancelPreview()
-  const controller = new AbortController()
-  previewController = controller
-  previewLoading.value = true
-  previewError.value = ''
-  try {
-    preview.value = requireOperationData(await previewDataRetention(controller.signal))
-  } catch (error) {
-    if (!controller.signal.aborted) {
-      preview.value = undefined
-      previewError.value = error instanceof Error ? error.message : String(error)
-    }
-  } finally {
-    if (previewController === controller) {
-      previewController = undefined
-      previewLoading.value = false
-    }
-  }
-}
-
-async function handleRun(): Promise<void> {
-  if (runMutation.pending.value) return
-  const confirmed = await confirmAction(
-    t('monitor.retention.runConfirm'),
-    t('monitor.retention.runConfirmTitle'),
-    { type: 'error', confirmButtonText: t('monitor.retention.runNow') },
-  )
-  if (!confirmed || runMutation.pending.value) return
-  const key = pendingRunKey ?? createIdempotencyKey('retention')
-  try {
-    await runMutation.mutateAsync(key)
-    pendingRunKey = undefined
-  } catch (error) {
-    pendingRunKey = shouldReuseIdempotencyKey(error) ? key : undefined
-    throw error
-  }
-  await Promise.all([
-    refreshRuns(),
-    invalidateTenantResource(userStore.tenantId!, MONITOR_JOBS_RESOURCE),
-    invalidateTenantResource(userStore.tenantId!, MONITOR_JOB_STATS_RESOURCE),
-  ])
 }
 
 function fetchRuns(): void {

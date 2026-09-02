@@ -58,7 +58,7 @@
       :saving="saving"
       :title="dialogTitle"
       :visible="dialogVisible"
-      @submit="$emit('submit')"
+      @submit="$emit('submit', $event)"
       @update:model-value="$emit('update:form', $event)"
       @update:visible="$emit('update:dialogVisible', $event)"
     />
@@ -82,6 +82,7 @@ import type {
   FlatCrudPermissions,
   FlatCrudQueryField,
 } from './model'
+import type { ServerStatePageOperation } from '@/shared/query/pageOperationScope'
 
 const { t } = useI18n()
 
@@ -118,7 +119,7 @@ defineEmits<{
   remove: [record: TRecord]
   reset: []
   search: []
-  submit: []
+  submit: [operation: ServerStatePageOperation]
 }>()
 </script>
 

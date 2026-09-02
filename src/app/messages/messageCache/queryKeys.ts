@@ -1,15 +1,17 @@
 import type { QueryClient, QueryKey } from '@tanstack/vue-query'
 import type { MessageInboxQuery } from '@/api/modules/messages'
-import { tenantQueryKey } from '@/shared/query/client'
+import {
+  isServerStateScopeCurrent,
+  serverStateQueryKey,
+  serverStateResourcePrefix,
+} from '@/shared/query/client'
+import type { ServerStateQueryKey, ServerStateScope } from '@/shared/query/scope'
 
 export const MESSAGE_INBOX_RESOURCE = 'message-inbox'
 export const MESSAGE_UNREAD_RESOURCE = 'message-unread-count'
 export const DEFAULT_INBOX_LIMIT = 100
 
-export interface MessageIdentity {
-  tenantId: string
-  userId: string
-}
+export type MessageIdentity = ServerStateScope
 
 export interface MessageInboxKeyParams {
   user_id: string
@@ -33,11 +35,11 @@ export interface DeleteVariables extends MessageIdentity {
 
 /** 将可选查询字段规范为稳定缓存键，空游标也会显式进入键。 */
 export function messageInboxKeyParams(
-  userId: string,
+  subjectId: string,
   query: MessageInboxQuery,
 ): MessageInboxKeyParams {
   return {
-    user_id: userId,
+    user_id: subjectId,
     cursor: query.cursor ?? null,
     limit: query.limit ?? DEFAULT_INBOX_LIMIT,
     unread_only: query.unread_only ?? false,
@@ -45,39 +47,47 @@ export function messageInboxKeyParams(
 }
 
 export function messageInboxQueryKey(
-  tenantId: string,
-  userId: string,
+  scope: ServerStateScope,
   query: MessageInboxQuery,
-): QueryKey {
-  return tenantQueryKey(tenantId, MESSAGE_INBOX_RESOURCE, messageInboxKeyParams(userId, query))
+): ServerStateQueryKey {
+  return serverStateQueryKey(
+    scope,
+    MESSAGE_INBOX_RESOURCE,
+    messageInboxKeyParams(scope.subjectId, query),
+  )
 }
 
-export function messageUnreadQueryKey(tenantId: string, userId: string): QueryKey {
-  return tenantQueryKey(tenantId, MESSAGE_UNREAD_RESOURCE, { user_id: userId })
-}
-
-export function resourceQueryKey(tenantId: string, resource: string): QueryKey {
-  return tenantQueryKey(tenantId, resource).slice(0, 3)
-}
-
-export function invalidateUserInbox(
-  client: QueryClient,
-  tenantId: string,
-  userId: string,
-): Promise<void> {
-  return client.invalidateQueries({
-    queryKey: resourceQueryKey(tenantId, MESSAGE_INBOX_RESOURCE),
-    predicate: (query) => isInboxKeyForUser(query.queryKey, userId),
+export function messageUnreadQueryKey(scope: ServerStateScope): ServerStateQueryKey {
+  return serverStateQueryKey(scope, MESSAGE_UNREAD_RESOURCE, {
+    user_id: scope.subjectId,
   })
 }
 
-export function isInboxKeyForUser(queryKey: QueryKey, userId: string): boolean {
-  const params = queryKey[3]
-  return isRecord(params) && params.user_id === userId
+export function messageResourcePrefix(
+  scope: ServerStateScope,
+  resource: string,
+): ReturnType<typeof serverStateResourcePrefix> {
+  return serverStateResourcePrefix(scope, resource)
+}
+
+export function invalidateMessageInbox(
+  client: QueryClient,
+  scope: ServerStateScope,
+): Promise<void> {
+  if (!isServerStateScopeCurrent(scope)) return Promise.resolve()
+  return client.invalidateQueries({
+    queryKey: messageResourcePrefix(scope, MESSAGE_INBOX_RESOURCE),
+    predicate: (query) => isInboxKeyForSubject(query.queryKey, scope.subjectId),
+  })
+}
+
+export function isInboxKeyForSubject(queryKey: QueryKey, subjectId: string): boolean {
+  const params = queryKey[5]
+  return isRecord(params) && params.user_id === subjectId
 }
 
 export function inboxParamsFromKey(queryKey: QueryKey): MessageInboxKeyParams | undefined {
-  const params = queryKey[3]
+  const params = queryKey[5]
   if (!isRecord(params)) return undefined
   if (
     typeof params.user_id !== 'string' ||

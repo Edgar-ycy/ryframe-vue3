@@ -1,4 +1,3 @@
-import { requestOperation } from '@/api/operationRequest'
 import {
   delete_system_roles_batch_by_ids,
   delete_system_roles_by_id,
@@ -10,7 +9,7 @@ import {
   put_system_roles_by_id,
   put_system_roles_by_id_data_scope,
   put_system_roles_by_id_permissions,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/system'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type Id } from '@/shared/http/types'
 
@@ -43,7 +42,7 @@ function toRoleRecord(value: ApiSchema<'RoleVo'>): RoleRecord {
 }
 
 export async function listRole(params: RoleQuery, signal?: AbortSignal) {
-  const response = await requestOperation(get_system_roles, { params, signal })
+  const response = await get_system_roles({ params, signal })
   return {
     ...response,
     data: response.data
@@ -52,7 +51,7 @@ export async function listRole(params: RoleQuery, signal?: AbortSignal) {
   }
 }
 export function listRoleOptions(params?: RoleOptionQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_roles_options, { params, signal })
+  return get_system_roles_options({ params, signal })
 }
 export function exportRole(
   params: RoleExportQuery | undefined,
@@ -60,7 +59,7 @@ export function exportRole(
   signal?: AbortSignal,
   confirmAll = false,
 ) {
-  return requestOperation(post_system_roles_exports, {
+  return post_system_roles_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,
@@ -70,38 +69,38 @@ export function exportRole(
   })
 }
 export async function getRole(id: Id, signal?: AbortSignal) {
-  const response = await requestOperation(get_system_roles_by_id, { path: { id }, signal })
+  const response = await get_system_roles_by_id({ path: { id }, signal })
   return {
     ...response,
     data: response.data ? toRoleRecord(response.data) : undefined,
   }
 }
 export async function createRole(data: RoleCreateInput) {
-  const response = await requestOperation(post_system_roles, { data })
+  const response = await post_system_roles({ data })
   return {
     ...response,
     data: response.data ? toRoleRecord(response.data) : undefined,
   }
 }
 export async function updateRole(id: Id, data: RoleUpdateInput) {
-  const response = await requestOperation(put_system_roles_by_id, { path: { id }, data })
+  const response = await put_system_roles_by_id({ path: { id }, data })
   return {
     ...response,
     data: response.data ? toRoleRecord(response.data) : undefined,
   }
 }
 export function deleteRole(id: Id) {
-  return requestOperation(delete_system_roles_by_id, { path: { id } })
+  return delete_system_roles_by_id({ path: { id } })
 }
 export function batchDeleteRole(ids: Id[]) {
-  return requestOperation(delete_system_roles_batch_by_ids, {
+  return delete_system_roles_batch_by_ids({
     path: { ids: ids.join(',') },
   })
 }
 
 /** 分配权限 */
 export function replaceRolePermissions(roleId: Id, permIds: Id[]) {
-  return requestOperation(put_system_roles_by_id_permissions, {
+  return put_system_roles_by_id_permissions({
     path: { id: roleId },
     data: { perm_ids: permIds.map(String) },
   })
@@ -109,7 +108,7 @@ export function replaceRolePermissions(roleId: Id, permIds: Id[]) {
 
 /** 原子替换数据范围和自定义部门。 */
 export function replaceRoleDataScope(roleId: Id, data: ReplaceRoleDataScopeInput) {
-  return requestOperation(put_system_roles_by_id_data_scope, {
+  return put_system_roles_by_id_data_scope({
     path: { id: roleId },
     data: {
       data_scope: data.data_scope,

@@ -5,10 +5,11 @@ import {
   onDeactivated,
   onMounted,
   onScopeDispose,
+  watch,
   type Ref,
 } from 'vue'
-import { queryClient } from '@/shared/query/client'
-import { useUserStore } from '@/stores/user'
+import { queryClient, serverStateResourcePrefix, useServerStateScope } from '@/shared/query/client'
+import { sameServerStateScope } from '@/shared/query/scope'
 import {
   TENANT_CONFIG_PACKAGES_RESOURCE,
   TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
@@ -40,12 +41,11 @@ function sameIdentity(
   left: TenantConfigIdentity | undefined,
   right: TenantConfigIdentity | undefined,
 ): boolean {
-  return left?.tenantId === right?.tenantId && left?.userId === right?.userId
+  return sameServerStateScope(left, right)
 }
 
 /** 配置迁移页面的身份切换、Query 清理和 KeepAlive 生命周期接线。 */
 export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLifecycleOptions) {
-  const userStore = useUserStore()
   let trackedIdentity = options.currentIdentity()
 
   function handleResumeEvent(): void {
@@ -65,7 +65,7 @@ export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLi
       TENANT_CONFIG_TRANSFERS_RESOURCE,
       TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
     ]) {
-      const prefix = ['server-state', identity.tenantId, resource]
+      const prefix = serverStateResourcePrefix(identity, resource)
       void queryClient.cancelQueries({ queryKey: prefix })
       queryClient.removeQueries({ queryKey: prefix })
     }
@@ -79,13 +79,16 @@ export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLi
       !options.pageActive.value ||
       key[0] !== 'server-state' ||
       key[1] !== identity.tenantId ||
-      ![TENANT_CONFIG_PACKAGES_RESOURCE, TENANT_CONFIG_TRANSFERS_RESOURCE].includes(String(key[2]))
+      key[2] !== identity.subjectId ||
+      key[3] !== identity.sessionEpoch ||
+      ![TENANT_CONFIG_PACKAGES_RESOURCE, TENANT_CONFIG_TRANSFERS_RESOURCE].includes(String(key[4]))
     )
       return
     options.activeTracking.scheduleActiveCycle()
   })
 
-  const unsubscribeUser = userStore.$subscribe(
+  const stopScopeWatch = watch(
+    useServerStateScope(),
     () => {
       const nextIdentity = options.currentIdentity()
       if (sameIdentity(trackedIdentity, nextIdentity)) return
@@ -125,7 +128,7 @@ export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLi
       options.activeTracking.stopActiveCycle()
       options.operationScope.dispose()
       unsubscribeCache()
-      unsubscribeUser()
+      stopScopeWatch()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       globalThis.removeEventListener('focus', handleResumeEvent)
       globalThis.removeEventListener('online', handleResumeEvent)

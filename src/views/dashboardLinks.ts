@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router'
+import type { RouteProjection } from '@/shared/navigation/routeProjection'
 
 export interface DashboardLink {
   title: string
@@ -11,11 +11,14 @@ function resolvePath(parentPath: string, childPath: string): string {
   return `${parentPath.replace(/\/$/, '')}/${childPath}`.replace(/\/{2,}/g, '/')
 }
 
-export function collectDashboardLinks(routes: RouteRecordRaw[], limit = 8): DashboardLink[] {
+export function collectDashboardLinks(
+  routes: readonly RouteProjection[],
+  limit = 8,
+): DashboardLink[] {
   const links: DashboardLink[] = []
   const seenPaths = new Set<string>()
 
-  function visit(route: RouteRecordRaw, parentPath = ''): void {
+  function visit(route: RouteProjection, parentPath = ''): void {
     if (route.meta?.hidden) return
     const fullPath = resolvePath(parentPath, route.path)
     const visibleChildren = (route.children ?? []).filter((child) => !child.meta?.hidden)

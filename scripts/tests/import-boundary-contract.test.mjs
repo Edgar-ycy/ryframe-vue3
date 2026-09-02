@@ -2,8 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   boundaryViolation,
+  containsDefineStoreCall,
+  externalPackageTarget,
   extractImportSpecifiers,
   moduleArea,
+  resolveImportTarget,
   resolveInternalSpecifier,
   runtimeCycleEdges,
 } from '../import-boundary-contract.mjs'
@@ -13,7 +16,7 @@ test('区分运行时、类型和动态导入', () => {
     import value from '@/stores/user'
     import type { User } from '@/api/modules/auth'
     import { type Id } from '@/shared/http/types'
-    export type { Route } from '@/router/pageRegistry'
+    export type { Route } from '@/features/pageRegistry'
     export { type Menu } from '@/api/modules/menu'
     const page = import('@/views/index.vue')
   `)
@@ -21,7 +24,7 @@ test('区分运行时、类型和动态导入', () => {
     { kind: 'runtime', specifier: '@/stores/user' },
     { kind: 'type', specifier: '@/api/modules/auth' },
     { kind: 'type', specifier: '@/shared/http/types' },
-    { kind: 'type', specifier: '@/router/pageRegistry' },
+    { kind: 'type', specifier: '@/features/pageRegistry' },
     { kind: 'type', specifier: '@/api/modules/menu' },
     { kind: 'dynamic', specifier: '@/views/index.vue' },
   ])
@@ -38,16 +41,133 @@ test('解析别名、相对路径和目录入口', () => {
     'src/app/session/index.ts',
   )
   assert.equal(resolveInternalSpecifier('src/app/a.ts', 'vue', modules), undefined)
+  assert.equal(externalPackageTarget('@tanstack/vue-query'), 'package:@tanstack/vue-query')
+  assert.equal(externalPackageTarget('vue-router/dist/foo'), 'package:vue-router')
+  assert.equal(resolveImportTarget('src/app/a.ts', 'pinia', modules), 'package:pinia')
   assert.equal(moduleArea('src/api/internal.ts'), 'api-core')
-  assert.equal(moduleArea('src/api/generated/operations.ts'), 'generated')
+  assert.equal(moduleArea('src/api/generated/operations/system.ts'), 'generated')
 })
 
-test('边界规则允许类型 DTO 但拒绝 Store 直接调用 API', () => {
+test('ImportTypeNode 不能绕过 Store 的外部类型边界', () => {
+  const source = 'src/stores/bypass.ts'
+  const imports = extractImportSpecifiers(
+    `
+      type Router = import('vue-router').Router
+      type QueryClient = import('@tanstack/vue-query').QueryClient
+      type Message = import('element-plus').MessageParams
+    `,
+    source,
+  )
+  assert.deepEqual(imports, [
+    { kind: 'type', specifier: 'vue-router' },
+    { kind: 'type', specifier: '@tanstack/vue-query' },
+    { kind: 'type', specifier: 'element-plus' },
+  ])
+  for (const dependency of imports) {
+    const target = resolveImportTarget(source, dependency.specifier, new Set())
+    assert.equal(
+      boundaryViolation({ ...dependency, source, target }),
+      `stores 不得依赖外部包 ${dependency.specifier}`,
+    )
+  }
+})
+
+test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', () => {
   assert.equal(
     boundaryViolation({
       kind: 'type',
       source: 'src/stores/user.ts',
       target: 'src/api/modules/auth.ts',
+    }),
+    'stores 不得依赖 api-modules',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'type',
+      source: 'src/stores/user.ts',
+      target: 'src/features/session/contracts.ts',
+    }),
+    undefined,
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'type',
+      source: 'src/features/session/contracts.ts',
+      target: 'src/api/contract.ts',
+    }),
+    undefined,
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'type',
+      source: 'src/stores/user.ts',
+      target: 'src/features/navigation/contracts.ts',
+    }),
+    'stores 不得依赖 features',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/stores/user.ts',
+      target: 'src/stores/permission.ts',
+    }),
+    'stores 不得跨 Store 编排',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/stores/user.ts',
+      target: 'package:element-plus',
+    }),
+    'stores 不得依赖外部包 element-plus',
+  )
+  for (const packageName of ['vue-router', '@tanstack/vue-query', 'element-plus']) {
+    assert.equal(
+      boundaryViolation({
+        kind: 'type',
+        source: 'src/stores/user.ts',
+        target: `package:${packageName}`,
+      }),
+      `stores 不得依赖外部包 ${packageName}`,
+    )
+  }
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/api/modules/user.ts',
+      target: 'package:@tanstack/vue-query',
+    }),
+    'api-modules 不得直接依赖外部包 @tanstack/vue-query',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'type',
+      source: 'src/api/modules/user.ts',
+      target: 'package:axios',
+    }),
+    'api-modules 不得直接依赖外部包 axios',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/api/modules/user.ts',
+      target: 'src/api/operationRequest.ts',
+    }),
+    'operationRequest 只能由生成 caller 调用',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/shared/http/client.ts',
+      target: 'package:element-plus',
+    }),
+    'shared/http 不得依赖外部包 element-plus',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/shared/http/client.ts',
+      target: 'package:axios',
     }),
     undefined,
   )
@@ -91,6 +211,37 @@ test('边界规则允许类型 DTO 但拒绝 Store 直接调用 API', () => {
     }),
     undefined,
   )
+})
+
+test('业务 catalog 子模块只能由对应顶层入口静态导入', () => {
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/i18n/catalog/monitor-tools.ts',
+      target: 'src/i18n/catalog/monitor-tools/en-US.ts',
+    }),
+    undefined,
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
+      source: 'src/i18n/messages.ts',
+      target: 'src/i18n/catalog/monitor-tools/en-US.ts',
+    }),
+    'business catalog child must be statically imported by src/i18n/catalog/monitor-tools.ts: src/i18n/catalog/monitor-tools/en-US.ts',
+  )
+})
+
+test('识别 Store 定义，供目录门禁拒绝目录外定义', () => {
+  assert.equal(containsDefineStoreCall(`const store = defineStore('user', {})`), true)
+  assert.equal(
+    containsDefineStoreCall(
+      `import { defineStore as createStore } from 'pinia'; createStore('user', {})`,
+    ),
+    true,
+  )
+  assert.equal(containsDefineStoreCall(`pinia.defineStore('user', {})`), true)
+  assert.equal(containsDefineStoreCall(`const defineStoreName = 'defineStore'`), false)
 })
 
 test('SCC 只统计静态运行时导入', () => {

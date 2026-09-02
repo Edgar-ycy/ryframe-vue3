@@ -60,7 +60,7 @@
             type="primary"
             link
             :loading="publishingId === row.id"
-            @click="emit('publish-message', row)"
+            @click="publishNotice(row.id)"
           >
             {{ t('system.notice.publishToMessageCenter') }}
           </el-button>
@@ -69,7 +69,7 @@
             type="primary"
             link
             icon="Edit"
-            @click="emit('edit', row)"
+            @click="editNotice(row.id)"
             >{{ t('system.common.edit') }}</el-button
           >
           <el-button
@@ -78,7 +78,7 @@
             link
             icon="Delete"
             :loading="deletingId === row.id"
-            @click="emit('delete', row)"
+            @click="deleteNotice(row.id)"
           >
             {{ t('system.common.delete') }}
           </el-button>
@@ -126,4 +126,23 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function findNotice(id: Id): NoticeRecord | undefined {
+  return props.tableData.find((notice) => notice.id === id)
+}
+
+function publishNotice(id: Id): void {
+  const notice = findNotice(id)
+  if (notice) emit('publish-message', notice)
+}
+
+function editNotice(id: Id): void {
+  const notice = findNotice(id)
+  if (notice) emit('edit', notice)
+}
+
+function deleteNotice(id: Id): void {
+  const notice = findNotice(id)
+  if (notice) emit('delete', notice)
+}
 </script>

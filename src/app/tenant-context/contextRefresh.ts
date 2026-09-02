@@ -1,5 +1,5 @@
 import type { Router } from 'vue-router'
-import type { TenantBusinessState } from '@/api/modules/sessionContext'
+import type { TenantBusinessState } from '@/features/session/contracts'
 import { getRouteRuntime } from '@/app/navigation/runtime'
 import {
   accessResultPath,
@@ -9,13 +9,13 @@ import {
   type RouteAccessResult,
 } from '@/features/navigation/routeAccess'
 import type { TenantContextObservation } from '@/shared/http/session'
-import { invalidateTenantServerState } from '@/shared/query/client'
+import { invalidateActiveServerStateScope } from '@/shared/query/client'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { useTagsViewStore } from '@/stores/tagsView'
 import { useUserStore } from '@/stores/user'
 import { assertSessionEpoch, getSessionEpoch } from '@/app/session/state'
 import { ensureTenantContextLoaded, refreshTenantContext } from './coordinator'
-import { useTenantContextStore } from './store'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 export interface TenantContextChangedFrame {
   v: 1
@@ -121,7 +121,7 @@ async function performTenantContextUiSynchronization(options?: {
   skipAuthRefresh?: boolean
   refreshContext?: boolean
 }): Promise<void> {
-  const expectedSessionEpoch = getSessionEpoch()
+  let expectedSessionEpoch = getSessionEpoch()
   const user = useUserStore()
   const tenantId = user.tenantId
   const userId = String(user.userId)
@@ -136,12 +136,13 @@ async function performTenantContextUiSynchronization(options?: {
       // 身份和 token 仍由会话协调器负责恢复，但所有租户授权投影立即失效。
       runtime.resetDynamicRoutes()
       useTagsViewStore().closeAllViews()
-      await invalidateTenantServerState(tenantId)
+      await invalidateActiveServerStateScope()
       if (isSameIdentity(tenantId, userId) && runtime.router.currentRoute.value.path !== '/503') {
         await runtime.router.replace('/503')
       }
       throw error
     }
+    expectedSessionEpoch = getSessionEpoch()
   }
   assertSessionEpoch(expectedSessionEpoch)
   if (!isSameIdentity(tenantId, userId)) return
@@ -154,7 +155,7 @@ async function performTenantContextUiSynchronization(options?: {
   const accessResult = pathAccessResult(runtime.router, currentPath)
   const replacement = accessResultPath(accessResult)
   if (replacement) await runtime.router.replace(replacement)
-  await invalidateTenantServerState(tenantId)
+  await invalidateActiveServerStateScope()
 }
 
 function pruneInaccessibleViews(router: Router): void {

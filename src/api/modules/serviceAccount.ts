@@ -1,5 +1,4 @@
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { requestOperation } from '@/api/operationRequest'
 import {
   delete_system_service_accounts_by_id,
   delete_system_service_accounts_by_id_credentials_by_credential_id,
@@ -15,7 +14,7 @@ import {
   put_system_service_accounts_by_id,
   put_system_service_accounts_by_id_roles,
   put_system_service_accounts_by_id_status,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/system'
 
 export type ServiceAccount = ApiSchema<'ServiceAccountVo'>
 export type ServiceAccountDetail = ApiSchema<'ServiceAccountDetailVo'>
@@ -35,17 +34,17 @@ export type CreateServiceCredentialInput =
 
 /** 分页读取当前租户的服务账号。 */
 export function listServiceAccounts(params: ServiceAccountQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_service_accounts, { params, signal })
+  return get_system_service_accounts({ params, signal })
 }
 
 /** 创建当前租户的机器主体。 */
 export function createServiceAccount(data: CreateServiceAccountInput, signal?: AbortSignal) {
-  return requestOperation(post_system_service_accounts, { data, signal })
+  return post_system_service_accounts({ data, signal })
 }
 
 /** 读取服务账号及其角色快照。 */
 export function getServiceAccount(id: string, signal?: AbortSignal) {
-  return requestOperation(get_system_service_accounts_by_id, {
+  return get_system_service_accounts_by_id({
     path: { id },
     signal,
   })
@@ -57,7 +56,7 @@ export function updateServiceAccount(
   data: UpdateServiceAccountInput,
   signal?: AbortSignal,
 ) {
-  return requestOperation(put_system_service_accounts_by_id, {
+  return put_system_service_accounts_by_id({
     data,
     path: { id },
     signal,
@@ -70,7 +69,7 @@ export function updateServiceAccountStatus(
   status: ServiceAccountStatus,
   signal?: AbortSignal,
 ) {
-  return requestOperation(put_system_service_accounts_by_id_status, {
+  return put_system_service_accounts_by_id_status({
     data: { status },
     path: { id },
     signal,
@@ -79,7 +78,7 @@ export function updateServiceAccountStatus(
 
 /** 软删除服务账号。 */
 export function deleteServiceAccount(id: string, signal?: AbortSignal) {
-  return requestOperation(delete_system_service_accounts_by_id, {
+  return delete_system_service_accounts_by_id({
     path: { id },
     signal,
   })
@@ -87,7 +86,7 @@ export function deleteServiceAccount(id: string, signal?: AbortSignal) {
 
 /** 读取服务账号已绑定的普通角色 ID。 */
 export function listServiceAccountRoles(id: string, signal?: AbortSignal) {
-  return requestOperation(get_system_service_accounts_by_id_roles, {
+  return get_system_service_accounts_by_id_roles({
     path: { id },
     signal,
   })
@@ -99,7 +98,7 @@ export function replaceServiceAccountRoles(
   roleIds: readonly string[],
   signal?: AbortSignal,
 ) {
-  return requestOperation(put_system_service_accounts_by_id_roles, {
+  return put_system_service_accounts_by_id_roles({
     data: { role_ids: [...roleIds] },
     path: { id },
     signal,
@@ -108,7 +107,7 @@ export function replaceServiceAccountRoles(
 
 /** 读取 API Key 元数据，响应不包含 Secret。 */
 export function listServiceCredentials(id: string, signal?: AbortSignal) {
-  return requestOperation(get_system_service_accounts_by_id_credentials, {
+  return get_system_service_accounts_by_id_credentials({
     path: { id },
     signal,
   })
@@ -121,7 +120,7 @@ export function createServiceCredential(
   idempotencyKey: string,
   signal?: AbortSignal,
 ) {
-  return requestOperation(post_system_service_accounts_by_id_credentials, {
+  return post_system_service_accounts_by_id_credentials({
     data,
     headers: { 'Idempotency-Key': idempotencyKey },
     path: { id },
@@ -131,7 +130,7 @@ export function createServiceCredential(
 
 /** 撤销指定 API Key。 */
 export function revokeServiceCredential(id: string, credentialId: string, signal?: AbortSignal) {
-  return requestOperation(delete_system_service_accounts_by_id_credentials_by_credential_id, {
+  return delete_system_service_accounts_by_id_credentials_by_credential_id({
     path: { credential_id: credentialId, id },
     signal,
   })
@@ -139,12 +138,12 @@ export function revokeServiceCredential(id: string, credentialId: string, signal
 
 /** 分页读取当前租户的服务委托。 */
 export function listServiceDelegations(params: ServiceDelegationQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_service_delegations, { params, signal })
+  return get_system_service_delegations({ params, signal })
 }
 
 /** 由管理员撤销租户内服务委托。 */
 export function revokeServiceDelegation(id: string, signal?: AbortSignal) {
-  return requestOperation(delete_system_service_delegations_by_id, {
+  return delete_system_service_delegations_by_id({
     path: { id },
     signal,
   })
@@ -152,5 +151,5 @@ export function revokeServiceDelegation(id: string, signal?: AbortSignal) {
 
 /** 分页读取 Agent 最小访问审计。 */
 export function listServiceAccessAudits(params: ServiceAccessAuditQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_service_access_audits, { params, signal })
+  return get_system_service_access_audits({ params, signal })
 }

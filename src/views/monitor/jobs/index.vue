@@ -167,7 +167,7 @@
             show-overflow-tooltip
           >
             <template #default="{ row }">
-              <el-button v-if="row.last_error" type="danger" link @click="showError(row)">{{
+              <el-button v-if="row.last_error" type="danger" link @click="showJobError(row.id)">{{
                 t('monitor.jobs.viewError')
               }}</el-button>
               <span v-else>{{ t('monitor.jobs.noError') }}</span>
@@ -187,7 +187,7 @@
                 icon="RefreshRight"
                 :loading="retryingId === row.id"
                 :disabled="retryPending"
-                @click="handleRetry(row)"
+                @click="retryJob(row.id)"
               >
                 {{ t('monitor.jobs.retry') }}
               </el-button>
@@ -244,8 +244,10 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import type { BackgroundJobRecord } from '@/api/modules/monitor'
 import { formatOptionalLocalizedDate } from '@/i18n'
 import { usePermission } from '@/hooks/usePermission'
 import { useJobManagement } from './useJobManagement'
@@ -291,6 +293,20 @@ function statLabel(key: JobStatKey): string {
 
 function statValue(key: JobStatKey): number {
   return stats.value?.[key] ?? 0
+}
+
+function findJob(id: string): BackgroundJobRecord | undefined {
+  return jobs.value?.items.find((job) => job.id === id)
+}
+
+function showJobError(id: string): void {
+  const job = findJob(id)
+  if (job) showError(job)
+}
+
+async function retryJob(id: string): Promise<void> {
+  const job = findJob(id)
+  if (job) await handleRetry(job)
 }
 
 function statusLabel(status: string): string {

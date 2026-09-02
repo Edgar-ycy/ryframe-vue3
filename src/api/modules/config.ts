@@ -1,4 +1,3 @@
-import { requestOperation } from '@/api/operationRequest'
 import {
   delete_system_configs_by_id,
   delete_system_configs_cache,
@@ -8,7 +7,7 @@ import {
   post_system_configs,
   post_system_configs_exports,
   put_system_configs_by_id,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/system'
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
 import { stripPagination, type Id } from '@/shared/http/types'
 
@@ -19,7 +18,7 @@ export type ConfigUpdateInput = OperationJsonBody<'put_system_configs_by_id'>
 export type ConfigRecord = ApiSchema<'ConfigVo'>
 
 export function listConfig(params: ConfigQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_configs, { params, signal })
+  return get_system_configs({ params, signal })
 }
 export function exportConfig(
   params: ConfigExportQuery | undefined,
@@ -27,7 +26,7 @@ export function exportConfig(
   signal?: AbortSignal,
   confirmAll = false,
 ) {
-  return requestOperation(post_system_configs_exports, {
+  return post_system_configs_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,
@@ -37,25 +36,25 @@ export function exportConfig(
   })
 }
 export function getConfig(id: Id, signal?: AbortSignal) {
-  return requestOperation(get_system_configs_by_id, { path: { id }, signal })
+  return get_system_configs_by_id({ path: { id }, signal })
 }
 
 /** 按键查询参数值 */
 export function getConfigByKey(key: string, signal?: AbortSignal) {
-  return requestOperation(get_system_configs_key_by_key, { path: { key }, signal })
+  return get_system_configs_key_by_key({ path: { key }, signal })
 }
 
 export function createConfig(data: ConfigCreateInput) {
-  return requestOperation(post_system_configs, { data })
+  return post_system_configs({ data })
 }
 export function updateConfig(id: Id, data: ConfigUpdateInput) {
-  return requestOperation(put_system_configs_by_id, { path: { id }, data })
+  return put_system_configs_by_id({ path: { id }, data })
 }
 export function deleteConfig(id: Id) {
-  return requestOperation(delete_system_configs_by_id, { path: { id } })
+  return delete_system_configs_by_id({ path: { id } })
 }
 
 /** 刷新参数缓存 */
 export function refreshConfigCache() {
-  return requestOperation(delete_system_configs_cache, {})
+  return delete_system_configs_cache({})
 }

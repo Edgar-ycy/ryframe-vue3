@@ -146,6 +146,7 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
+import { nextTick, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CreateTenantPayload, TenantCapacity, UpdateTenantPayload } from '@/api/modules/tenant'
 import { listAllDataTargetOptions, type DataTargetSummary } from '@/api/modules/dataTarget'
@@ -155,23 +156,18 @@ import {
   type ProductPlanVersion,
 } from '@/api/modules/productPlan'
 import { requireOperationData } from '@/shared/http/client'
+import { useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { PASSWORD_POLICY } from '@/shared/security/passwordPolicy'
 import { isValidTenantId } from '@/shared/security/tenantId'
-
-type TenantFormModel = {
-  tenant_id: string
-  name: string
-  domain: string
-  expire_at: string
-  max_users: number
-  max_roles: number
-  max_storage_mb: number
-  max_requests_per_min: number
-  admin_username: string
-  admin_password: string
-  plan_version_id: string
-  data_target_key: string
-}
+import {
+  buildCreateTenantPayload,
+  buildUpdateTenantPayload,
+  createDefaultTenantForm,
+  tenantPasswordValidationMessage,
+  type TenantFormModel,
+} from './tenantFormModel'
 
 type PublishedPlanVersionOption = ProductPlanVersion & { planName: string }
 
@@ -181,22 +177,23 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  create: [payload: CreateTenantPayload]
-  update: [tenantId: string, payload: UpdateTenantPayload]
+  create: [payload: CreateTenantPayload, scope: ServerStateScope]
+  update: [tenantId: string, payload: UpdateTenantPayload, scope: ServerStateScope]
 }>()
 
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const formRef = ref<FormInstance>()
-const form = reactive<TenantFormModel>(createDefaultForm())
+const form = reactive<TenantFormModel>(createDefaultTenantForm())
 const creationOptionsLoading = ref(false)
 const creationOptionsError = ref(false)
 const publishedPlanVersions = ref<PublishedPlanVersionOption[]>([])
 const dataTargets = ref<DataTargetSummary[]>([])
+const pageGeneration = ref(0)
 let optionsGeneration = 0
 
 const validateNewPassword: FormItemRule['validator'] = (_rule, value, callback) => {
-  const message = passwordValidationMessage(String(value ?? ''))
+  const message = tenantPasswordValidationMessage(String(value ?? ''), t)
   callback(message ? new Error(message) : undefined)
 }
 
@@ -243,23 +240,6 @@ const rules: FormRules<TenantFormModel> = {
   ],
 }
 
-function createDefaultForm(): TenantFormModel {
-  return {
-    tenant_id: '',
-    name: '',
-    domain: '',
-    expire_at: '',
-    max_users: 100,
-    max_roles: 20,
-    max_storage_mb: 1024,
-    max_requests_per_min: 1000,
-    admin_username: '',
-    admin_password: '',
-    plan_version_id: '',
-    data_target_key: '',
-  }
-}
-
 function handleOpen(): void {
   Object.assign(
     form,
@@ -278,53 +258,50 @@ function handleOpen(): void {
           plan_version_id: '',
           data_target_key: '',
         }
-      : createDefaultForm(),
+      : createDefaultTenantForm(),
   )
-  void nextTick(() => formRef.value?.clearValidate())
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () => visible.value && pageGeneration.value === generation
+  void nextTick(() => {
+    if (operation.isCurrent(ownsOperation)) formRef.value?.clearValidate()
+  })
   if (!props.tenant) void loadCreationOptions()
 }
 
 function handleClosed(): void {
+  pageGeneration.value += 1
   optionsGeneration += 1
   creationOptionsLoading.value = false
+  creationOptionsError.value = false
+  publishedPlanVersions.value = []
+  dataTargets.value = []
   formRef.value?.resetFields()
-  Object.assign(form, createDefaultForm())
+  Object.assign(form, createDefaultTenantForm())
 }
 
 async function submit(): Promise<void> {
   if (props.submitting) return
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () => visible.value && pageGeneration.value === generation
+  const tenant = props.tenant
   const valid = await formRef.value?.validate().catch(() => false)
+  if (!operation.isCurrent(ownsOperation)) return
   if (!valid) return
-  if (props.tenant) {
-    emit('update', props.tenant.tenant_id, {
-      name: form.name.trim(),
-      domain: form.domain.trim() || undefined,
-      expire_at: form.expire_at || undefined,
-      max_users: form.max_users,
-      max_roles: form.max_roles,
-      max_storage_mb: form.max_storage_mb,
-      max_requests_per_min: form.max_requests_per_min,
-    })
+  if (tenant) {
+    emit('update', tenant.tenant_id, buildUpdateTenantPayload(form), operation.scope)
     return
   }
-  emit('create', {
-    tenant_id: form.tenant_id.trim(),
-    name: form.name.trim(),
-    domain: form.domain.trim() || undefined,
-    expire_at: form.expire_at || undefined,
-    max_users: form.max_users,
-    max_roles: form.max_roles,
-    max_storage_mb: form.max_storage_mb,
-    max_requests_per_min: form.max_requests_per_min,
-    admin_username: form.admin_username.trim(),
-    admin_password: form.admin_password,
-    plan_version_id: form.plan_version_id,
-    data_target_key: form.data_target_key,
-  })
+  emit('create', buildCreateTenantPayload(form), operation.scope)
 }
 
 async function loadCreationOptions(): Promise<void> {
   const generation = ++optionsGeneration
+  const page = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    visible.value && pageGeneration.value === page && optionsGeneration === generation
   creationOptionsLoading.value = true
   creationOptionsError.value = false
   try {
@@ -332,46 +309,47 @@ async function loadCreationOptions(): Promise<void> {
       listProductPlans({ page: 1, page_size: 100 }).then(requireOperationData),
       listAllDataTargetOptions({ eligible_for: 'new_tenant' }),
     ])
+    operation.assertCurrent(ownsOperation)
     const details = await Promise.all(
       planPage.items.map((plan) => getProductPlan(plan.id).then(requireOperationData)),
     )
-    if (generation !== optionsGeneration) return
-    publishedPlanVersions.value = details.flatMap((detail) =>
-      detail.versions
-        .filter((version) => version.status === 'published')
-        .map((version) => ({ ...version, planName: detail.name })),
-    )
-    dataTargets.value = targets.filter((target) => target.eligible)
+    operation.apply(() => {
+      publishedPlanVersions.value = details.flatMap((detail) =>
+        detail.versions
+          .filter((version) => version.status === 'published')
+          .map((version) => ({ ...version, planName: detail.name })),
+      )
+      dataTargets.value = targets.filter((target) => target.eligible)
+    }, ownsOperation)
   } catch {
-    if (generation !== optionsGeneration) return
-    publishedPlanVersions.value = []
-    dataTargets.value = []
-    creationOptionsError.value = true
+    if (operation.isCurrent(ownsOperation)) {
+      publishedPlanVersions.value = []
+      dataTargets.value = []
+      creationOptionsError.value = true
+    }
   } finally {
-    if (generation === optionsGeneration) creationOptionsLoading.value = false
+    if (operation.isCurrent(ownsOperation)) creationOptionsLoading.value = false
   }
 }
+
+function invalidateForm(): void {
+  pageGeneration.value += 1
+  optionsGeneration += 1
+  creationOptionsLoading.value = false
+  creationOptionsError.value = false
+  publishedPlanVersions.value = []
+  dataTargets.value = []
+  Object.assign(form, createDefaultTenantForm())
+  visible.value = false
+}
+
+watch(useServerStateScope(), invalidateForm, { flush: 'sync' })
+onDeactivated(invalidateForm)
+onBeforeUnmount(invalidateForm)
 
 function dataTargetLabel(target: DataTargetSummary): string {
   const detail = [target.mode, target.kind, target.region].filter(Boolean).join(' · ')
   return `${target.key}${detail ? ` · ${detail}` : ''}`
-}
-
-function passwordValidationMessage(password: string): string | undefined {
-  if (password.length < PASSWORD_POLICY.min_length)
-    return t('tenantCapacity.passwordTooShort', { min: PASSWORD_POLICY.min_length })
-  if (password.length > PASSWORD_POLICY.max_length)
-    return t('tenantCapacity.passwordTooLong', { max: PASSWORD_POLICY.max_length })
-  if (!/^[!-~]+$/.test(password)) return t('tenantCapacity.passwordVisibleAscii')
-  if (PASSWORD_POLICY.required_classes.includes('uppercase') && !/[A-Z]/.test(password))
-    return t('tenantCapacity.passwordNeedsUppercase')
-  if (PASSWORD_POLICY.required_classes.includes('lowercase') && !/[a-z]/.test(password))
-    return t('tenantCapacity.passwordNeedsLowercase')
-  if (PASSWORD_POLICY.required_classes.includes('digit') && !/[0-9]/.test(password))
-    return t('tenantCapacity.passwordNeedsDigit')
-  if (PASSWORD_POLICY.required_classes.includes('special') && !/[^A-Za-z0-9]/.test(password))
-    return t('tenantCapacity.passwordNeedsSpecial')
-  return undefined
 }
 </script>
 

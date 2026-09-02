@@ -40,6 +40,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage, ElNotification } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { CircleCheckFilled, Download, WarningFilled } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { ExportJob } from '@/api/modules/exportJob'
@@ -47,6 +49,11 @@ import { exportJobDisplayName } from '@/app/exports/exportJobPresentation'
 import { isTerminalExportJob } from '@/app/exports/exportJobCache'
 import { useExportJobTracker } from '@/app/exports/useExportJobs'
 import { HttpError } from '@/shared/http/client'
+import { useServerStateScope } from '@/shared/query/client'
+import {
+  beginServerStatePageOperation,
+  type ServerStatePageOperation,
+} from '@/shared/query/pageOperationScope'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import ExportJobDrawer from './ExportJobDrawer.vue'
@@ -57,7 +64,8 @@ const { t } = useI18n()
 const visible = ref(false)
 const liveMessage = ref('')
 const notifiedTransitions = new Set<string>()
-let notificationIdentity = `${userStore.tenantId}:${userStore.userId}`
+const localNotices = new Set<{ close: () => void }>()
+let notificationGeneration = 0
 
 const {
   jobs,
@@ -80,21 +88,15 @@ const {
   onTransition: notifyTerminalTransition,
 })
 
-const unsubscribeUser = userStore.$subscribe((_mutation, state) => {
-  const identity = `${state.tenantId}:${state.userId}`
-  if (identity === notificationIdentity) return
-  notificationIdentity = identity
-  notifiedTransitions.clear()
-  liveMessage.value = ''
-  visible.value = false
-})
+const stopScopeWatch = watch(useServerStateScope(), resetExportCenterState, { flush: 'sync' })
 
 onMounted(() => {
   void initializeTracker()
 })
 
 onUnmounted(() => {
-  unsubscribeUser()
+  resetExportCenterState()
+  stopScopeWatch()
   stopTracking()
 })
 
@@ -159,11 +161,13 @@ function notifyTerminalTransition(previous: ExportJob, current: ExportJob): void
   if (notifiedTransitions.has(dedupeKey)) return
   notifiedTransitions.add(dedupeKey)
   liveMessage.value = ''
+  const generation = notificationGeneration
   void nextTick(() => {
-    liveMessage.value = notification.message
+    if (notificationGeneration === generation) liveMessage.value = notification.message
   })
   if (current.status === 'succeeded' || current.status === 'failed') {
-    const notice = ElNotification({
+    let notice!: { close: () => void }
+    notice = ElNotification({
       title: t(
         current.status === 'succeeded'
           ? 'exportCenter.notifyTitleSucceeded'
@@ -174,17 +178,25 @@ function notifyTerminalTransition(previous: ExportJob, current: ExportJob): void
       icon: current.status === 'succeeded' ? CircleCheckFilled : WarningFilled,
       duration: 8_000,
       showClose: false,
+      onClose: () => localNotices.delete(notice),
       onClick: () => {
         notice.close()
         void viewAll()
       },
     })
+    localNotices.add(notice)
     if (visible.value || router.currentRoute.value.path === '/profile/exports') {
       void markVisibleNotificationsRead([current]).catch(() => undefined)
     }
     return
   }
-  ElMessage.info({ message: notification.message, showClose: false })
+  let notice!: { close: () => void }
+  notice = ElMessage.info({
+    message: notification.message,
+    showClose: false,
+    onClose: () => localNotices.delete(notice),
+  })
+  localNotices.add(notice)
 }
 
 function openDrawer(): void {
@@ -192,7 +204,8 @@ function openDrawer(): void {
 }
 
 async function handleDrawerOpen(): Promise<void> {
-  await refreshJobs()
+  const operation = beginServerStatePageOperation()
+  if (!(await refreshForOperation(operation))) return
   try {
     await markVisibleNotificationsRead(recentJobs())
   } catch {
@@ -201,14 +214,18 @@ async function handleDrawerOpen(): Promise<void> {
 }
 
 async function refreshJobs(): Promise<void> {
+  const operation = beginServerStatePageOperation()
   try {
     await refresh()
-  } catch {
+    operation.assertCurrent()
+  } catch (error) {
+    if (!canReportActionError(operation, error)) return
     ElMessage.warning(t('exportCenter.loadFailed'))
   }
 }
 
 async function cancel(job: ExportJob): Promise<void> {
+  const operation = beginServerStatePageOperation()
   if (
     !(await confirmAction(
       t('exportCenter.cancelConfirm', { name: exportJobDisplayName(job) }),
@@ -219,9 +236,11 @@ async function cancel(job: ExportJob): Promise<void> {
     return
 
   try {
-    await cancelJob(job.id)
-  } catch {
-    await refreshJobs()
+    operation.assertCurrent()
+    await cancelJob(job.id, operation.scope)
+  } catch (error) {
+    if (!canReportActionError(operation, error)) return
+    if (!(await refreshForOperation(operation))) return
     const current = jobs.value?.find((item) => item.id === job.id)
     if (current && current.status !== 'queued' && current.status !== 'running') {
       ElMessage.info(`${exportJobDisplayName(current)}：${t(`exportCenter.${current.status}`)}`)
@@ -232,10 +251,12 @@ async function cancel(job: ExportJob): Promise<void> {
 }
 
 async function download(job: ExportJob): Promise<void> {
+  const operation = beginServerStatePageOperation()
   try {
-    await downloadJob(job)
+    await downloadJob(job, operation.scope)
   } catch (error) {
-    await refreshJobs()
+    if (!canReportActionError(operation, error)) return
+    if (!(await refreshForOperation(operation))) return
     const current = jobs.value?.find((item) => item.id === job.id)
     if (current?.status === 'expired' || isExpired(current?.expires_at ?? job.expires_at)) {
       ElMessage.error(t('exportCenter.downloadExpired'))
@@ -251,6 +272,7 @@ async function download(job: ExportJob): Promise<void> {
 
 async function remove(job: ExportJob): Promise<void> {
   if (!isTerminalExportJob(job) || deletingJobIds.value.length > 0) return
+  const operation = beginServerStatePageOperation()
   if (
     !(await confirmAction(
       t('exportCenter.deleteConfirm', { name: exportJobDisplayName(job) }),
@@ -261,16 +283,42 @@ async function remove(job: ExportJob): Promise<void> {
     return
 
   try {
-    await deleteJobs([job.id])
-    ElMessage.success(t('exportCenter.deleteSuccess'))
+    operation.assertCurrent()
+    await deleteJobs([job.id], operation.scope)
+    operation.apply(() => ElMessage.success(t('exportCenter.deleteSuccess')))
   } catch (error) {
+    if (!canReportActionError(operation, error)) return
     if (error instanceof HttpError && error.status === 409) {
-      await refreshJobs()
+      if (!(await refreshForOperation(operation))) return
       ElMessage.warning(t('exportCenter.deleteConflict'))
       return
     }
     ElMessage.error(t('exportCenter.deleteFailed'))
   }
+}
+
+async function refreshForOperation(operation: ServerStatePageOperation): Promise<boolean> {
+  if (!operation.isCurrent()) return false
+  try {
+    await refresh()
+  } catch {
+    // 动作失败后的补拉只负责对账，保留原始动作错误作为唯一提示。
+  }
+  return operation.isCurrent()
+}
+
+function canReportActionError(operation: ServerStatePageOperation, error: unknown): boolean {
+  const cancelled = error instanceof HttpError && error.kind === 'cancelled'
+  return operation.isCurrent() && !cancelled
+}
+
+function resetExportCenterState(): void {
+  notificationGeneration += 1
+  for (const notice of localNotices) notice.close()
+  localNotices.clear()
+  notifiedTransitions.clear()
+  liveMessage.value = ''
+  visible.value = false
 }
 
 function isExpired(value: string | null | undefined): boolean {

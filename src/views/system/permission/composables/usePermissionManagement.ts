@@ -1,3 +1,4 @@
+import { ElMessage } from 'element-plus'
 import {
   deletePermission,
   getPermissionTree,
@@ -8,8 +9,11 @@ import {
 import { refreshRuntimeAccessibleRoutes } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 
@@ -19,10 +23,10 @@ export function usePermissionManagement() {
   const editingPermission = ref<PermissionTreeNode | null>(null)
   const parentPermissionId = ref<Id>()
   const userStore = useUserStore()
+  const pageLifecycle = useServerStatePageLifecycle(resetPageState)
 
-  const permissionsQuery = useTenantQuery<PermissionTreeNode[]>(
-    () => userStore.tenantId,
-    () => userStore.sessionStatus === 'authenticated',
+  const permissionsQuery = useServerStateQuery<PermissionTreeNode[]>(
+    () => pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated',
     'permissions',
     () => ({ scope: 'tree' }),
     async (signal) => {
@@ -33,38 +37,31 @@ export function usePermissionManagement() {
   const tableData = permissionsQuery.data
   const loading = permissionsQuery.isFetching
 
-  const deleteMutation = useTenantMutation<void, PermissionTreeNode>(
-    () => userStore.tenantId,
-    'permissions',
-    {
-      mutationFn: async (permission) => {
-        await deletePermission(permission.id)
-      },
-      onSuccess: () => {
-        ElMessage.success(translate('system.common.deleteSuccess'))
-      },
+  const deleteMutation = useServerStateMutation<void, PermissionTreeNode>('permissions', {
+    mutationFn: async (permission) => {
+      await deletePermission(permission.id)
     },
-  )
-  const syncMutation = useTenantMutation<PermissionSyncReport, void>(
-    () => userStore.tenantId,
-    'permissions',
-    {
-      mutationFn: async () => {
-        const response = await syncApiPermissions()
-        if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
-        return response.data
-      },
-      onSuccess: (report) => {
-        syncReport.value = report
-        ElMessage.success(translate('system.permission.syncSuccess', { count: report.created }))
-      },
+  })
+  const syncMutation = useServerStateMutation<PermissionSyncReport, void>('permissions', {
+    mutationFn: async () => {
+      const response = await syncApiPermissions()
+      if (!response.data) throw new Error(translate('system.permission.syncResponseMissing'))
+      return response.data
     },
-  )
+  })
 
   const deletingId = computed<Id | null>(() =>
     deleteMutation.pending.value ? (deleteMutation.variables.value?.id ?? null) : null,
   )
   const syncLoading = syncMutation.pending
+
+  function resetPageState(): void {
+    syncReport.value = null
+    dialogVisible.value = false
+    editingPermission.value = null
+    parentPermissionId.value = undefined
+  }
+
   function syncReportTitle(): string {
     if (!syncReport.value) return ''
     return translate(
@@ -101,23 +98,38 @@ export function usePermissionManagement() {
 
   async function handleDelete(permission: PermissionTreeNode): Promise<void> {
     if (deleteMutation.pending.value) return
-    const confirmed = await confirmAction(
-      translate('system.permission.deleteConfirm', { name: permission.name }),
-      translate('system.common.warning'),
-      {
-        type: 'warning',
-        confirmButtonText: translate('system.common.confirmDelete'),
-      },
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          translate('system.permission.deleteConfirm', { name: permission.name }),
+          translate('system.common.warning'),
+          {
+            type: 'warning',
+            confirmButtonText: translate('system.common.confirmDelete'),
+          },
+        ),
+      ownsOperation,
     )
-    if (!confirmed) return
+    if (!operation) return
 
     await deleteMutation.mutateAsync(permission)
+    operation.apply(
+      () => ElMessage.success(translate('system.common.deleteSuccess')),
+      ownsOperation,
+    )
     await Promise.all([fetchData(), refreshRuntimeAccessibleRoutes()])
   }
 
   async function handleSync(): Promise<void> {
     if (syncMutation.pending.value) return
-    await syncMutation.mutateAsync()
+    const operation = beginServerStatePageOperation()
+    const ownsOperation = pageLifecycle.captureOwnership()
+    const report = await syncMutation.mutateAsync()
+    operation.apply(() => {
+      syncReport.value = report
+      ElMessage.success(translate('system.permission.syncSuccess', { count: report.created }))
+    }, ownsOperation)
     await Promise.all([fetchData(), refreshRuntimeAccessibleRoutes()])
   }
 

@@ -13,19 +13,16 @@ import {
 } from '@/api/modules/tenantConfigTransfer'
 import { requireOperationData } from '@/shared/http/client'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { queryClient, tenantQueryKey } from '@/shared/query/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
-import { useUserStore } from '@/stores/user'
+import { queryClient, serverStateQueryKey } from '@/shared/query/client'
+import type { ServerStateScope } from '@/shared/query/scope'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import {
   TENANT_CONFIG_PACKAGES_RESOURCE,
   TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
   TENANT_CONFIG_TRANSFERS_RESOURCE,
 } from '../queryResources'
 
-export interface TenantConfigIdentity {
-  tenantId: string
-  userId: string
-}
+export type TenantConfigIdentity = ServerStateScope
 
 interface TenantConfigTransferQueriesOptions {
   pageActive: Ref<boolean>
@@ -40,7 +37,6 @@ function samePageQuery(left: TenantConfigPackageQuery, right: TenantConfigPackag
 
 /** 配置包、迁移及逐项结果的服务端状态与精确缓存操作。 */
 export function useTenantConfigTransferQueries(options: TenantConfigTransferQueriesOptions) {
-  const userStore = useUserStore()
   const packageQueryParams = ref<TenantConfigPackageQuery>({ page: 1, page_size: 10 })
   const activePackageQueryParams = ref<TenantConfigPackageQuery>({ ...packageQueryParams.value })
   const queryParams = ref<TenantConfigTransferQuery>({ page: 1, page_size: 10 })
@@ -56,7 +52,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   function packageListParams(params = activePackageQueryParams.value) {
     return {
       scope: 'list',
-      userId: String(userStore.userId || 'anonymous'),
+      userId: options.currentIdentity()?.subjectId ?? 'anonymous',
       filters: { ...params },
     }
   }
@@ -64,7 +60,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   function transferListParams(params = activeQueryParams.value) {
     return {
       scope: 'list',
-      userId: String(userStore.userId || 'anonymous'),
+      userId: options.currentIdentity()?.subjectId ?? 'anonymous',
       filters: { ...params },
     }
   }
@@ -75,22 +71,21 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   ) {
     return {
       scope: 'items',
-      userId: String(userStore.userId || 'anonymous'),
+      userId: options.currentIdentity()?.subjectId ?? 'anonymous',
       transferId,
       filters: { ...params },
     }
   }
 
   function packageListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(identity.tenantId, TENANT_CONFIG_PACKAGES_RESOURCE, packageListParams())
+    return serverStateQueryKey(identity, TENANT_CONFIG_PACKAGES_RESOURCE, packageListParams())
   }
 
   function transferListKey(identity: TenantConfigIdentity): QueryKey {
-    return tenantQueryKey(identity.tenantId, TENANT_CONFIG_TRANSFERS_RESOURCE, transferListParams())
+    return serverStateQueryKey(identity, TENANT_CONFIG_TRANSFERS_RESOURCE, transferListParams())
   }
 
-  const packagesQuery = useTenantQuery<PageResponse<TenantConfigBundle>>(
-    () => userStore.tenantId,
+  const packagesQuery = useServerStateQuery<PageResponse<TenantConfigBundle>>(
     () => queryEnabled() && options.canListPackages(),
     TENANT_CONFIG_PACKAGES_RESOURCE,
     packageListParams,
@@ -108,8 +103,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     },
   )
 
-  const transfersQuery = useTenantQuery<PageResponse<TenantConfigTransfer>>(
-    () => userStore.tenantId,
+  const transfersQuery = useServerStateQuery<PageResponse<TenantConfigTransfer>>(
     queryEnabled,
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     transferListParams,
@@ -125,8 +119,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     },
   )
 
-  const itemsQuery = useTenantQuery<PageResponse<TenantConfigTransferItem>>(
-    () => userStore.tenantId,
+  const itemsQuery = useServerStateQuery<PageResponse<TenantConfigTransferItem>>(
     () => queryEnabled() && selectedTransfer.value !== undefined,
     TENANT_CONFIG_TRANSFER_ITEMS_RESOURCE,
     transferItemParams,

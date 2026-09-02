@@ -3,7 +3,7 @@
     <el-form-item v-for="field in fields" :key="field.key" :label="field.label">
       <el-input
         v-if="field.kind === 'text'"
-        :model-value="fieldValue(field)"
+        :model-value="textValue(field)"
         :placeholder="field.placeholder"
         clearable
         @update:model-value="updateField(field, $event)"
@@ -61,6 +61,12 @@ function fieldValue(field: FlatCrudQueryField<TModel>): FlatCrudScalar {
   if (value === null || value === undefined) return value
   if (['string', 'number', 'boolean'].includes(typeof value)) return value as FlatCrudScalar
   throw new Error(`平面资源查询字段 ${field.key} 不是标量值`)
+}
+
+function textValue(field: FlatCrudQueryField<TModel>): string | number | null | undefined {
+  const value = fieldValue(field)
+  if (typeof value === 'boolean') throw new Error(`文本字段 ${field.key} 不能使用布尔值`)
+  return value
 }
 
 function updateField(field: FlatCrudQueryField<TModel>, value: FlatCrudScalar): void {

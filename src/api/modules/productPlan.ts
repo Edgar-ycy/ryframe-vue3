@@ -1,4 +1,3 @@
-import { requestOperation } from '@/api/operationRequest'
 import {
   get_platform_capabilities,
   get_platform_product_plans,
@@ -13,7 +12,7 @@ import {
   post_platform_tenants_by_tenant_id_product_changes,
   put_platform_product_plans_by_plan_id,
   put_platform_product_plans_by_plan_id_versions_by_version_draft,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/platform'
 import type { OperationData, OperationJsonBody, OperationQuery } from '@/api/contract'
 
 export type ProductPlanVersionStatus =
@@ -53,40 +52,40 @@ export type ApplyProductChangeInput =
   OperationJsonBody<'post_platform_tenants_by_tenant_id_product_changes'>
 
 export function listProductCapabilities(signal?: AbortSignal) {
-  return requestOperation(get_platform_capabilities, { signal })
+  return get_platform_capabilities({ signal })
 }
 
 export function listProductPlans(params: ProductPlanQuery, signal?: AbortSignal) {
-  return requestOperation(get_platform_product_plans, { params, signal })
+  return get_platform_product_plans({ params, signal })
 }
 
 export function createProductPlan(data: CreateProductPlanInput) {
-  return requestOperation(post_platform_product_plans, { data })
+  return post_platform_product_plans({ data })
 }
 
 export function updateProductPlan(planId: string, data: UpdateProductPlanInput) {
-  return requestOperation(put_platform_product_plans_by_plan_id, {
+  return put_platform_product_plans_by_plan_id({
     data,
     path: { plan_id: planId },
   })
 }
 
 export function getProductPlan(planId: string, signal?: AbortSignal) {
-  return requestOperation(get_platform_product_plans_by_plan_id, {
+  return get_platform_product_plans_by_plan_id({
     path: { plan_id: planId },
     signal,
   })
 }
 
 export function listProductPlanVersions(planId: string, signal?: AbortSignal) {
-  return requestOperation(get_platform_product_plans_by_plan_id_versions, {
+  return get_platform_product_plans_by_plan_id_versions({
     path: { plan_id: planId },
     signal,
   })
 }
 
 export function createProductPlanVersion(planId: string, data: ProductPlanVersionInput) {
-  return requestOperation(post_platform_product_plans_by_plan_id_versions, {
+  return post_platform_product_plans_by_plan_id_versions({
     data,
     path: { plan_id: planId },
   })
@@ -97,40 +96,40 @@ export function updateProductPlanVersionDraft(
   version: number,
   data: ProductPlanVersionInput,
 ) {
-  return requestOperation(put_platform_product_plans_by_plan_id_versions_by_version_draft, {
+  return put_platform_product_plans_by_plan_id_versions_by_version_draft({
     data,
     path: { plan_id: planId, version },
   })
 }
 
 export function publishProductPlanVersion(planId: string, version: number) {
-  return requestOperation(post_platform_product_plans_by_plan_id_versions_by_version_publish, {
+  return post_platform_product_plans_by_plan_id_versions_by_version_publish({
     path: { plan_id: planId, version },
   })
 }
 
 export function retireProductPlanVersion(planId: string, version: number) {
-  return requestOperation(post_platform_product_plans_by_plan_id_versions_by_version_retire, {
+  return post_platform_product_plans_by_plan_id_versions_by_version_retire({
     path: { plan_id: planId, version },
   })
 }
 
 export function getTenantProductContext(tenantId: string, signal?: AbortSignal) {
-  return requestOperation(get_platform_tenants_by_tenant_id_product_context, {
+  return get_platform_tenants_by_tenant_id_product_context({
     path: { tenant_id: tenantId },
     signal,
   })
 }
 
 export function previewTenantProductChange(tenantId: string, data: ProductChangePreviewInput) {
-  return requestOperation(post_platform_tenants_by_tenant_id_product_change_previews, {
+  return post_platform_tenants_by_tenant_id_product_change_previews({
     data,
     path: { tenant_id: tenantId },
   })
 }
 
 export function applyTenantProductChange(tenantId: string, data: ApplyProductChangeInput) {
-  return requestOperation(post_platform_tenants_by_tenant_id_product_changes, {
+  return post_platform_tenants_by_tenant_id_product_changes({
     data,
     path: { tenant_id: tenantId },
   })

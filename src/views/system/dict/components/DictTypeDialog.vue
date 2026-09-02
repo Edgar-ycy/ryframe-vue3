@@ -40,6 +40,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   createDictType,
@@ -49,8 +51,9 @@ import {
   type DictTypeUpdateInput,
 } from '@/api/modules/dict'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 
 const { t } = useI18n()
 
@@ -77,22 +80,13 @@ function isEdit(): boolean {
   return props.dictType !== null
 }
 const formRef = ref<FormInstance>()
-const userStore = useUserStore()
-const saveMutation = useTenantMutation<void, SaveDictTypeCommand>(
-  () => userStore.tenantId,
-  'dict-types',
-  {
-    mutationFn: async (command) => {
-      if (command.kind === 'update') await updateDictType(command.id, command.data)
-      else await createDictType(command.data)
-    },
-    onSuccess: (_data, command) => {
-      ElMessage.success(
-        t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
-      )
-    },
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+const saveMutation = useServerStateMutation<void, SaveDictTypeCommand>('dict-types', {
+  mutationFn: async (command) => {
+    if (command.kind === 'update') await updateDictType(command.id, command.data)
+    else await createDictType(command.data)
   },
-)
+})
 const submitting = saveMutation.pending
 
 function initialForm(): DictTypeFormState {
@@ -110,6 +104,11 @@ function resetForm(): void {
   formRef.value?.clearValidate()
 }
 
+function resetPageState(): void {
+  visible.value = false
+  resetForm()
+}
+
 function populateForm(): void {
   resetForm()
   if (!props.dictType) return
@@ -122,8 +121,15 @@ function populateForm(): void {
 
 async function submit(): Promise<void> {
   if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedTypeId = props.dictType?.id ?? null
+  const ownsDialog = () =>
+    ownsPage() && visible.value && (props.dictType?.id ?? null) === expectedTypeId
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation) return
 
   const command: SaveDictTypeCommand = props.dictType
     ? {
@@ -136,7 +142,12 @@ async function submit(): Promise<void> {
         data: { name: form.value.name, code: form.value.code },
       }
   await saveMutation.mutateAsync(command)
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

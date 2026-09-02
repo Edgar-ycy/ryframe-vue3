@@ -6,6 +6,61 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import ElementPlus from 'unplugin-element-plus/vite'
 
+const vueCompositionPrimitives = [
+  'computed',
+  'customRef',
+  'effectScope',
+  'getCurrentInstance',
+  'getCurrentScope',
+  'getCurrentWatcher',
+  'inject',
+  'isProxy',
+  'isReactive',
+  'isReadonly',
+  'isRef',
+  'isShallow',
+  'markRaw',
+  'nextTick',
+  'onActivated',
+  'onBeforeMount',
+  'onBeforeUnmount',
+  'onBeforeUpdate',
+  'onDeactivated',
+  'onErrorCaptured',
+  'onMounted',
+  'onRenderTracked',
+  'onRenderTriggered',
+  'onScopeDispose',
+  'onServerPrefetch',
+  'onUnmounted',
+  'onUpdated',
+  'onWatcherCleanup',
+  'provide',
+  'reactive',
+  'readonly',
+  'ref',
+  'shallowReactive',
+  'shallowReadonly',
+  'shallowRef',
+  'toRaw',
+  'toRef',
+  'toRefs',
+  'toValue',
+  'triggerRef',
+  'unref',
+  'useAttrs',
+  'useCssModule',
+  'useCssVars',
+  'useId',
+  'useModel',
+  'useSlots',
+  'useTemplateRef',
+  'watch',
+  'watchEffect',
+  'watchPostEffect',
+  'watchSyncEffect',
+]
+
 function normalizeBuildCommit(value: string | undefined): string {
   const commit = value?.trim().toLowerCase()
   if (!commit) return 'development'
@@ -37,6 +92,28 @@ function buildIdentityPlugin(frontendCommit: string): Plugin {
   }
 }
 
+function normalizedModuleId(id: string): string {
+  return id.replaceAll('\\', '/')
+}
+
+function isI18nCoreModule(id: string): boolean {
+  const normalizedId = normalizedModuleId(id)
+  return (
+    normalizedId.endsWith('/src/i18n/messages.ts') ||
+    normalizedId.endsWith('/src/i18n/catalog/core.ts') ||
+    normalizedId.includes('/src/i18n/catalog/core/') ||
+    normalizedId.endsWith('/src/i18n/catalog/shell.ts') ||
+    normalizedId.endsWith('/src/i18n/catalog/export-jobs.ts')
+  )
+}
+
+function operationChunkName(id: string): string | null {
+  const operation = normalizedModuleId(id).match(
+    /\/src\/api\/generated\/operations\/(core|system|platform|monitor|agent)\.ts$/,
+  )
+  return operation ? `api-${operation[1]}` : null
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
@@ -48,24 +125,12 @@ export default defineConfig(({ mode }) => {
       buildIdentityPlugin(frontendCommit),
       vue(),
       AutoImport({
-        imports: [
-          'vue',
-          'vue-router',
-          'pinia',
-          {
-            'element-plus': ['ElMessage', 'ElMessageBox', 'ElNotification', 'ElLoading'],
-          },
-          {
-            from: 'element-plus',
-            imports: ['FormInstance', 'FormRules'],
-            type: true,
-          },
-        ],
+        imports: [{ vue: vueCompositionPrimitives }],
         dts: 'src/auto-imports.d.ts',
       }),
       Components({
         resolvers: [ElementPlusResolver()],
-        dts: false,
+        dts: 'src/components.d.ts',
       }),
       ElementPlus({}),
     ],
@@ -119,20 +184,65 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       rolldownOptions: {
         output: {
-          manualChunks(id: string) {
-            if (
-              id.includes('node_modules/vue') ||
-              id.includes('node_modules/vue-router') ||
-              id.includes('node_modules/pinia')
-            )
-              return 'vue-vendor'
-            if (id.includes('node_modules/zrender')) return 'zrender-vendor'
-            if (id.includes('node_modules/echarts')) {
-              if (id.includes('/chart/')) return 'echarts-charts'
-              if (id.includes('/component/')) return 'echarts-components'
-              if (id.includes('/renderer/')) return 'echarts-renderer'
-              return 'echarts-core'
-            }
+          codeSplitting: {
+            groups: [
+              {
+                name: 'api-runtime',
+                test: (id) => normalizedModuleId(id).endsWith('/src/api/operationRequest.ts'),
+                priority: 100,
+              },
+              {
+                name: operationChunkName,
+                test: (id) => operationChunkName(id) !== null,
+                priority: 90,
+                includeDependenciesRecursively: false,
+              },
+              { name: 'i18n-core', test: isI18nCoreModule, priority: 80 },
+              {
+                name: 'zrender-vendor',
+                test: (id) => normalizedModuleId(id).includes('/node_modules/zrender/'),
+                priority: 70,
+              },
+              {
+                name: 'echarts-charts',
+                test: (id) => normalizedModuleId(id).includes('/node_modules/echarts/chart/'),
+                priority: 60,
+              },
+              {
+                name: 'echarts-components',
+                test: (id) => normalizedModuleId(id).includes('/node_modules/echarts/component/'),
+                priority: 60,
+              },
+              {
+                name: 'echarts-renderer',
+                test: (id) => normalizedModuleId(id).includes('/node_modules/echarts/renderer/'),
+                priority: 60,
+              },
+              {
+                name: 'vue-vendor',
+                test: (id) => {
+                  const normalizedId = normalizedModuleId(id)
+                  return (
+                    normalizedId.includes('/node_modules/vue/') ||
+                    normalizedId.includes('/node_modules/vue-router/') ||
+                    normalizedId.includes('/node_modules/pinia/')
+                  )
+                },
+                priority: 50,
+              },
+              {
+                name: 'echarts-core',
+                test: (id) => normalizedModuleId(id).includes('/node_modules/echarts/'),
+                priority: 50,
+              },
+              {
+                name: 'app-runtime',
+                test: /[\\/]src[\\/]/,
+                tags: ['$initial'],
+                priority: 10,
+                includeDependenciesRecursively: false,
+              },
+            ],
           },
         },
         onLog(level, log, defaultHandler) {

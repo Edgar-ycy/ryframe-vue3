@@ -1,13 +1,13 @@
 import type { ServiceAccount } from '@/api/modules/serviceAccount'
 import type { PageResponse } from '@/shared/http/types'
 import { queryClient } from '@/shared/query/client'
-import type { ServiceAccountIdentity } from './serviceAccountContextTypes'
+import type { ServiceAccountScope } from './serviceAccountContextTypes'
 import { useServiceAccountQueries } from './useServiceAccountQueries'
 
 /** 服务账号列表的本地缓存更新。 */
 export function useServiceAccountPageCache(queries: ReturnType<typeof useServiceAccountQueries>) {
   function updateAccountPage(
-    identity: ServiceAccountIdentity,
+    identity: ServiceAccountScope,
     account: ServiceAccount,
     mode: 'create' | 'update',
   ): void {
@@ -32,7 +32,7 @@ export function useServiceAccountPageCache(queries: ReturnType<typeof useService
     if (queries.selectedAccount.value?.id === account.id) queries.selectedAccount.value = account
   }
 
-  function removeAccountFromPage(identity: ServiceAccountIdentity, accountId: string): void {
+  function removeAccountFromPage(identity: ServiceAccountScope, accountId: string): void {
     queryClient.setQueryData<PageResponse<ServiceAccount>>(
       queries.accountsKey(identity),
       (current) => {

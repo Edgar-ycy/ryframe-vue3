@@ -1,19 +1,17 @@
 import { getAuthContext } from '@/api/modules/authContext'
-import {
-  isSessionContext,
-  sessionContextUserInfo,
-  type SessionContext,
-} from '@/api/modules/sessionContext'
+import { isSessionContext, sessionContextUserInfo } from '@/api/modules/sessionContext'
+import type { SessionContext } from '@/features/session/contracts'
 import {
   buildAccessibleMenus,
   buildRoutesFromMenuTree,
 } from '@/features/navigation/routeProjection'
+import { transitionAuthenticatedServerState } from '@/app/session/serverStateScope'
 import { applyUserIdentity } from '@/app/session/userProjection'
 import { HttpError, requireOperationData } from '@/shared/http/client'
+import { deactivateServerStateScope } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
-import { capabilityCodes } from './capability'
-import { useTenantContextStore } from './store'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 let loadGeneration = 0
 let loadingIdentity = ''
@@ -69,7 +67,13 @@ export function refreshTenantContext(): Promise<void> {
 }
 
 /** 校验并原子更新身份、上下文与路由投影。 */
-export function applyTenantSessionContext(context: SessionContext): void {
+export function applyTenantSessionContext(
+  context: SessionContext,
+  options: {
+    applyCredentialProjection?: () => void
+    forceNewServerStateScope?: boolean
+  } = {},
+): boolean {
   if (!isSessionContext(context)) {
     throw new HttpError('会话上下文响应无效', { kind: 'invalid_response' })
   }
@@ -79,7 +83,7 @@ export function applyTenantSessionContext(context: SessionContext): void {
       kind: 'invalid_response',
     })
   }
-  const codes = capabilityCodes(context.capabilities)
+  const codes = context.capabilities.map((capability) => capability.code)
   if (new Set(codes).size !== codes.length) {
     throw new HttpError('会话上下文包含重复能力码', { kind: 'invalid_response' })
   }
@@ -90,14 +94,21 @@ export function applyTenantSessionContext(context: SessionContext): void {
   const contextStore = useTenantContextStore()
   const permissions = usePermissionStore()
 
-  // 跨身份或授权快照切换期间先关闭能力门禁，避免 Store 短暂混用新旧投影。
-  contextStore.markLoading()
-  applyUserIdentity(userInfo, context.is_super_admin)
-  contextStore.applyContext(context, contextIdentity(context))
-  permissions.applyRouteProjection(routes, menus)
+  return transitionAuthenticatedServerState(
+    context,
+    () => {
+      // 新范围发布前同步完成三个 Store 与凭据投影，避免观察者读取半套会话。
+      applyUserIdentity(userInfo, context.is_super_admin)
+      options.applyCredentialProjection?.()
+      contextStore.applyContext(context, contextIdentity(context))
+      permissions.applyRouteProjection(routes, menus)
+    },
+    { force: options.forceNewServerStateScope },
+  )
 }
 
 export function failClosedTenantContext(): void {
+  deactivateServerStateScope()
   useTenantContextStore().failClosedState()
   // 保留已认证身份与 access token 以便重试，但立即清除旧 RBAC 投影。
   useUserStore().$patch({

@@ -6,6 +6,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Loading } from '@element-plus/icons-vue'
 import { normalizeRedirectPath } from '@/shared/navigation/redirect'

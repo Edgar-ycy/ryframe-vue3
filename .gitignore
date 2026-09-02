@@ -35,6 +35,5 @@ openapi/.xtask-contract.lock
 
 docs
 
-# 自动生成文件（auto-imports.d.ts 需保留以支持类型检查）
-src/components.d.ts
+# 自动导入与模板组件声明需纳入版本控制，以便只读门禁发现漂移
 .qoder

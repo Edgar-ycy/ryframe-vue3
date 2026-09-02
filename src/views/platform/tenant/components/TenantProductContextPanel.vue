@@ -70,6 +70,7 @@
     <TenantProductChangeDialog
       v-if="context"
       v-model="changeVisible"
+      :active="active"
       :can-override="canOverride"
       :context="context"
       :tenant-id="tenantId"
@@ -79,31 +80,37 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import type { PermissionCode } from '@/api/generated/permissions'
+import { computed, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getTenantProductContext, type TenantProductContext } from '@/api/modules/productPlan'
 import { TENANT_PRODUCT_PERMISSIONS } from '@/features/product-plans/permissions'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { isServerStateScopeCurrent, useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 import TenantProductChangeDialog from './TenantProductChangeDialog.vue'
+import { invalidateTenantProductContext } from './tenantProductChangeCommands'
 
 const props = defineProps<{ active: boolean; tenantId: string }>()
 const { t } = useI18n()
 const userStore = useUserStore()
 const changeVisible = ref(false)
+const pageGeneration = ref(0)
 const can = (permission: PermissionCode) => hasPermission(userStore.permissions, permission)
 const canView = computed(() => can(TENANT_PRODUCT_PERMISSIONS.view))
 const canAssign = computed(() => can(TENANT_PRODUCT_PERMISSIONS.assign))
 const canOverride = computed(() => can(TENANT_PRODUCT_PERMISSIONS.override))
-const contextQuery = useTenantQuery<TenantProductContext>(
-  () => userStore.tenantId,
+const contextQuery = useServerStateQuery<TenantProductContext>(
   () => props.active && userStore.tenantId === 'system' && canView.value && Boolean(props.tenantId),
   'platform-tenant-product-context',
   () => ({ tenant_id: props.tenantId }),
   async (signal) => requireOperationData(await getTenantProductContext(props.tenantId, signal)),
-  { staleTime: 0 },
+  { staleTime: 0, meta: { errorMode: 'silent' } },
 )
 const context = contextQuery.data
 const loading = contextQuery.isFetching
@@ -113,9 +120,37 @@ watch(canAssign, (allowed) => {
   if (!allowed) changeVisible.value = false
 })
 
-async function handleApplied(updated: TenantProductContext): Promise<void> {
+function invalidatePage(): void {
+  pageGeneration.value += 1
+  changeVisible.value = false
+}
+
+watch(useServerStateScope(), invalidatePage, { flush: 'sync' })
+watch(
+  () => props.active,
+  (active) => !active && invalidatePage(),
+  { flush: 'sync' },
+)
+watch(() => props.tenantId, invalidatePage, { flush: 'sync' })
+onDeactivated(invalidatePage)
+onBeforeUnmount(invalidatePage)
+
+async function handleApplied(
+  updated: TenantProductContext,
+  expectedScope: ServerStateScope,
+): Promise<void> {
   if (updated.tenant_id !== props.tenantId) return
+  if (!isServerStateScopeCurrent(expectedScope)) return
+  const tenantId = props.tenantId
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () =>
+    props.active && pageGeneration.value === generation && props.tenantId === tenantId
+  operation.assertCurrent(ownsOperation)
+  await invalidateTenantProductContext(operation.scope)
+  operation.assertCurrent(ownsOperation)
   await contextQuery.refetch({ throwOnError: true })
+  if (!operation.isCurrent(ownsOperation)) return
   ElMessage.success(t('productPlans.changeApplied'))
 }
 </script>

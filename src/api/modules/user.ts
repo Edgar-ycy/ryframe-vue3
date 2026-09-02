@@ -1,5 +1,4 @@
 import type { ApiSchema, OperationJsonBody, OperationQuery } from '@/api/contract'
-import { requestBlobOperation, requestOperation } from '@/api/operationRequest'
 import {
   delete_system_users_batch_by_ids,
   delete_system_users_by_id,
@@ -13,7 +12,7 @@ import {
   put_system_users_by_id,
   put_system_users_by_id_roles,
   put_system_users_by_id_status,
-} from '@/api/generated/operations'
+} from '@/api/generated/operations/system'
 import { stripPagination, type ApiResponse, type Id, type PageResponse } from '@/shared/http/types'
 
 export type UserManageableStatus = '0' | '1'
@@ -42,43 +41,37 @@ export type PasswordResetRequestResult = ApiSchema<'PasswordResetRequestResponse
 
 /** 分页查询用户列表 */
 export function listUser(params: UserQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_users, { params, signal }) as Promise<
-    ApiResponse<PageResponse<UserRecord>>
-  >
+  return get_system_users({ params, signal }) as Promise<ApiResponse<PageResponse<UserRecord>>>
 }
 
 /** 查询当前数据范围内的用户候选项 */
 export function listUserOptions(params?: UserOptionQuery, signal?: AbortSignal) {
-  return requestOperation(get_system_users_options, { params, signal })
+  return get_system_users_options({ params, signal })
 }
 
 /** 查询用户详情 */
 export function getUser(id: Id, signal?: AbortSignal) {
-  return requestOperation(get_system_users_by_id, { path: { id }, signal }) as Promise<
-    ApiResponse<UserDetail>
-  >
+  return get_system_users_by_id({ path: { id }, signal }) as Promise<ApiResponse<UserDetail>>
 }
 
 /** 创建用户 */
 export function createUser(data: UserCreateInput) {
-  return requestOperation(post_system_users, { data }) as Promise<ApiResponse<UserRecord>>
+  return post_system_users({ data }) as Promise<ApiResponse<UserRecord>>
 }
 
 /** 更新用户 */
 export function updateUser(id: Id, data: UserUpdateInput) {
-  return requestOperation(put_system_users_by_id, { path: { id }, data }) as Promise<
-    ApiResponse<UserRecord>
-  >
+  return put_system_users_by_id({ path: { id }, data }) as Promise<ApiResponse<UserRecord>>
 }
 
 /** 删除用户 */
 export function deleteUser(id: Id) {
-  return requestOperation(delete_system_users_by_id, { path: { id } })
+  return delete_system_users_by_id({ path: { id } })
 }
 
 /** 发起密码重置请求（管理员操作） */
 export function requestPasswordReset(userId: Id, data: PasswordResetRequestInput) {
-  return requestOperation(post_system_users_by_id_password_reset_requests, {
+  return post_system_users_by_id_password_reset_requests({
     path: { id: userId },
     data,
   })
@@ -86,7 +79,7 @@ export function requestPasswordReset(userId: Id, data: PasswordResetRequestInput
 
 /** 给用户分配角色 */
 export function replaceUserRoles(userId: Id, roleIds: Id[]) {
-  return requestOperation(put_system_users_by_id_roles, {
+  return put_system_users_by_id_roles({
     path: { id: userId },
     data: { role_ids: roleIds },
   })
@@ -94,7 +87,7 @@ export function replaceUserRoles(userId: Id, roleIds: Id[]) {
 
 /** 修改用户状态 */
 export function updateUserStatus(userId: Id, status: UserManageableStatus) {
-  return requestOperation(put_system_users_by_id_status, {
+  return put_system_users_by_id_status({
     path: { id: userId },
     data: { status },
   })
@@ -102,7 +95,7 @@ export function updateUserStatus(userId: Id, status: UserManageableStatus) {
 
 /** 批量删除用户 */
 export function batchDeleteUser(ids: Id[]) {
-  return requestOperation(delete_system_users_batch_by_ids, {
+  return delete_system_users_batch_by_ids({
     path: { ids: ids.join(',') },
   })
 }
@@ -114,7 +107,7 @@ export function exportUser(
   signal?: AbortSignal,
   confirmAll = false,
 ) {
-  return requestOperation(post_system_users_exports, {
+  return post_system_users_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,
@@ -126,5 +119,5 @@ export function exportUser(
 
 /** 下载导入模板 */
 export function downloadImportTemplate() {
-  return requestBlobOperation(get_system_users_import_template, {})
+  return get_system_users_import_template({})
 }

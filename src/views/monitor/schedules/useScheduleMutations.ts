@@ -1,66 +1,80 @@
+import { computed } from 'vue'
 import {
   createSchedule,
   removeSchedule,
   runSchedule,
   updateSchedule,
   updateScheduleStatus,
-  type CreateScheduleBody,
-  type JobScheduleRecord,
-  type UpdateScheduleBody,
 } from '@/api/modules/monitor'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { assertServerStateScopeCurrent } from '@/shared/query/client'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { MONITOR_SCHEDULES_RESOURCE } from '../queryResources'
-import type { RunSchedulePayload } from './scheduleManagementSupport'
-
-type Translate = (key: string, values?: Record<string, unknown>) => string
+import type {
+  CreateScheduleCommand,
+  RunSchedulePayload,
+  ScheduleRowCommand,
+  ScheduleStatusCommand,
+  UpdateScheduleCommand,
+} from './scheduleManagementSupport'
 
 /** 集中管理定时任务写操作及其互斥状态。 */
-export function useScheduleMutations(tenantId: () => string, t: Translate) {
-  const createMutation = useTenantMutation<unknown, CreateScheduleBody>(
-    tenantId,
+export function useScheduleMutations() {
+  const createMutation = useServerStateMutation<unknown, CreateScheduleCommand>(
     MONITOR_SCHEDULES_RESOURCE,
     {
-      mutationFn: (payload) => createSchedule(payload),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.createSuccess')),
-    },
-  )
-  const updateMutation = useTenantMutation<unknown, { id: string; data: UpdateScheduleBody }>(
-    tenantId,
-    MONITOR_SCHEDULES_RESOURCE,
-    {
-      mutationFn: ({ id, data }) => updateSchedule(id, data),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.updateSuccess')),
-    },
-  )
-  const statusMutation = useTenantMutation<unknown, { row: JobScheduleRecord; enabled: boolean }>(
-    tenantId,
-    MONITOR_SCHEDULES_RESOURCE,
-    {
-      mutationFn: ({ row, enabled }) =>
-        updateScheduleStatus(row.id, { enabled, version: row.version }),
-      onSuccess: (_data, variables) => {
-        ElMessage.success(
-          variables.enabled
-            ? t('monitor.schedules.enableSuccess')
-            : t('monitor.schedules.disableSuccess'),
-        )
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return createSchedule(command.data)
       },
     },
   )
-  const removeMutation = useTenantMutation<unknown, JobScheduleRecord>(
-    tenantId,
+  const updateMutation = useServerStateMutation<unknown, UpdateScheduleCommand>(
     MONITOR_SCHEDULES_RESOURCE,
     {
-      mutationFn: (row) => removeSchedule(row.id, { version: row.version }),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.deleteSuccess')),
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return updateSchedule(command.id, command.data)
+      },
     },
   )
-  const runMutation = useTenantMutation<unknown, RunSchedulePayload>(
-    tenantId,
+  const statusMutation = useServerStateMutation<unknown, ScheduleStatusCommand>(
     MONITOR_SCHEDULES_RESOURCE,
     {
-      mutationFn: ({ row, idempotencyKey }) => runSchedule(row.id, idempotencyKey),
-      onSuccess: () => ElMessage.success(t('monitor.schedules.runSuccess')),
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return updateScheduleStatus(command.row.id, {
+          enabled: command.enabled,
+          version: command.row.version,
+        })
+      },
+    },
+  )
+  const removeMutation = useServerStateMutation<unknown, ScheduleRowCommand>(
+    MONITOR_SCHEDULES_RESOURCE,
+    {
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return removeSchedule(command.row.id, { version: command.row.version })
+      },
+    },
+  )
+  const runMutation = useServerStateMutation<unknown, RunSchedulePayload>(
+    MONITOR_SCHEDULES_RESOURCE,
+    {
+      invalidateOnSuccess: false,
+      meta: { errorMode: 'silent' },
+      mutationFn: (command) => {
+        assertServerStateScopeCurrent(command.scope)
+        return runSchedule(command.row.id, command.idempotencyKey)
+      },
     },
   )
 
@@ -71,7 +85,9 @@ export function useScheduleMutations(tenantId: () => string, t: Translate) {
       : undefined,
   )
   const removePendingId = computed(() =>
-    removeMutation.pending.value ? (removeMutation.variables.value?.id ?? undefined) : undefined,
+    removeMutation.pending.value
+      ? (removeMutation.variables.value?.row.id ?? undefined)
+      : undefined,
   )
   const runPendingId = computed(() =>
     runMutation.pending.value ? (runMutation.variables.value?.row.id ?? undefined) : undefined,

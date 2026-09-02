@@ -1,3 +1,5 @@
+import { ElMessage } from 'element-plus'
+import { computed, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import {
   getBackgroundJobStats,
@@ -9,14 +11,23 @@ import {
 } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import {
+  assertServerStateScopeCurrent,
+  invalidateServerStateResource,
+  useServerStateScope,
+} from '@/shared/query/client'
+import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import { propagateServerStatePageOperationError } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
 import { MONITOR_JOBS_RESOURCE, MONITOR_JOB_STATS_RESOURCE } from '../queryResources'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
 type RouteQuerySource = Pick<RouteLocationNormalizedLoaded, 'query'>
+type RetryJobCommand = { row: BackgroundJobRecord; scope: ServerStateScope }
 
 const EMPTY_STATS: BackgroundJobStats = {
   total: 0,
@@ -66,9 +77,9 @@ export function useJobManagement(
   const activeQueryParams = ref<BackgroundJobQuery>(normalizeQueryParams(queryParams.value))
   const selectedError = ref<BackgroundJobRecord | undefined>()
   const errorDialogVisible = ref(false)
+  const pageGeneration = ref(0)
 
-  const jobsQuery = useTenantQuery<PageResponse<BackgroundJobRecord>>(
-    () => userStore.tenantId,
+  const jobsQuery = useServerStateQuery<PageResponse<BackgroundJobRecord>>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_JOBS_RESOURCE,
     () => ({ scope: 'list', filters: normalizeQueryParams(activeQueryParams.value) }),
@@ -77,9 +88,9 @@ export function useJobManagement(
       const response = await listBackgroundJobs(params, signal)
       return response.data ?? emptyPageResponse<BackgroundJobRecord>(params)
     },
+    { meta: { errorMode: 'silent' } },
   )
-  const statsQuery = useTenantQuery<BackgroundJobStats>(
-    () => userStore.tenantId,
+  const statsQuery = useServerStateQuery<BackgroundJobStats>(
     () => userStore.sessionStatus === 'authenticated' && pageActive.value,
     MONITOR_JOB_STATS_RESOURCE,
     () => ({ scope: 'summary' }),
@@ -87,17 +98,16 @@ export function useJobManagement(
       const response = await getBackgroundJobStats(signal)
       return response.data ?? EMPTY_STATS
     },
+    { meta: { errorMode: 'silent' } },
   )
-  const retryMutation = useTenantMutation<unknown, BackgroundJobRecord>(
-    () => userStore.tenantId,
-    MONITOR_JOBS_RESOURCE,
-    {
-      mutationFn: (row) => retryBackgroundJob(row.id),
-      onSuccess: () => {
-        ElMessage.success(t('monitor.jobs.retrySuccess'))
-      },
+  const retryMutation = useServerStateMutation<unknown, RetryJobCommand>(MONITOR_JOBS_RESOURCE, {
+    invalidateOnSuccess: false,
+    meta: { errorMode: 'silent' },
+    mutationFn: (command) => {
+      assertServerStateScopeCurrent(command.scope)
+      return retryBackgroundJob(command.row.id)
     },
-  )
+  })
 
   const loading = jobsQuery.isFetching
   const statsLoading = statsQuery.isFetching
@@ -107,7 +117,7 @@ export function useJobManagement(
   const statsError = statsQuery.error
   const retryPending = retryMutation.pending
   const retryingId = computed(() =>
-    retryMutation.pending.value ? (retryMutation.variables.value?.id ?? undefined) : undefined,
+    retryMutation.pending.value ? (retryMutation.variables.value?.row.id ?? undefined) : undefined,
   )
 
   async function refresh(): Promise<void> {
@@ -161,6 +171,16 @@ export function useJobManagement(
 
   useKeepAlivePageActive(pageActive, refreshActivePage)
 
+  function invalidatePageState(): void {
+    pageGeneration.value += 1
+    selectedError.value = undefined
+    errorDialogVisible.value = false
+  }
+
+  watch(useServerStateScope(), invalidatePageState, { flush: 'sync' })
+  onDeactivated(invalidatePageState)
+  onBeforeUnmount(invalidatePageState)
+
   function showError(row: BackgroundJobRecord): void {
     selectedError.value = row
     errorDialogVisible.value = true
@@ -168,15 +188,34 @@ export function useJobManagement(
 
   async function handleRetry(row: BackgroundJobRecord): Promise<void> {
     if (row.status !== 'dead' || retryMutation.pending.value) return
-    const confirmed = await confirmAction(
-      t('monitor.jobs.retryConfirm', { id: row.id }),
-      t('monitor.jobs.retryConfirmTitle'),
-      { type: 'warning' },
+    const generation = pageGeneration.value
+    const ownsOperation = () => pageActive.value && pageGeneration.value === generation
+    const operation = await confirmServerStatePageOperation(
+      () =>
+        confirmAction(
+          t('monitor.jobs.retryConfirm', { id: row.id }),
+          t('monitor.jobs.retryConfirmTitle'),
+          { type: 'warning' },
+        ),
+      ownsOperation,
     )
-    if (!confirmed || retryMutation.pending.value) return
+    if (!operation || retryMutation.pending.value) return
 
-    await retryMutation.mutateAsync(row)
+    operation.assertCurrent(ownsOperation)
+    try {
+      await retryMutation.mutateAsync({ row, scope: operation.scope })
+    } catch (error) {
+      propagateServerStatePageOperationError(error, operation, ownsOperation)
+    }
+    operation.apply(() => ElMessage.success(t('monitor.jobs.retrySuccess')), ownsOperation)
+    operation.assertCurrent(ownsOperation)
+    await Promise.all([
+      invalidateServerStateResource(operation.scope, MONITOR_JOBS_RESOURCE),
+      invalidateServerStateResource(operation.scope, MONITOR_JOB_STATS_RESOURCE),
+    ])
+    operation.assertCurrent(ownsOperation)
     await refresh()
+    operation.assertCurrent(ownsOperation)
   }
 
   return {

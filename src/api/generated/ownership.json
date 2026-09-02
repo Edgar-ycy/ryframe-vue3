@@ -4,7 +4,11 @@
   "files": [
     "src/api/generated/crudResources.ts",
     "src/api/generated/menuRoutes.ts",
-    "src/api/generated/operations.ts",
+    "src/api/generated/operations/agent.ts",
+    "src/api/generated/operations/core.ts",
+    "src/api/generated/operations/monitor.ts",
+    "src/api/generated/operations/platform.ts",
+    "src/api/generated/operations/system.ts",
     "src/api/generated/ownership.json",
     "src/api/generated/permissions.ts",
     "src/api/generated/schema/agent.ts",

@@ -20,7 +20,7 @@
         <el-tree-select
           v-model="deptIds"
           :data="deptTree"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.role.selectDepartment')"
           multiple
           check-strictly
@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   getRole,
@@ -48,8 +49,10 @@ import {
 } from '@/api/modules/role'
 import type { DeptNode } from '@/api/modules/dept'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -67,9 +70,13 @@ const visible = defineModel<boolean>({ required: true })
 const dataScope = ref<RoleDataScope>('1')
 const deptIds = ref<Id[]>([])
 const userStore = useUserStore()
-const detailQuery = useTenantQuery<RoleRecord>(
-  () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+const detailQuery = useServerStateQuery<RoleRecord>(
+  () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    visible.value &&
+    props.role !== null,
   'roles',
   () => ({ scope: 'detail', id: props.role?.id ?? null }),
   async (signal) => {
@@ -80,18 +87,15 @@ const detailQuery = useTenantQuery<RoleRecord>(
     return response.data
   },
 )
-const dataScopeMutation = useTenantMutation<
+const dataScopeMutation = useServerStateMutation<
   void,
   { roleId: Id; dataScope: RoleDataScope; deptIds: Id[] }
->(() => userStore.tenantId, 'roles', {
+>('roles', {
   mutationFn: async (variables) => {
     await replaceRoleDataScope(variables.roleId, {
       data_scope: variables.dataScope,
       dept_ids: variables.deptIds,
     })
-  },
-  onSuccess: () => {
-    ElMessage.success(t('system.role.dataScopeUpdated'))
   },
 })
 const loading = detailQuery.isFetching
@@ -100,6 +104,11 @@ const submitting = dataScopeMutation.pending
 function reset(): void {
   dataScope.value = '1'
   deptIds.value = []
+}
+
+function resetPageState(): void {
+  visible.value = false
+  reset()
 }
 
 function populateDataScope(role: RoleRecord): void {
@@ -127,12 +136,20 @@ async function submit(): Promise<void> {
     return
   }
 
+  const operation = beginServerStatePageOperation()
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedRoleId = props.role.id
+  const ownsDialog = () => ownsPage() && visible.value && props.role?.id === expectedRoleId
+  operation.assertCurrent(ownsDialog)
   await dataScopeMutation.mutateAsync({
-    roleId: props.role.id,
+    roleId: expectedRoleId,
     dataScope: dataScope.value,
     deptIds: dataScope.value === '2' ? [...deptIds.value] : [],
   })
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(t('system.role.dataScopeUpdated'))
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

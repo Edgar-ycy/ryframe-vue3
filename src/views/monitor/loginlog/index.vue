@@ -105,7 +105,7 @@
               type="primary"
               link
               icon="View"
-              @click="handleDetail(row)"
+              @click="showLoginLogDetail(row.id)"
               >{{ t('monitor.loginLog.details') }}</el-button
             >
           </template>
@@ -160,6 +160,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import { onActivated } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatOptionalLocalizedDate } from '@/i18n'
 import {
@@ -168,18 +170,17 @@ import {
   type LoginLogQuery,
   type LoginLogRecord,
 } from '@/api/modules/monitor'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
-import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
+import { useLogPageScope } from '../useLogPageScope'
 
 const { t } = useI18n()
 const dateRange = ref<[string, string] | []>([])
 const userStore = useUserStore()
-const pageActive = ref(true)
 const { pending: exportLoading, submitExport } = useExportJobRequest()
 
 const {
@@ -200,14 +201,10 @@ const {
   end_time: '',
 })
 
-watch(
-  () => [userStore.tenantId, userStore.userId] as const,
-  () => clearSuccessfulQuery(),
-  { flush: 'sync' },
-)
+const { captureOwnership, detailRow, detailVisible, pageActive, showDetail } =
+  useLogPageScope<LoginLogRecord>(clearSuccessfulQuery)
 
-const loginLogsQuery = useTenantQuery<PageResponse<LoginLogRecord>>(
-  () => userStore.tenantId,
+const loginLogsQuery = useServerStateQuery<PageResponse<LoginLogRecord>>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-login-logs',
   () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
@@ -229,10 +226,13 @@ async function handleExport(): Promise<void> {
     return
   }
   const intent = normalizeExportIntent('loginlogs', successfulQuery)
-  if (!(await confirmExportIntent(intent))) return
-
-  await submitExport(intent.signature, (idempotencyKey, signal) =>
-    exportLoginLog(intent.filter, idempotencyKey, signal, intent.isEmpty),
+  await confirmAndSubmitExportIntent(
+    intent,
+    (scope) =>
+      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+        exportLoginLog(intent.filter, idempotencyKey, signal, intent.isEmpty),
+      ),
+    { ownsOperation: captureOwnership() },
   )
 }
 
@@ -267,12 +267,10 @@ function handleReset(): void {
   void fetchData()
 }
 
-const detailVisible = ref(false)
-const detailRow = ref<Partial<LoginLogRecord>>({})
-function handleDetail(row: LoginLogRecord): void {
-  detailRow.value = row
-  detailVisible.value = true
+function showLoginLogDetail(id: string): void {
+  const row = loginLogPage.value?.items.find((item) => item.id === id)
+  if (row) showDetail(row)
 }
 
-useKeepAlivePageActive(pageActive, refreshData)
+onActivated(() => void refreshData())
 </script>

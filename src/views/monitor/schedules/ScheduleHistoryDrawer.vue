@@ -160,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import type { TagProps } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
@@ -170,7 +171,7 @@ import {
 } from '@/api/modules/monitor'
 import { formatLocalizedDate } from '@/i18n'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { MONITOR_SCHEDULE_EXECUTIONS_RESOURCE } from '../queryResources'
 
@@ -183,8 +184,7 @@ const queryParams = ref<ScheduleExecutionQuery>(defaultQuery())
 const activeQueryParams = ref<ScheduleExecutionQuery>(normalizeQueryParams(queryParams.value))
 const queryReady = ref(false)
 
-const executionsQuery = useTenantQuery<PageResponse<JobScheduleExecutionRecord>>(
-  () => userStore.tenantId,
+const executionsQuery = useServerStateQuery<PageResponse<JobScheduleExecutionRecord>>(
   () =>
     userStore.sessionStatus === 'authenticated' &&
     visible.value &&
@@ -201,7 +201,7 @@ const executionsQuery = useTenantQuery<PageResponse<JobScheduleExecutionRecord>>
     const response = await listScheduleExecutions(props.schedule.id, params, signal)
     return response.data ?? emptyPageResponse<JobScheduleExecutionRecord>(params)
   },
-  { refetchInterval: false },
+  { refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 
 const loading = executionsQuery.isFetching

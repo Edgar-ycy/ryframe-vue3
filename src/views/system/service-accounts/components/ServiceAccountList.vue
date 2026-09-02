@@ -62,14 +62,14 @@
           </el-table-column>
           <el-table-column :label="t('serviceAccounts.actions')" min-width="310" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link @click="emit('details', row)">
+              <el-button type="primary" link @click="showDetails(row.id)">
                 {{ t('serviceAccounts.details') }}
               </el-button>
               <el-button
                 v-perm="'system:service-account:edit'"
                 type="primary"
                 link
-                @click="emit('edit', row)"
+                @click="editAccount(row.id)"
               >
                 {{ t('serviceAccounts.edit') }}
               </el-button>
@@ -79,7 +79,7 @@
                 link
                 :loading="statusPending && pendingAccountId === row.id"
                 :disabled="statusPending"
-                @click="emit('status', row)"
+                @click="changeAccountStatus(row.id)"
               >
                 {{
                   row.status === '1' ? t('serviceAccounts.disable') : t('serviceAccounts.enable')
@@ -91,7 +91,7 @@
                 link
                 :loading="removePending && pendingAccountId === row.id"
                 :disabled="removePending"
-                @click="emit('remove', row)"
+                @click="removeAccount(row.id)"
               >
                 {{ t('serviceAccounts.remove') }}
               </el-button>
@@ -181,7 +181,7 @@ import { useI18n } from 'vue-i18n'
 import type { ServiceAccount } from '@/api/modules/serviceAccount'
 import { formatLocalizedDate } from '@/i18n'
 
-defineProps<{
+const props = defineProps<{
   accounts?: { items: ServiceAccount[]; total: number }
   hasError: boolean
   loading: boolean
@@ -204,6 +204,30 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function findAccount(id: string): ServiceAccount | undefined {
+  return props.accounts?.items.find((account) => account.id === id)
+}
+
+function showDetails(id: string): void {
+  const account = findAccount(id)
+  if (account) emit('details', account)
+}
+
+function editAccount(id: string): void {
+  const account = findAccount(id)
+  if (account) emit('edit', account)
+}
+
+function changeAccountStatus(id: string): void {
+  const account = findAccount(id)
+  if (account) emit('status', account)
+}
+
+function removeAccount(id: string): void {
+  const account = findAccount(id)
+  if (account) emit('remove', account)
+}
 </script>
 
 <style scoped>

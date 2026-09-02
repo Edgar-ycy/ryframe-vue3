@@ -56,14 +56,17 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { nextTick } from 'vue'
 import type { CheckboxValueType, TreeInstance } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { replaceRolePermissions, type RoleRecord } from '@/api/modules/role'
 import { getRolePermissions, type PermissionTreeNode } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -83,9 +86,13 @@ const checkedKeys = ref<Id[]>([])
 const expandedAll = ref(false)
 const cascadeEnabled = ref(true)
 const userStore = useUserStore()
-const assignmentsQuery = useTenantQuery<Id[]>(
-  () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+const assignmentsQuery = useServerStateQuery<Id[]>(
+  () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    visible.value &&
+    props.role !== null,
   'roles',
   () => ({ scope: 'permissions', id: props.role?.id ?? null }),
   async (signal) => {
@@ -95,15 +102,11 @@ const assignmentsQuery = useTenantQuery<Id[]>(
     return response.data ?? []
   },
 )
-const assignmentMutation = useTenantMutation<void, { roleId: Id; permissionIds: Id[] }>(
-  () => userStore.tenantId,
+const assignmentMutation = useServerStateMutation<void, { roleId: Id; permissionIds: Id[] }>(
   'roles',
   {
     mutationFn: async (variables) => {
       await replaceRolePermissions(variables.roleId, variables.permissionIds)
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.role.permissionAssigned'))
     },
   },
 )
@@ -124,16 +127,27 @@ function reset(): void {
   void nextTick(() => setAllExpanded(false))
 }
 
+function resetPageState(): void {
+  visible.value = false
+  reset()
+}
+
 async function populateAssignments(ids: Id[]): Promise<void> {
+  const operation = beginServerStatePageOperation()
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedRoleId = props.role?.id ?? null
+  const ownsDialog = () => ownsPage() && visible.value && props.role?.id === expectedRoleId
   // 既有角色可能在关闭联动时保存了任意节点组合。加载时临时使用严格模式，
   // 防止 Element Plus 按当前默认联动设置补齐父节点或子节点。
   const restoreCascade = cascadeEnabled.value
   cascadeEnabled.value = false
   await nextTick()
+  if (!operation.isCurrent(ownsDialog)) return
   treeRef.value?.setCheckedKeys(ids, false)
   checkedKeys.value = currentCheckedKeys()
   cascadeEnabled.value = restoreCascade
   await nextTick()
+  if (!operation.isCurrent(ownsDialog)) return
   setAllExpanded(false)
 }
 
@@ -181,12 +195,20 @@ function flattenNodeIds(nodes: PermissionTreeNode[]): Id[] {
 
 async function submit(): Promise<void> {
   if (!props.role || submitting.value) return
+  const operation = beginServerStatePageOperation()
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedRoleId = props.role.id
+  const ownsDialog = () => ownsPage() && visible.value && props.role?.id === expectedRoleId
+  operation.assertCurrent(ownsDialog)
   await assignmentMutation.mutateAsync({
-    roleId: props.role.id,
+    roleId: expectedRoleId,
     permissionIds: currentCheckedKeys(),
   })
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(t('system.role.permissionAssigned'))
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>
 

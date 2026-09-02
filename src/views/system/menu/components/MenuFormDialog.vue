@@ -11,7 +11,7 @@
         <el-tree-select
           v-model="form.parent_id"
           :data="parentOptions"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.menu.rootPlaceholder')"
           clearable
           check-strictly
@@ -83,6 +83,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { isPermissionCode } from '@/api/generated/permissions'
 import {
@@ -96,8 +98,9 @@ import {
 import IconSelect from '@/components/common/IconSelect.vue'
 import { getRouteKeyByPermissionCode } from '@/features/pageRegistry'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { excludeMenuSubtree, type PermissionOption } from '../menuTree'
 
 const { t } = useI18n()
@@ -133,16 +136,11 @@ function isEdit(): boolean {
   return props.menu !== null
 }
 const formRef = ref<FormInstance>()
-const userStore = useUserStore()
-const saveMutation = useTenantMutation<void, SaveMenuCommand>(() => userStore.tenantId, 'menus', {
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+const saveMutation = useServerStateMutation<void, SaveMenuCommand>('menus', {
   mutationFn: async (command) => {
     if (command.kind === 'update') await updateMenu(command.id, command.data)
     else await createMenu(command.data)
-  },
-  onSuccess: (_data, command) => {
-    ElMessage.success(
-      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
-    )
   },
 })
 const submitting = saveMutation.pending
@@ -183,6 +181,11 @@ const parentOptions = computed(() =>
 function resetForm(): void {
   form.value = initialForm()
   formRef.value?.clearValidate()
+}
+
+function resetPageState(): void {
+  visible.value = false
+  resetForm()
 }
 
 function handlePermissionChange(permissionId?: Id): void {
@@ -229,8 +232,19 @@ function populateForm(): void {
 
 async function submit(): Promise<void> {
   if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedMenuId = props.menu?.id ?? null
+  const expectedParentId = props.parentId
+  const ownsDialog = () =>
+    ownsPage() &&
+    visible.value &&
+    (props.menu?.id ?? null) === expectedMenuId &&
+    props.parentId === expectedParentId
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation) return
   if (form.value.menu_type === 'C' && !form.value.route_key) {
     ElMessage.error(t('system.menu.pageMissing'))
     return
@@ -255,7 +269,12 @@ async function submit(): Promise<void> {
       }
     : { kind: 'create', data: payload }
   await saveMutation.mutateAsync(command)
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

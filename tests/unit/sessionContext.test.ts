@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { watch } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isSessionContext } from '@/api/modules/sessionContext'
@@ -18,12 +19,16 @@ import {
   failClosedTenantContext,
 } from '@/app/tenant-context/coordinator'
 import { HttpError } from '@/shared/http/client'
+import { deactivateServerStateScope, useServerStateScope } from '@/shared/query/client'
+import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
+import { useTenantContextStore } from '@/stores/tenantContext'
 
 import { sessionContext } from './sessionContextFixtures'
 
 describe('会话授权快照', () => {
   beforeEach(() => {
+    deactivateServerStateScope()
     setActivePinia(createPinia())
     vi.stubGlobal('localStorage', {
       getItem: () => null,
@@ -97,9 +102,50 @@ describe('会话授权快照', () => {
       throw new Error('测试会话快照无效')
     }
 
-    expect(applyAuthenticatedSession('token-a', regular)).toBe(false)
+    expect(applyAuthenticatedSession('token-a', regular)).toBe(true)
+    expect(applyAuthenticatedSession('token-refreshed', regular)).toBe(false)
     expect(applyAuthenticatedSession('token-b', superAdmin)).toBe(true)
     expect(useUserStore().isSuperAdmin).toBe(true)
+  })
+
+  it('发布新范围时用户、租户上下文与路由 Store 已完成新投影', () => {
+    const context = sessionContext(false)
+    if (!isSessionContext(context)) throw new Error('测试会话快照无效')
+    const observations: Array<Record<string, unknown>> = []
+    const stop = watch(
+      useServerStateScope(),
+      (scope) => {
+        if (!scope) return
+        const user = useUserStore()
+        const tenantContext = useTenantContextStore()
+        const permission = usePermissionStore()
+        observations.push({
+          context: tenantContext.context,
+          contextStatus: tenantContext.status,
+          routesLoaded: permission.isRoutesLoaded,
+          sessionStatus: user.sessionStatus,
+          subjectId: String(user.userId),
+          tenantId: user.tenantId,
+          token: user.token,
+        })
+      },
+      { flush: 'sync' },
+    )
+
+    applyAuthenticatedSession('token-a', context)
+
+    expect(observations).toEqual([
+      {
+        context,
+        contextStatus: 'loaded',
+        routesLoaded: true,
+        sessionStatus: 'authenticated',
+        subjectId: '42',
+        tenantId: 'tenant-a',
+        token: 'token-a',
+      },
+    ])
+    stop()
   })
 
   it('认证投影失败时原子回退用户与租户状态', () => {
@@ -123,7 +169,7 @@ describe('会话授权快照', () => {
   it('身份、租户、角色、权限、纪元、能力和菜单变化均会刷新路由范围', () => {
     const base = sessionContext(false)
     if (!isSessionContext(base)) throw new Error('测试会话快照无效')
-    expect(applyAuthenticatedSession('token', base)).toBe(false)
+    expect(applyAuthenticatedSession('token', base)).toBe(true)
 
     const cases = [
       { ...base, user: { ...base.user, id: '43' } },

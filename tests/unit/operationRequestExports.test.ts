@@ -33,6 +33,7 @@ import {
   exportUser,
   replaceUserRoles,
 } from '@/api/modules/user'
+import * as operationBindings from '@/api/operationRequest'
 
 beforeEach(() => {
   httpClient.request.mockReset()
@@ -42,6 +43,15 @@ beforeEach(() => {
 })
 
 describe('operation 领域请求', () => {
+  it('只公开生成 caller 使用的媒体绑定器', () => {
+    expect(Object.keys(operationBindings).sort()).toEqual([
+      'bindBlobOperation',
+      'bindJsonOperation',
+      'bindMultipartOperation',
+      'bindTextOperation',
+    ])
+  })
+
   it('用户 operation 保留角色与批量标识参数', async () => {
     httpClient.request.mockResolvedValue({})
     const template = new Blob(['template'])

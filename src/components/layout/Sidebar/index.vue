@@ -47,8 +47,9 @@
 </template>
 
 <script setup lang="ts">
-import type { RouteMeta, RouteRecordRaw } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { translateNavigationTitle } from '@/i18n'
+import type { RouteProjection, RouteProjectionMeta } from '@/shared/navigation/routeProjection'
 import { resolveElementIcon } from '@/shared/ui/icons'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
@@ -66,23 +67,23 @@ function handleMenuSelect(indexPath: string): void {
   if (appStore.isMobile) appStore.closeSidebar()
 }
 
-function visibleChildren(menu: RouteRecordRaw): RouteRecordRaw[] {
+function visibleChildren(menu: RouteProjection): RouteProjection[] {
   return (menu.children || []).filter((child) => !child.meta?.hidden)
 }
 
-function isSubMenu(menu: RouteRecordRaw): boolean {
+function isSubMenu(menu: RouteProjection): boolean {
   if (!menu.children?.length) return false
   if (menu.meta?.alwaysShow) return true
   return visibleChildren(menu).length > 1
 }
 
-function leafPath(menu: RouteRecordRaw): string {
+function leafPath(menu: RouteProjection): string {
   const visible = visibleChildren(menu)
   if (visible.length === 1) return resolvePath(menu.path, visible[0].path)
   return menu.path
 }
 
-function leafMeta(menu: RouteRecordRaw): RouteMeta {
+function leafMeta(menu: RouteProjection): RouteProjectionMeta {
   const visible = visibleChildren(menu)
   if (visible.length === 1) return visible[0].meta || {}
   return menu.meta || {}

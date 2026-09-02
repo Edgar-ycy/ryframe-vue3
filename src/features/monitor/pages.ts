@@ -8,9 +8,6 @@ export const pageManifest = definePageManifest({
       permissionCode: 'monitor:overview:list',
       path: '/monitor/overview',
       page: () => import('@/views/monitor/overview/index.vue'),
-      catalogs: [
-        () => import('@/i18n/catalog/platform-operations').then((module) => module.messageCatalog),
-      ],
     },
     {
       routeKey: 'monitor.runtime',
@@ -59,9 +56,6 @@ export const pageManifest = definePageManifest({
       permissionCode: 'monitor:retention:list',
       path: '/monitor/retention',
       page: () => import('@/views/monitor/retention/index.vue'),
-      catalogs: [
-        () => import('@/i18n/catalog/platform-operations').then((module) => module.messageCatalog),
-      ],
     },
   ],
 })

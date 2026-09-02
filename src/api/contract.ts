@@ -2,6 +2,7 @@ import type { components, operations } from './generated/schema'
 
 type SchemaMap = components['schemas']
 
+export type OperationId = keyof operations & string
 export type ApiSchema<Name extends keyof SchemaMap> = SchemaMap[Name]
 export type ApiOperation<Name extends keyof operations> = operations[Name]
 

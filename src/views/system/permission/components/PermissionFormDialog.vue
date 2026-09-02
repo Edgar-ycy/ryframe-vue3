@@ -11,7 +11,7 @@
         <el-tree-select
           v-model="form.parent_id"
           :data="parentTree"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.permission.selectParent')"
           clearable
           check-strictly
@@ -49,7 +49,7 @@
         <el-input-number v-model="form.sort" :min="0" :max="9999" />
       </el-form-item>
       <el-form-item :label="t('system.common.status')">
-        <el-radio-group v-model="form.status">
+        <el-radio-group :model-value="form.status ?? '1'" @update:model-value="updateStatus">
           <el-radio value="1">{{ t('system.common.normal') }}</el-radio>
           <el-radio value="0">{{ t('system.common.disabled') }}</el-radio>
         </el-radio-group>
@@ -70,6 +70,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   createPermission,
@@ -78,8 +80,9 @@ import {
   type PermissionTreeNode,
 } from '@/api/modules/permission'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useUserStore } from '@/stores/user'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 
 const { t } = useI18n()
 
@@ -98,19 +101,13 @@ function isEdit(): boolean {
   return props.permission !== null
 }
 const formRef = ref<FormInstance>()
-const userStore = useUserStore()
-const saveMutation = useTenantMutation<void, { id?: Id; payload: PermissionForm }>(
-  () => userStore.tenantId,
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+const saveMutation = useServerStateMutation<void, { id?: Id; payload: PermissionForm }>(
   'permissions',
   {
     mutationFn: async (variables) => {
       if (variables.id === undefined) await createPermission(variables.payload)
       else await updatePermission(variables.id, variables.payload)
-    },
-    onSuccess: (_data, variables) => {
-      ElMessage.success(
-        t(variables.id === undefined ? 'system.common.addSuccess' : 'system.common.updateSuccess'),
-      )
     },
   },
 )
@@ -146,6 +143,11 @@ function resetForm(): void {
   formRef.value?.clearValidate()
 }
 
+function resetPageState(): void {
+  visible.value = false
+  resetForm()
+}
+
 function populateForm(): void {
   resetForm()
   const permission = props.permission
@@ -164,17 +166,41 @@ function populateForm(): void {
   form.value.parent_id = props.parentId ?? null
 }
 
+function updateStatus(value: string | number | boolean | undefined): void {
+  if (value === '0' || value === '1') form.value.status = value
+}
+
 async function submit(): Promise<void> {
   if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedPermissionId = props.permission?.id
+  const expectedParentId = props.parentId
+  const ownsDialog = () =>
+    ownsPage() &&
+    visible.value &&
+    props.permission?.id === expectedPermissionId &&
+    props.parentId === expectedParentId
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation) return
   const payload: PermissionForm = {
     ...form.value,
     parent_id: form.value.parent_id === '0' ? null : form.value.parent_id,
   }
 
-  await saveMutation.mutateAsync({ id: props.permission?.id, payload })
-  visible.value = false
-  emit('saved')
+  await saveMutation.mutateAsync({ id: expectedPermissionId, payload })
+  operation.apply(() => {
+    ElMessage.success(
+      t(
+        expectedPermissionId === undefined
+          ? 'system.common.addSuccess'
+          : 'system.common.updateSuccess',
+      ),
+    )
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

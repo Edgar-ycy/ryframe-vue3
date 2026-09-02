@@ -55,18 +55,23 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import {
   genFileId,
   type UploadFile,
-  type UploadFiles,
   type UploadInstance,
   type UploadRawFile,
+  type UploadUserFile,
 } from 'element-plus'
+import { onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
 
 const props = defineProps<{ loading: boolean }>()
-const emit = defineEmits<{ submit: [file: File] }>()
+const emit = defineEmits<{ submit: [file: File, scope: ServerStateScope] }>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
 const selectedFile = ref<File>()
@@ -94,7 +99,7 @@ function handleFileRemove(): void {
   selectedFile.value = undefined
 }
 
-function handleExceed(files: File[], uploadFiles: UploadFiles): void {
+function handleExceed(files: File[], uploadFiles: UploadUserFile[]): void {
   const file = files[0] as UploadRawFile | undefined
   if (file && isValidFile(file)) {
     uploadRef.value?.clearFiles()
@@ -109,13 +114,25 @@ function handleExceed(files: File[], uploadFiles: UploadFiles): void {
 
 function reset(): void {
   if (props.loading) return
+  clearSelectedFile()
+}
+
+function clearSelectedFile(): void {
   selectedFile.value = undefined
   uploadRef.value?.clearFiles()
 }
 
+watch(useServerStateScope(), clearSelectedFile, { flush: 'sync' })
+watch(visible, (current, previous) => !current && previous && clearSelectedFile(), {
+  flush: 'sync',
+})
+onDeactivated(clearSelectedFile)
+onBeforeUnmount(clearSelectedFile)
+
 function submit(): void {
   if (props.loading || !selectedFile.value) return
-  emit('submit', selectedFile.value)
+  const operation = beginServerStatePageOperation()
+  emit('submit', selectedFile.value, operation.scope)
 }
 </script>
 

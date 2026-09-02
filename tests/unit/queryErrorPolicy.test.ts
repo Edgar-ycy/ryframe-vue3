@@ -32,16 +32,18 @@ describe('服务端状态错误出口', () => {
   it('局部处理的错误不进入全局 reporter', async () => {
     const reporter = vi.fn()
     const error = new HttpError('请求失败', { status: 400, kind: 'http' })
+    const queryKey = ['query-error-policy', 'silent'] as const
     configureServerStateErrorReporter(reporter)
 
     await expect(
       queryClient.fetchQuery({
-        queryKey: ['query-error-policy', 'silent'],
+        queryKey,
         meta: { errorMode: 'silent' },
         queryFn: () => Promise.reject(error),
       }),
     ).rejects.toBe(error)
 
+    expect(queryClient.getQueryState(queryKey)?.error).toBe(error)
     expect(reporter).not.toHaveBeenCalled()
   })
 

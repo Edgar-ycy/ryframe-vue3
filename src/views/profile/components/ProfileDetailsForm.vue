@@ -44,8 +44,11 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { type ProfileInfo, type ProfileUpdateParams } from '@/api/modules/auth'
+import { useServerStateScope } from '@/shared/query/client'
+import { createProfileDetailsSubmission } from '../profileDetailsSubmission'
 import { useProfileDetailsMutation } from '../useProfileMutations'
 import { formatLocalizedDate } from '@/i18n'
 
@@ -61,9 +64,8 @@ const emit = defineEmits<{
 const formRef = ref<FormInstance>()
 const form = ref({ nickname: '', email: '', phone: '' })
 const { t } = useI18n()
-const { saveProfile, submitting } = useProfileDetailsMutation(t, (profile) => {
-  emit('saved', profile)
-})
+const { saveProfile, submitting } = useProfileDetailsMutation()
+const serverStateScope = useServerStateScope()
 const rules = computed<FormRules>(() => ({
   nickname: [{ required: true, message: t('profile.enterNicknameValidation'), trigger: 'blur' }],
   email: [{ type: 'email', message: t('profile.emailValidation'), trigger: 'blur' }],
@@ -83,17 +85,32 @@ watch(
   { immediate: true },
 )
 
-async function submit(): Promise<void> {
-  if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
-
-  const payload: ProfileUpdateParams = {
+const submission = createProfileDetailsSubmission({
+  validate: async () => (await formRef.value?.validate().catch(() => false)) === true,
+  payload: (): ProfileUpdateParams => ({
     nickname: form.value.nickname,
     email: form.value.email || undefined,
     phone: form.value.phone || undefined,
-  }
-  await saveProfile(payload)
+  }),
+  save: saveProfile,
+  saved: (profile) => {
+    ElMessage.success(t('profile.saveSuccess'))
+    emit('saved', profile)
+  },
+})
+
+function invalidateDetailsForm(): void {
+  submission.invalidate()
+  form.value = { nickname: '', email: '', phone: '' }
+  formRef.value?.clearValidate()
+}
+
+watch(serverStateScope, invalidateDetailsForm, { flush: 'sync' })
+onDeactivated(invalidateDetailsForm)
+onBeforeUnmount(invalidateDetailsForm)
+
+async function submit(): Promise<void> {
+  if (!submitting.value) await submission.submit()
 }
 
 function formatCreatedAt(value: string | null | undefined): string {

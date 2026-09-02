@@ -42,7 +42,7 @@
         </el-table-column>
         <el-table-column :label="t('system.userImport.progress')" min-width="190">
           <template #default="{ row }">
-            <el-progress :percentage="progress(row)" :status="progressStatus(row.status)" />
+            <el-progress :percentage="progressById(row.id)" :status="progressStatus(row.status)" />
             <small>{{ row.processed_rows }} / {{ row.total_rows || '—' }}</small>
           </template>
         </el-table-column>
@@ -66,7 +66,7 @@
         </el-table-column>
         <el-table-column :label="t('system.userImport.operation')" min-width="230" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="openDetails(row)">{{
+            <el-button type="primary" link @click="openDetailsById(row.id)">{{
               t('system.userImport.details')
             }}</el-button>
             <el-button
@@ -75,7 +75,7 @@
               link
               :loading="isCancelling(row.id)"
               :disabled="cancelMutation.pending.value"
-              @click="handleCancel(row)"
+              @click="cancelImportById(row.id)"
             >
               {{ t('system.userImport.cancel') }}
             </el-button>
@@ -84,7 +84,7 @@
               type="success"
               link
               :loading="reportLoadingId === row.id"
-              @click="downloadReport(row)"
+              @click="downloadReportById(row.id)"
             >
               {{ t('system.userImport.report') }}
             </el-button>
@@ -184,26 +184,23 @@
 </template>
 
 <script setup lang="ts">
-import { onActivated, onDeactivated, onUnmounted } from 'vue'
+import { onActivated, onDeactivated, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  cancelUserImport,
-  downloadUserImportReport,
   getUserImport,
   listUserImportRows,
   listUserImports,
   type UserImportJob,
   type UserImportRow,
 } from '@/api/modules/userImport'
-import { downloadBlobDirect } from '@/hooks/useDownload'
 import { usePermission } from '@/hooks/usePermission'
 import { formatLocalizedDate, formatOptionalLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateScope } from '@/shared/query/client'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
-import { confirmAction } from '@/utils/confirmAction'
+import { useUserImportHistoryActions } from './useUserImportHistoryActions'
 
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
@@ -213,11 +210,9 @@ const queryReady = ref(false)
 const selectedId = ref('')
 const query = ref({ page: 1, page_size: 10 })
 const rowQuery = ref({ page: 1, page_size: 10 })
-const reportLoadingId = ref('')
 let pollTimer: number | undefined
 
-const importsQuery = useTenantQuery<PageResponse<UserImportJob>>(
-  () => userStore.tenantId,
+const importsQuery = useServerStateQuery<PageResponse<UserImportJob>>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && queryReady.value,
   'user-imports',
   () => ({ scope: 'list', ...query.value }),
@@ -228,8 +223,7 @@ const importsQuery = useTenantQuery<PageResponse<UserImportJob>>(
   { refetchInterval: false },
 )
 
-const detailQuery = useTenantQuery<UserImportJob>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<UserImportJob>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(selectedId.value),
   'user-import-detail',
   () => ({ id: selectedId.value }),
@@ -237,8 +231,7 @@ const detailQuery = useTenantQuery<UserImportJob>(
   { refetchInterval: false },
 )
 
-const rowsQuery = useTenantQuery<PageResponse<UserImportRow>>(
-  () => userStore.tenantId,
+const rowsQuery = useServerStateQuery<PageResponse<UserImportRow>>(
   () => userStore.sessionStatus === 'authenticated' && visible.value && Boolean(selectedId.value),
   'user-import-rows',
   () => ({ id: selectedId.value, ...rowQuery.value }),
@@ -250,16 +243,21 @@ const rowsQuery = useTenantQuery<PageResponse<UserImportRow>>(
   { refetchInterval: false },
 )
 
-const cancelMutation = useTenantMutation(() => userStore.tenantId, 'user-imports', {
-  mutationFn: (job: UserImportJob) => cancelUserImport(job.id),
-  onSuccess: () => ElMessage.success(t('system.userImport.cancelSuccess')),
-})
+const {
+  cancelImportById,
+  cancelMutation,
+  downloadReportById,
+  invalidate: invalidateHistoryActions,
+  isCancelling,
+  reportLoadingId,
+} = useUserImportHistoryActions({ findJob, refresh: refreshImports, t, visible })
 
 onActivated(() => {
   if (visible.value) void refreshImports()
 })
-onDeactivated(clearPolling)
-onUnmounted(clearPolling)
+onDeactivated(resetHistoryState)
+onUnmounted(resetHistoryState)
+watch(useServerStateScope(), resetHistoryState, { flush: 'sync' })
 
 function isActive(status: string): boolean {
   return status === 'pending' || status === 'running'
@@ -293,6 +291,15 @@ function handleOpen(): void {
 }
 
 function handleClosed(): void {
+  invalidateHistoryActions()
+  queryReady.value = false
+  selectedId.value = ''
+  clearPolling()
+}
+
+function resetHistoryState(): void {
+  invalidateHistoryActions()
+  visible.value = false
   queryReady.value = false
   selectedId.value = ''
   clearPolling()
@@ -308,11 +315,6 @@ async function refreshImports(): Promise<void> {
   schedulePolling()
 }
 
-function openDetails(job: UserImportJob): void {
-  selectedId.value = job.id
-  rowQuery.value = { page: 1, page_size: rowQuery.value.page_size }
-}
-
 function currentJob(): UserImportJob | undefined {
   return (
     detailQuery.data.value ??
@@ -320,9 +322,22 @@ function currentJob(): UserImportJob | undefined {
   )
 }
 
-function progress(job: UserImportJob): number {
+function findJob(id: string): UserImportJob | undefined {
+  return importsQuery.data.value?.items.find((item) => item.id === id)
+}
+
+function progressById(id: string): number {
+  const job = importsQuery.data.value?.items.find((item) => item.id === id)
+  if (!job) return 0
   if (job.total_rows <= 0) return isActive(job.status) ? 0 : 100
   return Math.min(100, Math.round((job.processed_rows / job.total_rows) * 100))
+}
+
+function openDetailsById(id: string): void {
+  const job = importsQuery.data.value?.items.find((item) => item.id === id)
+  if (!job) return
+  selectedId.value = job.id
+  rowQuery.value = { page: 1, page_size: rowQuery.value.page_size }
 }
 
 function progressStatus(status: string): '' | 'exception' | 'success' | 'warning' {
@@ -357,34 +372,6 @@ function outcomeLabel(outcome: string): string {
   return t(
     outcome === 'skipped' ? 'system.userImport.outcomeSkipped' : 'system.userImport.outcomeFailed',
   )
-}
-
-function isCancelling(id: string): boolean {
-  return cancelMutation.pending.value && cancelMutation.variables.value?.id === id
-}
-
-async function handleCancel(job: UserImportJob): Promise<void> {
-  if (cancelMutation.pending.value) return
-  const confirmed = await confirmAction(
-    t('system.userImport.cancelConfirm', { name: job.source_name }),
-    t('system.userImport.cancelConfirmTitle'),
-    { type: 'warning' },
-  )
-  if (!confirmed || cancelMutation.pending.value) return
-  await cancelMutation.mutateAsync(job)
-  await refreshImports()
-}
-
-async function downloadReport(job: UserImportJob): Promise<void> {
-  if (reportLoadingId.value) return
-  reportLoadingId.value = job.id
-  try {
-    const blob = await downloadUserImportReport(job.id)
-    downloadBlobDirect(blob, `${job.source_name.replace(/\.xlsx$/iu, '')}-report.xlsx`)
-    ElMessage.success(t('shell.download.success'))
-  } finally {
-    reportLoadingId.value = ''
-  }
 }
 
 function fetchRows(): void {

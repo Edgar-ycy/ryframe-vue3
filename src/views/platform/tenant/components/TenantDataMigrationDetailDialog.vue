@@ -153,12 +153,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import {
-  cancelTenantDataMigration,
-  finalizeTenantDataMigration,
-  getTenantDataMigration,
-  type TenantDataMigration,
-} from '@/api/modules/tenantData'
+import { getTenantDataMigration, type TenantDataMigration } from '@/api/modules/tenantData'
 import {
   canCancelMigration,
   canFinalizeMigration,
@@ -168,11 +163,9 @@ import {
 import { useActivePolling } from '@/features/tenant-data/useActivePolling'
 import { formatLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
-import { createIdempotencyKey, shouldReuseIdempotencyKey } from '@/shared/http/idempotency'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
-import { useUserStore } from '@/stores/user'
-import { confirmAction } from '@/utils/confirmAction'
+import type { ServerStateScope } from '@/shared/query/scope'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
+import { useTenantMigrationDetailActions } from './useTenantMigrationDetailActions'
 
 const props = defineProps<{
   active: boolean
@@ -181,15 +174,13 @@ const props = defineProps<{
   canCancel: boolean
   canFinalize: boolean
 }>()
-const emit = defineEmits<{ updated: [migration: TenantDataMigration] }>()
+const emit = defineEmits<{
+  updated: [migration: TenantDataMigration, scope: ServerStateScope]
+}>()
 const visible = defineModel<boolean>({ required: true })
 const { t, te } = useI18n()
-const userStore = useUserStore()
-let pendingCancelKey: string | undefined
-let pendingFinalizeKey: string | undefined
 
-const detailQuery = useTenantQuery<TenantDataMigration>(
-  () => userStore.tenantId,
+const detailQuery = useServerStateQuery<TenantDataMigration>(
   () => props.active && visible.value && Boolean(props.migrationId),
   'platform-tenant-data-migration-detail',
   () => ({ tenant_id: props.tenantId, migration_id: props.migrationId }),
@@ -213,30 +204,24 @@ const cutoverStarted = computed(() =>
   ),
 )
 
-const cancelMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-data-migrations',
-  {
-    meta: { errorMode: 'silent' },
-    mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
-      requireOperationData(
-        await cancelTenantDataMigration(input.migrationId, input.idempotencyKey),
-      ),
-  },
-)
-const finalizeMutation = useTenantMutation(
-  () => userStore.tenantId,
-  'platform-tenant-data-migrations',
-  {
-    meta: { errorMode: 'silent' },
-    mutationFn: async (input: { migrationId: string; idempotencyKey: string }) =>
-      requireOperationData(
-        await finalizeTenantDataMigration(input.migrationId, input.idempotencyKey),
-      ),
-  },
-)
-const actionPending = computed(() => cancelMutation.pending.value || finalizeMutation.pending.value)
-const actionError = computed(() => cancelMutation.error.value ?? finalizeMutation.error.value)
+const {
+  actionError,
+  actionPending,
+  cancelMutation,
+  finalizeMutation,
+  handleCancel,
+  handleFinalize,
+  handleOpen,
+} = useTenantMigrationDetailActions({
+  active: () => props.active,
+  canCancel: () => cancelAllowed.value,
+  canFinalize: () => finalizeAllowed.value,
+  emitUpdated: (updated, scope) => emit('updated', updated, scope),
+  migration,
+  refresh: refreshDetail,
+  t,
+  visible,
+})
 
 useActivePolling(
   () => props.active && visible.value,
@@ -263,58 +248,6 @@ function formatDate(value: string | null | undefined): string {
 
 async function refreshDetail(): Promise<void> {
   if (props.migrationId) await detailQuery.refetch()
-}
-
-function handleOpen(): void {
-  cancelMutation.reset()
-  finalizeMutation.reset()
-  void refreshDetail()
-}
-
-async function handleCancel(): Promise<void> {
-  if (!migration.value || !cancelAllowed.value || actionPending.value) return
-  const confirmed = await confirmAction(
-    t('tenantData.cancelConfirm', { id: migration.value.id }),
-    t('tenantData.cancelConfirmTitle'),
-    { type: 'warning' },
-  )
-  if (!confirmed) return
-  const key = pendingCancelKey ?? createIdempotencyKey('tenant-data-migration-cancel')
-  try {
-    const updated = await cancelMutation.mutateAsync({
-      migrationId: migration.value.id,
-      idempotencyKey: key,
-    })
-    pendingCancelKey = undefined
-    emit('updated', updated)
-    await detailQuery.refetch()
-    ElMessage.success(t('tenantData.cancellationRequested'))
-  } catch (error) {
-    pendingCancelKey = shouldReuseIdempotencyKey(error) ? key : undefined
-  }
-}
-
-async function handleFinalize(): Promise<void> {
-  if (!migration.value || !finalizeAllowed.value || actionPending.value) return
-  const confirmed = await confirmAction(
-    t('tenantData.finalizeConfirm', { id: migration.value.id }),
-    t('tenantData.finalizeConfirmTitle'),
-    { type: 'warning' },
-  )
-  if (!confirmed) return
-  const key = pendingFinalizeKey ?? createIdempotencyKey('tenant-data-migration-finalize')
-  try {
-    const updated = await finalizeMutation.mutateAsync({
-      migrationId: migration.value.id,
-      idempotencyKey: key,
-    })
-    pendingFinalizeKey = undefined
-    emit('updated', updated)
-    await detailQuery.refetch()
-    ElMessage.success(t('tenantData.finalizationRequested'))
-  } catch (error) {
-    pendingFinalizeKey = shouldReuseIdempotencyKey(error) ? key : undefined
-  }
 }
 </script>
 

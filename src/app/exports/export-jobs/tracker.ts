@@ -1,21 +1,21 @@
-import { getCurrentScope, onScopeDispose, ref } from 'vue'
+import { getCurrentScope, onScopeDispose, ref, watch } from 'vue'
 import { getExportJob, type ExportJob } from '@/api/modules/exportJob'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { queryClient } from '@/shared/query/client'
-import { useUserStore } from '@/stores/user'
+import { isServerStateScopeCurrent, queryClient, useServerStateScope } from '@/shared/query/client'
+import type { ServerStateScope } from '@/shared/query/scope'
 import { subscribeExportJobEvents } from '../exportJobChannel'
 import {
   exportJobListQueryKey,
+  exportJobListFromCache,
   isActiveExportJob,
   isUnreadExportNotification,
   markExportNotificationsReadInCache,
   mergeExportJob,
   removeExportJob,
   removeExportJobs,
-  type ExportJobIdentity,
 } from '../exportJobCache'
 import { useExportJobActions } from './actions'
-import { currentExportJobIdentity, sameExportJobIdentity, shouldEnableExportJobs } from './identity'
+import { currentExportJobScope, sameExportJobScope, shouldEnableExportJobs } from './identity'
 import { useExportJobList } from './list'
 import { useExportNotificationState } from './notifications'
 import {
@@ -25,7 +25,6 @@ import {
 } from './trackerModel'
 
 export type { ExportJobTrackerOptions, ExportJobTransition } from './trackerModel'
-
 export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   const enabled = options.enabled ?? true
   const list = useExportJobList(enabled)
@@ -38,18 +37,11 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   let cycleController: AbortController | undefined
   const channelControllers = new Set<AbortController>()
   let running = false
-  let trackedIdentity = currentExportJobIdentity()
+  let trackedScope = currentExportJobScope()
 
-  function listFromCache(identity: ExportJobIdentity): ExportJob[] {
-    return (
-      queryClient.getQueryData<ExportJob[]>(
-        exportJobListQueryKey(identity.tenantId, identity.userId),
-      ) ?? []
-    )
-  }
-
-  function reconcileList(identity: ExportJobIdentity): void {
-    const jobs = listFromCache(identity)
+  function reconcileList(scope: ServerStateScope): void {
+    if (!isServerStateScopeCurrent(scope)) return
+    const jobs = exportJobListFromCache(queryClient, scope)
     activeCount.value = jobs.filter(isActiveExportJob).length
     if (!baselineEstablished) {
       previousJobs.clear()
@@ -83,35 +75,35 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     }
   }
 
-  async function refreshOne(identity: ExportJobIdentity, jobId: string): Promise<void> {
+  async function refreshOne(
+    scope: ServerStateScope,
+    jobId: string,
+    controller: AbortController,
+  ): Promise<void> {
+    if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
     try {
-      const job = requireOperationData(await getExportJob(jobId, cycleController?.signal))
-      if (
-        !sameExportJobIdentity(identity, currentExportJobIdentity() ?? { tenantId: '', userId: '' })
-      )
-        return
-      mergeExportJob(queryClient, identity, job)
+      const job = requireOperationData(await getExportJob(jobId, controller.signal))
+      if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
+      mergeExportJob(queryClient, scope, job)
     } catch (error) {
+      if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
       if (!(error instanceof HttpError)) return
       if (error.kind === 'cancelled') return
       if (error.status === 403 || error.status === 404) {
-        removeExportJob(queryClient, identity, jobId)
+        removeExportJob(queryClient, scope, jobId)
         return
       }
       if (error.status === 409) {
         try {
-          const latest = requireOperationData(await getExportJob(jobId, cycleController?.signal))
-          if (
-            !sameExportJobIdentity(
-              identity,
-              currentExportJobIdentity() ?? { tenantId: '', userId: '' },
-            )
-          )
-            return
-          mergeExportJob(queryClient, identity, latest)
+          if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
+          const latest = requireOperationData(await getExportJob(jobId, controller.signal))
+          if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
+          mergeExportJob(queryClient, scope, latest)
         } catch (retryError) {
+          if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
           if (retryError instanceof HttpError && retryError.kind === 'cancelled') return
           try {
+            if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
             await list.refresh()
           } catch {
             // 本轮对账失败时保留活跃任务，下一轮继续确认。
@@ -121,12 +113,14 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     }
   }
 
-  async function refreshActiveDetails(): Promise<void> {
+  async function refreshActiveDetails(
+    scope: ServerStateScope,
+    controller: AbortController,
+  ): Promise<void> {
     if (!running || document.visibilityState === 'hidden' || !shouldEnableExportJobs(enabled))
       return
-    const identity = currentExportJobIdentity()
-    if (!identity) return
-    const ids = listFromCache(identity)
+    if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
+    const ids = exportJobListFromCache(queryClient, scope)
       .filter(isActiveExportJob)
       .map((job) => job.id)
     let cursor = 0
@@ -134,9 +128,10 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
       { length: Math.min(MAX_CONCURRENT_DETAILS, ids.length) },
       async () => {
         while (cursor < ids.length) {
+          if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
           const jobId = ids[cursor]
           cursor += 1
-          if (jobId) await refreshOne(identity, jobId)
+          if (jobId) await refreshOne(scope, jobId, controller)
         }
       },
     )
@@ -150,10 +145,17 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     timer = globalThis.setTimeout(
       async () => {
         timer = undefined
+        const scope = currentExportJobScope()
+        if (!scope) return
         cycleController?.abort()
-        cycleController = new AbortController()
-        await refreshActiveDetails()
-        scheduleNextCycle()
+        const controller = new AbortController()
+        cycleController = controller
+        try {
+          await refreshActiveDetails(scope, controller)
+        } finally {
+          if (cycleController === controller) cycleController = undefined
+        }
+        if (isServerStateScopeCurrent(scope)) scheduleNextCycle()
       },
       immediate ? 0 : ACTIVE_REFRESH_INTERVAL_MS,
     )
@@ -161,8 +163,8 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
 
   async function refresh(): Promise<void> {
     await Promise.all([list.refresh(), notifications.refreshUnread().catch(() => undefined)])
-    const identity = currentExportJobIdentity()
-    if (identity) reconcileList(identity)
+    const scope = currentExportJobScope()
+    if (scope) reconcileList(scope)
     if (activeCount.value > 0) scheduleNextCycle(true)
   }
 
@@ -185,8 +187,8 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     running = true
     baselineEstablished = false
     previousJobs.clear()
-    const identity = currentExportJobIdentity()
-    if (identity) reconcileList(identity)
+    const scope = currentExportJobScope()
+    if (scope) reconcileList(scope)
     document.addEventListener('visibilitychange', handleVisibilityChange)
     globalThis.addEventListener('focus', handleWindowFocus)
     globalThis.addEventListener('online', handleWindowFocus)
@@ -194,7 +196,7 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
   }
 
   function stopTracking(): void {
-    if (!running) return
+    const wasRunning = running
     running = false
     if (timer !== undefined) globalThis.clearTimeout(timer)
     timer = undefined
@@ -202,29 +204,32 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     cycleController = undefined
     for (const controller of channelControllers) controller.abort()
     channelControllers.clear()
+    if (!wasRunning) return
     document.removeEventListener('visibilitychange', handleVisibilityChange)
     globalThis.removeEventListener('focus', handleWindowFocus)
     globalThis.removeEventListener('online', handleWindowFocus)
   }
 
   const unsubscribeCache = queryClient.getQueryCache().subscribe((event) => {
-    const identity = currentExportJobIdentity()
-    if (!identity) return
-    const expected = exportJobListQueryKey(identity.tenantId, identity.userId)
+    const scope = currentExportJobScope()
+    if (!scope) return
+    const expected = exportJobListQueryKey(scope)
     if (JSON.stringify(event.query.queryKey) === JSON.stringify(expected)) {
-      reconcileList(identity)
+      reconcileList(scope)
     }
   })
   const unsubscribeChannel = subscribeExportJobEvents((event) => {
-    const identity = currentExportJobIdentity()
-    if (!identity || !sameExportJobIdentity(identity, event)) return
+    if (!isServerStateScopeCurrent(event)) return
+    const scope: ServerStateScope = event
     if (event.type === 'notifications-read') {
-      markExportNotificationsReadInCache(queryClient, identity, event.jobIds, event.readAt)
+      markExportNotificationsReadInCache(queryClient, scope, event.jobIds, event.readAt)
+      if (!isServerStateScopeCurrent(scope)) return
       void notifications.refreshUnread().catch(() => undefined)
       return
     }
     if (event.type === 'deleted') {
-      removeExportJobs(queryClient, identity, event.jobIds)
+      removeExportJobs(queryClient, scope, event.jobIds)
+      if (!isServerStateScopeCurrent(scope)) return
       void Promise.allSettled([list.refresh(), notifications.refreshUnread()])
       return
     }
@@ -232,40 +237,37 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     channelControllers.add(controller)
     void getExportJob(event.jobId, controller.signal)
       .then((response) => {
-        const latestIdentity = currentExportJobIdentity()
-        if (!latestIdentity || !sameExportJobIdentity(identity, latestIdentity)) return
+        if (!isServerStateScopeCurrent(scope)) return
         const job = requireOperationData(response)
-        mergeExportJob(queryClient, identity, job)
+        mergeExportJob(queryClient, scope, job)
         if (isUnreadExportNotification(job)) {
           void notifications.refreshUnread().catch(() => undefined)
         }
       })
       .catch((error: unknown) => {
-        const latestIdentity = currentExportJobIdentity()
-        if (!latestIdentity || !sameExportJobIdentity(identity, latestIdentity)) return
+        if (!isServerStateScopeCurrent(scope)) return
         if (error instanceof HttpError && (error.status === 403 || error.status === 404)) {
-          removeExportJob(queryClient, identity, event.jobId)
+          removeExportJob(queryClient, scope, event.jobId)
         }
       })
       .finally(() => channelControllers.delete(controller))
   })
-  const unsubscribeUser = useUserStore().$subscribe(
+  const stopScopeWatch = watch(
+    useServerStateScope(),
     () => {
-      const nextIdentity = currentExportJobIdentity()
-      if (trackedIdentity && nextIdentity && sameExportJobIdentity(trackedIdentity, nextIdentity))
-        return
-      if (!trackedIdentity && !nextIdentity) return
-      trackedIdentity = nextIdentity
+      const nextScope = currentExportJobScope()
+      if (trackedScope && nextScope && sameExportJobScope(trackedScope, nextScope)) return
+      if (!trackedScope && !nextScope) return
+      trackedScope = nextScope
       stopTracking()
       baselineEstablished = false
       previousJobs.clear()
       activeCount.value = 0
-      if (!shouldEnableExportJobs(enabled) || !nextIdentity) return
+      if (!shouldEnableExportJobs(enabled) || !nextScope) return
       void refresh()
         .catch(() => undefined)
         .finally(() => {
-          const latestIdentity = currentExportJobIdentity()
-          if (latestIdentity && sameExportJobIdentity(latestIdentity, nextIdentity)) startTracking()
+          if (isServerStateScopeCurrent(nextScope)) startTracking()
         })
     },
     { flush: 'sync' },
@@ -276,10 +278,9 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
       stopTracking()
       unsubscribeCache()
       unsubscribeChannel()
-      unsubscribeUser()
+      stopScopeWatch()
     })
   }
-
   return {
     listQuery: list.listQuery,
     jobs: list.jobs,

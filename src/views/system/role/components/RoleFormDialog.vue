@@ -49,6 +49,8 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   createRole,
@@ -59,8 +61,10 @@ import {
   type RoleUpdateInput,
 } from '@/api/modules/role'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
@@ -89,9 +93,13 @@ function isEdit(): boolean {
 }
 const userStore = useUserStore()
 const formRef = ref<FormInstance>()
-const detailQuery = useTenantQuery<RoleRecord>(
-  () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated' && visible.value && props.role !== null,
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+const detailQuery = useServerStateQuery<RoleRecord>(
+  () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    visible.value &&
+    props.role !== null,
   'roles',
   () => ({ scope: 'detail', id: props.role?.id ?? null }),
   async (signal) => {
@@ -102,15 +110,10 @@ const detailQuery = useTenantQuery<RoleRecord>(
     return response.data
   },
 )
-const saveMutation = useTenantMutation<void, SaveRoleCommand>(() => userStore.tenantId, 'roles', {
+const saveMutation = useServerStateMutation<void, SaveRoleCommand>('roles', {
   mutationFn: async (command) => {
     if (command.kind === 'update') await updateRole(command.id, command.data)
     else await createRole(command.data)
-  },
-  onSuccess: (_data, command) => {
-    ElMessage.success(
-      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
-    )
   },
 })
 const detailLoading = detailQuery.isFetching
@@ -129,6 +132,11 @@ const rules = computed<FormRules>(() => ({
 function resetForm(): void {
   form.value = initialForm()
   formRef.value?.clearValidate()
+}
+
+function resetPageState(): void {
+  visible.value = false
+  resetForm()
 }
 
 function populateForm(role: RoleRecord): void {
@@ -154,8 +162,15 @@ watch(
 
 async function submit(): Promise<void> {
   if (submitting.value) return
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedRoleId = props.role?.id ?? null
+  const ownsDialog = () =>
+    ownsPage() && visible.value && (props.role?.id ?? null) === expectedRoleId
+  const operation = await validateServerStatePageOperation(
+    () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
+    ownsDialog,
+  )
+  if (!operation) return
 
   const command: SaveRoleCommand = props.role
     ? {
@@ -177,7 +192,12 @@ async function submit(): Promise<void> {
       }
 
   await saveMutation.mutateAsync(command)
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(
+      t(command.kind === 'update' ? 'system.common.updateSuccess' : 'system.common.addSuccess'),
+    )
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

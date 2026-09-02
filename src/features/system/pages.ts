@@ -8,9 +8,6 @@ export const pageManifest = definePageManifest({
       permissionCode: 'system:user:list',
       path: '/system/user',
       page: () => import('@/views/system/user/index.vue'),
-      catalogs: [
-        () => import('@/i18n/catalog/platform-operations').then((module) => module.messageCatalog),
-      ],
     },
     {
       routeKey: 'system.role',
@@ -47,10 +44,6 @@ export const pageManifest = definePageManifest({
       permissionCode: 'system:config-transfer:list',
       path: '/system/config-transfer',
       page: () => import('@/views/system/config-transfer/index.vue'),
-      catalogs: [
-        () =>
-          import('@/i18n/catalog/tenant-config-transfer').then((module) => module.messageCatalog),
-      ],
     },
     {
       routeKey: 'system.operlog',
@@ -75,9 +68,6 @@ export const pageManifest = definePageManifest({
       permissionCode: 'system:authorization-diagnostic:list',
       path: '/system/authorization-diagnostics',
       page: () => import('@/views/system/authorization-diagnostics/index.vue'),
-      catalogs: [
-        () => import('@/i18n/catalog/platform-operations').then((module) => module.messageCatalog),
-      ],
     },
   ],
 })

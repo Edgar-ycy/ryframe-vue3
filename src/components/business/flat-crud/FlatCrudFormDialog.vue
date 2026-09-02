@@ -16,7 +16,7 @@
         <el-input
           v-if="field.kind === 'text'"
           :disabled="editing && field.disabledOnEdit"
-          :model-value="fieldValue(field)"
+          :model-value="textValue(field)"
           :placeholder="field.placeholder"
           @update:model-value="updateField(field, $event)"
         />
@@ -29,7 +29,7 @@
         />
         <el-radio-group
           v-else
-          :model-value="fieldValue(field)"
+          :model-value="optionValue(field)"
           @update:model-value="updateField(field, $event)"
         >
           <el-radio
@@ -58,6 +58,8 @@
 
 <script setup lang="ts" generic="TModel extends object">
 import type { FormInstance } from 'element-plus'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStatePageOperation } from '@/shared/query/pageOperationScope'
 
 import type {
   FlatCrudFormField,
@@ -80,10 +82,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: TModel]
   'update:visible': [value: boolean]
-  submit: []
+  submit: [operation: ServerStatePageOperation]
 }>()
 
 const formRef = ref<FormInstance>()
+let submissionGeneration = 0
 const visibleFields = computed(() =>
   props.fields.filter((field) => !field.editOnly || props.editing),
 )
@@ -109,12 +112,33 @@ function numberValue(field: FlatCrudFormField<TModel>): number | undefined {
   return typeof value === 'number' ? value : undefined
 }
 
+function textValue(field: FlatCrudFormField<TModel>): string | number | null | undefined {
+  const value = fieldValue(field)
+  if (typeof value === 'boolean') throw new Error(`文本字段 ${field.key} 不能使用布尔值`)
+  return value
+}
+
+function optionValue(field: FlatCrudFormField<TModel>): string | number | boolean | undefined {
+  return fieldValue(field) ?? undefined
+}
+
 function updateField(field: FlatCrudFormField<TModel>, value: FlatCrudScalar): void {
   emit('update:modelValue', Object.assign({}, props.modelValue, { [field.key]: value }))
 }
 
 async function submit(): Promise<void> {
+  const operation = beginServerStatePageOperation()
+  const generation = submissionGeneration
   if (!(await formRef.value?.validate().catch(() => false))) return
-  emit('submit')
+  if (!operation.isCurrent(() => props.visible && generation === submissionGeneration)) return
+  emit('submit', operation)
 }
+
+watch(
+  () => props.visible,
+  () => {
+    submissionGeneration += 1
+  },
+  { flush: 'sync' },
+)
 </script>

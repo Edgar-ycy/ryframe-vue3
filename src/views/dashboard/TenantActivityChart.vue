@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { EChartsCoreOption } from 'echarts/core'
@@ -77,7 +78,7 @@ function start(): void {
 function stop(): void {
   active = false
   clearTimer()
-  if (userStore.tenantId) void cancelOverviewTrendRequests(userStore.tenantId)
+  void cancelOverviewTrendRequests()
 }
 
 function clearTimer(): void {
@@ -100,7 +101,7 @@ async function load(force: boolean): Promise<void> {
   loading.value = true
   error.value = ''
   try {
-    trends.value = await fetchOverviewTrends(userStore.tenantId, '24h', force)
+    trends.value = await fetchOverviewTrends('24h', force)
     await nextTick()
     renderChart()
   } catch (reason) {

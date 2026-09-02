@@ -163,7 +163,7 @@ import { TENANT_DATA_PERMISSIONS } from '@/features/tenant-data/permissions'
 import { stateTagType } from '@/features/tenant-data/presentation'
 import { formatLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { hasPermission } from '@/utils/permission'
 
@@ -174,8 +174,7 @@ const canView = computed(() =>
   hasPermission(userStore.permissions, TENANT_DATA_PERMISSIONS.backupList),
 )
 
-const placementQuery = useTenantQuery<TenantDataPlacement>(
-  () => userStore.tenantId,
+const placementQuery = useServerStateQuery<TenantDataPlacement>(
   () => props.active && userStore.tenantId === 'system' && canView.value,
   'platform-tenant-data-placement-for-backups',
   () => ({ tenant_id: props.tenantId }),
@@ -183,8 +182,7 @@ const placementQuery = useTenantQuery<TenantDataPlacement>(
   { staleTime: 0, refetchInterval: false, meta: { errorMode: 'silent' } },
 )
 const placement = placementQuery.data
-const backupQuery = useTenantQuery<TenantDataBackupPoint[]>(
-  () => userStore.tenantId,
+const backupQuery = useServerStateQuery<TenantDataBackupPoint[]>(
   () => props.active && canView.value && Boolean(placement.value?.current_target_key),
   'platform-tenant-data-backup-points',
   () => ({ tenant_id: props.tenantId, target_key: placement.value?.current_target_key }),

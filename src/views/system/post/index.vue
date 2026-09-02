@@ -16,11 +16,12 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 import { findCrudResource } from '@/api/generated/crudResources'
 import { exportPost } from '@/api/modules/post'
-import { confirmExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
 import { PostPage, type PostQuery } from '@/generated/resources/post'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 
@@ -34,10 +35,10 @@ async function handleExport(successfulQuery: PostQuery | null): Promise<void> {
     return
   }
   const intent = normalizeExportIntent('posts', successfulQuery)
-  if (!(await confirmExportIntent(intent))) return
-
-  await submitExport(intent.signature, (idempotencyKey, signal) =>
-    exportPost(intent.filter, idempotencyKey, signal, intent.isEmpty),
+  await confirmAndSubmitExportIntent(intent, (scope) =>
+    submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+      exportPost(intent.filter, idempotencyKey, signal, intent.isEmpty),
+    ),
   )
 }
 </script>

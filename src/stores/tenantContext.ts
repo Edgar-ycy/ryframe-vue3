@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
-import { type SessionContext, type TenantBusinessDataContext } from '@/api/modules/sessionContext'
-import { capabilityCodes, hasCapabilities, hasCapability } from './capability'
+import type {
+  EffectiveSessionCapability,
+  SessionContext,
+  TenantBusinessDataContext,
+} from '@/features/session/contracts'
 
 export type TenantContextStatus = 'idle' | 'loading' | 'loaded' | 'failed'
 
@@ -11,6 +14,21 @@ export interface TenantContextState {
   runtimeEpoch: string
   businessData?: TenantBusinessDataContext
   context?: SessionContext
+}
+
+function capabilityCodes(capabilities: readonly EffectiveSessionCapability[]): string[] {
+  return capabilities.map((capability) => capability.code)
+}
+
+function hasCapability(capabilities: readonly EffectiveSessionCapability[], code: string): boolean {
+  return capabilities.some((capability) => capability.code === code)
+}
+
+function hasCapabilities(
+  capabilities: readonly EffectiveSessionCapability[],
+  required: readonly string[],
+): boolean {
+  return required.every((code) => hasCapability(capabilities, code))
 }
 
 export const useTenantContextStore = defineStore('tenant-context', {

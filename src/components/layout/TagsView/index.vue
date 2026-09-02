@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router'
 import { useTagsViewStore } from '@/stores/tagsView'
 import type { TagView } from '@/stores/tagsView'
 import { Close } from '@element-plus/icons-vue'

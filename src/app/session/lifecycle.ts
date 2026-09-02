@@ -1,10 +1,10 @@
 import { ElMessage } from 'element-plus'
 import { logout as logoutApi } from '@/api/modules/auth'
-import type { SessionContext } from '@/api/modules/sessionContext'
+import type { SessionContext } from '@/features/session/contracts'
 import { getRouteRuntime } from '@/app/navigation/runtime'
 import { translate } from '@/i18n'
 import { configureHttpSession, HttpError } from '@/shared/http/client'
-import { clearServerState, configureServerStateErrorReporter } from '@/shared/query/client'
+import { configureServerStateErrorReporter, getServerStateScope } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useTagsViewStore } from '@/stores/tagsView'
 import { failClosedTenantContext, resetTenantContext } from '@/app/tenant-context/coordinator'
@@ -14,7 +14,6 @@ import {
   synchronizeTenantContextUi,
 } from '@/app/tenant-context/contextRefresh'
 import { useUserStore } from '@/stores/user'
-import { getTenantId } from '@/utils/auth'
 import {
   broadcastAuthenticated,
   broadcastLogout,
@@ -60,8 +59,17 @@ export function installSessionCoordinator(): void {
     },
   })
   configureHttpSession({
-    getAccessToken: () => useUserStore().token || null,
-    getTenantId,
+    getSnapshot: () => {
+      const scope = getServerStateScope()
+      const accessToken = useUserStore().token
+      if (!scope || !accessToken) return undefined
+      return {
+        accessToken,
+        tenantId: scope.tenantId,
+        sessionEpoch: scope.sessionEpoch,
+        signal: scope.signal,
+      }
+    },
     observeTenantContext,
     refreshAccessToken,
     handleRefreshFailure,
@@ -73,7 +81,7 @@ export function publishAuthenticatedSession(
   accessToken: string,
   sessionContext: SessionContext,
 ): void {
-  applyAuthenticatedSession(accessToken, sessionContext)
+  applyAuthenticatedSession(accessToken, sessionContext, { forceNewServerStateScope: true })
   invalidateCsrfToken()
   const operation = startLocalRefreshOperation()
   broadcastAuthenticated(operation, accessToken, sessionContext)
@@ -141,7 +149,6 @@ async function handleRefreshFailure(error: HttpError): Promise<void> {
 }
 
 function failClosedAuthorizationProjection(): void {
-  clearServerState()
   failClosedTenantContext()
   useTagsViewStore().closeAllViews()
   getRouteRuntime()?.resetDynamicRoutes()
@@ -182,7 +189,6 @@ export function clearSession(): Promise<void> {
     const pending = Promise.resolve()
       .then(() => {
         resetTenantContextObservation()
-        clearServerState()
         resetTenantContext()
         useUserStore().resetState()
         usePermissionStore().resetRoutes()

@@ -81,14 +81,13 @@ import { useI18n } from 'vue-i18n'
 import { getDbPool, type DbPoolInfo } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { formatOptionalLocalizedDate } from '@/i18n'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 const userStore = useUserStore()
 const pageActive = ref(true)
-const poolQuery = useTenantQuery<DbPoolInfo | null>(
-  () => userStore.tenantId,
+const poolQuery = useServerStateQuery<DbPoolInfo | null>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-db-pool',
   () => ({ scope: 'status' }),
@@ -96,6 +95,7 @@ const poolQuery = useTenantQuery<DbPoolInfo | null>(
     const response = await getDbPool(signal)
     return response.data ?? null
   },
+  { meta: { errorMode: 'silent' } },
 )
 const loading = poolQuery.isFetching
 const poolInfo = poolQuery.data

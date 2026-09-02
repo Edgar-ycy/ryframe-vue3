@@ -10,7 +10,7 @@ import {
 } from '@/api/modules/tenantConfigTransfer'
 import { downloadBlobDirect } from '@/hooks/useDownload'
 import { HttpError, requireOperationData } from '@/shared/http/client'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { TENANT_CONFIG_TRANSFERS_RESOURCE } from '../queryResources'
 import { useTenantConfigTransferCommandContext } from './useTenantConfigTransferCommandContext'
 
@@ -32,8 +32,13 @@ export function useTenantConfigTransferOperationCommands(
   context: ReturnType<typeof useTenantConfigTransferCommandContext>,
 ) {
   const downloadingPackageId = ref<string>()
-  const operationMutation = useTenantMutation<TenantConfigTransfer, TransferOperationCommand>(
-    () => context.currentIdentity()?.tenantId,
+  let downloadToken: symbol | undefined
+
+  context.operationScope.onInvalidated(() => {
+    downloadToken = undefined
+    downloadingPackageId.value = undefined
+  })
+  const operationMutation = useServerStateMutation<TenantConfigTransfer, TransferOperationCommand>(
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     {
       meta: { errorMode: 'silent' },
@@ -119,6 +124,8 @@ export function useTenantConfigTransferOperationCommands(
     const identity = context.requireIdentity()
     const guard = context.requireOperationContext()
     const controller = context.operationScope.beginController()
+    const token = Symbol('download-package')
+    downloadToken = token
     downloadingPackageId.value = bundle.id
     try {
       const blob = await downloadTenantConfigPackage(bundle.id, controller.signal)
@@ -136,13 +143,18 @@ export function useTenantConfigTransferOperationCommands(
             requireOperationData(await getTenantConfigPackage(bundle.id, controller.signal)),
           )
         } catch {
-          await context.packagesQuery.refetch({ throwOnError: false })
+          if (context.operationContextMatches(identity, guard)) {
+            await context.packagesQuery.refetch({ throwOnError: false })
+          }
         }
       }
       throw error
     } finally {
       context.operationScope.finishController(controller)
-      if (downloadingPackageId.value === bundle.id) downloadingPackageId.value = undefined
+      if (downloadToken === token) {
+        downloadToken = undefined
+        downloadingPackageId.value = undefined
+      }
     }
   }
 

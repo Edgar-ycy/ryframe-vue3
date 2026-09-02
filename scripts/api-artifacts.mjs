@@ -6,9 +6,21 @@ import openapiTS, { astToString } from 'openapi-typescript'
 import { requireApiPrefixContract } from './api-prefix-contract.mjs'
 import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
-import { createSchemaDomainDocuments, renderSchemaIndex } from './openapi-schema-domains.mjs'
+import {
+  createSchemaDomainDocuments,
+  renderSchemaIndex,
+  schemaDomainForPath,
+  schemaDomainNames,
+} from './openapi-schema-domains.mjs'
 
 export const ownershipManifestPath = 'src/api/generated/ownership.json'
+export const generatedOperationArtifactPaths = Object.freeze([
+  'src/api/generated/operations/core.ts',
+  'src/api/generated/operations/system.ts',
+  'src/api/generated/operations/platform.ts',
+  'src/api/generated/operations/monitor.ts',
+  'src/api/generated/operations/agent.ts',
+])
 export const generatedArtifactPaths = Object.freeze([
   'src/api/generated/schema/core.ts',
   'src/api/generated/schema/system.ts',
@@ -16,7 +28,7 @@ export const generatedArtifactPaths = Object.freeze([
   'src/api/generated/schema/monitor.ts',
   'src/api/generated/schema/agent.ts',
   'src/api/generated/schema/index.ts',
-  'src/api/generated/operations.ts',
+  ...generatedOperationArtifactPaths,
   'src/api/generated/permissions.ts',
   'src/api/generated/menuRoutes.ts',
   'src/api/generated/crudResources.ts',
@@ -34,6 +46,12 @@ const generatedHeader = `/**
 `
 const httpMethods = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace']
 const infrastructurePaths = new Set(['/livez', '/readyz'])
+const blobResponseMediaTypes = new Set([
+  'application/octet-stream',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip',
+  'image/png',
+])
 
 function canonicalJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`
@@ -44,12 +62,49 @@ function compareText(left, right) {
   return left < right ? -1 : 1
 }
 
-export function createOperationManifest(document) {
+function classifyOperationBinder(operation, location) {
+  const requestMediaTypes = Object.keys(operation.requestBody?.content ?? {})
+  if (requestMediaTypes.length > 1) {
+    throw new Error(`${location} 请求媒体类型不唯一：${requestMediaTypes.join(', ')}`)
+  }
+  if (operation.requestBody && requestMediaTypes.length === 0) {
+    throw new Error(`${location} 请求体缺少媒体类型`)
+  }
+
+  const responseMediaTypes = new Set()
+  for (const [status, response] of Object.entries(operation.responses ?? {})) {
+    if (!/^2\d\d$/u.test(status)) continue
+    for (const mediaType of Object.keys(response?.content ?? {})) responseMediaTypes.add(mediaType)
+  }
+  if (responseMediaTypes.size !== 1) {
+    throw new Error(
+      `${location} 成功响应媒体类型必须唯一，实际为：${[...responseMediaTypes].join(', ') || '无'}`,
+    )
+  }
+
+  const [requestMediaType] = requestMediaTypes
+  const [responseMediaType] = responseMediaTypes
+  if (requestMediaType === 'multipart/form-data') {
+    if (responseMediaType !== 'application/json') {
+      throw new Error(`${location} multipart 请求只支持 JSON 成功响应`)
+    }
+    return 'bindMultipartOperation'
+  }
+  if (requestMediaType && requestMediaType !== 'application/json') {
+    throw new Error(`${location} 不支持请求媒体类型：${requestMediaType}`)
+  }
+  if (responseMediaType === 'application/json') return 'bindJsonOperation'
+  if (responseMediaType === 'text/plain') return 'bindTextOperation'
+  if (blobResponseMediaTypes.has(responseMediaType)) return 'bindBlobOperation'
+  throw new Error(`${location} 不支持成功响应媒体类型：${responseMediaType}`)
+}
+
+export function createOperationCallers(document) {
   const apiPrefix = requireApiPrefixContract(
     document?.['x-ryframe-api-prefix'],
     'openapi/openapi.json',
   ).value
-  const operations = []
+  const operations = new Map(schemaDomainNames.map((domain) => [domain, []]))
   const operationIds = new Set()
 
   for (const [routePath, pathItem] of Object.entries(document?.paths ?? {})) {
@@ -69,38 +124,44 @@ export function createOperationManifest(document) {
         throw new Error(`OpenAPI 存在重复 operationId：${operationId}`)
       }
       operationIds.add(operationId)
-      operations.push([operationId, { method, path: requestPath }])
+      const domain = schemaDomainForPath(routePath, apiPrefix)
+      const location = `${method.toUpperCase()} ${routePath} (${operationId})`
+      operations.get(domain).push({
+        binder: classifyOperationBinder(operation, location),
+        method,
+        operationId,
+        path: requestPath,
+      })
     }
   }
 
-  operations.sort(([left], [right]) => compareText(left, right))
-  return Object.fromEntries(operations)
+  for (const domain of schemaDomainNames) {
+    operations.get(domain).sort((left, right) => compareText(left.operationId, right.operationId))
+  }
+  return operations
 }
 
-export function renderOperationManifest(document) {
-  const manifest = createOperationManifest(document)
-  const operationIds = Object.keys(manifest)
-  const operationIdType = operationIds
-    .map((operationId) => JSON.stringify(operationId))
-    .join('\n  | ')
-  const descriptors = Object.entries(manifest)
-    .map(
-      ([operationId, operation]) =>
-        `export const ${operationId} = ${JSON.stringify({ operationId, ...operation })} as const satisfies OperationDescriptor<${JSON.stringify(operationId)}>`,
-    )
-    .join('\n\n')
-
-  return `${generatedHeader}export type OperationId =
-  | ${operationIdType}
-
-export type OperationDescriptor<Name extends OperationId = OperationId> = Readonly<{
-  operationId: Name
-  method: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'trace'
-  path: string
-}>
-
-${descriptors}
-`
+export function renderOperationCallers(document) {
+  const operations = createOperationCallers(document)
+  return new Map(
+    schemaDomainNames.map((domain) => {
+      const domainOperations = operations.get(domain)
+      const binders = [...new Set(domainOperations.map((operation) => operation.binder))].sort(
+        compareText,
+      )
+      const imports = `import { ${binders.join(', ')} } from '@/api/operationRequest'`
+      const callers = domainOperations
+        .map(
+          ({ binder, method, operationId, path: requestPath }) =>
+            `export const ${operationId} = ${binder}(${JSON.stringify({ operationId, method, path: requestPath })})`,
+        )
+        .join('\n')
+      return [
+        `src/api/generated/operations/${domain}.ts`,
+        `${generatedHeader}${imports}\n\n${callers}\n`,
+      ]
+    }),
+  )
 }
 
 export function renderPermissionCatalog(document) {
@@ -212,10 +273,11 @@ export async function buildApiArtifacts(root) {
     ])
   }
   schemaArtifacts.push(['src/api/generated/schema/index.ts', renderSchemaIndex(generatedHeader)])
+  const operationArtifacts = renderOperationCallers(document)
 
   return new Map([
     ...schemaArtifacts,
-    ['src/api/generated/operations.ts', renderOperationManifest(document)],
+    ...operationArtifacts,
     ['src/api/generated/permissions.ts', renderPermissionCatalog(document)],
     ['src/api/generated/menuRoutes.ts', renderMenuRouteCatalog(document)],
     ['src/api/generated/crudResources.ts', renderCrudResourceCatalog(document)],

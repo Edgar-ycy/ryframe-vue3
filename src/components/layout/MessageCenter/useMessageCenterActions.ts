@@ -1,12 +1,17 @@
-import type { Ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { nextTick, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MessageRecord } from '@/api/modules/messages'
+import { HttpError } from '@/shared/http/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
+import type { MessageDetailSeed } from './messageCenterState'
 
 interface MessageCenterActions {
-  markRead: (id: string) => Promise<unknown>
-  refresh: () => Promise<unknown>
-  remove: (ids: string[]) => Promise<unknown>
-  markAllRead: () => Promise<unknown>
+  markRead: (id: string, expectedScope: ServerStateScope) => Promise<unknown>
+  refresh: (expectedScope: ServerStateScope) => Promise<unknown>
+  remove: (ids: string[], expectedScope: ServerStateScope) => Promise<unknown>
+  markAllRead: (expectedScope: ServerStateScope) => Promise<unknown>
 }
 
 interface MessageStoreActions {
@@ -14,10 +19,11 @@ interface MessageStoreActions {
 }
 
 interface UseMessageCenterActionsOptions {
-  detailSeed: Ref<MessageRecord | undefined>
+  detailSeed: Ref<MessageDetailSeed | undefined>
   detailVisible: Ref<boolean>
   messageCenter: MessageCenterActions
   messageStore: MessageStoreActions
+  pageGeneration: Ref<number>
   selectedIds: Ref<string[]>
 }
 
@@ -26,31 +32,67 @@ export function useMessageCenterActions({
   detailVisible,
   messageCenter,
   messageStore,
+  pageGeneration,
   selectedIds,
 }: UseMessageCenterActionsOptions) {
   const { t } = useI18n()
 
-  async function openDetail(message: MessageRecord): Promise<void> {
-    detailSeed.value = message
-    detailVisible.value = true
-    await nextTick()
-    if (message.read_at) return
+  function beginPageOperation() {
+    const generation = pageGeneration.value
     try {
-      await messageCenter.markRead(message.id)
-    } catch {
-      ElMessage.error(t('messageCenter.markReadFailed'))
+      const operation = beginServerStatePageOperation()
+      return {
+        operation,
+        ownsOperation: () => pageGeneration.value === generation,
+      }
+    } catch (error) {
+      if (error instanceof HttpError && error.kind === 'cancelled') return undefined
+      throw error
+    }
+  }
+
+  function shouldReportFailure(
+    page: NonNullable<ReturnType<typeof beginPageOperation>>,
+    error: unknown,
+  ): boolean {
+    return (
+      page.operation.isCurrent(page.ownsOperation) &&
+      !(error instanceof HttpError && error.kind === 'cancelled')
+    )
+  }
+
+  async function openDetail(message: MessageRecord): Promise<void> {
+    const page = beginPageOperation()
+    if (!page) return
+    page.operation.apply(() => {
+      detailSeed.value = { message, scope: page.operation.scope }
+      detailVisible.value = true
+    }, page.ownsOperation)
+    try {
+      await nextTick()
+      page.operation.assertCurrent(page.ownsOperation)
+      if (message.read_at) return
+      await messageCenter.markRead(message.id, page.operation.scope)
+      page.operation.assertCurrent(page.ownsOperation)
+    } catch (error) {
+      if (shouldReportFailure(page, error)) ElMessage.error(t('messageCenter.markReadFailed'))
     }
   }
 
   async function refresh(): Promise<void> {
+    const page = beginPageOperation()
+    if (!page) return
     try {
-      await messageCenter.refresh()
-    } catch {
-      ElMessage.warning(t('messageCenter.refreshFailed'))
+      await messageCenter.refresh(page.operation.scope)
+      page.operation.assertCurrent(page.ownsOperation)
+    } catch (error) {
+      if (shouldReportFailure(page, error)) ElMessage.warning(t('messageCenter.refreshFailed'))
     }
   }
 
   async function deleteSelected(): Promise<void> {
+    const page = beginPageOperation()
+    if (!page) return
     const ids = [...selectedIds.value]
     if (ids.length === 0) return
     try {
@@ -62,10 +104,20 @@ export function useMessageCenterActions({
     } catch {
       return
     }
-    if (await removeMessages(ids)) selectedIds.value = []
+    if (await removeMessages(ids, page)) {
+      try {
+        page.operation.apply(() => {
+          selectedIds.value = []
+        }, page.ownsOperation)
+      } catch (error) {
+        if (!(error instanceof HttpError && error.kind === 'cancelled')) throw error
+      }
+    }
   }
 
   async function deleteOne(message: MessageRecord): Promise<void> {
+    const page = beginPageOperation()
+    if (!page) return
     try {
       await ElMessageBox.confirm(
         t('messageCenter.deleteOneConfirm', { title: message.title }),
@@ -75,30 +127,39 @@ export function useMessageCenterActions({
     } catch {
       return
     }
-    await removeMessages([message.id])
+    await removeMessages([message.id], page)
   }
 
-  async function removeMessages(ids: string[]): Promise<boolean> {
+  async function removeMessages(
+    ids: string[],
+    page: NonNullable<ReturnType<typeof beginPageOperation>>,
+  ): Promise<boolean> {
     try {
-      await messageCenter.remove(ids)
-      messageStore.markMessagesDeleted(ids)
-      if (detailSeed.value && ids.includes(detailSeed.value.id)) {
-        detailVisible.value = false
-        detailSeed.value = undefined
-      }
-      ElMessage.success(t('messageCenter.deleteSuccess'))
+      page.operation.assertCurrent(page.ownsOperation)
+      await messageCenter.remove(ids, page.operation.scope)
+      page.operation.apply(() => {
+        messageStore.markMessagesDeleted(ids)
+        if (detailSeed.value && ids.includes(detailSeed.value.message.id)) {
+          detailVisible.value = false
+          detailSeed.value = undefined
+        }
+        ElMessage.success(t('messageCenter.deleteSuccess'))
+      }, page.ownsOperation)
       return true
-    } catch {
-      ElMessage.error(t('messageCenter.deleteFailed'))
+    } catch (error) {
+      if (shouldReportFailure(page, error)) ElMessage.error(t('messageCenter.deleteFailed'))
       return false
     }
   }
 
   async function markAllRead(): Promise<void> {
+    const page = beginPageOperation()
+    if (!page) return
     try {
-      await messageCenter.markAllRead()
-    } catch {
-      ElMessage.error(t('messageCenter.markAllReadFailed'))
+      await messageCenter.markAllRead(page.operation.scope)
+      page.operation.assertCurrent(page.ownsOperation)
+    } catch (error) {
+      if (shouldReportFailure(page, error)) ElMessage.error(t('messageCenter.markAllReadFailed'))
     }
   }
 

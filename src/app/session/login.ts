@@ -1,7 +1,6 @@
 import { login, type LoginParams } from '@/api/modules/auth'
 import { isSessionContext } from '@/api/modules/sessionContext'
 import { translate } from '@/i18n'
-import { clearServerState } from '@/shared/query/client'
 import { ensureCsrfToken } from './csrf'
 import { publishAuthenticatedSession } from './lifecycle'
 
@@ -16,7 +15,6 @@ export async function authenticateWithPassword(credentials: LoginParams, tenantI
     throw new Error(translate('shell.session.loginResponseMissingTenant'))
   }
 
-  clearServerState()
   publishAuthenticatedSession(authData.access_token, context)
   return response
 }

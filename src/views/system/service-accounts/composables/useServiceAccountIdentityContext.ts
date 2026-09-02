@@ -1,13 +1,14 @@
 import { computed, ref } from 'vue'
 import { usePermission } from '@/hooks/usePermission'
 import { HttpError } from '@/shared/http/client'
+import { getServerStateScope, isServerStateScopeCurrent } from '@/shared/query/client'
 import { createIdentityOperationScope } from '@/shared/query/createIdentityOperationScope'
 import { SERVICE_ACCOUNTS_CAPABILITY } from '@/features/service-accounts/manifest'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 import { useUserStore } from '@/stores/user'
 import {
-  sameServiceAccountIdentity,
-  type ServiceAccountIdentity,
+  sameServiceAccountScope,
+  type ServiceAccountScope,
   type ServiceAccountIdentityGuard,
 } from './serviceAccountContextTypes'
 
@@ -33,26 +34,37 @@ export function useServiceAccountIdentityContext() {
   const canRevokeDelegation = computed(() => hasPermission('system:service-delegation:revoke'))
   const canListAudits = computed(() => hasPermission('system:service-access-audit:list'))
 
-  function currentIdentity(): ServiceAccountIdentity | undefined {
+  function currentIdentity(): ServiceAccountScope | undefined {
     if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId)
       return undefined
-    return { tenantId: userStore.tenantId, userId: String(userStore.userId) }
+    const active = getServerStateScope()
+    if (
+      !active ||
+      active.tenantId !== userStore.tenantId ||
+      active.subjectId !== String(userStore.userId)
+    )
+      return undefined
+    return {
+      tenantId: active.tenantId,
+      subjectId: active.subjectId,
+      sessionEpoch: active.sessionEpoch,
+    }
   }
 
   const operationScope = createIdentityOperationScope({
     currentIdentity,
     isActive: () => pageActive.value,
-    sameIdentity: sameServiceAccountIdentity,
+    sameIdentity: sameServiceAccountScope,
   })
 
-  function requireIdentity(): ServiceAccountIdentity {
+  function requireIdentity(): ServiceAccountScope {
     const identity = currentIdentity()
     if (!identity) throw new HttpError('当前登录身份已失效', { status: 401, kind: 'http' })
     return identity
   }
 
-  function ensureCurrentIdentity(identity: ServiceAccountIdentity): void {
-    if (!sameServiceAccountIdentity(identity, currentIdentity())) {
+  function ensureCurrentIdentity(scope: ServiceAccountScope): void {
+    if (!isServerStateScopeCurrent(scope)) {
       throw new HttpError('登录身份已经切换', { kind: 'cancelled' })
     }
   }
@@ -76,7 +88,7 @@ export function useServiceAccountIdentityContext() {
   }
 
   function ensureOperationContext(
-    identity: ServiceAccountIdentity,
+    identity: ServiceAccountScope,
     snapshot: ServiceAccountIdentityGuard,
   ): void {
     ensureCurrentIdentity(identity)

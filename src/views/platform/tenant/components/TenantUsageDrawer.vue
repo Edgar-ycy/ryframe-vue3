@@ -8,6 +8,7 @@
     @closed="handleClosed"
   >
     <div v-loading="loading" class="drawer-content" aria-live="polite">
+      <el-alert v-if="error" :title="error.message" type="error" show-icon :closable="false" />
       <template v-if="tenant">
         <el-tabs v-model="activeTab">
           <el-tab-pane :label="t('tenantCapacity.capacityTab')" name="capacity">
@@ -260,6 +261,7 @@ import {
 } from './tenantUsagePresentation'
 
 defineProps<{
+  error?: Error | null
   tenant?: TenantCapacity
   loading: boolean
   refreshing: boolean

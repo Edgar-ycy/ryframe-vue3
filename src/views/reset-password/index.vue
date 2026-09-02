@@ -62,6 +62,9 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { completePasswordReset } from '@/api/modules/auth'
 import type { FormItemRule } from 'element-plus'

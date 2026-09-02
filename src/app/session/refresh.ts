@@ -1,9 +1,9 @@
 import { refreshToken as refreshTokenApi } from '@/api/modules/auth'
 import { isSessionContext } from '@/api/modules/sessionContext'
 import { translate } from '@/i18n'
-import { HttpError } from '@/shared/http/client'
+import { HttpError, type AccessTokenApplied } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
-import { useTenantContextStore } from '@/app/tenant-context'
+import { useTenantContextStore } from '@/stores/tenantContext'
 import { synchronizeTenantContextUi } from '@/app/tenant-context/contextRefresh'
 import {
   broadcastAuthenticated,
@@ -22,12 +22,33 @@ import {
 } from './state'
 
 let refreshPromise: Promise<string> | undefined
+let locallyAppliedAccessToken: string | undefined
+const accessTokenAppliedListeners = new Set<AccessTokenApplied>()
+
+interface RefreshResult {
+  token: string
+  sessionEpoch: number
+}
 
 export function getPendingRefresh(): Promise<string> | undefined {
   return refreshPromise
 }
 
-export async function refreshAccessToken(): Promise<string> {
+export async function refreshAccessToken(
+  onAccessTokenApplied?: AccessTokenApplied,
+): Promise<string> {
+  if (onAccessTokenApplied) accessTokenAppliedListeners.add(onAccessTokenApplied)
+  try {
+    if (onAccessTokenApplied && refreshPromise && locallyAppliedAccessToken) {
+      onAccessTokenApplied(locallyAppliedAccessToken)
+    }
+    return await runAccessTokenRefresh()
+  } finally {
+    if (onAccessTokenApplied) accessTokenAppliedListeners.delete(onAccessTokenApplied)
+  }
+}
+
+async function runAccessTokenRefresh(): Promise<string> {
   if (isSessionTerminating()) {
     throw new HttpError(translate('shell.session.terminating'), {
       status: 401,
@@ -55,9 +76,10 @@ export async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     const refreshEpoch = getSessionEpoch()
     const operation = startLocalRefreshOperation()
+    locallyAppliedAccessToken = undefined
     const pending = performRefresh(refreshEpoch)
-      .then((token) => {
-        assertSessionEpoch(refreshEpoch)
+      .then((result) => {
+        assertSessionEpoch(result.sessionEpoch)
         const context = useTenantContextStore().context
         if (!context) {
           throw new HttpError(translate('shell.session.refreshResponseInvalid'), {
@@ -65,8 +87,8 @@ export async function refreshAccessToken(): Promise<string> {
             kind: 'invalid_response',
           })
         }
-        broadcastAuthenticated(operation, token, context)
-        return token
+        broadcastAuthenticated(operation, result.token, context)
+        return result.token
       })
       .catch((error: unknown) => {
         if (refreshEpoch === getSessionEpoch()) {
@@ -75,14 +97,17 @@ export async function refreshAccessToken(): Promise<string> {
         throw error
       })
       .finally(() => {
-        if (refreshPromise === pending) refreshPromise = undefined
+        if (refreshPromise === pending) {
+          refreshPromise = undefined
+          locallyAppliedAccessToken = undefined
+        }
       })
     refreshPromise = pending
   }
   return refreshPromise
 }
 
-async function performRefresh(refreshEpoch: number): Promise<string> {
+async function performRefresh(refreshEpoch: number): Promise<RefreshResult> {
   const tokenBeforeRefresh = useUserStore().token
   try {
     return await requestRefresh(false, refreshEpoch)
@@ -94,13 +119,13 @@ async function performRefresh(refreshEpoch: number): Promise<string> {
     assertSessionEpoch(refreshEpoch)
     const tokenFromAnotherTab = useUserStore().token
     if (tokenFromAnotherTab && tokenFromAnotherTab !== tokenBeforeRefresh) {
-      return tokenFromAnotherTab
+      return { token: tokenFromAnotherTab, sessionEpoch: getSessionEpoch() }
     }
     return requestRefresh(true, refreshEpoch)
   }
 }
 
-async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise<string> {
+async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise<RefreshResult> {
   const challenge = await ensureCsrfToken(forceCsrf)
   try {
     assertSessionEpoch(refreshEpoch)
@@ -114,14 +139,21 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
       })
     }
     const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.session_context)
+    notifyAccessTokenApplied(auth.access_token)
+    const appliedEpoch = getSessionEpoch()
     if (scopeChanged) {
       await synchronizeTenantContextUi({ skipAuthRefresh: true, refreshContext: false })
     } else await ensureRoutesAfterAuthentication(true)
-    assertSessionEpoch(refreshEpoch)
-    return auth.access_token
+    assertSessionEpoch(appliedEpoch)
+    return { token: auth.access_token, sessionEpoch: appliedEpoch }
   } finally {
     // 后端在刷新失败时会清理认证 Cookie；本次双提交挑战也必须同步作废，
     // 避免登录或后续刷新继续复用已经失去 Cookie 配对的内存令牌。
     invalidateCsrfToken()
   }
+}
+
+function notifyAccessTokenApplied(accessToken: string): void {
+  locallyAppliedAccessToken = accessToken
+  for (const listener of [...accessTokenAppliedListeners]) listener(accessToken)
 }

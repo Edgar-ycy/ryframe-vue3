@@ -49,12 +49,15 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { getUser, replaceUserRoles, type UserDetail, type UserRecord } from '@/api/modules/user'
 import type { SelectOption } from '@/api/modules/option'
 import type { Id } from '@/shared/http/types'
-import { useTenantMutation } from '@/shared/query/useTenantMutation'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
+import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { useRoleOptions } from '../composables/useRoleOptions'
 
@@ -74,6 +77,7 @@ const visible = defineModel<boolean>({ required: true })
 const userStore = useUserStore()
 const selectedRoleIds = ref<Id[]>([])
 const selectedRoleOptions = ref<SelectOption[]>([])
+const pageLifecycle = useServerStatePageLifecycle(resetPageState)
 function selfAssignmentLocked(): boolean {
   return props.user?.id === props.currentUserId && !props.currentUserIsSuper
 }
@@ -82,10 +86,13 @@ const {
   options: roleOptions,
   remoteMethod: remoteRoleSearch,
   resetSearch: resetRoleSearch,
-} = useRoleOptions(() => visible.value, selectedRoleOptions)
-const detailQuery = useTenantQuery<UserDetail>(
-  () => userStore.tenantId,
-  () => userStore.sessionStatus === 'authenticated' && visible.value && props.user !== null,
+} = useRoleOptions(() => pageLifecycle.pageActive.value && visible.value, selectedRoleOptions)
+const detailQuery = useServerStateQuery<UserDetail>(
+  () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    visible.value &&
+    props.user !== null,
   'users',
   () => ({ scope: 'detail', id: props.user?.id ?? null }),
   async (signal) => {
@@ -96,18 +103,11 @@ const detailQuery = useTenantQuery<UserDetail>(
     return response.data
   },
 )
-const assignmentMutation = useTenantMutation<void, { userId: Id; roleIds: Id[] }>(
-  () => userStore.tenantId,
-  'users',
-  {
-    mutationFn: async (variables) => {
-      await replaceUserRoles(variables.userId, variables.roleIds)
-    },
-    onSuccess: () => {
-      ElMessage.success(t('system.user.roleAssigned'))
-    },
+const assignmentMutation = useServerStateMutation<void, { userId: Id; roleIds: Id[] }>('users', {
+  mutationFn: async (variables) => {
+    await replaceUserRoles(variables.userId, variables.roleIds)
   },
-)
+})
 const loading = detailQuery.isFetching
 const submitting = assignmentMutation.pending
 
@@ -115,6 +115,11 @@ function reset(): void {
   selectedRoleIds.value = []
   selectedRoleOptions.value = []
   resetRoleSearch()
+}
+
+function resetPageState(): void {
+  visible.value = false
+  reset()
 }
 
 function syncSelectedRoleOptions(): void {
@@ -151,11 +156,20 @@ watch(
 
 async function submit(): Promise<void> {
   if (!props.user || selfAssignmentLocked() || submitting.value) return
+  const operation = beginServerStatePageOperation()
+  const ownsPage = pageLifecycle.captureOwnership()
+  const expectedUserId = props.user.id
+  const ownsDialog = () =>
+    ownsPage() && visible.value && props.user?.id === expectedUserId && !selfAssignmentLocked()
+  operation.assertCurrent(ownsDialog)
   await assignmentMutation.mutateAsync({
-    userId: props.user.id,
+    userId: expectedUserId,
     roleIds: [...selectedRoleIds.value],
   })
-  visible.value = false
-  emit('saved')
+  operation.apply(() => {
+    ElMessage.success(t('system.user.roleAssigned'))
+    visible.value = false
+    emit('saved')
+  }, ownsDialog)
 }
 </script>

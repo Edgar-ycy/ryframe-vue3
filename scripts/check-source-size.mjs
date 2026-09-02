@@ -5,6 +5,7 @@ import {
   lineCount,
   scriptLimit,
   sourceLimit,
+  sourceSizeAssessment,
   sourceSizeViolation,
 } from './source-size-contract.mjs'
 
@@ -59,6 +60,7 @@ function normalizedRelative(path) {
 
 const repositoryFiles = await collectFiles(root)
 const violations = []
+const advisories = []
 let scannedSourceFiles = 0
 let scannedScriptFiles = 0
 
@@ -70,8 +72,13 @@ for (const path of repositoryFiles.sort()) {
   if (!effectiveLimit) continue
   if (limit) scannedSourceFiles += 1
   else scannedScriptFiles += 1
-  const violation = sourceSizeViolation(relativePath, await readFile(path, 'utf8'), effectiveLimit)
+  const content = await readFile(path, 'utf8')
+  const violation = sourceSizeViolation(relativePath, content, effectiveLimit)
   if (violation) violations.push(violation)
+  else {
+    const assessment = sourceSizeAssessment(relativePath, content, effectiveLimit)
+    if (assessment) advisories.push(assessment)
+  }
 }
 
 const documentFiles = await collectMarkdownFiles(root)
@@ -88,6 +95,11 @@ if (JSON.stringify(documentNames) !== JSON.stringify(expectedDocumentNames)) {
 for (const [path, limit] of documentLimits) {
   const lines = lineCount(await readFile(join(root, path), 'utf8'))
   if (lines > limit) violations.push({ limit, lines, path })
+}
+
+for (const advisory of advisories) {
+  const label = advisory.severity === 'warning' ? '强警告' : '提示'
+  console.warn(`源码规模${label}：${advisory.lines}/${advisory.limit} 行 ${advisory.path}`)
 }
 
 if (violations.length > 0) {

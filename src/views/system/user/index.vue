@@ -134,12 +134,12 @@
             <template #default="{ row }">
               <el-switch
                 v-if="hasPermission('system:user:edit') && isManageableStatus(row.status)"
-                v-model="row.status"
+                :model-value="row.status"
                 active-value="1"
                 inactive-value="0"
                 :loading="statusUpdatingId === row.id"
                 :disabled="statusUpdatingId !== null"
-                @change="(value: UserManageableStatus) => handleChangeStatus(row, value)"
+                @change="changeUserStatus(row.id, $event)"
               />
               <el-tag v-else :type="userStatusTag(row.status)" size="small">
                 {{ userStatusLabel(row.status) }}
@@ -161,7 +161,7 @@
                 type="primary"
                 link
                 icon="Edit"
-                @click="handleEdit(row)"
+                @click="editUserById(row.id)"
               >
                 {{ t('system.common.edit') }}
               </el-button>
@@ -170,7 +170,7 @@
                 type="success"
                 link
                 icon="UserFilled"
-                @click="handleAssignRoles(row)"
+                @click="assignRolesById(row.id)"
               >
                 {{ t('system.user.assignRoles') }}
               </el-button>
@@ -179,7 +179,7 @@
                 type="warning"
                 link
                 icon="Key"
-                @click="handleResetPassword(row)"
+                @click="resetPasswordById(row.id)"
               >
                 {{ t('system.user.initiateReset') }}
               </el-button>
@@ -189,7 +189,7 @@
                 link
                 icon="Delete"
                 :loading="deletingId === row.id"
-                @click="handleDelete(row)"
+                @click="deleteUserById(row.id)"
               >
                 {{ t('system.common.delete') }}
               </el-button>
@@ -239,8 +239,9 @@
 <script setup lang="ts">
 import { ArrowRight } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import type { UserManageableStatus } from '@/api/modules/user'
+import type { UserRecord } from '@/api/modules/user'
 import { formatLocalizedDate } from '@/i18n'
+import type { Id } from '@/shared/http/types'
 import DepartmentTree from './components/DepartmentTree.vue'
 import PasswordResetDialog from './components/PasswordResetDialog.vue'
 import UserFormDialog from './components/UserFormDialog.vue'
@@ -299,96 +300,38 @@ const {
   submitImport,
   templateLoading,
 } = useUserImportManagement(refreshData)
+
+function findUser(id: Id): UserRecord | undefined {
+  return tableResponse.value?.items.find((user) => user.id === id)
+}
+
+async function changeUserStatus(
+  id: Id,
+  value: string | number | boolean | undefined,
+): Promise<void> {
+  const user = findUser(id)
+  if (user && (value === '0' || value === '1')) await handleChangeStatus(user, value)
+}
+
+function editUserById(id: Id): void {
+  const user = findUser(id)
+  if (user) handleEdit(user)
+}
+
+function assignRolesById(id: Id): void {
+  const user = findUser(id)
+  if (user) handleAssignRoles(user)
+}
+
+async function resetPasswordById(id: Id): Promise<void> {
+  const user = findUser(id)
+  if (user) await handleResetPassword(user)
+}
+
+async function deleteUserById(id: Id): Promise<void> {
+  const user = findUser(id)
+  if (user) await handleDelete(user)
+}
 </script>
 
-<style scoped lang="scss">
-.user-management {
-  display: flex;
-  gap: 12px;
-  height: calc(100vh - var(--navbar-height) - var(--tags-view-height) - 40px);
-  min-height: 600px;
-
-  &__left {
-    width: 280px;
-    flex-shrink: 0;
-  }
-
-  &__right {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow: hidden;
-  }
-}
-
-.search-card__header {
-  margin-bottom: 12px;
-}
-
-.search-card__title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.search-card__separator {
-  color: var(--color-text-secondary);
-}
-
-.table-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-
-  :deep(.el-card__body) {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  :deep(.el-table) {
-    flex: 1;
-  }
-}
-
-@media (width <= 1024px) {
-  .user-management {
-    flex-direction: column;
-    height: auto;
-
-    &__left {
-      width: 100%;
-      max-height: 320px;
-    }
-
-    &__right {
-      min-height: 500px;
-    }
-  }
-}
-
-@media (width <= 768px) {
-  .user-management {
-    gap: 8px;
-
-    &__left {
-      max-height: 260px;
-    }
-
-    &__right {
-      min-height: 400px;
-    }
-  }
-
-  .search-card :deep(.el-form-item) {
-    margin-bottom: 8px;
-  }
-}
-</style>
+<style scoped lang="scss" src="./userPage.scss"></style>

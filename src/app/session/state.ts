@@ -1,23 +1,22 @@
-import type { SessionContext } from '@/api/modules/sessionContext'
+import type { SessionContext } from '@/features/session/contracts'
 import { getRouteRuntime } from '@/app/navigation/runtime'
 import {
   applyTenantSessionContext,
   failClosedTenantContext,
 } from '@/app/tenant-context/coordinator'
-import { useTenantContextStore } from '@/app/tenant-context/store'
 import { translate } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
+import { deactivateServerStateScope, getServerStateSessionEpoch } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
 
-let sessionEpoch = 0
 let sessionTerminating = false
 
 export function getSessionEpoch(): number {
-  return sessionEpoch
+  return getServerStateSessionEpoch()
 }
 
 export function invalidateSessionEpoch(): void {
-  sessionEpoch += 1
+  deactivateServerStateScope()
 }
 
 export function isSessionTerminating(): boolean {
@@ -29,7 +28,7 @@ export function setSessionTerminating(value: boolean): void {
 }
 
 export function assertSessionEpoch(expected: number): void {
-  if (expected !== sessionEpoch || sessionTerminating) {
+  if (expected !== getSessionEpoch() || sessionTerminating) {
     throw new HttpError(translate('shell.session.operationCancelled'), {
       status: 401,
       kind: 'cancelled',
@@ -41,15 +40,20 @@ export function assertSessionEpoch(expected: number): void {
  * 写入认证结果，并返回动态路由所属的身份或授权范围是否发生变化。
  * 跨标签页刷新令牌可能切换到另一个用户、租户或权限集合，调用方必须据此清理旧路由。
  */
-export function applyAuthenticatedSession(accessToken: string, context: SessionContext): boolean {
+export function applyAuthenticatedSession(
+  accessToken: string,
+  context: SessionContext,
+  options: { forceNewServerStateScope?: boolean } = {},
+): boolean {
   const userStore = useUserStore()
-  const tenantContext = useTenantContextStore()
-  const scopeChanged = hasAuthenticatedScopeChanged(userStore, tenantContext, context)
   try {
-    applyTenantSessionContext(context)
-    userStore.token = accessToken
-    userStore.sessionStatus = 'authenticated'
-    return scopeChanged
+    return applyTenantSessionContext(context, {
+      applyCredentialProjection: () => {
+        userStore.token = accessToken
+        userStore.sessionStatus = 'authenticated'
+      },
+      forceNewServerStateScope: options.forceNewServerStateScope,
+    })
   } catch (error) {
     failClosedTenantContext()
     userStore.resetState()
@@ -59,29 +63,4 @@ export function applyAuthenticatedSession(accessToken: string, context: SessionC
 
 export async function ensureRoutesAfterAuthentication(skipAuthRefresh = false): Promise<void> {
   await getRouteRuntime()?.ensureAccessibleRoutes({ skipAuthRefresh })
-}
-
-function hasAuthenticatedScopeChanged(
-  userStore: ReturnType<typeof useUserStore>,
-  tenantContext: ReturnType<typeof useTenantContextStore>,
-  context: SessionContext,
-): boolean {
-  const userInfo = context.user
-  if (userStore.sessionStatus !== 'authenticated' || userStore.userId === '') return false
-  return (
-    String(userStore.userId) !== String(userInfo.id) ||
-    userStore.tenantId !== userInfo.tenant_id ||
-    userStore.isSuperAdmin !== context.is_super_admin ||
-    accessFingerprint(userStore.roles) !== accessFingerprint(context.roles) ||
-    accessFingerprint(userStore.permissions) !== accessFingerprint(context.permissions) ||
-    tenantContext.authorizationEpoch !== context.authorization_epoch ||
-    tenantContext.runtimeEpoch !== context.runtime_epoch ||
-    accessFingerprint(tenantContext.capabilityCodes) !==
-      accessFingerprint(context.capabilities.map((item) => item.code)) ||
-    JSON.stringify(tenantContext.context?.menus ?? []) !== JSON.stringify(context.menus)
-  )
-}
-
-function accessFingerprint(values: readonly string[]): string {
-  return [...values].sort().join('\u0000')
 }

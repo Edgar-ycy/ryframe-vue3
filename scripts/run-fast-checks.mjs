@@ -1,21 +1,70 @@
 import { spawn } from 'node:child_process'
 import { performance } from 'node:perf_hooks'
-import { createPackageManagerInvocation } from './fast-check-contract.mjs'
+import {
+  createPackageBinaryInvocation,
+  createPackageManagerInvocation,
+} from './fast-check-contract.mjs'
 
+const cacheRoot = process.env.RYFRAME_FAST_CHECK_CACHE_ROOT
 const tasks = [
   ['格式', 'format:check:fast'],
   ['源码规模', 'check:source-size'],
   ['导入边界', 'check:imports'],
+  ['operation 使用', 'check:api-operations'],
+  ['API 生成资产', 'check:api-artifacts'],
   ['ESLint', 'lint'],
   ['Stylelint', 'lint:styles'],
   ['应用类型', 'typecheck:app'],
   ['单元测试', 'test:unit'],
 ]
 
-function runTask([name, script]) {
+if (cacheRoot) {
+  tasks[0] = [
+    '格式',
+    'format:check:fast',
+    [
+      'prettier',
+      [
+        '--check',
+        '.',
+        '--cache',
+        '--cache-location',
+        `${cacheRoot}/prettier/cache`,
+        '--cache-strategy',
+        'content',
+      ],
+    ],
+  ]
+  tasks[5] = [
+    'ESLint',
+    'lint',
+    [
+      'eslint',
+      ['.', '--max-warnings=0', '--cache', '--cache-location', `${cacheRoot}/eslint/cache`],
+    ],
+  ]
+  tasks[6] = [
+    'Stylelint',
+    'lint:styles',
+    [
+      'stylelint',
+      [
+        'src/**/*.{css,scss,vue}',
+        '--max-warnings=0',
+        '--cache',
+        '--cache-location',
+        `${cacheRoot}/stylelint/cache`,
+      ],
+    ],
+  ]
+}
+
+function runTask([name, script, binary]) {
   const startedAt = performance.now()
   return new Promise((resolve) => {
-    const invocation = createPackageManagerInvocation(script)
+    const invocation = binary
+      ? createPackageBinaryInvocation(binary[0], binary[1])
+      : createPackageManagerInvocation(script)
     const child = spawn(invocation.command, invocation.args, {
       cwd: process.cwd(),
       env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },

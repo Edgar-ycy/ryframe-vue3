@@ -75,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { ArrowRight } from '@element-plus/icons-vue'
 import { defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'

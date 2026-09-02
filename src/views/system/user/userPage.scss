@@ -1,0 +1,89 @@
+.user-management {
+  display: flex;
+  gap: 12px;
+  height: calc(100vh - var(--navbar-height) - var(--tags-view-height) - 40px);
+  min-height: 600px;
+
+  &__left {
+    width: 280px;
+    flex-shrink: 0;
+  }
+
+  &__right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+}
+
+.search-card__header {
+  margin-bottom: 12px;
+}
+
+.search-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-card__separator {
+  color: var(--color-text-secondary);
+}
+
+.table-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  :deep(.el-card__body) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :deep(.el-table) {
+    flex: 1;
+  }
+}
+
+@media (width <= 1024px) {
+  .user-management {
+    flex-direction: column;
+    height: auto;
+
+    &__left {
+      width: 100%;
+      max-height: 320px;
+    }
+
+    &__right {
+      min-height: 500px;
+    }
+  }
+}
+
+@media (width <= 768px) {
+  .user-management {
+    gap: 8px;
+
+    &__left {
+      max-height: 260px;
+    }
+
+    &__right {
+      min-height: 400px;
+    }
+  }
+
+  .search-card :deep(.el-form-item) {
+    margin-bottom: 8px;
+  }
+}

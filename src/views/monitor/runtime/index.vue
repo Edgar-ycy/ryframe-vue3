@@ -132,14 +132,13 @@ import {
 import { useI18n } from 'vue-i18n'
 import { getRuntimeStatus, type RuntimeStatus } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
-import { useTenantQuery } from '@/shared/query/useTenantQuery'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
 const { t } = useI18n()
 const userStore = useUserStore()
 const pageActive = ref(true)
-const runtimeQuery = useTenantQuery<RuntimeStatus | null>(
-  () => userStore.tenantId,
+const runtimeQuery = useServerStateQuery<RuntimeStatus | null>(
   () => userStore.sessionStatus === 'authenticated' && pageActive.value,
   'monitor-runtime',
   () => ({ scope: 'status' }),
@@ -147,6 +146,7 @@ const runtimeQuery = useTenantQuery<RuntimeStatus | null>(
     const response = await getRuntimeStatus(signal)
     return response.data ?? null
   },
+  { meta: { errorMode: 'silent' } },
 )
 const loading = runtimeQuery.isFetching
 const runtime = runtimeQuery.data

@@ -200,7 +200,9 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { nextTick, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   type CreateScheduleBody,
@@ -209,6 +211,9 @@ import {
   type UpdateScheduleBody,
 } from '@/api/modules/monitor'
 import { formatLocalizedDate, getApplicationLocale } from '@/i18n'
+import { useServerStateScope } from '@/shared/query/client'
+import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import type { ServerStateScope } from '@/shared/query/scope'
 import CronScheduleBuilder from './CronScheduleBuilder.vue'
 import type { BuilderState } from './cron/model'
 import {
@@ -235,7 +240,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [payload: CreateScheduleBody | UpdateScheduleBody]
+  save: [payload: CreateScheduleBody | UpdateScheduleBody, scope: ServerStateScope]
 }>()
 
 const visible = defineModel<boolean>({ required: true })
@@ -247,6 +252,7 @@ const timezoneOptions = buildTimezoneOptions(browserTimezone)
 const form = reactive<ScheduleFormModel>(createDefaultScheduleForm(browserTimezone))
 const builderComplete = ref(true)
 const scheduleSummary = ref('')
+const pageGeneration = ref(0)
 const {
   cancelPreview,
   canPreview,
@@ -290,13 +296,17 @@ const rules: FormRules<ScheduleFormModel> = {
 
 function resetForm(schedule: JobScheduleRecord | undefined): void {
   Object.assign(form, createScheduleForm(schedule, browserTimezone))
-  void nextTick(() => formRef.value?.clearValidate())
 }
 
 async function handleOpen(): Promise<void> {
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () => visible.value && pageGeneration.value === generation
   cancelPreview()
   resetForm(props.schedule)
   await nextTick()
+  if (!operation.isCurrent(ownsOperation)) return
+  formRef.value?.clearValidate()
   const state = builderRef.value?.loadExpression(form.cron_expression)
   builderComplete.value = state?.complete ?? Boolean(form.cron_expression.trim())
   scheduleSummary.value = state?.summary ?? ''
@@ -304,6 +314,7 @@ async function handleOpen(): Promise<void> {
 }
 
 function handleClosed(): void {
+  pageGeneration.value += 1
   cancelPreview()
   preview.value = undefined
   previewError.value = ''
@@ -340,17 +351,13 @@ function canSubmit(): boolean {
   return isFormComplete() && hasValidPreview() && !props.saving
 }
 
-async function validateForm(): Promise<boolean> {
-  try {
-    return (await formRef.value?.validate()) ?? false
-  } catch {
-    return false
-  }
-}
-
 async function submit(): Promise<void> {
   if (props.saving || previewLoading.value) return
-  if (!(await validateForm()) || !isFormComplete()) return
+  const generation = pageGeneration.value
+  const operation = beginServerStatePageOperation()
+  const ownsOperation = () => visible.value && pageGeneration.value === generation
+  const valid = (await formRef.value?.validate().catch(() => false)) ?? false
+  if (!operation.isCurrent(ownsOperation) || !valid || !isFormComplete()) return
   if (!hasValidPreview()) {
     const succeeded = await runPreview(
       JSON.stringify({
@@ -358,11 +365,28 @@ async function submit(): Promise<void> {
         timezone: form.timezone.trim(),
       }),
     )
-    if (succeeded) ElMessage.info(t('monitor.schedules.previewReviewBeforeSave'))
+    if (!operation.isCurrent(ownsOperation)) return
+    if (succeeded) {
+      operation.apply(
+        () => ElMessage.info(t('monitor.schedules.previewReviewBeforeSave')),
+        ownsOperation,
+      )
+    }
     return
   }
-  emit('save', buildSchedulePayload(form, props.schedule?.version))
+  operation.assertCurrent(ownsOperation)
+  emit('save', buildSchedulePayload(form, props.schedule?.version), operation.scope)
 }
+
+function invalidateForm(): void {
+  pageGeneration.value += 1
+  visible.value = false
+  cancelPreview()
+}
+
+watch(useServerStateScope(), invalidateForm, { flush: 'sync' })
+onDeactivated(invalidateForm)
+onBeforeUnmount(invalidateForm)
 
 function targetLabel(target: ScheduleTargetRecord): string {
   const targetName = props.targetName(target.handler_key)

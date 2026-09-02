@@ -64,6 +64,47 @@ function relative(absolute) {
   return path.relative(root, absolute).split(path.sep).join('/')
 }
 
+function containsExpressionReference(value, name) {
+  if (typeof value !== 'string' || !value.includes('${{')) return false
+  return new RegExp(`(^|[^A-Za-z0-9_])${name}\\s*(?:\\.|\\[)`, 'u').test(value)
+}
+
+export function validateEnvironmentContexts(name, workflow) {
+  const contextErrors = []
+  const scopes = [
+    [
+      'workflow env',
+      workflow?.env,
+      ['runner', 'job', 'steps', 'env', 'needs', 'strategy', 'matrix'],
+    ],
+  ]
+  for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
+    scopes.push([`job ${jobName} env`, job?.env, ['runner', 'job', 'steps', 'env']])
+  }
+  for (const [location, environment, forbidden] of scopes) {
+    if (environment == null) continue
+    if (typeof environment !== 'object' || Array.isArray(environment)) {
+      contextErrors.push(`${name}: ${location} must be an object`)
+      continue
+    }
+    for (const [variable, value] of Object.entries(environment)) {
+      for (const context of forbidden) {
+        if (containsExpressionReference(value, context)) {
+          contextErrors.push(
+            `${name}: ${location}.${variable} cannot reference ${context}; move it to a step env, with, or run`,
+          )
+        }
+      }
+      if (typeof value === 'string' && value.includes('${{') && /\bhashFiles\s*\(/u.test(value)) {
+        contextErrors.push(
+          `${name}: ${location}.${variable} cannot call hashFiles; move it to a step env or with`,
+        )
+      }
+    }
+  }
+  return contextErrors
+}
+
 const workflowFiles = await collectYamlFiles(workflowsDirectory, (name) => /\.ya?ml$/iu.test(name))
 const actionFiles = await collectYamlFiles(actionsDirectory, (name) =>
   /^action\.ya?ml$/iu.test(name),
@@ -86,7 +127,12 @@ for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
   for (const error of document.errors) errors.push(`${name}: ${error.message}`)
   if (document.errors.length > 0) continue
 
-  for (const localUse of collectLocalUses(document.toJS())) {
+  const workflow = document.toJS()
+  if (workflowFiles.includes(absolute)) {
+    errors.push(...validateEnvironmentContexts(name, workflow))
+  }
+
+  for (const localUse of collectLocalUses(workflow)) {
     if (localUse.includes('${{')) {
       errors.push(`${name}: local uses reference must be static (${localUse})`)
       continue
@@ -104,7 +150,7 @@ for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
     }
   }
 
-  for (const remoteUse of collectRemoteUses(document.toJS())) {
+  for (const remoteUse of collectRemoteUses(workflow)) {
     const separator = remoteUse.lastIndexOf('@')
     if (separator < 1) {
       errors.push(

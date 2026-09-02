@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
 
 import { validateRequiredJobs } from '../check-required-jobs.mjs'
+import { validateEnvironmentContexts } from '../check-workflows.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -94,4 +95,19 @@ test('可执行错误提示也通过 Corepack 给出 pnpm 命令', async () => {
     assert.ok(source.includes(command), `${file} 未给出 Corepack 命令`)
     assert.doesNotMatch(source, /请(?:运行|通过) pnpm\s/u, `${file} 仍提示裸 pnpm 命令`)
   }
+})
+
+test('工作流检查器在 step 之前拒绝运行期上下文', async () => {
+  const invalid = validateEnvironmentContexts('ci.yml', {
+    jobs: { integration: { env: { ARTIFACT_DIR: '${{ runner.temp }}/integration' } } },
+  })
+  const valid = validateEnvironmentContexts('ci.yml', {
+    jobs: {
+      integration: {
+        steps: [{ env: { ARTIFACT_DIR: '${{ runner.temp }}/integration' } }],
+      },
+    },
+  })
+  assert.ok(invalid.some((error) => error.includes('cannot reference runner')))
+  assert.deepEqual(valid, [])
 })

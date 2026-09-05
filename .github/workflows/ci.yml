@@ -83,12 +83,22 @@ jobs:
         run: corepack pnpm install --frozen-lockfile
 
       - name: Run stable build gate
-        run: corepack pnpm build
+        run: corepack pnpm build --real
         env:
           VITE_APP_BUILD_COMMIT: ${{ github.sha }}
 
+      - name: 保存待验收的生产构建
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: frontend-production-${{ github.sha }}-${{ github.run_attempt }}
+          path: dist
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
   browser:
     name: Browser Smoke (Node 24)
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -114,17 +124,27 @@ jobs:
       - name: Install browser for deterministic smoke tests
         run: corepack pnpm exec playwright install --with-deps chromium
 
-      - name: Run stable browser gate
-        run: corepack pnpm check --stage browser
+      - name: 验收开发服务器浏览器流程
+        run: corepack pnpm check --stage browser --fixture core --server dev
+
+      - name: 读取本次门禁的生产构建
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: frontend-production-${{ github.sha }}-${{ github.run_attempt }}
+          path: dist
+
+      - name: 验收生产构建浏览器流程
+        run: corepack pnpm check --stage browser --fixture core --server preview
 
       - name: Upload browser failure artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: browser-smoke-${{ github.sha }}
+          name: browser-smoke-${{ github.sha }}-${{ github.run_attempt }}
           path: |
             .local-tests/playwright/report
             .local-tests/playwright/results
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
 

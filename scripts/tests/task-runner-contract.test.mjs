@@ -177,12 +177,22 @@ test('定向测试及 browser 参数完整传递，中文空格路径不拆分',
 
 test('真实浏览器配置消费 dev 和 preview 服务模式并隔离产物', async () => {
   const source = await readFile(new URL('../../playwright.real.config.ts', import.meta.url), 'utf8')
-  assert.match(source, /RYFRAME_E2E_SERVER/u)
-  assert.match(source, /mode !== 'dev' && mode !== 'preview'/u)
+  const environment = await readFile(
+    new URL('../real-browser-environment.mjs', import.meta.url),
+    'utf8',
+  )
+  assert.match(source, /validateRealBrowserEnvironment\(\)/u)
+  assert.ok(
+    source.indexOf('validateRealBrowserEnvironment()') < source.indexOf('mkdirSync(directory'),
+  )
+  assert.match(source, /externalBaseUrl = environment\.baseURL/u)
+  assert.match(environment, /RYFRAME_E2E_SERVER/u)
+  assert.match(environment, /\['dev', 'preview'\]/u)
   assert.match(source, /run-real-browser-server\.mjs \$\{serverMode\} \$\{port\}/u)
   assert.match(source, /RYFRAME_E2E_GATE_ENDPOINT/u)
-  assert.match(source, /playwright-real\/report\/\$\{serverMode\}/u)
-  assert.match(source, /playwright-real\/results\/\$\{serverMode\}/u)
+  assert.match(source, /artifactSuffix = `\$\{fixture\}\/\$\{serverMode\}/u)
+  assert.match(source, /playwright-real\/report\/\$\{artifactSuffix\}/u)
+  assert.match(source, /playwright-real\/results\/\$\{artifactSuffix\}/u)
 })
 
 test('开发、构建和生成选项映射到唯一职责', () => {

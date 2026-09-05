@@ -27,8 +27,44 @@ test('登记环境完整时返回脱敏绑定，并保留中文空格绝对路�
   assert.equal(binding.backendDir, environment.RYFRAME_E2E_BACKEND_DIR)
   assert.equal(binding.loginBudgetState, environment.RYFRAME_E2E_LOGIN_BUDGET_STATE)
   assert.equal(binding.baseURL, 'http://127.0.0.1:4174')
+  assert.equal(binding.port, 4174)
+  assert.equal(binding.serverMode, 'dev')
+  assert.equal(binding.fixture, 'core')
+  assert.equal(binding.runId, undefined)
   assert.equal(JSON.stringify(binding).includes(environment.RYFRAME_E2E_PASSWORD), false)
   assert.equal(Object.isFrozen(binding), true)
+})
+
+test('运行选项经过统一校验并保留显式选择', () => {
+  const binding = validateRealBrowserEnvironment({
+    ...validEnvironment(),
+    RYFRAME_E2E_FRONTEND_PORT: '49152',
+    RYFRAME_E2E_SERVER: 'preview',
+    RYFRAME_E2E_FIXTURE: 'device',
+    RYFRAME_E2E_RUN_ID: 'attempt-12',
+  })
+  assert.deepEqual(
+    {
+      port: binding.port,
+      serverMode: binding.serverMode,
+      fixture: binding.fixture,
+      runId: binding.runId,
+    },
+    { port: 49152, serverMode: 'preview', fixture: 'device', runId: 'attempt-12' },
+  )
+})
+
+test('非法运行选项在创建产物和服务前失败', () => {
+  for (const [name, value] of [
+    ['RYFRAME_E2E_FRONTEND_PORT', '0'],
+    ['RYFRAME_E2E_FRONTEND_PORT', '65536'],
+    ['RYFRAME_E2E_SERVER', 'production'],
+    ['RYFRAME_E2E_FIXTURE', 'unknown'],
+    ['RYFRAME_E2E_RUN_ID', 'UPPER'],
+    ['RYFRAME_E2E_RUN_ID', `a${'-a'.repeat(32)}`],
+  ]) {
+    assert.throws(() => validateRealBrowserEnvironment({ ...validEnvironment(), [name]: value }))
+  }
 })
 
 test('任一登记、凭据引用、限流来源或账本路径缺失都会失败', () => {

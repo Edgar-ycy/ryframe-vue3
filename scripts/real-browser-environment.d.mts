@@ -9,6 +9,10 @@ export interface RealBrowserEnvironment {
   loginCapacity: number
   loginWindowSeconds: number
   loginBudgetState: string
+  port: number
+  serverMode: 'dev' | 'preview'
+  fixture: 'core' | 'device'
+  runId: string | undefined
   baseURL: string | undefined
 }
 

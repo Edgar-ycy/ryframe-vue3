@@ -4,31 +4,14 @@ import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { validateRealBrowserEnvironment } from './scripts/real-browser-environment.mjs'
 
-function readPort(): number {
-  const port = Number(process.env.RYFRAME_E2E_FRONTEND_PORT?.trim() || '4174')
-  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
-    throw new Error('RYFRAME_E2E_FRONTEND_PORT 必须是 1 到 65535 之间的整数')
-  }
-  return port
-}
-
-function readServerMode(): 'dev' | 'preview' {
-  const mode = process.env.RYFRAME_E2E_SERVER?.trim() || 'dev'
-  if (mode !== 'dev' && mode !== 'preview') {
-    throw new Error('RYFRAME_E2E_SERVER 必须为 dev 或 preview')
-  }
-  return mode
-}
-
-const port = readPort()
-const serverMode = readServerMode()
-validateRealBrowserEnvironment()
-const externalBaseUrl = process.env.RYFRAME_E2E_BASE_URL?.trim()
+const environment = validateRealBrowserEnvironment()
+const { fixture, port, runId, serverMode } = environment
+const externalBaseUrl = environment.baseURL
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
-const reportDirectory = `.local-tests/playwright-real/report/${serverMode}`
-const resultsDirectory = `.local-tests/playwright-real/results/${serverMode}`
-const serverCommand = `node scripts/run-real-browser-server.mjs ${serverMode} ${port}`
+const artifactSuffix = `${fixture}/${serverMode}${runId ? `/${runId}` : ''}`
+const reportDirectory = `.local-tests/playwright-real/report/${artifactSuffix}`
+const resultsDirectory = `.local-tests/playwright-real/results/${artifactSuffix}`
 
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })
@@ -42,7 +25,7 @@ if (!externalBaseUrl) {
 }
 
 export default defineConfig({
-  testDir: 'tests/browser-real',
+  testDir: fixture === 'device' ? 'tests/browser-device' : 'tests/browser-real',
   timeout: 120_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
@@ -64,7 +47,7 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: serverCommand,
+        command: `node scripts/run-real-browser-server.mjs ${serverMode} ${port}`,
         reuseExistingServer: false,
         timeout: 120_000,
         url: `${baseURL}/login`,

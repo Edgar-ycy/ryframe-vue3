@@ -16,6 +16,26 @@ function positiveInteger(environment, name, maximum) {
   return value
 }
 
+function optionalPositiveInteger(environment, name, fallback, maximum) {
+  const raw = environment[name]
+  if (raw === undefined || raw === '') return fallback
+  return positiveInteger(environment, name, maximum)
+}
+
+function choice(environment, name, fallback, choices) {
+  const value = environment[name]?.trim() || fallback
+  if (!choices.includes(value)) throw new Error(`${name} 必须为 ${choices.join(' 或 ')}`)
+  return value
+}
+
+function optionalRunId(environment) {
+  const value = environment.RYFRAME_E2E_RUN_ID?.trim()
+  if (value && !/^[a-z0-9][a-z0-9-]{0,63}$/u.test(value)) {
+    throw new Error('RYFRAME_E2E_RUN_ID 必须是长度不超过 64 的小写字母、数字或连字符')
+  }
+  return value || undefined
+}
+
 function absolutePath(environment, name) {
   const value = required(environment, name)
   if (value !== value.trim() || /[\r\n\0]/u.test(value) || !isAbsolute(value)) {
@@ -75,6 +95,10 @@ export function validateRealBrowserEnvironment(environment = process.env) {
       86_400,
     ),
     loginBudgetState: absolutePath(environment, 'RYFRAME_E2E_LOGIN_BUDGET_STATE'),
+    port: optionalPositiveInteger(environment, 'RYFRAME_E2E_FRONTEND_PORT', 4174, 65_535),
+    serverMode: choice(environment, 'RYFRAME_E2E_SERVER', 'dev', ['dev', 'preview']),
+    fixture: choice(environment, 'RYFRAME_E2E_FIXTURE', 'core', ['core', 'device']),
+    runId: optionalRunId(environment),
     baseURL: localBaseUrl(environment.RYFRAME_E2E_BASE_URL?.trim()),
   }
   return Object.freeze(binding)

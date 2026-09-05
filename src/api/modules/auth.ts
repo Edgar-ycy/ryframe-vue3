@@ -36,17 +36,19 @@ export type AuthSessionPath = OperationPath<'delete_auth_sessions_by_sid'>
 export type RevokeOtherSessionsResult = OperationData<'post_auth_sessions_revoke_others'>
 
 /** 登录 */
-export function getCsrfChallenge() {
+export function getCsrfChallenge(signal: AbortSignal) {
   return get_auth_csrf({
+    signal,
     transport: 'raw',
     skipAuthRefresh: true,
     skipTenantHeader: true,
   })
 }
 
-export function login(data: LoginParams, tenantId: string, csrfToken: string) {
+export function login(data: LoginParams, tenantId: string, csrfToken: string, signal: AbortSignal) {
   return post_auth_login({
     data,
+    signal,
     headers: {
       'X-Tenant-Id': tenantId,
       'X-CSRF-Token': csrfToken,
@@ -71,8 +73,9 @@ export function logout(csrfToken: string, accessToken?: string) {
 }
 
 /** 刷新令牌 */
-export function refreshToken(csrfToken: string) {
+export function refreshToken(csrfToken: string, signal: AbortSignal) {
   return post_auth_refresh({
+    signal,
     headers: { 'X-CSRF-Token': csrfToken },
     transport: 'raw',
     skipAuthRefresh: true,

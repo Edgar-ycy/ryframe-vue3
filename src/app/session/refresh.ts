@@ -4,6 +4,7 @@ import { translate } from '@/i18n'
 import { HttpError, type AccessTokenApplied } from '@/shared/http/client'
 import { useUserStore } from '@/stores/user'
 import { useTenantContextStore } from '@/stores/tenantContext'
+import { getServerStateRequestContext } from '@/shared/query/client'
 import { synchronizeTenantContextUi } from '@/app/tenant-context/contextRefresh'
 import {
   broadcastAuthenticated,
@@ -22,8 +23,9 @@ import {
 } from './state'
 
 let refreshPromise: Promise<string> | undefined
+let refreshPromiseEpoch: number | undefined
 let locallyAppliedAccessToken: string | undefined
-const accessTokenAppliedListeners = new Set<AccessTokenApplied>()
+const accessTokenAppliedListeners = new Set<{ epoch: number; notify: AccessTokenApplied }>()
 
 interface RefreshResult {
   token: string
@@ -37,14 +39,17 @@ export function getPendingRefresh(): Promise<string> | undefined {
 export async function refreshAccessToken(
   onAccessTokenApplied?: AccessTokenApplied,
 ): Promise<string> {
-  if (onAccessTokenApplied) accessTokenAppliedListeners.add(onAccessTokenApplied)
+  const listener = onAccessTokenApplied
+    ? { epoch: getSessionEpoch(), notify: onAccessTokenApplied }
+    : undefined
+  if (listener) accessTokenAppliedListeners.add(listener)
   try {
-    if (onAccessTokenApplied && refreshPromise && locallyAppliedAccessToken) {
-      onAccessTokenApplied(locallyAppliedAccessToken)
+    if (listener && listener.epoch === refreshPromiseEpoch && locallyAppliedAccessToken) {
+      listener.notify(locallyAppliedAccessToken)
     }
     return await runAccessTokenRefresh()
   } finally {
-    if (onAccessTokenApplied) accessTokenAppliedListeners.delete(onAccessTokenApplied)
+    if (listener) accessTokenAppliedListeners.delete(listener)
   }
 }
 
@@ -57,6 +62,10 @@ async function runAccessTokenRefresh(): Promise<string> {
   }
 
   const callerEpoch = getSessionEpoch()
+  if (refreshPromise && refreshPromiseEpoch !== callerEpoch) {
+    refreshPromise = undefined
+    locallyAppliedAccessToken = undefined
+  }
   const remoteOperation = getRemoteRefreshOperation()
   if (
     !refreshPromise &&
@@ -75,6 +84,7 @@ async function runAccessTokenRefresh(): Promise<string> {
 
   if (!refreshPromise) {
     const refreshEpoch = getSessionEpoch()
+    refreshPromiseEpoch = refreshEpoch
     const operation = startLocalRefreshOperation()
     locallyAppliedAccessToken = undefined
     const pending = performRefresh(refreshEpoch)
@@ -99,6 +109,7 @@ async function runAccessTokenRefresh(): Promise<string> {
       .finally(() => {
         if (refreshPromise === pending) {
           refreshPromise = undefined
+          refreshPromiseEpoch = undefined
           locallyAppliedAccessToken = undefined
         }
       })
@@ -126,10 +137,11 @@ async function performRefresh(refreshEpoch: number): Promise<RefreshResult> {
 }
 
 async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise<RefreshResult> {
+  const context = getServerStateRequestContext()
   const challenge = await ensureCsrfToken(forceCsrf)
   try {
     assertSessionEpoch(refreshEpoch)
-    const response = await refreshTokenApi(challenge)
+    const response = await refreshTokenApi(challenge, context.signal)
     assertSessionEpoch(refreshEpoch)
     const auth = response.data
     if (!auth?.access_token || !isSessionContext(auth.session_context)) {
@@ -139,7 +151,7 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
       })
     }
     const scopeChanged = applyAuthenticatedSession(auth.access_token, auth.session_context)
-    notifyAccessTokenApplied(auth.access_token)
+    notifyAccessTokenApplied(auth.access_token, refreshEpoch)
     const appliedEpoch = getSessionEpoch()
     if (scopeChanged) {
       await synchronizeTenantContextUi({ skipAuthRefresh: true, refreshContext: false })
@@ -149,11 +161,13 @@ async function requestRefresh(forceCsrf: boolean, refreshEpoch: number): Promise
   } finally {
     // 后端在刷新失败时会清理认证 Cookie；本次双提交挑战也必须同步作废，
     // 避免登录或后续刷新继续复用已经失去 Cookie 配对的内存令牌。
-    invalidateCsrfToken()
+    invalidateCsrfToken(challenge)
   }
 }
 
-function notifyAccessTokenApplied(accessToken: string): void {
+function notifyAccessTokenApplied(accessToken: string, refreshEpoch: number): void {
   locallyAppliedAccessToken = accessToken
-  for (const listener of [...accessTokenAppliedListeners]) listener(accessToken)
+  for (const listener of [...accessTokenAppliedListeners]) {
+    if (listener.epoch === refreshEpoch) listener.notify(accessToken)
+  }
 }

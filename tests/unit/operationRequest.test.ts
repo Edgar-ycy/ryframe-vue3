@@ -91,11 +91,13 @@ describe('operation 请求传输模式', () => {
   it('匿名认证调用使用 raw 传输并保留跳过会话处理的标记', async () => {
     httpClient.rawRequest.mockResolvedValue(versionResponse)
 
-    await getCsrfChallenge()
+    const signal = new AbortController().signal
+    await getCsrfChallenge(signal)
     await logout('csrf-token', 'access-token')
 
     expect(httpClient.rawRequest).toHaveBeenNthCalledWith(1, {
       method: 'get',
+      signal,
       skipAuthRefresh: true,
       skipTenantHeader: true,
       url: '/auth/csrf',
@@ -116,11 +118,13 @@ describe('operation 请求传输模式', () => {
   it('登录使用 raw 传输保留显式租户与 CSRF 头，不携带旧会话', async () => {
     httpClient.rawRequest.mockResolvedValue(versionResponse)
     const data = { username: 'admin', password: 'secret' }
+    const signal = new AbortController().signal
 
-    await login(data, 'tenant-a', 'csrf-token')
+    await login(data, 'tenant-a', 'csrf-token', signal)
 
     expect(httpClient.rawRequest).toHaveBeenCalledWith({
       data,
+      signal,
       headers: {
         'X-CSRF-Token': 'csrf-token',
         'X-Tenant-Id': 'tenant-a',

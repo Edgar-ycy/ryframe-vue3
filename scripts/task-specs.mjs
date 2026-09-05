@@ -115,7 +115,7 @@ export const taskSpecs = {
   dependencies: {
     label: '依赖版本',
     profiles: ['static'],
-    invoke: () => script('check-prerelease-dependencies.mjs'),
+    invoke: () => script('prerelease-dependency-policy.mjs'),
   },
   'policy-tests': {
     label: '工具策略测试',

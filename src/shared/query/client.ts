@@ -1,5 +1,5 @@
 import { readonly, shallowRef, type DeepReadonly, type Ref } from 'vue'
-import { MutationCache, QueryCache, QueryClient } from '@tanstack/vue-query'
+import { isCancelledError, MutationCache, QueryCache, QueryClient } from '@tanstack/vue-query'
 import { HttpError } from '@/shared/http/client'
 import type {
   ActiveServerStateScope,
@@ -45,7 +45,7 @@ function normalizeServerStateError(error: unknown): HttpError {
   return error instanceof HttpError
     ? error
     : new HttpError(error instanceof Error ? error.message : '服务端状态请求失败', {
-        kind: 'unknown',
+        kind: isCancelledError(error) ? 'cancelled' : 'unknown',
         cause: error,
       })
 }
@@ -63,6 +63,7 @@ function reportServerStateError(error: unknown, meta: ServerStateMeta | undefine
 }
 
 function shouldRetry(failureCount: number, error: unknown): boolean {
+  if (isCancelledError(error)) return false
   if (error instanceof HttpError) {
     // 主动取消不是失败，不应重新发起已失效的请求。
     if (error.kind === 'cancelled') return false

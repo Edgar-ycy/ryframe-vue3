@@ -1,6 +1,7 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import {
   useQuery,
+  isCancelledError,
   type UseQueryDefinedReturnType,
   type UseQueryOptions,
   type UseQueryReturnType,
@@ -115,5 +116,22 @@ export function useServerStateQuery<TQueryData, TSelected = TQueryData>(
     },
     enabled: computed(() => scope.value !== undefined && toValue(enabled)),
   } as UseQueryOptions<TQueryData, HttpError, TSelected>
-  return useQuery<TQueryData, HttpError, TSelected>(options)
+  const query = useQuery<TQueryData, HttpError, TSelected>(options)
+  const refetch = query.refetch
+  // 显式 refetch 的取消由 Query 自身抛出，不会经过上面的 queryFn。
+  query.refetch = async (...args) => {
+    const captured = getServerStateScope()
+    try {
+      const result = await refetch(...args)
+      if (captured) assertServerStateScopeCurrent(captured)
+      return result
+    } catch (error) {
+      if (captured) assertServerStateScopeCurrent(captured, error)
+      if (isCancelledError(error)) {
+        throw new HttpError('服务端状态刷新已取消', { kind: 'cancelled', cause: error })
+      }
+      throw error
+    }
+  }
+  return query
 }

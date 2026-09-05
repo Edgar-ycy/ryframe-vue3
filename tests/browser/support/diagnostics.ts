@@ -1,7 +1,10 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Page, type Request } from '@playwright/test'
 import type { BrowserDiagnostics } from './types'
 
-export function observeDiagnostics(page: Page): BrowserDiagnostics {
+export function observeDiagnostics(
+  page: Page,
+  expectedCancellation?: (request: Request) => boolean,
+): BrowserDiagnostics {
   const diagnostics: BrowserDiagnostics = {
     console: [],
     httpErrors: [],
@@ -23,6 +26,8 @@ export function observeDiagnostics(page: Page): BrowserDiagnostics {
   })
   page.on('pageerror', (error) => diagnostics.pageErrors.push(error.message))
   page.on('requestfailed', (request) => {
+    if (request.failure()?.errorText === 'net::ERR_ABORTED' && expectedCancellation?.(request))
+      return
     diagnostics.requestFailures.push(
       `${request.method()} ${request.url()}: ${request.failure()?.errorText}`,
     )

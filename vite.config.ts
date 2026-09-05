@@ -121,6 +121,8 @@ export default defineConfig(({ mode }) => {
   const devServerPort = normalizeDevServerPort(env.VITE_APP_DEV_PORT)
 
   return {
+    // 项目统一使用 Composition API，与 createI18n 的 legacy: false 保持一致。
+    define: { __VUE_I18N_LEGACY_API__: false },
     plugins: [
       buildIdentityPlugin(frontendCommit),
       vue(),

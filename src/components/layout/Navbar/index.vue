@@ -73,7 +73,7 @@
           class="user-info"
           :aria-label="userStore.nickname || userStore.username || t('navbar.profile')"
         >
-          <el-avatar :size="32" :src="avatarSrc">
+          <el-avatar :size="32" :src="avatarSrc" alt="">
             <el-icon><UserFilled /></el-icon>
           </el-avatar>
           <span>{{ userStore.nickname || userStore.username }}</span>

@@ -12,7 +12,7 @@
         :disabled="uploading"
         accept="image/png,image/jpeg,image/gif,image/webp"
       >
-        <el-avatar :size="80" :src="imageSrc" class="avatar-preview">
+        <el-avatar :size="80" :src="imageSrc" :alt="t('account.avatar')" class="avatar-preview">
           <el-icon :size="40">
             <UserFilled />
           </el-icon>

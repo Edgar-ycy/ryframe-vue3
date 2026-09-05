@@ -46,16 +46,22 @@ function publishProof(files) {
 export default class RestoreReporter {
   runs = []
 
-  constructor({ verify = verifyRuntime, checkout = verifiedCheckout } = {}) {
+  constructor({ verify = verifyRuntime, checkout = verifiedCheckout, expectedBinding } = {}) {
     this.verify = verify
     this.checkout = checkout
+    this.expectedBinding = expectedBinding
   }
 
   onBegin(config) {
     this.started = Date.now()
     const input = process.env.RYFRAME_RESTORE_BINDINGS
-    if (!input) return
+    if (!input || !this.expectedBinding) throw new Error('恢复证明 reporter 未绑定配置预检结果')
     const binding = evidenceFile(input, '恢复绑定收据')
+    if (
+      binding.path !== this.expectedBinding.bindingPath ||
+      sha256(binding.bytes) !== this.expectedBinding.bindingSha256
+    )
+      throw new Error('恢复绑定收据与配置预检结果不一致')
     const { bindings, record, manifest } = restoreProofBindings(binding.bytes)
     const scope = (process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID)?.trim()
     const backend = process.env.RYFRAME_RESTORE_BACKEND_DIR

@@ -7,7 +7,7 @@ import RestoreReporter from '../restore-reporter.mjs'
 import { sha256 } from '../restore-build.mjs'
 import { requiredScenarios } from '../restore-proof.mjs'
 
-function fixture(t, verify) {
+function fixture(t, verify, expectedDigest) {
   const local = path.resolve('.local-tests/node-unit')
   mkdirSync(local, { recursive: true })
   mkdirSync(path.resolve('.local-tests/playwright-real'), { recursive: true })
@@ -89,6 +89,10 @@ function fixture(t, verify) {
   const reporter = new RestoreReporter({
     checkout: (root) => root,
     verify: () => verify(digest),
+    expectedBinding: {
+      bindingPath: bindings,
+      bindingSha256: expectedDigest ?? sha256(bindingBytes),
+    },
   })
   reporter.onBegin({ projects: [{ use: { baseURL: 'http://127.0.0.1:4174' } }] })
   reporter.onTestEnd(
@@ -163,4 +167,8 @@ test('恢复输入必须使用绝对普通文件且 scope 必须精确匹配', (
     () => item.reporter.onBegin({ projects: [{ use: { baseURL: 'http://127.0.0.1:4174' } }] }),
     /scope/u,
   )
+})
+
+test('reporter 拒绝与配置预检不一致的恢复绑定', (t) => {
+  assert.throws(() => fixture(t, (digest) => digest, '0'.repeat(64)), /预检结果/u)
 })

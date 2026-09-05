@@ -25,6 +25,30 @@ beforeEach(() => {
 })
 
 describe('Cron 构建器状态机', () => {
+  it('初始化并跟随外部表达式更新可视化状态', () => {
+    const { builder, cronExpression, emitChange } = createBuilder('0 15 8 * * MON,WED *')
+
+    expect(builder.mode.value).toBe('weekly')
+    expect(builder.weekdays.value).toEqual(['MON', 'WED'])
+    expect(builder.summary.value).toContain('monitor.schedules.summaryWeekly')
+
+    cronExpression.value = '0 30 6 1,15 * * *'
+    expect(builder.mode.value).toBe('monthly')
+    expect(builder.monthDays.value).toEqual([1, 15])
+    expect(emitChange).toHaveBeenLastCalledWith({
+      complete: true,
+      summary: expect.stringContaining('monitor.schedules.summaryMonthly'),
+    })
+
+    cronExpression.value = 'outside-builder'
+    expect(builder.mode.value).toBe('advanced')
+    expect(builder.advancedOutsideBuilder.value).toBe(true)
+    expect(emitChange).toHaveBeenLastCalledWith({
+      complete: true,
+      summary: 'monitor.schedules.summaryAdvanced',
+    })
+  })
+
   it('切换每种可视化模式时生成完整表达式，并忽略重复选择', async () => {
     const { builder, cronExpression, emitChange } = createBuilder()
     const cases = [

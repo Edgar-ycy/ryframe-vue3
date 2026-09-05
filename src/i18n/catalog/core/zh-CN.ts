@@ -47,7 +47,6 @@ export const coreZhCNMessages = {
     overview: '运维总览',
     retention: '数据保留',
     authorizationDiagnostics: '权限诊断',
-    serviceAccounts: '服务账号',
     productPlans: '产品套餐',
     dataTargets: '数据目标',
     tenant: '租户管理',

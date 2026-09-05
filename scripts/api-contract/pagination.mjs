@@ -4,10 +4,6 @@ const requiredQueryOperationIds = new Set([
   'get_auth_captcha_generate',
   'get_auth_captcha_image',
   'get_common_file_download',
-  'get_agent_v1_directory_departments',
-  'get_agent_v1_directory_posts',
-  'get_agent_v1_directory_users',
-  'get_agent_v1_reference_dictionaries_by_type_code',
   'get_monitor_jobs',
   'get_monitor_retention_runs',
   'get_monitor_schedules',
@@ -18,9 +14,6 @@ const requiredQueryOperationIds = new Set([
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
-  'get_system_service_access_audits',
-  'get_system_service_accounts',
-  'get_system_service_delegations',
   'get_system_configs',
   'get_system_depts',
   'get_system_dict_data',
@@ -41,10 +34,6 @@ const requiredQueryOperationIds = new Set([
   'get_system_users_options',
 ])
 const c1PaginatedOperationIds = new Set([
-  'get_agent_v1_directory_departments',
-  'get_agent_v1_directory_posts',
-  'get_agent_v1_directory_users',
-  'get_agent_v1_reference_dictionaries_by_type_code',
   'get_monitor_jobs',
   'get_monitor_retention_runs',
   'get_monitor_schedules',
@@ -55,9 +44,6 @@ const c1PaginatedOperationIds = new Set([
   'get_system_config_packages',
   'get_system_config_transfers',
   'get_system_config_transfers_by_id_items',
-  'get_system_service_access_audits',
-  'get_system_service_accounts',
-  'get_system_service_delegations',
   'get_system_configs',
   'get_system_depts',
   'get_system_dict_types',
@@ -97,10 +83,6 @@ const c1PaginationParameterContracts = new Map([
 ])
 // 平台租户容量页固定将单页上限收紧为 100，不受通用分页配置放宽。
 const fixedPaginationPageSizeMaximums = new Map([
-  ['get_agent_v1_directory_departments', 100],
-  ['get_agent_v1_directory_posts', 100],
-  ['get_agent_v1_directory_users', 100],
-  ['get_agent_v1_reference_dictionaries_by_type_code', 100],
   ['get_platform_tenants_page', 100],
   ['get_platform_data_targets', 100],
   ['get_platform_product_plans', 100],
@@ -183,10 +165,7 @@ function validateRoleOptionPurpose(operationId, parameters, resolveLocalReferenc
     errors.push(`${operationId}.purpose: parameter must remain required`)
   }
   const schema = resolveLocalReference(parameter.schema, `${operationId}.purpose.schema`)
-  if (
-    schema?.type !== 'string' ||
-    !isDeepStrictEqual(schema.enum, ['user_assignment', 'service_account_assignment'])
-  ) {
+  if (schema?.type !== 'string' || !isDeepStrictEqual(schema.enum, ['user_assignment'])) {
     errors.push(`${operationId}.purpose: role option purpose enum is invalid`)
   }
 }
@@ -204,9 +183,9 @@ export function validatePaginationContracts({
     resolveLocalReference,
     errors,
   )
-  if (c1PaginatedOperationIds.size !== 30) {
+  if (c1PaginatedOperationIds.size !== 23) {
     errors.push(
-      `C1 pagination manifest must contain 30 operationIds, found ${c1PaginatedOperationIds.size}`,
+      `C1 pagination manifest must contain 23 operationIds, found ${c1PaginatedOperationIds.size}`,
     )
   }
   if (c1OptionOperationContracts.size !== 2) {

@@ -145,11 +145,6 @@ export const menuRouteCatalog = [
     "titleKey": "role"
   },
   {
-    "defaultName": "服务账号",
-    "routeKey": "system.service-accounts",
-    "titleKey": "serviceAccounts"
-  },
-  {
     "defaultName": "用户管理",
     "routeKey": "system.user",
     "titleKey": "user"
@@ -215,8 +210,6 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
   "岗位管理": "post",
   "system.role": "role",
   "角色管理": "role",
-  "system.service-accounts": "serviceAccounts",
-  "服务账号": "serviceAccounts",
   "system.user": "user",
   "用户管理": "user"
 })

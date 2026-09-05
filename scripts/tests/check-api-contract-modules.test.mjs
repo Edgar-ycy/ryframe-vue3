@@ -42,8 +42,8 @@ test('拆分后的 OpenAPI 契约模块保持正式文档一致', async () => {
   validateSchemaContracts({ ...operationState, errors, resolveLocalReference })
 
   assert.deepEqual(errors, [])
-  assert.equal(contractRoutes.size, 30)
-  assert.equal(operationState.operationCount, 214)
+  assert.equal(contractRoutes.size, 29)
+  assert.equal(operationState.operationCount, 191)
 })
 
 test('本地引用解析器拒绝外部和不存在的引用', () => {

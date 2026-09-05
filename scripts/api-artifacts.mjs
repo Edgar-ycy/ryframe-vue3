@@ -19,14 +19,12 @@ export const generatedOperationArtifactPaths = Object.freeze([
   'src/api/generated/operations/system.ts',
   'src/api/generated/operations/platform.ts',
   'src/api/generated/operations/monitor.ts',
-  'src/api/generated/operations/agent.ts',
 ])
 export const generatedArtifactPaths = Object.freeze([
   'src/api/generated/schema/core.ts',
   'src/api/generated/schema/system.ts',
   'src/api/generated/schema/platform.ts',
   'src/api/generated/schema/monitor.ts',
-  'src/api/generated/schema/agent.ts',
   'src/api/generated/schema/index.ts',
   ...generatedOperationArtifactPaths,
   'src/api/generated/permissions.ts',

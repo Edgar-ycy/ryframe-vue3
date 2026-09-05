@@ -13,7 +13,7 @@ vi.mock('@/features/pageRegistry', () => {
     'system.service': {
       path: '/system/service',
       component,
-      requiredCapabilities: ['system.service_accounts'],
+      requiredCapabilities: ['example.reports'],
     },
     'system.user': { path: '/system/user', component },
   }
@@ -187,20 +187,16 @@ describe('可访问菜单投影', () => {
       route('/system', { alwaysShow: true }, [
         route('user', { permission: 'system:user:list', requiresPermission: true }),
         route('service', {
-          permission: 'system:service-account:list',
+          permission: 'system:role:list',
           requiresPermission: true,
-          requiredCapabilities: ['system.service_accounts'],
+          requiredCapabilities: ['example.reports'],
         }),
       ]),
       route('/plain', undefined, []),
     ]
 
     expect(
-      buildAccessibleMenus(
-        routes,
-        ['system:user:list', 'system:service-account:list'],
-        ['system.service_accounts'],
-      ),
+      buildAccessibleMenus(routes, ['system:user:list', 'system:role:list'], ['example.reports']),
     ).toMatchObject([
       { path: '/system', children: [{ path: 'user' }, { path: 'service' }] },
       { path: '/plain', children: undefined },

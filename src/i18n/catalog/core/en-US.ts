@@ -47,7 +47,6 @@ export const coreEnUSMessages = {
     overview: 'Operations overview',
     retention: 'Data retention',
     authorizationDiagnostics: 'Authorization diagnostics',
-    serviceAccounts: 'Service accounts',
     productPlans: 'Product plans',
     dataTargets: 'Data targets',
     tenant: 'Tenant management',

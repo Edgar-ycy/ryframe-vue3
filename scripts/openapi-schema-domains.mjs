@@ -1,4 +1,4 @@
-const domainNames = Object.freeze(['core', 'system', 'platform', 'monitor', 'agent'])
+const domainNames = Object.freeze(['core', 'system', 'platform', 'monitor'])
 const httpMethods = new Set(['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace'])
 
 export const schemaDomainNames = domainNames

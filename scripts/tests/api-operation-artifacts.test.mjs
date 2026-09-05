@@ -60,13 +60,12 @@ test('API 前缀内每个 operation 恰由一个分域 caller 拥有', () => {
   )
 })
 
-test('operation 产物固定为五个领域文件且重复渲染零差异', () => {
+test('operation 产物固定为四个领域文件且重复渲染零差异', () => {
   assert.deepEqual(generatedOperationArtifactPaths, [
     'src/api/generated/operations/core.ts',
     'src/api/generated/operations/system.ts',
     'src/api/generated/operations/platform.ts',
     'src/api/generated/operations/monitor.ts',
-    'src/api/generated/operations/agent.ts',
   ])
   const first = renderOperationCallers(document)
   const second = renderOperationCallers(document)

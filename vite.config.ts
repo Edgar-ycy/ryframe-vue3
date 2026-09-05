@@ -109,7 +109,7 @@ function isI18nCoreModule(id: string): boolean {
 
 function operationChunkName(id: string): string | null {
   const operation = normalizedModuleId(id).match(
-    /\/src\/api\/generated\/operations\/(core|system|platform|monitor|agent)\.ts$/,
+    /\/src\/api\/generated\/operations\/(core|system|platform|monitor)\.ts$/,
   )
   return operation ? `api-${operation[1]}` : null
 }

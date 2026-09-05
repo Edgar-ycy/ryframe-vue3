@@ -970,8 +970,6 @@ export interface components {
             /** Format: int32 */
             schedule_execution_days: number;
             /** Format: int32 */
-            service_access_audit_days: number;
-            /** Format: int32 */
             tenant_config_artifact_hours: number;
             /** Format: int32 */
             tenant_config_rollback_hours: number;

@@ -12,9 +12,6 @@ import { initialMessageCatalogs, messages } from '@/i18n/messages'
 
 vi.mock('@/views/system/role/index.vue', () => ({ default: { name: 'RolePageStub' } }))
 vi.mock('@/views/monitor/jobs/index.vue', () => ({ default: { name: 'JobPageStub' } }))
-vi.mock('@/views/system/service-accounts/index.vue', () => ({
-  default: { name: 'ServiceAccountPageStub' },
-}))
 vi.mock('@/views/platform/data-targets/index.vue', () => ({
   default: { name: 'DataTargetPageStub' },
 }))
@@ -60,12 +57,10 @@ describe('菜单国际化目录', () => {
   it('页面加载器按 route namespace 自动安装领域文案目录', async () => {
     await getMenuPage('system.role')?.component?.()
     await getMenuPage('monitor.jobs')?.component?.()
-    await getMenuPage('system.service-accounts')?.component?.()
     await getMenuPage('platform.data-targets')?.component?.()
     setApplicationLocale('zh-CN')
     expect(translate('system.common.search')).toBe('搜索')
     expect(translate('monitor.jobs.title')).toBe('后台任务')
-    expect(translate('serviceAccounts.title')).toBe('服务账号')
     setApplicationLocale('en-US')
     expect(translate('tenantData.targetsTitle')).toBe('Data targets')
   })

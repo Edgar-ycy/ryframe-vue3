@@ -239,8 +239,9 @@ test('帮助只展示四类用户入口和五个检查阶段', () => {
 
 test('统一 runner 直接使用项目依赖、无 shell 并支持隔离缓存', async () => {
   const source = await readFile(new URL('../task-runner.mjs', import.meta.url), 'utf8')
+  const processSource = await readFile(new URL('../task-process.mjs', import.meta.url), 'utf8')
   assert.match(source, /node_modules/u)
-  assert.match(source, /shell: false/u)
+  assert.match(processSource, /shell: false/u)
   assert.match(source, /RYFRAME_FAST_CHECK_CACHE_ROOT/u)
 })
 

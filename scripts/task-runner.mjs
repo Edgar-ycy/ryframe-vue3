@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -8,6 +7,8 @@ import { performance } from 'node:perf_hooks'
 import { verifyLocalContractState } from './api-contract-state.mjs'
 import { sourceSnapshot, writeBuildReceipt } from './restore-build.mjs'
 import { taskSpecs } from './task-specs.mjs'
+import { runTaskProcess } from './task-process.mjs'
+import { TaskRunControl, withTaskSignals } from './task-run-control.mjs'
 import {
   consumerContext,
   createTaskPlan,
@@ -18,8 +19,6 @@ import {
 } from './task-runner-contract.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const activeChildren = new Set()
-let interruptedSignal
 
 function cachePath(tool) {
   const configured = process.env.RYFRAME_FAST_CHECK_CACHE_ROOT?.trim()
@@ -60,41 +59,16 @@ function taskInvocation(task) {
   }
 }
 
-function spawnTask(task, invocation, interactive) {
-  return new Promise((resolve) => {
-    const child = spawn(invocation.command, invocation.args, {
+async function runTask(task, interactive, control) {
+  const invocation = taskInvocation(task)
+  if (invocation.kind !== 'action') {
+    return runTaskProcess(invocation, {
       cwd: root,
       env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1', ...task.env },
-      shell: false,
-      stdio: interactive ? 'inherit' : ['ignore', 'pipe', 'pipe'],
-      windowsHide: true,
+      interactive,
+      control,
     })
-    activeChildren.add(child)
-    let settled = false
-    let stderr = ''
-    let stdout = ''
-    if (!interactive) {
-      child.stdout.on('data', (chunk) => (stdout += chunk))
-      child.stderr.on('data', (chunk) => (stderr += chunk))
-    }
-    child.once('error', (error) => {
-      if (settled) return
-      settled = true
-      activeChildren.delete(child)
-      resolve({ code: 1, error, stderr, stdout })
-    })
-    child.once('close', (code, signal) => {
-      if (settled) return
-      settled = true
-      activeChildren.delete(child)
-      resolve({ code: code ?? 1, signal, stderr, stdout })
-    })
-  })
-}
-
-async function runTask(task, interactive) {
-  const invocation = taskInvocation(task)
-  if (invocation.kind !== 'action') return spawnTask(task, invocation, interactive)
+  }
   if (invocation.action !== 'api-source') throw new Error('未知任务动作：' + invocation.action)
   const state = await verifyLocalContractState(root)
   if (task.params.consumer) {
@@ -110,15 +84,11 @@ export class TaskRunError extends Error {
   }
 }
 
-function signalExitCode(signal) {
-  return signal === 'SIGINT' ? 130 : signal === 'SIGTERM' ? 143 : undefined
-}
-
 function reportResult(result, interactive) {
-  const succeeded = !result.error && result.code === 0
+  const succeeded = !result.cancelled && !result.error && result.code === 0
   if (!interactive || !succeeded) {
     console.log(
-      (succeeded ? '通过 ' : '失败 ') +
+      (result.cancelled ? '取消 ' : succeeded ? '通过 ' : '失败 ') +
         taskSpecs[result.task.id].label +
         ' (' +
         Math.round(result.elapsed) +
@@ -133,39 +103,52 @@ function reportResult(result, interactive) {
 }
 
 /** 执行 planner 的原始节点，收集实际结果；执行记录仅属于本次运行。 */
-export async function executeTaskPlan(plan, { execute = runTask, report = reportResult } = {}) {
+export async function executeTaskPlan(
+  plan,
+  { execute = runTask, report = reportResult, control = new TaskRunControl() } = {},
+) {
   const completed = new Map()
-  for (const tasks of plan.groups) {
-    if (interruptedSignal) throw new TaskRunError(signalExitCode(interruptedSignal))
-    const pending = tasks.filter((task) => !completed.has(task.key))
-    for (const task of pending) {
-      if (task.dependencies.some((key) => completed.get(key)?.code !== 0)) {
-        throw new Error('任务 ' + task.id + ' 的依赖尚未成功完成')
-      }
-    }
-    const results = await Promise.all(
-      pending.map(async (task) => {
-        const startedAt = performance.now()
-        try {
-          const result = await execute(task, plan.interactive)
-          return { ...result, elapsed: performance.now() - startedAt, task }
-        } catch (error) {
-          return { code: 1, error, elapsed: performance.now() - startedAt, task }
+  try {
+    for (const tasks of plan.groups) {
+      if (control.signal.aborted) throw new TaskRunError(control.exitCode)
+      const pending = tasks.filter((task) => !completed.has(task.key))
+      for (const task of pending) {
+        if (task.dependencies.some((key) => completed.get(key)?.code !== 0)) {
+          throw new Error('任务 ' + task.id + ' 的依赖尚未成功完成')
         }
-      }),
-    )
-    for (const result of results) {
-      completed.set(result.task.key, result)
-      report(result, plan.interactive)
-    }
-    const failed = results.find((result) => result.error || result.code !== 0)
-    if (failed) {
-      throw new TaskRunError(
-        signalExitCode(failed.signal ?? interruptedSignal) ?? (failed.code || 1),
+      }
+      const results = await Promise.all(
+        pending.map(async (task) => {
+          const startedAt = performance.now()
+          let result
+          try {
+            result = control.signal.aborted
+              ? { code: 1, cancelled: true }
+              : await execute(task, plan.interactive, control)
+          } catch (error) {
+            result = { code: 1, error }
+          }
+          const cancelled = control.signal.aborted && !control.ownsFailure(result)
+          if (!cancelled && (result.error || result.code !== 0)) control.fail(result)
+          return { ...result, cancelled, elapsed: performance.now() - startedAt, task }
+        }),
       )
+      let reportError
+      for (const result of results) {
+        completed.set(result.task.key, result)
+        try {
+          report(result, plan.interactive)
+        } catch (error) {
+          reportError ??= error
+        }
+      }
+      if (control.signal.aborted) throw new TaskRunError(control.exitCode)
+      if (reportError) throw reportError
     }
+    return [...completed.values()]
+  } finally {
+    control.dispose()
   }
-  return [...completed.values()]
 }
 
 function printPlan(plan) {
@@ -189,25 +172,6 @@ function printPlan(plan) {
   })
 }
 
-async function withSignals(action) {
-  interruptedSignal = undefined
-  const handlers = new Map(
-    ['SIGINT', 'SIGTERM'].map((signal) => [
-      signal,
-      () => {
-        interruptedSignal = signal
-        for (const child of activeChildren) child.kill(signal)
-      },
-    ]),
-  )
-  for (const [signal, handler] of handlers) process.on(signal, handler)
-  try {
-    return await action()
-  } finally {
-    for (const [signal, handler] of handlers) process.off(signal, handler)
-  }
-}
-
 export async function runTaskRunner(argv) {
   const options = parseTaskArguments(argv)
   if (options.command === 'help') {
@@ -220,13 +184,14 @@ export async function runTaskRunner(argv) {
     printPlan(plan)
     return
   }
-  return withSignals(async () => {
+  const control = new TaskRunControl()
+  return withTaskSignals(async () => {
     const buildSource =
       options.command === 'build' && options.real ? sourceSnapshot(root) : undefined
-    const results = await executeTaskPlan(plan)
+    const results = await executeTaskPlan(plan, { control })
     if (buildSource) writeBuildReceipt(root, buildSource)
     return results
-  })
+  }, control)
 }
 
 const isMain =
@@ -238,7 +203,7 @@ if (isMain) {
       process.exitCode = 2
     } else {
       if (!(error instanceof TaskRunError)) console.error(error.stack ?? error.message)
-      process.exitCode = error.exitCode ?? signalExitCode(interruptedSignal) ?? 1
+      process.exitCode = error.exitCode ?? 1
     }
   })
 }

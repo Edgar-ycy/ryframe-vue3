@@ -167,6 +167,8 @@ export default defineConfig(({ mode }) => {
     server: {
       port: devServerPort,
       host: env.VITE_APP_DEV_HOST || '127.0.0.1',
+      // 只排除当前前端的验收产物；隔离工作树的祖先目录也可能名为 .local-tests。
+      watch: { ignored: [normalizedModuleId(resolve(__dirname, '.local-tests')) + '/**'] },
       proxy: {
         '/api': {
           target: proxyTarget,

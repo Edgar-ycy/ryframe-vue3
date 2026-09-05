@@ -195,7 +195,11 @@ import {
   type TenantDataPlacement,
 } from '@/api/modules/tenantData'
 import { TENANT_DATA_PERMISSIONS } from '@/features/tenant-data/permissions'
-import { isMigrationInProgress, stateTagType } from '@/features/tenant-data/presentation'
+import {
+  blocksNewMigration,
+  shouldPollMigration,
+  stateTagType,
+} from '@/features/tenant-data/presentation'
 import { useActivePolling } from '@/features/tenant-data/useActivePolling'
 import { formatLocalizedDate } from '@/i18n'
 import { requireOperationData } from '@/shared/http/client'
@@ -244,21 +248,16 @@ const migrationQuery = useServerStateQuery<TenantDataMigration[]>(
 )
 const placement = placementQuery.data
 const migrations = computed(() => migrationQuery.data.value ?? [])
-const hasOngoingMigration = computed(() =>
-  migrations.value.some(
-    (migration) =>
-      isMigrationInProgress(migration.state) ||
-      migration.cancel_requested ||
-      migration.finalize_requested,
-  ),
+const hasBlockingMigration = computed(() =>
+  migrations.value.some((migration) => blocksNewMigration(migration.state)),
 )
 const canStartMigration = computed(() =>
-  Boolean(canCreate.value && placement.value?.state === 'active' && !hasOngoingMigration.value),
+  Boolean(canCreate.value && placement.value?.state === 'active' && !hasBlockingMigration.value),
 )
 
 useActivePolling(
   () => props.active,
-  () => hasOngoingMigration.value,
+  () => migrations.value.some(shouldPollMigration),
   async () => {
     const requests: Promise<unknown>[] = [migrationQuery.refetch()]
     if (canViewPlacement.value) requests.push(placementQuery.refetch())

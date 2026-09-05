@@ -7,6 +7,7 @@ import test from 'node:test'
 import { promisify } from 'node:util'
 
 import {
+  apiVersionContractViolation,
   canonicalJson,
   sha256,
   verifyLocalContractState,
@@ -17,6 +18,25 @@ import { parseConsumerArguments, validateConsumerState } from '../task-runner-co
 const commit = '0123456789abcdef0123456789abcdef01234567'
 const execFileAsync = promisify(execFile)
 const syncScript = path.resolve('scripts/sync-api-contract.mjs')
+
+test('产品版本和 OpenAPI 业务版本使用同一严格契约', () => {
+  assert.equal(
+    apiVersionContractViolation({ version: '0.12.1' }, { info: { version: '0.12.1' } }),
+    null,
+  )
+  assert.equal(
+    apiVersionContractViolation({ version: ' 0.12.1' }, { info: { version: '0.12.1' } }),
+    'package.json version must be a non-empty trimmed string',
+  )
+  assert.equal(
+    apiVersionContractViolation({ version: '0.12.1' }, { info: { version: '' } }),
+    'OpenAPI info.version must be a non-empty trimmed string',
+  )
+  assert.equal(
+    apiVersionContractViolation({ version: '0.12.1' }, { info: { version: '0.13.0' } }),
+    'package.json version "0.12.1" does not equal OpenAPI info.version "0.13.0"',
+  )
+})
 
 function contract(description = '正式契约') {
   return {

@@ -253,6 +253,7 @@ test('已吸收的薄包装脚本不再存在', async () => {
     '../' + ['check', 'consumer', 'contract.mjs'].join('-'),
     '../' + ['check', 'prerelease', 'dependencies.mjs'].join('-'),
     '../' + ['check', 'required', 'jobs.mjs'].join('-'),
+    '../' + ['api', 'version', 'contract.mjs'].join('-'),
     '../../' + ['vitest', 'targeted', 'config', 'ts'].join('.'),
   ])
     await assert.rejects(access(new URL(relative, import.meta.url)))

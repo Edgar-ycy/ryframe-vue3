@@ -6,7 +6,7 @@ import { validatePaginationContracts } from './api-contract/pagination.mjs'
 import { createLocalReferenceResolver } from './api-contract/references.mjs'
 import { validatePageRegistryContract } from './api-contract/registry.mjs'
 import { validateSchemaContracts } from './api-contract/schema.mjs'
-import { apiVersionContractViolation } from './api-version-contract.mjs'
+import { apiVersionContractViolation } from './api-contract-state.mjs'
 import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 

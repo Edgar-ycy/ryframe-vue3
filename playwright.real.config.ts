@@ -1,5 +1,6 @@
 import { defineConfig } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
+import { validateRealBrowserEnvironment } from './scripts/real-browser-environment.mjs'
 
 function readPort(): number {
   const port = Number(process.env.RYFRAME_E2E_FRONTEND_PORT?.trim() || '4174')
@@ -19,6 +20,7 @@ function readServerMode(): 'dev' | 'preview' {
 
 const port = readPort()
 const serverMode = readServerMode()
+validateRealBrowserEnvironment()
 const externalBaseUrl = process.env.RYFRAME_E2E_BASE_URL?.trim()
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')

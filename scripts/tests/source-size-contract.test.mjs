@@ -42,7 +42,7 @@ test('生成代码和声明文件不计入手写源码门禁', () => {
 test('Vue、样式和维护脚本使用各自上限', () => {
   assert.equal(sourceLimit('src/views/system/user/index.vue'), sourceLimits.vue)
   assert.equal(sourceLimit('src/styles/page.scss'), sourceLimits.style)
-  assert.equal(scriptLimit('scripts/check-source-size.mjs'), sourceLimits.script)
+  assert.equal(scriptLimit('scripts/source-size-contract.mjs'), sourceLimits.script)
   assert.equal(scriptLimit('scripts/config.ts'), undefined)
 })
 

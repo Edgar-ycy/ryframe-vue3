@@ -20,7 +20,7 @@ export const taskSpecs = {
   'source-size': {
     label: '源码规模',
     profiles: ['fast', 'static'],
-    invoke: () => script('check-source-size.mjs'),
+    invoke: () => script('source-size-contract.mjs'),
   },
   imports: {
     label: '导入边界',

@@ -183,7 +183,7 @@ jobs:
           BROWSER_RESULT: ${{ needs.browser.result }}
           WINDOWS_RESULT: ${{ needs.windows-smoke.result }}
         run: >-
-          node scripts/check-required-jobs.mjs
+          node scripts/check-workflows.mjs required
           --event "$EVENT_NAME"
           --job "static=$STATIC_RESULT"
           --job "unit=$UNIT_RESULT"

@@ -4,8 +4,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
 
-import { validateRequiredJobs } from '../check-required-jobs.mjs'
-import { validateEnvironmentContexts } from '../check-workflows.mjs'
+import {
+  runWorkflowCli,
+  validateEnvironmentContexts,
+  validateRequiredJobs,
+} from '../check-workflows.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -45,7 +48,21 @@ test('拒绝把必跑 job 当作 skipped 或 failure', () => {
 
 test('工作流通过受测脚本执行汇总', async () => {
   const workflow = await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')
-  assert.match(workflow, /node scripts\/check-required-jobs\.mjs/u)
+  assert.match(workflow, /node scripts\/check-workflows\.mjs required/u)
+})
+
+test('Required 模式不读取工作流目录', async () => {
+  const messages = []
+  const output = {
+    error: (message) => messages.push(message),
+    log: (message) => messages.push(message),
+  }
+  const args = ['required', '--event', 'push']
+  for (const [name, result] of Object.entries(resultsFor('push'))) {
+    args.push('--job', `${name}=${result}`)
+  }
+  assert.equal(await runWorkflowCli(args, path.join(root, '不存在的仓库'), output), true)
+  assert.deepEqual(messages, ['Required 汇总校验通过（event=push）'])
 })
 
 test('低频兼容与供应链检查只进入扩展 CI', async () => {

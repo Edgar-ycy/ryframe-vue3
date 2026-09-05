@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { validateRealBrowserEnvironment } from './scripts/real-browser-environment.mjs'
 
 function readPort(): number {
@@ -26,19 +28,17 @@ const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
 const reportDirectory = `.local-tests/playwright-real/report/${serverMode}`
 const resultsDirectory = `.local-tests/playwright-real/results/${serverMode}`
-const serverCommand = [
-  'node',
-  'node_modules/vite/bin/vite.js',
-  ...(serverMode === 'preview' ? ['preview'] : []),
-  '--host',
-  '127.0.0.1',
-  '--port',
-  String(port),
-  '--strictPort',
-].join(' ')
+const serverCommand = `node scripts/run-real-browser-server.mjs ${serverMode} ${port}`
 
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })
+}
+if (!externalBaseUrl) {
+  const controlId = `ryframe-browser-${process.pid}-${randomUUID().slice(0, 8)}`
+  process.env.RYFRAME_E2E_GATE_ENDPOINT ||=
+    process.platform === 'win32'
+      ? `\\\\.\\pipe\\${controlId}`
+      : resolve(process.env.RUNNER_TEMP || '.local-tests', `${controlId}.sock`)
 }
 
 export default defineConfig({
@@ -55,6 +55,7 @@ export default defineConfig({
     baseURL,
     ...(channel ? { channel } : {}),
     browserName: 'chromium',
+    serviceWorkers: 'block',
     locale: 'zh-CN',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',

@@ -101,6 +101,10 @@ export function createCoreHandler(options: ApiFixtureOptions): FixtureHandler {
       await fulfillJson(route, path.endsWith('sideTheme') ? 'light' : 'default')
       return true
     }
+    if (key === 'GET /common/shell-settings') {
+      await fulfillJson(route, { side_theme: 'light', skin_name: 'default' })
+      return true
+    }
     return false
   }
 }

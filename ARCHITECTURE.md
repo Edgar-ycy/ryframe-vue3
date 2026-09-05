@@ -39,7 +39,7 @@ src/
 
 ## 接入 API
 
-后端接口变化后先在后端仓库运行 `cargo api-sync`。同步完成后：
+后端接口变化后先在后端仓库运行 `cargo xtask generate api --write`。同步完成后：
 
 1. 在 `src/api/generated/operations/` 对应领域文件查找 typed caller。
 2. JSON、multipart、文本和 Blob 传输由契约媒体类型自动绑定；媒体类型不唯一时生成会失败。
@@ -47,10 +47,10 @@ src/
    没有这些策略时可直接调用生成 caller。
 4. 从 `src/api/contract.ts` 取得 operation 的请求与响应类型。
 5. 在页面 composable 或应用用例中调用请求函数。
-6. 运行 `corepack pnpm api:check` 和相关单元测试。
+6. 运行 `corepack pnpm check --stage contract` 和相关单元测试。
 
 可参考 `src/api/modules/post.ts` 中的导出筛选规范化。业务模块不得手写 URL、HTTP method，
-也不得直接调用 `operationRequest`；运行 `corepack pnpm api:generate` 会更新五个领域 caller，连续生成
+也不得直接调用 `operationRequest`；运行 `corepack pnpm generate --write` 会更新五个领域 caller，连续生成
 应保持零差异。
 
 ## 导入与状态边界
@@ -63,7 +63,7 @@ API、QueryClient 或其他 Store；也不以 type-only import 引入 Vue Router
 Element Plus。权限 Store 只保存 `src/shared/navigation/routeProjection.ts` 定义的中立路由投影，
 `src/router/routeProjectionAdapter.ts` 负责在 Router 边界转换。跨状态副作用放入 `src/app/`
 coordinator。API module 不直接依赖外部 package，也不依赖 Router、Store、Query 或 UI；
-`src/shared/http/` 只依赖 Axios 和同层纯模块。`corepack pnpm check:imports` 同时检查内部路径、
+`src/shared/http/` 只依赖 Axios 和同层纯模块。`corepack pnpm check --stage static` 同时检查内部路径、
 外部 package、运行时环和 Store 定义位置。
 
 ## 管理状态
@@ -128,20 +128,19 @@ SessionContext
 开发时可先运行相邻测试：
 
 ```bash
-corepack pnpm test:unit tests/unit/postPage.component.test.ts
-corepack pnpm typecheck:app
-corepack pnpm check:fast
+corepack pnpm check --test tests/unit/postPage.component.test.ts
+corepack pnpm check
 ```
 
 修改路由、会话、消息、Cron 或设置流程后，可运行定向测试与浏览器 smoke：
 
 ```bash
-corepack pnpm test:targeted-coverage
-corepack pnpm test:browser-smoke
+corepack pnpm check --stage unit
+corepack pnpm check --stage browser
 ```
 
 准备生产构建时运行：
 
 ```bash
-corepack pnpm check
+corepack pnpm check --full
 ```

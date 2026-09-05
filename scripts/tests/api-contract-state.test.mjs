@@ -12,7 +12,7 @@ import {
   verifyLocalContractState,
   writeFormalContract,
 } from '../api-contract-state.mjs'
-import { parseArguments, validateConsumerState } from '../check-consumer-contract.mjs'
+import { parseConsumerArguments, validateConsumerState } from '../task-runner-contract.mjs'
 
 const commit = '0123456789abcdef0123456789abcdef01234567'
 const execFileAsync = promisify(execFile)
@@ -189,12 +189,12 @@ test('上游校验优先读取已配置后端工作树中的未推送提交', as
   assert.match(stdout, new RegExp(`@${backend.commit} 一致`, 'u'))
 })
 
-test('consumer:check 显式区分 candidate 和 formal，并仅在正式态要求提交 pin', async (t) => {
+test('消费契约检查显式区分 candidate 和 formal，并仅在正式态要求提交 pin', async (t) => {
   const root = await createFormalRoot()
   t.after(() => rm(root, { recursive: true, force: true }))
   const candidateBytes = await enterCandidateState(root)
   const candidateState = await verifyLocalContractState(root)
-  const options = parseArguments([
+  const options = parseConsumerArguments([
     '--mode',
     'candidate',
     '--openapi',

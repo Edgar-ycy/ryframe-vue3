@@ -181,7 +181,9 @@ export async function verifyLocalContractState(root) {
   const document = parseContract(openapiBytes, 'openapi/openapi.json')
   const canonicalOpenapi = Buffer.from(canonicalJson(document), 'utf8')
   if (!openapiBytes.equals(canonicalOpenapi)) {
-    throw new Error('openapi/openapi.json 必须使用规范 UTF-8 JSON 格式；请运行 cargo api-sync')
+    throw new Error(
+      'openapi/openapi.json 必须使用规范 UTF-8 JSON 格式；请运行 cargo xtask generate api --write',
+    )
   }
 
   if (markerBytes) {

@@ -1,24 +1,30 @@
 import { spawn } from 'node:child_process'
-import { mkdir, open, readFile, rename, rm } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { TaskUsageError } from './task-runner-contract.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-function parseArguments(argv) {
-  let output = path.join(root, 'artifacts', 'ryframe-vue3.cdx.json')
+export function parseSbomArguments(argv) {
+  let output
+  let write = false
+  const seen = new Set()
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
-    if (value === '--') continue
-    if (value === '--output' && argv[index + 1]) {
-      output = path.resolve(argv[index + 1])
-      index += 1
-      continue
-    }
-    throw new Error(`未知参数：${value}`)
+    if (value === '--' && index === 0) continue
+    if (seen.has(value)) throw new TaskUsageError('参数重复：' + value)
+    seen.add(value)
+    if (value === '--output' && argv[index + 1] && !argv[index + 1].startsWith('--')) {
+      output = path.resolve(argv[++index])
+    } else if (value === '--write') {
+      write = true
+    } else throw new TaskUsageError('未知或不完整参数：' + value)
   }
-  return { output }
+  if (write && !output) throw new TaskUsageError('写入 SBOM 必须提供 --output')
+  return { output, write }
 }
 
 export function validateSbom(sbom) {
@@ -33,57 +39,65 @@ export function validateSbom(sbom) {
   return errors
 }
 
-async function runPnpmSbom(output) {
+function collectSbom() {
   const pnpmCli = process.env.npm_execpath
-  if (!pnpmCli) throw new Error('请通过 corepack pnpm sbom:generate 生成 SBOM')
-  await mkdir(path.dirname(output), { recursive: true })
-  const temporary = `${output}.tmp-${process.pid}`
-  const handle = await open(temporary, 'w')
-  let spawnError
-  try {
-    const exitCode = await new Promise((resolve, reject) => {
-      const child = spawn(
-        process.execPath,
-        [pnpmCli, 'sbom', '--sbom-format', 'cyclonedx', '--sbom-spec-version', '1.6', '--prod'],
-        { cwd: root, stdio: ['ignore', handle.fd, 'inherit'], windowsHide: true },
-      )
-      child.once('error', reject)
-      child.once('close', resolve)
+  if (!pnpmCli) {
+    throw new Error('请通过 corepack pnpm generate --sbom --output <文件> --write 生成 SBOM 文件')
+  }
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [pnpmCli, 'sbom', '--sbom-format', 'cyclonedx', '--sbom-spec-version', '1.6', '--prod'],
+      { cwd: root, stdio: ['ignore', 'pipe', 'inherit'], shell: false, windowsHide: true },
+    )
+    let output = ''
+    child.stdout.on('data', (chunk) => (output += chunk))
+    child.once('error', reject)
+    child.once('close', (code) => {
+      if (code !== 0) return reject(new Error('pnpm sbom 退出码为 ' + code))
+      try {
+        resolve(JSON.parse(output))
+      } catch (error) {
+        reject(error)
+      }
     })
-    if (exitCode !== 0) throw new Error(`pnpm sbom 退出码为 ${exitCode}`)
-  } catch (error) {
-    spawnError = error
-  } finally {
-    await handle.close()
-  }
-  if (spawnError) {
-    await rm(temporary, { force: true })
-    throw spawnError
-  }
+  })
+}
 
+async function writeSbom(output, sbom) {
+  await mkdir(path.dirname(output), { recursive: true })
+  const temporary = output + '.tmp-' + randomUUID()
   try {
-    const sbom = JSON.parse(await readFile(temporary, 'utf8'))
-    const errors = validateSbom(sbom)
-    if (errors.length > 0) throw new Error(errors.join('；'))
-    await rm(output, { force: true })
+    await writeFile(temporary, JSON.stringify(sbom, null, 2) + '\n', { flag: 'wx' })
     await rename(temporary, output)
-    return sbom.components.length
-  } catch (error) {
+  } finally {
     await rm(temporary, { force: true })
-    throw error
   }
 }
 
+/** 缺少 --write 时只在内存中生成和校验，连输出目录也不创建。 */
+export async function generateSbom(options, { collect = collectSbom } = {}) {
+  if (options.write && !options.output) throw new TaskUsageError('写入 SBOM 必须提供 --output')
+  const sbom = await collect()
+  const errors = validateSbom(sbom)
+  if (errors.length > 0) throw new Error(errors.join('；'))
+  if (options.write) await writeSbom(options.output, sbom)
+  return { components: sbom.components.length, output: options.output, written: options.write }
+}
+
 async function main() {
-  const { output } = parseArguments(process.argv.slice(2))
-  const componentCount = await runPnpmSbom(output)
-  console.log(`CycloneDX SBOM 已生成：${output}（${componentCount} 个组件）。`)
+  const result = await generateSbom(parseSbomArguments(process.argv.slice(2)))
+  console.log(
+    result.written
+      ? 'CycloneDX SBOM 已生成：' + result.output + '（' + result.components + ' 个组件）。'
+      : 'CycloneDX SBOM 预览通过（' + result.components + ' 个组件，未写入文件）。',
+  )
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) {
   main().catch((error) => {
-    console.error(`CycloneDX SBOM 生成失败：${error.message}`)
-    process.exitCode = 1
+    console.error('CycloneDX SBOM 生成失败：' + error.message)
+    process.exitCode = error instanceof TaskUsageError ? 2 : 1
   })
 }

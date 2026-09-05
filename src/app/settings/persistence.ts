@@ -1,6 +1,6 @@
 import { normalizeLocale } from '@/i18n'
-import type { SettingsState } from './model'
-import { parseThemeColor } from './theme'
+import type { SettingsState } from '@/stores/settings/model'
+import { parseThemeColor } from '@/stores/settings/theme'
 
 const STORAGE_KEY = 'ryframe_settings'
 const SETTINGS_SCHEMA_VERSION = 1

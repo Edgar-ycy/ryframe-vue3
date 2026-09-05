@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyComponentSize, applyTheme, applyThemeColor } from '@/stores/settings/domAdapter'
+import { applyComponentSize, applyTheme, applyThemeColor } from '@/app/settings/domAdapter'
+import { loadSettings, saveSettings } from '@/app/settings/persistence'
 import { createDefaultSettings, DEFAULT_THEME_COLOR, SKIN_COLOR_MAP } from '@/stores/settings/model'
-import { loadSettings, saveSettings } from '@/stores/settings/persistence'
 import {
   hslToHex,
   parseThemeColor,

@@ -1,6 +1,11 @@
-import type { ColorTheme, ComponentSize } from './model'
-import { DEFAULT_THEME_COLOR } from './model'
-import { hslToHex, parseThemeColor, resolveReadableThemeColor, rgbToHsl } from './theme'
+import type { ColorTheme, ComponentSize } from '@/stores/settings/model'
+import { DEFAULT_THEME_COLOR } from '@/stores/settings/model'
+import {
+  hslToHex,
+  parseThemeColor,
+  resolveReadableThemeColor,
+  rgbToHsl,
+} from '@/stores/settings/theme'
 
 export function applyThemeColor(color: string): void {
   const parsed = parseThemeColor(color) ?? parseThemeColor(DEFAULT_THEME_COLOR)!

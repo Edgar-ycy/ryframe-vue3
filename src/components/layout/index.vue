@@ -45,9 +45,6 @@ const settingsStore = useSettingsStore()
 const { t } = useI18n()
 useShellSettingsQuery()
 
-// 初始化时应用持久化设置到 DOM
-settingsStore.initSettings()
-
 onMounted(() => {
   appStore.initResponsive()
 })

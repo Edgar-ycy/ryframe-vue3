@@ -58,9 +58,17 @@ export function getApplicationLocale(): AppLocale {
   return normalizeLocale(i18n.global.locale.value) ?? DEFAULT_LOCALE
 }
 
-export function setApplicationLocale(locale: AppLocale): void {
+interface SetApplicationLocaleOptions {
+  persist?: boolean
+}
+
+export function setApplicationLocale(
+  locale: AppLocale,
+  options: SetApplicationLocaleOptions = {},
+): void {
   i18n.global.locale.value = locale
   applyDocumentLocale(locale)
+  if (options.persist === false) return
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.setItem(LOCALE_STORAGE_KEY, locale)

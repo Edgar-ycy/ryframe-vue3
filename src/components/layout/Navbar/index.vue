@@ -106,6 +106,7 @@ import {
   UserFilled,
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { setTheme } from '@/app/settings/coordinator'
 import { translateNavigationTitle } from '@/i18n'
 import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 import { useAppStore } from '@/stores/app'
@@ -131,7 +132,7 @@ const settingsVisible = ref(false)
 const breadcrumbs = computed(() => route.matched.filter((item) => item.meta?.title))
 
 function setDarkMode(value: string | number | boolean): void {
-  settingsStore.setTheme(value === true ? 'dark' : 'light')
+  setTheme(value === true ? 'dark' : 'light')
 }
 
 async function toggleFullscreen(): Promise<void> {

@@ -173,6 +173,30 @@ test('定向测试及 browser 参数完整传递，中文空格路径不拆分',
     plan(['check', '--stage', 'browser', '--real', '--fixture', 'device', '--server', 'preview']),
   )[0]
   assert.deepEqual(browser.env, { RYFRAME_E2E_FIXTURE: 'device', RYFRAME_E2E_SERVER: 'preview' })
+  const defaults = tasks(plan(['check', '--stage', 'browser']))[0]
+  assert.deepEqual(defaults.params, { real: false, fixture: 'core', server: 'dev' })
+  assert.deepEqual(defaults.env, { RYFRAME_E2E_FIXTURE: 'core', RYFRAME_E2E_SERVER: 'dev' })
+})
+
+test('任务节点从实际调用事实源携带执行和资源元数据', () => {
+  const value = plan(['check', '--full', '--upstream'])
+  for (const task of tasks(value)) {
+    assert.deepEqual(task.invocation, taskSpecs[task.id].invoke(task))
+    assert.equal(task.workingDirectory, '.')
+    for (const field of [
+      'compilationCoverage',
+      'allowedWrites',
+      'externalResources',
+      'concurrencyResources',
+    ])
+      assert.ok(Array.isArray(task[field]), `${task.id}.${field}`)
+  }
+  assert.deepEqual(tasks(value).find((task) => task.id === 'build').compilationCoverage, [
+    'vite:production',
+  ])
+  assert.deepEqual(tasks(value).find((task) => task.id === 'api-upstream').externalResources, [
+    'network:registered-api-upstream',
+  ])
 })
 
 test('真实浏览器配置消费 dev 和 preview 服务模式并隔离产物', async () => {

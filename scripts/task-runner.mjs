@@ -28,7 +28,8 @@ function cachePath(tool) {
 }
 
 function taskInvocation(task) {
-  const invocation = taskSpecs[task.id].invoke(task)
+  const invocation = task.invocation
+  if (!invocation) throw new Error('任务缺少实际调用声明：' + task.id)
   if (invocation.kind === 'action') return invocation
   const args = (invocation.args ?? []).map((value) =>
     typeof value === 'string' ? value : cachePath(value.cache),
@@ -63,7 +64,7 @@ async function runTask(task, interactive, control) {
   const invocation = taskInvocation(task)
   if (invocation.kind !== 'action') {
     return runTaskProcess(invocation, {
-      cwd: root,
+      cwd: path.resolve(root, task.workingDirectory),
       env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1', ...task.env },
       interactive,
       control,
@@ -166,7 +167,21 @@ function printPlan(plan) {
           '；依赖：' +
           dependencies +
           '；作用：' +
-          task.effect,
+          task.effect +
+          '；工作目录：' +
+          task.workingDirectory +
+          '；调用：' +
+          JSON.stringify(task.invocation) +
+          '；环境：' +
+          JSON.stringify(task.env) +
+          '；编译覆盖：' +
+          (task.compilationCoverage.join(', ') || '无') +
+          '；允许写入：' +
+          (task.allowedWrites.join(', ') || '无') +
+          '；外部资源：' +
+          (task.externalResources.join(', ') || '无') +
+          '；并发资源：' +
+          (task.concurrencyResources.join(', ') || '无'),
       )
     }
   })

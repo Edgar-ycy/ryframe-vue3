@@ -105,6 +105,37 @@ test('--plan 在 Node 禁止文件写入与派生子进程的权限模型中成�
   assert.match(result.stdout, /依赖：/u)
   assert.match(result.stdout, /作用：write/u)
   assert.match(result.stdout, /coverage.*true/u)
+  for (const label of [
+    '工作目录：',
+    '调用：',
+    '编译覆盖：',
+    '允许写入：',
+    '外部资源：',
+    '并发资源：',
+  ]) {
+    assert.match(result.stdout, new RegExp(label, 'u'))
+  }
+})
+
+test('browser 默认值覆盖父进程遗留环境且仍保持计划零副作用', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['--permission', '--allow-fs-read=*', runner, 'check', '--stage', 'browser', '--plan'],
+    {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        RYFRAME_E2E_FIXTURE: 'device',
+        RYFRAME_E2E_SERVER: 'preview',
+      },
+      windowsHide: true,
+      shell: false,
+    },
+  )
+  assert.equal(result.error, undefined)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /"RYFRAME_E2E_FIXTURE":"core"/u)
+  assert.match(result.stdout, /"RYFRAME_E2E_SERVER":"dev"/u)
 })
 
 test('实际进程将未知和互斥参数映射到退出码 2，帮助为 0', () => {

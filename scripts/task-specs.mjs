@@ -8,6 +8,12 @@ export const taskSpecs = {
     label: '格式',
     profiles: ['fast', 'static'],
     params: (_options, profiles) => ({ cache: !profiles.has('static'), fix: false }),
+    allowedWrites: ({ params }) => [
+      ...(params.fix ? ['controlled-source:format'] : []),
+      ...(params.cache ? ['cache:prettier'] : []),
+    ],
+    concurrencyResources: ({ params }) =>
+      params.fix ? ['exclusive:repository-source'] : ['shared:frontend-cpu'],
     invoke: ({ params }) =>
       binary('prettier', 'prettier', [
         params.fix ? '--write' : '--check',
@@ -31,6 +37,9 @@ export const taskSpecs = {
     label: 'API 派生物',
     profiles: ['fast', 'static', 'contract', 'generate'],
     params: (options) => ({ write: options.command === 'generate' && options.write === true }),
+    allowedWrites: ({ params }) => (params.write ? ['controlled-source:api-artifacts'] : []),
+    concurrencyResources: ({ params }) =>
+      params.write ? ['exclusive:repository-source'] : ['shared:frontend-cpu'],
     invoke: ({ params }) =>
       script('generate-api-artifacts.mjs', [params.write ? '--write' : '--check']),
   },
@@ -38,6 +47,12 @@ export const taskSpecs = {
     label: 'ESLint',
     profiles: ['fast', 'static'],
     params: () => ({ fix: false }),
+    allowedWrites: ({ params }) => [
+      'cache:eslint',
+      ...(params.fix ? ['controlled-source:eslint'] : []),
+    ],
+    concurrencyResources: ({ params }) =>
+      params.fix ? ['exclusive:repository-source'] : ['shared:frontend-cpu'],
     invoke: ({ params }) =>
       binary('eslint', 'eslint', [
         '.',
@@ -50,6 +65,12 @@ export const taskSpecs = {
     label: 'Stylelint',
     profiles: ['fast', 'static'],
     params: () => ({ fix: false }),
+    allowedWrites: ({ params }) => [
+      'cache:stylelint',
+      ...(params.fix ? ['controlled-source:stylelint'] : []),
+    ],
+    concurrencyResources: ({ params }) =>
+      params.fix ? ['exclusive:repository-source'] : ['shared:frontend-cpu'],
     invoke: ({ params }) =>
       binary('stylelint', 'stylelint', [
         'src/**/*.{css,scss,vue}',
@@ -64,6 +85,8 @@ export const taskSpecs = {
     params: (_options, profiles) => ({
       scope: profiles.has('static') || profiles.has('contract') ? 'all' : 'app',
     }),
+    compilationCoverage: ({ params }) => [`typescript:${params.scope}`],
+    allowedWrites: ({ params }) => [`cache:types/${params.scope}.tsbuildinfo`],
     invoke: ({ params }) =>
       binary('vue-tsc', 'vue-tsc', [
         '-p',
@@ -76,6 +99,11 @@ export const taskSpecs = {
     profiles: ['fast', 'unit', 'targeted'],
     params: (options, profiles) => ({ coverage: profiles.has('unit'), test: options.test ?? null }),
     phase: (params) => (params.coverage ? 1 : 0),
+    compilationCoverage: ({ params }) => [params.test ? `vitest:${params.test}` : 'vitest:all'],
+    allowedWrites: ({ params }) => [
+      'cache:vite',
+      ...(params.coverage ? ['artifact:coverage'] : []),
+    ],
     invoke: ({ params }) =>
       binary('vitest', 'vitest', [
         'run',
@@ -89,6 +117,7 @@ export const taskSpecs = {
     label: 'API 来源',
     profiles: ['static', 'contract'],
     params: (options) => ({ consumer: options.consumer ?? null }),
+    externalResources: ({ params }) => (params.consumer ? ['registered:backend-openapi'] : []),
     invoke: () => ({ kind: 'action', action: 'api-source' }),
   },
   'api-contract': {
@@ -100,6 +129,7 @@ export const taskSpecs = {
     label: '上游 API 来源',
     profiles: ['static', 'contract'],
     when: (options) => options.upstream === true,
+    externalResources: () => ['network:registered-api-upstream'],
     invoke: () => script('sync-api-contract.mjs', ['--verify-upstream']),
   },
   workflows: {
@@ -115,6 +145,7 @@ export const taskSpecs = {
   'policy-tests': {
     label: '工具策略测试',
     profiles: ['static', 'tools'],
+    allowedWrites: () => ['temporary:tool-test-fixtures'],
     invoke: () => ({ kind: 'policy-tests' }),
   },
   'supply-chain': {
@@ -128,12 +159,16 @@ export const taskSpecs = {
     phase: () => 2,
     params: (options) => ({ real: options.real === true }),
     effect: 'artifacts',
+    compilationCoverage: () => ['vite:production'],
+    allowedWrites: () => ['artifact:dist', 'cache:vite'],
+    concurrencyResources: () => ['exclusive:dist'],
     invoke: () => binary('vite', 'vite', ['build']),
   },
   bundle: {
     label: '包体积',
     profiles: ['build'],
     phase: () => 3,
+    concurrencyResources: () => ['exclusive:dist'],
     invoke: () => script('check-bundle-budget.mjs'),
   },
   browser: {
@@ -141,10 +176,18 @@ export const taskSpecs = {
     profiles: ['browser'],
     params: (options) => ({
       real: options.real === true,
-      fixture: options.fixture ?? null,
-      server: options.server ?? null,
+      fixture: options.fixture ?? 'core',
+      server: options.server ?? 'dev',
     }),
     effect: 'artifacts',
+    allowedWrites: ({ params }) => [
+      params.real ? 'artifact:playwright-real' : 'artifact:playwright',
+    ],
+    externalResources: ({ params }) => [
+      'process:local-chrome',
+      ...(params.real ? ['registered:full-stack'] : []),
+    ],
+    concurrencyResources: () => ['exclusive:browser', 'exclusive:browser-server'],
     invoke: ({ params }) =>
       binary('@playwright/test', 'playwright', [
         'test',
@@ -157,18 +200,39 @@ export const taskSpecs = {
     profiles: ['dev'],
     params: (options) => ({ preview: options.preview === true }),
     effect: 'service',
+    allowedWrites: () => ['cache:vite'],
+    externalResources: () => ['process:local-development-server'],
+    concurrencyResources: () => ['exclusive:development-server'],
     invoke: ({ params }) => binary('vite', 'vite', params.preview ? ['preview'] : []),
   },
   sbom: {
     label: 'CycloneDX SBOM',
     profiles: ['sbom'],
     params: (options) => ({ write: options.write === true, output: options.output ?? null }),
+    allowedWrites: ({ params }) => (params.write ? [`output:${params.output}`] : []),
+    concurrencyResources: ({ params }) =>
+      params.write ? ['exclusive:sbom-output'] : ['shared:frontend-cpu'],
     invoke: ({ params }) =>
       script('generate-sbom.mjs', [
         ...(params.output ? ['--output', params.output] : []),
         ...(params.write ? ['--write'] : []),
       ]),
   },
+}
+
+/** 规划器与执行器共同消费的实际调用及资源声明。 */
+export function taskExecutionMetadata(task) {
+  const spec = taskSpecs[task.id]
+  if (!spec) throw new Error(`未登记的任务：${task.id}`)
+  const readList = (name, fallback) => spec[name]?.(task) ?? fallback
+  return {
+    invocation: spec.invoke(task),
+    workingDirectory: '.',
+    compilationCoverage: readList('compilationCoverage', []),
+    allowedWrites: readList('allowedWrites', []),
+    externalResources: readList('externalResources', []),
+    concurrencyResources: readList('concurrencyResources', ['shared:frontend-cpu']),
+  }
 }
 
 export function taskEnvironment(task) {

@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { normalizeCommit, normalizeRepository } from './api-contract-state.mjs'
-import { taskEnvironment, taskSpecs } from './task-specs.mjs'
+import { taskEnvironment, taskExecutionMetadata, taskSpecs } from './task-specs.mjs'
 
 const commands = new Set(['dev', 'check', 'build', 'generate'])
 const stages = new Set(['static', 'unit', 'contract', 'browser', 'tools'])
@@ -241,6 +241,7 @@ function createTask(id, params, source, phase) {
     effect: params.fix || params.write ? 'write' : (spec.effect ?? 'read'),
   }
   task.env = taskEnvironment(task)
+  Object.assign(task, taskExecutionMetadata(task))
   task.key = taskKey(task)
   return task
 }

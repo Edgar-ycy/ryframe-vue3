@@ -56,6 +56,11 @@ CI 和专项验收通过 `check --stage static|unit|contract|browser|tools` 选�
 corepack pnpm check --stage browser --real
 ```
 
+用户导入样本由后端 `scripts/user_import_fixture.py browser` 根据实际下载的模板生成；用
+`RYFRAME_E2E_BACKEND_DIR` 指定后端目录、`RYFRAME_E2E_PYTHON` 指定已安装后端检查依赖的
+Python。生成器绑定模板和输出文件的 SHA-256，浏览器在上传已验证字节前再次核对并附加收据。
+需要保留多轮报告时设置唯一的 `RYFRAME_E2E_RUN_ID`，测试产物写入该轮子目录。
+
 ## 同步 API 契约
 
 后端 DTO 或接口变化后，在后端仓库根目录运行：

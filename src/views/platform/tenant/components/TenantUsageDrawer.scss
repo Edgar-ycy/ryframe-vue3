@@ -33,6 +33,10 @@
   justify-content: flex-end;
 }
 
+.tenant-heading__tags :deep(.el-tag) {
+  color: var(--el-text-color-primary);
+}
+
 .drawer-hint,
 .section-description,
 .window-remaining {

@@ -176,6 +176,15 @@ test('定向测试及 browser 参数完整传递，中文空格路径不拆分',
   assert.deepEqual(browser.env, { RYFRAME_E2E_FIXTURE: 'device', RYFRAME_E2E_SERVER: 'preview' })
 })
 
+test('真实浏览器配置消费 dev 和 preview 服务模式并隔离产物', async () => {
+  const source = await readFile(new URL('../../playwright.real.config.ts', import.meta.url), 'utf8')
+  assert.match(source, /RYFRAME_E2E_SERVER/u)
+  assert.match(source, /mode !== 'dev' && mode !== 'preview'/u)
+  assert.match(source, /serverMode === 'preview' \? \['preview'\] : \[\]/u)
+  assert.match(source, /playwright-real\/report\/\$\{serverMode\}/u)
+  assert.match(source, /playwright-real\/results\/\$\{serverMode\}/u)
+})
+
 test('开发、构建和生成选项映射到唯一职责', () => {
   for (const args of [
     ['generate'],

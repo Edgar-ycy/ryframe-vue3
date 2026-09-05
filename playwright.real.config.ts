@@ -9,12 +9,31 @@ function readPort(): number {
   return port
 }
 
+function readServerMode(): 'dev' | 'preview' {
+  const mode = process.env.RYFRAME_E2E_SERVER?.trim() || 'dev'
+  if (mode !== 'dev' && mode !== 'preview') {
+    throw new Error('RYFRAME_E2E_SERVER 必须为 dev 或 preview')
+  }
+  return mode
+}
+
 const port = readPort()
+const serverMode = readServerMode()
 const externalBaseUrl = process.env.RYFRAME_E2E_BASE_URL?.trim()
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
-const reportDirectory = '.local-tests/playwright-real/report'
-const resultsDirectory = '.local-tests/playwright-real/results'
+const reportDirectory = `.local-tests/playwright-real/report/${serverMode}`
+const resultsDirectory = `.local-tests/playwright-real/results/${serverMode}`
+const serverCommand = [
+  'node',
+  'node_modules/vite/bin/vite.js',
+  ...(serverMode === 'preview' ? ['preview'] : []),
+  '--host',
+  '127.0.0.1',
+  '--port',
+  String(port),
+  '--strictPort',
+].join(' ')
 
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })
@@ -42,7 +61,7 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${port} --strictPort`,
+        command: serverCommand,
         reuseExistingServer: false,
         timeout: 120_000,
         url: `${baseURL}/login`,

@@ -1,5 +1,5 @@
 import { renderToString } from 'vue/server-renderer'
-import { createSSRApp, defineComponent, h, type Component } from 'vue'
+import { createSSRApp, h, type FunctionalComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import CronScheduleBuilder from '@/views/monitor/schedules/CronScheduleBuilder.vue'
@@ -100,22 +100,18 @@ const captured = {
   selects: [] as EventAttributes[],
 }
 
-function captureStub(bucket: EventAttributes[], tag = 'span'): Component {
-  return defineComponent({
-    inheritAttrs: false,
-    setup(_props, { attrs, slots }) {
-      bucket.push({ ...attrs })
-      return () => h(tag, attrs, slots.default?.())
-    },
-  })
+function captureStub(bucket: EventAttributes[], tag = 'span'): FunctionalComponent {
+  const stub: FunctionalComponent = (_props, { attrs, slots }) => {
+    bucket.push({ ...attrs })
+    return h(tag, attrs, slots.default?.())
+  }
+  stub.inheritAttrs = false
+  return stub
 }
 
-const passThrough = defineComponent({
-  inheritAttrs: false,
-  setup(_props, { attrs, slots }) {
-    return () => h('span', attrs, slots.default?.())
-  },
-})
+const passThrough: FunctionalComponent = (_props, { attrs, slots }) =>
+  h('span', attrs, slots.default?.())
+passThrough.inheritAttrs = false
 
 function resetCaptures(): void {
   captured.buttons.length = 0

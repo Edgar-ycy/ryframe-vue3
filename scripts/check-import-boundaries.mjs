@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url'
 import { parse as parseVue } from '@vue/compiler-sfc'
 import {
   boundaryViolation,
-  containsDefineStoreCall,
   edgeKey,
-  extractImportSpecifiers,
+  hasApiOperationUsage,
+  inspectModuleSource,
   normalizeModulePath,
   resolveImportTarget,
   runtimeCycleEdges,
@@ -46,14 +46,20 @@ const modulePaths = new Set(
 )
 const edges = []
 const misplacedStores = []
+const apiOperationUsage = {}
 
 for (const absolutePath of absoluteModules.sort()) {
   const source = normalizeModulePath(relative(root, absolutePath))
   const content = moduleSource(source, await readFile(absolutePath, 'utf8'))
-  if (moduleAreaForStore(source) !== 'stores' && containsDefineStoreCall(content, source)) {
+  const inspection = inspectModuleSource(content, source)
+  if (moduleAreaForStore(source) !== 'stores' && inspection.containsDefineStoreCall) {
     misplacedStores.push(`defineStore 只能出现在 src/stores/**：${source}`)
   }
-  for (const dependency of extractImportSpecifiers(content, source)) {
+  if (source.startsWith('src/api/modules/') && source.endsWith('.ts')) {
+    const inventory = inspection.apiOperationUsage
+    if (hasApiOperationUsage(inventory)) apiOperationUsage[source] = inventory
+  }
+  for (const dependency of inspection.imports) {
     const target = resolveImportTarget(source, dependency.specifier, modulePaths)
     if (target) edges.push({ kind: dependency.kind, source, target })
   }
@@ -74,10 +80,17 @@ const violations = [
   ...new Set(forbidden.map((edge) => `边界违规 ${edge}`)),
   ...new Set(cycles.map((edge) => `运行时环内边 ${edge}`)),
 ]
-if (violations.length > 0) {
-  console.error('导入边界检查失败：')
+const apiOperationViolations = Object.keys(apiOperationUsage).sort()
+if (violations.length > 0 || apiOperationViolations.length > 0) {
+  if (apiOperationViolations.length > 0) {
+    console.error('API operation 使用门禁失败：发现通用传输、旧 operation 入口或手写请求。')
+    for (const file of apiOperationViolations) console.error(`  - ${file}`)
+    console.error('API 模块必须调用分域生成的 typed caller，不接受违规基线。')
+    console.error(`当前完整违规清单如下：\n${JSON.stringify(apiOperationUsage, null, 2)}\n`)
+  }
+  if (violations.length > 0) console.error('导入边界检查失败：')
   for (const violation of violations.sort()) console.error(`  ${violation}`)
   process.exitCode = 1
 } else {
-  console.log('导入边界检查通过（0 条边界债务、0 条运行时环内边）。')
+  console.log('源码边界检查通过（0 个 operation 违规、0 条边界债务、0 条运行时环内边）。')
 }

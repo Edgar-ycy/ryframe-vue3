@@ -5,6 +5,8 @@ import {
   containsDefineStoreCall,
   externalPackageTarget,
   extractImportSpecifiers,
+  hasApiOperationUsage,
+  inspectApiOperationUsage,
   moduleArea,
   resolveImportTarget,
   resolveInternalSpecifier,
@@ -242,6 +244,29 @@ test('识别 Store 定义，供目录门禁拒绝目录外定义', () => {
   )
   assert.equal(containsDefineStoreCall(`pinia.defineStore('user', {})`), true)
   assert.equal(containsDefineStoreCall(`const defineStoreName = 'defineStore'`), false)
+})
+
+test('同一次源码扫描识别 API 模块的旧传输入口和手写请求', () => {
+  const inventory = inspectApiOperationUsage(`
+    import request, { requestBlob as download } from '@/shared/http/client'
+    import { requestOperation } from '@/api/operationRequest'
+    import { legacy } from '@/api/generated/operations'
+    request({ url: '/users', method: 'get' })
+    download(\`/files/\${id}\`)
+  `)
+  assert.equal(hasApiOperationUsage(inventory), true)
+  assert.deepEqual(inventory.directImports, ['request', 'requestBlob'])
+  assert.deepEqual(inventory.directCalls, { request: 1, requestBlob: 1 })
+  assert.deepEqual(inventory.operationRequestImports, ['requestOperation'])
+  assert.deepEqual(inventory.legacyOperationImports, ['@/api/generated/operations'])
+  assert.equal(inventory.methodProperties, 1)
+  assert.equal(inventory.urlProperties, 1)
+  assert.equal(inventory.pathLiterals, 2)
+
+  const generated = inspectApiOperationUsage(
+    `import { get_system_users } from '@/api/generated/operations/system'`,
+  )
+  assert.equal(hasApiOperationUsage(generated), false)
 })
 
 test('SCC 只统计静态运行时导入', () => {

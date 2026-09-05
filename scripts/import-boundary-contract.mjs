@@ -2,68 +2,29 @@ import { posix } from 'node:path'
 import ts from 'typescript'
 import { businessCatalogImportViolation } from './bundle-manifest-policy.mjs'
 
+const directHttpExports = new Set(['default', 'rawRequest', 'requestBlob', 'requestText'])
+const commonTargets = ['features', 'generated', 'i18n', 'shared']
+const applicationTargets = ['api-core', 'api-modules', 'app', ...commonTargets, 'stores', 'utils']
+const componentTargets = [...applicationTargets, 'components', 'hooks']
+const viewTargets = [...componentTargets, 'directives', 'views']
+
 const allowedAreaTargets = Object.freeze({
-  app: new Set([
-    'api-core',
-    'api-modules',
-    'app',
-    'features',
-    'generated',
-    'i18n',
-    'shared',
-    'stores',
-    'utils',
-  ]),
+  app: new Set(applicationTargets),
   'api-core': new Set(['api-core', 'generated', 'shared']),
   'api-modules': new Set(['api-core', 'api-modules', 'generated', 'shared']),
-  components: new Set([
-    'api-core',
-    'api-modules',
-    'app',
-    'components',
-    'features',
-    'generated',
-    'hooks',
-    'i18n',
-    'shared',
-    'stores',
-    'utils',
-  ]),
-  directives: new Set([
-    'app',
-    'directives',
-    'features',
-    'generated',
-    'i18n',
-    'shared',
-    'stores',
-    'utils',
-  ]),
-  features: new Set(['features', 'generated', 'i18n', 'shared']),
-  hooks: new Set([
-    'api-core',
-    'api-modules',
-    'app',
-    'features',
-    'generated',
-    'hooks',
-    'i18n',
-    'shared',
-    'stores',
-    'utils',
-  ]),
+  components: new Set(componentTargets),
+  directives: new Set(['app', 'directives', ...commonTargets, 'stores', 'utils']),
+  features: new Set(commonTargets),
+  hooks: new Set([...applicationTargets, 'hooks']),
   i18n: new Set(['generated', 'i18n', 'shared']),
   router: new Set([
     'api-core',
     'api-modules',
     'components',
     'directives',
-    'features',
-    'generated',
+    ...commonTargets,
     'hooks',
-    'i18n',
     'router',
-    'shared',
     'stores',
     'utils',
     'views',
@@ -71,21 +32,7 @@ const allowedAreaTargets = Object.freeze({
   shared: new Set(['generated', 'shared']),
   stores: new Set(['generated', 'i18n', 'shared', 'stores', 'utils']),
   utils: new Set(['generated', 'i18n', 'shared', 'utils']),
-  views: new Set([
-    'api-core',
-    'api-modules',
-    'app',
-    'components',
-    'directives',
-    'features',
-    'generated',
-    'hooks',
-    'i18n',
-    'shared',
-    'stores',
-    'utils',
-    'views',
-  ]),
+  views: new Set(viewTargets),
 })
 
 export function normalizeModulePath(path) {
@@ -106,41 +53,7 @@ export function moduleArea(path) {
 }
 
 export function extractImportSpecifiers(source, fileName = 'module.ts') {
-  const scriptKind = fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
-  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, scriptKind)
-  const imports = []
-
-  function visit(node) {
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
-      imports.push({
-        kind: importDeclarationKind(node),
-        specifier: node.moduleSpecifier.text,
-      })
-    } else if (
-      ts.isExportDeclaration(node) &&
-      node.moduleSpecifier &&
-      ts.isStringLiteral(node.moduleSpecifier)
-    ) {
-      imports.push({
-        kind: exportDeclarationKind(node),
-        specifier: node.moduleSpecifier.text,
-      })
-    } else if (ts.isImportTypeNode(node)) {
-      const argument = node.argument
-      if (ts.isLiteralTypeNode(argument) && ts.isStringLiteral(argument.literal)) {
-        imports.push({ kind: 'type', specifier: argument.literal.text })
-      }
-    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      const [argument] = node.arguments
-      if (argument && ts.isStringLiteral(argument)) {
-        imports.push({ kind: 'dynamic', specifier: argument.text })
-      }
-    }
-    ts.forEachChild(node, visit)
-  }
-
-  visit(sourceFile)
-  return imports
+  return inspectModuleSource(source, fileName).imports
 }
 
 function exportDeclarationKind(node) {
@@ -213,42 +126,151 @@ export function resolveImportTarget(source, specifier, modulePaths) {
 }
 
 export function containsDefineStoreCall(source, fileName = 'module.ts') {
+  return inspectModuleSource(source, fileName).containsDefineStoreCall
+}
+
+function syntaxPropertyName(node) {
+  if (ts.isIdentifier(node) || ts.isStringLiteralLike(node)) return node.text
+  return undefined
+}
+
+function isHandwrittenApiPath(node) {
+  if (ts.isStringLiteralLike(node)) return node.text.startsWith('/')
+  return (
+    ts.isTemplateExpression(node) &&
+    (node.head.text.startsWith('/') ||
+      node.templateSpans.some((span) => span.literal.text.startsWith('/')))
+  )
+}
+
+export function inspectModuleSource(source, fileName = 'module.ts') {
   const scriptKind = fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, scriptKind)
-  const bindings = new Set(['defineStore'])
+  const imports = []
+  const defineStoreBindings = new Set(['defineStore'])
+  const apiBindings = new Map()
+  const directImports = new Set()
+  const operationRequestImports = new Set()
+  const legacyOperationImports = new Set()
 
   for (const statement of sourceFile.statements) {
-    if (
-      !ts.isImportDeclaration(statement) ||
-      !ts.isStringLiteral(statement.moduleSpecifier) ||
-      statement.moduleSpecifier.text !== 'pinia'
-    ) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier))
       continue
-    }
-    const namedBindings = statement.importClause?.namedBindings
-    if (!namedBindings || !ts.isNamedImports(namedBindings)) continue
-    for (const element of namedBindings.elements) {
-      if ((element.propertyName?.text ?? element.name.text) === 'defineStore') {
-        bindings.add(element.name.text)
+    const moduleName = statement.moduleSpecifier.text
+    const clause = statement.importClause
+    if (moduleName === 'pinia') {
+      const namedBindings = clause?.namedBindings
+      for (const element of namedBindings && ts.isNamedImports(namedBindings)
+        ? namedBindings.elements
+        : []) {
+        if ((element.propertyName?.text ?? element.name.text) === 'defineStore') {
+          defineStoreBindings.add(element.name.text)
+        }
       }
+    }
+    if (moduleName === '@/api/generated/operations') legacyOperationImports.add(moduleName)
+    if (moduleName === '@/api/operationRequest' && !clause?.isTypeOnly) {
+      if (clause?.name) operationRequestImports.add('default')
+      for (const element of clause?.namedBindings && ts.isNamedImports(clause.namedBindings)
+        ? clause.namedBindings.elements
+        : []) {
+        if (!element.isTypeOnly)
+          operationRequestImports.add(element.propertyName?.text ?? element.name.text)
+      }
+    }
+    if (moduleName !== '@/shared/http/client') continue
+    if (!clause?.isTypeOnly && clause?.name) {
+      apiBindings.set(clause.name.text, 'request')
+      directImports.add('request')
+    }
+    for (const element of clause?.namedBindings && ts.isNamedImports(clause.namedBindings)
+      ? clause.namedBindings.elements
+      : []) {
+      if (clause?.isTypeOnly || element.isTypeOnly) continue
+      const imported = element.propertyName?.text ?? element.name.text
+      if (!directHttpExports.has(imported)) continue
+      apiBindings.set(element.name.text, imported)
+      directImports.add(imported)
     }
   }
 
-  let found = false
+  const directCalls = {}
+  let containsDefineStoreCall = false
+  let methodProperties = 0
+  let pathLiterals = 0
+  let urlProperties = 0
   function visit(node) {
-    if (
-      ts.isCallExpression(node) &&
-      ((ts.isIdentifier(node.expression) && bindings.has(node.expression.text)) ||
-        (ts.isPropertyAccessExpression(node.expression) &&
-          node.expression.name.text === 'defineStore'))
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      imports.push({ kind: importDeclarationKind(node), specifier: node.moduleSpecifier.text })
+    } else if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
     ) {
-      found = true
-      return
+      imports.push({ kind: exportDeclarationKind(node), specifier: node.moduleSpecifier.text })
+    } else if (ts.isImportTypeNode(node)) {
+      const argument = node.argument
+      if (ts.isLiteralTypeNode(argument) && ts.isStringLiteral(argument.literal)) {
+        imports.push({ kind: 'type', specifier: argument.literal.text })
+      }
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      const [argument] = node.arguments
+      if (argument && ts.isStringLiteral(argument)) {
+        imports.push({ kind: 'dynamic', specifier: argument.text })
+      }
     }
+    if (ts.isCallExpression(node)) {
+      if (
+        (ts.isIdentifier(node.expression) && defineStoreBindings.has(node.expression.text)) ||
+        (ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === 'defineStore')
+      ) {
+        containsDefineStoreCall = true
+      }
+      if (ts.isIdentifier(node.expression)) {
+        const helper = apiBindings.get(node.expression.text)
+        if (helper) directCalls[helper] = (directCalls[helper] ?? 0) + 1
+      }
+    }
+    if (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) {
+      const name = syntaxPropertyName(node.name)
+      if (name === 'url') urlProperties += 1
+      if (name === 'method') methodProperties += 1
+    }
+    if (isHandwrittenApiPath(node)) pathLiterals += 1
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
-  return found
+
+  return {
+    containsDefineStoreCall,
+    imports,
+    apiOperationUsage: {
+      directImports: [...directImports].sort(),
+      directCalls: Object.fromEntries(Object.entries(directCalls).sort()),
+      legacyOperationImports: [...legacyOperationImports].sort(),
+      methodProperties,
+      operationRequestImports: [...operationRequestImports].sort(),
+      pathLiterals,
+      urlProperties,
+    },
+  }
+}
+
+export function inspectApiOperationUsage(source, fileName = 'module.ts') {
+  return inspectModuleSource(source, fileName).apiOperationUsage
+}
+
+export function hasApiOperationUsage(inventory) {
+  return (
+    inventory.directImports.length > 0 ||
+    inventory.legacyOperationImports.length > 0 ||
+    inventory.operationRequestImports.length > 0 ||
+    Object.keys(inventory.directCalls).length > 0 ||
+    inventory.pathLiterals > 0 ||
+    inventory.urlProperties > 0 ||
+    inventory.methodProperties > 0
+  )
 }
 
 function storeDomain(path) {

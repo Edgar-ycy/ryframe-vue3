@@ -34,7 +34,6 @@ test('默认快速检查保持完整单测并只执行一次', () => {
     'format',
     'source-size',
     'imports',
-    'api-operations',
     'api-artifacts',
     'eslint',
     'stylelint',
@@ -58,7 +57,7 @@ test('完整检查使用一次 coverage 单测并顺序复用生产构建', () =
     'api-source',
     'api-contract',
     'api-artifacts',
-    'api-operations',
+    'imports',
     'api-upstream',
     'policy-tests',
     'supply-chain',
@@ -89,7 +88,7 @@ test('消费契约门禁执行完整领域 coverage 且不重复单测', () => {
   const value = createConsumerContractPlan()
   assert.deepEqual(
     new Set(ids(value)),
-    new Set(['api-source', 'api-contract', 'api-artifacts', 'api-operations', 'typecheck', 'unit']),
+    new Set(['api-source', 'api-contract', 'api-artifacts', 'imports', 'typecheck', 'unit']),
   )
   assert.equal(tasks(value).find((task) => task.id === 'unit').params.coverage, true)
   assert.throws(() => createConsumerContractPlan({ profile: 'unknown' }), TaskUsageError)
@@ -261,6 +260,7 @@ test('已吸收的薄包装脚本不再存在', async () => {
     '../' + ['verify', 'local', 'api', 'contract.mjs'].join('-'),
     '../' + ['build', 'real', 'frontend.mjs'].join('-'),
     '../' + ['check', 'consumer', 'contract.mjs'].join('-'),
+    '../' + ['check', 'api', 'operation', 'usage.mjs'].join('-'),
     '../' + ['check', 'prerelease', 'dependencies.mjs'].join('-'),
     '../' + ['check', 'required', 'jobs.mjs'].join('-'),
     '../' + ['api', 'version', 'contract.mjs'].join('-'),

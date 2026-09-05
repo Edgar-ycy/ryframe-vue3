@@ -23,14 +23,9 @@ export const taskSpecs = {
     invoke: () => script('source-size-contract.mjs'),
   },
   imports: {
-    label: '导入边界',
-    profiles: ['fast', 'static'],
-    invoke: () => script('check-import-boundaries.mjs'),
-  },
-  'api-operations': {
-    label: 'operation 使用',
+    label: '源码边界',
     profiles: ['fast', 'static', 'contract'],
-    invoke: () => script('check-api-operation-usage.mjs'),
+    invoke: () => script('check-import-boundaries.mjs'),
   },
   'api-artifacts': {
     label: 'API 派生物',

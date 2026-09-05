@@ -1,5 +1,6 @@
 import {
   get_common_file_download,
+  get_common_shell_settings,
   post_common_upload,
   post_common_upload_avatar,
   post_common_upload_image,
@@ -7,6 +8,11 @@ import {
 import type { ApiSchema, OperationQuery } from '@/api/contract'
 
 export type UploadResult = ApiSchema<'UploadResponse'>
+
+/** 当前租户允许普通登录用户读取的界面设置。 */
+export function getShellSettings(signal?: AbortSignal) {
+  return get_common_shell_settings({ signal })
+}
 
 /** 通用文件上传（后端返回数组，通常取第一个） */
 export function uploadFile(data: FormData) {

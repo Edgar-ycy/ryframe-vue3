@@ -11,11 +11,11 @@ import {
 import { useUserStore } from '@/stores/user'
 
 const dependencies = vi.hoisted(() => ({
-  getConfigByKey: vi.fn(),
+  getShellSettings: vi.fn(),
   applyServerSettings: vi.fn(),
 }))
 
-vi.mock('@/api/modules/config', () => ({ getConfigByKey: dependencies.getConfigByKey }))
+vi.mock('@/api/modules/common', () => ({ getShellSettings: dependencies.getShellSettings }))
 vi.mock('@/app/settings/coordinator', () => ({
   applyServerSettings: dependencies.applyServerSettings,
 }))
@@ -42,15 +42,12 @@ describe('Shell 设置完整会话隔离', () => {
     ['同用户切换租户', 'tenant-b', 'user-a', 'a'],
     ['同用户权限变更', 'tenant-a', 'user-a', 'reduced'],
   ])('%s 后迟到的主题不覆盖新范围', async (_label, tenant, subject, authorization) => {
-    let resolveOld!: (value: { data: string }) => void
-    const oldResponse = new Promise<{ data: string }>((resolve) => (resolveOld = resolve))
-    let oldSignal: AbortSignal | undefined
-    dependencies.getConfigByKey.mockImplementation((key: string, signal: AbortSignal) => {
-      oldSignal ??= signal
-      if (signal === oldSignal) {
-        return key === 'sys.index.sideTheme' ? oldResponse : Promise.resolve({ data: 'skin-red' })
-      }
-      return Promise.resolve({ data: key === 'sys.index.sideTheme' ? 'theme-light' : 'skin-green' })
+    let resolveOld!: (value: { data: { side_theme: string; skin_name: string } }) => void
+    const oldResponse = new Promise<{ data: { side_theme: string; skin_name: string } }>(
+      (resolve) => (resolveOld = resolve),
+    )
+    dependencies.getShellSettings.mockReturnValueOnce(oldResponse).mockResolvedValue({
+      data: { side_theme: 'theme-light', skin_name: 'skin-green' },
     })
     const reporter = vi.fn()
     configureServerStateErrorReporter(reporter)
@@ -61,8 +58,8 @@ describe('Shell 设置完整会话隔离', () => {
     const scope = effectScope()
     scopes.push(scope)
     app.runWithContext(() => scope.run(() => useShellSettingsQuery()))
-    await vi.waitFor(() => expect(dependencies.getConfigByKey).toHaveBeenCalledTimes(2))
-    const requestSignal: AbortSignal = dependencies.getConfigByKey.mock.calls[0]![1]
+    await vi.waitFor(() => expect(dependencies.getShellSettings).toHaveBeenCalledOnce())
+    const requestSignal: AbortSignal = dependencies.getShellSettings.mock.calls[0]![0]
 
     activate(tenant, subject, authorization)
     expect(requestSignal.aborted).toBe(true)
@@ -72,7 +69,7 @@ describe('Shell 设置完整会话隔离', () => {
         skinName: 'skin-green',
       }),
     )
-    resolveOld({ data: 'theme-dark' })
+    resolveOld({ data: { side_theme: 'theme-dark', skin_name: 'skin-red' } })
     await oldResponse
     await nextTick()
 

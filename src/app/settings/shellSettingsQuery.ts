@@ -1,5 +1,5 @@
 import { watch } from 'vue'
-import { getConfigByKey } from '@/api/modules/config'
+import { getShellSettings } from '@/api/modules/common'
 import { applyServerSettings } from '@/app/settings/coordinator'
 import { HttpError } from '@/shared/http/client'
 import {
@@ -43,10 +43,7 @@ export function useShellSettingsQuery() {
     async (signal) => {
       const scope = getServerStateScope()
       if (!scope) throw new HttpError('会话已失效，设置请求已取消', { kind: 'cancelled' })
-      const [sideThemeResponse, skinNameResponse] = await Promise.all([
-        getConfigByKey('sys.index.sideTheme', signal),
-        getConfigByKey('sys.index.skinName', signal),
-      ])
+      const response = await getShellSettings(signal)
       return {
         scope: {
           tenantId: scope.tenantId,
@@ -54,8 +51,8 @@ export function useShellSettingsQuery() {
           sessionEpoch: scope.sessionEpoch,
         },
         settings: {
-          sideTheme: sideThemeResponse.data,
-          skinName: skinNameResponse.data,
+          sideTheme: response.data?.side_theme ?? undefined,
+          skinName: response.data?.skin_name ?? undefined,
         },
       }
     },

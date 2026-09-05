@@ -23,12 +23,12 @@ const dependencies = vi.hoisted(() => ({
   applyServerSettings: vi.fn(),
   getServerStateScope: vi.fn(),
   isServerStateScopeCurrent: vi.fn(),
-  getConfigByKey: vi.fn(),
+  getShellSettings: vi.fn(),
   refetchQueries: vi.fn(),
   serverStateQueryKey: vi.fn(),
 }))
 
-vi.mock('@/api/modules/config', () => ({ getConfigByKey: dependencies.getConfigByKey }))
+vi.mock('@/api/modules/common', () => ({ getShellSettings: dependencies.getShellSettings }))
 vi.mock('@/app/settings/coordinator', () => ({
   applyServerSettings: dependencies.applyServerSettings,
 }))
@@ -66,7 +66,7 @@ describe('Shell 设置查询', () => {
     }
     dependencies.getServerStateScope.mockReturnValue(undefined)
     dependencies.isServerStateScopeCurrent.mockReturnValue(true)
-    dependencies.getConfigByKey.mockResolvedValue({ data: undefined })
+    dependencies.getShellSettings.mockResolvedValue({ data: undefined })
     dependencies.refetchQueries.mockResolvedValue(undefined)
     dependencies.serverStateQueryKey.mockReturnValue(['server-state', 'settings'])
   })
@@ -74,9 +74,9 @@ describe('Shell 设置查询', () => {
   it('使用会话范围加载服务端设置并交给协调器', async () => {
     const activeScope = { sessionEpoch: 7, subjectId: 'user-a', tenantId: 'tenant-a' }
     dependencies.getServerStateScope.mockReturnValue(activeScope)
-    dependencies.getConfigByKey.mockImplementation((key: string) =>
-      Promise.resolve({ data: key === 'sys.index.sideTheme' ? 'theme-dark' : 'skin-blue' }),
-    )
+    dependencies.getShellSettings.mockResolvedValue({
+      data: { side_theme: 'theme-dark', skin_name: 'skin-blue' },
+    })
     const scope = effectScope()
     scope.run(() => useShellSettingsQuery())
 
@@ -136,7 +136,7 @@ describe('Shell 设置查询', () => {
     await expect(queryHarness.fetcher!(new AbortController().signal)).rejects.toMatchObject({
       kind: 'cancelled',
     })
-    expect(dependencies.getConfigByKey).not.toHaveBeenCalled()
+    expect(dependencies.getShellSettings).not.toHaveBeenCalled()
     scope.stop()
   })
 })

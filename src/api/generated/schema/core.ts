@@ -447,6 +447,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/common/shell-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 所有已认证用户可读取固定的界面设置，不接受任意配置键。 */
+        get: operations["get_common_shell_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/common/upload": {
         parameters: {
             query?: never;
@@ -940,6 +957,27 @@ export interface components {
                 roles: string[];
                 runtime_epoch: string;
                 user: components["schemas"]["SessionUserVo"];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_ShellSettingsDto: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 当前租户的界面设置；未配置的项目由客户端使用默认值。 */
+            data?: {
+                side_theme?: string | null;
+                skin_name?: string | null;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -2692,6 +2730,11 @@ export interface components {
             tenant_name: string;
             username: string;
         };
+        /** @description 当前租户的界面设置；未配置的项目由客户端使用默认值。 */
+        ShellSettingsDto: {
+            side_theme?: string | null;
+            skin_name?: string | null;
+        };
         /** @description 租户后台运行状态汇总。 */
         TenantAuxiliaryUsageVo: {
             /** Format: int64 */
@@ -4223,6 +4266,34 @@ export interface operations {
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": number[];
+                };
+            };
+        };
+    };
+    get_common_shell_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前租户界面设置 */
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ShellSettingsDto"];
                 };
             };
         };

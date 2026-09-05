@@ -19,6 +19,7 @@ export const get_common_jobs = bindJsonOperation({"operationId":"get_common_jobs
 export const get_common_jobs_by_id = bindJsonOperation({"operationId":"get_common_jobs_by_id","method":"get","path":"/common/jobs/{id}"})
 export const get_common_jobs_by_id_download = bindBlobOperation({"operationId":"get_common_jobs_by_id_download","method":"get","path":"/common/jobs/{id}/download"})
 export const get_common_jobs_notifications_unread_count = bindJsonOperation({"operationId":"get_common_jobs_notifications_unread_count","method":"get","path":"/common/jobs/notifications/unread-count"})
+export const get_common_shell_settings = bindJsonOperation({"operationId":"get_common_shell_settings","method":"get","path":"/common/shell-settings"})
 export const get_profile_service_delegations = bindJsonOperation({"operationId":"get_profile_service_delegations","method":"get","path":"/profile/service-delegations"})
 export const get_profile_service_delegations_capabilities = bindJsonOperation({"operationId":"get_profile_service_delegations_capabilities","method":"get","path":"/profile/service-delegations/capabilities"})
 export const get_version = bindJsonOperation({"operationId":"get_version","method":"get","path":"/version"})

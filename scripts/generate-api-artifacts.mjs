@@ -8,11 +8,7 @@ import {
   generatedArtifactPaths,
   ownershipManifestPath,
 } from './api-artifacts.mjs'
-
-const mode = process.argv[2] ?? '--write'
-if (!new Set(['--write', '--check']).has(mode) || process.argv.length > 3) {
-  throw new Error('用法：generate-api-artifacts.mjs [--write|--check]')
-}
+import { TaskUsageError } from './task-runner-contract.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const legacyArtifactPaths = Object.freeze([
@@ -71,23 +67,32 @@ async function existingFile(relative) {
   }
 }
 
-async function validateStaging(stagingRoot, artifacts) {
+function validateArtifacts(artifacts) {
   const actual = new Set(artifacts.keys())
   for (const relative of generatedArtifactPaths) {
     if (!actual.has(relative)) throw new Error(`生成器遗漏正式资产：${relative}`)
-    await readFile(path.join(stagingRoot, relative))
   }
-  for (const relative of actual) {
+  for (const [relative, content] of artifacts) {
+    requireOwnedPath(relative)
     if (!generatedSet.has(relative)) throw new Error(`生成器输出未登记资产：${relative}`)
+    if (typeof content !== 'string') throw new Error(`生成器输出不是 UTF-8 文本：${relative}`)
   }
 }
 
-async function checkArtifacts(stagingRoot, artifacts, previousOwnership) {
+async function validateStaging(stagingRoot, artifacts) {
+  for (const [relative, content] of artifacts) {
+    const staged = await readFile(path.join(stagingRoot, relative))
+    if (!staged.equals(Buffer.from(content, 'utf8'))) {
+      throw new Error(`OpenAPI 暂存内容与本次生成结果不一致：${relative}`)
+    }
+  }
+}
+
+async function checkArtifacts(artifacts, previousOwnership) {
   const stale = []
-  for (const [relative] of artifacts) {
+  for (const [relative, content] of artifacts) {
     const committed = await existingFile(relative)
-    const generated = await readFile(path.join(stagingRoot, relative))
-    if (!committed?.equals(generated)) stale.push(relative)
+    if (!committed?.equals(Buffer.from(content, 'utf8'))) stale.push(relative)
   }
   for (const relative of previousOwnership) {
     if (!generatedSet.has(relative) && (await existingFile(relative))) stale.push(relative)
@@ -162,22 +167,37 @@ async function assertUnifiedSchemaImports() {
   }
 }
 
-const artifacts = await buildApiArtifacts(root)
-const stagingParent = path.join(root, 'target')
-await mkdir(stagingParent, { recursive: true })
-const stagingRoot = await mkdtemp(path.join(stagingParent, 'api-artifacts-'))
-try {
-  await writeArtifacts(stagingRoot, artifacts)
-  await validateStaging(stagingRoot, artifacts)
+async function main() {
+  const args = process.argv.slice(2)
+  const mode = args[0] ?? '--check'
+  if (args.length > 1 || !['--write', '--check'].includes(mode)) {
+    throw new TaskUsageError('用法：generate-api-artifacts.mjs [--check|--write]，默认只读检查')
+  }
+
+  const artifacts = await buildApiArtifacts(root)
+  validateArtifacts(artifacts)
   await assertUnifiedSchemaImports()
   const previousOwnership = await readPreviousOwnership()
   if (mode === '--check') {
-    await checkArtifacts(stagingRoot, artifacts, previousOwnership)
+    await checkArtifacts(artifacts, previousOwnership)
     console.log(`OpenAPI 派生文件只读校验通过（${artifacts.size} 个文件）`)
-  } else {
+    return
+  }
+
+  const stagingParent = path.join(root, 'target')
+  await mkdir(stagingParent, { recursive: true })
+  const stagingRoot = await mkdtemp(path.join(stagingParent, 'api-artifacts-'))
+  try {
+    await writeArtifacts(stagingRoot, artifacts)
+    await validateStaging(stagingRoot, artifacts)
     await installArtifacts(stagingRoot, previousOwnership)
     console.log(`已原子安装 OpenAPI 派生文件（${artifacts.size} 个文件）`)
+  } finally {
+    await rm(stagingRoot, { recursive: true, force: true })
   }
-} finally {
-  await rm(stagingRoot, { recursive: true, force: true })
 }
+
+main().catch((error) => {
+  console.error(error.message)
+  process.exitCode = error instanceof TaskUsageError ? 2 : 1
+})

@@ -1,39 +1,8 @@
+import { socketRuntime, messageCache, messageSync } from './messageControllerFixtures'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MessageRecord } from '@/api/modules/messages'
-import type { MessageSocketOptions } from '@/app/messages/socket/lifecycle'
-
-interface FakeMessageSocket {
-  options: MessageSocketOptions
-  start: ReturnType<typeof vi.fn>
-  stop: ReturnType<typeof vi.fn>
-}
-
-const socketRuntime = vi.hoisted(() => ({ instances: [] as FakeMessageSocket[] }))
-const messageCache = vi.hoisted(() => ({
-  receiveMessageDelivery: vi.fn(),
-  removeCachedMessages: vi.fn(),
-}))
-const messageSync = vi.hoisted(() => ({
-  cancelMessageState: vi.fn(),
-  executeMessageAcknowledgement: vi.fn(),
-  synchronizeMessageState: vi.fn(),
-}))
-
-vi.mock('@/api/modules/messages', () => ({ getMessageWebSocketTicket: vi.fn() }))
-vi.mock('@/app/messages/messageCache/mutations', () => messageCache)
-vi.mock('@/app/messages/messageSync', () => messageSync)
-vi.mock('@/app/messages/socket/lifecycle', () => ({
-  MessageSocket: class implements FakeMessageSocket {
-    readonly start = vi.fn()
-    readonly stop = vi.fn()
-
-    constructor(readonly options: MessageSocketOptions) {
-      socketRuntime.instances.push(this)
-    }
-  },
-}))
 
 import { messageController } from '@/app/messages/messageController'
 import {

@@ -1,6 +1,6 @@
 import { test } from './fixture'
 import { expect, type Page } from '@playwright/test'
-import { stat } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { act, isolatedName, login } from './support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 
@@ -37,7 +37,7 @@ async function selectLatestTransfer(page: Page, transferId: string, status: stri
   await expect(page.locator('.plan-overview')).toContainText(status)
 }
 
-test('真实配置包导出、下载、预览、应用与回滚保留参数值', async ({ page }, info) => {
+test('真实配置包导出、下载、上传、预览、应用与回滚保留参数值', async ({ page }, info) => {
   test.setTimeout(240_000)
   const name = isolatedName('config')
   const diagnostics = observeDiagnostics(page)
@@ -81,8 +81,15 @@ test('真实配置包导出、下载、预览、应用与回滚保留参数值',
   )
 
   await page.getByRole('menuitem', { name: '配置迁移', exact: true }).click()
-  const created = await act(page, 'POST', '/api/v1/system/config-transfers/from-package', () =>
-    bundle.getByRole('button', { name: '使用此包', exact: true }).click(),
+  await page.getByRole('button', { name: '上传配置包', exact: true }).click()
+  const upload = page.getByRole('dialog', { name: '上传配置包', exact: true })
+  await upload.locator('input[type=file]').setInputFiles({
+    name: `${name}.ryframe-config.zip`,
+    mimeType: 'application/zip',
+    buffer: await readFile(output),
+  })
+  const created = await act(page, 'POST', '/api/v1/system/config-transfers/upload', () =>
+    upload.getByRole('button', { name: '上传并创建迁移', exact: true }).click(),
   )
   const transferId: string = (await created.json()).data.id
   const plan = page.locator('.plan-card')

@@ -1,5 +1,37 @@
 import { spawn } from 'node:child_process'
 
+function stopTaskTree(child, signal, spawnTerminator = spawn) {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
+  if (process.platform !== 'win32') {
+    try {
+      process.kill(-child.pid, signal)
+      return
+    } catch (cause) {
+      if (cause.code === 'ESRCH') return
+    }
+  } else {
+    const args = ['/PID', String(child.pid), '/T']
+    if (signal === 'SIGKILL') args.push('/F')
+    const terminator = spawnTerminator('taskkill.exe', args, {
+      stdio: 'ignore',
+      windowsHide: true,
+    })
+    terminator.on('error', () => {
+      try {
+        child.kill(signal)
+      } catch (cause) {
+        if (cause.code !== 'ESRCH') throw cause
+      }
+    })
+    return
+  }
+  try {
+    child.kill(signal)
+  } catch (cause) {
+    if (cause.code !== 'ESRCH') throw cause
+  }
+}
+
 /** 等待已登记的直接子进程及其输出关闭。 */
 export function runTaskProcess(invocation, { cwd, env, interactive, control, spawnChild = spawn }) {
   if (control.signal.aborted) return Promise.resolve({ code: 1, cancelled: true })
@@ -10,6 +42,7 @@ export function runTaskProcess(invocation, { cwd, env, interactive, control, spa
       shell: false,
       stdio: interactive ? 'inherit' : ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
+      detached: process.platform !== 'win32',
     })
     const result = { code: 1, stderr: '', stdout: '' }
     if (!interactive) {
@@ -28,9 +61,8 @@ export function runTaskProcess(invocation, { cwd, env, interactive, control, spa
       if (result.code !== 0) control.fail(result)
     })
     const unregister = control.register((signal) => {
-      if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
       try {
-        child.kill(signal)
+        stopTaskTree(child, signal)
       } catch (cause) {
         if (cause.code !== 'ESRCH') result.error ??= cause
       }

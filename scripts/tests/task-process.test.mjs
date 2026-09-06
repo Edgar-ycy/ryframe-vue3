@@ -19,20 +19,39 @@ function fixture(t) {
   const directory = mkdtempSync(path.join(parent, '直接 子进程-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
   const file = path.join(directory, '端口 进程.mjs')
+  const descendant = path.join(directory, '孙进程.mjs')
+  writeFileSync(
+    descendant,
+    `import net from 'node:net'
+process.on('SIGTERM', () => {})
+const server = net.createServer()
+server.listen(0, '127.0.0.1', () => console.log(JSON.stringify({ pid: process.pid, port: server.address().port })))
+`,
+  )
   writeFileSync(
     file,
-    `import net from 'node:net'
+    `import { spawn } from 'node:child_process'
+import net from 'node:net'
 import { writeFileSync } from 'node:fs'
 process.on('SIGTERM', () => {})
+const state = process.argv[2]
+if (process.argv[3] === 'descendant') {
+  const child = spawn(process.execPath, [process.argv[4]], { stdio: ['ignore', 'pipe', 'inherit'], windowsHide: true })
+  child.stdout.once('data', (chunk) => {
+    const value = JSON.parse(String(chunk))
+    writeFileSync(state, JSON.stringify({ pid: process.pid, childPid: value.pid, port: value.port }))
+  })
+} else {
 const server = net.createServer()
 server.listen(0, '127.0.0.1', () => {
   console.log('stdout 就绪')
   console.error('stderr 就绪')
-  writeFileSync(process.argv[2], JSON.stringify({ pid: process.pid, port: server.address().port }))
+  writeFileSync(state, JSON.stringify({ pid: process.pid, port: server.address().port }))
 })
+}
 `,
   )
-  return { directory, file }
+  return { directory, file, descendant }
 }
 
 async function ready(file) {
@@ -66,9 +85,12 @@ async function assertReleased({ pid, port }) {
   )
 }
 
-function start(file, state, control) {
+function start(file, state, control, descendant) {
   return runTaskProcess(
-    { command: process.execPath, args: [file, state] },
+    {
+      command: process.execPath,
+      args: [file, state, ...(descendant ? ['descendant', descendant] : [])],
+    },
     { cwd: path.dirname(file), env: process.env, interactive: false, control },
   )
 }
@@ -97,6 +119,25 @@ test('直接子进程在中文空格路径启动，停止后保留日志、释�
     await Promise.all([first, other])
     controlled.dispose()
     unrelated.dispose()
+  }
+})
+
+test('中断时回收父子孙进程树，释放孙进程端口', async (t) => {
+  const { directory, file, descendant } = fixture(t)
+  const state = path.join(directory, '进程树.json')
+  const control = new TaskRunControl({ gracePeriodMs: 30 })
+  const running = start(file, state, control, descendant)
+  try {
+    const before = await ready(state)
+    control.interrupt('SIGTERM')
+    await running
+    await assertReleased(before)
+    assert.throws(() => process.kill(before.childPid, 0), { code: 'ESRCH' })
+  } finally {
+    control.interrupt('SIGINT')
+    control.interrupt('SIGINT')
+    await running
+    control.dispose()
   }
 })
 

@@ -1,5 +1,6 @@
 /* ====== 深色主题 ====== */
 html.dark {
+  --color-primary-readable: var(--color-primary-readable-dark);
   --bg-color: #111827;
   --bg-color-page: #0f172a;
   --color-text-primary: #f1f5f9;

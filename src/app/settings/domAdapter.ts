@@ -3,6 +3,7 @@ import { DEFAULT_THEME_COLOR } from '@/stores/settings/model'
 import {
   hslToHex,
   parseThemeColor,
+  resolveReadableDarkThemeColor,
   resolveReadableThemeColor,
   rgbToHsl,
 } from '@/stores/settings/theme'
@@ -15,7 +16,8 @@ export function applyThemeColor(color: string): void {
 
   style.setProperty('--el-color-primary', css)
   style.setProperty('--color-primary', css)
-  style.setProperty('--color-primary-readable', resolveReadableThemeColor(css))
+  style.setProperty('--color-primary-readable-light', resolveReadableThemeColor(css))
+  style.setProperty('--color-primary-readable-dark', resolveReadableDarkThemeColor(css))
   style.setProperty('--color-primary-rgb', `${red}, ${green}, ${blue}`)
 
   for (let index = 3; index <= 9; index += 1) {

@@ -7,7 +7,11 @@ export type {
   SettingsState,
   ShellServerSettings,
 } from './settings/model'
-export { parseThemeColor, resolveReadableThemeColor } from './settings/theme'
+export {
+  parseThemeColor,
+  resolveReadableDarkThemeColor,
+  resolveReadableThemeColor,
+} from './settings/theme'
 
 /** 只保存界面设置的内存投影；持久化和运行时副作用由 app coordinator 负责。 */
 export const useSettingsStore = defineStore('settings', {

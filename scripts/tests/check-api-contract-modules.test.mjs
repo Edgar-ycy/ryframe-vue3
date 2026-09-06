@@ -50,8 +50,9 @@ test('拆分后的 OpenAPI 契约模块保持正式文档一致', async () => {
   validateSchemaContracts({ ...operationState, errors, resolveLocalReference })
 
   assert.deepEqual(errors, [])
-  assert.equal(contractRoutes.size, 29)
-  assert.equal(operationState.operationCount, 191)
+  // 标准资源可以通过生成器增加；路由和操作总数只能相对当前稳定基线增加。
+  assert.ok(contractRoutes.size >= 29)
+  assert.ok(operationState.operationCount >= 191)
   assert.equal(
     document.paths['/api/v1/common/shell-settings'].get.operationId,
     'get_common_shell_settings',

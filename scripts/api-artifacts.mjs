@@ -230,10 +230,8 @@ export function renderMenuRouteCatalog(document) {
   )
   const fallbackNames = Object.fromEntries(
     routes.flatMap((route) => {
-      const labels = resourceMenuLabels.get(route.routeKey) ?? {
-        'en-US': route.defaultName,
-        'zh-CN': route.defaultName,
-      }
+      const labels = resourceMenuLabels.get(route.routeKey)
+      if (!labels) return []
       return [
         [route.routeKey, labels],
         [route.defaultName, labels],

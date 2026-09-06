@@ -172,6 +172,7 @@ function validateRoleOptionPurpose(operationId, parameters, resolveLocalReferenc
 
 /** 校验受控分页、候选项查询及被删除的无上限列表。 */
 export function validatePaginationContracts({
+  crudResources = [],
   document,
   errors,
   operationsById,
@@ -194,10 +195,18 @@ export function validatePaginationContracts({
     )
   }
 
-  for (const operationId of c1PaginatedOperationIds) {
+  // 标准资源由后端生成的 OpenAPI 扩展登记。该扩展已由调用方完整校验，
+  // 因此资源列表与手工维护的 C1 接口使用同一分页参数规则。
+  const resourceListOperationIds = new Set(
+    crudResources.map((resource) => resource.api.operations.list),
+  )
+  const paginatedOperationIds = new Set([...c1PaginatedOperationIds, ...resourceListOperationIds])
+
+  for (const operationId of paginatedOperationIds) {
     const entry = operationsById.get(operationId)
     if (!entry) {
-      errors.push(`${operationId}: required C1 pagination operation is missing`)
+      const source = resourceListOperationIds.has(operationId) ? '生成资源' : 'C1'
+      errors.push(`${operationId}: required ${source} pagination operation is missing`)
       continue
     }
     const parameters = queryParametersFor(operationId, entry)
@@ -248,8 +257,10 @@ export function validatePaginationContracts({
   for (const [operationId, entry] of operationsById) {
     const parameters = queryParametersFor(operationId, entry)
     const hasPaginationParameter = parameters.has('page') || parameters.has('page_size')
-    if (hasPaginationParameter && !c1PaginatedOperationIds.has(operationId)) {
-      errors.push(`${operationId}: pagination operation is missing from the C1 manifest`)
+    if (hasPaginationParameter && !paginatedOperationIds.has(operationId)) {
+      errors.push(
+        `${operationId}: pagination operation is missing from the C1 or generated resource manifest`,
+      )
     }
     if (entry.path.endsWith('/options') && !c1OptionOperationContracts.has(operationId)) {
       errors.push(`${operationId}: options operation is missing from the C1 manifest`)

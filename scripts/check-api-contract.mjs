@@ -37,8 +37,9 @@ try {
 } catch (error) {
   errors.push(error instanceof Error ? error.message : String(error))
 }
+let crudResources = []
 try {
-  requireCrudResourceCatalog(document['x-ryframe-crud-resources'], document)
+  crudResources = requireCrudResourceCatalog(document['x-ryframe-crud-resources'], document)
 } catch (error) {
   errors.push(error instanceof Error ? error.message : String(error))
 }
@@ -84,7 +85,13 @@ if (document.info?.title !== 'RyFrame API') {
 
 const operationState = collectOperationContractState(document, errors)
 const resolveLocalReference = createLocalReferenceResolver(document, errors)
-validatePaginationContracts({ ...operationState, document, errors, resolveLocalReference })
+validatePaginationContracts({
+  ...operationState,
+  crudResources,
+  document,
+  errors,
+  resolveLocalReference,
+})
 validateSchemaContracts({ ...operationState, errors, resolveLocalReference })
 
 if (operationState.paths.length < 97) {

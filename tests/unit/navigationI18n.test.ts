@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { menuRouteCatalog, navigationRouteFallbackNames } from '@/api/generated/menuRoutes'
+import { menuRouteCatalog } from '@/api/generated/menuRoutes'
 import {
   getApplicationLocale,
-  i18n,
   setApplicationLocale,
   translate,
   translateNavigationTitle,
@@ -21,7 +20,6 @@ const originalLocale = getApplicationLocale()
 
 afterEach(() => {
   setApplicationLocale(originalLocale)
-  vi.restoreAllMocks()
 })
 
 describe('菜单国际化目录', () => {
@@ -30,22 +28,6 @@ describe('菜单国际化目录', () => {
     for (const menu of menuRouteCatalog) {
       expect(translateNavigationTitle(menu.routeKey), menu.routeKey).toBe(menu.defaultName)
     }
-  })
-
-  it('生成资源从 OpenAPI 资源目录获得双语导航后备名称', () => {
-    expect(navigationRouteFallbackNames['system.post']).toEqual({
-      'en-US': 'Posts',
-      'zh-CN': '岗位管理',
-    })
-  })
-
-  it('缺少静态目录项时按当前语言使用生成资源的后备名称', () => {
-    vi.spyOn(i18n.global, 't').mockReturnValue('navigation.post')
-    setApplicationLocale('en-US')
-
-    expect(translateNavigationTitle('system.post')).toBe('Posts')
-    setApplicationLocale('zh-CN')
-    expect(translateNavigationTitle('system.post')).toBe('岗位管理')
   })
 
   it('所有菜单 route key 在中英文环境下都能显示友好名称', () => {

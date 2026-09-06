@@ -4,6 +4,7 @@
   "files": [
     "src/api/generated/crudResources.ts",
     "src/api/generated/menuRoutes.ts",
+    "src/api/generated/navigation.ts",
     "src/api/generated/operations/core.ts",
     "src/api/generated/operations/monitor.ts",
     "src/api/generated/operations/platform.ts",

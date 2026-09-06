@@ -5,7 +5,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
-import { generatedArtifactPaths, ownershipManifestPath } from '../api-artifacts.mjs'
+import {
+  generatedArtifactPaths,
+  ownershipManifestPath,
+  renderNavigationResourceMessages,
+} from '../api-artifacts.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const generator = 'scripts/generate-api-artifacts.mjs'
@@ -94,6 +98,20 @@ test('未知、重复和互斥参数在任何生成前返回 2', () => {
     assert.match(result.stderr, /用法：/u)
     assert.doesNotMatch(result.stderr, /ERR_ACCESS_DENIED/u)
   }
+})
+
+test('生成资源的导航文案使用菜单 title key，且缺少对应菜单路由时失败', async () => {
+  const document = JSON.parse(await readFile(path.join(root, 'openapi/openapi.json'), 'utf8'))
+
+  const rendered = renderNavigationResourceMessages(document)
+  assert.match(rendered, /"post": "岗位管理"/u)
+  assert.match(rendered, /"post": "Posts"/u)
+
+  const invalid = structuredClone(document)
+  invalid['x-ryframe-menu-routes'].routes = invalid['x-ryframe-menu-routes'].routes.filter(
+    (route) => route.route_key !== 'system.post',
+  )
+  assert.throws(() => renderNavigationResourceMessages(invalid), /post 缺少菜单路由声明/u)
 })
 
 test('仅 --write 安装暂存产物，恢复漂移并保持重复生成零差异', async (t) => {

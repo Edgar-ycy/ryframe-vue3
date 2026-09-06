@@ -213,22 +213,3 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
   "system.user": "user",
   "用户管理": "user"
 })
-
-export const navigationRouteFallbackNames: Readonly<Record<string, Readonly<Record<'zh-CN' | 'en-US', string>>>> = Object.freeze({
-  "system.notice": {
-    "en-US": "Notices",
-    "zh-CN": "通知公告"
-  },
-  "通知公告": {
-    "en-US": "Notices",
-    "zh-CN": "通知公告"
-  },
-  "system.post": {
-    "en-US": "Posts",
-    "zh-CN": "岗位管理"
-  },
-  "岗位管理": {
-    "en-US": "Posts",
-    "zh-CN": "岗位管理"
-  }
-})

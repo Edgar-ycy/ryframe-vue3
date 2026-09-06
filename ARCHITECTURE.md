@@ -13,7 +13,7 @@ src/
 ├── stores/       # 客户端跨页面状态
 ├── features/     # 页面、能力、权限和变体声明
 ├── router/       # 导航守卫与运行时路由
-├── api/generated/operations/ # 按 core/system/platform/monitor/agent 生成的 typed caller
+├── api/generated/operations/ # 按 core/system/platform/monitor 生成的 typed caller
 ├── api/modules/  # 只组织规范化、幂等、分页、校验和 raw session 策略
 ├── shared/       # HTTP、查询、安全和其他通用能力
 └── styles/       # 设计 token 与全局布局
@@ -50,7 +50,7 @@ src/
 6. 运行 `corepack pnpm check --stage contract` 和相关单元测试。
 
 可参考 `src/api/modules/post.ts` 中的导出筛选规范化。业务模块不得手写 URL、HTTP method，
-也不得直接调用 `operationRequest`；运行 `corepack pnpm generate --write` 会更新五个领域 caller，连续生成
+也不得直接调用 `operationRequest`；运行 `corepack pnpm generate --write` 会更新四个领域 caller，连续生成
 应保持零差异。
 
 ## 导入与状态边界
@@ -121,7 +121,7 @@ SessionContext
 ## 编写与运行测试
 
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。
-- `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文 smoke 测试。
+- `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文 smoke 测试；开发服务与生产 preview 都执行，生产包复用同次 CI 构建产物。
 - `tests/browser-real/`：连接真实 API、MySQL 与 Redis 的完整浏览器流程。
 - `scripts/tests/`：契约生成、目录检查和开发脚本测试。
 

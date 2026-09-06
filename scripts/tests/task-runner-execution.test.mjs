@@ -8,6 +8,12 @@ import { executeTaskPlan, TaskRunError } from '../task-runner.mjs'
 const runner = fileURLToPath(new URL('../task-runner.mjs', import.meta.url))
 const plan = (args, source = 'test-source') => createTaskPlan(parseTaskArguments(args), { source })
 
+function runnerEnvironment(overrides = {}) {
+  const env = { ...process.env, ...overrides }
+  delete env.RYFRAME_CONSUMER_CONTRACT
+  return env
+}
+
 test('执行真实归并后的节点，覆盖单测与完整类型各一次，并按依赖收集产物', async () => {
   const graph = combineTaskPlans([
     plan(['check']),
@@ -98,7 +104,7 @@ test('--plan 在 Node 禁止文件写入与派生子进程的权限模型中成�
   const result = spawnSync(
     process.execPath,
     ['--permission', '--allow-fs-read=*', runner, 'check', '--full', '--fix', '--plan'],
-    { encoding: 'utf8', windowsHide: true, shell: false },
+    { encoding: 'utf8', env: runnerEnvironment(), windowsHide: true, shell: false },
   )
   assert.equal(result.error, undefined)
   assert.equal(result.status, 0, result.stderr)
@@ -123,11 +129,10 @@ test('browser 只接受显式 fixture，遗留环境不能隐式选择 Device', 
     ['--permission', '--allow-fs-read=*', runner, 'check', '--stage', 'browser', '--plan'],
     {
       encoding: 'utf8',
-      env: {
-        ...process.env,
+      env: runnerEnvironment({
         RYFRAME_E2E_FIXTURE: 'device',
         RYFRAME_E2E_SERVER: 'preview',
-      },
+      }),
       windowsHide: true,
       shell: false,
     },
@@ -155,11 +160,10 @@ test('browser 只接受显式 fixture，遗留环境不能隐式选择 Device', 
     ],
     {
       encoding: 'utf8',
-      env: {
-        ...process.env,
+      env: runnerEnvironment({
         RYFRAME_E2E_FIXTURE: 'core',
         RYFRAME_E2E_SERVER: 'dev',
-      },
+      }),
       windowsHide: true,
       shell: false,
     },
@@ -178,6 +182,7 @@ test('实际进程将未知和互斥参数映射到退出码 2，帮助为 0', (
   ]) {
     const result = spawnSync(process.execPath, [runner, ...args], {
       encoding: 'utf8',
+      env: runnerEnvironment(),
       windowsHide: true,
       shell: false,
     })
@@ -186,6 +191,7 @@ test('实际进程将未知和互斥参数映射到退出码 2，帮助为 0', (
   }
   const help = spawnSync(process.execPath, [runner, '--help'], {
     encoding: 'utf8',
+    env: runnerEnvironment(),
     windowsHide: true,
     shell: false,
   })

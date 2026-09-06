@@ -87,10 +87,10 @@ test('浏览器复用同一 SHA 与 attempt 的构建，同时验收 dev 和 pre
 
   const playwright = await read('playwright.config.ts')
   const vite = await read('vite.config.ts')
-  assert.match(
-    playwright,
-    /node node_modules\/vite\/bin\/vite\.js \$\{serverMode === 'preview' \? 'preview' : ''\}/u,
-  )
+  assert.match(playwright, /serverMode === 'preview'/u)
+  assert.match(playwright, /run-browser-preview-harness-server\.mjs/u)
+  assert.match(playwright, /node_modules\/vite\/bin\/vite\.js/u)
+  await read('scripts/run-browser-preview-harness-server.mjs')
   assert.doesNotMatch(playwright, /vite(?:\.js)? build/u)
   assert.match(vite, /outDir: 'dist'/u)
 })

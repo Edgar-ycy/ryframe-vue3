@@ -7,6 +7,12 @@ if (!['dev', 'preview'].includes(serverMode)) {
   throw new Error('RYFRAME_E2E_SERVER 必须为 dev 或 preview')
 }
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
+const serverCommand =
+  serverMode === 'preview'
+    ? 'node scripts/run-browser-preview-harness-server.mjs ' + port
+    : 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ' +
+      port +
+      ' --strictPort'
 const reportDirectory = `.local-tests/playwright/report/${serverMode}`
 const resultsDirectory = `.local-tests/playwright/results/${serverMode}`
 
@@ -36,7 +42,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: `node node_modules/vite/bin/vite.js ${serverMode === 'preview' ? 'preview' : ''} --host 127.0.0.1 --port ${port} --strictPort`,
+    command: serverCommand,
     reuseExistingServer: false,
     timeout: 120_000,
     url: `http://127.0.0.1:${port}/login`,

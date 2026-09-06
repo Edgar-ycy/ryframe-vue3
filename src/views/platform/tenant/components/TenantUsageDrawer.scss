@@ -33,8 +33,34 @@
   justify-content: flex-end;
 }
 
-.tenant-heading__tags :deep(.el-tag) {
-  color: var(--el-text-color-primary);
+.tenant-heading__tags :deep(.el-tag--success) {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}
+
+.tenant-heading__tags :deep(.el-tag--info) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e3a8a;
+}
+
+.tenant-heading__tags :deep(.el-tag--warning) {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #78350f;
+}
+
+.tenant-heading__tags :deep(.el-tag--danger) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
+.tenant-heading__tags :deep(.el-tag--primary) {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  color: #312e81;
 }
 
 .drawer-hint,

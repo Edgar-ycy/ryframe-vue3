@@ -146,6 +146,15 @@ test('dev 和 preview 使用同一 scope/场景派生客户，运行编号与重
   assert.throws(() => fixedClientAddress(undefined, 'test-1'), /scope/u)
 })
 
+test('登录预算只接受产品 ResourceScopeId 边界', () => {
+  for (const scope of ['a1', `a${'_'.repeat(46)}z`, 'dev_local-01']) {
+    assert.match(fixedClientAddress(scope, 'test-1'), /^198\.18\./u)
+  }
+  for (const scope of ['a', `a${'_'.repeat(47)}z`, 'Upper', 'scope.dot', '-x', 'x-']) {
+    assert.throws(() => fixedClientAddress(scope, 'test-1'), /scope/u)
+  }
+})
+
 test('账本拒绝 scope、容量和窗口来源变化，失败后保留原始状态', async (t) => {
   const value = fixture(t)
   await value.attempt()

@@ -89,6 +89,30 @@ test('配置失真时不使用默认值或自动修正', () => {
   }
 })
 
+test('资源 scope 与产品合同保持相同边界', () => {
+  for (const value of ['a1', `a${'_'.repeat(46)}z`, 'dev_local-01']) {
+    assert.equal(
+      validateRealBrowserEnvironment({ ...validEnvironment(), RYFRAME_E2E_SCOPE_ID: value })
+        .scopeId,
+      value,
+    )
+  }
+  for (const value of [
+    'a',
+    `a${'_'.repeat(47)}z`,
+    'Upper',
+    'scope.dot',
+    '-scope',
+    'scope-',
+    '_scope',
+    'scope_',
+  ]) {
+    assert.throws(() =>
+      validateRealBrowserEnvironment({ ...validEnvironment(), RYFRAME_E2E_SCOPE_ID: value }),
+    )
+  }
+})
+
 test('外部服务只允许带明确端口的本机 HTTP 原点', () => {
   for (const value of [
     'https://127.0.0.1:4174',

@@ -172,3 +172,25 @@ test('登记落盘失败不能发送创建请求', async () => {
   )
   assert.equal(requests, 0)
 })
+
+test('会话资源只接受产品 ResourceScopeId 边界', async () => {
+  for (const scopeId of ['a1', `a${'_'.repeat(46)}z`, 'dev_local-01']) {
+    const resources = await createSessionResources({
+      scopeId,
+      testId: 'test',
+      tenantId: 'system',
+      save: async () => {},
+    })
+    assert.equal(resources.snapshot().scope_id, scopeId)
+  }
+  for (const scopeId of ['a', `a${'_'.repeat(47)}z`, 'Upper', 'scope.dot', '-x', 'x-']) {
+    await assert.rejects(
+      createSessionResources({
+        scopeId,
+        testId: 'test',
+        tenantId: 'system',
+        save: async () => {},
+      }),
+    )
+  }
+})

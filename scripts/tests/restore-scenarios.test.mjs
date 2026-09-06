@@ -40,7 +40,7 @@ function bindingFixture(t, contents) {
       plan_hash: sha256(Buffer.from(JSON.stringify(plan))),
       plan,
     },
-    manifest: { id: 'backup', source_sha: 'c'.repeat(40) },
+    manifest: { id: 'backup', scope_id: 'source-selection', source_sha: 'c'.repeat(40) },
   }
   const file = path.join(directory, 'bindings.json')
   const bytes = Buffer.from(contents ?? JSON.stringify(value))

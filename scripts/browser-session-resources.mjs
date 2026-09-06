@@ -1,3 +1,5 @@
+import { isResourceScopeId } from './resource-scope.mjs'
+
 const validId = (value) =>
   typeof value === 'string' &&
   /^[1-9][0-9]{0,18}$/u.test(value) &&
@@ -5,7 +7,7 @@ const validId = (value) =>
 
 /** 只接受本次真实创建响应中的 ID；未知提交不查名称、不接管、不重放。 */
 export async function createSessionResources({ scopeId, testId, tenantId, save }) {
-  if (!/^[a-z0-9][a-z0-9-]{2,63}$/u.test(scopeId || '') || !testId || !tenantId) {
+  if (!isResourceScopeId(scopeId) || !testId || !tenantId) {
     throw new Error('会话身份收据必须绑定明确 scope、测试和租户')
   }
   const receipt = {

@@ -1,4 +1,5 @@
 import { isAbsolute } from 'node:path'
+import { isResourceScopeId } from './resource-scope.mjs'
 
 function required(environment, name) {
   const value = environment[name]
@@ -70,7 +71,7 @@ function localBaseUrl(value) {
 /** 在创建报告目录和服务前验证真实环境，只返回不含凭据的运行绑定。 */
 export function validateRealBrowserEnvironment(environment = process.env) {
   const scopeId = environment.RYFRAME_E2E_SCOPE_ID || environment.APP_SCOPE_ID
-  if (!/^[a-z0-9][a-z0-9-]{2,63}$/u.test(scopeId || '')) {
+  if (!isResourceScopeId(scopeId)) {
     throw new Error('真实浏览器环境必须绑定明确的隔离 scope')
   }
   const tenantId = required(environment, 'RYFRAME_E2E_TENANT_ID').trim()

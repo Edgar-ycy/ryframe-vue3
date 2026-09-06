@@ -1,4 +1,9 @@
 import { sha256 } from './restore-build.mjs'
+import {
+  isResourceScopeId,
+  isRestoreIdentifier,
+  verifyRestoreRuntimeReceipt,
+} from './restore-runtime-receipt.mjs'
 
 export const requiredScenarios = [
   'login',
@@ -64,10 +69,6 @@ function instant(value, message) {
   return Date.parse(value)
 }
 
-function validIdentifier(value) {
-  return typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/u.test(value)
-}
-
 function restorePlanDigest(plan) {
   exactObject(plan, restorePlanFields, '恢复计划字段缺失或包含未登记内容')
   if (!Array.isArray(plan.databases) || plan.databases.length === 0)
@@ -97,12 +98,14 @@ export function restoreProofBindings(bytes) {
   const plan = record?.plan
   if (
     record?.status !== 'data_verified' ||
-    !validIdentifier(plan?.id) ||
-    !validIdentifier(plan?.backup_id) ||
-    !validIdentifier(plan?.scope_id) ||
+    !isRestoreIdentifier(plan?.id) ||
+    !isRestoreIdentifier(plan?.backup_id) ||
+    !isResourceScopeId(plan?.scope_id) ||
+    !isResourceScopeId(manifest?.scope_id) ||
     !/^[a-f0-9]{40}$/u.test(plan?.frontend_sha) ||
     !/^[a-f0-9]{40}$/u.test(manifest?.source_sha) ||
     plan.backup_id !== manifest?.id ||
+    plan.scope_id === manifest.scope_id ||
     plan.object_prefix !== `${plan.scope_id}/` ||
     record.plan_hash !== restorePlanDigest(plan)
   )
@@ -111,28 +114,22 @@ export function restoreProofBindings(bytes) {
 }
 
 function verifiedRuntime(bytes, verifiedDigest, bindingsBytes, record, manifest) {
-  const receipt = parseEvidence(bytes, '运行产物收据')
-  const digest = sha256(bytes)
-  if (verifiedDigest !== digest) throw new Error('运行产物摘要不是本次已核验收据的实际摘要')
-  if (
-    receipt.format_version !== 1 ||
-    receipt.kind !== 'restore-runtime' ||
-    receipt.restore_id !== record.plan.id ||
-    receipt.plan_hash !== record.plan_hash ||
-    receipt.scope_id !== record.plan.scope_id ||
-    receipt.bindings_sha256 !== sha256(bindingsBytes) ||
-    receipt.backend?.kind !== 'restore-backend-build' ||
-    receipt.backend?.source?.head !== manifest.source_sha ||
-    receipt.backend?.source?.clean !== true ||
-    receipt.frontend?.kind !== 'restore-frontend-build' ||
-    receipt.frontend?.source?.head !== record.plan.frontend_sha ||
-    receipt.frontend?.source?.clean !== true ||
-    Object.keys(receipt.processes || {})
-      .sort()
-      .join(',') !== 'api,worker'
-  )
-    throw new Error('运行产物收据未绑定同一演练、源码、构建或进程集合')
-  return digest
+  return verifyRestoreRuntimeReceipt({
+    bytes,
+    verifiedDigest,
+    bindingsBytes,
+    expected: {
+      restoreId: record.plan.id,
+      backupId: record.plan.backup_id,
+      planHash: record.plan_hash,
+      scopeId: record.plan.scope_id,
+      dataVerifiedAt: record.data_verified_at,
+      backendSha: manifest.source_sha,
+      frontendSha: record.plan.frontend_sha,
+      apiEndpoint: record.plan.api_ready_url,
+      workerEndpoint: record.plan.worker_ready_url,
+    },
+  }).digest
 }
 
 export function buildRestoreProof({

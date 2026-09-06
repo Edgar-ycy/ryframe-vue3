@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto'
-import { isAbsolute } from 'node:path'
+import {
+  isResourceScopeId,
+  isRestoreIdentifier,
+  verifyRestoreRuntimeReceipt,
+} from '../../scripts/restore-runtime-receipt.mjs'
 
 type JsonObject = Record<string, unknown>
 
@@ -76,7 +80,13 @@ function text(value: unknown, label: string): string {
 
 function identifier(value: unknown, label: string): string {
   const result = text(value, label)
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/u.test(result)) throw new Error(`${label}无效`)
+  if (!isRestoreIdentifier(result)) throw new Error(`${label}无效`)
+  return result
+}
+
+function scopeIdentifier(value: unknown, label: string): string {
+  const result = text(value, label)
+  if (!isResourceScopeId(result)) throw new Error(`${label}无效`)
   return result
 }
 
@@ -179,10 +189,11 @@ export function deriveVerifiedRestoreRuntimeFacts(
   }
   const restoreId = identifier(plan.id, '恢复 ID')
   const backupId = identifier(plan.backup_id, '备份 ID')
-  const targetScopeId = identifier(plan.scope_id, '恢复 scope')
-  const sourceScopeId = identifier(manifest.scope_id, '备份 scope')
+  const targetScopeId = scopeIdentifier(plan.scope_id, '恢复 scope')
+  const sourceScopeId = scopeIdentifier(manifest.scope_id, '备份 scope')
   const frontendSha = hex(plan.frontend_sha, 40, '前端 SHA')
   const backendSha = hex(manifest.source_sha, 40, '后端 SHA')
+  const planDigest = hex(record.plan_hash, 64, '恢复计划摘要')
   if (
     record.status !== 'data_verified' ||
     record.completed_at !== null ||
@@ -190,7 +201,7 @@ export function deriveVerifiedRestoreRuntimeFacts(
     backupId !== identifier(manifest.id, '清单备份 ID') ||
     sourceScopeId === targetScopeId ||
     text(plan.object_prefix, '恢复对象前缀') !== `${targetScopeId}/` ||
-    hex(record.plan_hash, 64, '恢复计划摘要') !== planHash(plan)
+    planDigest !== planHash(plan)
   ) {
     throw new Error('恢复绑定没有绑定唯一的待业务验收演练')
   }
@@ -210,65 +221,22 @@ export function deriveVerifiedRestoreRuntimeFacts(
     throw new Error('恢复时间顺序或 RPO 与绑定清单不一致')
   }
 
-  const runtimeDigest = hex(verifiedRuntimeSha256, 64, '已核验运行收据摘要')
-  if (runtimeDigest !== sha256(runtimeBytes)) throw new Error('运行收据不是外部核验器确认的内容')
-  const runtime = exact(
-    parse(runtimeBytes, '恢复运行收据'),
-    [
-      'format_version',
-      'kind',
-      'restore',
-      'paths',
-      'digests',
-      'source',
-      'endpoints',
-      'backend',
-      'frontend',
-      'processes',
-    ],
-    '恢复运行收据',
-  )
-  const runtimeRestore = exact(
-    runtime.restore,
-    ['id', 'backup_id', 'plan_hash', 'scope_id', 'data_verified_at'],
-    '运行收据恢复绑定',
-  )
-  const digests = exact(
-    runtime.digests,
-    ['bindings', 'backend_build', 'frontend_build'],
-    '运行收据摘要',
-  )
-  const source = exact(runtime.source, ['backend_sha', 'frontend_sha'], '运行收据源码')
-  const paths = exact(
-    runtime.paths,
-    ['backend_root', 'frontend_root', 'runtime_dir', 'bindings', 'backend_build', 'frontend_build'],
-    '运行收据路径',
-  )
-  const processes = exact(runtime.processes, ['api', 'worker'], '运行收据进程')
-  if (
-    runtime.format_version !== 2 ||
-    runtime.kind !== 'restore-runtime' ||
-    runtimeRestore.id !== restoreId ||
-    runtimeRestore.backup_id !== backupId ||
-    runtimeRestore.plan_hash !== record.plan_hash ||
-    runtimeRestore.scope_id !== targetScopeId ||
-    runtimeRestore.data_verified_at !== dataVerifiedAt.value ||
-    hex(digests.bindings, 64, 'bindings 摘要') !== sha256(bindingsBytes) ||
-    source.backend_sha !== backendSha ||
-    source.frontend_sha !== frontendSha ||
-    !Object.values(paths).every((value) => typeof value === 'string' && isAbsolute(value)) ||
-    !Object.values(processes).every(
-      (value) => value && typeof value === 'object' && !Array.isArray(value),
-    ) ||
-    !runtime.backend ||
-    typeof runtime.backend !== 'object' ||
-    Array.isArray(runtime.backend) ||
-    !runtime.frontend ||
-    typeof runtime.frontend !== 'object' ||
-    Array.isArray(runtime.frontend)
-  ) {
-    throw new Error('运行收据与恢复绑定、源码、路径或进程集合不一致')
-  }
+  const { digest: runtimeDigest } = verifyRestoreRuntimeReceipt({
+    bytes: runtimeBytes,
+    verifiedDigest: hex(verifiedRuntimeSha256, 64, '已核验运行收据摘要'),
+    bindingsBytes,
+    expected: {
+      restoreId,
+      backupId,
+      planHash: planDigest,
+      scopeId: targetScopeId,
+      dataVerifiedAt: dataVerifiedAt.value,
+      backendSha,
+      frontendSha,
+      apiEndpoint: text(plan.api_ready_url, 'API 端点'),
+      workerEndpoint: text(plan.worker_ready_url, 'Worker 端点'),
+    },
+  })
 
   return Object.freeze({
     backup: Object.freeze({

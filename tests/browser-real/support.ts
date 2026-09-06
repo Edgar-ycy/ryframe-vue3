@@ -2,11 +2,12 @@ import { expect, type Page, type Response } from '@playwright/test'
 import { expectNoSeriousAccessibilityViolations } from '../browser/support/accessibility'
 import { randomUUID } from 'node:crypto'
 import { configuredLoginBudget } from '../../scripts/browser-login-budget.mjs'
+import { isResourceScopeId } from '../../scripts/resource-scope.mjs'
 import { clientAddress } from './client-address'
 
 export function isolatedName(prefix: string): string {
   const scope = process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID
-  if (!scope || !/^[a-z0-9][a-z0-9-]{2,63}$/u.test(scope)) {
+  if (!isResourceScopeId(scope)) {
     throw new Error('业务写入验收必须显式设置隔离环境的 RYFRAME_E2E_SCOPE_ID')
   }
   return `${prefix}-${randomUUID().slice(0, 8)}`

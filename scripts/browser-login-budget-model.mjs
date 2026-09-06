@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { isResourceScopeId } from './resource-scope.mjs'
 
 export const marginMs = 250
 export const maximumBuckets = 1024
 
 export function loginBinding({ scope, capacity, windowMs }) {
-  if (!/^[a-z0-9][a-z0-9-]{2,63}$/u.test(scope || '')) {
+  if (!isResourceScopeId(scope)) {
     throw new Error('登录预算必须绑定明确的隔离 scope')
   }
   if (!Number.isSafeInteger(capacity) || capacity < 1 || capacity > 10_000) {

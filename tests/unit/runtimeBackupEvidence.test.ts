@@ -54,6 +54,18 @@ function fixture() {
     },
   }
   const bindingsBytes = json(binding)
+  const source = (head: string) => ({
+    head,
+    patch_sha256: 'd'.repeat(64),
+    files: [],
+    clean: true,
+  })
+  const artifact = (role: string, digest: string) => ({
+    executable: resolve(`${role}.exe`),
+    command: ['cargo', 'build'],
+    bytes: 1,
+    sha256: digest,
+  })
   const runtime = {
     format_version: 2,
     kind: 'restore-runtime',
@@ -83,12 +95,48 @@ function fixture() {
       worker: 'http://127.0.0.1:9091/readyz',
       frontend: 'http://127.0.0.1:4174',
     },
-    backend: { kind: 'restore-backend-build' },
-    frontend: { kind: 'restore-frontend-build' },
-    processes: { api: { pid: 1 }, worker: { pid: 2 } },
+    backend: {
+      format_version: 1,
+      kind: 'restore-backend-build',
+      source: source('a'.repeat(40)),
+      source_inventory: {},
+      artifacts: {
+        api: artifact('api', '3'.repeat(64)),
+        worker: artifact('worker', '4'.repeat(64)),
+      },
+    },
+    frontend: {
+      format_version: 1,
+      kind: 'restore-frontend-build',
+      source: source('b'.repeat(40)),
+      files: [{ path: 'index.html', bytes: 1, sha256: '5'.repeat(64) }],
+    },
+    processes: {
+      api: {
+        receipt_path: resolve('runtime/api.json'),
+        receipt_sha256: '1'.repeat(64),
+        identity: { pid: 101, started: 'api-started', executable: resolve('api.exe') },
+      },
+      worker: {
+        receipt_path: resolve('runtime/worker.json'),
+        receipt_sha256: '2'.repeat(64),
+        identity: { pid: 102, started: 'worker-started', executable: resolve('worker.exe') },
+      },
+    },
   }
   const runtimeBytes = json(runtime)
   return { binding, bindingsBytes, runtime, runtimeBytes }
+}
+
+function synchronize(value: ReturnType<typeof fixture>): void {
+  value.binding.record.plan_hash = sha256(json(value.binding.record.plan))
+  value.runtime.restore.id = value.binding.record.plan.id
+  value.runtime.restore.backup_id = value.binding.record.plan.backup_id
+  value.runtime.restore.plan_hash = value.binding.record.plan_hash
+  value.runtime.restore.scope_id = value.binding.record.plan.scope_id
+  value.bindingsBytes = json(value.binding)
+  value.runtime.digests.bindings = sha256(value.bindingsBytes)
+  value.runtimeBytes = json(value.runtime)
 }
 
 describe('运行时备份恢复证据', () => {
@@ -142,6 +190,52 @@ describe('运行时备份恢复证据', () => {
     ).toThrow(/不一致/u)
   })
 
+  it('来源 scope 使用与产品一致的边界且不同于恢复目标', () => {
+    for (const replacement of ['a1', `a${'_'.repeat(46)}z`]) {
+      const value = fixture()
+      value.binding.manifest.scope_id = replacement
+      synchronize(value)
+      expect(() =>
+        deriveVerifiedRestoreRuntimeFacts(
+          value.bindingsBytes,
+          value.runtimeBytes,
+          sha256(value.runtimeBytes),
+        ),
+      ).not.toThrow()
+    }
+    for (const replacement of [
+      '',
+      'a',
+      `a${'_'.repeat(47)}z`,
+      'Source',
+      'source.v2',
+      '-source',
+      'source-',
+      'target-scope',
+    ]) {
+      const value = fixture()
+      value.binding.manifest.scope_id = replacement
+      synchronize(value)
+      expect(() =>
+        deriveVerifiedRestoreRuntimeFacts(
+          value.bindingsBytes,
+          value.runtimeBytes,
+          sha256(value.runtimeBytes),
+        ),
+      ).toThrow()
+    }
+    const missingSource = fixture()
+    Reflect.deleteProperty(missingSource.binding.manifest, 'scope_id')
+    synchronize(missingSource)
+    expect(() =>
+      deriveVerifiedRestoreRuntimeFacts(
+        missingSource.bindingsBytes,
+        missingSource.runtimeBytes,
+        sha256(missingSource.runtimeBytes),
+      ),
+    ).toThrow()
+  })
+
   it('拒绝伪造完成、时间错序、重复资源及未知字段', () => {
     const mutations: Array<(value: ReturnType<typeof fixture>) => void> = [
       (value) => {
@@ -158,6 +252,21 @@ describe('运行时备份恢复证据', () => {
       },
       (value) => {
         Object.assign(value.runtime, { unknown: true })
+      },
+      (value) => {
+        value.runtime.backend.source.clean = false
+      },
+      (value) => {
+        value.runtime.processes.api.receipt_path = 'api.json'
+      },
+      (value) => {
+        Object.assign(value.runtime.backend.artifacts.api, { bytes: '1' })
+      },
+      (value) => {
+        value.runtime.frontend.files[0].path = '../index.html'
+      },
+      (value) => {
+        value.runtime.endpoints.frontend = 'http://localhost:4174'
       },
     ]
 

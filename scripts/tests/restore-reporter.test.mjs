@@ -42,26 +42,83 @@ function fixture(t, verify, expectedDigest) {
       plan_hash: sha256(Buffer.from(JSON.stringify(plan))),
       plan,
     },
-    manifest: { id: 'backup', source_sha: 'c'.repeat(40) },
+    manifest: { id: 'backup', scope_id: 'source-unit', source_sha: 'c'.repeat(40) },
   }
   const bindingBytes = Buffer.from(JSON.stringify(bindingValue))
   writeFileSync(bindings, bindingBytes)
+  const source = (head) => ({
+    head,
+    patch_sha256: 'd'.repeat(64),
+    files: [],
+    clean: true,
+  })
+  const artifact = (role, digest) => ({
+    executable: path.join(directory, `${role}.exe`),
+    command: ['cargo', 'build'],
+    bytes: 1,
+    sha256: digest,
+  })
   const runtimeValue = {
-    format_version: 1,
+    format_version: 2,
     kind: 'restore-runtime',
-    restore_id: id,
-    plan_hash: bindingValue.record.plan_hash,
-    scope_id: plan.scope_id,
-    bindings_sha256: sha256(bindingBytes),
+    restore: {
+      id,
+      backup_id: plan.backup_id,
+      plan_hash: bindingValue.record.plan_hash,
+      scope_id: plan.scope_id,
+      data_verified_at: bindingValue.record.data_verified_at,
+    },
+    paths: {
+      backend_root: directory,
+      frontend_root: directory,
+      runtime_dir: directory,
+      bindings,
+      backend_build: path.join(directory, 'backend-build.json'),
+      frontend_build: path.join(directory, 'frontend-build.json'),
+    },
+    digests: {
+      bindings: sha256(bindingBytes),
+      backend_build: 'e'.repeat(64),
+      frontend_build: 'f'.repeat(64),
+    },
+    source: { backend_sha: bindingValue.manifest.source_sha, frontend_sha: plan.frontend_sha },
+    endpoints: {
+      api: plan.api_ready_url,
+      worker: plan.worker_ready_url,
+      frontend: 'http://127.0.0.1:4174',
+    },
     backend: {
+      format_version: 1,
       kind: 'restore-backend-build',
-      source: { head: bindingValue.manifest.source_sha, clean: true },
+      source: source(bindingValue.manifest.source_sha),
+      source_inventory: {},
+      artifacts: {
+        api: artifact('api', '3'.repeat(64)),
+        worker: artifact('worker', '4'.repeat(64)),
+      },
     },
     frontend: {
+      format_version: 1,
       kind: 'restore-frontend-build',
-      source: { head: plan.frontend_sha, clean: true },
+      source: source(plan.frontend_sha),
+      files: [{ path: 'index.html', bytes: 1, sha256: '5'.repeat(64) }],
     },
-    processes: { api: {}, worker: {} },
+    processes: {
+      api: {
+        receipt_path: path.join(directory, 'api.json'),
+        receipt_sha256: '1'.repeat(64),
+        identity: { pid: 101, started: 'api-started', executable: path.join(directory, 'api.exe') },
+      },
+      worker: {
+        receipt_path: path.join(directory, 'worker.json'),
+        receipt_sha256: '2'.repeat(64),
+        identity: {
+          pid: 102,
+          started: 'worker-started',
+          executable: path.join(directory, 'worker.exe'),
+        },
+      },
+    },
   }
   writeFileSync(runtime, JSON.stringify(runtimeValue))
   const environment = {

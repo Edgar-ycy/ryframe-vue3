@@ -117,8 +117,8 @@ test('--plan 在 Node 禁止文件写入与派生子进程的权限模型中成�
   }
 })
 
-test('browser 默认值覆盖父进程遗留环境且仍保持计划零副作用', () => {
-  const result = spawnSync(
+test('browser 只接受显式 fixture，遗留环境不能隐式选择 Device', () => {
+  const inherited = spawnSync(
     process.execPath,
     ['--permission', '--allow-fs-read=*', runner, 'check', '--stage', 'browser', '--plan'],
     {
@@ -132,10 +132,43 @@ test('browser 默认值覆盖父进程遗留环境且仍保持计划零副作用
       shell: false,
     },
   )
-  assert.equal(result.error, undefined)
-  assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /"RYFRAME_E2E_FIXTURE":"core"/u)
-  assert.match(result.stdout, /"RYFRAME_E2E_SERVER":"dev"/u)
+  assert.equal(inherited.error, undefined)
+  assert.equal(inherited.status, 0, inherited.stderr)
+  assert.match(inherited.stdout, /"RYFRAME_E2E_FIXTURE":"core"/u)
+  assert.match(inherited.stdout, /"RYFRAME_E2E_SERVER":"dev"/u)
+
+  const explicit = spawnSync(
+    process.execPath,
+    [
+      '--permission',
+      '--allow-fs-read=*',
+      runner,
+      'check',
+      '--stage',
+      'browser',
+      '--real',
+      '--fixture',
+      'device',
+      '--server',
+      'preview',
+      '--plan',
+    ],
+    {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        RYFRAME_E2E_FIXTURE: 'core',
+        RYFRAME_E2E_SERVER: 'dev',
+      },
+      windowsHide: true,
+      shell: false,
+    },
+  )
+  assert.equal(explicit.error, undefined)
+  assert.equal(explicit.status, 0, explicit.stderr)
+  assert.match(explicit.stdout, /"RYFRAME_E2E_FIXTURE":"device"/u)
+  assert.match(explicit.stdout, /"RYFRAME_E2E_SERVER":"preview"/u)
+  assert.match(explicit.stdout, /playwright\.real\.config\.ts/u)
 })
 
 test('实际进程将未知和互斥参数映射到退出码 2，帮助为 0', () => {

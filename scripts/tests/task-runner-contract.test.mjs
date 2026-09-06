@@ -164,7 +164,7 @@ test('check 参数覆盖阶段、修复、定向路径和只读计划', () => {
   assert.deepEqual(value.groups[1][0].dependencies, [value.groups[0][0].key])
 })
 
-test('定向测试及 browser 参数完整传递，中文空格路径不拆分', () => {
+test('定向测试及 browser 参数完整传递，Device 仍由同一任务定义执行', () => {
   const path = 'D:\\含 空格\\settings.test.ts'
   const task = tasks(plan(['check', '--test', path]))[0]
   assert.deepEqual(task.params, { coverage: false, test: path })
@@ -172,7 +172,10 @@ test('定向测试及 browser 参数完整传递，中文空格路径不拆分',
   const browser = tasks(
     plan(['check', '--stage', 'browser', '--real', '--fixture', 'device', '--server', 'preview']),
   )[0]
+  assert.deepEqual(browser.params, { real: true, fixture: 'device', server: 'preview' })
   assert.deepEqual(browser.env, { RYFRAME_E2E_FIXTURE: 'device', RYFRAME_E2E_SERVER: 'preview' })
+  assert.deepEqual(browser.invocation, taskSpecs.browser.invoke(browser))
+  assert.deepEqual(browser.invocation.args, ['test', '--config', 'playwright.real.config.ts'])
   const defaults = tasks(plan(['check', '--stage', 'browser']))[0]
   assert.deepEqual(defaults.params, { real: false, fixture: 'core', server: 'dev' })
   assert.deepEqual(defaults.env, { RYFRAME_E2E_FIXTURE: 'core', RYFRAME_E2E_SERVER: 'dev' })
@@ -217,6 +220,10 @@ test('真实浏览器配置消费 dev 和 preview 服务模式并隔离产物', 
   assert.match(source, /artifactSuffix = `\$\{fixture\}\/\$\{serverMode\}/u)
   assert.match(source, /playwright-real\/report\/\$\{artifactSuffix\}/u)
   assert.match(source, /playwright-real\/results\/\$\{artifactSuffix\}/u)
+  assert.match(
+    source,
+    /testDir: fixture === 'device' \? 'tests\/browser-device' : 'tests\/browser-real'/u,
+  )
 })
 
 test('开发、构建和生成选项映射到唯一职责', () => {
@@ -278,6 +285,7 @@ test('帮助只展示四类用户入口和五个检查阶段', () => {
   for (const stage of ['static', 'unit', 'contract', 'browser', 'tools']) {
     assert.ok(taskRunnerHelp.includes(stage))
   }
+  assert.match(taskRunnerHelp, /Device 浏览器流程必须显式使用 --real --fixture device/u)
 })
 
 test('统一 runner 直接使用项目依赖、无 shell 并支持隔离缓存', async () => {

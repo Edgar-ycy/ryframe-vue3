@@ -17,6 +17,7 @@ export const taskRunnerHelp = `RyFrame 前端任务
 
 check 阶段：static、unit、contract、browser、tools
 附加参数：browser 可用 --real、--fixture core|device、--server dev|preview
+Device 浏览器流程必须显式使用 --real --fixture device
 static/contract 可用 --upstream；--full 不启动浏览器或真实业务服务
 CI 物料清单：corepack pnpm generate --sbom --output <文件> --write
 `

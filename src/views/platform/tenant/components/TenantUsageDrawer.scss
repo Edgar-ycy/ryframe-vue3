@@ -63,6 +63,12 @@
   color: #312e81;
 }
 
+.tenant-heading__tags :deep(.el-tag--default) {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
 .drawer-hint,
 .section-description,
 .window-remaining {

@@ -19,3 +19,4 @@ peerDependencyRules:
     'openapi-typescript>typescript': '6'
 onlyBuiltDependencies:
   - '@parcel/watcher'
+enableGlobalVirtualStore: false

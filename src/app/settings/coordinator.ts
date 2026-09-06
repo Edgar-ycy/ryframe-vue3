@@ -101,13 +101,16 @@ export function applyServerSettings(settings: ShellServerSettings): void {
   const store = settingsStore()
   let changed = false
 
-  if (settings.sideTheme) {
-    const theme = settings.sideTheme === 'theme-dark' ? 'dark' : 'light'
-    if (theme !== store.theme) {
-      store.theme = theme
-      applyTheme(theme)
-      changed = true
-    }
+  const theme =
+    settings.sideTheme === 'theme-dark'
+      ? 'dark'
+      : settings.sideTheme === 'theme-light'
+        ? 'light'
+        : undefined
+  if (theme && theme !== store.theme) {
+    store.theme = theme
+    applyTheme(theme)
+    changed = true
   }
 
   const color = settings.skinName ? SKIN_COLOR_MAP[settings.skinName] : undefined

@@ -131,6 +131,25 @@ describe('设置协调器', () => {
     expect(settingsWriteCount(environment.setItem)).toBe(2)
   })
 
+  it('未知服务端主题和皮肤不修改状态、DOM 或存储', () => {
+    const environment = installSettingsEnvironment()
+    initializeSettings()
+    setTheme('dark')
+    setThemeColor('#22C55E')
+    environment.writes.forEach((write) => write.mockClear())
+    const store = useSettingsStore()
+    const before = { ...store.$state }
+    const mutation = vi.fn()
+    const stop = store.$subscribe(mutation, { flush: 'sync' })
+
+    applyServerSettings({ sideTheme: 'theme-contrast', skinName: 'unknown-skin' })
+
+    expect(store.$state).toEqual(before)
+    expect(mutation).not.toHaveBeenCalled()
+    environment.writes.forEach((write) => expect(write).not.toHaveBeenCalled())
+    stop()
+  })
+
   it('同一 Store 只初始化一次且重复调用不读取或应用外部投影', () => {
     const environment = installSettingsEnvironment()
     initializeSettings()

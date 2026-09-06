@@ -86,6 +86,7 @@ test('pnpm 缓存指纹覆盖完整工作区定义', async () => {
 
 test('开发脚本与 CI 只通过 Corepack 调用固定 pnpm', async () => {
   const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
+  const workspace = await readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8')
   const workflow = await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')
   const action = await readFile(path.join(root, '.github/actions/setup-pnpm/action.yml'), 'utf8')
 
@@ -95,6 +96,7 @@ test('开发脚本与 CI 只通过 Corepack 调用固定 pnpm', async () => {
   assert.doesNotMatch(workflow, /^\s*run:\s*pnpm\s/mu)
   assert.match(action, /corepack prepare "pnpm@\$\{pnpm_version\}" --activate/u)
   assert.doesNotMatch(action, /npm install --global/u)
+  assert.match(workspace, /^verifyDepsBeforeRun: error$/mu)
 })
 
 test('可执行错误提示也通过 Corepack 给出 pnpm 命令', async () => {

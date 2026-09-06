@@ -6,6 +6,7 @@ import {
   businessCatalogIsolationFailures,
   findNamedChunk,
   findOptionalNamedChunk,
+  staticImportCycles,
 } from './bundle-manifest-policy.mjs'
 
 const dist = path.resolve('dist')
@@ -40,6 +41,9 @@ const regressionLimits = {
   initialCssGzip: baseline.initialCssGzip + Math.min(baseline.initialCssGzip * 0.03, 5 * 1024),
 }
 const failures = []
+for (const cycle of staticImportCycles(manifest)) {
+  failures.push(`static chunk import cycle: ${cycle.join(' -> ')}`)
+}
 if (initialJsGzip > limits.initialJsGzip) {
   failures.push(`initial gzip JS ${initialJsGzip} > ${limits.initialJsGzip}`)
 }

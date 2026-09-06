@@ -6,6 +6,7 @@ import {
   collectInitialGraph,
   findNamedChunk,
   findOptionalNamedChunk,
+  staticImportCycles,
 } from '../bundle-manifest-policy.mjs'
 
 const businessCatalogSources = [
@@ -102,4 +103,20 @@ test('business catalog owners must statically import children while core remains
 test('manifest imports must resolve to a known chunk', () => {
   const manifest = manifestWithInitialImports(['missing.js'])
   assert.throws(() => collectInitialGraph(manifest), /Manifest import is missing/)
+})
+
+test('manifest static imports must not contain a cycle', () => {
+  const manifest = manifestWithInitialImports(['_app-runtime.js'])
+  manifest['_app-runtime.js'] = {
+    file: 'assets/app-runtime.js',
+    imports: ['_vue-i18n.js'],
+  }
+  manifest['_vue-i18n.js'] = {
+    file: 'assets/vue-i18n.js',
+    imports: ['_app-runtime.js'],
+  }
+
+  assert.deepEqual(staticImportCycles(manifest), [
+    ['_app-runtime.js', '_vue-i18n.js', '_app-runtime.js'],
+  ])
 })

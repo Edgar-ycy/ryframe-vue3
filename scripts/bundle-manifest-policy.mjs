@@ -58,6 +58,34 @@ export function collectInitialGraph(manifest) {
   return { files, keys }
 }
 
+export function staticImportCycles(manifest) {
+  const states = new Map()
+  const stack = []
+  const cycles = []
+
+  function visit(key) {
+    const state = states.get(key)
+    if (state === 'visiting') {
+      const start = stack.indexOf(key)
+      cycles.push([...stack.slice(start), key])
+      return
+    }
+    if (state === 'visited') return
+
+    const chunk = manifest[key]
+    if (!chunk) throw new Error(`Manifest import is missing: ${key}`)
+
+    states.set(key, 'visiting')
+    stack.push(key)
+    for (const imported of chunk.imports ?? []) visit(imported)
+    stack.pop()
+    states.set(key, 'visited')
+  }
+
+  for (const key of Object.keys(manifest).sort()) visit(key)
+  return cycles
+}
+
 export function businessCatalogIsolationFailures(manifest, initialGraph, catalogSources) {
   const failures = []
   for (const rawSource of catalogSources) {

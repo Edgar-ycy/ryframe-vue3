@@ -228,6 +228,8 @@ export default defineConfig(({ mode }) => {
                   const normalizedId = normalizedModuleId(id)
                   return (
                     normalizedId.includes('/node_modules/vue/') ||
+                    normalizedId.includes('/node_modules/vue-i18n/') ||
+                    normalizedId.includes('/node_modules/@intlify/') ||
                     normalizedId.includes('/node_modules/vue-router/') ||
                     normalizedId.includes('/node_modules/pinia/')
                   )
@@ -238,13 +240,6 @@ export default defineConfig(({ mode }) => {
                 name: 'echarts-core',
                 test: (id) => normalizedModuleId(id).includes('/node_modules/echarts/'),
                 priority: 50,
-              },
-              {
-                name: 'app-runtime',
-                test: /[\\/]src[\\/]/,
-                tags: ['$initial'],
-                priority: 10,
-                includeDependenciesRecursively: false,
               },
             ],
           },

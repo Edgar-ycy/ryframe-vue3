@@ -185,6 +185,11 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
   "system.user": "user"
 })
 
+export const navigationResourceDefaultNames = Object.freeze({
+  "notice": "通知公告",
+  "post": "岗位管理"
+})
+
 export const navigationResourceNames = Object.freeze({
   "notice": "Notices",
   "post": "Posts"

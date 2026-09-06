@@ -105,6 +105,7 @@ test('生成资源的导航文案使用菜单 title key，且缺少对应菜单�
 
   const rendered = renderMenuRouteCatalog(document)
   assert.match(rendered, /"post": "Posts"/u)
+  assert.match(rendered, /"post": "岗位管理"/u)
   assert.doesNotMatch(rendered, /"zh-CN"/u)
 
   const invalid = structuredClone(document)

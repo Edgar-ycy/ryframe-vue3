@@ -29,7 +29,6 @@ export const generatedArtifactPaths = Object.freeze([
   ...generatedOperationArtifactPaths,
   'src/api/generated/permissions.ts',
   'src/api/generated/menuRoutes.ts',
-  'src/api/generated/navigation.ts',
   'src/api/generated/crudResources.ts',
   'src/shared/security/passwordPolicy.generated.json',
   'src/shared/markdown/noticePolicy.generated.json',
@@ -223,32 +222,22 @@ export function renderMenuRouteCatalog(document) {
       [route.defaultName, route.titleKey],
     ]),
   )
+  const resourceNames = {}
+  for (const resource of requireCrudResourceCatalog(
+    document?.['x-ryframe-crud-resources'],
+    document,
+  )) {
+    const route = routes.find((candidate) => candidate.routeKey === resource.route.key)
+    if (!route) throw new Error(`生成资源 ${resource.name} 缺少菜单路由声明`)
+    resourceNames[route.titleKey] = [resource.menu.labels.en, resource.menu.labels.zh_cn]
+  }
   return `${generatedHeader}export const menuRouteCatalog = ${JSON.stringify(routes, null, 2)} as const
 
 export type MenuRouteKey = typeof menuRouteCatalog[number]['routeKey']
 
 export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(titleKeys, null, 2)})
-`
-}
 
-export function renderNavigationResourceMessages(document) {
-  const routes = new Map(
-    requireMenuRouteCatalog(
-      document?.['x-ryframe-menu-routes'],
-      'openapi/openapi.json.x-ryframe-menu-routes',
-    ).map((route) => [route.routeKey, route]),
-  )
-  const messages = { 'en-US': {}, 'zh-CN': {} }
-  for (const resource of requireCrudResourceCatalog(
-    document?.['x-ryframe-crud-resources'],
-    document,
-  )) {
-    const route = routes.get(resource.route.key)
-    if (!route) throw new Error(`生成资源 ${resource.name} 缺少菜单路由声明`)
-    messages['zh-CN'][route.titleKey] = resource.menu.labels.zh_cn
-    messages['en-US'][route.titleKey] = resource.menu.labels.en
-  }
-  return `${generatedHeader}export const generatedNavigationMessages = ${JSON.stringify(messages, null, 2)} as const
+export const navigationResourceNames = Object.freeze(${JSON.stringify(resourceNames, null, 2)})
 `
 }
 
@@ -300,7 +289,6 @@ export async function buildApiArtifacts(root) {
     ...operationArtifacts,
     ['src/api/generated/permissions.ts', renderPermissionCatalog(document)],
     ['src/api/generated/menuRoutes.ts', renderMenuRouteCatalog(document)],
-    ['src/api/generated/navigation.ts', renderNavigationResourceMessages(document)],
     ['src/api/generated/crudResources.ts', renderCrudResourceCatalog(document)],
     [
       'src/shared/security/passwordPolicy.generated.json',

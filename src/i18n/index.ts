@@ -1,4 +1,5 @@
 import { createI18n } from 'vue-i18n'
+import { navigationResourceNames } from '@/api/generated/menuRoutes'
 import { messages, navigationTitleKeys } from './messages'
 
 export type AppLocale = keyof typeof messages
@@ -85,6 +86,10 @@ export function translateNavigationTitle(title: unknown): string {
   if (typeof title !== 'string') return ''
   const key = navigationTitleKeys[title]
   if (key) {
+    const resourceNames = navigationResourceNames[key as keyof typeof navigationResourceNames]
+    if (resourceNames) {
+      return getApplicationLocale() === 'zh-CN' ? resourceNames[1] : resourceNames[0]
+    }
     const translated = translate(`navigation.${key}`)
     if (translated !== `navigation.${key}`) return translated
   }

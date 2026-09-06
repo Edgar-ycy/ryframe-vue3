@@ -1,5 +1,4 @@
 import { navigationRouteTitleKeys } from '@/api/generated/menuRoutes'
-import { generatedNavigationMessages } from '@/api/generated/navigation'
 import { coreMessages } from './catalog/core'
 import { exportJobMessages } from './catalog/export-jobs'
 import { shellMessages } from './catalog/shell'
@@ -11,19 +10,11 @@ export const messages = {
     ...shellMessages['zh-CN'],
     ...exportJobMessages['zh-CN'],
     ...coreMessages['zh-CN'],
-    navigation: {
-      ...coreMessages['zh-CN'].navigation,
-      ...generatedNavigationMessages['zh-CN'],
-    },
   },
   'en-US': {
     ...shellMessages['en-US'],
     ...exportJobMessages['en-US'],
     ...coreMessages['en-US'],
-    navigation: {
-      ...coreMessages['en-US'].navigation,
-      ...generatedNavigationMessages['en-US'],
-    },
   },
 } as const
 

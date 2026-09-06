@@ -213,3 +213,14 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
   "system.user": "user",
   "用户管理": "user"
 })
+
+export const navigationResourceNames = Object.freeze({
+  "notice": [
+    "Notices",
+    "通知公告"
+  ],
+  "post": [
+    "Posts",
+    "岗位管理"
+  ]
+})

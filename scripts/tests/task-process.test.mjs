@@ -37,11 +37,21 @@ server.listen(0, '127.0.0.1', () => {
 
 async function ready(file) {
   const deadline = Date.now() + 5000
-  while (!existsSync(file)) {
-    assert.ok(Date.now() < deadline, '直接子进程应及时就绪')
+  let incompleteStateError
+  while (Date.now() < deadline) {
+    if (existsSync(file)) {
+      try {
+        return JSON.parse(readFileSync(file, 'utf8'))
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) {
+          throw error
+        }
+        incompleteStateError = error
+      }
+    }
     await delay(10)
   }
-  return JSON.parse(readFileSync(file, 'utf8'))
+  assert.fail(incompleteStateError ?? '直接子进程应及时写入完整状态')
 }
 
 async function assertReleased({ pid, port }) {

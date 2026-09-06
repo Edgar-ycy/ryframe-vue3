@@ -1,6 +1,8 @@
 name: Extended CI
 
 on:
+  push:
+    tags: ['v*.*.*']
   schedule:
     - cron: '43 3 * * 3'
   workflow_dispatch:

@@ -6,6 +6,7 @@ import {
 } from 'vue-router'
 import type { SessionContext } from '@/features/session/contracts'
 import { matchedRouteAccessResult } from '@/features/navigation/routeAccess'
+import { translateNavigationTitle } from '@/i18n'
 import {
   buildAccessibleMenus,
   buildRoutesFromMenuTree,
@@ -215,7 +216,8 @@ const navigationGuard = createNavigationGuard({
 })
 
 router.beforeEach((to) => {
-  document.title = to.meta?.title ? `${to.meta.title} - RyFrame` : 'RyFrame'
+  const title = translateNavigationTitle(to.meta?.title, to.meta?.defaultTitle)
+  document.title = title ? `${title} - RyFrame` : 'RyFrame'
   return navigationGuard(to)
 })
 

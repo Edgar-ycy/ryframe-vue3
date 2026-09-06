@@ -1,4 +1,4 @@
-import { navigationRouteTitleKeys } from '@/api/generated/menuRoutes'
+import { navigationRouteFallbackNames, navigationRouteTitleKeys } from '@/api/generated/menuRoutes'
 import { coreMessages } from './catalog/core'
 import { exportJobMessages } from './catalog/export-jobs'
 import { shellMessages } from './catalog/shell'
@@ -33,3 +33,5 @@ export const navigationTitleKeys: Readonly<Record<string, string>> = Object.free
   页面不存在: 'notFound',
   服务器错误: 'serverError',
 })
+
+export const navigationFallbackNames = navigationRouteFallbackNames

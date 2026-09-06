@@ -216,17 +216,37 @@ export function renderMenuRouteCatalog(document) {
     document?.['x-ryframe-menu-routes'],
     'openapi/openapi.json.x-ryframe-menu-routes',
   )
+  const resourceMenuLabels = new Map(
+    requireCrudResourceCatalog(document?.['x-ryframe-crud-resources'], document).map((resource) => [
+      resource.route.key,
+      { 'en-US': resource.menu.labels.en, 'zh-CN': resource.menu.labels.zh_cn },
+    ]),
+  )
   const titleKeys = Object.fromEntries(
     routes.flatMap((route) => [
       [route.routeKey, route.titleKey],
       [route.defaultName, route.titleKey],
     ]),
   )
+  const fallbackNames = Object.fromEntries(
+    routes.flatMap((route) => {
+      const labels = resourceMenuLabels.get(route.routeKey) ?? {
+        'en-US': route.defaultName,
+        'zh-CN': route.defaultName,
+      }
+      return [
+        [route.routeKey, labels],
+        [route.defaultName, labels],
+      ]
+    }),
+  )
   return `${generatedHeader}export const menuRouteCatalog = ${JSON.stringify(routes, null, 2)} as const
 
 export type MenuRouteKey = typeof menuRouteCatalog[number]['routeKey']
 
 export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(titleKeys, null, 2)})
+
+export const navigationRouteFallbackNames: Readonly<Record<string, Readonly<Record<'zh-CN' | 'en-US', string>>>> = Object.freeze(${JSON.stringify(fallbackNames, null, 2)})
 `
 }
 

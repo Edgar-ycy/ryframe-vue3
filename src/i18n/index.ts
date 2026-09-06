@@ -1,5 +1,5 @@
 import { createI18n } from 'vue-i18n'
-import { messages, navigationTitleKeys } from './messages'
+import { messages, navigationFallbackNames, navigationTitleKeys } from './messages'
 
 export type AppLocale = keyof typeof messages
 
@@ -84,7 +84,11 @@ export function translate(key: string, values?: Record<string, unknown>): string
 export function translateNavigationTitle(title: unknown): string {
   if (typeof title !== 'string') return ''
   const key = navigationTitleKeys[title]
-  return key ? translate(`navigation.${key}`) : title
+  if (key) {
+    const translated = translate(`navigation.${key}`)
+    if (translated !== `navigation.${key}`) return translated
+  }
+  return navigationFallbackNames[title]?.[getApplicationLocale()] ?? title
 }
 
 export function formatLocalizedDate(value: string): string {

@@ -184,6 +184,14 @@ test('边界规则要求 Store 只依赖中立类型并拒绝直接依赖 API', 
   assert.equal(
     boundaryViolation({
       kind: 'runtime',
+      source: 'src/stores/settings.ts',
+      target: 'src/app/settings/coordinator.ts',
+    }),
+    'stores 不得依赖 app',
+  )
+  assert.equal(
+    boundaryViolation({
+      kind: 'runtime',
       source: 'src/app/session.ts',
       target: 'src/router/index.ts',
     }),

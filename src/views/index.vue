@@ -65,7 +65,9 @@
               <component :is="resolveElementIcon(link.icon)" />
             </el-icon>
           </span>
-          <span class="quick-title">{{ translateNavigationTitle(link.title, link.defaultTitle) }}</span>
+          <span class="quick-title">{{
+            translateNavigationTitle(link.title, link.defaultTitle)
+          }}</span>
           <el-icon class="quick-arrow"><ArrowRight /></el-icon>
         </button>
       </div>

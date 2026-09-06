@@ -216,9 +216,7 @@ export function renderMenuRouteCatalog(document) {
     document?.['x-ryframe-menu-routes'],
     'openapi/openapi.json.x-ryframe-menu-routes',
   )
-  const titleKeys = Object.fromEntries(
-    routes.map((route) => [route.routeKey, route.titleKey]),
-  )
+  const titleKeys = Object.fromEntries(routes.map((route) => [route.routeKey, route.titleKey]))
   const resourceNames = {}
   for (const resource of requireCrudResourceCatalog(
     document?.['x-ryframe-crud-resources'],

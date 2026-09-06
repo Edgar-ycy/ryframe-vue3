@@ -32,6 +32,12 @@ describe('菜单国际化目录', () => {
     }
   })
 
+  it('服务端遗留 route key 时回退到生成菜单的默认名称', () => {
+    setApplicationLocale('zh-CN')
+    expect(translateNavigationTitle('system.post', 'system.post')).toBe('岗位管理')
+    expect(translateNavigationTitle('system.post')).toBe('岗位管理')
+  })
+
   it('所有菜单 route key 在中英文环境下都能显示友好名称', () => {
     for (const locale of ['zh-CN', 'en-US'] as const) {
       setApplicationLocale(locale)

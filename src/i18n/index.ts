@@ -1,5 +1,5 @@
 import { createI18n } from 'vue-i18n'
-import { navigationResourceNames } from '@/api/generated/menuRoutes'
+import { menuRouteCatalog, navigationResourceNames } from '@/api/generated/menuRoutes'
 import { messages, navigationTitleKeys } from './messages'
 
 export type AppLocale = keyof typeof messages
@@ -82,9 +82,14 @@ export function translate(key: string, values?: Record<string, unknown>): string
   return values ? i18n.global.t(key, values) : i18n.global.t(key)
 }
 
+function navigationFallback(title: string, defaultTitle: unknown): string {
+  if (typeof defaultTitle === 'string' && defaultTitle !== title) return defaultTitle
+  return menuRouteCatalog.find((menu) => menu.routeKey === title)?.defaultName ?? title
+}
+
 export function translateNavigationTitle(title: unknown, defaultTitle?: unknown): string {
   if (typeof title !== 'string') return ''
-  const fallback = typeof defaultTitle === 'string' ? defaultTitle : title
+  const fallback = navigationFallback(title, defaultTitle)
   const key = navigationTitleKeys[title]
   if (key) {
     const resourceNames = navigationResourceNames[key as keyof typeof navigationResourceNames]

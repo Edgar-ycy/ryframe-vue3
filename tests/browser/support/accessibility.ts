@@ -6,6 +6,7 @@ export async function expectNoSeriousAccessibilityViolations(
   pageName: string,
 ): Promise<void> {
   await expect(page.locator('.el-message')).toHaveCount(0, { timeout: 5_000 })
+  await expect(page.locator('[class*="-enter-active"], [class*="-leave-active"]')).toHaveCount(0)
   const result = await new AxeBuilder({ page }).analyze()
   const violations = result.violations
     .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')

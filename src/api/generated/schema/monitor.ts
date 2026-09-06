@@ -798,6 +798,7 @@ export interface components {
              */
             code: number;
             data?: {
+                backup: components["schemas"]["RuntimeBackupStatus"];
                 database: components["schemas"]["RuntimeDatabaseStatus"];
                 jobs: components["schemas"]["RuntimeJobsStatus"];
                 object_storage: components["schemas"]["RuntimeStorageStatus"];
@@ -1237,6 +1238,40 @@ export interface components {
             uptime_days: number;
             /** @description Redis 版本 */
             version: string;
+        };
+        /** @enum {string} */
+        RuntimeBackupCollectionStatus: "unknown" | "available" | "unavailable" | "stale";
+        RuntimeBackupHealth: {
+            /** Format: int64 */
+            expired_resources: number;
+            /** Format: int64 */
+            invalid_resources: number;
+            /** Format: date-time */
+            last_restore_completed?: string | null;
+            last_restore_succeeded: boolean;
+            /** Format: int64 */
+            missing_resources: number;
+            /** Format: date-time */
+            oldest_capture?: string | null;
+            /** Format: int64 */
+            recovery_point_age_seconds?: number | null;
+            /** Format: int64 */
+            required_resources: number;
+            /** Format: int64 */
+            restore_duration_seconds?: number | null;
+            /** Format: int64 */
+            restore_overdue: number;
+            /** Format: int64 */
+            restore_running: number;
+        };
+        RuntimeBackupStatus: {
+            available: boolean;
+            collector_status: components["schemas"]["RuntimeBackupCollectionStatus"];
+            health?: null | components["schemas"]["RuntimeBackupHealth"];
+            /** Format: date-time */
+            last_attempt_at?: string | null;
+            /** Format: date-time */
+            last_success_at?: string | null;
         };
         RuntimeCircuitBreakerStatus: {
             state: string;

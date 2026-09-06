@@ -2275,6 +2275,40 @@ export interface components {
             sort: number;
             status: string;
         };
+        /** @enum {string} */
+        RuntimeBackupCollectionStatus: "unknown" | "available" | "unavailable" | "stale";
+        RuntimeBackupHealth: {
+            /** Format: int64 */
+            expired_resources: number;
+            /** Format: int64 */
+            invalid_resources: number;
+            /** Format: date-time */
+            last_restore_completed?: string | null;
+            last_restore_succeeded: boolean;
+            /** Format: int64 */
+            missing_resources: number;
+            /** Format: date-time */
+            oldest_capture?: string | null;
+            /** Format: int64 */
+            recovery_point_age_seconds?: number | null;
+            /** Format: int64 */
+            required_resources: number;
+            /** Format: int64 */
+            restore_duration_seconds?: number | null;
+            /** Format: int64 */
+            restore_overdue: number;
+            /** Format: int64 */
+            restore_running: number;
+        };
+        RuntimeBackupStatus: {
+            available: boolean;
+            collector_status: components["schemas"]["RuntimeBackupCollectionStatus"];
+            health?: null | components["schemas"]["RuntimeBackupHealth"];
+            /** Format: date-time */
+            last_attempt_at?: string | null;
+            /** Format: date-time */
+            last_success_at?: string | null;
+        };
         RuntimeCircuitBreakerStatus: {
             state: string;
         };
@@ -2316,6 +2350,7 @@ export interface components {
             connected: boolean;
         };
         RuntimeStatus: {
+            backup: components["schemas"]["RuntimeBackupStatus"];
             database: components["schemas"]["RuntimeDatabaseStatus"];
             jobs: components["schemas"]["RuntimeJobsStatus"];
             object_storage: components["schemas"]["RuntimeStorageStatus"];
@@ -3232,7 +3267,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_AvatarResponse"];
                 };
             };
-            /** @description 上传内容超过 5 MiB 限制 */
+            /** @description 上传表单或头像内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的头像大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -4029,7 +4079,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
             };
-            /** @description 上传内容超过 10 MiB 限制 */
+            /** @description 上传表单或文件内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的文件大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -4091,7 +4156,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
             };
-            /** @description 上传内容超过 5 MiB 限制 */
+            /** @description 上传表单或头像内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的头像大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -4153,7 +4233,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
             };
-            /** @description 上传内容超过 10 MiB 限制 */
+            /** @description 上传表单或文件内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的文件大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */

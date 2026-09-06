@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 
 export interface RouteProjectionMeta {
   title?: string
+  defaultTitle?: string
   icon?: string
   hidden?: boolean
   affix?: boolean

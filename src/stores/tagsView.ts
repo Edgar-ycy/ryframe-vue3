@@ -4,6 +4,7 @@ export interface TagView {
   path: string
   name?: string
   title?: string
+  defaultTitle?: string
   affix?: boolean
   noCache?: boolean
   requiredCapabilities?: readonly string[]

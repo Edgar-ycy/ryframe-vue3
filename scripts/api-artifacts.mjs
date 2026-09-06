@@ -217,10 +217,7 @@ export function renderMenuRouteCatalog(document) {
     'openapi/openapi.json.x-ryframe-menu-routes',
   )
   const titleKeys = Object.fromEntries(
-    routes.flatMap((route) => [
-      [route.routeKey, route.titleKey],
-      [route.defaultName, route.titleKey],
-    ]),
+    routes.map((route) => [route.routeKey, route.titleKey]),
   )
   const resourceNames = {}
   for (const resource of requireCrudResourceCatalog(
@@ -229,7 +226,7 @@ export function renderMenuRouteCatalog(document) {
   )) {
     const route = routes.find((candidate) => candidate.routeKey === resource.route.key)
     if (!route) throw new Error(`生成资源 ${resource.name} 缺少菜单路由声明`)
-    resourceNames[route.titleKey] = [resource.menu.labels.en, resource.menu.labels.zh_cn]
+    resourceNames[route.titleKey] = resource.menu.labels.en
   }
   return `${generatedHeader}export const menuRouteCatalog = ${JSON.stringify(routes, null, 2)} as const
 

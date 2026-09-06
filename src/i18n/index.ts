@@ -82,18 +82,19 @@ export function translate(key: string, values?: Record<string, unknown>): string
   return values ? i18n.global.t(key, values) : i18n.global.t(key)
 }
 
-export function translateNavigationTitle(title: unknown): string {
+export function translateNavigationTitle(title: unknown, defaultTitle?: unknown): string {
   if (typeof title !== 'string') return ''
+  const fallback = typeof defaultTitle === 'string' ? defaultTitle : title
   const key = navigationTitleKeys[title]
   if (key) {
     const resourceNames = navigationResourceNames[key as keyof typeof navigationResourceNames]
     if (resourceNames) {
-      return getApplicationLocale() === 'zh-CN' ? resourceNames[1] : resourceNames[0]
+      return getApplicationLocale() === 'zh-CN' ? fallback : resourceNames
     }
     const translated = translate(`navigation.${key}`)
     if (translated !== `navigation.${key}`) return translated
   }
-  return title
+  return fallback
 }
 
 export function formatLocalizedDate(value: string): string {

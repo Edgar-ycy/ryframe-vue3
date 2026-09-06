@@ -111,7 +111,8 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteProjection | null {
     name: getRouteName(node),
     redirect,
     meta: {
-      title: node.name,
+      title: node.route_key ?? node.name,
+      defaultTitle: node.name,
       icon: iconPascalCase(node.icon || '') || undefined,
       hidden: !isNodeVisible(node),
       alwaysShow: true,
@@ -140,7 +141,8 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteProjectio
     name: routeName,
     component: withRouteComponentName(routeName, page.component),
     meta: {
-      title: node.name,
+      title: node.route_key ?? node.name,
+      defaultTitle: node.name,
       icon: iconPascalCase(node.icon || '') || undefined,
       hidden: !isNodeVisible(node),
       sort: node.sort,

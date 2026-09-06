@@ -13,7 +13,7 @@
 
     <el-breadcrumb class="breadcrumb" separator="/">
       <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.path" :to="item.path">
-        {{ translateNavigationTitle(item.meta?.title) }}
+        {{ translateNavigationTitle(item.meta?.title, item.meta?.defaultTitle) }}
       </el-breadcrumb-item>
     </el-breadcrumb>
 

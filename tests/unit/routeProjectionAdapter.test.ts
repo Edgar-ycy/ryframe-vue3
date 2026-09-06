@@ -17,7 +17,8 @@ describe('路由投影边界适配', () => {
             name: 'Index',
             component,
             meta: {
-              title: '首页',
+              title: 'home',
+              defaultTitle: '首页',
               permission: 'system:user:list',
               requiredCapabilities: ['dashboard'],
             },
@@ -37,7 +38,8 @@ describe('路由投影边界适配', () => {
             path: 'index',
             name: 'Index',
             meta: {
-              title: '首页',
+              title: 'home',
+              defaultTitle: '首页',
               permission: 'system:user:list',
               requiredCapabilities: ['dashboard'],
             },
@@ -49,7 +51,10 @@ describe('路由投影边界适配', () => {
 
     const restored = restoreRouteRecords(projection)
     expect(restored[0].children?.[0].component).toBe(component)
-    expect(restored[0].children?.[0].meta?.title).toBe('首页')
+    expect(restored[0].children?.[0].meta).toMatchObject({
+      title: 'home',
+      defaultTitle: '首页',
+    })
   })
 
   it('拒绝无法无损投影的函数式重定向', () => {

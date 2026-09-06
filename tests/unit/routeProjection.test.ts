@@ -101,6 +101,11 @@ describe('菜单树路由投影', () => {
         requiresPermission: false,
       },
     })
+    expect(routes[0].meta).toMatchObject({ title: 'system', defaultTitle: '系统管理' })
+    expect(routes[0].children?.[0].meta).toMatchObject({
+      title: 'system.user',
+      defaultTitle: '隐藏用户',
+    })
     expect(routes[0].children?.map((child) => child.path)).toEqual(['user', 'nested'])
     expect(routes[0].children?.[0].meta?.hidden).toBe(true)
   })

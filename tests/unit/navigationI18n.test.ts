@@ -26,7 +26,9 @@ describe('菜单国际化目录', () => {
   it('中文翻译与后端访问目录默认名称完全一致', () => {
     setApplicationLocale('zh-CN')
     for (const menu of menuRouteCatalog) {
-      expect(translateNavigationTitle(menu.routeKey), menu.routeKey).toBe(menu.defaultName)
+      expect(translateNavigationTitle(menu.routeKey, menu.defaultName), menu.routeKey).toBe(
+        menu.defaultName,
+      )
     }
   })
 
@@ -34,7 +36,7 @@ describe('菜单国际化目录', () => {
     for (const locale of ['zh-CN', 'en-US'] as const) {
       setApplicationLocale(locale)
       for (const menu of menuRouteCatalog) {
-        const title = translateNavigationTitle(menu.routeKey)
+        const title = translateNavigationTitle(menu.routeKey, menu.defaultName)
         expect(title, `${locale}:${menu.routeKey}`).not.toBe(menu.routeKey)
         expect(title.trim(), `${locale}:${menu.routeKey}`).not.toBe('')
       }

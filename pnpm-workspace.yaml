@@ -1,4 +1,6 @@
 engineStrict: true
+# 公共任务入口不得在执行前隐式改写依赖目录；安装必须显式执行。
+verifyDepsBeforeRun: error
 overrides:
   'brace-expansion@^1.0.0': 1.1.18
   'brace-expansion@^2.0.0': 2.1.4

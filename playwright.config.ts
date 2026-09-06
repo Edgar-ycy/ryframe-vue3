@@ -10,9 +10,7 @@ const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? unde
 const serverCommand =
   serverMode === 'preview'
     ? 'node scripts/run-browser-preview-harness-server.mjs ' + port
-    : 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ' +
-      port +
-      ' --strictPort'
+    : 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ' + port + ' --strictPort'
 const reportDirectory = `.local-tests/playwright/report/${serverMode}`
 const resultsDirectory = `.local-tests/playwright/results/${serverMode}`
 

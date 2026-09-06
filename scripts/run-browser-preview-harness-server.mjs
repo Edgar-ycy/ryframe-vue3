@@ -125,10 +125,15 @@ export async function startPreviewHarnessServer(options, dependencies = {}) {
 }
 
 async function run() {
-  const server = await startPreviewHarnessServer(parsePreviewHarnessServerArguments(process.argv.slice(2)))
+  const server = await startPreviewHarnessServer(
+    parsePreviewHarnessServerArguments(process.argv.slice(2)),
+  )
   console.log('生产预览测试桥接已就绪：' + server.origin)
   let stopping
-  for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+  for (const [signal, code] of [
+    ['SIGINT', 130],
+    ['SIGTERM', 143],
+  ]) {
     process.once(signal, () => {
       stopping ??= server.close().then(
         () => {

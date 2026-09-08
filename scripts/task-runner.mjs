@@ -44,6 +44,20 @@ function taskInvocation(task) {
       .map((name) => path.join(root, 'scripts', 'tests', name))
     return { command: process.execPath, args: ['--test', ...files] }
   }
+  if (invocation.kind === 'node-test') {
+    const file = path.resolve(root, invocation.file)
+    const tests = path.resolve(root, 'scripts', 'tests')
+    const relative = path.relative(tests, file)
+    if (
+      !file.endsWith('.test.mjs') ||
+      relative === '' ||
+      relative.startsWith('..' + path.sep) ||
+      path.isAbsolute(relative)
+    ) {
+      throw new Error('Node 定向测试必须位于 scripts/tests 且使用 .test.mjs 后缀')
+    }
+    return { command: process.execPath, args: ['--test', file] }
+  }
   const manifestPath = path.join(
     root,
     'node_modules',

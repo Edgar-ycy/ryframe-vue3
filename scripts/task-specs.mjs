@@ -1,6 +1,10 @@
 const binary = (packageName, name, args) => ({ kind: 'package', packageName, name, args })
 const script = (file, args = []) => ({ kind: 'script', file: `scripts/${file}`, args })
 const cached = (tool) => ['--cache', '--cache-location', { cache: tool }]
+const isNodePolicyTest = (test) =>
+  typeof test === 'string' &&
+  test.replaceAll('\\', '/').startsWith('scripts/tests/') &&
+  test.endsWith('.test.mjs')
 
 /** 任务职责、选择条件、参数和实际执行定义的唯一登记表。 */
 export const taskSpecs = {
@@ -99,19 +103,25 @@ export const taskSpecs = {
     profiles: ['fast', 'unit', 'targeted'],
     params: (options, profiles) => ({ coverage: profiles.has('unit'), test: options.test ?? null }),
     phase: (params) => (params.coverage ? 1 : 0),
-    compilationCoverage: ({ params }) => [params.test ? `vitest:${params.test}` : 'vitest:all'],
+    compilationCoverage: ({ params }) => [
+      params.test
+        ? `${isNodePolicyTest(params.test) ? 'node-test' : 'vitest'}:${params.test}`
+        : 'vitest:all',
+    ],
     allowedWrites: ({ params }) => [
-      'cache:vite',
+      ...(isNodePolicyTest(params.test) ? ['temporary:tool-test-fixtures'] : ['cache:vite']),
       ...(params.coverage ? ['artifact:coverage'] : []),
     ],
     invoke: ({ params }) =>
-      binary('vitest', 'vitest', [
-        'run',
-        '--config',
-        'vitest.config.ts',
-        ...(params.coverage ? ['--coverage'] : []),
-        ...(params.test ? [params.test] : []),
-      ]),
+      isNodePolicyTest(params.test)
+        ? { kind: 'node-test', file: params.test }
+        : binary('vitest', 'vitest', [
+            'run',
+            '--config',
+            'vitest.config.ts',
+            ...(params.coverage ? ['--coverage'] : []),
+            ...(params.test ? [params.test] : []),
+          ]),
   },
   'api-source': {
     label: 'API 来源',

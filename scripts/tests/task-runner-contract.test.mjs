@@ -169,6 +169,10 @@ test('定向测试及 browser 参数完整传递，Device 仍由同一任务定�
   const task = tasks(plan(['check', '--test', path]))[0]
   assert.deepEqual(task.params, { coverage: false, test: path })
   assert.equal(taskSpecs.unit.invoke(task).args.at(-1), path)
+  const policyPath = 'scripts/tests/crud-resource-contract.test.mjs'
+  const policyTask = tasks(plan(['check', '--test', policyPath]))[0]
+  assert.deepEqual(taskSpecs.unit.invoke(policyTask), { kind: 'node-test', file: policyPath })
+  assert.deepEqual(policyTask.compilationCoverage, [`node-test:${policyPath}`])
   const browser = tasks(
     plan(['check', '--stage', 'browser', '--real', '--fixture', 'device', '--server', 'preview']),
   )[0]

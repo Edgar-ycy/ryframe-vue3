@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isSessionContext } from '@/api/modules/sessionContext'
 import { installRouteRuntime } from '@/app/navigation/runtime'
+import { initializeSettings } from '@/app/settings/coordinator'
 import {
   applyAuthenticatedSession,
   assertSessionEpoch,
@@ -25,15 +26,14 @@ import { useUserStore } from '@/stores/user'
 import { useTenantContextStore } from '@/stores/tenantContext'
 
 import { sessionContext } from './sessionContextFixtures'
+import { installSettingsEnvironment } from './settingsCoordinatorFixtures'
 
 describe('会话授权快照', () => {
   beforeEach(() => {
     deactivateServerStateScope()
     setActivePinia(createPinia())
-    vi.stubGlobal('localStorage', {
-      getItem: () => null,
-      setItem: vi.fn(),
-    })
+    installSettingsEnvironment()
+    initializeSettings()
     setSessionTerminating(false)
   })
 

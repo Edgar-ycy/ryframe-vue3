@@ -12,14 +12,20 @@ import { parseThemeColor } from '@/stores/settings/theme'
 import { applyComponentSize, applyTheme, applyThemeColor } from './domAdapter'
 import { loadSettings, saveSettings } from './persistence'
 
-const initializedDefaults = new WeakMap<ReturnType<typeof useSettingsStore>, SettingsState>()
+type SettingsStore = ReturnType<typeof useSettingsStore>
 
-function settingsStore() {
+const initializedDefaults = new WeakMap<SettingsStore, SettingsState>()
+
+function settingsStore(): SettingsStore {
   return useSettingsStore()
 }
 
-function persistSettings(): void {
-  saveSettings(settingsStore().$state)
+function persistSettings(store: SettingsStore): void {
+  saveSettings(store.$state)
+}
+
+function requireInitialized(store: SettingsStore, action: string): void {
+  if (!initializedDefaults.has(store)) throw new Error(`${action}前必须先初始化设置`)
 }
 
 /** 读取持久化设置并一次性发布内存、DOM 与语言投影。 */
@@ -38,48 +44,54 @@ export function initializeSettings(): void {
 
 export function setTheme(theme: ColorTheme): void {
   const store = settingsStore()
+  requireInitialized(store, '修改设置')
   if (store.theme === theme) return
   store.theme = theme
   applyTheme(theme)
-  persistSettings()
+  persistSettings(store)
 }
 
 export function setThemeColor(color: string): void {
   const parsed = parseThemeColor(color)
   if (!parsed) return
   const store = settingsStore()
+  requireInitialized(store, '修改设置')
   if (store.themeColor === parsed.css) return
   store.themeColor = parsed.css
   applyThemeColor(parsed.css)
-  persistSettings()
+  persistSettings(store)
 }
 
 export function setComponentSize(size: ComponentSize): void {
   const store = settingsStore()
+  requireInitialized(store, '修改设置')
   if (store.componentSize === size) return
   store.componentSize = size
   applyComponentSize(size)
-  persistSettings()
+  persistSettings(store)
 }
 
 export function setLocale(locale: SettingsState['locale']): void {
   const store = settingsStore()
+  requireInitialized(store, '修改设置')
   if (store.locale === locale) return
   store.locale = locale
   setApplicationLocale(locale)
-  persistSettings()
+  persistSettings(store)
 }
 
 export function toggleTagsView(): void {
   const store = settingsStore()
+  requireInitialized(store, '修改设置')
   store.tagsView = !store.tagsView
-  persistSettings()
+  persistSettings(store)
 }
 
 export function toggleSidebarLogo(): void {
   const store = settingsStore()
+  requireInitialized(store, '修改设置')
   store.sidebarLogo = !store.sidebarLogo
-  persistSettings()
+  persistSettings(store)
 }
 
 export function resetSettings(): void {
@@ -94,11 +106,12 @@ export function resetSettings(): void {
   if (previous.themeColor !== store.themeColor) applyThemeColor(store.themeColor)
   if (previous.componentSize !== store.componentSize) applyComponentSize(store.componentSize)
   if (previous.locale !== store.locale) setApplicationLocale(store.locale)
-  persistSettings()
+  persistSettings(store)
 }
 
 export function applyServerSettings(settings: ShellServerSettings): void {
   const store = settingsStore()
+  requireInitialized(store, '应用服务端设置')
   let changed = false
 
   const theme =
@@ -120,5 +133,5 @@ export function applyServerSettings(settings: ShellServerSettings): void {
     changed = true
   }
 
-  if (changed) persistSettings()
+  if (changed) persistSettings(store)
 }

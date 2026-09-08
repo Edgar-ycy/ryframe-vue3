@@ -235,6 +235,34 @@ describe('设置协调器', () => {
     environment.writes.forEach((write) => expect(write).not.toHaveBeenCalled())
   })
 
+  it('初始化前拒绝修改，避免局部状态被后续初始化覆盖', () => {
+    const environment = installSettingsEnvironment()
+    const store = useSettingsStore()
+    const previous = { ...store.$state }
+    const mutation = vi.fn()
+    const stop = store.$subscribe(mutation, { flush: 'sync' })
+
+    for (const change of [
+      () => setTheme('dark'),
+      () => setThemeColor('#22C55E'),
+      () => setComponentSize('small'),
+      () => setLocale('en-US'),
+      () => toggleTagsView(),
+      () => toggleSidebarLogo(),
+    ]) {
+      expect(change).toThrow('修改设置前必须先初始化设置')
+    }
+    expect(() => applyServerSettings({ sideTheme: 'theme-dark', skinName: 'skin-blue' })).toThrow(
+      '应用服务端设置前必须先初始化设置',
+    )
+
+    expect(store.$state).toEqual(previous)
+    expect(mutation).not.toHaveBeenCalled()
+    expect(environment.getItem).not.toHaveBeenCalled()
+    environment.writes.forEach((write) => expect(write).not.toHaveBeenCalled())
+    stop()
+  })
+
   it('主题副作用发生时状态已更新，持久化发生时 DOM 已更新', () => {
     const environment = installSettingsEnvironment()
     initializeSettings()

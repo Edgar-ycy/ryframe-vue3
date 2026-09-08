@@ -348,10 +348,13 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
   seen.paths.add(apiPath)
   requireActions(resource.api.operations, `${location}.api.operations`, operationPattern)
 
-  const accessKeys = ['capability', 'permissions']
+  const accessKeys = ['permissions']
+  if ('capability' in resource.access) accessKeys.push('capability')
   if ('owner_field' in resource.access) accessKeys.push('owner_field')
   requireExactKeys(resource.access, accessKeys, `${location}.access`)
-  requireString(resource.access.capability, `${location}.access.capability`, /^[a-z0-9_.-]+$/u)
+  if ('capability' in resource.access) {
+    requireString(resource.access.capability, `${location}.access.capability`, /^[a-z0-9_.-]+$/u)
+  }
   requirePermissionActions(
     resource.access.permissions,
     `${location}.access.permissions`,

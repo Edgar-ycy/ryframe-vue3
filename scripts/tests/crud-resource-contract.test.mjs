@@ -195,6 +195,16 @@ test('接受与 OpenAPI 操作和权限目录严格对应的资源目录', () =>
   assert.doesNotMatch(generated, /as unknown as/u)
 })
 
+test('基础 CRUD 资源可以省略套餐能力，仍保留完整 RBAC 权限契约', () => {
+  const document = contract()
+  delete resource(document).access.capability
+
+  const resources = requireCrudResourceCatalog(document['x-ryframe-crud-resources'], document)
+
+  assert.equal(resources[0].access.capability, undefined)
+  assert.equal(resources[0].access.permissions.create, 'system:post:add')
+})
+
 test('生成的 name 查找保持具体 descriptor 类型关联', () => {
   const document = contract()
   addDeviceResource(document)

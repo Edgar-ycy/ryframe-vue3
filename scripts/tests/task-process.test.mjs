@@ -10,6 +10,7 @@ import test from 'node:test'
 import { runTaskProcess } from '../task-process.mjs'
 import { TaskRunControl } from '../task-run-control.mjs'
 import { executeTaskPlan } from '../task-runner.mjs'
+import { taskWorkerProtocol } from '../task-worker-protocol.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 
@@ -22,25 +23,49 @@ function fixture(t) {
   const descendant = path.join(directory, '孙进程.mjs')
   writeFileSync(
     descendant,
-    `import net from 'node:net'
+    `import { writeFileSync } from 'node:fs'
+import net from 'node:net'
 process.on('SIGTERM', () => {})
 const server = net.createServer()
-server.listen(0, '127.0.0.1', () => console.log(JSON.stringify({ pid: process.pid, port: server.address().port })))
+server.listen(0, '127.0.0.1', () => {
+  const value = { pid: process.pid, port: server.address().port }
+  if (process.argv[2]) {
+    writeFileSync(process.argv[2], JSON.stringify({
+      pid: Number(process.argv[3]),
+      childPid: value.pid,
+      port: value.port,
+    }))
+  }
+  else console.log(JSON.stringify(value))
+})
 `,
   )
   writeFileSync(
     file,
     `import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import net from 'node:net'
 import { writeFileSync } from 'node:fs'
 process.on('SIGTERM', () => {})
 const state = process.argv[2]
-if (process.argv[3] === 'descendant') {
-  const child = spawn(process.execPath, [process.argv[4]], { stdio: ['ignore', 'pipe', 'inherit'], windowsHide: true })
-  child.stdout.once('data', (chunk) => {
-    const value = JSON.parse(String(chunk))
-    writeFileSync(state, JSON.stringify({ pid: process.pid, childPid: value.pid, port: value.port }))
+if (process.argv[3] === 'descendant' || process.argv[3] === 'failed-descendant') {
+  const failing = process.argv[3] === 'failed-descendant'
+  const child = spawn(process.execPath, [process.argv[4], ...(failing ? [state, String(process.pid)] : [])], {
+    detached: failing && process.platform === 'win32',
+    stdio: failing ? 'ignore' : ['ignore', 'pipe', 'ignore'],
+    windowsHide: true,
   })
+  const record = (value) => {
+    writeFileSync(state, JSON.stringify({ pid: process.pid, childPid: value.pid, port: value.port }))
+  }
+  if (failing) {
+    const timer = setInterval(() => {
+      if (!existsSync(state)) return
+      clearInterval(timer)
+      process.exit(17)
+    }, 5)
+  }
+  else child.stdout.once('data', (chunk) => record(JSON.parse(String(chunk))))
 } else {
 const server = net.createServer()
 server.listen(0, '127.0.0.1', () => {
@@ -93,6 +118,15 @@ function start(file, state, control, descendant) {
     },
     { cwd: path.dirname(file), env: process.env, interactive: false, control },
   )
+}
+
+function stopFixtureProcess(pid) {
+  if (!pid) return
+  try {
+    process.kill(pid, 'SIGKILL')
+  } catch (error) {
+    if (error.code !== 'ESRCH') throw error
+  }
 }
 
 test('直接子进程在中文空格路径启动，停止后保留日志、释放端口且无关进程不受影响', async (t) => {
@@ -172,6 +206,33 @@ test('真实兄弟失败取消已登记直接子进程，等待其退出并保�
   assert.match(reports[0].stdout, /就绪/u)
 })
 
+test('直接子进程非零退出后仍回收存活孙进程并保留真实失败码', async (t) => {
+  const { directory, file, descendant } = fixture(t)
+  const state = path.join(directory, '失败进程树.json')
+  const control = new TaskRunControl({ gracePeriodMs: 30 })
+  const running = runTaskProcess(
+    {
+      command: process.execPath,
+      args: [file, state, 'failed-descendant', descendant],
+    },
+    { cwd: directory, env: process.env, interactive: false, control },
+  )
+  let before
+  try {
+    before = await ready(state)
+    const result = await running
+    assert.equal(result.code, 17)
+    assert.equal(control.exitCode, 17)
+    await assertReleased({ pid: before.childPid, port: before.port })
+  } finally {
+    stopFixtureProcess(before?.childPid)
+    control.interrupt('SIGINT')
+    control.interrupt('SIGINT')
+    await running
+    control.dispose()
+  }
+})
+
 test('派生失败等待 close 返回错误；已经停止时不派生进程', async () => {
   const control = new TaskRunControl()
   const result = await runTaskProcess(
@@ -179,7 +240,7 @@ test('派生失败等待 close 返回错误；已经停止时不派生进程', a
     { cwd: root, env: process.env, interactive: false, control },
   )
   assert.equal(result.error.code, 'ENOENT')
-  assert.notEqual(result.code, 0)
+  assert.equal(result.code, 1)
   control.interrupt('SIGINT')
   const cancelled = await runTaskProcess({}, { control })
   assert.deepEqual(cancelled, { code: 1, cancelled: true })
@@ -203,8 +264,12 @@ test('直接子进程 exit 时立即登记失败，仍等待 close 收齐日志�
     completed = true
     return result
   })
-  child.exitCode = 7
-  child.emit('exit', 7, null)
+  if (process.platform === 'win32') {
+    child.emit('message', { type: taskWorkerProtocol.result, code: 7, signal: null })
+  } else {
+    child.exitCode = 7
+    child.emit('exit', 7, null)
+  }
   assert.deepEqual(stops, ['SIGTERM'])
   assert.equal(control.exitCode, 7)
   control.interrupt('SIGINT')
@@ -218,7 +283,7 @@ test('直接子进程 exit 时立即登记失败，仍等待 close 收齐日志�
     stream.write(bytes.subarray(0, 1))
     stream.write(bytes.subarray(1))
   }
-  child.emit('close', 7, null)
+  child.emit('close', process.platform === 'win32' ? 0 : 7, null)
   const result = await running
   assert.equal(control.ownsFailure(result), true)
   assert.equal(control.exitCode, 7)

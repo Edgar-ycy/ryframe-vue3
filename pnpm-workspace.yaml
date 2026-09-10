@@ -12,6 +12,7 @@ overrides:
   'postcss@^8.0.0': 8.5.23
 allowBuilds:
   '@parcel/watcher': true
+  koffi: false
   vue-demi: true
 strictPeerDependencies: true
 peerDependencyRules:

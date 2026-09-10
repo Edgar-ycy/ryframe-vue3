@@ -118,6 +118,23 @@ SessionContext
 按钮展示可使用 `v-perm`，页面可访问性由页面声明中的权限和 capability 参与计算。403、功能
 不可用和 404 页面可用于分别验证权限不足、能力缺失和未知路由。
 
+## 任务运行器与进程边界
+
+`corepack pnpm dev`、`check`、`build` 和 `generate` 是四个公开入口，共同使用
+`scripts/task-runner.mjs` 的任务图。`--plan` 只读取同一任务图并输出依赖、编译覆盖和允许写入，
+不启动任务或创建产物；定向检查继续通过 `check` 的 stage 和 test 参数选择已有节点。
+
+`scripts/task-process.mjs` 负责每个外部任务的生命周期。Unix 任务使用独立进程组，停止时向整个
+进程组发送信号。Windows 为每个任务启动独立 Node worker；worker 在执行任务代码前先加入启用
+`KILL_ON_JOB_CLOSE` 的私有 Job Object，任务及其后代由此继承同一 Job。任务完成时，worker 先通过
+IPC 返回真实退出码、信号和派生错误，再关闭 Job；任务取消时先请求 worker 停止直接任务，宽限期
+结束后终止 worker，句柄关闭负责回收仍存活的后代。每个任务持有不同的 Job，失败和取消不会终止
+同阶段的无关任务。
+
+Windows Job API 只在 worker 内通过锁定版本的 Koffi 预构建绑定调用。依赖安装脚本保持禁用，四个
+前端入口不得在运行时编译本机扩展。任务运行器以 IPC 结果为任务事实，不使用 worker 自身因关闭
+Job 产生的退出状态替代业务任务结果。
+
 ## 编写与运行测试
 
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。

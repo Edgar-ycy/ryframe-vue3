@@ -9,9 +9,11 @@ import { realTestSelection } from './scripts/restore-scenarios.mjs'
 
 const environment = validateRealBrowserEnvironment()
 const { fixture, port, runId, serverMode } = environment
-if (serverMode === 'preview') verifyBuildReceipt(fileURLToPath(new URL('.', import.meta.url)))
-const restore = realTestSelection(process.env.RYFRAME_RESTORE_BINDINGS, fixture)
 const externalBaseUrl = environment.baseURL
+if (serverMode === 'preview' && !externalBaseUrl) {
+  verifyBuildReceipt(fileURLToPath(new URL('.', import.meta.url)))
+}
+const restore = realTestSelection(process.env.RYFRAME_RESTORE_BINDINGS, fixture)
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
 const artifactSuffix = `${fixture}/${serverMode}${runId ? `/${runId}` : ''}`

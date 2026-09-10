@@ -77,9 +77,10 @@ test('重新构建、缺少 manifest 与源码中途变动可被识别', (t) => 
 test('真实 preview 在创建报告目录前验证生产构建收据', () => {
   const source = readFileSync(path.resolve('playwright.real.config.ts'), 'utf8')
   const environment = source.indexOf('validateRealBrowserEnvironment()')
-  const verify = source.indexOf("if (serverMode === 'preview') verifyBuildReceipt(")
+  const verify = source.indexOf("if (serverMode === 'preview' && !externalBaseUrl)")
   const selection = source.indexOf('realTestSelection(')
   const directory = source.indexOf('mkdirSync(directory')
   assert.ok(environment >= 0 && environment < verify)
   assert.ok(verify < selection && selection < directory)
+  assert.match(source.slice(verify, selection), /verifyBuildReceipt\(/u)
 })

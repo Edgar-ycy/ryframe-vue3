@@ -2,11 +2,14 @@ import { defineConfig, type ReporterDescription } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { validateRealBrowserEnvironment } from './scripts/real-browser-environment.mjs'
+import { verifyBuildReceipt } from './scripts/restore-build.mjs'
 import { realTestSelection } from './scripts/restore-scenarios.mjs'
 
 const environment = validateRealBrowserEnvironment()
 const { fixture, port, runId, serverMode } = environment
+if (serverMode === 'preview') verifyBuildReceipt(fileURLToPath(new URL('.', import.meta.url)))
 const restore = realTestSelection(process.env.RYFRAME_RESTORE_BINDINGS, fixture)
 const externalBaseUrl = environment.baseURL
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { lstatSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 
 export const receiptPath = '.vite/restore-build.json'
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex')
@@ -62,5 +63,31 @@ export function writeBuildReceipt(root, before) {
   writeFileSync(path.join(root, 'dist', receiptPath), JSON.stringify(receipt, null, 2) + '\n', {
     flag: 'wx',
   })
+  return receipt
+}
+
+/** 真实 preview 只能验收由当前源码生成且内容未变的生产产物。 */
+export function verifyBuildReceipt(root) {
+  let receipt
+  try {
+    receipt = JSON.parse(readFileSync(path.join(root, 'dist', receiptPath), 'utf8'))
+  } catch (error) {
+    throw new Error('真实 preview 需要先执行 corepack pnpm build --real', { cause: error })
+  }
+  if (
+    !receipt ||
+    typeof receipt !== 'object' ||
+    Array.isArray(receipt) ||
+    receipt.format_version !== 1 ||
+    receipt.kind !== 'restore-frontend-build'
+  ) {
+    throw new Error('真实 preview 的生产构建收据无效')
+  }
+  if (!isDeepStrictEqual(receipt.source, sourceSnapshot(root))) {
+    throw new Error('真实 preview 的生产构建与当前源码不一致')
+  }
+  if (!isDeepStrictEqual(receipt.files, productionFiles(path.join(root, 'dist')))) {
+    throw new Error('真实 preview 的生产构建内容已发生变化')
+  }
   return receipt
 }

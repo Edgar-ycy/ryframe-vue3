@@ -247,6 +247,35 @@ test('开发、构建和生成选项映射到唯一职责', () => {
   ])
 })
 
+test('四个用户入口的计划复用实际任务定义', () => {
+  const cases = [
+    ['dev', '--preview', '--plan'],
+    ['check', '--stage', 'static', '--plan'],
+    ['build', '--real', '--plan'],
+    ['generate', '--write', '--plan'],
+  ]
+  for (const args of cases) assert.equal(parseTaskArguments(args).plan, true)
+  const plans = cases.map((args) => plan(args))
+  for (const value of plans) {
+    for (const task of tasks(value)) {
+      assert.deepEqual(task.invocation, taskSpecs[task.id].invoke(task))
+    }
+  }
+
+  const dev = tasks(plans[0])[0]
+  assert.deepEqual(dev.params, { preview: true })
+  assert.deepEqual(dev.invocation.args, ['preview'])
+
+  const build = tasks(plans[2])[0]
+  assert.deepEqual(build.params, { real: true })
+  assert.deepEqual(build.env, { VITE_APP_API_ORIGIN: '' })
+
+  const generate = tasks(plans[3])[0]
+  assert.deepEqual(generate.params, { write: true })
+  assert.equal(generate.effect, 'write')
+  assert.deepEqual(generate.invocation.args, ['--write'])
+})
+
 test('开发预览、真实构建与工具阶段有明确参数和归属', () => {
   const dev = tasks(plan(['dev', '--preview']))[0]
   assert.deepEqual(taskSpecs.dev.invoke(dev).args, ['preview'])
@@ -266,6 +295,9 @@ test('拒绝互斥选项和未知阶段', () => {
     ['check', '--stage', 'browser', '--server', 'unknown'],
     ['check', '--fixture', 'core'],
     ['check', '--full', '--full'],
+    ['dev', '--plan', '--plan'],
+    ['build', '--real', '--real'],
+    ['generate', '--plan', '--plan'],
     ['generate', '--sbom', '--write'],
     ['generate', '--output', 'file.json'],
     ['check', '--test'],
@@ -285,6 +317,11 @@ test('主 Vitest 配置覆盖完整 settings 职责', async () => {
 test('帮助只展示四类用户入口和五个检查阶段', () => {
   for (const command of ['dev', 'check', 'build', 'generate']) {
     assert.ok(taskRunnerHelp.includes('corepack pnpm ' + command))
+    assert.match(
+      taskRunnerHelp,
+      new RegExp(`corepack pnpm ${command}[^\\n]*--plan`, 'u'),
+      `${command} 帮助缺少 --plan`,
+    )
   }
   for (const stage of ['static', 'unit', 'contract', 'browser', 'tools']) {
     assert.ok(taskRunnerHelp.includes(stage))

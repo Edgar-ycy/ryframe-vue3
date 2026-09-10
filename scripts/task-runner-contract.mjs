@@ -10,10 +10,10 @@ const freshSource = () => randomUUID()
 export const taskRunnerHelp = `RyFrame 前端任务
 
 用法：
-  corepack pnpm dev [--preview]
+  corepack pnpm dev [--preview] [--plan]
   corepack pnpm check [--full | --test <路径> | --stage <阶段>] [--fix] [--plan]
-  corepack pnpm build [--real]
-  corepack pnpm generate [--write]
+  corepack pnpm build [--real] [--plan]
+  corepack pnpm generate [--write] [--plan]
 
 check 阶段：static、unit、contract、browser、tools
 附加参数：browser 可用 --real、--fixture core|device、--server dev|preview
@@ -165,11 +165,11 @@ function parseCheck(args) {
 }
 
 function parseGenerate(args) {
-  const result = { command: 'generate', output: undefined, sbom: false, write: false }
+  const result = { command: 'generate', output: undefined, plan: false, sbom: false, write: false }
   const seen = new Set()
   for (let index = 0; index < args.length; index += 1) {
     const name = args[index]
-    if (name === '--write' || name === '--sbom') {
+    if (name === '--write' || name === '--sbom' || name === '--plan') {
       ensureUnique(seen, name)
       result[name.slice(2)] = true
     } else if (name === '--output') {
@@ -180,6 +180,17 @@ function parseGenerate(args) {
   }
   if (result.sbom && result.write && !result.output) usage('写入 SBOM 必须同时提供 --output')
   if (result.output && !result.sbom) usage('--output 只能与 --sbom 同时使用')
+  return result
+}
+
+function parseSimpleCommand(command, args, option) {
+  const result = { command, plan: false, [option.slice(2)]: false }
+  const seen = new Set()
+  for (const name of args) {
+    if (name !== option && name !== '--plan') usage(`${command} 不支持参数：${name}`)
+    ensureUnique(seen, name)
+    result[name.slice(2)] = true
+  }
   return result
 }
 
@@ -199,11 +210,7 @@ export function parseTaskArguments(argv) {
   if (command === 'check') return parseCheck(args)
   if (command === 'generate') return parseGenerate(args)
 
-  const allowed = command === 'dev' ? '--preview' : '--real'
-  if (args.length > 1 || (args.length === 1 && args[0] !== allowed)) {
-    usage(`${command} 仅支持 ${allowed}`)
-  }
-  return { command, [allowed.slice(2)]: args.length === 1 }
+  return parseSimpleCommand(command, args, command === 'dev' ? '--preview' : '--real')
 }
 
 function requestedProfiles(options) {

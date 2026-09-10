@@ -41,6 +41,7 @@ corepack pnpm generate  # 只读检查 OpenAPI 派生文件
 
 需要完整门禁时运行 `corepack pnpm check --full`；自动修复格式和代码风格使用
 `corepack pnpm check --fix`；定向单测使用 `corepack pnpm check --test <测试路径>`。
+四类入口都可追加 `--plan`，以同一任务图预览参数、依赖、编译覆盖和允许写入，不执行任务或生成产物。
 CI 和专项验收通过 `check --stage static|unit|contract|browser|tools` 选择任务阶段。
 
 ## CI 任务

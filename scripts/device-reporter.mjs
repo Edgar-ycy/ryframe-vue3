@@ -44,7 +44,7 @@ export function verifyDeviceTestReceipt(value, expected) {
     receipt.server !== expected.server ||
     receipt.run_id !== expected.runId ||
     !Array.isArray(receipt.runs) ||
-    receipt.runs.length === 0
+    receipt.runs.length !== 4
   )
     throw new Error('Device 浏览器测试收据与当前运行不一致')
 
@@ -59,6 +59,7 @@ export function verifyDeviceTestReceipt(value, expected) {
       run.status !== 'passed' ||
       run.retry !== 0 ||
       !Array.isArray(run.scenarios) ||
+      run.scenarios.length === 0 ||
       run.scenarios.some((scenario) => typeof scenario !== 'string' || !scenario)
     )
       throw new Error('Device 浏览器测试包含失败、跳过、重试或无效标题')

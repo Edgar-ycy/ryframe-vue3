@@ -71,6 +71,7 @@ test('拒绝失败、跳过、重试、重复标题和缺失或重复场景', ()
     (value) => (value[0].scenarios = []),
     (value) => value[0].scenarios.push('shared-migration'),
     (value) => (value[0].scenarios = ['unknown']),
+    (value) => value.push({ title: ['extra'], status: 'passed', retry: 0, scenarios: [] }),
   ]) {
     const value = runs()
     mutate(value)

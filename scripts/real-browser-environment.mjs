@@ -82,12 +82,13 @@ function restoreEnvironment(environment) {
     ['coordinatorDir', 'RYFRAME_RESTORE_BACKEND_DIR'],
     ['verifierSha', 'RYFRAME_RESTORE_VERIFIER_SHA'],
     ['runnerSha', 'RYFRAME_RESTORE_RUNNER_SHA'],
+    ['python', 'RYFRAME_PYTHON'],
   ]
-  const configured = fields.filter(([, name]) => environment[name] !== undefined)
+  const configured = fields.slice(0, -1).filter(([, name]) => environment[name] !== undefined)
   if (configured.length === 0) return undefined
-  if (configured.length !== fields.length)
+  if (configured.length !== fields.length - 1 || environment.RYFRAME_PYTHON === undefined)
     throw new Error(
-      '恢复浏览器环境必须同时登记 bindings、target plan、运行收据、协调器、verifier SHA 和 runner SHA',
+      '恢复浏览器环境必须同时登记 bindings、target plan、运行收据、协调器、verifier SHA、runner SHA 和 Python',
     )
   return Object.freeze(
     Object.fromEntries(

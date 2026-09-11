@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 import { test } from './fixture'
 import { act, credentials, login } from './support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 import {
-  datasetDigest,
-  restoredDatasetLineage,
+  restoreDatasetAuthority,
+  restoreDatasetEvidence,
   verifyRestoredDataset,
 } from '../../scripts/restore-dataset.mjs'
 
@@ -17,15 +16,12 @@ function required(name: string): string {
 
 test('恢复前已有岗位与文件在全部参考租户中仍可读取', async ({ newClientContext }, info) => {
   test.setTimeout(20 * 60_000)
-  const targetPlanFile = required('RYFRAME_RESTORE_TARGET_PLAN')
-  const bindingFile = required('RYFRAME_RESTORE_BINDINGS')
   const verifierRoot = required('RYFRAME_RESTORE_BACKEND_DIR')
   const frontendEndpoint = info.project.use.baseURL
   if (typeof frontendEndpoint !== 'string' || !frontendEndpoint)
     throw new Error('恢复旧数据验收缺少唯一前端地址')
-  const paths = [targetPlanFile, bindingFile]
-  const original = await Promise.all(paths.map((file) => readFile(file)))
-  const restored = restoredDatasetLineage(original[0])
+  const expectedAuthority = restoreDatasetAuthority(info.config.metadata.restoreDatasetAuthority)
+  const restored = restoreDatasetEvidence(expectedAuthority)
   const dataset = restored.lineage
   const passwords = new Map(
     dataset.tenants.map((tenant) => [tenant.tenant_id, required(tenant.password_env)]),
@@ -55,21 +51,14 @@ test('恢复前已有岗位与文件在全部参考租户中仍可读取', async
     await context.close()
   }
   const verified = await verifyRestoredDataset({
-    bindingsBytes: original[1],
-    targetPlanBytes: original[0],
-    frontendEndpoint,
+    authority: restored,
     verifierRoot,
-    lineage: dataset,
   })
   await info.attach('restored-existing-data', {
     body: Buffer.from(JSON.stringify(verified, null, 2) + '\n'),
     contentType: 'application/json',
   })
-  const final = await Promise.all(paths.map((file) => readFile(file)))
-  expect(final.map(datasetDigest)).toEqual(original.map(datasetDigest))
-  const rebound = restoredDatasetLineage(final[0])
-  expect(rebound.sourceGeneration).toEqual(restored.sourceGeneration)
-  expect(rebound.sourceRuntime).toEqual(restored.sourceRuntime)
-  expect(rebound.datasetLineage).toEqual(restored.datasetLineage)
+  const rebound = restoreDatasetEvidence(expectedAuthority)
+  expect(rebound.authority).toEqual(restored.authority)
   info.annotations.push({ type: 'restore-scenario', description: 'restored-data' })
 })

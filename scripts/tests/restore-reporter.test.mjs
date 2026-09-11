@@ -9,7 +9,7 @@ import RestoreReporter from '../restore-reporter.mjs'
 import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
 import { restoreLineageFixture } from './restore-lineage-fixture.mjs'
 
-function fixture(t, verify, expectedDigest, checkout = (root) => root) {
+function fixture(t, verify, expectedDigest, checkout = (root) => root, authorityFactory) {
   const local = path.resolve('.local-tests/node-unit')
   mkdirSync(local, { recursive: true })
   mkdirSync(path.resolve('.local-tests/playwright-real'), { recursive: true })
@@ -43,6 +43,7 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root) {
     RYFRAME_RESTORE_BACKEND_DIR: directory,
     RYFRAME_RESTORE_VERIFIER_SHA: 'e'.repeat(40),
     RYFRAME_RESTORE_RUNNER_SHA: 'f'.repeat(40),
+    RYFRAME_PYTHON: path.join(directory, 'python.exe'),
     RYFRAME_E2E_SCOPE_ID: 'restore-unit',
   }
   for (const [key, configured] of Object.entries(environment)) {
@@ -61,9 +62,38 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root) {
       }),
     )
   const digest = sha256(readFileSync(runtime))
+  const authority = {
+    format_version: 1,
+    kind: 'restore-dataset-authority',
+    runtime: { path: runtime, bytes: value.runtimeBytes.byteLength, sha256: digest },
+    target_plan: {
+      path: targetPlan,
+      bytes: lineage.bytes.byteLength,
+      sha256: sha256(lineage.bytes),
+    },
+    source_generation: lineage.sourceGeneration,
+    dataset_lineage: lineage.datasetLineage,
+    target: {
+      scope_id: value.bindings.record.plan.scope_id,
+      api_url: new URL(value.runtime.endpoints.api).origin,
+      frontend_url: value.runtime.endpoints.frontend,
+    },
+    execution_backend: value.paths.backendExecutionRoot,
+  }
+  const datasetAuthority =
+    authorityFactory?.(authority, lineage) ??
+    (() => {
+      for (const item of [authority.source_generation, authority.dataset_lineage]) {
+        const bytes = readFileSync(item.path)
+        if (bytes.byteLength !== item.bytes || sha256(bytes) !== item.sha256)
+          throw new Error('dataset authority changed')
+      }
+      return { authority, lineage: lineage.lineage }
+    })
   const reporter = new RestoreReporter({
     checkout,
     verify: () => verify(digest),
+    datasetAuthority,
     expectedRestore: {
       binding: {
         path: value.paths.bindings,
@@ -77,6 +107,8 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root) {
       verifierSha: 'e'.repeat(40),
       runnerRoot: process.cwd(),
       runnerSha: 'f'.repeat(40),
+      python: environment.RYFRAME_PYTHON,
+      datasetAuthority: authority,
     },
   })
   reporter.onBegin({ projects: [{ use: { baseURL: value.runtime.endpoints.frontend } }] })
@@ -98,6 +130,7 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root) {
     output,
     digest,
     lineage,
+    authority,
   }
 }
 
@@ -134,6 +167,49 @@ test('全部测试完成后重新核验来源，并保存与证明摘要对应�
   assert.equal(proof.dataset_lineage_sha256, item.lineage.datasetLineage.sha256)
   assert.equal(tests.runtime.path, item.output.replace('.json', '-runtime.json'))
   assert.equal(path.dirname(tests.runtime.path), path.dirname(item.output))
+})
+
+test('reporter 开始与结束都重验配置阶段冻结的同一数据权威', (t) => {
+  const observed = []
+  const item = fixture(
+    t,
+    (digest) => digest,
+    undefined,
+    (root) => root,
+    (authority, lineage) => (_input, options) => {
+      observed.push(options.expected)
+      return { authority, lineage: lineage.lineage }
+    },
+  )
+  assert.equal(observed.length, 1)
+  assert.deepEqual(observed[0], item.authority)
+  assert.equal(item.reporter.onEnd({ status: 'passed' }), undefined)
+  assert.equal(observed.length, 2)
+  assert.deepEqual(observed[1], item.authority)
+})
+
+test('reporter 结束时权威变化会拒绝证明', (t) => {
+  let calls = 0
+  const item = fixture(
+    t,
+    (digest) => digest,
+    undefined,
+    (root) => root,
+    (authority, lineage) => () => {
+      calls++
+      if (calls === 1) return { authority, lineage: lineage.lineage }
+      return {
+        authority: {
+          ...authority,
+          source_generation: { ...authority.source_generation, sha256: '0'.repeat(64) },
+        },
+        lineage: lineage.lineage,
+      }
+    },
+  )
+  t.mock.method(console, 'error', () => {})
+  assert.deepEqual(item.reporter.onEnd({ status: 'passed' }), { status: 'failed' })
+  assert.equal(existsSync(item.output), false)
 })
 
 test('测试结束时进程或源码核验失败不会写成功证明', (t) => {

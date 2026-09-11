@@ -45,6 +45,7 @@ test('恢复环境成组绑定 target plan、运行收据、协调器与当前 r
     RYFRAME_RESTORE_BACKEND_DIR: resolve('D 盘源码', '协调器'),
     RYFRAME_RESTORE_VERIFIER_SHA: 'b'.repeat(40),
     RYFRAME_RESTORE_RUNNER_SHA: 'a'.repeat(40),
+    RYFRAME_PYTHON: resolve('D 盘工具', 'python.exe'),
   }
   assert.deepEqual(validateRealBrowserEnvironment(environment).restore, {
     bindings: environment.RYFRAME_RESTORE_BINDINGS,
@@ -53,7 +54,13 @@ test('恢复环境成组绑定 target plan、运行收据、协调器与当前 r
     coordinatorDir: environment.RYFRAME_RESTORE_BACKEND_DIR,
     verifierSha: environment.RYFRAME_RESTORE_VERIFIER_SHA,
     runnerSha: environment.RYFRAME_RESTORE_RUNNER_SHA,
+    python: environment.RYFRAME_PYTHON,
   })
+})
+
+test('普通真实浏览器可单独固定 Python 而不会误启用恢复流程', () => {
+  const environment = { ...validEnvironment(), RYFRAME_PYTHON: resolve('python.exe') }
+  assert.equal(validateRealBrowserEnvironment(environment).restore, undefined)
 })
 
 test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭', () => {
@@ -70,6 +77,7 @@ test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭',
     RYFRAME_RESTORE_BACKEND_DIR: resolve('backend'),
     RYFRAME_RESTORE_VERIFIER_SHA: 'b'.repeat(40),
     RYFRAME_RESTORE_RUNNER_SHA: 'a'.repeat(40),
+    RYFRAME_PYTHON: resolve('python.exe'),
   }
   assert.throws(() =>
     validateRealBrowserEnvironment({ ...complete, RYFRAME_RESTORE_TARGET_PLAN: 'target.json' }),
@@ -80,6 +88,7 @@ test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭',
   assert.throws(() =>
     validateRealBrowserEnvironment({ ...complete, RYFRAME_RESTORE_VERIFIER_SHA: 'B'.repeat(40) }),
   )
+  assert.throws(() => validateRealBrowserEnvironment({ ...complete, RYFRAME_PYTHON: 'python' }))
 })
 
 test('运行选项经过统一校验并保留显式选择', () => {

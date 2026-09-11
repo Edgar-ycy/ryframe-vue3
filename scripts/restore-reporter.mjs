@@ -3,7 +3,7 @@ import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { buildRestoreEvidence, restoreProofBindings } from './restore-proof.mjs'
 import { sha256 } from './build-source-inventory.mjs'
-import { restoredDatasetLineage } from './restore-dataset.mjs'
+import { verifyRestoreDatasetAuthority } from './restore-dataset.mjs'
 import { restoreRuntimeBinding } from './restore-runtime-receipt.mjs'
 import {
   evidenceDirectory,
@@ -45,6 +45,14 @@ function publishProof(files) {
   }
 }
 
+function samePath(left, right) {
+  const normalize = (value) => {
+    const resolved = path.normalize(path.resolve(value))
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved
+  }
+  return normalize(left) === normalize(right)
+}
+
 function boundEvidence(environmentName, expected, label) {
   if (
     !expected ||
@@ -54,7 +62,7 @@ function boundEvidence(environmentName, expected, label) {
     throw new Error(`恢复证明 reporter 缺少${label}预检结果`)
   const configured = process.env[environmentName]
   const evidence = evidenceFile(configured, label)
-  if (evidence.path !== expected.path || sha256(evidence.bytes) !== expected.sha256)
+  if (!samePath(evidence.path, expected.path) || sha256(evidence.bytes) !== expected.sha256)
     throw new Error(`${label}与配置预检结果不一致`)
   return evidence
 }
@@ -62,9 +70,15 @@ function boundEvidence(environmentName, expected, label) {
 export default class RestoreReporter {
   runs = []
 
-  constructor({ verify = verifyRuntime, checkout = verifiedCheckout, expectedRestore } = {}) {
+  constructor({
+    verify = verifyRuntime,
+    checkout = verifiedCheckout,
+    datasetAuthority = verifyRestoreDatasetAuthority,
+    expectedRestore,
+  } = {}) {
     this.verify = verify
     this.checkout = checkout
+    this.datasetAuthority = datasetAuthority
     this.expectedRestore = expectedRestore
   }
 
@@ -79,12 +93,6 @@ export default class RestoreReporter {
       expected.runtime,
       '恢复运行收据',
     )
-    const lineage = restoredDatasetLineage(target.bytes)
-    if (
-      !isDeepStrictEqual(lineage.sourceGeneration, expected.sourceGeneration) ||
-      !isDeepStrictEqual(lineage.datasetLineage, expected.datasetLineage)
-    )
-      throw new Error('恢复数据血缘与配置预检结果不一致')
     const { bindings, record, manifest } = restoreProofBindings(binding.bytes)
     const scope = (process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID)?.trim()
     if (!scope || scope !== record.plan.scope_id)
@@ -97,6 +105,8 @@ export default class RestoreReporter {
     )
     if (configuredVerifierSha !== expected.verifierSha || verifierRoot !== expected.verifierRoot)
       throw new Error('恢复证明协调后端与配置预检结果不一致')
+    const python = process.env.RYFRAME_PYTHON
+    if (python !== expected.python) throw new Error('恢复数据预检 Python 与配置预检结果不一致')
     const urls = new Set(config.projects.map((project) => project.use.baseURL))
     if (urls.size !== 1 || typeof [...urls][0] !== 'string' || ![...urls][0])
       throw new Error('恢复验收必须绑定运行产物收据与唯一浏览器地址')
@@ -116,13 +126,38 @@ export default class RestoreReporter {
     const runnerRoot = this.checkout(process.cwd(), configuredRunnerSha, '恢复测试 runner 源码')
     if (configuredRunnerSha !== expected.runnerSha || runnerRoot !== expected.runnerRoot)
       throw new Error('恢复测试 runner 与配置预检结果不一致')
+    const dataset = this.datasetAuthority(
+      {
+        bindingsBytes: binding.bytes,
+        runtimeReceipt: runtime.path,
+        targetPlan: target.path,
+        backendRoot: verifierRoot,
+        frontendEndpoint: baseURL,
+        python,
+      },
+      { expected: expected.datasetAuthority },
+    )
+    if (
+      !isDeepStrictEqual(dataset.authority.source_generation, expected.sourceGeneration) ||
+      !isDeepStrictEqual(dataset.authority.dataset_lineage, expected.datasetLineage)
+    )
+      throw new Error('恢复数据血缘与配置预检结果不一致')
     this.bindings = bindings
     this.bindingsBytes = binding.bytes
     this.bindingDigest = sha256(binding.bytes)
     this.targetPlanBytes = target.bytes
     this.targetPlanDigest = sha256(target.bytes)
-    this.sourceGeneration = lineage.sourceGeneration
-    this.datasetLineage = lineage.datasetLineage
+    this.sourceGeneration = dataset.authority.source_generation
+    this.datasetLineage = dataset.authority.dataset_lineage
+    this.datasetAuthorityRecord = dataset.authority
+    this.datasetInputs = {
+      bindingsBytes: binding.bytes,
+      runtimeReceipt: runtime.path,
+      targetPlan: target.path,
+      backendRoot: verifierRoot,
+      frontendEndpoint: baseURL,
+      python,
+    }
     this.verification = {
       receipt: runtime.path,
       bindings: binding.path,
@@ -162,7 +197,9 @@ export default class RestoreReporter {
       const runtime = evidenceFile(this.verification.receipt, '运行产物收据')
       const binding = evidenceFile(this.verification.bindings, '恢复绑定收据')
       const target = evidenceFile(this.verification.targetPlan, '恢复目标计划')
-      const lineage = restoredDatasetLineage(target.bytes)
+      const dataset = this.datasetAuthority(this.datasetInputs, {
+        expected: this.datasetAuthorityRecord,
+      })
       if (
         digest !== this.runtimeDigest ||
         sha256(runtime.bytes) !== digest ||
@@ -170,8 +207,8 @@ export default class RestoreReporter {
         !binding.bytes.equals(this.bindingsBytes) ||
         sha256(target.bytes) !== this.targetPlanDigest ||
         !target.bytes.equals(this.targetPlanBytes) ||
-        !isDeepStrictEqual(lineage.sourceGeneration, this.sourceGeneration) ||
-        !isDeepStrictEqual(lineage.datasetLineage, this.datasetLineage)
+        !isDeepStrictEqual(dataset.authority.source_generation, this.sourceGeneration) ||
+        !isDeepStrictEqual(dataset.authority.dataset_lineage, this.datasetLineage)
       )
         throw new Error('恢复测试期间源码、运行进程、构建或演练收据发生变化')
       const outputs = proofPaths(this.restoreId)
@@ -183,8 +220,8 @@ export default class RestoreReporter {
         frontendEndpoint: this.verification.baseURL,
         runtimeEvidencePath: outputs.runtime,
         targetPlanPath: target.path,
-        sourceGeneration: lineage.sourceGeneration,
-        datasetLineage: lineage.datasetLineage,
+        sourceGeneration: dataset.authority.source_generation,
+        datasetLineage: dataset.authority.dataset_lineage,
         runnerRoot: this.runnerRoot,
         runnerSha: this.runnerSha,
         verifierRoot: this.verifierRoot,

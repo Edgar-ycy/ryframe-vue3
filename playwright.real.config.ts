@@ -48,6 +48,7 @@ export default defineConfig({
   workers: 1,
   reporter: reporters,
   outputDir: resultsDirectory,
+  metadata: restore.worker ? { restoreDatasetAuthority: restore.worker } : {},
   use: {
     baseURL,
     actionTimeout: 15_000,

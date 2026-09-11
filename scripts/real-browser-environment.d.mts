@@ -22,6 +22,7 @@ export interface RealBrowserEnvironment {
         runtimeReceipt: string
         targetPlan: string
         verifierSha: string
+        python: string
       }>
     | undefined
 }

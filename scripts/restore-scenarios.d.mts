@@ -1,3 +1,5 @@
+import type { RestoreDatasetAuthorityRecord } from './restore-dataset.mjs'
+
 export interface RestoreBrowserEnvironment {
   bindings: string
   coordinatorDir: string
@@ -5,6 +7,7 @@ export interface RestoreBrowserEnvironment {
   runtimeReceipt: string
   targetPlan: string
   verifierSha: string
+  python: string
 }
 
 export interface RestoreEvidenceDescriptor {
@@ -23,6 +26,17 @@ export function realTestSelection(
   baseURL?: string,
   root?: string,
   checkout?: (directory: string, sha: string, label?: string) => string,
+  datasetAuthority?: (input: {
+    backendRoot: string
+    bindingsBytes: Uint8Array
+    frontendEndpoint: string
+    python: string
+    runtimeReceipt: string
+    targetPlan: string
+  }) => {
+    authority: RestoreDatasetAuthorityRecord
+    lineage: object
+  },
 ): {
   selection: { testIgnore: string[] } | { testMatch: string[] }
   reporter:
@@ -36,6 +50,9 @@ export function realTestSelection(
         target: RestoreEvidenceDescriptor
         verifierRoot: string
         verifierSha: string
+        python: string
+        datasetAuthority: RestoreDatasetAuthorityRecord
       }
     | undefined
+  worker: RestoreDatasetAuthorityRecord | undefined
 }

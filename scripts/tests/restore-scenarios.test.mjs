@@ -32,8 +32,32 @@ function restoreFixture(t, options = {}) {
   writeFileSync(value.paths.bindings, value.bindingsBytes)
   writeFileSync(targetPlan, lineage.bytes)
   writeFileSync(runtimeReceipt, value.runtimeBytes)
+  const authority = {
+    format_version: 1,
+    kind: 'restore-dataset-authority',
+    runtime: {
+      path: runtimeReceipt,
+      bytes: value.runtimeBytes.byteLength,
+      sha256: sha256(value.runtimeBytes),
+    },
+    target_plan: {
+      path: targetPlan,
+      bytes: lineage.bytes.byteLength,
+      sha256: sha256(lineage.bytes),
+    },
+    source_generation: lineage.sourceGeneration,
+    dataset_lineage: lineage.datasetLineage,
+    target: {
+      scope_id: value.bindings.record.plan.scope_id,
+      api_url: new URL(value.runtime.endpoints.api).origin,
+      frontend_url: value.runtime.endpoints.frontend,
+    },
+    execution_backend: value.paths.backendExecutionRoot,
+  }
   return {
     ...value,
+    authority,
+    datasetAuthority: () => ({ authority, lineage: lineage.lineage }),
     lineage,
     restore: {
       bindings: value.paths.bindings,
@@ -42,6 +66,7 @@ function restoreFixture(t, options = {}) {
       coordinatorDir: coordinator,
       verifierSha: 'e'.repeat(40),
       runnerSha: 'f'.repeat(40),
+      python: path.join(directory, 'python.exe'),
     },
   }
 }
@@ -51,6 +76,7 @@ test('普通 core 与 Device 保留故障验收且不加载恢复旧数据场景
     assert.deepEqual(realTestSelection(undefined, fixture), {
       selection: { testIgnore: ['**/restore-existing.spec.ts'] },
       reporter: undefined,
+      worker: undefined,
     })
 })
 
@@ -72,6 +98,7 @@ test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t
     value.runtime.endpoints.frontend,
     root,
     checkout,
+    value.datasetAuthority,
   )
   assert.deepEqual(result.selection, { testMatch: restoreSpecs })
   assert.deepEqual(restoreSpecs, [
@@ -104,9 +131,12 @@ test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t
     datasetLineage: value.lineage.datasetLineage,
     verifierRoot: value.restore.coordinatorDir,
     verifierSha: value.restore.verifierSha,
+    python: value.restore.python,
     runnerRoot: root,
     runnerSha: value.restore.runnerSha,
+    datasetAuthority: value.authority,
   })
+  assert.deepEqual(result.worker, value.authority)
   assert.equal(result.selection.testMatch.includes('**/restore-existing.spec.ts'), true)
   assert.deepEqual(requiredScenarios, [
     'login',
@@ -140,17 +170,34 @@ test('恢复专用套件登记全部且仅一次业务证明场景', async () =>
 test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', (t) => {
   const value = restoreFixture(t)
   const select = (restore, fixture = 'core', source = root) =>
-    realTestSelection(restore, fixture, value.runtime.endpoints.frontend, source, (directory) =>
-      path.resolve(directory),
+    realTestSelection(
+      restore,
+      fixture,
+      value.runtime.endpoints.frontend,
+      source,
+      (directory) => path.resolve(directory),
+      value.datasetAuthority,
     )
   assert.throws(() => select(value.restore, 'device'), /core/u)
   assert.throws(() => select({ ...value.restore, unknown: true }), /字段/u)
   assert.throws(() => select({ ...value.restore, bindings: 'bindings.json' }), /绝对路径/u)
   writeFileSync(value.restore.targetPlan, '{invalid')
   assert.throws(() => select(value.restore), /JSON/u)
-  const replaced = restoreFixture(t)
-  writeFileSync(replaced.lineage.sourceGeneration.path, '{}')
-  assert.throws(() => select(replaced.restore), /登记摘要/u)
+  const forged = restoreFixture(t)
+  assert.throws(
+    () =>
+      realTestSelection(
+        forged.restore,
+        'core',
+        forged.runtime.endpoints.frontend,
+        root,
+        (directory) => path.resolve(directory),
+        () => {
+          throw new Error('后端拒绝伪造来源链')
+        },
+      ),
+    /后端拒绝伪造来源链/u,
+  )
   const another = restoreFixture(t)
   assert.throws(
     () => select(another.restore, 'core', path.dirname(another.restore.bindings)),
@@ -172,6 +219,7 @@ test('runner 核验失败会在报告目录和服务创建前传播', (t) => {
             if (label === '恢复测试 runner 源码') throw new Error(error)
             return value.paths.frontendRoot
           },
+          value.datasetAuthority,
         ),
       new RegExp(error, 'u'),
     )
@@ -186,6 +234,24 @@ test('真实浏览器配置先完成恢复选择，再创建目录与控制端�
   const control = source.indexOf('const controlId =')
   assert.ok(selection >= 0 && selection < report && report < directory && directory < control)
   assert.match(source, /if \(restore\.reporter\)[\s\S]+restore-reporter\.mjs/u)
+  assert.match(source, /metadata: restore\.worker/u)
   assert.match(source, /actionTimeout: 15_000/u)
   assert.match(source, /navigationTimeout: 30_000/u)
+})
+
+test('restore worker 在首次登录前重验配置冻结的数据权威', async () => {
+  const source = await readFile(
+    path.join(root, 'tests/browser-real/restore-existing.spec.ts'),
+    'utf8',
+  )
+  const expected = source.indexOf('info.config.metadata.restoreDatasetAuthority')
+  const authority = source.indexOf('restoreDatasetEvidence(expectedAuthority)')
+  const loginCall = source.indexOf('await login(')
+  assert.ok(expected >= 0 && expected < authority && authority < loginCall)
+  for (const name of [
+    'RYFRAME_RESTORE_TARGET_PLAN',
+    'RYFRAME_RESTORE_RUNTIME_RECEIPT',
+    'RYFRAME_RESTORE_BINDINGS',
+  ])
+    assert.doesNotMatch(source, new RegExp(name, 'u'))
 })

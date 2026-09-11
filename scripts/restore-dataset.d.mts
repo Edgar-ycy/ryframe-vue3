@@ -20,11 +20,20 @@ export interface RestoreFileDescriptor {
   sha256: string
 }
 
-export interface RestoredDatasetLineage {
-  lineage: RestoreDatasetLineageDocument
-  sourceGeneration: Readonly<RestoreFileDescriptor>
-  sourceRuntime: Readonly<RestoreFileDescriptor>
-  datasetLineage: Readonly<RestoreFileDescriptor>
+export interface RestoreDatasetAuthorityRecord {
+  format_version: 1
+  kind: 'restore-dataset-authority'
+  runtime: Readonly<RestoreFileDescriptor>
+  target_plan: Readonly<RestoreFileDescriptor>
+  source_generation: Readonly<RestoreFileDescriptor>
+  dataset_lineage: Readonly<RestoreFileDescriptor>
+  target: Readonly<{ scope_id: string; api_url: string; frontend_url: string }>
+  execution_backend: string
+}
+
+export interface VerifiedRestoreDatasetAuthority {
+  authority: Readonly<RestoreDatasetAuthorityRecord>
+  lineage: Readonly<RestoreDatasetLineageDocument>
 }
 
 export interface RestoreDatasetVerification {
@@ -41,11 +50,20 @@ export interface RestoreDatasetVerification {
 }
 
 export function datasetDigest(bytes: string | Uint8Array): string
-export function restoredDatasetLineage(targetPlanBytes: Uint8Array): RestoredDatasetLineage
+export function restoreDatasetAuthority(value: unknown): Readonly<RestoreDatasetAuthorityRecord>
+export function restoreDatasetEvidence(value: unknown): Readonly<VerifiedRestoreDatasetAuthority>
+export function verifyRestoreDatasetAuthority(
+  input: {
+    backendRoot: string
+    bindingsBytes: Uint8Array
+    frontendEndpoint: string
+    python: string
+    runtimeReceipt: string
+    targetPlan: string
+  },
+  options?: { expected?: RestoreDatasetAuthorityRecord },
+): Readonly<VerifiedRestoreDatasetAuthority>
 export function verifyRestoredDataset(input: {
-  bindingsBytes: Uint8Array
-  targetPlanBytes: Uint8Array
-  frontendEndpoint: string
+  authority: VerifiedRestoreDatasetAuthority
   verifierRoot: string
-  lineage: RestoreDatasetLineageDocument
 }): Promise<Readonly<RestoreDatasetVerification>>

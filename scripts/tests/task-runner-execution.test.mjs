@@ -121,6 +121,32 @@ test('--plan 在 Node 禁止文件写入与派生子进程的权限模型中成�
   ]) {
     assert.match(result.stdout, new RegExp(label, 'u'))
   }
+
+  const build = spawnSync(
+    process.execPath,
+    ['--permission', '--allow-fs-read=*', runner, 'build', '--real', '--plan'],
+    { encoding: 'utf8', env: runnerEnvironment(), windowsHide: true, shell: false },
+  )
+  assert.equal(build.error, undefined)
+  assert.equal(build.status, 0, build.stderr)
+  assert.match(build.stdout, /build-source/u)
+  assert.match(build.stdout, /build-receipt/u)
+  assert.match(build.stdout, /artifact:dist\/\.vite\/restore-build\.json/u)
+})
+
+test('真实构建来源和收据由同一计划按前后像顺序执行', async () => {
+  const graph = plan(['build', '--real'])
+  const executed = []
+  await executeTaskPlan(graph, {
+    execute: async (task, _interactive, _control, context) => {
+      executed.push(task.id)
+      if (task.id === 'build-source') context.set('captured', true)
+      if (task.id === 'build-receipt') assert.equal(context.get('captured'), true)
+      return { code: 0 }
+    },
+    report: () => undefined,
+  })
+  assert.deepEqual(executed, ['build-source', 'build', 'bundle', 'build-receipt'])
 })
 
 test('browser 只接受显式 fixture，遗留环境不能隐式选择 Device', () => {

@@ -266,9 +266,14 @@ test('四个用户入口的计划复用实际任务定义', () => {
   assert.deepEqual(dev.params, { preview: true })
   assert.deepEqual(dev.invocation.args, ['preview'])
 
-  const build = tasks(plans[2])[0]
+  assert.deepEqual(ids(plans[2]), ['build-source', 'build', 'bundle', 'build-receipt'])
+  const build = tasks(plans[2]).find((task) => task.id === 'build')
   assert.deepEqual(build.params, { real: true })
   assert.deepEqual(build.env, { VITE_APP_API_ORIGIN: '' })
+  assert.deepEqual(
+    plans[2].groups.map((group) => group.map((task) => task.id)),
+    [['build-source'], ['build'], ['bundle'], ['build-receipt']],
+  )
 
   const generate = tasks(plans[3])[0]
   assert.deepEqual(generate.params, { write: true })
@@ -279,7 +284,8 @@ test('四个用户入口的计划复用实际任务定义', () => {
 test('开发预览、真实构建与工具阶段有明确参数和归属', () => {
   const dev = tasks(plan(['dev', '--preview']))[0]
   assert.deepEqual(taskSpecs.dev.invoke(dev).args, ['preview'])
-  assert.deepEqual(tasks(plan(['build', '--real']))[0].env, { VITE_APP_API_ORIGIN: '' })
+  const build = tasks(plan(['build', '--real'])).find((task) => task.id === 'build')
+  assert.deepEqual(build.env, { VITE_APP_API_ORIGIN: '' })
   assert.deepEqual(ids(plan(['check', '--stage', 'tools'])), ['policy-tests', 'supply-chain'])
 })
 

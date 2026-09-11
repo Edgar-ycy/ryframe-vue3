@@ -163,6 +163,14 @@ export const taskSpecs = {
     profiles: ['tools'],
     invoke: () => script('check-supply-chain-policy.mjs'),
   },
+  'build-source': {
+    label: '生产构建来源前像',
+    profiles: ['build'],
+    when: (options) => options.command === 'build' && options.real === true,
+    phase: () => 1,
+    concurrencyResources: () => ['exclusive:repository-source'],
+    invoke: () => ({ kind: 'action', action: 'build-source' }),
+  },
   build: {
     label: '生产构建',
     profiles: ['build'],
@@ -180,6 +188,16 @@ export const taskSpecs = {
     phase: () => 3,
     concurrencyResources: () => ['exclusive:dist'],
     invoke: () => script('check-bundle-budget.mjs'),
+  },
+  'build-receipt': {
+    label: '真实生产构建收据',
+    profiles: ['build'],
+    when: (options) => options.command === 'build' && options.real === true,
+    phase: () => 4,
+    effect: 'artifacts',
+    allowedWrites: () => ['artifact:dist/.vite/restore-build.json'],
+    concurrencyResources: () => ['exclusive:dist', 'exclusive:repository-source'],
+    invoke: () => ({ kind: 'action', action: 'build-receipt' }),
   },
   browser: {
     label: '浏览器流程',

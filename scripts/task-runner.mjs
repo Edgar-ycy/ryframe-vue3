@@ -74,7 +74,11 @@ function taskInvocation(task) {
   }
 }
 
-async function runTask(task, interactive, control) {
+function buildSourceKey(task) {
+  return `build-source:${task.source}`
+}
+
+async function runTask(task, interactive, control, context) {
   const invocation = taskInvocation(task)
   if (invocation.kind !== 'action') {
     return runTaskProcess(invocation, {
@@ -84,12 +88,28 @@ async function runTask(task, interactive, control) {
       control,
     })
   }
-  if (invocation.action !== 'api-source') throw new Error('未知任务动作：' + invocation.action)
-  const state = await verifyLocalContractState(root)
-  if (task.params.consumer) {
-    validateConsumerState(task.params.consumer, state, readFileSync(task.params.consumer.candidate))
+  if (invocation.action === 'api-source') {
+    const state = await verifyLocalContractState(root)
+    if (task.params.consumer) {
+      validateConsumerState(
+        task.params.consumer,
+        state,
+        readFileSync(task.params.consumer.candidate),
+      )
+    }
+    return { code: 0, stdout: '本地 OpenAPI ' + state.mode + ' 态校验通过' }
   }
-  return { code: 0, stdout: '本地 OpenAPI ' + state.mode + ' 态校验通过' }
+  if (invocation.action === 'build-source') {
+    context.set(buildSourceKey(task), sourceSnapshot(root))
+    return { code: 0, stdout: '生产构建来源前像已固定' }
+  }
+  if (invocation.action === 'build-receipt') {
+    const before = context.get(buildSourceKey(task))
+    if (!before) throw new Error('真实生产构建缺少同次来源前像')
+    writeBuildReceipt(root, before)
+    return { code: 0, artifacts: [path.join(root, 'dist', '.vite', 'restore-build.json')] }
+  }
+  throw new Error('未知任务动作：' + invocation.action)
 }
 
 export class TaskRunError extends Error {
@@ -120,7 +140,12 @@ function reportResult(result, interactive) {
 /** 执行 planner 的原始节点，收集实际结果；执行记录仅属于本次运行。 */
 export async function executeTaskPlan(
   plan,
-  { execute = runTask, report = reportResult, control = new TaskRunControl() } = {},
+  {
+    execute = runTask,
+    report = reportResult,
+    control = new TaskRunControl(),
+    context = new Map(),
+  } = {},
 ) {
   const completed = new Map()
   try {
@@ -139,7 +164,7 @@ export async function executeTaskPlan(
           try {
             result = control.signal.aborted
               ? { code: 1, cancelled: true }
-              : await execute(task, plan.interactive, control)
+              : await execute(task, plan.interactive, control, context)
           } catch (error) {
             result = { code: 1, error }
           }
@@ -215,11 +240,7 @@ export async function runTaskRunner(argv) {
   }
   const control = new TaskRunControl()
   return withTaskSignals(async () => {
-    const buildSource =
-      options.command === 'build' && options.real ? sourceSnapshot(root) : undefined
-    const results = await executeTaskPlan(plan, { control })
-    if (buildSource) writeBuildReceipt(root, buildSource)
-    return results
+    return executeTaskPlan(plan, { control })
   }, control)
 }
 

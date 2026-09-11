@@ -5,12 +5,39 @@ import { promisify } from 'node:util'
 const execute = promisify(execFile)
 type Operation =
   'inspect' | 'plan-history' | 'historical-expired' | 'export-backup' | 'verify-cleaned'
+const writeOperations = new Set<Operation>(['historical-expired', 'export-backup'])
 
 export function record(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new Error('历史保留期 fixture 未返回有效对象')
   }
   return Object.fromEntries(Object.entries(value))
+}
+
+export function migrationHistoryArguments(
+  backend: string,
+  runtime: string,
+  operation: Operation,
+  tenant: string,
+  migration: string,
+  planSha256?: string,
+): string[] {
+  return [
+    '-X',
+    'utf8',
+    path.join(backend, 'scripts/full_stack_migration_history.py'),
+    operation,
+    '--backend-dir',
+    backend,
+    '--runtime-dir',
+    runtime,
+    '--tenant',
+    tenant,
+    '--migration',
+    migration,
+    ...(planSha256 ? ['--plan-sha256', planSha256] : []),
+    ...(writeOperations.has(operation) ? ['--write'] : []),
+  ]
 }
 
 export async function migrationHistory(
@@ -23,23 +50,11 @@ export async function migrationHistory(
   const runtime = process.env.RYFRAME_E2E_RUNTIME_DIR
   const scope = process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID
   if (!backend || !runtime || !scope) throw new Error('历史保留期 fixture 缺少明确隔离运行配置')
+  const backendRoot = path.resolve(backend)
+  const runtimeRoot = path.resolve(runtime)
   const { stdout } = await execute(
     process.env.RYFRAME_E2E_PYTHON || 'python',
-    [
-      '-X',
-      'utf8',
-      path.join(backend, 'scripts/full_stack_migration_history.py'),
-      operation,
-      '--backend-root',
-      path.resolve(backend),
-      '--runtime-dir',
-      path.resolve(runtime),
-      '--tenant',
-      tenant,
-      '--migration',
-      migration,
-      ...(planSha256 ? ['--plan-sha256', planSha256] : []),
-    ],
+    migrationHistoryArguments(backendRoot, runtimeRoot, operation, tenant, migration, planSha256),
     { timeout: 150_000, windowsHide: true },
   )
   const result = record(JSON.parse(stdout))

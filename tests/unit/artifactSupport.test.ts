@@ -2,11 +2,24 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 
 import {
+  artifactInspectionArguments,
   parseArtifactInspection,
   verifyDownloadedExportContent,
 } from '../browser-real/artifact-support'
 
 describe('导出物理对象验收结果', () => {
+  it('使用后端脚本声明的目录参数', () => {
+    const args = artifactInspectionArguments(
+      'D:\\workspace\\backend',
+      'D:\\workspace\\runtime',
+      'snapshot',
+      '42',
+      'D:\\workspace\\receipt.json',
+    )
+    expect(args).toContain('--backend-dir')
+    expect(args).not.toContain('--backend-root')
+  })
+
   it.each([
     ['snapshot', 'present'],
     ['verify-deleted', 'pending'],

@@ -118,6 +118,27 @@ function absoluteEnvironmentPath(name: string): string {
   return path.resolve(value)
 }
 
+export function artifactInspectionArguments(
+  backend: string,
+  runtime: string,
+  operation: ArtifactInspectionOperation,
+  jobId: string,
+  receipt: string,
+): string[] {
+  return [
+    path.join(backend, 'scripts/full_stack_artifacts.py'),
+    operation,
+    '--backend-dir',
+    backend,
+    '--runtime-dir',
+    runtime,
+    '--job-id',
+    jobId,
+    '--receipt',
+    receipt,
+  ]
+}
+
 export async function inspectExportArtifact(
   operation: ArtifactInspectionOperation,
   jobId: string,
@@ -130,18 +151,7 @@ export async function inspectExportArtifact(
   const runtime = absoluteEnvironmentPath('RYFRAME_E2E_RUNTIME_DIR')
   const { stdout } = await execute(
     process.env.RYFRAME_E2E_PYTHON?.trim() || 'python',
-    [
-      path.join(backend, 'scripts/full_stack_artifacts.py'),
-      operation,
-      '--backend-root',
-      backend,
-      '--runtime-dir',
-      runtime,
-      '--job-id',
-      jobId,
-      '--receipt',
-      path.resolve(receipt),
-    ],
+    artifactInspectionArguments(backend, runtime, operation, jobId, path.resolve(receipt)),
     { encoding: 'utf8', maxBuffer: 64 * 1024, timeout: 45_000, windowsHide: true },
   )
   return parseArtifactInspection(stdout, operation, jobId)

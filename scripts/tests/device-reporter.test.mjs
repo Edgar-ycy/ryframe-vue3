@@ -12,25 +12,25 @@ import DeviceReporter, {
 function runs() {
   return [
     {
-      title: ['device', '真实 Device 数据从 shared-control 复制校验并切换到 shared'],
+      title: ['真实 Device 数据从 shared-control 复制校验并切换到 shared'],
       status: 'passed',
       retry: 0,
       scenarios: ['shared-migration'],
     },
     {
-      title: ['device', '真实 Device 数据从 dedicated-a 复制校验并切换到 dedicated-b'],
+      title: ['真实 Device 数据从 dedicated-a 复制校验并切换到 dedicated-b'],
       status: 'passed',
       retry: 0,
       scenarios: ['dedicated-migration', 'retention'],
     },
     {
-      title: ['device', '真实排队 Device 迁移取消恢复源数据，并允许再次迁移'],
+      title: ['真实排队 Device 迁移取消恢复源数据，并允许再次迁移'],
       status: 'passed',
       retry: 0,
       scenarios: ['cancellation'],
     },
     {
-      title: ['device', '真实 Device 复制阻塞时 Worker 崩溃，重启后同一迁移恢复并完成校验'],
+      title: ['真实 Device 复制阻塞时 Worker 崩溃，重启后同一迁移恢复并完成校验'],
       status: 'passed',
       retry: 0,
       scenarios: ['crash-recovery'],
@@ -83,7 +83,8 @@ test('拒绝失败、跳过、重试、重复标题和缺失或重复场景', ()
     (value) => (value[0].status = 'skipped'),
     (value) => (value[0].retry = 1),
     (value) => (value[1].title = [...value[0].title]),
-    (value) => (value[0].title = ['device', '未登记的额外测试']),
+    (value) => (value[0].title = ['未登记的额外测试']),
+    (value) => (value[0].title = ['额外前缀', ...value[0].title]),
     (value) => (value[0].scenarios = []),
     (value) => value[0].scenarios.push('shared-migration'),
     (value) => (value[0].scenarios = ['unknown']),

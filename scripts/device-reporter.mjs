@@ -63,7 +63,7 @@ export function verifyDeviceTestReceipt(value, expected) {
     const run = exactObject(item, runFields, 'Device 浏览器测试明细')
     if (
       !Array.isArray(run.title) ||
-      run.title.length === 0 ||
+      run.title.length !== 1 ||
       run.title.some((part) => typeof part !== 'string' || !part.trim()) ||
       run.status !== 'passed' ||
       run.retry !== 0 ||
@@ -74,14 +74,17 @@ export function verifyDeviceTestReceipt(value, expected) {
       throw new Error('Device 浏览器测试包含失败、跳过、重试或无效标题')
     const title = JSON.stringify(run.title)
     if (titles.has(title)) throw new Error('Device 浏览器测试标题重复')
-    const expectedScenarios = requiredDeviceTests[run.title.at(-1)]
-    if (!expectedScenarios || JSON.stringify(run.scenarios) !== JSON.stringify(expectedScenarios))
+    const name = run.title[0]
+    if (
+      !Object.hasOwn(requiredDeviceTests, name) ||
+      JSON.stringify(run.scenarios) !== JSON.stringify(requiredDeviceTests[name])
+    )
       throw new Error('Device 浏览器测试标题与场景不匹配')
     titles.add(title)
     scenarios.push(...run.scenarios)
   }
   if (
-    new Set([...titles].map((title) => JSON.parse(title).at(-1))).size !==
+    new Set([...titles].map((title) => JSON.parse(title)[0])).size !==
     Object.keys(requiredDeviceTests).length
   )
     throw new Error('Device 浏览器测试标题集合不完整')
@@ -121,7 +124,7 @@ export default class DeviceReporter {
 
   onTestEnd(test, result) {
     this.runs.push({
-      title: test.titlePath(),
+      title: [test.titlePath().at(-1)],
       status: result.status,
       retry: result.retry,
       scenarios: test.annotations

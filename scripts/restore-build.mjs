@@ -11,6 +11,7 @@ import {
 } from './build-source.mjs'
 import {
   captureSourceInventory,
+  compareSourcePaths,
   sha256,
   sourceDomains,
   validateSourceDomains,
@@ -34,6 +35,7 @@ export function productionFiles(dist) {
     }
   }
   visit(dist)
+  files.sort((left, right) => compareSourcePaths(left.path, right.path))
   if (!files.some((file) => file.path === 'index.html')) throw new Error('缺少生产首页')
   if (!files.some((file) => file.path === '.vite/manifest.json'))
     throw new Error('缺少 Vite 生产 manifest')

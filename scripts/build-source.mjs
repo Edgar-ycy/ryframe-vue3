@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
@@ -25,14 +26,12 @@ export const environmentPaths = Object.freeze([
 ])
 
 export function environmentFiles(root) {
-  return environmentPaths
-    .filter((relative) => existsSync(path.join(root, relative)))
-    .map((relative) => ({
-      path: relative,
-      sha256: sha256(
-        readFileSync(localSourceFile(root, relative, 'Vite 环境文件必须是前端仓库内的普通文件')),
-      ),
-    }))
+  return environmentPaths.flatMap((relative) => {
+    const file = localSourceFile(root, relative, 'Vite 环境文件必须是前端仓库内的普通文件', {
+      allowMissing: true,
+    })
+    return file ? [{ path: relative, sha256: sha256(readFileSync(file)) }] : []
+  })
 }
 
 function packageVersion(root, name) {
@@ -46,9 +45,30 @@ function packageVersion(root, name) {
 export function observedToolchain(root, environment = process.env) {
   const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
   const pinned = /^pnpm@([^+]+)(?:\+.*)?$/u.exec(manifest.packageManager ?? '')?.[1]
-  const observed = /(?:^|\s)pnpm\/([^\s]+)/u.exec(environment.npm_config_user_agent ?? '')?.[1]
-  if (!pinned || !observed || observed !== pinned) {
+  const announced = /(?:^|\s)pnpm\/([^\s]+)/u.exec(environment.npm_config_user_agent ?? '')?.[1]
+  const configuredCli = environment.npm_execpath?.trim()
+  if (
+    !pinned ||
+    !announced ||
+    announced !== pinned ||
+    !configuredCli ||
+    !path.isAbsolute(configuredCli)
+  ) {
     throw new Error('真实构建必须由 packageManager 固定版本的 Corepack pnpm 执行')
+  }
+  const cli = realpathSync(configuredCli)
+  if (!lstatSync(configuredCli).isFile() || lstatSync(configuredCli).isSymbolicLink()) {
+    throw new Error('真实构建的 pnpm 入口不是普通文件')
+  }
+  const observed = execFileSync(process.execPath, [cli, '--version'], {
+    cwd: root,
+    env: environment,
+    encoding: 'utf8',
+    windowsHide: true,
+    maxBuffer: 1024 * 1024,
+  }).trim()
+  if (observed !== pinned) {
+    throw new Error('实际 pnpm 版本与 packageManager 固定版本不一致')
   }
   return {
     node: process.version,
@@ -104,7 +124,9 @@ export function validateBuildContext(value) {
       value.environment.variables,
       [...new Set(value.environment.variables)].sort(),
     ) ||
-    !value.environment.variables.every((name) => /^VITE_[A-Z0-9_]+$/u.test(name)) ||
+    !value.environment.variables.every(
+      (name) => typeof name === 'string' && name.startsWith('VITE_'),
+    ) ||
     !hex(value.environment.sha256, 64)
   )
     throw new Error('前端构建命令、工具链或环境摘要无效')

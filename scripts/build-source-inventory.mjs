@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs'
+import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
@@ -23,6 +23,8 @@ function canonical(value) {
 }
 
 export const canonicalDigest = (value) => sha256(JSON.stringify(canonical(value)))
+export const compareSourcePaths = (left, right) =>
+  Buffer.compare(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8'))
 const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { windowsHide: true })
 
 export function exactObject(value, fields, message) {
@@ -46,14 +48,26 @@ function validRelative(relative) {
   )
 }
 
-export function localSourceFile(root, relative, message) {
+export function localSourceFile(root, relative, message, { allowMissing = false } = {}) {
   if (!validRelative(relative)) throw new Error(message)
+  let cursor = root
+  let observed
+  for (const part of relative.split('/')) {
+    cursor = path.join(cursor, part)
+    try {
+      observed = lstatSync(cursor)
+    } catch (error) {
+      if (allowMissing && error?.code === 'ENOENT') return null
+      throw new Error(message, { cause: error })
+    }
+    if (observed.isSymbolicLink()) throw new Error(message)
+  }
   const file = path.resolve(root, ...relative.split('/'))
   const resolvedRoot = realpathSync(root)
   const resolved = realpathSync(file)
   const normalizedRoot = process.platform === 'win32' ? resolvedRoot.toLowerCase() : resolvedRoot
   const normalized = process.platform === 'win32' ? resolved.toLowerCase() : resolved
-  if (!normalized.startsWith(normalizedRoot + path.sep) || !lstatSync(file).isFile()) {
+  if (!normalized.startsWith(normalizedRoot + path.sep) || !observed.isFile()) {
     throw new Error(message)
   }
   return file
@@ -71,7 +85,7 @@ export function sourceSnapshot(root) {
     realpathSync(git(root, 'rev-parse', '--show-toplevel').toString().trim()) !== realpathSync(root)
   )
     throw new Error('恢复构建必须使用实际 Git 仓库根目录')
-  const files = [...untracked(root)].sort().map((relative) => ({
+  const files = [...untracked(root)].sort(compareSourcePaths).map((relative) => ({
     path: relative,
     sha256: sha256(
       readFileSync(localSourceFile(root, relative, '源码快照包含越界路径或非普通文件')),
@@ -110,13 +124,14 @@ function fileInventory(root) {
         .split('\0')
         .filter(Boolean),
     ),
-  ].sort()
+  ].sort(compareSourcePaths)
   const files = []
   const modes = []
   for (const relative of paths) {
-    const candidate = path.resolve(root, ...relative.split('/'))
-    if (!existsSync(candidate)) continue
-    const file = localSourceFile(root, relative, '源码清单包含链接、越界路径或非普通文件')
+    const file = localSourceFile(root, relative, '源码清单包含链接、越界路径或非普通文件', {
+      allowMissing: true,
+    })
+    if (!file) continue
     files.push({ path: relative, sha256: sha256(readFileSync(file)) })
     modes.push({ path: relative, executable: lstatSync(file).mode & 0o111 })
   }
@@ -231,7 +246,11 @@ export function validateFiles(value, fields, message) {
   let previous = ''
   for (const item of value) {
     exactObject(item, fields, message)
-    if (!validRelative(item.path) || item.path <= previous || !hex(item.sha256, 64)) {
+    if (
+      !validRelative(item.path) ||
+      (previous && compareSourcePaths(item.path, previous) <= 0) ||
+      !hex(item.sha256, 64)
+    ) {
       throw new Error(message)
     }
     previous = item.path

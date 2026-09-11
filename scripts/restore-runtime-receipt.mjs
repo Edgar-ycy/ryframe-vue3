@@ -1,5 +1,5 @@
 import { isAbsolute } from 'node:path'
-import { sha256 } from './build-source-inventory.mjs'
+import { compareSourcePaths, sha256 } from './build-source-inventory.mjs'
 import {
   validateBackendBuildSources,
   validateFrontendBuildSources,
@@ -160,7 +160,7 @@ function verifyFrontendBuild(receipt, expectedSha) {
     exactObject(file, frontendFileFields, '运行产物收据前端文件字段无效')
     if (
       !validFrontendPath(file.path) ||
-      file.path <= previous ||
+      (previous && compareSourcePaths(file.path, previous) <= 0) ||
       !Number.isInteger(file.bytes) ||
       file.bytes < 0 ||
       !validHex(file.sha256, 64)

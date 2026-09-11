@@ -89,17 +89,15 @@ function sourceGroup(files, selected) {
   }
 }
 
-function validateBackendSourceDomains(value) {
-  exactObject(value, ['product', 'tools', 'full'], '后端构建来源分域字段无效')
-  exactObject(value.product, ['api', 'worker'], '后端产品来源角色无效')
-  const inventory = validateSourceInventory(value.full)
+export function backendSourceDomains(inventory) {
+  validateSourceInventory(inventory)
   const roles = { api: [], worker: [] }
   const tools = []
   for (const file of inventory.files) {
     for (const role of backendProductRoles(file.path)) roles[role].push(file.path)
     if (backendTool(file.path)) tools.push(file.path)
   }
-  const expected = {
+  return {
     product: {
       api: sourceGroup(inventory.files, roles.api),
       worker: sourceGroup(inventory.files, roles.worker),
@@ -107,6 +105,12 @@ function validateBackendSourceDomains(value) {
     tools: sourceGroup(inventory.files, tools),
     full: structuredClone(inventory),
   }
+}
+
+function validateBackendSourceDomains(value) {
+  exactObject(value, ['product', 'tools', 'full'], '后端构建来源分域字段无效')
+  exactObject(value.product, ['api', 'worker'], '后端产品来源角色无效')
+  const expected = backendSourceDomains(validateSourceInventory(value.full))
   if (canonicalDigest(value) !== canonicalDigest(expected)) {
     throw new Error('后端构建来源分域与完整清单不一致')
   }

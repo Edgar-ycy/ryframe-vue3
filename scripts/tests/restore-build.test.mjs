@@ -13,9 +13,15 @@ import {
   writeBuildReceipt,
 } from '../restore-build.mjs'
 
-const environment = {
-  ...process.env,
-  npm_config_user_agent: 'pnpm/11.20.0 npm/? node/? win32 x64',
+function buildEnvironment(root) {
+  const cli = path.join(root, '.local-tests/pnpm.mjs')
+  mkdirSync(path.dirname(cli), { recursive: true })
+  writeFileSync(cli, "console.log('11.20.0')\n")
+  return {
+    ...process.env,
+    npm_config_user_agent: 'pnpm/11.20.0 npm/? node/? win32 x64',
+    npm_execpath: cli,
+  }
 }
 
 function fixture(t) {
@@ -56,6 +62,7 @@ function fixture(t) {
 
 test('生产构建收据绑定三域、工具链和完整 dist，非干净候选不能伪装', (t) => {
   const root = fixture(t)
+  const environment = buildEnvironment(root)
   const before = buildSourceSnapshot(root, {}, environment)
   assert.equal(before.sources.full.source.snapshot.clean, true)
   writeFileSync(path.join(root, 'new.js'), 'export const untracked = true')
@@ -84,7 +91,9 @@ test('工具源码变化不改变产品摘要，完整来源和工具摘要仍�
 
 test('Vite 忽略环境文件、构建参数和工具链变化都不能复用收据', (t) => {
   const root = fixture(t)
+  const environment = { ...buildEnvironment(root), VITE_lowercase_input: 'fixture' }
   const before = buildSourceSnapshot(root, {}, environment)
+  assert.ok(before.build.environment.variables.includes('VITE_lowercase_input'))
   writeFileSync(path.join(root, '.env.production'), 'VITE_FLAG=before\n')
   assert.throws(() => writeBuildReceipt(root, before, {}, environment), /有效构建环境/u)
   rmSync(path.join(root, '.env.production'))
@@ -101,10 +110,18 @@ test('Vite 忽略环境文件、构建参数和工具链变化都不能复用收
   )
   const { npm_config_user_agent: _ignored, ...withoutObservedPnpm } = environment
   assert.throws(() => verifyBuildReceipt(root, withoutObservedPnpm), /Corepack pnpm/u)
+  const fakePnpm = path.join(root, '.local-tests/fake-pnpm.mjs')
+  mkdirSync(path.dirname(fakePnpm), { recursive: true })
+  writeFileSync(fakePnpm, "console.log('10.0.0')\n")
+  assert.throws(
+    () => verifyBuildReceipt(root, { ...environment, npm_execpath: fakePnpm }),
+    /实际 pnpm 版本/u,
+  )
 })
 
 test('preview 不要求当前 VITE 进程环境重现构建值，但仍核对环境文件与产物', (t) => {
   const root = fixture(t)
+  const environment = buildEnvironment(root)
   const builtWith = { ...environment, VITE_BUILD_LABEL: 'candidate' }
   const before = buildSourceSnapshot(root, { VITE_APP_API_ORIGIN: '' }, builtWith)
   const receipt = writeBuildReceipt(root, before, { VITE_APP_API_ORIGIN: '' }, builtWith)
@@ -118,12 +135,25 @@ test('preview 不要求当前 VITE 进程环境重现构建值，但仍核对环
 
 test('缺少 manifest 和源码中途变动可被识别', (t) => {
   const root = fixture(t)
+  const environment = buildEnvironment(root)
   assert.throws(() => verifyBuildReceipt(root, environment), /build --real/u)
   const before = buildSourceSnapshot(root, {}, environment)
   writeFileSync(path.join(root, 'app.js'), 'export const answer = 43\n')
   assert.throws(() => writeBuildReceipt(root, before, {}, environment), /发生变化/u)
   rmSync(path.join(root, 'dist/.vite/manifest.json'))
   assert.throws(() => productionFiles(path.join(root, 'dist')), /manifest/u)
+})
+
+test('完整 dist 清单全局排序并保留 Unicode 路径', (t) => {
+  const root = fixture(t)
+  mkdirSync(path.join(root, 'dist/a'), { recursive: true })
+  writeFileSync(path.join(root, 'dist/a/😀.js'), 'emoji')
+  writeFileSync(path.join(root, 'dist/a.txt'), 'sibling')
+  const paths = productionFiles(path.join(root, 'dist')).map((item) => item.path)
+  const sorted = [...paths].sort((left, right) =>
+    Buffer.compare(Buffer.from(left), Buffer.from(right)),
+  )
+  assert.deepEqual(paths, sorted)
 })
 
 test('真实 preview 在创建报告目录前验证生产构建收据', () => {

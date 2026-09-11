@@ -63,16 +63,14 @@ corepack pnpm check --stage browser --real
 
 手动运行完整真实测试时，还需将 `RYFRAME_E2E_RATE_LIMIT_CAPACITY` 和 `RYFRAME_E2E_RATE_LIMIT_WINDOW_SECS` 分别设为当前后端实际生效的 IP 限流容量与窗口秒数。跨租户测试会计入该客户端的后台请求，在准备和清理阶段等待可用预算；这两个输入只控制测试节奏，不改变服务端限流，也不将 429 当作成功。后端全栈自动化入口会从同一组运行配置传入这些值。
 
-登录另需 `RYFRAME_E2E_LOGIN_RATE_LIMIT_CAPACITY`、`RYFRAME_E2E_LOGIN_RATE_LIMIT_WINDOW_SECS` 和绝对文件路径 `RYFRAME_E2E_LOGIN_BUDGET_STATE`。前两项由后端 `scripts/full_stack_rate_limit_config.py` 读取实际配置导出；账本放在忽略的本地测试目录。同一隔离环境的 dev 与 preview 必须共享账本，独立套件使用新路径。测试按固定场景客户地址和租户用户名共同预约登录预算，窗口耗尽时在点击登录前等待；失败或未完成尝试同样计费。账本损坏、配置变化或时间回退会明确失败，不自动清空已有预算。
+登录另需 `RYFRAME_E2E_LOGIN_RATE_LIMIT_CAPACITY`、`RYFRAME_E2E_LOGIN_RATE_LIMIT_WINDOW_SECS` 和绝对文件路径 `RYFRAME_E2E_LOGIN_BUDGET_STATE`。后端统一恢复入口会从实际配置导出前两项并创建忽略目录中的账本；独立运行前端时需要使用同一登记结果。同一隔离环境的 dev 与 preview 必须共享账本，独立套件使用新路径。测试按固定场景客户地址和租户用户名共同预约登录预算，窗口耗尽时在点击登录前等待；失败或未完成尝试同样计费。账本损坏、配置变化或时间回退会明确失败，不自动清空已有预算。
 
-用户导入样本由后端 `scripts/user_import_fixture.py browser` 根据实际下载的模板生成；用
-`RYFRAME_E2E_BACKEND_DIR` 指定后端目录、`RYFRAME_E2E_PYTHON` 指定已安装后端检查依赖的
-Python。生成器绑定模板和输出文件的 SHA-256，浏览器在上传已验证字节前再次核对并附加收据。
+用户导入样本由后端恢复入口根据实际下载的模板生成；用 `RYFRAME_E2E_BACKEND_DIR` 指定后端目录、`RYFRAME_E2E_PYTHON` 指定已安装后端检查依赖的 Python。生成器绑定模板和输出文件的 SHA-256，浏览器在上传已验证字节前再次核对并附加收据。
 需要保留多轮报告时设置唯一的 `RYFRAME_E2E_RUN_ID`，测试产物写入该轮子目录。
 
 上传边界套件按默认文件 10 MiB、头像 5 MiB 配置验收：4 MiB 文本、超过 2 MiB 的有效 PNG，以及增加 3 MiB 未压缩成员的真实 XLSX 模板。用户导入仍验证原有成功、重复和失败三类业务行；畸形表单与分块超限请求分别要求 400、413，传输失败不计为通过。
 
-排队取消和故障场景还需要 `RYFRAME_E2E_RUNTIME_DIR` 指向后端全栈启动流程生成的运行目录，本地设置 `RYFRAME_E2E_MYSQL_CLIENT` 为 MySQL 客户端的绝对路径。测试通过 `scripts/full_stack_worker.py start|stop|crash|status --backend-root <后端目录> --runtime-dir <运行目录>` 控制已登记 Worker；配置、构建摘要、scope 或进程创建身份不匹配时拒绝操作，重启后按最新收据回收进程。真实会话竞争使用测试进程内的同源透明代理，整份延迟响应包含 Cookie，生产服务无需增加测试接口。
+排队取消和故障场景还需要 `RYFRAME_E2E_RUNTIME_DIR` 指向后端全栈启动流程生成的运行目录，本地设置 `RYFRAME_E2E_MYSQL_CLIENT` 为 MySQL 客户端的绝对路径。`cargo xtask check recovery` 负责控制已登记 Worker；配置、构建摘要、scope 或进程创建身份不匹配时拒绝操作，重启后按最新收据回收进程。真实会话竞争使用测试进程内的同源透明代理，整份延迟响应包含 Cookie，生产服务无需增加测试接口。完整的隔离环境准备、运行和回收方法见后端 `docs/operations.md`。
 
 生产构建验收先运行 `corepack pnpm build --real`，再设置 `RYFRAME_E2E_SERVER=preview` 运行 `corepack pnpm check --stage browser --real`。真实构建必须由 `packageManager` 固定版本的 Corepack pnpm 启动；收据会绑定 Node、实际 pnpm、Vite、production 环境文件、产品与工具来源以及完整 `dist` 清单。未设置 `RYFRAME_E2E_BASE_URL` 时，内置 preview 启动前会核对构建收据、当前源码、环境文件、工具链与全部产物摘要；使用外部代理时，需由启动该代理的流程核验对应构建来源。真实构建显式使用同源 API，覆盖本机 `.env.production` 的 API 地址而不修改配置文件；测试仅允许访问本机代理地址，越界请求会被阻止并导致失败。开发服务器与 preview 的 trace、截图、视频和 HTML 报告分别保存在 `.local-tests/playwright-real/` 的对应目录中；fixture smoke 使用 `corepack pnpm check --stage browser`。
 

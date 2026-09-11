@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { buildRestoreProof, requiredScenarios, restoreProofBindings } from '../restore-proof.mjs'
-import { sha256 } from '../restore-build.mjs'
+import { sha256 } from '../build-source-inventory.mjs'
+import { backendBuild, frontendBuild } from './build-receipt-fixture.mjs'
 
 function fixture() {
   const plan = {
@@ -34,12 +35,6 @@ function fixture() {
     manifest: { id: 'set-v2', scope_id: 'source-v2', source_sha: 'c'.repeat(40) },
   }
   const bindingsBytes = Buffer.from(JSON.stringify(bindings))
-  const source = (head) => ({
-    head,
-    patch_sha256: 'd'.repeat(64),
-    files: [],
-    clean: true,
-  })
   const artifact = (role, digest) => ({
     executable: path.resolve(`${role}.exe`),
     command: ['cargo', 'build'],
@@ -75,22 +70,10 @@ function fixture() {
       worker: plan.worker_ready_url,
       frontend: 'http://127.0.0.1:4174',
     },
-    backend: {
-      format_version: 1,
-      kind: 'restore-backend-build',
-      source: source(bindings.manifest.source_sha),
-      source_inventory: {},
-      artifacts: {
-        api: artifact('api', '3'.repeat(64)),
-        worker: artifact('worker', '4'.repeat(64)),
-      },
-    },
-    frontend: {
-      format_version: 1,
-      kind: 'restore-frontend-build',
-      source: source(plan.frontend_sha),
-      files: [{ path: 'index.html', bytes: 1, sha256: '5'.repeat(64) }],
-    },
+    backend: backendBuild(bindings.manifest.source_sha, artifact),
+    frontend: frontendBuild(plan.frontend_sha, [
+      { path: 'index.html', bytes: 1, sha256: '5'.repeat(64) },
+    ]),
     processes: {
       api: {
         receipt_path: path.resolve('runtime/api.json'),
@@ -218,7 +201,7 @@ test('v2 运行收据必须绑定摘要、绝对路径、精确源码与完整�
       value.runtime.source.frontend_sha = 'e'.repeat(40)
     },
     (value) => {
-      value.runtime.backend.source.clean = false
+      value.runtime.backend.sources.full.source.snapshot.clean = false
     },
     (value) => {
       value.runtime.processes.api.receipt_path = 'api.json'

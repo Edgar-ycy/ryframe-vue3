@@ -5,7 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { performance } from 'node:perf_hooks'
 
 import { verifyLocalContractState } from './api-contract-state.mjs'
-import { sourceSnapshot, writeBuildReceipt } from './restore-build.mjs'
+import { buildSourceSnapshot } from './build-source.mjs'
+import { writeBuildReceipt } from './restore-build.mjs'
 import { taskSpecs } from './task-specs.mjs'
 import { runTaskProcess } from './task-process.mjs'
 import { TaskRunControl, withTaskSignals } from './task-run-control.mjs'
@@ -100,13 +101,13 @@ async function runTask(task, interactive, control, context) {
     return { code: 0, stdout: '本地 OpenAPI ' + state.mode + ' 态校验通过' }
   }
   if (invocation.action === 'build-source') {
-    context.set(buildSourceKey(task), sourceSnapshot(root))
+    context.set(buildSourceKey(task), buildSourceSnapshot(root, task.env))
     return { code: 0, stdout: '生产构建来源前像已固定' }
   }
   if (invocation.action === 'build-receipt') {
     const before = context.get(buildSourceKey(task))
     if (!before) throw new Error('真实生产构建缺少同次来源前像')
-    writeBuildReceipt(root, before)
+    writeBuildReceipt(root, before, task.env)
     return { code: 0, artifacts: [path.join(root, 'dist', '.vite', 'restore-build.json')] }
   }
   throw new Error('未知任务动作：' + invocation.action)

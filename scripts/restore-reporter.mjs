@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, realpathSync, unlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { buildRestoreProof, restoreProofBindings } from './restore-proof.mjs'
-import { sha256 } from './restore-build.mjs'
+import { sha256 } from './build-source-inventory.mjs'
 import { evidenceDirectory, evidenceFile, verifyRuntime } from './restore-verification.mjs'
 
 function verifiedCheckout(directory, sha) {

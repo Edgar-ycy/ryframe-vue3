@@ -113,6 +113,7 @@ test('内部消费上下文只用于显式完整或契约检查，不创建第�
   const value = createTaskPlan({ ...options, consumer, consumerCheck: true })
   assert.equal(tasks(value).find((task) => task.id === 'unit').params.coverage, true)
   assert.deepEqual(tasks(value).find((task) => task.id === 'api-source').params.consumer, consumer)
+  assert.ok(tasks(value).some((task) => task.id === 'source-domain-contract'))
   assert.equal(consumerContext(options, undefined), undefined)
   assert.throws(
     () => consumerContext(parseTaskArguments(['check']), JSON.stringify(args)),

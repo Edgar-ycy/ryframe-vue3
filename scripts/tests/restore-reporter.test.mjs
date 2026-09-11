@@ -4,8 +4,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import path from 'node:path'
 import test from 'node:test'
 import RestoreReporter from '../restore-reporter.mjs'
-import { sha256 } from '../restore-build.mjs'
+import { sha256 } from '../build-source-inventory.mjs'
 import { requiredScenarios } from '../restore-proof.mjs'
+import { backendBuild, frontendBuild } from './build-receipt-fixture.mjs'
 
 function fixture(t, verify, expectedDigest) {
   const local = path.resolve('.local-tests/node-unit')
@@ -46,12 +47,6 @@ function fixture(t, verify, expectedDigest) {
   }
   const bindingBytes = Buffer.from(JSON.stringify(bindingValue))
   writeFileSync(bindings, bindingBytes)
-  const source = (head) => ({
-    head,
-    patch_sha256: 'd'.repeat(64),
-    files: [],
-    clean: true,
-  })
   const artifact = (role, digest) => ({
     executable: path.join(directory, `${role}.exe`),
     command: ['cargo', 'build'],
@@ -87,22 +82,10 @@ function fixture(t, verify, expectedDigest) {
       worker: plan.worker_ready_url,
       frontend: 'http://127.0.0.1:4174',
     },
-    backend: {
-      format_version: 1,
-      kind: 'restore-backend-build',
-      source: source(bindingValue.manifest.source_sha),
-      source_inventory: {},
-      artifacts: {
-        api: artifact('api', '3'.repeat(64)),
-        worker: artifact('worker', '4'.repeat(64)),
-      },
-    },
-    frontend: {
-      format_version: 1,
-      kind: 'restore-frontend-build',
-      source: source(plan.frontend_sha),
-      files: [{ path: 'index.html', bytes: 1, sha256: '5'.repeat(64) }],
-    },
+    backend: backendBuild(bindingValue.manifest.source_sha, artifact),
+    frontend: frontendBuild(plan.frontend_sha, [
+      { path: 'index.html', bytes: 1, sha256: '5'.repeat(64) },
+    ]),
     processes: {
       api: {
         receipt_path: path.join(directory, 'api.json'),

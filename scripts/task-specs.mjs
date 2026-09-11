@@ -135,6 +135,13 @@ export const taskSpecs = {
     profiles: ['static', 'contract'],
     invoke: () => script('check-api-contract.mjs'),
   },
+  'source-domain-contract': {
+    label: '构建来源分域契约',
+    profiles: ['contract'],
+    when: (options) => options.consumer !== undefined && options.consumer !== null,
+    externalResources: () => ['registered:backend-source-domain-checker'],
+    invoke: () => script('source-domain-contract.mjs'),
+  },
   'api-upstream': {
     label: '上游 API 来源',
     profiles: ['static', 'contract'],
@@ -167,6 +174,7 @@ export const taskSpecs = {
     label: '生产构建来源前像',
     profiles: ['build'],
     when: (options) => options.command === 'build' && options.real === true,
+    params: (options) => ({ real: options.real === true }),
     phase: () => 1,
     concurrencyResources: () => ['exclusive:repository-source'],
     invoke: () => ({ kind: 'action', action: 'build-source' }),
@@ -193,6 +201,7 @@ export const taskSpecs = {
     label: '真实生产构建收据',
     profiles: ['build'],
     when: (options) => options.command === 'build' && options.real === true,
+    params: (options) => ({ real: options.real === true }),
     phase: () => 4,
     effect: 'artifacts',
     allowedWrites: () => ['artifact:dist/.vite/restore-build.json'],
@@ -264,7 +273,9 @@ export function taskExecutionMetadata(task) {
 }
 
 export function taskEnvironment(task) {
-  if (task.id === 'build' && task.params.real) return { VITE_APP_API_ORIGIN: '' }
+  if (['build-source', 'build', 'build-receipt'].includes(task.id) && task.params.real) {
+    return { VITE_APP_API_ORIGIN: '' }
+  }
   if (task.id !== 'browser') return {}
   return {
     ...(task.params.fixture ? { RYFRAME_E2E_FIXTURE: task.params.fixture } : {}),

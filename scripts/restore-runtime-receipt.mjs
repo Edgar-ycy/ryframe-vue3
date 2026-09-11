@@ -1,5 +1,9 @@
 import { isAbsolute } from 'node:path'
-import { sha256 } from './restore-build.mjs'
+import { sha256 } from './build-source-inventory.mjs'
+import {
+  validateBackendBuildSources,
+  validateFrontendBuildSources,
+} from './build-receipt-schema.mjs'
 import { isResourceScopeId } from './resource-scope.mjs'
 
 const runtimeFields = [
@@ -28,7 +32,6 @@ const sourceFields = ['backend_sha', 'frontend_sha']
 const endpointFields = ['api', 'worker', 'frontend']
 const processFields = ['receipt_path', 'receipt_sha256', 'identity']
 const identityFields = ['pid', 'started', 'executable']
-const buildSourceFields = ['head', 'patch_sha256', 'files', 'clean']
 const artifactFields = ['executable', 'command', 'bytes', 'sha256']
 const frontendFileFields = ['path', 'bytes', 'sha256']
 
@@ -100,31 +103,17 @@ function endpointPort(value, expectedPath) {
   return port
 }
 
-function verifyBuildSource(source, expectedSha) {
-  exactObject(source, buildSourceFields, '运行产物收据内嵌源码字段无效')
-  if (
-    source.head !== expectedSha ||
-    !validHex(source.head, 40) ||
-    !validHex(source.patch_sha256, 64) ||
-    !Array.isArray(source.files) ||
-    source.clean !== true
-  )
-    throw new Error('运行产物收据内嵌构建未绑定精确干净源码')
-}
-
 function verifyBackendBuild(receipt, expectedSha) {
   exactObject(
     receipt,
-    ['format_version', 'kind', 'source', 'source_inventory', 'artifacts'],
+    ['format_version', 'kind', 'sources', 'build', 'artifacts'],
     '运行产物收据内嵌后端构建字段无效',
   )
-  verifyBuildSource(receipt.source, expectedSha)
+  validateBackendBuildSources(receipt, expectedSha)
   if (
-    receipt.format_version !== 1 ||
+    receipt.format_version !== 2 ||
     receipt.kind !== 'restore-backend-build' ||
-    !receipt.source_inventory ||
-    typeof receipt.source_inventory !== 'object' ||
-    Array.isArray(receipt.source_inventory)
+    !receipt.sources.full.source.snapshot.clean
   )
     throw new Error('运行产物收据内嵌后端构建字段无效')
   exactObject(receipt.artifacts, ['api', 'worker'], '运行产物收据后端产物集合无效')
@@ -156,12 +145,12 @@ function validFrontendPath(value) {
 function verifyFrontendBuild(receipt, expectedSha) {
   exactObject(
     receipt,
-    ['format_version', 'kind', 'source', 'files'],
+    ['format_version', 'kind', 'sources', 'build', 'files'],
     '运行产物收据内嵌前端构建字段无效',
   )
-  verifyBuildSource(receipt.source, expectedSha)
+  validateFrontendBuildSources(receipt, expectedSha)
   if (
-    receipt.format_version !== 1 ||
+    receipt.format_version !== 2 ||
     receipt.kind !== 'restore-frontend-build' ||
     !Array.isArray(receipt.files)
   )

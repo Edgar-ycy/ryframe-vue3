@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { deriveVerifiedRestoreRuntimeFacts } from '../browser-real/runtime-backup-evidence'
+import { backendBuildFixture, frontendBuildFixture } from './runtimeBuildReceiptFixture'
 
 const sha256 = (bytes: Uint8Array): string => createHash('sha256').update(bytes).digest('hex')
 const json = (value: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(value))
@@ -54,18 +55,6 @@ function fixture() {
     },
   }
   const bindingsBytes = json(binding)
-  const source = (head: string) => ({
-    head,
-    patch_sha256: 'd'.repeat(64),
-    files: [],
-    clean: true,
-  })
-  const artifact = (role: string, digest: string) => ({
-    executable: resolve(`${role}.exe`),
-    command: ['cargo', 'build'],
-    bytes: 1,
-    sha256: digest,
-  })
   const runtime = {
     format_version: 2,
     kind: 'restore-runtime',
@@ -95,22 +84,8 @@ function fixture() {
       worker: 'http://127.0.0.1:9091/readyz',
       frontend: 'http://127.0.0.1:4174',
     },
-    backend: {
-      format_version: 1,
-      kind: 'restore-backend-build',
-      source: source('a'.repeat(40)),
-      source_inventory: {},
-      artifacts: {
-        api: artifact('api', '3'.repeat(64)),
-        worker: artifact('worker', '4'.repeat(64)),
-      },
-    },
-    frontend: {
-      format_version: 1,
-      kind: 'restore-frontend-build',
-      source: source('b'.repeat(40)),
-      files: [{ path: 'index.html', bytes: 1, sha256: '5'.repeat(64) }],
-    },
+    backend: backendBuildFixture('a'.repeat(40)),
+    frontend: frontendBuildFixture('b'.repeat(40)),
     processes: {
       api: {
         receipt_path: resolve('runtime/api.json'),
@@ -254,7 +229,7 @@ describe('运行时备份恢复证据', () => {
         Object.assign(value.runtime, { unknown: true })
       },
       (value) => {
-        value.runtime.backend.source.clean = false
+        value.runtime.backend.sources.full.source.snapshot.clean = false
       },
       (value) => {
         value.runtime.processes.api.receipt_path = 'api.json'

@@ -74,7 +74,7 @@ Python。生成器绑定模板和输出文件的 SHA-256，浏览器在上传已
 
 排队取消和故障场景还需要 `RYFRAME_E2E_RUNTIME_DIR` 指向后端全栈启动流程生成的运行目录，本地设置 `RYFRAME_E2E_MYSQL_CLIENT` 为 MySQL 客户端的绝对路径。测试通过 `scripts/full_stack_worker.py start|stop|crash|status --backend-root <后端目录> --runtime-dir <运行目录>` 控制已登记 Worker；配置、构建摘要、scope 或进程创建身份不匹配时拒绝操作，重启后按最新收据回收进程。真实会话竞争使用测试进程内的同源透明代理，整份延迟响应包含 Cookie，生产服务无需增加测试接口。
 
-生产构建验收先运行 `corepack pnpm build --real`，再设置 `RYFRAME_E2E_SERVER=preview` 运行 `corepack pnpm check --stage browser --real`。未设置 `RYFRAME_E2E_BASE_URL` 时，内置 preview 启动前会核对构建收据、当前源码与全部产物摘要；使用外部代理时，需由启动该代理的流程核验对应构建来源。真实构建显式使用同源 API，覆盖本机 `.env.production` 的 API 地址而不修改配置文件；测试仅允许访问本机代理地址，越界请求会被阻止并导致失败。开发服务器与 preview 的 trace、截图、视频和 HTML 报告分别保存在 `.local-tests/playwright-real/` 的对应目录中；fixture smoke 使用 `corepack pnpm check --stage browser`。
+生产构建验收先运行 `corepack pnpm build --real`，再设置 `RYFRAME_E2E_SERVER=preview` 运行 `corepack pnpm check --stage browser --real`。真实构建必须由 `packageManager` 固定版本的 Corepack pnpm 启动；收据会绑定 Node、实际 pnpm、Vite、production 环境文件、产品与工具来源以及完整 `dist` 清单。未设置 `RYFRAME_E2E_BASE_URL` 时，内置 preview 启动前会核对构建收据、当前源码、环境文件、工具链与全部产物摘要；使用外部代理时，需由启动该代理的流程核验对应构建来源。真实构建显式使用同源 API，覆盖本机 `.env.production` 的 API 地址而不修改配置文件；测试仅允许访问本机代理地址，越界请求会被阻止并导致失败。开发服务器与 preview 的 trace、截图、视频和 HTML 报告分别保存在 `.local-tests/playwright-real/` 的对应目录中；fixture smoke 使用 `corepack pnpm check --stage browser`。
 
 ## 同步 API 契约
 

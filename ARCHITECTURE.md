@@ -122,7 +122,7 @@ SessionContext
 
 `corepack pnpm dev`、`check`、`build` 和 `generate` 是四个公开入口，共同使用任务运行器的任务图。
 `--plan` 只输出依赖、编译覆盖和允许写入，不启动任务或创建产物；定向检查通过 `check` 参数选择节点。
-`build --real` 将源码前像和最终收据列为任务图节点；收据只在构建及包体积核验后写入，预览不读取 Git 或写文件。
+`build --real` 将来源前像和最终收据列为任务图节点；同一前后像按前端产物角色派生 product、tools、full 三域，并绑定 Node、固定与实际 pnpm、Vite、production 环境摘要及完整 `dist` 清单。收据只在构建及包体积核验后写入；预览只读核对当前来源、环境文件、工具链和产物，不要求另一个终端重现构建时临时注入的 `VITE_*` 值。
 
 `scripts/task-process.mjs` 负责外部任务生命周期。Unix 使用独立进程组。Windows 为每个任务启动 Node
 worker；worker 在执行任务代码前加入启用 `KILL_ON_JOB_CLOSE` 的私有 Job Object，任务后代继承该

@@ -1,4 +1,4 @@
-import { sha256 } from './restore-build.mjs'
+import { sha256 } from './build-source-inventory.mjs'
 import {
   isResourceScopeId,
   isRestoreIdentifier,

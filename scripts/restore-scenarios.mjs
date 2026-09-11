@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { sha256 } from './restore-build.mjs'
+import { sha256 } from './build-source-inventory.mjs'
 import { restoreProofBindings } from './restore-proof.mjs'
 import { evidenceDirectory, evidenceFile } from './restore-verification.mjs'
 

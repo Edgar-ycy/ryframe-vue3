@@ -1,7 +1,35 @@
 import { isAbsolute, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { isResourceScopeId } from './resource-scope.mjs'
 
 export class BrowserServerUsageError extends Error {}
+
+function responseAudit(mode, environment) {
+  const output = environment.RYFRAME_E2E_PREVIEW_RESPONSE_AUDIT
+  const formal =
+    mode === 'preview' &&
+    environment.RYFRAME_E2E_FIXTURE === 'device' &&
+    typeof environment.RYFRAME_E2E_RUN_ID === 'string'
+  if (!formal) {
+    if (output !== undefined) {
+      throw new BrowserServerUsageError('静态响应审计只允许用于正式 Device preview')
+    }
+    return undefined
+  }
+  const runId = environment.RYFRAME_E2E_RUN_ID
+  const scopeId = environment.RYFRAME_E2E_SCOPE_ID || environment.APP_SCOPE_ID
+  if (
+    !/^[a-z0-9][a-z0-9-]{0,63}$/u.test(runId) ||
+    !isResourceScopeId(scopeId) ||
+    typeof output !== 'string' ||
+    output !== output.trim() ||
+    /[\r\n\0]/u.test(output) ||
+    !isAbsolute(output)
+  ) {
+    throw new BrowserServerUsageError('正式 Device preview 缺少有效的静态响应审计绑定')
+  }
+  return Object.freeze({ output: resolve(output), runId, scopeId })
+}
 
 export function parseBrowserServerArguments(argv, environment = process.env) {
   if (
@@ -31,7 +59,7 @@ export function parseBrowserServerArguments(argv, environment = process.env) {
   ) {
     throw new BrowserServerUsageError('真实浏览器服务需要独立的绝对 IPC 地址')
   }
-  return Object.freeze({ mode, port, endpoint })
+  return Object.freeze({ mode, port, endpoint, responseAudit: responseAudit(mode, environment) })
 }
 
 async function closeVite(server, mode) {
@@ -50,10 +78,18 @@ export async function startRealBrowserServer(options, dependencies = {}) {
   const viteApi = dependencies.viteApi ?? (await import('vite'))
   const startProxy =
     dependencies.startProxy ?? (await import('./browser-delay-proxy.mjs')).startDelayProxy
+  const createAudit = dependencies.createAudit
   const listen = { host: '127.0.0.1', port: 0, strictPort: true }
   let vite
   let proxy
+  let audit
   try {
+    if (options.responseAudit) {
+      const create =
+        createAudit ??
+        (await import('./browser-static-response-audit.mjs')).createStaticResponseAudit
+      audit = await create(options.responseAudit)
+    }
     vite =
       options.mode === 'preview'
         ? await viteApi.preview({ preview: listen })
@@ -67,6 +103,7 @@ export async function startRealBrowserServer(options, dependencies = {}) {
       target: `http://127.0.0.1:${address.port}`,
       port: options.port,
       endpoint: options.endpoint,
+      ...(audit ? { audit } : {}),
     })
   } catch (error) {
     await proxy?.close().catch(() => undefined)
@@ -80,6 +117,7 @@ export async function startRealBrowserServer(options, dependencies = {}) {
       closing ??= (async () => {
         await proxy.close()
         await closeVite(vite, options.mode)
+        await audit?.publish()
       })()
       return closing
     },

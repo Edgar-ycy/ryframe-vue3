@@ -37,13 +37,19 @@ function closeServer(instance) {
   })
 }
 
-function forwardedHeaders(request, upstream) {
+function forwardedHeaders(request, upstream, audited = false) {
   const headers = { ...request.headers, host: upstream.host }
   delete headers['x-ryframe-test-gate']
+  if (audited) {
+    headers['accept-encoding'] = 'identity'
+    for (const name of ['range', 'if-range', 'if-match', 'if-none-match', 'if-modified-since']) {
+      delete headers[name]
+    }
+  }
   return headers
 }
 
-export async function startDelayProxy({ target, port = 0, endpoint }) {
+export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
   const upstream = localTarget(target)
   const gates = createResponseGates()
   const sockets = new Set()
@@ -56,17 +62,25 @@ export async function startDelayProxy({ target, port = 0, endpoint }) {
       response.writeHead(400).end()
       return
     }
+    let audited
+    try {
+      audited = audit?.classify(request)
+    } catch {
+      response.writeHead(400).end()
+      return
+    }
     const gate = gates.claim(request)
     const forwarded = http.request(
       upstream,
       {
         method: request.method,
         path: request.url,
-        headers: forwardedHeaders(request, upstream),
+        headers: forwardedHeaders(request, upstream, Boolean(audited)),
       },
       (result) => {
         if (gate) gates.hold(gate, result, response)
         else {
+          if (audited) audit.track(audited, result, response)
           response.writeHead(result.statusCode, result.rawHeaders)
           result.pipe(response)
         }
@@ -74,6 +88,7 @@ export async function startDelayProxy({ target, port = 0, endpoint }) {
     )
     forwarded.on('error', () => {
       if (gate) gate.state = 'upstream-failed'
+      if (audited) audit.fail(new Error('静态响应上游请求失败'))
       response.destroy()
     })
     request.on('aborted', () => forwarded.destroy())

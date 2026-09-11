@@ -108,7 +108,8 @@ test('Vite 忽略环境文件、构建参数和工具链变化都不能复用收
     () => verifyBuildReceipt(root, { ...environment, npm_config_user_agent: 'pnpm/10.0.0 node/?' }),
     /Corepack pnpm/u,
   )
-  const { npm_config_user_agent: _ignored, ...withoutObservedPnpm } = environment
+  const withoutObservedPnpm = { ...environment }
+  delete withoutObservedPnpm.npm_config_user_agent
   assert.throws(() => verifyBuildReceipt(root, withoutObservedPnpm), /Corepack pnpm/u)
   const fakePnpm = path.join(root, '.local-tests/fake-pnpm.mjs')
   mkdirSync(path.dirname(fakePnpm), { recursive: true })

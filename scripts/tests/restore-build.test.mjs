@@ -7,6 +7,7 @@ import test from 'node:test'
 import { buildSourceSnapshot } from '../build-source.mjs'
 import { captureSourceInventory, sourceDomains } from '../build-source-inventory.mjs'
 import {
+  buildExternalReceipt,
   productionFiles,
   receiptPath,
   verifyBuildReceipt,
@@ -155,6 +156,52 @@ test('完整 dist 清单全局排序并保留 Unicode 路径', (t) => {
     Buffer.compare(Buffer.from(left), Buffer.from(right)),
   )
   assert.deepEqual(paths, sorted)
+})
+
+test('当前工具可以为声明的精确干净外部工作树签发同格式收据', (t) => {
+  const root = fixture(t)
+  const environment = buildEnvironment(root)
+  const head = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+  let builds = 0
+  const receipt = buildExternalReceipt(root, head, {
+    environment,
+    observeToolchain: () => ({
+      node: process.version,
+      pnpm: { pinned: '11.20.0', observed: '11.20.0' },
+      vite: '7.1.7',
+    }),
+    executeBuild: () => {
+      builds += 1
+    },
+  })
+  assert.equal(builds, 1)
+  assert.equal(receipt.format_version, 2)
+  assert.equal(receipt.sources.full.source.snapshot.head, head)
+  assert.equal(receipt.sources.full.source.snapshot.clean, true)
+  assert.deepEqual(verifyBuildReceipt(root, environment), receipt)
+})
+
+test('外部构建在写产物前拒绝错误 SHA、脏源码和已有收据', (t) => {
+  const root = fixture(t)
+  const environment = buildEnvironment(root)
+  const head = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+  let builds = 0
+  const options = {
+    environment,
+    executeBuild: () => (builds += 1),
+    observeToolchain: () => ({
+      node: process.version,
+      pnpm: { pinned: '11.20.0', observed: '11.20.0' },
+      vite: '7.1.7',
+    }),
+  }
+  assert.throws(() => buildExternalReceipt(root, 'a'.repeat(40), options), /精确干净/u)
+  writeFileSync(path.join(root, 'untracked.js'), 'dirty')
+  assert.throws(() => buildExternalReceipt(root, head, options), /精确干净/u)
+  rmSync(path.join(root, 'untracked.js'))
+  writeFileSync(path.join(root, 'dist', receiptPath), '{}')
+  assert.throws(() => buildExternalReceipt(root, head, options), /拒绝覆盖/u)
+  assert.equal(builds, 0)
 })
 
 test('真实 preview 在创建报告目录前验证生产构建收据', () => {

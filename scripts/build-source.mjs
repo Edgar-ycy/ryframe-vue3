@@ -16,8 +16,6 @@ import {
   validateFiles,
 } from './build-source-inventory.mjs'
 
-const require = createRequire(import.meta.url)
-
 export const environmentPaths = Object.freeze([
   '.env',
   '.env.local',
@@ -42,9 +40,13 @@ function packageVersion(root, name) {
   return manifest.version
 }
 
-export function observedToolchain(root, environment = process.env) {
+function pinnedPnpm(root) {
   const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
-  const pinned = /^pnpm@([^+]+)(?:\+.*)?$/u.exec(manifest.packageManager ?? '')?.[1]
+  return /^pnpm@([^+]+)(?:\+.*)?$/u.exec(manifest.packageManager ?? '')?.[1]
+}
+
+export function observedToolchain(root, environment = process.env) {
+  const pinned = pinnedPnpm(root)
   const announced = /(?:^|\s)pnpm\/([^\s]+)/u.exec(environment.npm_config_user_agent ?? '')?.[1]
   const configuredCli = environment.npm_execpath?.trim()
   if (
@@ -77,9 +79,39 @@ export function observedToolchain(root, environment = process.env) {
   }
 }
 
-export function buildContext(root, overrides = {}, environment = process.env) {
+/** 外部历史工作树不运行 package script；直接核验当前 Node 附带的 Corepack 与目标锁定版本。 */
+export function observedExternalToolchain(root) {
+  const pinned = pinnedPnpm(root)
+  const corepack = path.join(
+    path.dirname(process.execPath),
+    'node_modules/corepack/dist/corepack.js',
+  )
+  if (!pinned || !lstatSync(corepack).isFile() || lstatSync(corepack).isSymbolicLink()) {
+    throw new Error('外部真实构建缺少固定 pnpm 或受信任 Corepack 入口')
+  }
+  const observed = execFileSync(process.execPath, [corepack, 'pnpm', '--version'], {
+    cwd: root,
+    encoding: 'utf8',
+    windowsHide: true,
+    maxBuffer: 1024 * 1024,
+  }).trim()
+  if (observed !== pinned) throw new Error('外部真实构建的 pnpm 版本与目标工作树不一致')
+  return {
+    node: process.version,
+    pnpm: { pinned, observed },
+    vite: packageVersion(root, 'vite'),
+  }
+}
+
+export function buildContext(
+  root,
+  overrides = {},
+  environment = process.env,
+  observeToolchain = observedToolchain,
+) {
   // 只在真实来源捕获时加载 Vite；--plan 可在禁止原生扩展和派生进程的权限模型中运行。
-  const effective = { ...require('vite').loadEnv('production', root, 'VITE_') }
+  const requireFromSource = createRequire(path.join(root, 'package.json'))
+  const effective = { ...requireFromSource('vite').loadEnv('production', root, 'VITE_') }
   for (const [name, value] of Object.entries(environment)) {
     if (name.startsWith('VITE_') && typeof value === 'string') effective[name] = value
   }
@@ -93,7 +125,7 @@ export function buildContext(root, overrides = {}, environment = process.env) {
     command: ['vite', 'build'],
     mode: 'production',
     target: 'vite-default',
-    toolchain: observedToolchain(root, environment),
+    toolchain: observeToolchain(root, environment),
     environment: { variables: entries.map((item) => item.name), sha256: canonicalDigest(entries) },
     environment_files: environmentFiles(root),
   }
@@ -137,9 +169,14 @@ export function validateBuildContext(value) {
   return value
 }
 
-export function buildSourceSnapshot(root, overrides = {}, environment = process.env) {
+export function buildSourceSnapshot(
+  root,
+  overrides = {},
+  environment = process.env,
+  observeToolchain = observedToolchain,
+) {
   return {
     sources: sourceDomains(captureSourceInventory(root)),
-    build: buildContext(root, overrides, environment),
+    build: buildContext(root, overrides, environment, observeToolchain),
   }
 }

@@ -10,6 +10,15 @@ export const requiredDeviceScenarios = Object.freeze([
   'cancellation',
   'crash-recovery',
 ])
+export const requiredDeviceTests = Object.freeze({
+  '真实 Device 数据从 shared-control 复制校验并切换到 shared': ['shared-migration'],
+  '真实 Device 数据从 dedicated-a 复制校验并切换到 dedicated-b': [
+    'dedicated-migration',
+    'retention',
+  ],
+  '真实排队 Device 迁移取消恢复源数据，并允许再次迁移': ['cancellation'],
+  '真实 Device 复制阻塞时 Worker 崩溃，重启后同一迁移恢复并完成校验': ['crash-recovery'],
+})
 
 const runFields = ['title', 'status', 'retry', 'scenarios']
 
@@ -65,9 +74,17 @@ export function verifyDeviceTestReceipt(value, expected) {
       throw new Error('Device 浏览器测试包含失败、跳过、重试或无效标题')
     const title = JSON.stringify(run.title)
     if (titles.has(title)) throw new Error('Device 浏览器测试标题重复')
+    const expectedScenarios = requiredDeviceTests[run.title.at(-1)]
+    if (!expectedScenarios || JSON.stringify(run.scenarios) !== JSON.stringify(expectedScenarios))
+      throw new Error('Device 浏览器测试标题与场景不匹配')
     titles.add(title)
     scenarios.push(...run.scenarios)
   }
+  if (
+    new Set([...titles].map((title) => JSON.parse(title).at(-1))).size !==
+    Object.keys(requiredDeviceTests).length
+  )
+    throw new Error('Device 浏览器测试标题集合不完整')
   const names = new Set(scenarios)
   if (
     scenarios.length !== requiredDeviceScenarios.length ||

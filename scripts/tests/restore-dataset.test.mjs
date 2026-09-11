@@ -1,10 +1,83 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 import {
   datasetDigest,
   restoredDataset,
+  restoredDatasetLineage,
   restoredExistingVerification,
 } from '../restore-dataset.mjs'
+
+const temporaryRoots = []
+test.afterEach(() => {
+  for (const root of temporaryRoots.splice(0)) rmSync(root, { force: true, recursive: true })
+})
+
+function lineageFixture({
+  backupVersion = 2,
+  mismatchedExport = false,
+  mismatchedRuntime = false,
+} = {}) {
+  const parent = path.resolve('.local-tests', 'restore-dataset-unit')
+  mkdirSync(parent, { recursive: true })
+  const root = mkdtempSync(path.join(parent, 'chain-'))
+  temporaryRoots.push(root)
+  const write = (name, value) => {
+    const filename = path.join(root, name)
+    mkdirSync(path.dirname(filename), { recursive: true })
+    const bytes = Buffer.from(JSON.stringify(value))
+    writeFileSync(filename, bytes)
+    return { path: filename, bytes: bytes.byteLength, sha256: datasetDigest(bytes) }
+  }
+  const lineage = {
+    format_version: 1,
+    kind: 'restore-source-derived-dataset-lineage',
+    status: 'derived_dataset_verified',
+    restore_qualified: false,
+  }
+  const lineageDescriptor = write('generation/dataset-lineage.json', lineage)
+  const otherLineage = write('generation/other-lineage.json', lineage)
+  const start = write('results/start.json', {
+    dataset_lineage: lineageDescriptor,
+    status: 'seed_source_generation_running',
+  })
+  const runtime = write('generation/verification/source-runtime.json', {
+    format_version: 2,
+    kind: 'restore-source-runtime',
+    status: 'source_runtime_verified',
+    source_generation: start,
+    dataset_lineage: mismatchedRuntime ? otherLineage : lineageDescriptor,
+  })
+  const stopped = write('results/stop.json', {
+    status: 'seed_source_generation_published',
+    start,
+    source_runtime: runtime,
+    dataset_lineage: lineageDescriptor,
+  })
+  const otherGeneration = write('results/other-stop.json', {
+    status: 'seed_source_generation_published',
+  })
+  const backup = write('backup.json', {
+    command: 'backup',
+    status: 'completed',
+    result: {
+      format_version: backupVersion,
+      kind: 'restore-reference-backup',
+      source_generation: stopped,
+      source_export: {
+        source_generation: mismatchedExport ? otherGeneration : stopped,
+      },
+    },
+  })
+  return {
+    bytes: Buffer.from(JSON.stringify({ backup_receipt: backup })),
+    lineage,
+    lineageDescriptor,
+    runtime,
+    stopped,
+  }
+}
 
 function fixture() {
   const plan = {
@@ -188,4 +261,31 @@ test('已有数据验证必须匹配target、原数据摘要和只读范围，so
     change(candidate)
     assert.throws(() => verify(candidate), /target/)
   }
+})
+
+test('正式目标计划递归绑定同一 STOP、source-runtime、START 与 C52 血缘', () => {
+  const value = lineageFixture()
+  const result = restoredDatasetLineage(value.bytes)
+  assert.deepEqual(result.lineage, value.lineage)
+  assert.deepEqual(result.sourceGeneration, value.stopped)
+  assert.deepEqual(result.sourceRuntime, value.runtime)
+  assert.deepEqual(result.datasetLineage, value.lineageDescriptor)
+})
+
+test('孤立导出代次或混入另一 source-runtime 血缘会失败关闭', () => {
+  assert.throws(
+    () => restoredDatasetLineage(lineageFixture({ mismatchedExport: true }).bytes),
+    /同一/u,
+  )
+  assert.throws(
+    () => restoredDatasetLineage(lineageFixture({ mismatchedRuntime: true }).bytes),
+    /同一代次/u,
+  )
+})
+
+test('递归证据被原地替换或旧备份格式不能作为 C52 数据来源', () => {
+  const value = lineageFixture()
+  writeFileSync(value.lineageDescriptor.path, JSON.stringify({ replaced: true }))
+  assert.throws(() => restoredDatasetLineage(value.bytes), /登记摘要/u)
+  assert.throws(() => restoredDatasetLineage(lineageFixture({ backupVersion: 1 }).bytes), /v2/u)
 })

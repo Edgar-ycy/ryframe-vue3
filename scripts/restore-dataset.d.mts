@@ -11,7 +11,19 @@ export interface RestoredDataset {
   records: number
   object_bytes: number
 }
+export interface RestoreFileDescriptor {
+  path: string
+  bytes: number
+  sha256: string
+}
+export interface RestoredDatasetLineage {
+  lineage: Record<string, unknown>
+  sourceGeneration: Readonly<RestoreFileDescriptor>
+  sourceRuntime: Readonly<RestoreFileDescriptor>
+  datasetLineage: Readonly<RestoreFileDescriptor>
+}
 export function datasetDigest(bytes: string | Uint8Array): string
+export function restoredDatasetLineage(targetPlanBytes: Uint8Array): RestoredDatasetLineage
 export function restoredDataset(
   datasetBytes: Uint8Array,
   planBytes: Uint8Array,

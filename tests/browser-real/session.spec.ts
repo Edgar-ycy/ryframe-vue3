@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { act, login } from './support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 
-test('真实刷新 Cookie、跨标签恢复会话和同步退出', async ({ page, context }) => {
+test('真实刷新 Cookie、跨标签恢复会话和同步退出', async ({ page, context }, info) => {
   const diagnostics = observeDiagnostics(page)
   await login(page)
   const refreshed = await act(page, 'POST', '/api/v1/auth/refresh', () => page.reload())
@@ -27,4 +27,5 @@ test('真实刷新 Cookie、跨标签恢复会话和同步退出', async ({ page
   await expectCleanDiagnostics(page, diagnostics)
   await expectCleanDiagnostics(second, secondDiagnostics)
   await second.close()
+  info.annotations.push({ type: 'restore-scenario', description: 'session' })
 })

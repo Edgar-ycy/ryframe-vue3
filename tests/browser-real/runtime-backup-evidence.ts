@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import {
   isResourceScopeId,
   isRestoreIdentifier,
+  restoreRuntimeBinding,
   verifyRestoreRuntimeReceipt,
 } from '../../scripts/restore-runtime-receipt.mjs'
 
@@ -143,8 +144,10 @@ function requiredResources(manifest: JsonObject): number {
  */
 export function deriveVerifiedRestoreRuntimeFacts(
   bindingsBytes: Uint8Array,
+  targetPlanBytes: Uint8Array,
   runtimeBytes: Uint8Array,
   verifiedRuntimeSha256: string,
+  frontendEndpoint: string,
 ): VerifiedRestoreRuntimeFacts {
   const binding = exact(
     parse(bindingsBytes, '恢复绑定收据'),
@@ -191,8 +194,8 @@ export function deriveVerifiedRestoreRuntimeFacts(
   const backupId = identifier(plan.backup_id, '备份 ID')
   const targetScopeId = scopeIdentifier(plan.scope_id, '恢复 scope')
   const sourceScopeId = scopeIdentifier(manifest.scope_id, '备份 scope')
-  const frontendSha = hex(plan.frontend_sha, 40, '前端 SHA')
-  const backendSha = hex(manifest.source_sha, 40, '后端 SHA')
+  hex(plan.frontend_sha, 40, '前端 SHA')
+  hex(manifest.source_sha, 40, '备份来源 SHA')
   const planDigest = hex(record.plan_hash, 64, '恢复计划摘要')
   if (
     record.status !== 'data_verified' ||
@@ -221,21 +224,17 @@ export function deriveVerifiedRestoreRuntimeFacts(
     throw new Error('恢复时间顺序或 RPO 与绑定清单不一致')
   }
 
+  const expected = restoreRuntimeBinding({
+    record,
+    manifest,
+    targetPlanBytes,
+    frontendEndpoint,
+  })
   const { digest: runtimeDigest } = verifyRestoreRuntimeReceipt({
     bytes: runtimeBytes,
     verifiedDigest: hex(verifiedRuntimeSha256, 64, '已核验运行收据摘要'),
     bindingsBytes,
-    expected: {
-      restoreId,
-      backupId,
-      planHash: planDigest,
-      scopeId: targetScopeId,
-      dataVerifiedAt: dataVerifiedAt.value,
-      backendSha,
-      frontendSha,
-      apiEndpoint: text(plan.api_ready_url, 'API 端点'),
-      workerEndpoint: text(plan.worker_ready_url, 'Worker 端点'),
-    },
+    expected,
   })
 
   return Object.freeze({

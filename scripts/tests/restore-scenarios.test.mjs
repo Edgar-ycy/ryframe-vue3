@@ -1,73 +1,108 @@
-import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import test from 'node:test'
 import { sha256 } from '../build-source-inventory.mjs'
 import { requiredScenarios } from '../restore-proof.mjs'
 import { realTestSelection, restoreSpecs } from '../restore-scenarios.mjs'
+import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+const root = path.resolve(import.meta.dirname, '../..')
+const b0FrontendSha = '0087ea2ecf62530d042b9e52f5c950fb34c66d78'
 
-function bindingFixture(t, contents) {
+function restoreFixture(t, options = {}) {
   const local = path.resolve('.local-tests/node-unit')
   mkdirSync(local, { recursive: true })
   const directory = mkdtempSync(path.join(local, 'restore-selection-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  const plan = {
-    id: 'restore-selection',
-    backup_id: 'backup',
-    scope_id: 'restore-selection',
-    fault_at: '2026-01-01T00:00:00Z',
-    databases: [
-      {
-        source_key: 'control',
-        target_key: 'control',
-        server_uuid: 'server-one',
-        database: 'restore_control',
-      },
-    ],
-    object_endpoint: 'http://127.0.0.1:9000',
-    object_prefix: 'restore-selection/',
-    api_ready_url: 'http://127.0.0.1:8080/readyz',
-    worker_ready_url: 'http://127.0.0.1:9091/readyz',
-    frontend_sha: 'b'.repeat(40),
-  }
-  const value = {
-    record: {
-      status: 'data_verified',
-      plan_hash: sha256(Buffer.from(JSON.stringify(plan))),
-      plan,
+  const value = restoreRuntimeFixture({ directory, ...options })
+  const coordinator = path.join(directory, 'coordinator')
+  for (const item of [
+    coordinator,
+    value.paths.backendProductRoot,
+    value.paths.backendExecutionRoot,
+    value.paths.frontendRoot,
+  ])
+    mkdirSync(item, { recursive: true })
+  const targetPlan = path.join(directory, 'target-plan.json')
+  const runtimeReceipt = path.join(directory, 'runtime.json')
+  writeFileSync(value.paths.bindings, value.bindingsBytes)
+  writeFileSync(targetPlan, value.targetPlanBytes)
+  writeFileSync(runtimeReceipt, value.runtimeBytes)
+  return {
+    ...value,
+    restore: {
+      bindings: value.paths.bindings,
+      targetPlan,
+      runtimeReceipt,
+      coordinatorDir: coordinator,
+      verifierSha: 'e'.repeat(40),
+      runnerSha: 'f'.repeat(40),
     },
-    manifest: { id: 'backup', scope_id: 'source-selection', source_sha: 'c'.repeat(40) },
   }
-  const file = path.join(directory, 'bindings.json')
-  const bytes = Buffer.from(contents ?? JSON.stringify(value))
-  writeFileSync(file, bytes)
-  return { bytes, file }
 }
 
-test('普通 core 与 Device 保留所有故障验收，不加载恢复专属旧数据场景', () => {
+test('普通 core 与 Device 保留故障验收且不加载恢复旧数据场景', () => {
   for (const fixture of ['core', 'device'])
-    assert.deepEqual(realTestSelection(undefined, fixture, '不存在的目录'), {
+    assert.deepEqual(realTestSelection(undefined, fixture), {
       selection: { testIgnore: ['**/restore-existing.spec.ts'] },
       reporter: undefined,
     })
 })
 
-test('恢复选择只引用当前完整文件并绑定预检收据', (t) => {
-  const binding = bindingFixture(t)
-  const result = realTestSelection(binding.file, 'core', root)
+test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t) => {
+  const value = restoreFixture(t, {
+    backupSourceSha: 'a'.repeat(40),
+    backendProductSha: 'b'.repeat(40),
+    backendExecutionSha: 'c'.repeat(40),
+    frontendSha: b0FrontendSha,
+  })
+  const calls = []
+  const checkout = (directory, sha, label) => {
+    calls.push({ directory, sha, label })
+    return path.resolve(directory)
+  }
+  const result = realTestSelection(
+    value.restore,
+    'core',
+    value.runtime.endpoints.frontend,
+    root,
+    checkout,
+  )
   assert.deepEqual(result.selection, { testMatch: restoreSpecs })
+  assert.deepEqual(restoreSpecs, [
+    '**/full-stack.spec.ts',
+    '**/product-tenant.spec.ts',
+    '**/post-export.spec.ts',
+    '**/session.spec.ts',
+    '**/notice.spec.ts',
+    '**/schedule.spec.ts',
+    '**/restore-existing.spec.ts',
+  ])
+  assert.deepEqual(calls, [
+    {
+      directory: value.restore.coordinatorDir,
+      sha: value.restore.verifierSha,
+      label: '恢复证明协调后端',
+    },
+    {
+      directory: value.paths.frontendRoot,
+      sha: b0FrontendSha,
+      label: '恢复产品前端源码',
+    },
+    { directory: root, sha: 'f'.repeat(40), label: '恢复测试 runner 源码' },
+  ])
   assert.deepEqual(result.reporter, {
-    bindingPath: binding.file,
-    bindingSha256: sha256(binding.bytes),
+    binding: { path: value.paths.bindings, sha256: sha256(value.bindingsBytes) },
+    target: { path: value.restore.targetPlan, sha256: sha256(value.targetPlanBytes) },
+    runtime: { path: value.restore.runtimeReceipt, sha256: sha256(value.runtimeBytes) },
+    verifierRoot: value.restore.coordinatorDir,
+    verifierSha: value.restore.verifierSha,
+    runnerRoot: root,
+    runnerSha: value.restore.runnerSha,
   })
   assert.equal(result.selection.testMatch.includes('**/restore-existing.spec.ts'), true)
-  assert.equal(result.selection.testMatch.includes('**/session-races.spec.ts'), false)
-  result.selection.testMatch.pop()
-  assert.equal(restoreSpecs.length, 5)
   assert.deepEqual(requiredScenarios, [
     'login',
     'session',
@@ -81,16 +116,58 @@ test('恢复选择只引用当前完整文件并绑定预检收据', (t) => {
   ])
 })
 
-test('恢复绑定、fixture 与场景来源在配置副作用前失败关闭', (t) => {
-  const binding = bindingFixture(t)
-  assert.throws(() => realTestSelection(binding.file, 'device', root), /core/u)
-  assert.throws(() => realTestSelection('   ', 'core', root), /只包含空白/u)
-  assert.throws(() => realTestSelection('bindings.json', 'core', root), /绝对路径/u)
-  assert.throws(() => realTestSelection(` ${binding.file}`, 'core', root), /首尾空白/u)
-  const invalid = bindingFixture(t, '{invalid')
-  assert.throws(() => realTestSelection(invalid.file, 'core', root), /JSON/u)
-  const missingRoot = path.dirname(bindingFixture(t).file)
-  assert.throws(() => realTestSelection(binding.file, 'core', missingRoot), /场景不存在/u)
+test('恢复专用套件登记全部且仅一次业务证明场景', async () => {
+  const observed = []
+  for (const pattern of restoreSpecs) {
+    const source = await readFile(
+      path.join(root, 'tests', 'browser-real', pattern.slice(3)),
+      'utf8',
+    )
+    observed.push(
+      ...[...source.matchAll(/type:\s*'restore-scenario',\s*description:\s*'([^']+)'/gu)].map(
+        (match) => match[1],
+      ),
+    )
+  }
+  assert.deepEqual([...observed].sort(), [...requiredScenarios].sort())
+})
+
+test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', (t) => {
+  const value = restoreFixture(t)
+  const select = (restore, fixture = 'core', source = root) =>
+    realTestSelection(restore, fixture, value.runtime.endpoints.frontend, source, (directory) =>
+      path.resolve(directory),
+    )
+  assert.throws(() => select(value.restore, 'device'), /core/u)
+  assert.throws(() => select({ ...value.restore, unknown: true }), /字段/u)
+  assert.throws(() => select({ ...value.restore, bindings: 'bindings.json' }), /绝对路径/u)
+  writeFileSync(value.restore.targetPlan, '{invalid')
+  assert.throws(() => select(value.restore), /JSON/u)
+  const another = restoreFixture(t)
+  assert.throws(
+    () => select(another.restore, 'core', path.dirname(another.restore.bindings)),
+    /场景不存在/u,
+  )
+})
+
+test('runner 核验失败会在报告目录和服务创建前传播', (t) => {
+  const value = restoreFixture(t)
+  for (const error of ['恢复测试 runner 源码必须是预期 SHA', '恢复测试 runner 源码必须干净']) {
+    assert.throws(
+      () =>
+        realTestSelection(
+          value.restore,
+          'core',
+          value.runtime.endpoints.frontend,
+          root,
+          (_directory, _sha, label) => {
+            if (label === '恢复测试 runner 源码') throw new Error(error)
+            return value.paths.frontendRoot
+          },
+        ),
+      new RegExp(error, 'u'),
+    )
+  }
 })
 
 test('真实浏览器配置先完成恢复选择，再创建目录与控制端点', async () => {

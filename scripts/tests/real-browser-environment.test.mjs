@@ -31,8 +31,55 @@ test('登记环境完整时返回脱敏绑定，并保留中文空格绝对路�
   assert.equal(binding.serverMode, 'dev')
   assert.equal(binding.fixture, 'core')
   assert.equal(binding.runId, undefined)
+  assert.equal(binding.restore, undefined)
   assert.equal(JSON.stringify(binding).includes(environment.RYFRAME_E2E_PASSWORD), false)
   assert.equal(Object.isFrozen(binding), true)
+})
+
+test('恢复环境成组绑定 target plan、运行收据、协调器与当前 runner', () => {
+  const environment = {
+    ...validEnvironment(),
+    RYFRAME_RESTORE_BINDINGS: resolve('D 盘证据', 'bindings.json'),
+    RYFRAME_RESTORE_RUNTIME_RECEIPT: resolve('D 盘证据', 'runtime.json'),
+    RYFRAME_RESTORE_TARGET_PLAN: resolve('D 盘证据', 'target-plan.json'),
+    RYFRAME_RESTORE_BACKEND_DIR: resolve('D 盘源码', '协调器'),
+    RYFRAME_RESTORE_VERIFIER_SHA: 'b'.repeat(40),
+    RYFRAME_RESTORE_RUNNER_SHA: 'a'.repeat(40),
+  }
+  assert.deepEqual(validateRealBrowserEnvironment(environment).restore, {
+    bindings: environment.RYFRAME_RESTORE_BINDINGS,
+    runtimeReceipt: environment.RYFRAME_RESTORE_RUNTIME_RECEIPT,
+    targetPlan: environment.RYFRAME_RESTORE_TARGET_PLAN,
+    coordinatorDir: environment.RYFRAME_RESTORE_BACKEND_DIR,
+    verifierSha: environment.RYFRAME_RESTORE_VERIFIER_SHA,
+    runnerSha: environment.RYFRAME_RESTORE_RUNNER_SHA,
+  })
+})
+
+test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭', () => {
+  const base = validEnvironment()
+  assert.throws(
+    () => validateRealBrowserEnvironment({ ...base, RYFRAME_RESTORE_BINDINGS: resolve('x') }),
+    /同时登记/u,
+  )
+  const complete = {
+    ...base,
+    RYFRAME_RESTORE_BINDINGS: resolve('bindings.json'),
+    RYFRAME_RESTORE_RUNTIME_RECEIPT: resolve('runtime.json'),
+    RYFRAME_RESTORE_TARGET_PLAN: resolve('target-plan.json'),
+    RYFRAME_RESTORE_BACKEND_DIR: resolve('backend'),
+    RYFRAME_RESTORE_VERIFIER_SHA: 'b'.repeat(40),
+    RYFRAME_RESTORE_RUNNER_SHA: 'a'.repeat(40),
+  }
+  assert.throws(() =>
+    validateRealBrowserEnvironment({ ...complete, RYFRAME_RESTORE_TARGET_PLAN: 'target.json' }),
+  )
+  assert.throws(() =>
+    validateRealBrowserEnvironment({ ...complete, RYFRAME_RESTORE_RUNNER_SHA: 'a'.repeat(39) }),
+  )
+  assert.throws(() =>
+    validateRealBrowserEnvironment({ ...complete, RYFRAME_RESTORE_VERIFIER_SHA: 'B'.repeat(40) }),
+  )
 })
 
 test('运行选项经过统一校验并保留显式选择', () => {

@@ -14,6 +14,16 @@ export interface RealBrowserEnvironment {
   fixture: 'core' | 'device'
   runId: string | undefined
   baseURL: string | undefined
+  restore:
+    | Readonly<{
+        bindings: string
+        coordinatorDir: string
+        runnerSha: string
+        runtimeReceipt: string
+        targetPlan: string
+        verifierSha: string
+      }>
+    | undefined
 }
 
 export function validateRealBrowserEnvironment(

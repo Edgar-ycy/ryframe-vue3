@@ -3,7 +3,11 @@ import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { sha256 } from './build-source-inventory.mjs'
 import { restoreProofBindings } from './restore-proof.mjs'
-import { verifyRestoreRuntimeReceipt } from './restore-runtime-receipt.mjs'
+import {
+  inspectRestoreRuntimeReceipt,
+  restoreRuntimeBinding,
+  verifyRestoreRuntimeReceipt,
+} from './restore-runtime-receipt.mjs'
 
 const verificationFields = [
   'format_version',
@@ -49,6 +53,21 @@ export function evidenceDirectory(value, label) {
   const canonical = realpathSync.native(resolved)
   if (!samePath(canonical, resolved)) throw new Error(`${label}不能通过链接或别名路径访问`)
   return canonical
+}
+
+/** 核验测试 runner 或产品源码使用预期提交的干净仓库根。 */
+export function verifiedCheckout(directory, sha, label = '源码目录', execute = execFileSync) {
+  const root = evidenceDirectory(directory, label)
+  if (!validHex(sha, 40)) throw new Error(`${label}缺少精确提交 SHA`)
+  const git = (...args) =>
+    execute('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true }).trim()
+  if (
+    !samePath(realpathSync.native(git('rev-parse', '--show-toplevel')), root) ||
+    git('rev-parse', 'HEAD') !== sha ||
+    git('status', '--porcelain', '--untracked-files=all')
+  )
+    throw new Error(`${label}必须是预期 SHA 的干净仓库根目录`)
+  return root
 }
 
 function exactObject(value, fields, label) {
@@ -112,9 +131,10 @@ function processObservation(value, expectedProcess, expectedArtifact, label) {
     !samePath(identity.executable, expectedProcess.identity.executable) ||
     !samePath(processReceipt.path, expectedProcess.receipt_path) ||
     processReceipt.sha256 !== expectedProcess.receipt_sha256 ||
-    !samePath(executable.path, expectedArtifact.executable) ||
-    executable.bytes !== expectedArtifact.bytes ||
-    executable.sha256 !== expectedArtifact.sha256 ||
+    (expectedArtifact !== undefined &&
+      (!samePath(executable.path, expectedArtifact.executable) ||
+        executable.bytes !== expectedArtifact.bytes ||
+        executable.sha256 !== expectedArtifact.sha256)) ||
     !samePath(identity.executable, executable.path)
   )
     throw new Error(`${label}与运行收据绑定的进程或可执行文件不一致`)
@@ -141,39 +161,6 @@ function validFrontendFile(value, expected, previous) {
   return file.path
 }
 
-function authorityFromBindings(bindingBytes, frontendEndpoint) {
-  const { record, manifest } = restoreProofBindings(bindingBytes)
-  const plan = record.plan
-  return {
-    format_version: 1,
-    kind: 'restore-runtime-authority',
-    restore_id: plan.id,
-    backup_id: plan.backup_id,
-    plan_hash: record.plan_hash,
-    scope_id: plan.scope_id,
-    data_verified_at: record.data_verified_at,
-    backend_sha: manifest.source_sha,
-    frontend_sha: plan.frontend_sha,
-    api_endpoint: plan.api_ready_url,
-    worker_endpoint: plan.worker_ready_url,
-    frontend_endpoint: frontendEndpoint,
-  }
-}
-
-function runtimeExpectation(authority) {
-  return {
-    restoreId: authority.restore_id,
-    backupId: authority.backup_id,
-    planHash: authority.plan_hash,
-    scopeId: authority.scope_id,
-    dataVerifiedAt: authority.data_verified_at,
-    backendSha: authority.backend_sha,
-    frontendSha: authority.frontend_sha,
-    apiEndpoint: authority.api_endpoint,
-    workerEndpoint: authority.worker_endpoint,
-  }
-}
-
 function verificationBindings(authority) {
   return {
     restore: {
@@ -183,7 +170,13 @@ function verificationBindings(authority) {
       scope_id: authority.scope_id,
       data_verified_at: authority.data_verified_at,
     },
-    source: { backend_sha: authority.backend_sha, frontend_sha: authority.frontend_sha },
+    source: {
+      backup_source_sha: authority.backup_source_sha,
+      backend_product_sha: authority.backend_product_sha,
+      backend_execution_sha: authority.backend_execution_sha,
+      backend_adapter_contract: authority.backend_adapter_contract,
+      frontend_sha: authority.frontend_sha,
+    },
     endpoints: {
       api: authority.api_endpoint,
       worker: authority.worker_endpoint,
@@ -192,7 +185,7 @@ function verificationBindings(authority) {
   }
 }
 
-function verificationResult(output, { runtime, binding, authority, backendRoot, frontendRoot }) {
+function verificationResult(output, { runtime, binding, expected, roots }) {
   let value
   try {
     value = JSON.parse(output)
@@ -211,35 +204,43 @@ function verificationResult(output, { runtime, binding, authority, backendRoot, 
     bytes: runtime.bytes,
     verifiedDigest: value.runtime_receipt_sha256,
     bindingsBytes: binding.bytes,
-    expected: runtimeExpectation(authority),
+    expected,
   })
   if (
     !samePath(runtimeReceipt.paths.bindings, binding.path) ||
-    !samePath(runtimeReceipt.paths.backend_root, backendRoot) ||
-    !samePath(runtimeReceipt.paths.frontend_root, frontendRoot)
+    !samePath(runtimeReceipt.paths.backend_product_root, roots.product) ||
+    !samePath(runtimeReceipt.paths.backend_execution_root, roots.execution) ||
+    !samePath(runtimeReceipt.paths.frontend_root, roots.frontend)
   )
     throw new Error('运行收据没有绑定本次核验的 bindings 或源码目录')
   const bindings = pathDigest(value.bindings, '运行产物核验 bindings')
   if (!samePath(bindings.path, binding.path) || bindings.sha256 !== sha256(binding.bytes))
     throw new Error('运行产物核验 bindings 与本次输入不一致')
-  const expected = verificationBindings(authority)
-  for (const field of Object.keys(expected)) {
-    exactValues(runtimeReceipt[field], expected[field], `运行收据 ${field}`)
-    exactValues(value[field], expected[field], `运行核验 ${field}`)
+  const bindingsExpected = verificationBindings(expected.authority)
+  for (const field of Object.keys(bindingsExpected)) {
+    exactValues(runtimeReceipt[field], bindingsExpected[field], `运行收据 ${field}`)
+    exactValues(value[field], bindingsExpected[field], `运行核验 ${field}`)
   }
 
-  const builds = exactObject(value.build_receipts, ['backend', 'frontend'], '运行产物核验构建收据')
+  const builds = exactObject(
+    value.build_receipts,
+    ['backend', 'frontend', 'launch'],
+    '运行产物核验构建收据',
+  )
   const backendBuild = pathDigest(builds.backend, '运行产物核验后端构建收据')
   const frontendBuild = pathDigest(builds.frontend, '运行产物核验前端构建收据')
+  const launch = pathDigest(builds.launch, '运行产物核验启动收据')
   if (
     !samePath(backendBuild.path, runtimeReceipt.paths.backend_build) ||
     backendBuild.sha256 !== runtimeReceipt.digests.backend_build ||
     !samePath(frontendBuild.path, runtimeReceipt.paths.frontend_build) ||
-    frontendBuild.sha256 !== runtimeReceipt.digests.frontend_build
+    frontendBuild.sha256 !== runtimeReceipt.digests.frontend_build ||
+    !samePath(launch.path, runtimeReceipt.paths.launch) ||
+    launch.sha256 !== runtimeReceipt.digests.launch
   )
     throw new Error('运行产物核验构建收据与运行收据不一致')
 
-  const processes = exactObject(value.processes, ['api', 'worker'], '运行产物核验进程')
+  const processes = exactObject(value.processes, ['api', 'worker', 'frontend'], '运行产物核验进程')
   const processReceipts = [
     processObservation(
       processes.api,
@@ -253,8 +254,18 @@ function verificationResult(output, { runtime, binding, authority, backendRoot, 
       runtimeReceipt.backend.artifacts.worker,
       'Worker 运行核验',
     ),
+    processObservation(
+      processes.frontend,
+      runtimeReceipt.processes.frontend,
+      undefined,
+      '前端运行核验',
+    ),
   ]
-  if (samePath(processReceipts[0].path, processReceipts[1].path))
+  if (
+    processReceipts.some((item, index) =>
+      processReceipts.slice(index + 1).some((other) => samePath(item.path, other.path)),
+    )
+  )
     throw new Error('运行产物核验进程收据路径重复')
 
   const readiness = exactObject(
@@ -293,16 +304,36 @@ function verificationResult(output, { runtime, binding, authority, backendRoot, 
 }
 
 export function verifyRuntime(
-  { receipt, bindings, backend, frontend, baseURL },
+  { receipt, bindings, targetPlan, backend, frontend, baseURL },
   execute = execFileSync,
 ) {
   const runtime = evidenceFile(receipt, '运行产物收据')
   const binding = evidenceFile(bindings, '恢复绑定收据')
+  const target = evidenceFile(targetPlan, '恢复目标计划')
   const backendRoot = evidenceDirectory(backend, '后端源码目录')
   const frontendRoot = evidenceDirectory(frontend, '前端源码目录')
   if (typeof baseURL !== 'string' || !baseURL.trim() || baseURL !== baseURL.trim())
     throw new Error('浏览器地址不能为空或包含首尾空白')
-  const authority = authorityFromBindings(binding.bytes, baseURL)
+  const { record, manifest } = restoreProofBindings(binding.bytes)
+  const expected = restoreRuntimeBinding({
+    record,
+    manifest,
+    targetPlanBytes: target.bytes,
+    frontendEndpoint: baseURL,
+  })
+  inspectRestoreRuntimeReceipt({
+    bytes: runtime.bytes,
+    bindingsBytes: binding.bytes,
+    expected,
+  })
+  const roots = {
+    product: evidenceDirectory(expected.roots.source_backend, '后端产品源码目录'),
+    execution: evidenceDirectory(expected.roots.execution_backend, '后端执行源码目录'),
+    frontend: evidenceDirectory(expected.roots.frontend, '前端运行源码目录'),
+  }
+  if (!samePath(roots.frontend, frontendRoot))
+    throw new Error('恢复目标计划没有绑定当前前端源码目录')
+  const authority = expected.authority
   const result = execute(
     process.env.RYFRAME_PYTHON?.trim() || 'python',
     [
@@ -312,14 +343,22 @@ export function verifyRuntime(
       'verify',
       '--backend-dir',
       backendRoot,
-      '--frontend-dir',
-      frontendRoot,
+      '--source-backend',
+      roots.execution,
+      '--source-frontend',
+      roots.frontend,
       '--receipt',
       runtime.path,
       '--bindings',
       binding.path,
-      '--frontend-url',
-      baseURL,
+      ...(authority.backend_adapter_contract === null
+        ? []
+        : [
+            '--adapter-contract',
+            authority.backend_adapter_contract,
+            '--product-backend',
+            roots.product,
+          ]),
     ],
     {
       encoding: 'utf8',
@@ -332,13 +371,17 @@ export function verifyRuntime(
   const digest = verificationResult(result, {
     runtime,
     binding,
-    authority,
-    backendRoot,
-    frontendRoot,
+    expected,
+    roots,
   })
   const runtimeAfter = evidenceFile(runtime.path, '运行产物收据')
   const bindingAfter = evidenceFile(binding.path, '恢复绑定收据')
-  if (!runtime.bytes.equals(runtimeAfter.bytes) || !binding.bytes.equals(bindingAfter.bytes))
+  const targetAfter = evidenceFile(target.path, '恢复目标计划')
+  if (
+    !runtime.bytes.equals(runtimeAfter.bytes) ||
+    !binding.bytes.equals(bindingAfter.bytes) ||
+    !target.bytes.equals(targetAfter.bytes)
+  )
     throw new Error('运行产物核验期间输入收据发生变化')
   return digest
 }

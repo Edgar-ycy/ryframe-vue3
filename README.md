@@ -76,6 +76,8 @@ Python。生成器绑定模板和输出文件的 SHA-256，浏览器在上传已
 
 生产构建验收先运行 `corepack pnpm build --real`，再设置 `RYFRAME_E2E_SERVER=preview` 运行 `corepack pnpm check --stage browser --real`。真实构建必须由 `packageManager` 固定版本的 Corepack pnpm 启动；收据会绑定 Node、实际 pnpm、Vite、production 环境文件、产品与工具来源以及完整 `dist` 清单。未设置 `RYFRAME_E2E_BASE_URL` 时，内置 preview 启动前会核对构建收据、当前源码、环境文件、工具链与全部产物摘要；使用外部代理时，需由启动该代理的流程核验对应构建来源。真实构建显式使用同源 API，覆盖本机 `.env.production` 的 API 地址而不修改配置文件；测试仅允许访问本机代理地址，越界请求会被阻止并导致失败。开发服务器与 preview 的 trace、截图、视频和 HTML 报告分别保存在 `.local-tests/playwright-real/` 的对应目录中；fixture smoke 使用 `corepack pnpm check --stage browser`。
 
+正式恢复浏览器验收由后端恢复控制器同时提供 `RYFRAME_RESTORE_BINDINGS`、`RYFRAME_RESTORE_TARGET_PLAN`、`RYFRAME_RESTORE_RUNTIME_RECEIPT`、`RYFRAME_RESTORE_BACKEND_DIR`、`RYFRAME_RESTORE_VERIFIER_SHA` 和 `RYFRAME_RESTORE_RUNNER_SHA`；缺少任一项都会在创建报告或启动服务前失败。目标计划绑定被测产品前后端，verifier SHA 绑定复核证据的干净后端提交，runner SHA 绑定执行当前测试代码的干净前端提交，因此 B0 产品前端可以由最终候选 runner 验收。`RYFRAME_RESTORE_REFERENCE_PLAN` 仍只用于恢复前已有业务数据的只读核验，不作为运行来源权威。
+
 ## 同步 API 契约
 
 后端 DTO 或接口变化后，在后端仓库根目录运行：

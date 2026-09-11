@@ -10,11 +10,11 @@ import { realTestSelection } from './scripts/restore-scenarios.mjs'
 const environment = validateRealBrowserEnvironment()
 const { fixture, port, runId, serverMode } = environment
 const externalBaseUrl = environment.baseURL
+const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
 if (serverMode === 'preview' && !externalBaseUrl) {
   verifyBuildReceipt(fileURLToPath(new URL('.', import.meta.url)))
 }
-const restore = realTestSelection(process.env.RYFRAME_RESTORE_BINDINGS, fixture)
-const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
+const restore = realTestSelection(environment.restore, fixture, baseURL)
 const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
 const artifactSuffix = `${fixture}/${serverMode}${runId ? `/${runId}` : ''}`
 const reportDirectory = `.local-tests/playwright-real/report/${artifactSuffix}`
@@ -24,7 +24,7 @@ const reporters: ReporterDescription[] = [
   ['html', { open: 'never', outputFolder: reportDirectory }],
 ]
 if (restore.reporter)
-  reporters.push(['./scripts/restore-reporter.mjs', { expectedBinding: restore.reporter }])
+  reporters.push(['./scripts/restore-reporter.mjs', { expectedRestore: restore.reporter }])
 
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })

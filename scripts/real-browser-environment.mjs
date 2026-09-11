@@ -45,6 +45,12 @@ function absolutePath(environment, name) {
   return value
 }
 
+function commitSha(environment, name) {
+  const value = required(environment, name)
+  if (!/^[a-f0-9]{40}$/u.test(value)) throw new Error(`${name} 必须是完整小写提交 SHA`)
+  return value
+}
+
 function localBaseUrl(value) {
   if (!value) return undefined
   let url
@@ -66,6 +72,33 @@ function localBaseUrl(value) {
     throw new Error('RYFRAME_E2E_BASE_URL 必须是带明确端口的本机 HTTP 原点')
   }
   return url.origin
+}
+
+function restoreEnvironment(environment) {
+  const fields = [
+    ['bindings', 'RYFRAME_RESTORE_BINDINGS'],
+    ['runtimeReceipt', 'RYFRAME_RESTORE_RUNTIME_RECEIPT'],
+    ['targetPlan', 'RYFRAME_RESTORE_TARGET_PLAN'],
+    ['coordinatorDir', 'RYFRAME_RESTORE_BACKEND_DIR'],
+    ['verifierSha', 'RYFRAME_RESTORE_VERIFIER_SHA'],
+    ['runnerSha', 'RYFRAME_RESTORE_RUNNER_SHA'],
+  ]
+  const configured = fields.filter(([, name]) => environment[name] !== undefined)
+  if (configured.length === 0) return undefined
+  if (configured.length !== fields.length)
+    throw new Error(
+      '恢复浏览器环境必须同时登记 bindings、target plan、运行收据、协调器、verifier SHA 和 runner SHA',
+    )
+  return Object.freeze(
+    Object.fromEntries(
+      fields.map(([field, name]) => [
+        field,
+        field === 'runnerSha' || field === 'verifierSha'
+          ? commitSha(environment, name)
+          : absolutePath(environment, name),
+      ]),
+    ),
+  )
 }
 
 /** 在创建报告目录和服务前验证真实环境，只返回不含凭据的运行绑定。 */
@@ -101,6 +134,7 @@ export function validateRealBrowserEnvironment(environment = process.env) {
     fixture: choice(environment, 'RYFRAME_E2E_FIXTURE', 'core', ['core', 'device']),
     runId: optionalRunId(environment),
     baseURL: localBaseUrl(environment.RYFRAME_E2E_BASE_URL?.trim()),
+    restore: restoreEnvironment(environment),
   }
   return Object.freeze(binding)
 }

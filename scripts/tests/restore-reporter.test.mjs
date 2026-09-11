@@ -3,116 +3,49 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import RestoreReporter from '../restore-reporter.mjs'
 import { sha256 } from '../build-source-inventory.mjs'
 import { requiredScenarios } from '../restore-proof.mjs'
-import { backendBuild, frontendBuild } from './build-receipt-fixture.mjs'
+import RestoreReporter from '../restore-reporter.mjs'
+import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
 
-function fixture(t, verify, expectedDigest) {
+function fixture(t, verify, expectedDigest, checkout = (root) => root) {
   const local = path.resolve('.local-tests/node-unit')
   mkdirSync(local, { recursive: true })
   mkdirSync(path.resolve('.local-tests/playwright-real'), { recursive: true })
   const directory = mkdtempSync(path.join(local, 'restore-reporter-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
   const id = `proof-${randomUUID()}`
-  const plan = {
+  const value = restoreRuntimeFixture({
+    directory,
     id,
-    backup_id: 'backup',
-    scope_id: 'restore-unit',
-    fault_at: '2026-01-01T00:00:00Z',
-    databases: [
-      {
-        source_key: 'control',
-        target_key: 'control',
-        server_uuid: 'server-one',
-        database: 'restore_control',
-      },
-    ],
-    object_endpoint: 'http://127.0.0.1:9000',
-    object_prefix: 'restore-unit/',
-    api_ready_url: 'http://127.0.0.1:8080/readyz',
-    worker_ready_url: 'http://127.0.0.1:9091/readyz',
-    frontend_sha: 'b'.repeat(40),
-  }
-  const bindings = path.join(directory, 'bindings.json')
-  const runtime = path.join(directory, 'runtime.json')
-  const bindingValue = {
-    record: {
-      status: 'data_verified',
-      data_verified_at: new Date(Date.now() - 1000).toISOString(),
-      plan_hash: sha256(Buffer.from(JSON.stringify(plan))),
-      plan,
-    },
-    manifest: { id: 'backup', scope_id: 'source-unit', source_sha: 'c'.repeat(40) },
-  }
-  const bindingBytes = Buffer.from(JSON.stringify(bindingValue))
-  writeFileSync(bindings, bindingBytes)
-  const artifact = (role, digest) => ({
-    executable: path.join(directory, `${role}.exe`),
-    command: ['cargo', 'build'],
-    bytes: 1,
-    sha256: digest,
+    backupId: 'backup',
+    scopeId: 'restore-unit',
+    backupSourceSha: 'c'.repeat(40),
+    dataVerifiedAt: new Date(Date.now() - 1000).toISOString(),
   })
-  const runtimeValue = {
-    format_version: 2,
-    kind: 'restore-runtime',
-    restore: {
-      id,
-      backup_id: plan.backup_id,
-      plan_hash: bindingValue.record.plan_hash,
-      scope_id: plan.scope_id,
-      data_verified_at: bindingValue.record.data_verified_at,
-    },
-    paths: {
-      backend_root: directory,
-      frontend_root: directory,
-      runtime_dir: directory,
-      bindings,
-      backend_build: path.join(directory, 'backend-build.json'),
-      frontend_build: path.join(directory, 'frontend-build.json'),
-    },
-    digests: {
-      bindings: sha256(bindingBytes),
-      backend_build: 'e'.repeat(64),
-      frontend_build: 'f'.repeat(64),
-    },
-    source: { backend_sha: bindingValue.manifest.source_sha, frontend_sha: plan.frontend_sha },
-    endpoints: {
-      api: plan.api_ready_url,
-      worker: plan.worker_ready_url,
-      frontend: 'http://127.0.0.1:4174',
-    },
-    backend: backendBuild(bindingValue.manifest.source_sha, artifact),
-    frontend: frontendBuild(plan.frontend_sha, [
-      { path: 'index.html', bytes: 1, sha256: '5'.repeat(64) },
-    ]),
-    processes: {
-      api: {
-        receipt_path: path.join(directory, 'api.json'),
-        receipt_sha256: '1'.repeat(64),
-        identity: { pid: 101, started: 'api-started', executable: path.join(directory, 'api.exe') },
-      },
-      worker: {
-        receipt_path: path.join(directory, 'worker.json'),
-        receipt_sha256: '2'.repeat(64),
-        identity: {
-          pid: 102,
-          started: 'worker-started',
-          executable: path.join(directory, 'worker.exe'),
-        },
-      },
-    },
-  }
-  writeFileSync(runtime, JSON.stringify(runtimeValue))
+  for (const root of [
+    value.paths.backendProductRoot,
+    value.paths.backendExecutionRoot,
+    value.paths.frontendRoot,
+  ])
+    mkdirSync(root, { recursive: true })
+  const runtime = path.join(directory, 'runtime.json')
+  const targetPlan = path.join(directory, 'target-plan.json')
+  writeFileSync(value.paths.bindings, value.bindingsBytes)
+  writeFileSync(runtime, value.runtimeBytes)
+  writeFileSync(targetPlan, value.targetPlanBytes)
   const environment = {
-    RYFRAME_RESTORE_BINDINGS: bindings,
+    RYFRAME_RESTORE_BINDINGS: value.paths.bindings,
     RYFRAME_RESTORE_RUNTIME_RECEIPT: runtime,
+    RYFRAME_RESTORE_TARGET_PLAN: targetPlan,
     RYFRAME_RESTORE_BACKEND_DIR: directory,
+    RYFRAME_RESTORE_VERIFIER_SHA: 'e'.repeat(40),
+    RYFRAME_RESTORE_RUNNER_SHA: 'f'.repeat(40),
     RYFRAME_E2E_SCOPE_ID: 'restore-unit',
   }
-  for (const [key, value] of Object.entries(environment)) {
+  for (const [key, configured] of Object.entries(environment)) {
     const previous = process.env[key]
-    process.env[key] = value
+    process.env[key] = configured
     t.after(() => {
       if (previous === undefined) delete process.env[key]
       else process.env[key] = previous
@@ -127,14 +60,22 @@ function fixture(t, verify, expectedDigest) {
     )
   const digest = sha256(readFileSync(runtime))
   const reporter = new RestoreReporter({
-    checkout: (root) => root,
+    checkout,
     verify: () => verify(digest),
-    expectedBinding: {
-      bindingPath: bindings,
-      bindingSha256: expectedDigest ?? sha256(bindingBytes),
+    expectedRestore: {
+      binding: {
+        path: value.paths.bindings,
+        sha256: expectedDigest ?? sha256(value.bindingsBytes),
+      },
+      target: { path: targetPlan, sha256: sha256(value.targetPlanBytes) },
+      runtime: { path: runtime, sha256: digest },
+      verifierRoot: directory,
+      verifierSha: 'e'.repeat(40),
+      runnerRoot: process.cwd(),
+      runnerSha: 'f'.repeat(40),
     },
   })
-  reporter.onBegin({ projects: [{ use: { baseURL: 'http://127.0.0.1:4174' } }] })
+  reporter.onBegin({ projects: [{ use: { baseURL: value.runtime.endpoints.frontend } }] })
   reporter.onTestEnd(
     {
       titlePath: () => ['fixture'],
@@ -145,7 +86,14 @@ function fixture(t, verify, expectedDigest) {
     },
     { status: 'passed', retry: 0 },
   )
-  return { reporter, runtime, bindings, output, digest }
+  return {
+    reporter,
+    runtime,
+    bindings: value.paths.bindings,
+    targetPlan,
+    output,
+    digest,
+  }
 }
 
 test('全部测试完成后重新核验来源，并保存与证明摘要对应的运行收据', (t) => {
@@ -158,8 +106,25 @@ test('全部测试完成后重新核验来源，并保存与证明摘要对应�
   assert.equal(item.reporter.onEnd({ status: 'passed' }), undefined)
   assert.equal(calls, 2)
   const proof = JSON.parse(readFileSync(item.output))
+  const tests = JSON.parse(readFileSync(item.output.replace('.json', '-tests.json')))
   assert.equal(proof.runtime_receipt_sha256, item.digest)
+  assert.equal(proof.runner_sha, 'f'.repeat(40))
+  assert.equal(proof.verifier_sha, 'e'.repeat(40))
+  assert.equal(
+    proof.tests_receipt_sha256,
+    sha256(readFileSync(item.output.replace('.json', '-tests.json'))),
+  )
   assert.equal(sha256(readFileSync(item.output.replace('.json', '-runtime.json'))), item.digest)
+  assert.deepEqual(tests.runs, [
+    { title: ['fixture'], status: 'passed', retry: 0, scenarios: requiredScenarios },
+  ])
+  assert.equal(tests.kind, 'restore-browser-tests')
+  assert.equal(tests.sources.runner.sha, proof.runner_sha)
+  assert.equal(tests.sources.verifier.sha, proof.verifier_sha)
+  assert.equal(tests.runtime.sha256, proof.runtime_receipt_sha256)
+  assert.equal(tests.target_plan.sha256, proof.target_plan_sha256)
+  assert.equal(tests.runtime.path, item.output.replace('.json', '-runtime.json'))
+  assert.equal(path.dirname(tests.runtime.path), path.dirname(item.output))
 })
 
 test('测试结束时进程或源码核验失败不会写成功证明', (t) => {
@@ -173,9 +138,27 @@ test('测试结束时进程或源码核验失败不会写成功证明', (t) => {
   assert.equal(existsSync(item.output), false)
 })
 
-test('测试中替换运行收据或演练绑定文件会拒绝成功证明', (t) => {
+test('测试结束时 runner 或 verifier 源码变化会拒绝证明', (t) => {
   t.mock.method(console, 'error', () => {})
-  for (const file of ['runtime', 'bindings']) {
+  for (const changedLabel of ['恢复测试 runner 源码', '恢复证明协调后端']) {
+    let checks = 0
+    const item = fixture(
+      t,
+      (digest) => digest,
+      undefined,
+      (root, _sha, label) => {
+        if (label === changedLabel && ++checks === 2) throw new Error(`${label} changed`)
+        return root
+      },
+    )
+    assert.deepEqual(item.reporter.onEnd({ status: 'passed' }), { status: 'failed' })
+    assert.equal(existsSync(item.output), false)
+  }
+})
+
+test('测试中替换任一恢复输入会拒绝成功证明', (t) => {
+  t.mock.method(console, 'error', () => {})
+  for (const file of ['runtime', 'bindings', 'targetPlan']) {
     const item = fixture(t, (digest) => digest)
     writeFileSync(item[file], '{}')
     assert.deepEqual(item.reporter.onEnd({ status: 'passed' }), { status: 'failed' })

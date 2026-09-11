@@ -185,13 +185,29 @@ function parseExternalBuild(argv) {
   return { root: values.get('--source-root'), expectedHead: values.get('--expected-head') }
 }
 
+function parseVerify(argv) {
+  if (argv.length !== 3 || argv[0] !== 'verify' || argv[1] !== '--source-root') {
+    throw new ExternalBuildUsageError(
+      '用法：node scripts/restore-build.mjs verify --source-root <目录>',
+    )
+  }
+  return path.resolve(argv[2])
+}
+
 const isMain =
   process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url
 if (isMain) {
   try {
-    const arguments_ = parseExternalBuild(process.argv.slice(2))
-    buildExternalReceipt(arguments_.root, arguments_.expectedHead)
-    console.log(JSON.stringify({ receipt: path.resolve(arguments_.root, 'dist', receiptPath) }))
+    const argv = process.argv.slice(2)
+    if (argv[0] === 'verify') {
+      const root = parseVerify(argv)
+      verifyBuildReceipt(root)
+      console.log(JSON.stringify({ receipt: path.resolve(root, 'dist', receiptPath) }))
+    } else {
+      const arguments_ = parseExternalBuild(argv)
+      buildExternalReceipt(arguments_.root, arguments_.expectedHead)
+      console.log(JSON.stringify({ receipt: path.resolve(arguments_.root, 'dist', receiptPath) }))
+    }
   } catch (error) {
     console.error(error.stack ?? error.message)
     process.exitCode = error instanceof ExternalBuildUsageError ? 2 : 1

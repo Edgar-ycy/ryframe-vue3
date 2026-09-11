@@ -20,6 +20,12 @@ for (const [source, target] of [
     clientAddress,
   }, info) => {
     test.setTimeout(source === 'dedicated-a' ? 420_000 : 240_000)
+    info.annotations.push({
+      type: 'device-scenario',
+      description: source === 'dedicated-a' ? 'dedicated-migration' : 'shared-migration',
+    })
+    if (source === 'dedicated-a')
+      info.annotations.push({ type: 'device-scenario', description: 'retention' })
     const diagnostics = observeDiagnostics(page)
     await login(page)
     await verifyDataTargets(page, ['shared', 'dedicated-a', 'dedicated-b'])

@@ -22,6 +22,7 @@ test('真实 Device 复制阻塞时 Worker 崩溃，重启后同一迁移恢复�
   clientAddress,
 }, info) => {
   test.setTimeout(300_000)
+  info.annotations.push({ type: 'device-scenario', description: 'crash-recovery' })
   const diagnostics = observeDiagnostics(page)
   await login(page)
   await verifyDataTargets(page, ['shared'])

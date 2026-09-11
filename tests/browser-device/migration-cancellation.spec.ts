@@ -17,6 +17,7 @@ test('真实排队 Device 迁移取消恢复源数据，并允许再次迁移', 
   clientAddress,
 }, info) => {
   test.setTimeout(300_000)
+  info.annotations.push({ type: 'device-scenario', description: 'cancellation' })
   const diagnostics = observeDiagnostics(page)
   await login(page)
   await verifyDataTargets(page, ['shared'])

@@ -13,31 +13,49 @@ function killChild(child, signal) {
   }
 }
 
-function stopTaskTree(child, signal) {
-  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
+function unixProcessGroupAlive(processGroup) {
+  try {
+    process.kill(-processGroup, 0)
+    return true
+  } catch (cause) {
+    if (cause.code === 'ESRCH') return false
+    throw cause
+  }
+}
+
+function stopTaskTree(child, processGroup, signal) {
   if (process.platform !== 'win32') {
+    if (!processGroup) return
     try {
-      process.kill(-child.pid, signal)
+      process.kill(-processGroup, signal)
       return
     } catch (cause) {
       if (cause.code === 'ESRCH') return
+      throw cause
     }
-  } else {
-    if (signal === 'SIGKILL' || !child.connected) killChild(child, 'SIGKILL')
-    else {
-      try {
-        child.send({ type: taskWorkerProtocol.stop, signal }, (error) => {
-          if (error && child.exitCode === null && child.signalCode === null) {
-            killChild(child, 'SIGKILL')
-          }
-        })
-      } catch {
-        killChild(child, 'SIGKILL')
-      }
-    }
-    return
   }
-  killChild(child, signal)
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
+  if (signal === 'SIGKILL' || !child.connected) killChild(child, 'SIGKILL')
+  else {
+    try {
+      child.send({ type: taskWorkerProtocol.stop, signal }, (error) => {
+        if (error && child.exitCode === null && child.signalCode === null) {
+          killChild(child, 'SIGKILL')
+        }
+      })
+    } catch {
+      killChild(child, 'SIGKILL')
+    }
+  }
+}
+
+async function waitForUnixProcessGroup(processGroup, timeoutMs = 5000) {
+  if (!processGroup) return
+  const deadline = Date.now() + timeoutMs
+  while (unixProcessGroupAlive(processGroup)) {
+    if (Date.now() >= deadline) throw new Error(`任务进程组 ${processGroup} 未能完成回收`)
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
 }
 
 function childInvocation(invocation, interactive) {
@@ -64,7 +82,7 @@ function resultError(value) {
   return Object.assign(new Error(value.message ?? 'Windows 任务执行失败'), value)
 }
 
-/** 等待已登记的直接子进程及其输出关闭。 */
+/** 等待已登记的任务进程树及其输出关闭。 */
 export function runTaskProcess(invocation, { cwd, env, interactive, control, spawnChild = spawn }) {
   if (control.signal.aborted) return Promise.resolve({ code: 1, cancelled: true })
   return new Promise((resolve) => {
@@ -77,6 +95,7 @@ export function runTaskProcess(invocation, { cwd, env, interactive, control, spa
       windowsHide: true,
       detached: target.detached,
     })
+    const processGroup = process.platform !== 'win32' && child.pid ? child.pid : undefined
     const result = { code: 1, stderr: '', stdout: '' }
     let taskResult
     let unregister = () => undefined
@@ -119,27 +138,48 @@ export function runTaskProcess(invocation, { cwd, env, interactive, control, spa
     })
     unregister = control.register((signal) => {
       try {
-        stopTaskTree(child, signal)
+        stopTaskTree(child, processGroup, signal)
       } catch (cause) {
         if (cause.code !== 'ESRCH') result.error ??= cause
       }
     })
     child.once('close', (code, signal) => {
-      unregister()
-      const workerCode = process.platform === 'win32' && code === 0 ? 1 : (code ?? 1)
-      if (process.platform === 'win32' && !taskResult && workerCode !== 0) {
-        result.code = workerCode
-        result.signal = signal
-        control.fail(result)
-      }
-      resolve(
-        Object.assign(
-          result,
-          taskResult
-            ? { code: taskResult.code ?? 1, signal: taskResult.signal }
-            : { code: workerCode, signal },
-        ),
-      )
+      void (async () => {
+        let workerCode = process.platform === 'win32' && code === 0 ? 1 : (code ?? 1)
+        if (process.platform !== 'win32' && processGroup) {
+          try {
+            if (unixProcessGroupAlive(processGroup) && !control.signal.aborted) {
+              result.error ??= new Error('任务直接子进程退出后仍有存活后代')
+              result.code = workerCode || 1
+              result.signal = signal
+              control.fail(result)
+            }
+            await waitForUnixProcessGroup(processGroup)
+          } catch (cause) {
+            result.error ??= cause
+            workerCode ||= 1
+            if (!control.signal.aborted) {
+              result.code = workerCode
+              result.signal = signal
+              control.fail(result)
+            }
+          }
+        }
+        unregister()
+        if (process.platform === 'win32' && !taskResult && workerCode !== 0) {
+          result.code = workerCode
+          result.signal = signal
+          control.fail(result)
+        }
+        resolve(
+          Object.assign(
+            result,
+            taskResult
+              ? { code: taskResult.code ?? 1, signal: taskResult.signal }
+              : { code: result.error && workerCode === 0 ? 1 : workerCode, signal },
+          ),
+        )
+      })()
     })
   })
 }

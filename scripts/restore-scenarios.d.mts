@@ -12,6 +12,10 @@ export interface RestoreEvidenceDescriptor {
   sha256: string
 }
 
+export interface RestoreLineageDescriptor extends RestoreEvidenceDescriptor {
+  bytes: number
+}
+
 export const restoreSpecs: string[]
 export function realTestSelection(
   restore: RestoreBrowserEnvironment | undefined,
@@ -24,9 +28,11 @@ export function realTestSelection(
   reporter:
     | {
         binding: RestoreEvidenceDescriptor
+        datasetLineage: RestoreLineageDescriptor
         runnerRoot: string
         runnerSha: string
         runtime: RestoreEvidenceDescriptor
+        sourceGeneration: RestoreLineageDescriptor
         target: RestoreEvidenceDescriptor
         verifierRoot: string
         verifierSha: string

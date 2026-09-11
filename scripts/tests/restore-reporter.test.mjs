@@ -7,6 +7,7 @@ import { sha256 } from '../build-source-inventory.mjs'
 import { requiredScenarios } from '../restore-proof.mjs'
 import RestoreReporter from '../restore-reporter.mjs'
 import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+import { restoreLineageFixture } from './restore-lineage-fixture.mjs'
 
 function fixture(t, verify, expectedDigest, checkout = (root) => root) {
   const local = path.resolve('.local-tests/node-unit')
@@ -31,9 +32,10 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root) {
     mkdirSync(root, { recursive: true })
   const runtime = path.join(directory, 'runtime.json')
   const targetPlan = path.join(directory, 'target-plan.json')
+  const lineage = restoreLineageFixture(directory, value.targetPlan)
   writeFileSync(value.paths.bindings, value.bindingsBytes)
   writeFileSync(runtime, value.runtimeBytes)
-  writeFileSync(targetPlan, value.targetPlanBytes)
+  writeFileSync(targetPlan, lineage.bytes)
   const environment = {
     RYFRAME_RESTORE_BINDINGS: value.paths.bindings,
     RYFRAME_RESTORE_RUNTIME_RECEIPT: runtime,
@@ -67,8 +69,10 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root) {
         path: value.paths.bindings,
         sha256: expectedDigest ?? sha256(value.bindingsBytes),
       },
-      target: { path: targetPlan, sha256: sha256(value.targetPlanBytes) },
+      target: { path: targetPlan, sha256: sha256(lineage.bytes) },
       runtime: { path: runtime, sha256: digest },
+      sourceGeneration: lineage.sourceGeneration,
+      datasetLineage: lineage.datasetLineage,
       verifierRoot: directory,
       verifierSha: 'e'.repeat(40),
       runnerRoot: process.cwd(),
@@ -93,6 +97,7 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root) {
     targetPlan,
     output,
     digest,
+    lineage,
   }
 }
 
@@ -123,6 +128,10 @@ test('全部测试完成后重新核验来源，并保存与证明摘要对应�
   assert.equal(tests.sources.verifier.sha, proof.verifier_sha)
   assert.equal(tests.runtime.sha256, proof.runtime_receipt_sha256)
   assert.equal(tests.target_plan.sha256, proof.target_plan_sha256)
+  assert.deepEqual(tests.source_generation, item.lineage.sourceGeneration)
+  assert.deepEqual(tests.dataset_lineage, item.lineage.datasetLineage)
+  assert.equal(proof.source_generation_sha256, item.lineage.sourceGeneration.sha256)
+  assert.equal(proof.dataset_lineage_sha256, item.lineage.datasetLineage.sha256)
   assert.equal(tests.runtime.path, item.output.replace('.json', '-runtime.json'))
   assert.equal(path.dirname(tests.runtime.path), path.dirname(item.output))
 })
@@ -158,9 +167,15 @@ test('测试结束时 runner 或 verifier 源码变化会拒绝证明', (t) => {
 
 test('测试中替换任一恢复输入会拒绝成功证明', (t) => {
   t.mock.method(console, 'error', () => {})
-  for (const file of ['runtime', 'bindings', 'targetPlan']) {
+  for (const selected of [
+    (item) => item.runtime,
+    (item) => item.bindings,
+    (item) => item.targetPlan,
+    (item) => item.lineage.sourceGeneration.path,
+    (item) => item.lineage.datasetLineage.path,
+  ]) {
     const item = fixture(t, (digest) => digest)
-    writeFileSync(item[file], '{}')
+    writeFileSync(selected(item), '{}')
     assert.deepEqual(item.reporter.onEnd({ status: 'passed' }), { status: 'failed' })
     assert.equal(existsSync(item.output), false)
   }

@@ -7,6 +7,7 @@ import { sha256 } from '../build-source-inventory.mjs'
 import { requiredScenarios } from '../restore-proof.mjs'
 import { realTestSelection, restoreSpecs } from '../restore-scenarios.mjs'
 import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+import { restoreLineageFixture } from './restore-lineage-fixture.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const b0FrontendSha = '0087ea2ecf62530d042b9e52f5c950fb34c66d78'
@@ -27,11 +28,13 @@ function restoreFixture(t, options = {}) {
     mkdirSync(item, { recursive: true })
   const targetPlan = path.join(directory, 'target-plan.json')
   const runtimeReceipt = path.join(directory, 'runtime.json')
+  const lineage = restoreLineageFixture(directory, value.targetPlan)
   writeFileSync(value.paths.bindings, value.bindingsBytes)
-  writeFileSync(targetPlan, value.targetPlanBytes)
+  writeFileSync(targetPlan, lineage.bytes)
   writeFileSync(runtimeReceipt, value.runtimeBytes)
   return {
     ...value,
+    lineage,
     restore: {
       bindings: value.paths.bindings,
       targetPlan,
@@ -95,8 +98,10 @@ test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t
   ])
   assert.deepEqual(result.reporter, {
     binding: { path: value.paths.bindings, sha256: sha256(value.bindingsBytes) },
-    target: { path: value.restore.targetPlan, sha256: sha256(value.targetPlanBytes) },
+    target: { path: value.restore.targetPlan, sha256: sha256(value.lineage.bytes) },
     runtime: { path: value.restore.runtimeReceipt, sha256: sha256(value.runtimeBytes) },
+    sourceGeneration: value.lineage.sourceGeneration,
+    datasetLineage: value.lineage.datasetLineage,
     verifierRoot: value.restore.coordinatorDir,
     verifierSha: value.restore.verifierSha,
     runnerRoot: root,
@@ -143,6 +148,9 @@ test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', 
   assert.throws(() => select({ ...value.restore, bindings: 'bindings.json' }), /绝对路径/u)
   writeFileSync(value.restore.targetPlan, '{invalid')
   assert.throws(() => select(value.restore), /JSON/u)
+  const replaced = restoreFixture(t)
+  writeFileSync(replaced.lineage.sourceGeneration.path, '{}')
+  assert.throws(() => select(replaced.restore), /登记摘要/u)
   const another = restoreFixture(t)
   assert.throws(
     () => select(another.restore, 'core', path.dirname(another.restore.bindings)),

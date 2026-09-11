@@ -1,15 +1,12 @@
-import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
-import { promisify } from 'node:util'
 import { expect } from '@playwright/test'
 import { test } from './fixture'
 import { act, credentials, login } from './support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 import {
   datasetDigest,
-  restoredDataset,
-  restoredExistingVerification,
+  restoredDatasetLineage,
+  verifyRestoredDataset,
 } from '../../scripts/restore-dataset.mjs'
 
 function required(name: string): string {
@@ -20,13 +17,16 @@ function required(name: string): string {
 
 test('恢复前已有岗位与文件在全部参考租户中仍可读取', async ({ newClientContext }, info) => {
   test.setTimeout(20 * 60_000)
-  const datasetFile = required('RYFRAME_RESTORE_DATASET_RECEIPT')
-  const planFile = required('RYFRAME_RESTORE_REFERENCE_PLAN')
+  const targetPlanFile = required('RYFRAME_RESTORE_TARGET_PLAN')
   const bindingFile = required('RYFRAME_RESTORE_BINDINGS')
-  const backend = required('RYFRAME_RESTORE_BACKEND_DIR')
-  const paths = [datasetFile, planFile, bindingFile]
+  const verifierRoot = required('RYFRAME_RESTORE_BACKEND_DIR')
+  const frontendEndpoint = info.project.use.baseURL
+  if (typeof frontendEndpoint !== 'string' || !frontendEndpoint)
+    throw new Error('恢复旧数据验收缺少唯一前端地址')
+  const paths = [targetPlanFile, bindingFile]
   const original = await Promise.all(paths.map((file) => readFile(file)))
-  const dataset = restoredDataset(original[0], original[1], original[2])
+  const restored = restoredDatasetLineage(original[0])
+  const dataset = restored.lineage
   const passwords = new Map(
     dataset.tenants.map((tenant) => [tenant.tenant_id, required(tenant.password_env)]),
   )
@@ -54,29 +54,22 @@ test('恢复前已有岗位与文件在全部参考租户中仍可读取', async
     await expectCleanDiagnostics(page, diagnostics)
     await context.close()
   }
-  const verified = await promisify(execFile)(
-    process.execPath,
-    [
-      resolve(backend, 'scripts/restore_reference_dataset.mjs'),
-      '--plan',
-      planFile,
-      '--backend-dir',
-      backend,
-      '--verify-existing',
-      datasetFile,
-      '--side',
-      'target',
-      '--write',
-    ],
-    { windowsHide: true, timeout: 15 * 60_000, maxBuffer: 1024 * 1024 },
-  )
-  const result: unknown = JSON.parse(verified.stdout)
-  restoredExistingVerification(result, original[0], original[1], original[2])
+  const verified = await verifyRestoredDataset({
+    bindingsBytes: original[1],
+    targetPlanBytes: original[0],
+    frontendEndpoint,
+    verifierRoot,
+    lineage: dataset,
+  })
   await info.attach('restored-existing-data', {
-    body: verified.stdout,
+    body: Buffer.from(JSON.stringify(verified, null, 2) + '\n'),
     contentType: 'application/json',
   })
   const final = await Promise.all(paths.map((file) => readFile(file)))
   expect(final.map(datasetDigest)).toEqual(original.map(datasetDigest))
+  const rebound = restoredDatasetLineage(final[0])
+  expect(rebound.sourceGeneration).toEqual(restored.sourceGeneration)
+  expect(rebound.sourceRuntime).toEqual(restored.sourceRuntime)
+  expect(rebound.datasetLineage).toEqual(restored.datasetLineage)
   info.annotations.push({ type: 'restore-scenario', description: 'restored-data' })
 })

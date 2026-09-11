@@ -157,6 +157,19 @@ function documentDescriptor(path, bytes, digest, label) {
   return { path, bytes: bytes.byteLength, sha256: digest }
 }
 
+function registeredDocumentDescriptor(value, label) {
+  exactObject(value, ['path', 'bytes', 'sha256'], `${label}字段缺失或包含未登记内容`)
+  if (
+    typeof value.path !== 'string' ||
+    !isAbsolute(value.path) ||
+    !Number.isSafeInteger(value.bytes) ||
+    value.bytes <= 0 ||
+    !/^[a-f0-9]{64}$/u.test(value.sha256)
+  )
+    throw new Error(`恢复业务验收缺少精确${label}`)
+  return Object.freeze({ path: value.path, bytes: value.bytes, sha256: value.sha256 })
+}
+
 function verifiedRuns(runs, status) {
   if (status !== 'passed' || !Array.isArray(runs) || runs.length === 0)
     throw new Error('真实浏览器验收有失败、跳过或重试，不能生成成功恢复证明')
@@ -203,6 +216,8 @@ export function buildRestoreEvidence({
   frontendEndpoint,
   runtimeEvidencePath,
   targetPlanPath,
+  sourceGeneration,
+  datasetLineage,
   runnerRoot,
   runnerSha,
   verifierRoot,
@@ -247,6 +262,13 @@ export function buildRestoreEvidence({
     sha256(targetPlanBytes),
     '目标计划',
   )
+  const sourceGenerationDescriptor = registeredDocumentDescriptor(
+    sourceGeneration,
+    '来源 STOP 代次',
+  )
+  const datasetLineageDescriptor = registeredDocumentDescriptor(datasetLineage, 'C52 派生数据血缘')
+  if (sourceGenerationDescriptor.path === datasetLineageDescriptor.path)
+    throw new Error('来源 STOP 代次与 C52 派生数据血缘必须是不同文件')
   const source = runtime.receipt.source
   const sources = {
     backup_source_sha: source.backup_source_sha,
@@ -267,6 +289,8 @@ export function buildRestoreEvidence({
     },
     runtime: runtimeDescriptor,
     target_plan: targetPlanDescriptor,
+    source_generation: sourceGenerationDescriptor,
+    dataset_lineage: datasetLineageDescriptor,
     sources,
     frontend_url: frontendEndpoint,
     started_at: startedAt,
@@ -289,6 +313,8 @@ export function buildRestoreEvidence({
     runtime_receipt_sha256: runtime.digest,
     tests_receipt_sha256: sha256(testsBytes),
     target_plan_sha256: targetPlanDescriptor.sha256,
+    source_generation_sha256: sourceGenerationDescriptor.sha256,
+    dataset_lineage_sha256: datasetLineageDescriptor.sha256,
     started_at: startedAt,
     completed_at: completedAt,
     scenarios: requiredScenarios.map((name) => ({ name, succeeded: true })),

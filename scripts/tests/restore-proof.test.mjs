@@ -20,6 +20,16 @@ function fixture(options = {}) {
     verifiedRuntimeDigest: sha256(value.runtimeBytes),
     runtimeEvidencePath: path.resolve(value.paths.runtimeDir, 'published-runtime.json'),
     targetPlanPath: path.resolve(value.paths.runtimeDir, 'target-plan.json'),
+    sourceGeneration: {
+      path: path.resolve(value.paths.runtimeDir, 'source-stop.json'),
+      bytes: 11,
+      sha256: '7'.repeat(64),
+    },
+    datasetLineage: {
+      path: path.resolve(value.paths.runtimeDir, 'dataset-lineage.json'),
+      bytes: 13,
+      sha256: '8'.repeat(64),
+    },
     runnerRoot: path.resolve(value.paths.runtimeDir, 'runner'),
     runnerSha: 'f'.repeat(40),
     verifierRoot: path.resolve(value.paths.runtimeDir, 'verifier'),
@@ -49,6 +59,8 @@ test('证明绑定完整真实测试结果、数据验证时刻、运行收据�
   assert.equal(result.verifier_sha, value.verifierSha)
   assert.match(result.tests_receipt_sha256, /^[a-f0-9]{64}$/u)
   assert.equal(result.target_plan_sha256, sha256(value.targetPlanBytes))
+  assert.equal(result.source_generation_sha256, value.sourceGeneration.sha256)
+  assert.equal(result.dataset_lineage_sha256, value.datasetLineage.sha256)
 })
 
 test('B0 业务证明区分备份、产品、执行与适配来源', () => {
@@ -83,6 +95,27 @@ test('runner 与 verifier 必须使用精确源码路径和 SHA', () => {
   }
 })
 
+test('来源 STOP 与 C52 血缘必须使用不同的完整文件描述', () => {
+  for (const change of [
+    (value) => {
+      value.sourceGeneration.bytes = 0
+    },
+    (value) => {
+      value.datasetLineage.sha256 = 'A'.repeat(64)
+    },
+    (value) => {
+      value.datasetLineage.path = value.sourceGeneration.path
+    },
+    (value) => {
+      value.sourceGeneration.unknown = true
+    },
+  ]) {
+    const value = fixture()
+    change(value)
+    assert.throws(() => buildRestoreProof(value), /STOP|血缘/u)
+  }
+})
+
 test('测试 sidecar 绑定运行副本、目标计划、五类来源和执行源码', () => {
   const value = fixture({
     backupSourceSha: 'a'.repeat(40),
@@ -100,6 +133,7 @@ test('测试 sidecar 绑定运行副本、目标计划、五类来源和执行�
       'backend_product_sha',
       'backup_source_sha',
       'completed_at',
+      'dataset_lineage_sha256',
       'frontend_sha',
       'frontend_url',
       'plan_hash',
@@ -107,6 +141,7 @@ test('测试 sidecar 绑定运行副本、目标计划、五类来源和执行�
       'runner_sha',
       'scenarios',
       'scope_id',
+      'source_generation_sha256',
       'started_at',
       'target_plan_sha256',
       'tests_receipt_sha256',
@@ -134,6 +169,8 @@ test('测试 sidecar 绑定运行副本、目标计划、五类来源和执行�
       bytes: value.targetPlanBytes.byteLength,
       sha256: sha256(value.targetPlanBytes),
     },
+    source_generation: value.sourceGeneration,
+    dataset_lineage: value.datasetLineage,
     sources: {
       ...value.runtime.source,
       runner: { root: value.runnerRoot, sha: value.runnerSha },

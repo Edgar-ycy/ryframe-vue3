@@ -3,21 +3,57 @@ import { describe, expect, it } from 'vitest'
 
 import {
   artifactInspectionArguments,
+  artifactInspectionInvocation,
   parseArtifactInspection,
   verifyDownloadedExportContent,
 } from '../browser-real/artifact-support'
+import { parseXtaskJsonReceipt } from '../support/xtask-receipt'
 
 describe('导出物理对象验收结果', () => {
-  it('使用后端脚本声明的目录参数', () => {
-    const args = artifactInspectionArguments(
-      'D:\\workspace\\backend',
-      'D:\\workspace\\runtime',
+  const backend = 'D:\\工作 空间\\backend'
+  const runtime = 'D:\\工作 空间\\.local-tests\\runtime'
+  const python = 'D:\\工具 目录\\python.exe'
+  const receipt = 'D:\\工作 空间\\.local-tests\\物理对象.json'
+
+  it.each(['snapshot', 'verify-deleted'] as const)(
+    '通过固定 cargo xtask 参数执行 %s 且不传公开写入参数',
+    (operation) => {
+      const args = artifactInspectionArguments(runtime, operation, '42', receipt)
+      expect(args).toEqual([
+        'xtask',
+        'check',
+        'recovery',
+        'fixture',
+        'artifact',
+        operation,
+        '--runtime-dir',
+        runtime,
+        '--job-id',
+        '42',
+        '--receipt',
+        receipt,
+      ])
+      expect(args).not.toContain('--write')
+      expect(args.every((value) => !value.endsWith('.py'))).toBe(true)
+    },
+  )
+
+  it('从后端 cwd 执行并将已登记 Python 映射给 xtask', () => {
+    const invocation = artifactInspectionInvocation(
+      backend,
+      runtime,
+      python,
       'snapshot',
       '42',
-      'D:\\workspace\\receipt.json',
+      receipt,
+      { PATH: 'fixed-path' },
     )
-    expect(args).toContain('--backend-dir')
-    expect(args).not.toContain('--backend-root')
+    expect(invocation.executable).toBe('cargo')
+    expect(invocation.arguments).toEqual(
+      artifactInspectionArguments(runtime, 'snapshot', '42', receipt),
+    )
+    expect(invocation.options.cwd).toBe(backend)
+    expect(invocation.options.env).toEqual({ PATH: 'fixed-path', RYFRAME_PYTHON: python })
   })
 
   it.each([
@@ -25,9 +61,8 @@ describe('导出物理对象验收结果', () => {
     ['verify-deleted', 'pending'],
     ['verify-deleted', 'deleted'],
   ] as const)('接受 %s 操作的 %s 状态', (operation, state) => {
-    expect(parseArtifactInspection(JSON.stringify({ job_id: '42', state }), operation, '42')).toBe(
-      state,
-    )
+    const stdout = `Compiling xtask\nRunning fixture\n${JSON.stringify({ job_id: '42', state })}\n`
+    expect(parseArtifactInspection(stdout, operation, '42')).toBe(state)
   })
 
   it.each([
@@ -49,6 +84,23 @@ describe('导出物理对象验收结果', () => {
     expect(() => parseArtifactInspection(stdout, operation, '42')).toThrow(
       '对象清理验收返回了与操作不一致的状态',
     )
+  })
+})
+
+describe('xtask JSON 收据提取', () => {
+  it('接受日志后的唯一末行对象', () => {
+    expect(parseXtaskJsonReceipt('Compiling xtask\n执行 fixture\n{"state":"ok"}\n')).toEqual({
+      state: 'ok',
+    })
+  })
+
+  it.each([
+    ['缺少 JSON', 'Compiling xtask\n执行 fixture\n'],
+    ['多个 JSON', '{"first":true}\n{"second":true}\n'],
+    ['数组', '[{"state":"ok"}]\n'],
+    ['尾随破损', '{"state":"ok"}\n{"unfinished"\n'],
+  ])('拒绝%s', (_label, stdout) => {
+    expect(() => parseXtaskJsonReceipt(stdout)).toThrow()
   })
 })
 

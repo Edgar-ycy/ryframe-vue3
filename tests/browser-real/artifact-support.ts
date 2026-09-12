@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import { parseXtaskJsonReceipt } from '../support/xtask-receipt'
 
 const execute = promisify(execFile)
 
@@ -35,14 +36,8 @@ export function parseArtifactInspection(
   operation: ArtifactInspectionOperation,
   expectedJobId: string,
 ): ArtifactInspectionState {
-  let result: unknown
-  try {
-    result = JSON.parse(stdout)
-  } catch {
-    throw new Error('对象清理验收没有返回有效 JSON')
-  }
+  const result = parseXtaskJsonReceipt(stdout)
   if (
-    !record(result) ||
     !hasExactKeys(result, ['job_id', 'state']) ||
     result.job_id !== expectedJobId ||
     typeof result.state !== 'string'
@@ -119,17 +114,18 @@ function absoluteEnvironmentPath(name: string): string {
 }
 
 export function artifactInspectionArguments(
-  backend: string,
   runtime: string,
   operation: ArtifactInspectionOperation,
   jobId: string,
   receipt: string,
 ): string[] {
   return [
-    path.join(backend, 'scripts/full_stack_artifacts.py'),
+    'xtask',
+    'check',
+    'recovery',
+    'fixture',
+    'artifact',
     operation,
-    '--backend-dir',
-    backend,
     '--runtime-dir',
     runtime,
     '--job-id',
@@ -137,6 +133,29 @@ export function artifactInspectionArguments(
     '--receipt',
     receipt,
   ]
+}
+
+export function artifactInspectionInvocation(
+  backend: string,
+  runtime: string,
+  python: string,
+  operation: ArtifactInspectionOperation,
+  jobId: string,
+  receipt: string,
+  environment: NodeJS.ProcessEnv = process.env,
+) {
+  return {
+    executable: 'cargo',
+    arguments: artifactInspectionArguments(runtime, operation, jobId, receipt),
+    options: {
+      cwd: backend,
+      encoding: 'utf8' as const,
+      env: { ...environment, RYFRAME_PYTHON: python },
+      maxBuffer: 64 * 1024,
+      timeout: 45_000,
+      windowsHide: true,
+    },
+  }
 }
 
 export async function inspectExportArtifact(
@@ -149,10 +168,15 @@ export async function inspectExportArtifact(
   }
   const backend = absoluteEnvironmentPath('RYFRAME_E2E_BACKEND_DIR')
   const runtime = absoluteEnvironmentPath('RYFRAME_E2E_RUNTIME_DIR')
-  const { stdout } = await execute(
-    process.env.RYFRAME_E2E_PYTHON?.trim() || 'python',
-    artifactInspectionArguments(backend, runtime, operation, jobId, path.resolve(receipt)),
-    { encoding: 'utf8', maxBuffer: 64 * 1024, timeout: 45_000, windowsHide: true },
+  const python = absoluteEnvironmentPath('RYFRAME_E2E_PYTHON')
+  const invocation = artifactInspectionInvocation(
+    backend,
+    runtime,
+    python,
+    operation,
+    jobId,
+    path.resolve(receipt),
   )
+  const { stdout } = await execute(invocation.executable, invocation.arguments, invocation.options)
   return parseArtifactInspection(stdout, operation, jobId)
 }

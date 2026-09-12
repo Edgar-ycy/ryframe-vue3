@@ -1,28 +1,15 @@
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
+import type { BrowserDiagnostics } from './support/types'
+import { expectCleanDiagnostics, observeDiagnostics } from './support/diagnostics'
 
 test.use({ timezoneId: 'Asia/Shanghai' })
 
-async function openHarness(page: Page, scheduleForm = false): Promise<string[]> {
-  const pageErrors: string[] = []
-  const harnessSource = scheduleForm ? 'scheduleFormHarness.ts' : 'cronBuilderHarness.ts'
-  page.on('pageerror', (error) => pageErrors.push(error.message))
-  await page.route('**/cron-builder-harness*', async (route) => {
-    await route.fulfill({
-      body: `<!doctype html>
-        <html lang="zh-CN">
-          <head><meta charset="UTF-8" /><title>Cron builder harness</title></head>
-          <body>
-            <div id="app"></div>
-            <script type="module" src="/tests/browser/support/${harnessSource}"></script>
-          </body>
-        </html>`,
-      contentType: 'text/html',
-    })
-  })
-
-  await page.goto(`/cron-builder-harness${scheduleForm ? '?schedule-form' : ''}`)
+async function openHarness(page: Page, scheduleForm = false): Promise<BrowserDiagnostics> {
+  const diagnostics = observeDiagnostics(page)
+  const query = scheduleForm ? '?schedule-form' : ''
+  await page.goto(`/tests/browser/support/cron-builder-harness.html${query}`)
   await expect(page.locator('.cron-builder')).toBeVisible()
-  return pageErrors
+  return diagnostics
 }
 
 async function updateHarness(page: Page, type: string, detail: string | boolean): Promise<void> {
@@ -78,7 +65,7 @@ async function completeRequiredScheduleFields(page: Page): Promise<Locator> {
 }
 
 test('Cron 构建器逐项编辑间隔、每日和每周规则并回显提交值', async ({ page }) => {
-  const pageErrors = await openHarness(page)
+  const diagnostics = await openHarness(page)
   const builder = page.locator('.cron-builder')
   const cronValue = page.getByTestId('cron-value')
 
@@ -104,11 +91,11 @@ test('Cron 构建器逐项编辑间隔、每日和每周规则并回显提交值
 
   await page.getByTestId('submit-cron').click()
   await expect(page.getByTestId('submitted-cron')).toHaveText('0 5 6 * * MON,FRI *')
-  expect(pageErrors).toEqual([])
+  await expectCleanDiagnostics(page, diagnostics)
 })
 
 test('Cron 构建器编辑月度、年度和高级规则并显示日期边界提示', async ({ page }) => {
-  const pageErrors = await openHarness(page)
+  const diagnostics = await openHarness(page)
   const builder = page.locator('.cron-builder')
   const cronValue = page.getByTestId('cron-value')
 
@@ -133,11 +120,11 @@ test('Cron 构建器编辑月度、年度和高级规则并显示日期边界提
   await expect(cronValue).toHaveText('0 20 14 * * MON-FRI *')
   await page.getByTestId('submit-cron').click()
   await expect(page.getByTestId('submitted-cron')).toHaveText('0 20 14 * * MON-FRI *')
-  expect(pageErrors).toEqual([])
+  await expectCleanDiagnostics(page, diagnostics)
 })
 
 test('Cron 构建器跟随外部表达式切换交互模式', async ({ page }) => {
-  const pageErrors = await openHarness(page)
+  const diagnostics = await openHarness(page)
   const builder = page.locator('.cron-builder')
   await expect(builder.locator('.cron-builder__checks')).toBeVisible()
   await expect(builder.locator('.cron-builder__summary span')).toHaveText('每周一、周三 08:15 执行')
@@ -153,11 +140,11 @@ test('Cron 构建器跟随外部表达式切换交互模式', async ({ page }) =
   await expect(
     builder.getByText('该规则超出常用生成器范围，已完整保留并交由服务端校验。'),
   ).toBeVisible()
-  expect(pageErrors).toEqual([])
+  await expectCleanDiagnostics(page, diagnostics)
 })
 
 test('Cron 构建器在禁用和拒绝覆盖时保持当前表达式', async ({ page }) => {
-  const pageErrors = await openHarness(page)
+  const diagnostics = await openHarness(page)
   const builder = page.locator('.cron-builder')
   const cronValue = page.getByTestId('cron-value')
   const initialExpression = '0 15 8 * * MON,WED *'
@@ -183,7 +170,7 @@ test('Cron 构建器在禁用和拒绝覆盖时保持当前表达式', async ({ 
 
   await expect(cronValue).toHaveText(invalidExpression)
   await expect(builder.locator('.cron-builder__advanced input')).toHaveValue(invalidExpression)
-  expect(pageErrors).toEqual([])
+  await expectCleanDiagnostics(page, diagnostics)
 })
 
 test('定时任务表单提交构建器生成的表达式并回显载荷', async ({ page }) => {
@@ -192,7 +179,7 @@ test('定时任务表单提交构建器生成的表达式并回显载荷', async
     previewBodies.push(route.request().postDataJSON())
     await fulfillPreview(route)
   })
-  const pageErrors = await openHarness(page, true)
+  const diagnostics = await openHarness(page, true)
   const dialog = await completeRequiredScheduleFields(page)
 
   await expect.poll(() => previewBodies.length).toBe(1)
@@ -203,7 +190,7 @@ test('定时任务表单提交构建器生成的表达式并回显载荷', async
     '"cron_expression":"0 0 0 * * * *"',
   )
   expect(previewBodies).toEqual([{ cron_expression: '0 0 0 * * * *', timezone: 'Asia/Shanghai' }])
-  expect(pageErrors).toEqual([])
+  await expectCleanDiagnostics(page, diagnostics)
 })
 
 test('定时任务表单在浏览器内拒绝日期和星期同时受限的表达式', async ({ page }) => {
@@ -212,7 +199,7 @@ test('定时任务表单在浏览器内拒绝日期和星期同时受限的表�
     previewRequests += 1
     await fulfillPreview(route)
   })
-  const pageErrors = await openHarness(page, true)
+  const diagnostics = await openHarness(page, true)
   const dialog = await completeRequiredScheduleFields(page)
   await expect.poll(() => previewRequests).toBe(1)
 
@@ -227,5 +214,5 @@ test('定时任务表单在浏览器内拒绝日期和星期同时受限的表�
   await dialog.getByRole('button', { name: '预览并继续' }).click()
   await expect(page.getByTestId('submitted-schedule')).toBeEmpty()
   await expect.poll(() => previewRequests).toBe(1)
-  expect(pageErrors).toEqual([])
+  await expectCleanDiagnostics(page, diagnostics)
 })

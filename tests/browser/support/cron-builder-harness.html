@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cron builder harness</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      if (new URLSearchParams(window.location.search).has('schedule-form')) {
+        await import('./scheduleFormHarness.ts')
+      } else {
+        await import('./cronBuilderHarness.ts')
+      }
+    </script>
+  </body>
+</html>

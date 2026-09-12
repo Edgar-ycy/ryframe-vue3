@@ -195,19 +195,15 @@ jobs:
           node-version-file: .node-version
           package-manager-cache: false
 
+      - name: Install pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
       - name: 汇总必须门禁
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          STATIC_RESULT: ${{ needs.static.result }}
-          UNIT_RESULT: ${{ needs.unit.result }}
-          BUILD_RESULT: ${{ needs.build.result }}
-          BROWSER_RESULT: ${{ needs.browser.result }}
-          WINDOWS_RESULT: ${{ needs.windows-smoke.result }}
-        run: >-
-          node scripts/check-workflows.mjs required
-          --event "$EVENT_NAME"
-          --job "static=$STATIC_RESULT"
-          --job "unit=$UNIT_RESULT"
-          --job "build=$BUILD_RESULT"
-          --job "browser=$BROWSER_RESULT"
-          --job "windows-smoke=$WINDOWS_RESULT"
+          RYFRAME_FRONTEND_TOOLS_REQUEST: >-
+            {"version":1,"operation":"required-jobs","event":${{ toJSON(github.event_name) }},
+            "needs":${{ toJSON(needs) }}}
+        run: corepack pnpm check --stage tools

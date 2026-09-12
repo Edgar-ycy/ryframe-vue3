@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { normalizeCommit, normalizeRepository } from './api-contract-state.mjs'
+import { parseRequiredJobsRequest } from './check-workflows.mjs'
 import { taskEnvironment, taskExecutionMetadata, taskSpecs } from './task-specs.mjs'
 
 const commands = new Set(['dev', 'check', 'build', 'generate'])
@@ -23,6 +24,18 @@ CI 物料清单：corepack pnpm generate --sbom --output <文件> --write
 `
 
 export class TaskUsageError extends Error {}
+
+export function toolsRequestContext(options, raw) {
+  if (raw === undefined) return undefined
+  if (options.command !== 'check' || options.stage !== 'tools') {
+    throw new TaskUsageError('工具环境请求仅用于 check --stage tools')
+  }
+  try {
+    return parseRequiredJobsRequest(raw)
+  } catch (error) {
+    throw new TaskUsageError(error.message)
+  }
+}
 
 export function parseConsumerArguments(argv) {
   if (!Array.isArray(argv) || argv.some((value) => typeof value !== 'string')) {

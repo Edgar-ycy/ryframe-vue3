@@ -9,9 +9,29 @@ const runner = fileURLToPath(new URL('../task-runner.mjs', import.meta.url))
 const plan = (args, source = 'test-source') => createTaskPlan(parseTaskArguments(args), { source })
 
 function runnerEnvironment(overrides = {}) {
-  const env = { ...process.env, ...overrides }
+  const env = { ...process.env }
   delete env.RYFRAME_CONSUMER_CONTRACT
-  return env
+  delete env.RYFRAME_FRONTEND_TOOLS_REQUEST
+  return { ...env, ...overrides }
+}
+
+function requiredRequest(changed = {}) {
+  const results = {
+    static: 'success',
+    unit: 'success',
+    build: 'success',
+    browser: 'success',
+    'windows-smoke': 'success',
+    ...changed,
+  }
+  return JSON.stringify({
+    event: 'push',
+    needs: Object.fromEntries(
+      Object.entries(results).map(([name, result]) => [name, { outputs: {}, result }]),
+    ),
+    operation: 'required-jobs',
+    version: 1,
+  })
 }
 
 test('执行真实归并后的节点，覆盖单测与完整类型各一次，并按依赖收集产物', async () => {
@@ -132,6 +152,49 @@ test('--plan 在 Node 禁止文件写入与派生子进程的权限模型中成�
   assert.match(build.stdout, /build-source/u)
   assert.match(build.stdout, /build-receipt/u)
   assert.match(build.stdout, /artifact:dist\/\.vite\/restore-build\.json/u)
+
+  const required = spawnSync(
+    process.execPath,
+    ['--permission', '--allow-fs-read=*', runner, 'check', '--stage', 'tools', '--plan'],
+    {
+      encoding: 'utf8',
+      env: runnerEnvironment({ RYFRAME_FRONTEND_TOOLS_REQUEST: requiredRequest() }),
+      windowsHide: true,
+      shell: false,
+    },
+  )
+  assert.equal(required.error, undefined)
+  assert.equal(required.status, 0, required.stderr)
+  assert.match(required.stdout, /required-jobs/u)
+  assert.doesNotMatch(required.stdout, /policy-tests|supply-chain/u)
+})
+
+test('Required 节点保留成功、失败和协议错误退出码', () => {
+  const run = (request) =>
+    spawnSync(
+      process.execPath,
+      ['--permission', '--allow-fs-read=*', runner, 'check', '--stage', 'tools'],
+      {
+        encoding: 'utf8',
+        env: runnerEnvironment({ RYFRAME_FRONTEND_TOOLS_REQUEST: request }),
+        windowsHide: true,
+        shell: false,
+      },
+    )
+  const success = run(requiredRequest())
+  assert.equal(success.error, undefined)
+  assert.equal(success.status, 0, success.stderr)
+  assert.match(success.stdout, /通过 必须门禁汇总/u)
+
+  const failed = run(requiredRequest({ browser: 'skipped' }))
+  assert.equal(failed.error, undefined)
+  assert.equal(failed.status, 1, failed.stderr)
+  assert.match(failed.stderr, /browser 期望 success，实际 skipped/u)
+
+  const invalid = run('{broken')
+  assert.equal(invalid.error, undefined)
+  assert.equal(invalid.status, 2, invalid.stderr)
+  assert.match(invalid.stderr, /Required 环境请求不是合法 JSON/u)
 })
 
 test('真实构建来源和收据由同一计划按前后像顺序执行', async () => {

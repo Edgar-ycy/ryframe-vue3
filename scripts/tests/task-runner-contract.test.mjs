@@ -11,6 +11,7 @@ import {
   parseConsumerArguments,
   TaskUsageError,
   taskRunnerHelp,
+  toolsRequestContext,
 } from '../task-runner-contract.mjs'
 import { taskSpecs } from '../task-specs.mjs'
 
@@ -288,6 +289,48 @@ test('开发预览、真实构建与工具阶段有明确参数和归属', () =>
   const build = tasks(plan(['build', '--real'])).find((task) => task.id === 'build')
   assert.deepEqual(build.env, { VITE_APP_API_ORIGIN: '' })
   assert.deepEqual(ids(plan(['check', '--stage', 'tools'])), ['policy-tests', 'supply-chain'])
+})
+
+test('Required 私有请求通过 tools 阶段选择同一任务图中的单一节点', () => {
+  const options = parseTaskArguments(['check', '--stage', 'tools'])
+  const needs = Object.fromEntries(
+    ['static', 'unit', 'build', 'browser', 'windows-smoke'].map((name) => [
+      name,
+      { outputs: {}, result: 'success' },
+    ]),
+  )
+  const request = toolsRequestContext(
+    options,
+    JSON.stringify({
+      event: 'push',
+      needs,
+      operation: 'required-jobs',
+      version: 1,
+    }),
+  )
+  const value = createTaskPlan({ ...options, toolsRequest: request }, { source: 'required-ci' })
+  assert.deepEqual(ids(value), ['required-jobs'])
+  const task = tasks(value)[0]
+  assert.deepEqual(task.params, {
+    event: 'push',
+    results: Object.fromEntries(Object.keys(needs).map((name) => [name, 'success'])),
+  })
+  assert.deepEqual(task.invocation, { kind: 'action', action: 'required-jobs' })
+  assert.equal(task.effect, 'read')
+  assert.deepEqual(task.allowedWrites, [])
+  assert.deepEqual(task.externalResources, [])
+})
+
+test('Required 私有请求不能泄漏到其他公开入口', () => {
+  const raw = JSON.stringify({ event: 'push', needs: {}, operation: 'required-jobs', version: 1 })
+  for (const args of [['check'], ['check', '--full'], ['check', '--stage', 'static'], ['build']]) {
+    assert.throws(() => toolsRequestContext(parseTaskArguments(args), raw), TaskUsageError)
+  }
+  assert.equal(toolsRequestContext(parseTaskArguments(['check', '--stage', 'tools'])), undefined)
+  assert.throws(
+    () => toolsRequestContext(parseTaskArguments(['check', '--stage', 'tools']), '{broken'),
+    TaskUsageError,
+  )
 })
 
 test('拒绝互斥选项和未知阶段', () => {

@@ -162,13 +162,22 @@ export const taskSpecs = {
   'policy-tests': {
     label: '工具策略测试',
     profiles: ['static', 'tools'],
+    when: (options) => options.toolsRequest === undefined,
     allowedWrites: () => ['temporary:tool-test-fixtures'],
     invoke: () => ({ kind: 'policy-tests' }),
   },
   'supply-chain': {
     label: '供应链许可证',
     profiles: ['tools'],
+    when: (options) => options.toolsRequest === undefined,
     invoke: () => script('check-supply-chain-policy.mjs'),
+  },
+  'required-jobs': {
+    label: '必须门禁汇总',
+    profiles: ['tools'],
+    when: (options) => options.toolsRequest !== undefined,
+    params: (options) => options.toolsRequest,
+    invoke: () => ({ kind: 'action', action: 'required-jobs' }),
   },
   'build-source': {
     label: '生产构建来源前像',

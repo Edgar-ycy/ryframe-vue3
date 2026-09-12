@@ -8,6 +8,61 @@ const requiredJobMatrix = {
   push: { success: ordinaryJobs, skipped: [] },
   pull_request: { success: ordinaryJobs, skipped: [] },
 }
+const requiredRequestKeys = ['event', 'needs', 'operation', 'version']
+const requiredNeedKeys = new Set(['outputs', 'result'])
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function requireExactKeys(value, expected, label) {
+  const actual = Object.keys(value).sort()
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${label} 字段必须精确为 ${expected.join('、')}`)
+  }
+}
+
+function requireProtocolString(value, label) {
+  if (typeof value !== 'string' || !value || /[\r\n\0]/u.test(value)) {
+    throw new Error(`${label} 必须是非空单行字符串`)
+  }
+  return value
+}
+
+/** 将 GitHub 的 event/needs 快照转换为 Required 节点的不可变参数。 */
+export function parseRequiredJobsRequest(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) throw new Error('Required 环境请求不能为空')
+  let request
+  try {
+    request = JSON.parse(raw)
+  } catch {
+    throw new Error('Required 环境请求不是合法 JSON')
+  }
+  if (!isPlainObject(request)) throw new Error('Required 环境请求必须是对象')
+  requireExactKeys(request, requiredRequestKeys, 'Required 环境请求')
+  if (request.version !== 1) throw new Error('Required 环境协议版本必须为 1')
+  if (request.operation !== 'required-jobs')
+    throw new Error('Required 环境操作必须为 required-jobs')
+  const event = requireProtocolString(request.event, 'Required event')
+  if (!isPlainObject(request.needs)) throw new Error('Required needs 必须是对象')
+
+  const resultEntries = []
+  for (const [name, job] of Object.entries(request.needs)) {
+    requireProtocolString(name, 'Required job 名称')
+    if (!isPlainObject(job)) throw new Error(`Required job ${name} 必须是对象`)
+    if (
+      !Object.hasOwn(job, 'result') ||
+      Object.keys(job).some((key) => !requiredNeedKeys.has(key))
+    ) {
+      throw new Error(`Required job ${name} 只能包含 result 和可选 outputs`)
+    }
+    if (Object.hasOwn(job, 'outputs') && !isPlainObject(job.outputs)) {
+      throw new Error(`Required job ${name}.outputs 必须是对象`)
+    }
+    resultEntries.push([name, requireProtocolString(job.result, `Required job ${name}.result`)])
+  }
+  return Object.freeze({ event, results: Object.freeze(Object.fromEntries(resultEntries)) })
+}
 
 async function readDirectory(directory) {
   try {
@@ -130,34 +185,6 @@ export function validateRequiredJobs(event, results) {
   return errors
 }
 
-function parseRequiredArguments(argv) {
-  let event
-  const results = {}
-  for (let index = 0; index < argv.length; index += 1) {
-    const value = argv[index]
-    if (value === '--event' && argv[index + 1]) {
-      event = argv[index + 1]
-      index += 1
-      continue
-    }
-    if (value === '--job' && argv[index + 1]) {
-      const raw = argv[index + 1]
-      const separator = raw.indexOf('=')
-      if (separator <= 0 || separator === raw.length - 1) {
-        throw new Error(`job 结果必须使用 name=result：${raw}`)
-      }
-      const name = raw.slice(0, separator)
-      if (Object.hasOwn(results, name)) throw new Error(`job 结果重复：${name}`)
-      results[name] = raw.slice(separator + 1)
-      index += 1
-      continue
-    }
-    throw new Error(`未知参数：${value}`)
-  }
-  if (!event) throw new Error('缺少 --event')
-  return { event, results }
-}
-
 function inspectWorkflowFile(root, absolute, source, document, isWorkflow) {
   const errors = []
   const name = relative(root, absolute)
@@ -256,19 +283,7 @@ export async function runWorkflowCheck(root = process.cwd(), output = console) {
   return true
 }
 
-export function runRequiredJobsCheck(argv, output = console) {
-  const { event, results } = parseRequiredArguments(argv)
-  const errors = validateRequiredJobs(event, results)
-  if (errors.length > 0) {
-    for (const error of errors) output.error(error)
-    return false
-  }
-  output.log(`Required 汇总校验通过（event=${event}）`)
-  return true
-}
-
 export async function runWorkflowCli(argv, root = process.cwd(), output = console) {
-  if (argv[0] === 'required') return runRequiredJobsCheck(argv.slice(1), output)
   if (argv.length > 0) throw new Error(`未知参数：${argv[0]}`)
   return runWorkflowCheck(root, output)
 }

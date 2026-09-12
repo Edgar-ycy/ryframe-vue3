@@ -6,6 +6,7 @@ import { performance } from 'node:perf_hooks'
 
 import { verifyLocalContractState } from './api-contract-state.mjs'
 import { buildSourceSnapshot } from './build-source.mjs'
+import { validateRequiredJobs } from './check-workflows.mjs'
 import { writeBuildReceipt } from './restore-build.mjs'
 import { taskSpecs } from './task-specs.mjs'
 import { runTaskProcess } from './task-process.mjs'
@@ -16,6 +17,7 @@ import {
   parseTaskArguments,
   TaskUsageError,
   taskRunnerHelp,
+  toolsRequestContext,
   validateConsumerState,
 } from './task-runner-contract.mjs'
 
@@ -88,6 +90,12 @@ async function runTask(task, interactive, control, context) {
       interactive,
       control,
     })
+  }
+  if (invocation.action === 'required-jobs') {
+    const errors = validateRequiredJobs(task.params.event, task.params.results)
+    return errors.length === 0
+      ? { code: 0, stdout: `Required 汇总校验通过（event=${task.params.event}）` }
+      : { code: 1, stderr: errors.join('\n') }
   }
   if (invocation.action === 'api-source') {
     const state = await verifyLocalContractState(root)
@@ -233,8 +241,14 @@ export async function runTaskRunner(argv) {
     console.log(taskRunnerHelp)
     return
   }
+  const toolsRequest = toolsRequestContext(options, process.env.RYFRAME_FRONTEND_TOOLS_REQUEST)
   const consumer = consumerContext(options, process.env.RYFRAME_CONSUMER_CONTRACT)
-  const plan = createTaskPlan({ ...options, consumer, consumerCheck: consumer !== undefined })
+  const plan = createTaskPlan({
+    ...options,
+    consumer,
+    consumerCheck: consumer !== undefined,
+    toolsRequest,
+  })
   if (options.plan) {
     printPlan(plan)
     return

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
 
 import {
+  parseRequiredJobsRequest,
   runWorkflowCli,
   validateEnvironmentContexts,
   validateRequiredJobs,
@@ -30,39 +31,98 @@ function resultsFor(event) {
   return common
 }
 
+function requestFor(event = 'push', transform = (value) => value) {
+  const needs = Object.fromEntries(
+    Object.entries(resultsFor(event)).map(([name, result]) => [name, { outputs: {}, result }]),
+  )
+  return JSON.stringify(transform({ event, needs, operation: 'required-jobs', version: 1 }))
+}
+
 test('接受每种工作流事件的精确矩阵', () => {
   for (const event of ['push', 'pull_request']) {
     assert.deepEqual(validateRequiredJobs(event, resultsFor(event)), [])
   }
 })
 
-test('拒绝把必跑 job 当作 skipped 或 failure', () => {
-  const pullRequest = resultsFor('pull_request')
-  pullRequest.static = 'skipped'
-  assert.notDeepEqual(validateRequiredJobs('pull_request', pullRequest), [])
-
-  const push = resultsFor('push')
-  push.browser = 'failure'
-  assert.notDeepEqual(validateRequiredJobs('push', push), [])
+test('拒绝必跑 job 的跳过、失败、取消、缺失和未知结果', () => {
+  for (const result of ['skipped', 'failure', 'cancelled']) {
+    const jobs = resultsFor('pull_request')
+    jobs.static = result
+    assert.notDeepEqual(validateRequiredJobs('pull_request', jobs), [])
+  }
+  const missing = resultsFor('push')
+  delete missing.browser
+  assert.notDeepEqual(validateRequiredJobs('push', missing), [])
+  const unknown = { ...resultsFor('push'), unknown: 'success' }
+  assert.notDeepEqual(validateRequiredJobs('push', unknown), [])
 })
 
 test('工作流通过受测脚本执行汇总', async () => {
   const workflow = await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')
-  assert.match(workflow, /node scripts\/check-workflows\.mjs required/u)
+  const required = workflow.slice(workflow.indexOf('\n  required:'))
+  assert.match(required, /corepack pnpm check --stage tools/u)
+  assert.match(required, /RYFRAME_FRONTEND_TOOLS_REQUEST/u)
+  assert.match(required, /toJSON\(github\.event_name\)/u)
+  assert.match(required, /toJSON\(needs\)/u)
+  assert.doesNotMatch(required, /check-workflows\.mjs required/u)
+  for (const name of Object.keys(resultsFor('push'))) {
+    assert.doesNotMatch(required, new RegExp(`--job [^\\n]*${name}`, 'u'))
+  }
+  const setup = required.indexOf('uses: ./.github/actions/setup-pnpm')
+  const install = required.indexOf('run: corepack pnpm install --frozen-lockfile')
+  const check = required.indexOf('run: corepack pnpm check --stage tools')
+  assert.ok(setup >= 0 && setup < install && install < check)
+  assert.doesNotMatch(required, /verify-deps-before-run|VERIFY_DEPS_BEFORE_RUN/u)
 })
 
-test('Required 模式不读取工作流目录', async () => {
-  const messages = []
-  const output = {
-    error: (message) => messages.push(message),
-    log: (message) => messages.push(message),
-  }
-  const args = ['required', '--event', 'push']
-  for (const [name, result] of Object.entries(resultsFor('push'))) {
-    args.push('--job', `${name}=${result}`)
-  }
-  assert.equal(await runWorkflowCli(args, path.join(root, '不存在的仓库'), output), true)
-  assert.deepEqual(messages, ['Required 汇总校验通过（event=push）'])
+test('Required 环境协议只提取 event 与 needs 结果', () => {
+  const push = parseRequiredJobsRequest(requestFor())
+  assert.deepEqual(push, {
+    event: 'push',
+    results: resultsFor('push'),
+  })
+  assert.equal(Object.isFrozen(push), true)
+  assert.equal(Object.isFrozen(push.results), true)
+  assert.deepEqual(parseRequiredJobsRequest(requestFor('pull_request')), {
+    event: 'pull_request',
+    results: resultsFor('pull_request'),
+  })
+})
+
+test('Required 环境协议拒绝未知、缺失和畸形字段', () => {
+  const invalid = [
+    '',
+    '{broken',
+    '[]',
+    requestFor('push', (value) => ({ ...value, version: 2 })),
+    requestFor('push', (value) => ({ ...value, operation: 'other' })),
+    requestFor('push', (value) => ({ ...value, unknown: true })),
+    requestFor('push', (value) => {
+      delete value.event
+      return value
+    }),
+    requestFor('push', (value) => ({ ...value, needs: [] })),
+    requestFor('push', (value) => {
+      value.needs.static = { result: 'success', unknown: true }
+      return value
+    }),
+    requestFor('push', (value) => {
+      value.needs.static = { outputs: [], result: 'success' }
+      return value
+    }),
+    requestFor('push', (value) => {
+      value.needs.static = { result: 'success\nfailed' }
+      return value
+    }),
+  ]
+  for (const raw of invalid) assert.throws(() => parseRequiredJobsRequest(raw), Error)
+})
+
+test('工作流脚本不再暴露 Required 参数入口', async () => {
+  await assert.rejects(
+    runWorkflowCli(['required'], path.join(root, '不存在的仓库')),
+    /未知参数：required/u,
+  )
 })
 
 test('低频兼容与供应链检查只进入扩展 CI', async () => {

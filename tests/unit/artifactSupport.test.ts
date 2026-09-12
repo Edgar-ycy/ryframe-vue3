@@ -61,7 +61,7 @@ describe('导出物理对象验收结果', () => {
     ['verify-deleted', 'pending'],
     ['verify-deleted', 'deleted'],
   ] as const)('接受 %s 操作的 %s 状态', (operation, state) => {
-    const stdout = `Compiling xtask\nRunning fixture\n${JSON.stringify({ job_id: '42', state })}\n`
+    const stdout = `Compiling xtask\n${JSON.stringify({ job_id: '42', state })}\n✓ 0.1s\n`
     expect(parseArtifactInspection(stdout, operation, '42')).toBe(state)
   })
 
@@ -88,10 +88,10 @@ describe('导出物理对象验收结果', () => {
 })
 
 describe('xtask JSON 收据提取', () => {
-  it('接受日志后的唯一末行对象', () => {
-    expect(parseXtaskJsonReceipt('Compiling xtask\n执行 fixture\n{"state":"ok"}\n')).toEqual({
-      state: 'ok',
-    })
+  it('接受前后执行日志之间的唯一对象', () => {
+    expect(
+      parseXtaskJsonReceipt('Compiling xtask\n执行 fixture\n{"state":"ok"}\n✓ 0.1s\n'),
+    ).toEqual({ state: 'ok' })
   })
 
   it.each([

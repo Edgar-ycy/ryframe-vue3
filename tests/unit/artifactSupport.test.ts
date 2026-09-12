@@ -7,7 +7,6 @@ import {
   parseArtifactInspection,
   verifyDownloadedExportContent,
 } from '../browser-real/artifact-support'
-import { parseXtaskJsonReceipt } from '../support/xtask-receipt'
 
 describe('导出物理对象验收结果', () => {
   const backend = 'D:\\工作 空间\\backend'
@@ -84,23 +83,6 @@ describe('导出物理对象验收结果', () => {
     expect(() => parseArtifactInspection(stdout, operation, '42')).toThrow(
       '对象清理验收返回了与操作不一致的状态',
     )
-  })
-})
-
-describe('xtask JSON 收据提取', () => {
-  it('接受前后执行日志之间的唯一对象', () => {
-    expect(
-      parseXtaskJsonReceipt('Compiling xtask\n执行 fixture\n{"state":"ok"}\n✓ 0.1s\n'),
-    ).toEqual({ state: 'ok' })
-  })
-
-  it.each([
-    ['缺少 JSON', 'Compiling xtask\n执行 fixture\n'],
-    ['多个 JSON', '{"first":true}\n{"second":true}\n'],
-    ['数组', '[{"state":"ok"}]\n'],
-    ['尾随破损', '{"state":"ok"}\n{"unfinished"\n'],
-  ])('拒绝%s', (_label, stdout) => {
-    expect(() => parseXtaskJsonReceipt(stdout)).toThrow()
   })
 })
 

@@ -1,9 +1,9 @@
-export function parseXtaskJsonReceipt(stdout: string): Record<string, unknown> {
+export function parseXtaskJsonReceipt(stdout) {
   const lines = stdout
     .split(/\r?\n/u)
     .map((line) => line.trim())
     .filter(Boolean)
-  const values: unknown[] = []
+  const values = []
 
   for (const line of lines) {
     if (!line.startsWith('{') && !line.startsWith('[')) continue

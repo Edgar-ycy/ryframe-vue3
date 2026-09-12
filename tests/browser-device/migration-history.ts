@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
-import { parseXtaskJsonReceipt } from '../support/xtask-receipt'
+import { parseXtaskJsonReceipt } from '../../scripts/xtask-receipt.mjs'
 
 const execute = promisify(execFile)
 type Operation =

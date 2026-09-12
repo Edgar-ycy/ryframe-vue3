@@ -165,6 +165,7 @@ export default class RestoreReporter {
       backend: verifierRoot,
       frontend: frontendRoot,
       baseURL,
+      python,
     }
     this.runnerRoot = runnerRoot
     this.runnerSha = configuredRunnerSha

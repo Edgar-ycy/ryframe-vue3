@@ -8,6 +8,7 @@ import {
   restoreRuntimeBinding,
   verifyRestoreRuntimeReceipt,
 } from './restore-runtime-receipt.mjs'
+import { parseXtaskJsonReceipt } from './xtask-receipt.mjs'
 
 const verificationFields = [
   'format_version',
@@ -188,7 +189,7 @@ function verificationBindings(authority) {
 function verificationResult(output, { runtime, binding, expected, roots }) {
   let value
   try {
-    value = JSON.parse(output)
+    value = parseXtaskJsonReceipt(output)
   } catch {
     throw new Error('运行产物核验未返回单一 JSON 结果')
   }
@@ -304,8 +305,9 @@ function verificationResult(output, { runtime, binding, expected, roots }) {
 }
 
 export function verifyRuntime(
-  { receipt, bindings, targetPlan, backend, frontend, baseURL },
+  { receipt, bindings, targetPlan, backend, frontend, baseURL, python },
   execute = execFileSync,
+  environment = process.env,
 ) {
   const runtime = evidenceFile(receipt, '运行产物收据')
   const binding = evidenceFile(bindings, '恢复绑定收据')
@@ -334,15 +336,25 @@ export function verifyRuntime(
   if (!samePath(roots.frontend, frontendRoot))
     throw new Error('恢复目标计划没有绑定当前前端源码目录')
   const authority = expected.authority
+  const pythonPath = absolutePath(python, '恢复运行核验 Python')
+  const childEnvironment = { ...environment }
+  for (const name of Object.keys(childEnvironment)) {
+    if (name.startsWith('RYFRAME_RESTORE_RUNTIME_')) delete childEnvironment[name]
+  }
+  delete childEnvironment.RYFRAME_RESTORE_SOURCE_PROTOCOL
+  delete childEnvironment.RYFRAME_DEVEX_TARGET_ROOT
+  childEnvironment.RYFRAME_WORKSPACE_ROOT = backendRoot
+  childEnvironment.RYFRAME_PYTHON = pythonPath
+  childEnvironment.PYTHONUTF8 = '1'
+  childEnvironment.PYTHONIOENCODING = 'utf-8'
   const result = execute(
-    process.env.RYFRAME_PYTHON?.trim() || 'python',
+    'cargo',
     [
-      '-X',
-      'utf8',
-      path.join(backendRoot, 'scripts/restore_runtime.py'),
+      'xtask',
+      'check',
+      'recovery',
+      'runtime',
       'verify',
-      '--backend-dir',
-      backendRoot,
       '--source-backend',
       roots.execution,
       '--source-frontend',
@@ -361,7 +373,9 @@ export function verifyRuntime(
           ]),
     ],
     {
+      cwd: backendRoot,
       encoding: 'utf8',
+      env: childEnvironment,
       windowsHide: true,
       timeout: 60_000,
       maxBuffer: 16 * 1024 * 1024,

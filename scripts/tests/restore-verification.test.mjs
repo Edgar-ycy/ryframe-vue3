@@ -24,6 +24,7 @@ function fixture(t, options = {}) {
   mkdirSync(path.join(coordinator, 'scripts'))
   const receipt = path.join(root, 'runtime.json')
   const targetPlanPath = path.join(root, 'target-plan.json')
+  const python = path.join(root, '工具 目录', 'python.exe')
   writeFileSync(value.paths.bindings, value.bindingsBytes)
   writeFileSync(receipt, value.runtimeBytes)
   writeFileSync(targetPlanPath, value.targetPlanBytes)
@@ -44,6 +45,7 @@ function fixture(t, options = {}) {
       backend: coordinator,
       frontend: value.paths.frontendRoot,
       baseURL: value.runtime.endpoints.frontend,
+      python,
     },
     receipt,
     root,
@@ -115,16 +117,31 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
   const value = fixture(t)
   const expectedDigest = sha256(evidenceFile(value.receipt, '收据').bytes)
   let command
-  const digest = verifyRuntime(value.input, (executable, argv, options) => {
-    command = { executable, argv, options }
-    return JSON.stringify(verificationOutput(value))
-  })
+  const inherited = {
+    PATH: 'fixed-path',
+    RYFRAME_DEVEX_TARGET_ROOT: path.join(value.root, '错误 target'),
+    RYFRAME_RESTORE_RUNTIME_RECEIPT: value.receipt,
+    RYFRAME_RESTORE_RUNTIME_PROTOCOL: 'untrusted runtime protocol',
+    RYFRAME_RESTORE_RUNTIME_UNKNOWN: 'untrusted runtime value',
+    RYFRAME_RESTORE_SOURCE_PROTOCOL: 'untrusted source protocol',
+    RYFRAME_WORKSPACE_ROOT: path.join(value.root, '错误 workspace'),
+  }
+  const digest = verifyRuntime(
+    value.input,
+    (executable, argv, options) => {
+      command = { executable, argv, options }
+      return `Compiling xtask\n${JSON.stringify(verificationOutput(value))}\n✓ 0.1s\n`
+    },
+    inherited,
+  )
   assert.equal(digest, expectedDigest)
-  assert.equal(command.argv[2], path.join(value.coordinator, 'scripts/restore_runtime.py'))
-  assert.deepEqual(command.argv.slice(3), [
+  assert.equal(command.executable, 'cargo')
+  assert.deepEqual(command.argv, [
+    'xtask',
+    'check',
+    'recovery',
+    'runtime',
     'verify',
-    '--backend-dir',
-    value.coordinator,
     '--source-backend',
     value.paths.backendExecutionRoot,
     '--source-frontend',
@@ -134,8 +151,24 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
     '--bindings',
     value.paths.bindings,
   ])
+  assert.equal(command.options.cwd, value.coordinator)
   assert.equal(command.options.timeout, 60_000)
   assert.deepEqual(JSON.parse(command.options.input), value.expected.authority)
+  assert.equal(command.options.env.PATH, 'fixed-path')
+  assert.equal(command.options.env.RYFRAME_PYTHON, value.input.python)
+  assert.equal(command.options.env.RYFRAME_WORKSPACE_ROOT, value.coordinator)
+  assert.equal(command.options.env.PYTHONUTF8, '1')
+  assert.equal(command.options.env.PYTHONIOENCODING, 'utf-8')
+  assert.equal(command.options.env.RYFRAME_DEVEX_TARGET_ROOT, undefined)
+  assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_RECEIPT, undefined)
+  assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_PROTOCOL, undefined)
+  assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_UNKNOWN, undefined)
+  assert.equal(command.options.env.RYFRAME_RESTORE_SOURCE_PROTOCOL, undefined)
+  assert.equal(
+    command.argv.some((item) => item.endsWith('.py')),
+    false,
+  )
+  assert.equal(command.argv.includes('--backend-dir'), false)
   assert.equal(command.argv.includes('--frontend-dir'), false)
   assert.equal(command.argv.includes('--frontend-url'), false)
 })

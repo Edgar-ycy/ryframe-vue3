@@ -29,6 +29,15 @@ test('package.json 只公开四个稳定入口', async () => {
   })
 })
 
+test('README 通过统一入口显式选择真实 preview 服务', async () => {
+  const source = await readFile(new URL('../../README.md', import.meta.url), 'utf8')
+  assert.match(
+    source,
+    /corepack pnpm check --stage browser --real --fixture core --server preview/u,
+  )
+  assert.doesNotMatch(source, /设置 `RYFRAME_E2E_SERVER=preview`/u)
+})
+
 test('默认快速检查保持完整单测并只执行一次', () => {
   const value = plan(['check'])
   assert.deepEqual(ids(value), [

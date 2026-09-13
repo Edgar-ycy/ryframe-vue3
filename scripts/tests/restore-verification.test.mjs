@@ -125,6 +125,13 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
     RYFRAME_RESTORE_RUNTIME_UNKNOWN: 'untrusted runtime value',
     RYFRAME_RESTORE_SOURCE_PROTOCOL: 'untrusted source protocol',
     RYFRAME_WORKSPACE_ROOT: path.join(value.root, '错误 workspace'),
+    pythonioencoding: 'ascii:strict',
+    pythonutf8: '0',
+    ryframe_devex_target_root: path.join(value.root, '混合大小写错误 target'),
+    ryframe_python: path.join(value.root, '错误 python.exe'),
+    ryframe_restore_runtime_receipt: value.receipt,
+    ryframe_restore_source_protocol: 'mixed-case source protocol',
+    ryframe_workspace_root: path.join(value.root, '混合大小写错误 workspace'),
   }
   const digest = verifyRuntime(
     value.input,
@@ -164,6 +171,17 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
   assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_PROTOCOL, undefined)
   assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_UNKNOWN, undefined)
   assert.equal(command.options.env.RYFRAME_RESTORE_SOURCE_PROTOCOL, undefined)
+  const controlledNames = Object.keys(command.options.env).map((name) => name.toUpperCase())
+  assert.equal(controlledNames.filter((name) => name === 'RYFRAME_DEVEX_TARGET_ROOT').length, 0)
+  assert.equal(controlledNames.filter((name) => name === 'RYFRAME_WORKSPACE_ROOT').length, 1)
+  assert.equal(controlledNames.filter((name) => name === 'RYFRAME_PYTHON').length, 1)
+  assert.equal(controlledNames.filter((name) => name === 'PYTHONUTF8').length, 1)
+  assert.equal(controlledNames.filter((name) => name === 'PYTHONIOENCODING').length, 1)
+  assert.equal(
+    controlledNames.some((name) => name.startsWith('RYFRAME_RESTORE_RUNTIME_')),
+    false,
+  )
+  assert.equal(controlledNames.includes('RYFRAME_RESTORE_SOURCE_PROTOCOL'), false)
   assert.equal(
     command.argv.some((item) => item.endsWith('.py')),
     false,

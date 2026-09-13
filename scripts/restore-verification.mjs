@@ -339,10 +339,21 @@ export function verifyRuntime(
   const pythonPath = absolutePath(python, '恢复运行核验 Python')
   const childEnvironment = { ...environment }
   for (const name of Object.keys(childEnvironment)) {
-    if (name.startsWith('RYFRAME_RESTORE_RUNTIME_')) delete childEnvironment[name]
+    const normalized = name.toUpperCase()
+    if (
+      normalized.startsWith('RYFRAME_RESTORE_RUNTIME_') ||
+      [
+        'RYFRAME_RESTORE_SOURCE_PROTOCOL',
+        'RYFRAME_DEVEX_TARGET_ROOT',
+        'RYFRAME_WORKSPACE_ROOT',
+        'RYFRAME_PYTHON',
+        'PYTHONUTF8',
+        'PYTHONIOENCODING',
+      ].includes(normalized)
+    ) {
+      delete childEnvironment[name]
+    }
   }
-  delete childEnvironment.RYFRAME_RESTORE_SOURCE_PROTOCOL
-  delete childEnvironment.RYFRAME_DEVEX_TARGET_ROOT
   childEnvironment.RYFRAME_WORKSPACE_ROOT = backendRoot
   childEnvironment.RYFRAME_PYTHON = pythonPath
   childEnvironment.PYTHONUTF8 = '1'

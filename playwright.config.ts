@@ -26,9 +26,7 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: process.env.CI
-    ? [['line'], ['html', { open: 'never', outputFolder: reportDirectory }]]
-    : 'line',
+  reporter: [['line'], ['html', { open: 'never', outputFolder: reportDirectory }]],
   outputDir: resultsDirectory,
   use: {
     baseURL: `http://127.0.0.1:${port}`,
@@ -42,6 +40,8 @@ export default defineConfig({
   webServer: {
     command: serverCommand,
     reuseExistingServer: false,
+    stderr: 'pipe',
+    stdout: 'pipe',
     timeout: 120_000,
     url: `http://127.0.0.1:${port}/login`,
   },

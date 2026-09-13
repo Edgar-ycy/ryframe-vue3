@@ -81,14 +81,36 @@ function buildSourceKey(task) {
   return `build-source:${task.source}`
 }
 
+export function browserProcessLog(task, environment) {
+  if (task.id !== 'browser') return undefined
+  const family = task.params.real ? 'playwright-real' : 'playwright'
+  const segments = [root, '.local-tests', family, 'results']
+  if (task.params.real) segments.push(task.params.fixture)
+  segments.push(task.params.server)
+  const runId = environment.RYFRAME_E2E_RUN_ID?.trim()
+  if (task.params.real && /^[a-z0-9][a-z0-9-]{0,63}$/u.test(runId ?? '')) segments.push(runId)
+  return path.join(...segments, 'browser-web-server.log')
+}
+
 async function runTask(task, interactive, control, context) {
   const invocation = taskInvocation(task)
   if (invocation.kind !== 'action') {
+    const environment = { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1', ...task.env }
     return runTaskProcess(invocation, {
       cwd: path.resolve(root, task.workingDirectory),
-      env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1', ...task.env },
+      env: environment,
       interactive,
       control,
+      outputFile: browserProcessLog(task, environment),
+      outputMetadata:
+        task.id === 'browser'
+          ? {
+              fixture: task.params.fixture,
+              real: task.params.real,
+              server: task.params.server,
+              web_server: environment.RYFRAME_E2E_BASE_URL ? 'external' : 'playwright',
+            }
+          : undefined,
     })
   }
   if (invocation.action === 'required-jobs') {
@@ -139,6 +161,8 @@ function reportResult(result, interactive) {
         ' ms)',
     )
   }
+  const processLog = result.artifacts?.find((value) => value.endsWith('browser-web-server.log'))
+  if (processLog) console.log('浏览器与 webServer 日志：' + path.relative(root, processLog))
   if (!succeeded) {
     const output = ((result.stdout ?? '') + (result.stderr ?? '')).trim()
     if (output) console.error(output)

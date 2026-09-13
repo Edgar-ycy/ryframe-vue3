@@ -1,4 +1,6 @@
 import { spawn } from 'node:child_process'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { taskWorkerProtocol } from './task-worker-protocol.mjs'
@@ -82,8 +84,59 @@ function resultError(value) {
   return Object.assign(new Error(value.message ?? 'Windows 任务执行失败'), value)
 }
 
+const sensitiveEnvironmentName =
+  /password|passwd|secret|token|authorization|auth|cookie|access[_-]?key|private[_-]?key|api[_-]?key/iu
+
+function redactTaskProcessLog(content, environment) {
+  const secrets = Object.entries(environment ?? {})
+    .filter(
+      ([name, value]) => sensitiveEnvironmentName.test(name) && String(value ?? '').length > 0,
+    )
+    .map(([, value]) => String(value))
+    .sort((left, right) => right.length - left.length)
+  let redacted = content
+  for (const secret of new Set(secrets)) redacted = redacted.split(secret).join('[REDACTED]')
+  return redacted
+    .replace(
+      /(\b(?:proxy-)?authorization\s*[:=]\s*)(?:(?:bearer|basic)\s+)?[^\r\n]+/giu,
+      '$1[REDACTED]',
+    )
+    .replace(/(\b(?:set-cookie|cookie)\s*:\s*)[^\r\n]+/giu, '$1[REDACTED]')
+    .replace(/\b(bearer|basic)\s+[^\s,;]+/giu, '$1 [REDACTED]')
+    .replace(
+      /(\b[a-z0-9_-]*(?:password|passwd|secret|token|access[_-]?key|private[_-]?key|api[_-]?key|auth|cookie)[a-z0-9_-]*\b['"]?\s*[:=]\s*)(?:"(?:\\.|[^"\r\n])*"|'(?:\\.|[^'\r\n])*'|[^\s,;}\]\r\n]+)/giu,
+      '$1[REDACTED]',
+    )
+    .replace(/(\b[a-z][a-z0-9+.-]*:\/\/[^:\s/@]+:)[^@\s/]+(@)/giu, '$1[REDACTED]$2')
+}
+
+function writeTaskProcessLog(outputFile, result, metadata = {}, environment) {
+  mkdirSync(path.dirname(outputFile), { recursive: true })
+  const fields = Object.entries(metadata)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, value]) => `${name}=${String(value)}`)
+  const content = [
+    '# RyFrame 任务进程日志',
+    ...fields,
+    `exit_code=${result.code ?? 1}`,
+    `signal=${result.signal ?? ''}`,
+    '',
+    '[stdout]',
+    result.stdout ?? '',
+    '',
+    '[stderr]',
+    result.stderr ?? '',
+    '',
+  ].join('\n')
+  writeFileSync(outputFile, redactTaskProcessLog(content, environment), 'utf8')
+  return outputFile
+}
+
 /** 等待已登记的任务进程树及其输出关闭。 */
-export function runTaskProcess(invocation, { cwd, env, interactive, control, spawnChild = spawn }) {
+export function runTaskProcess(
+  invocation,
+  { cwd, env, interactive, control, outputFile, outputMetadata, spawnChild = spawn },
+) {
   if (control.signal.aborted) return Promise.resolve({ code: 1, cancelled: true })
   return new Promise((resolve) => {
     const target = childInvocation(invocation, interactive)
@@ -171,14 +224,25 @@ export function runTaskProcess(invocation, { cwd, env, interactive, control, spa
           result.signal = signal
           control.fail(result)
         }
-        resolve(
-          Object.assign(
-            result,
-            taskResult
-              ? { code: taskResult.code ?? 1, signal: taskResult.signal }
-              : { code: result.error && workerCode === 0 ? 1 : workerCode, signal },
-          ),
+        const completed = Object.assign(
+          result,
+          taskResult
+            ? { code: taskResult.code ?? 1, signal: taskResult.signal }
+            : { code: result.error && workerCode === 0 ? 1 : workerCode, signal },
         )
+        if (outputFile) {
+          try {
+            completed.artifacts = [
+              ...(completed.artifacts ?? []),
+              writeTaskProcessLog(outputFile, completed, outputMetadata, env),
+            ]
+          } catch (cause) {
+            completed.error ??= new Error(`无法保存任务进程日志：${cause.message}`, { cause })
+            if (completed.code === 0) completed.code = 1
+            control.fail(completed)
+          }
+        }
+        resolve(completed)
       })()
     })
   })

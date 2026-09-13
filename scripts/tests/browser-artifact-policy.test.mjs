@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { EventEmitter } from 'node:events'
+import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { PassThrough } from 'node:stream'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
+import { runTaskProcess } from '../task-process.mjs'
+import { TaskRunControl } from '../task-run-control.mjs'
+import { browserProcessLog } from '../task-runner.mjs'
+import { taskWorkerProtocol } from '../task-worker-protocol.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const uploadArtifactV4 = 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a'
@@ -13,6 +19,14 @@ async function read(relativePath) {
   return readFile(path.join(root, relativePath), 'utf8')
 }
 
+async function temporaryDirectory(context) {
+  const parent = path.join(root, '.local-tests', 'node-unit')
+  await mkdir(parent, { recursive: true })
+  const directory = await mkdtemp(path.join(parent, '浏览器日志-'))
+  context.after(() => rm(directory, { recursive: true, force: true }))
+  return directory
+}
+
 test('普通与真实浏览器测试保留完整失败产物', async () => {
   for (const config of ['playwright.config.ts', 'playwright.real.config.ts']) {
     const source = await read(config)
@@ -20,7 +34,145 @@ test('普通与真实浏览器测试保留完整失败产物', async () => {
     assert.match(source, /trace: 'retain-on-failure'/u)
     assert.match(source, /video: 'retain-on-failure'/u)
     assert.match(source, /mkdirSync\(directory, \{ recursive: true \}\)/u)
+    assert.match(source, /stderr: 'pipe'/u)
+    assert.match(source, /stdout: 'pipe'/u)
   }
+  const fixture = await read('playwright.config.ts')
+  assert.match(fixture, /reporter: \[\['line'\], \['html'/u)
+  assert.doesNotMatch(fixture, /reporter: process\.env\.CI/u)
+})
+
+test('浏览器任务使用对应结果路径', () => {
+  const fixture = browserProcessLog(
+    { id: 'browser', params: { fixture: 'core', real: false, server: 'preview' } },
+    { RYFRAME_E2E_RUN_ID: 'ignored-fixture-id' },
+  )
+  assert.equal(
+    path.relative(root, fixture),
+    path.join('.local-tests', 'playwright', 'results', 'preview', 'browser-web-server.log'),
+  )
+  const real = browserProcessLog(
+    { id: 'browser', params: { fixture: 'device', real: true, server: 'dev' } },
+    { RYFRAME_E2E_RUN_ID: 'r25-device-dev' },
+  )
+  assert.equal(
+    path.relative(root, real),
+    path.join(
+      '.local-tests',
+      'playwright-real',
+      'results',
+      'device',
+      'dev',
+      'r25-device-dev',
+      'browser-web-server.log',
+    ),
+  )
+})
+
+test('真实任务进程收集 stdout 与 stderr，写盘前脱敏凭证', async (context) => {
+  const directory = await temporaryDirectory(context)
+  const credentials = {
+    RYFRAME_LOG_PASSWORD: 'password-value',
+    ryframe_log_secret: 'prefix-overlap-value-suffix',
+    RYFRAME_LOG_TOKEN: 'overlap-value',
+    RYFRAME_LOG_ACCESS_KEY: 'access-key-value',
+    RYFRAME_LOG_PRIVATE_KEY: 'private-key-value',
+    RYFRAME_LOG_AUTH: 'auth-value',
+    RYFRAME_LOG_COOKIE: 'cookie-value',
+    RYFRAME_LOG_EMPTY_SECRET: '',
+  }
+  const source = `const values = Object.entries(process.env)
+  .filter(([name]) => name.toUpperCase().startsWith('RYFRAME_LOG_'))
+  .map(([, value]) => value)
+console.log(values.join('\\n'))
+console.log('Authorization: Bearer visible-bearer\\nAuthorization=Basic visible-basic')
+console.log('Bearer visible-standalone-bearer%@\\nBasic visible-standalone-basic==')
+console.log('Cookie: sid=visible-cookie\\nSet-Cookie: sid=visible-set-cookie; HttpOnly')
+console.log('password=visible-password token:visible-token secret="visible-secret"')
+console.error('stderr 已捕获')`
+  const outputFile = path.join(directory, '含 空格', 'browser-web-server.log')
+  const control = new TaskRunControl()
+  const result = await runTaskProcess(
+    { command: process.execPath, args: ['-e', source] },
+    {
+      cwd: directory,
+      env: { ...process.env, ...credentials },
+      interactive: false,
+      control,
+      outputFile,
+    },
+  )
+  control.dispose()
+
+  assert.equal(result.code, 0)
+  assert.match(result.stdout, /visible-bearer/u)
+  assert.match(result.stderr, /stderr 已捕获/u)
+  const processLog = await readFile(outputFile, 'utf8')
+  assert.match(processLog, /\[stdout\][\s\S]*\[REDACTED\]/u)
+  assert.match(processLog, /\[stderr\][\s\S]*stderr 已捕获/u)
+  assert.match(processLog, /\[REDACTED\]/u)
+  const common = [
+    'visible-bearer',
+    'visible-basic',
+    'visible-standalone-bearer%@',
+    'visible-standalone-basic==',
+    'visible-cookie',
+    'visible-set-cookie',
+    'visible-password',
+    'visible-token',
+    'visible-secret',
+  ]
+  for (const secret of [...Object.values(credentials).filter(Boolean), ...common]) {
+    assert.equal(processLog.includes(secret), false)
+  }
+  assert.doesNotMatch(processLog, /prefix-|-suffix/u)
+})
+
+test('日志写入失败使成功任务失败，不覆盖原退出码与信号', async (context) => {
+  const directory = await temporaryDirectory(context)
+  const invocation = { command: process.execPath, args: ['-e', 'process.exit(0)'] }
+  const successControl = new TaskRunControl()
+  const writeFailure = await runTaskProcess(invocation, {
+    cwd: directory,
+    env: process.env,
+    interactive: false,
+    control: successControl,
+    outputFile: directory,
+  })
+  assert.equal(writeFailure.code, 1)
+  assert.match(writeFailure.error.message, /无法保存任务进程日志/u)
+  assert.equal(successControl.exitCode, 1)
+  successControl.dispose()
+
+  const child = Object.assign(new EventEmitter(), {
+    exitCode: null,
+    pid: undefined,
+    signalCode: null,
+    stderr: new PassThrough(),
+    stdout: new PassThrough(),
+  })
+  const failureControl = new TaskRunControl()
+  const running = runTaskProcess(
+    {},
+    {
+      control: failureControl,
+      interactive: false,
+      outputFile: directory,
+      spawnChild: () => child,
+    },
+  )
+  if (process.platform === 'win32') {
+    child.emit('message', { type: taskWorkerProtocol.result, code: 17, signal: 'SIGTERM' })
+  } else {
+    child.exitCode = 17
+    child.emit('exit', 17, 'SIGTERM')
+  }
+  child.emit('close', process.platform === 'win32' ? 0 : 17, 'SIGTERM')
+  const originalFailure = await running
+  assert.deepEqual([originalFailure.code, originalFailure.signal], [17, 'SIGTERM'])
+  assert.match(originalFailure.error.message, /无法保存任务进程日志/u)
+  assert.equal(failureControl.exitCode, 143)
+  failureControl.dispose()
 })
 
 test('普通浏览器门禁严格上传报告与测试结果', async () => {

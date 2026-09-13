@@ -76,6 +76,8 @@ export default defineConfig({
     : {
         command: `node scripts/run-real-browser-server.mjs ${serverMode} ${port}`,
         reuseExistingServer: false,
+        stderr: 'pipe',
+        stdout: 'pipe',
         timeout: 120_000,
         url: `${baseURL}/login`,
       },

@@ -24,6 +24,7 @@ class FakeMigrationGateProcess extends EventEmitter {
   exitCode: number | null = null
   signalCode: NodeJS.Signals | null = null
   readonly killSignals: Array<NodeJS.Signals | number | undefined> = []
+  releaseRequests = 0
   onKill: (() => void) | undefined
   closed = false
 
@@ -67,6 +68,7 @@ function spawnFixture(
     captured.options = options
     child.stdin.on('data', (chunk: Buffer) => {
       if (chunk.toString('utf8').includes('"operation":"release"')) {
+        child.releaseRequests += 1
         child.receipt('released')
       }
     })
@@ -102,12 +104,18 @@ describe('Device 迁移 gate 进程生命周期', () => {
 
     const finished = once(child.stdin, 'finish')
     let settled = false
-    const releasing = gate.release().finally(() => (settled = true))
+    const firstRelease = gate.release()
+    const secondRelease = gate.release()
+    expect(secondRelease).toBe(firstRelease)
+    const releasing = firstRelease.finally(() => (settled = true))
     await finished
     await Promise.resolve()
     expect(settled).toBe(false)
     child.close()
     await releasing
+    expect(gate.release()).toBe(firstRelease)
+    await gate.release()
+    expect(child.releaseRequests).toBe(1)
     expect(child.killSignals).toEqual([])
   })
 
@@ -138,8 +146,13 @@ describe('Device 迁移 gate 进程生命周期', () => {
     expect(child.killSignals).toEqual([])
   })
 
-  it('强制停止后仍未 close 时明确失败，不把 helper 当作已回收', async () => {
+  it('强制停止未收敛时允许后续 release 再次受限回收并固定终态', async () => {
     const child = new FakeMigrationGateProcess()
+    let killCount = 0
+    child.onKill = () => {
+      killCount += 1
+      if (killCount === 2) queueMicrotask(() => child.close(null, 'SIGKILL'))
+    }
     const gate = await holdMigrationGate(tenant, migration, {
       environment,
       forceCloseTimeoutMs: 5,
@@ -147,10 +160,41 @@ describe('Device 迁移 gate 进程生命周期', () => {
       spawnProcess: spawnFixture(child),
     })
 
-    await expect(gate.release()).rejects.toThrow('迁移 gate 强制关闭后仍未退出')
+    const firstRelease = gate.release()
+    await expect(firstRelease).rejects.toThrow('迁移 gate 强制关闭后仍未退出')
     expect(child.killSignals).toEqual(['SIGKILL'])
     expect(child.closed).toBe(false)
+
+    const secondRelease = gate.release()
+    expect(secondRelease).not.toBe(firstRelease)
+    await expect(secondRelease).rejects.toThrow('迁移 gate 关闭超时')
+    expect(child.killSignals).toEqual(['SIGKILL', 'SIGKILL'])
+    expect(child.closed).toBe(true)
+    expect(child.releaseRequests).toBe(1)
+
+    const terminalRelease = gate.release()
+    expect(terminalRelease).toBe(secondRelease)
+    await expect(terminalRelease).rejects.toThrow('迁移 gate 关闭超时')
   })
+
+  it.each(['stdin', 'stdout', 'stderr'] as const)(
+    '保留 release 收据后的 %s transport error',
+    async (stream) => {
+      const child = new FakeMigrationGateProcess()
+      const transportError = new Error(`${stream} transport failed`)
+      child.stdin.once('finish', () => {
+        child[stream].emit('error', transportError)
+        child.close()
+      })
+      const gate = await holdMigrationGate(tenant, migration, {
+        environment,
+        spawnProcess: spawnFixture(child),
+      })
+
+      await expect(gate.release()).rejects.toBe(transportError)
+      expect(child.killSignals).toEqual([])
+    },
+  )
 
   it('初始化协议失败时完成强制回收并同时保留原始错误', async () => {
     const child = new FakeMigrationGateProcess()

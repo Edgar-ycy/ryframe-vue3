@@ -69,8 +69,10 @@ export async function holdMigrationGate(
     { env: environment, stdio: 'pipe', windowsHide: true },
   )
   const lines: string[] = []
-  let failure: Error | undefined
+  let transportFailure: Error | undefined
+  let closeWakeError: Error | undefined
   let exitError: Error | undefined
+  let closed = false
   let errors = ''
   let pending: { resolve: (line: string) => void; reject: (error: Error) => void } | undefined
   const input = createInterface({ input: child.stdout })
@@ -81,27 +83,32 @@ export async function holdMigrationGate(
   child.stderr.on('data', (data: Buffer) => {
     errors = (errors + data.toString('utf8')).slice(-4096)
   })
-  const failed = (error: Error) => {
-    failure ??= error
-    pending?.reject(failure)
+  const transportFailed = (error: Error) => {
+    transportFailure ??= error
+    pending?.reject(transportFailure)
   }
-  child.on('error', failed)
-  child.stdin.on('error', failed)
-  child.stdout.on('error', failed)
-  child.stderr.on('error', failed)
+  input.on('error', transportFailed)
+  child.on('error', transportFailed)
+  child.stdin.on('error', transportFailed)
+  child.stdout.on('error', transportFailed)
+  child.stderr.on('error', transportFailed)
   const exited = new Promise<void>((resolve) => {
     child.once('close', (code, signal) => {
-      exitError = new Error(`迁移 gate 已退出（${signal ?? code}）：${errors}`)
-      failed(exitError)
+      closed = true
+      closeWakeError = new Error(`迁移 gate 已退出（${signal ?? code}）：${errors}`)
+      if (code !== 0 || signal !== null) exitError = closeWakeError
+      pending?.reject(transportFailure ?? closeWakeError)
       resolve()
     })
   })
 
   async function read(state: string, timeout = 40_000): Promise<Receipt> {
+    if (transportFailure) throw transportFailure
     const line =
       lines.shift() ??
       (await new Promise<string>((resolve, reject) => {
-        if (failure) return reject(failure)
+        if (transportFailure) return reject(transportFailure)
+        if (closed) return reject(closeWakeError!)
         const timer = setTimeout(() => {
           pending = undefined
           reject(new Error(`等待 gate ${state} 超时：${errors}`))
@@ -145,63 +152,108 @@ export async function holdMigrationGate(
     }
   }
 
-  async function close() {
-    const errors: Error[] = []
-    try {
-      child.stdin.end()
-    } catch (error) {
-      errors.push(error instanceof Error ? error : new Error(String(error)))
-    }
-    if (await exitsWithin(gracefulCloseTimeoutMs)) {
-      input.close()
-      if (child.exitCode !== 0 || child.signalCode !== null) errors.push(exitError!)
-      if (errors.length) throw errors[0]
-      return
+  function combinedError(candidates: Array<Error | undefined>): Error | undefined {
+    const distinct = [...new Set(candidates.filter((error): error is Error => Boolean(error)))]
+    if (distinct.length === 0) return undefined
+    if (distinct.length === 1) return distinct[0]
+    return new AggregateError(distinct, distinct.map((error) => error.message).join('；'))
+  }
+
+  let stdinEnded = false
+  let stdinEndError: Error | undefined
+  let gracefulTimeoutError: Error | undefined
+
+  async function closeAttempt(primary?: Error): Promise<void> {
+    if (!stdinEnded) {
+      stdinEnded = true
+      try {
+        child.stdin.end()
+      } catch (error) {
+        stdinEndError = error instanceof Error ? error : new Error(String(error))
+      }
     }
 
-    errors.push(new Error('迁移 gate 关闭超时'))
-    if (child.exitCode === null && child.signalCode === null) {
+    if (
+      !closed &&
+      !gracefulTimeoutError &&
+      !(await exitsWithin(gracefulCloseTimeoutMs)) &&
+      !closed
+    ) {
+      gracefulTimeoutError = new Error('迁移 gate 关闭超时')
+    }
+
+    const attemptErrors: Error[] = []
+    if (!closed && child.exitCode === null && child.signalCode === null) {
       try {
         // 仅强制回收此函数创建的 helper；外层任务 Job/进程组负责浏览器任务树。
         child.kill('SIGKILL')
       } catch (error) {
         if (!(error instanceof Error && 'code' in error && error.code === 'ESRCH')) {
-          errors.push(error instanceof Error ? error : new Error(String(error)))
+          attemptErrors.push(error instanceof Error ? error : new Error(String(error)))
         }
       }
     }
-    const forcedClosed = await exitsWithin(forceCloseTimeoutMs)
-    input.close()
-    if (!forcedClosed) errors.push(new Error('迁移 gate 强制关闭后仍未退出'))
-    throw errors.length === 1
-      ? errors[0]
-      : new AggregateError(errors, errors.map((error) => error.message).join('；'))
-  }
-
-  async function closePreserving(primary?: Error): Promise<void> {
-    try {
-      await close()
-    } catch (cleanup) {
-      const cleanupError = cleanup instanceof Error ? cleanup : new Error(String(cleanup))
-      if (primary) {
-        throw new AggregateError(
-          [primary, cleanupError],
-          `${primary.message}；迁移 gate 清理失败：${cleanupError.message}`,
-        )
-      }
-      throw cleanupError
+    if (!closed && !(await exitsWithin(forceCloseTimeoutMs)) && !closed) {
+      attemptErrors.push(new Error('迁移 gate 强制关闭后仍未退出'))
     }
-    if (primary) throw primary
+    if (closed) input.close()
+    const failure = combinedError([
+      primary,
+      stdinEndError,
+      gracefulTimeoutError,
+      transportFailure,
+      exitError,
+      ...attemptErrors,
+    ])
+    if (failure) throw failure
   }
 
   let held: Receipt
   try {
     held = await read('held')
   } catch (error) {
-    await closePreserving(error instanceof Error ? error : new Error(String(error)))
+    await closeAttempt(error instanceof Error ? error : new Error(String(error)))
     throw error
   }
-  let released = false
+  let releaseReceipt: Promise<void> | undefined
+  let releaseInFlight: Promise<void> | undefined
+  let releaseTerminal: Promise<void> | undefined
+
+  function requestRelease(): Promise<void> {
+    releaseReceipt ??= (async () => {
+      child.stdin.write(JSON.stringify({ operation: 'release' }) + '\n')
+      await read('released')
+    })()
+    return releaseReceipt
+  }
+
+  async function performRelease(): Promise<void> {
+    let releaseError: Error | undefined
+    try {
+      await requestRelease()
+    } catch (error) {
+      releaseError = error instanceof Error ? error : new Error(String(error))
+    }
+    await closeAttempt(releaseError)
+  }
+
+  function release(): Promise<void> {
+    if (releaseTerminal) return releaseTerminal
+    if (releaseInFlight) return releaseInFlight
+    const attempt = performRelease()
+    releaseInFlight = attempt
+    void attempt.then(
+      () => settleRelease(attempt),
+      () => settleRelease(attempt),
+    )
+    return attempt
+  }
+
+  function settleRelease(attempt: Promise<void>): void {
+    if (closed) releaseTerminal = attempt
+    if (releaseInFlight === attempt) releaseInFlight = undefined
+  }
+
   return {
     held,
     async waitBlocked() {
@@ -209,17 +261,6 @@ export async function holdMigrationGate(
       const result = await read('blocked')
       return receipt(result.proof)
     },
-    async release() {
-      if (released) return
-      released = true
-      let releaseError: Error | undefined
-      try {
-        child.stdin.write(JSON.stringify({ operation: 'release' }) + '\n')
-        await read('released')
-      } catch (error) {
-        releaseError = error instanceof Error ? error : new Error(String(error))
-      }
-      await closePreserving(releaseError)
-    },
+    release,
   }
 }

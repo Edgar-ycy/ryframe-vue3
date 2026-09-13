@@ -121,6 +121,14 @@ test('非法运行选项在创建产物和服务前失败', () => {
   ]) {
     assert.throws(() => validateRealBrowserEnvironment({ ...validEnvironment(), [name]: value }))
   }
+  assert.throws(
+    () =>
+      validateRealBrowserEnvironment({
+        ...validEnvironment(),
+        RYFRAME_E2E_FIXTURE: 'device',
+      }),
+    /Device.*RYFRAME_E2E_RUN_ID/u,
+  )
 })
 
 test('任一登记、凭据引用、限流来源或账本路径缺失都会失败', () => {

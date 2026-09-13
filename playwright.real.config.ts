@@ -29,7 +29,7 @@ if (restore.reporter)
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })
 }
-if (fixture === 'device' && runId) {
+if (fixture === 'device') {
   reporters.push([
     './scripts/device-reporter.mjs',
     {

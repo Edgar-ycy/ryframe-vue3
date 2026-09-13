@@ -239,6 +239,9 @@ test('真实浏览器配置消费 dev 和 preview 服务模式并隔离产物', 
     source,
     /testDir: fixture === 'device' \? 'tests\/browser-device' : 'tests\/browser-real'/u,
   )
+  assert.match(source, /if \(fixture === 'device'\)/u)
+  assert.doesNotMatch(source, /if \(fixture === 'device' && runId\)/u)
+  assert.match(environment, /fixture === 'device' && !runId/u)
 })
 
 test('开发、构建和生成选项映射到唯一职责', () => {

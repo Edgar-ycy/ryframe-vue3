@@ -111,6 +111,11 @@ export function validateRealBrowserEnvironment(environment = process.env) {
   const tenantId = required(environment, 'RYFRAME_E2E_TENANT_ID').trim()
   const username = required(environment, 'RYFRAME_E2E_USERNAME').trim()
   required(environment, 'RYFRAME_E2E_PASSWORD')
+  const fixture = choice(environment, 'RYFRAME_E2E_FIXTURE', 'core', ['core', 'device'])
+  const runId = optionalRunId(environment)
+  if (fixture === 'device' && !runId) {
+    throw new Error('Device 浏览器环境必须绑定全新的 RYFRAME_E2E_RUN_ID')
+  }
   const binding = {
     scopeId,
     tenantId,
@@ -132,8 +137,8 @@ export function validateRealBrowserEnvironment(environment = process.env) {
     loginBudgetState: absolutePath(environment, 'RYFRAME_E2E_LOGIN_BUDGET_STATE'),
     port: optionalPositiveInteger(environment, 'RYFRAME_E2E_FRONTEND_PORT', 4174, 65_535),
     serverMode: choice(environment, 'RYFRAME_E2E_SERVER', 'dev', ['dev', 'preview']),
-    fixture: choice(environment, 'RYFRAME_E2E_FIXTURE', 'core', ['core', 'device']),
-    runId: optionalRunId(environment),
+    fixture,
+    runId,
     baseURL: localBaseUrl(environment.RYFRAME_E2E_BASE_URL?.trim()),
     restore: restoreEnvironment(environment),
   }

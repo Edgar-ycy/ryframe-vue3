@@ -137,7 +137,6 @@ Windows Job API 只在 worker 内通过锁定版本的 Koffi 预构建绑定调�
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。
 - `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文 smoke 测试；开发服务与生产 preview 都执行，生产包复用同次 CI 构建产物。
 - `tests/browser-real/`：连接真实 API、MySQL 与 Redis 的完整浏览器流程。
-- `scripts/tests/`：契约生成、目录检查和开发脚本测试。
 
 开发时可先运行相邻测试：
 

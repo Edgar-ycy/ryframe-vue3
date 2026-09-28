@@ -13,7 +13,7 @@
 
     <el-breadcrumb class="breadcrumb" separator="/">
       <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.path" :to="item.path">
-        {{ translateNavigationTitle(item.meta?.title) }}
+        {{ translateNavigationTitle(item.meta?.title, item.meta?.defaultTitle) }}
       </el-breadcrumb-item>
     </el-breadcrumb>
 
@@ -73,7 +73,7 @@
           class="user-info"
           :aria-label="userStore.nickname || userStore.username || t('navbar.profile')"
         >
-          <el-avatar :size="32" :src="avatarSrc">
+          <el-avatar :size="32" :src="avatarSrc" alt="">
             <el-icon><UserFilled /></el-icon>
           </el-avatar>
           <span>{{ userStore.nickname || userStore.username }}</span>
@@ -106,6 +106,7 @@ import {
   UserFilled,
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { setTheme } from '@/app/settings/coordinator'
 import { translateNavigationTitle } from '@/i18n'
 import { useAuthenticatedImage } from '@/hooks/useAuthenticatedImage'
 import { useAppStore } from '@/stores/app'
@@ -131,7 +132,7 @@ const settingsVisible = ref(false)
 const breadcrumbs = computed(() => route.matched.filter((item) => item.meta?.title))
 
 function setDarkMode(value: string | number | boolean): void {
-  settingsStore.setTheme(value === true ? 'dark' : 'light')
+  setTheme(value === true ? 'dark' : 'light')
 }
 
 async function toggleFullscreen(): Promise<void> {

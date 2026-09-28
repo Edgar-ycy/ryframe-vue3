@@ -87,14 +87,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onDeactivated, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getProductPlan,
   listProductPlans,
   type ProductChangePreview,
   type CapabilityOverrideInput,
-  type TenantCapabilityOverride,
   type TenantProductContext,
 } from '@/api/modules/productPlan'
 import { requireOperationData } from '@/shared/http/client'
@@ -110,6 +109,7 @@ import DiffSummary from './TenantProductDiffSummary.vue'
 import TenantCapabilityOverrideEditor from './TenantCapabilityOverrideEditor.vue'
 import {
   invalidateTenantProductContext,
+  snapshotCapabilityOverrides,
   useTenantProductChangeCommands,
 } from './tenantProductChangeCommands'
 
@@ -179,7 +179,7 @@ function reset(): void {
   pageGeneration.value += 1
   selectedPlanId.value = ''
   planVersionId.value = ''
-  overrides.value = props.context.overrides.map(toOverrideInput)
+  overrides.value = snapshotCapabilityOverrides(props.context.overrides)
   overrideError.value = ''
   preview.value = undefined
   previewMutation.reset()
@@ -198,15 +198,15 @@ function clearPreview(): void {
 }
 
 function parseOverrides(): CapabilityOverrideInput[] | undefined {
-  if (!props.canOverride) return props.context.overrides.map(toOverrideInput)
+  if (!props.canOverride) return snapshotCapabilityOverrides(props.context.overrides)
   if (!overrideEditorRef.value?.validate()) return undefined
-  return overrides.value.map((item) => ({ ...item, config: { ...item.config } }))
+  return snapshotCapabilityOverrides(overrides.value)
 }
 
 watch(
   () => props.canOverride,
   () => {
-    overrides.value = props.context.overrides.map(toOverrideInput)
+    overrides.value = snapshotCapabilityOverrides(props.context.overrides)
     clearPreview()
   },
   { flush: 'sync' },
@@ -237,16 +237,6 @@ watch(visible, (current, previous) => !current && previous && invalidatePage(), 
 onDeactivated(invalidatePage)
 onBeforeUnmount(invalidatePage)
 
-function toOverrideInput(value: TenantCapabilityOverride): CapabilityOverrideInput {
-  return {
-    capability_code: value.capability_code,
-    enabled: value.enabled,
-    variant_code: value.variant_code,
-    schema_version: value.schema_version,
-    config: { ...value.config },
-  }
-}
-
 async function handlePreview(): Promise<void> {
   const targetVersionId = planVersionId.value
   if (!targetVersionId || submitting.value) return
@@ -270,7 +260,7 @@ async function handlePreview(): Promise<void> {
   let result: ProductChangePreview
   try {
     result = await previewMutation.mutateAsync({
-      overrides: structuredClone(overrides),
+      overrides,
       planVersionId: targetVersionId,
       scope: operation.scope,
       tenantId,
@@ -289,7 +279,7 @@ async function handleApply(): Promise<void> {
     overrideError.value = t('productPlans.overrideInvalid')
     return
   }
-  const snapshot = structuredClone(preview.value)
+  const snapshot = structuredClone(toRaw(preview.value))
   const targetVersionId = planVersionId.value
   const tenantId = props.tenantId
   const runtimeEpoch = props.context.runtime_epoch
@@ -307,7 +297,7 @@ async function handleApply(): Promise<void> {
   let context: TenantProductContext
   try {
     context = await applyMutation.mutateAsync({
-      overrides: structuredClone(overrides),
+      overrides,
       planVersionId: targetVersionId,
       preview: snapshot,
       scope: operation.scope,

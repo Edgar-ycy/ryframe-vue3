@@ -109,7 +109,7 @@ function isI18nCoreModule(id: string): boolean {
 
 function operationChunkName(id: string): string | null {
   const operation = normalizedModuleId(id).match(
-    /\/src\/api\/generated\/operations\/(core|system|platform|monitor|agent)\.ts$/,
+    /\/src\/api\/generated\/operations\/(core|system|platform|monitor)\.ts$/,
   )
   return operation ? `api-${operation[1]}` : null
 }
@@ -121,6 +121,8 @@ export default defineConfig(({ mode }) => {
   const devServerPort = normalizeDevServerPort(env.VITE_APP_DEV_PORT)
 
   return {
+    // 项目统一使用 Composition API，与 createI18n 的 legacy: false 保持一致。
+    define: { __VUE_I18N_LEGACY_API__: false },
     plugins: [
       buildIdentityPlugin(frontendCommit),
       vue(),
@@ -167,6 +169,8 @@ export default defineConfig(({ mode }) => {
     server: {
       port: devServerPort,
       host: env.VITE_APP_DEV_HOST || '127.0.0.1',
+      // 只排除当前前端的验收产物；隔离工作树的祖先目录也可能名为 .local-tests。
+      watch: { ignored: [normalizedModuleId(resolve(__dirname, '.local-tests')) + '/**'] },
       proxy: {
         '/api': {
           target: proxyTarget,
@@ -224,6 +228,8 @@ export default defineConfig(({ mode }) => {
                   const normalizedId = normalizedModuleId(id)
                   return (
                     normalizedId.includes('/node_modules/vue/') ||
+                    normalizedId.includes('/node_modules/vue-i18n/') ||
+                    normalizedId.includes('/node_modules/@intlify/') ||
                     normalizedId.includes('/node_modules/vue-router/') ||
                     normalizedId.includes('/node_modules/pinia/')
                   )
@@ -234,13 +240,6 @@ export default defineConfig(({ mode }) => {
                 name: 'echarts-core',
                 test: (id) => normalizedModuleId(id).includes('/node_modules/echarts/'),
                 priority: 50,
-              },
-              {
-                name: 'app-runtime',
-                test: /[\\/]src[\\/]/,
-                tags: ['$initial'],
-                priority: 10,
-                includeDependenciesRecursively: false,
               },
             ],
           },

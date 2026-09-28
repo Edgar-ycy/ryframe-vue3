@@ -102,6 +102,7 @@ export function initializeSession(): Promise<void> {
                 kind: 'unknown',
                 cause: error,
               })
+        if (httpError.kind === 'cancelled') return
         if (httpError.status === 401 || httpError.status === 403) {
           await clearSession()
         } else {
@@ -132,6 +133,7 @@ async function handleRemoteLogout(): Promise<void> {
 }
 
 async function handleRefreshFailure(error: HttpError): Promise<void> {
+  if (error.kind === 'cancelled') return
   if (error.status === 401 || error.status === 403) {
     ElMessage.error(translate('shell.session.expired'))
     await terminateSession()

@@ -1,4 +1,5 @@
 import { createI18n } from 'vue-i18n'
+import { navigationResourceDefaultNames, navigationResourceNames } from '@/api/generated/menuRoutes'
 import { messages, navigationTitleKeys } from './messages'
 
 export type AppLocale = keyof typeof messages
@@ -58,9 +59,17 @@ export function getApplicationLocale(): AppLocale {
   return normalizeLocale(i18n.global.locale.value) ?? DEFAULT_LOCALE
 }
 
-export function setApplicationLocale(locale: AppLocale): void {
+interface SetApplicationLocaleOptions {
+  persist?: boolean
+}
+
+export function setApplicationLocale(
+  locale: AppLocale,
+  options: SetApplicationLocaleOptions = {},
+): void {
   i18n.global.locale.value = locale
   applyDocumentLocale(locale)
+  if (options.persist === false) return
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.setItem(LOCALE_STORAGE_KEY, locale)
@@ -73,10 +82,23 @@ export function translate(key: string, values?: Record<string, unknown>): string
   return values ? i18n.global.t(key, values) : i18n.global.t(key)
 }
 
-export function translateNavigationTitle(title: unknown): string {
+export function translateNavigationTitle(title: unknown, defaultTitle?: unknown): string {
   if (typeof title !== 'string') return ''
+  const fallback = typeof defaultTitle === 'string' ? defaultTitle : title
   const key = navigationTitleKeys[title]
-  return key ? translate(`navigation.${key}`) : title
+  if (key) {
+    const resourceNames = navigationResourceNames[key as keyof typeof navigationResourceNames]
+    if (resourceNames) {
+      if (getApplicationLocale() !== 'zh-CN') return resourceNames
+      return fallback === title
+        ? (navigationResourceDefaultNames[key as keyof typeof navigationResourceDefaultNames] ??
+            fallback)
+        : fallback
+    }
+    const translated = translate(`navigation.${key}`)
+    if (translated !== `navigation.${key}`) return translated
+  }
+  return fallback
 }
 
 export function formatLocalizedDate(value: string): string {

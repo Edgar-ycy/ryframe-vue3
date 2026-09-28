@@ -55,7 +55,7 @@ function isActive(view: TagView) {
 }
 
 function tagTitle(view: TagView): string {
-  return translateNavigationTitle(view.title) || view.name || view.path
+  return translateNavigationTitle(view.title, view.defaultTitle) || view.name || view.path
 }
 
 function goToView(view: TagView) {

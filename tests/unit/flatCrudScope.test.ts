@@ -22,6 +22,7 @@ vi.mock('element-plus', () => ({ ElMessage: message }))
 import type { FlatCrudResource } from '@/components/business/flat-crud/resource'
 import { useFlatCrudResource } from '@/components/business/flat-crud/useFlatCrudResource'
 import { emptyPageResponse } from '@/shared/http/types'
+import { HttpError } from '@/shared/http/client'
 import {
   beginServerStatePageOperation,
   type ServerStatePageOperation,
@@ -255,5 +256,36 @@ describe('Post/Notice 平面资源会话范围', () => {
     await composable.result.submit(operation)
 
     expect(queryClient.getQueryState(otherKey)?.isInvalidated).toBe(true)
+  })
+
+  it.each(['search', 'reset'] as const)(
+    '%s 将取消交回 Vue 事件调用方且不产生旧成功结果',
+    async (action) => {
+      const current = resource('posts')
+      const composable = runComposable(() => useFlatCrudResource(current.definition))
+      scopes.push(composable.scope)
+      await vi.waitFor(() => expect(composable.result.canExport.value).toBe(true))
+      const pending = deferred<ReturnType<typeof emptyPageResponse<RecordValue>>>()
+      current.adapter.list.mockReturnValueOnce(pending.promise)
+      const success = vi.fn()
+      const result = composable.result[action]().then(success, (error: unknown) => error)
+      await vi.waitFor(() => expect(current.adapter.list).toHaveBeenCalledTimes(2))
+      activate('user-b', 'authorization-b')
+      expect(await result).toMatchObject({ kind: 'cancelled' })
+      pending.resolve(emptyPageResponse({ page: 1, page_size: 10 }))
+      expect(success).not.toHaveBeenCalled()
+      expect(reporter).not.toHaveBeenCalled()
+    },
+  )
+
+  it('搜索普通失败保留 Promise 拒绝并且只提示一次', async () => {
+    const current = resource('posts')
+    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    scopes.push(composable.scope)
+    await vi.waitFor(() => expect(composable.result.canExport.value).toBe(true))
+    const failure = new HttpError('没有权限', { status: 403 })
+    current.adapter.list.mockRejectedValueOnce(failure)
+    await expect(composable.result.search()).rejects.toBe(failure)
+    expect(reporter).toHaveBeenCalledExactlyOnceWith(failure)
   })
 })

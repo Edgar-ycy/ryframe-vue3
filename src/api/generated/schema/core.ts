@@ -447,6 +447,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/common/shell-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 所有已认证用户可读取固定的界面设置，不接受任意配置键。 */
+        get: operations["get_common_shell_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/common/upload": {
         parameters: {
             query?: never;
@@ -493,54 +510,6 @@ export interface paths {
         /** 图片上传（仅允许图片类型，自动压缩） */
         post: operations["post_common_upload_image"];
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/profile/service-delegations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_profile_service_delegations"];
-        put?: never;
-        post: operations["post_profile_service_delegations"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/profile/service-delegations/capabilities": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_profile_service_delegations_capabilities"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/profile/service-delegations/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["delete_profile_service_delegations_by_id"];
         options?: never;
         head?: never;
         patch?: never;
@@ -599,57 +568,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AgentCapabilityResponse: {
-            key: string;
-            method: string;
-            path: string;
-        };
-        AgentDepartmentResponse: {
-            id: string;
-            name: string;
-            parent_id?: string | null;
-            status: string;
-        };
-        AgentDictionaryItemResponse: {
-            label: string;
-            /** Format: int32 */
-            sort: number;
-            value: string;
-        };
-        AgentDictionaryResponse: {
-            items: components["schemas"]["AgentDictionaryItemResponse"][];
-            /** Format: int64 */
-            max_page_size: number;
-            /** Format: int64 */
-            page: number;
-            /** Format: int64 */
-            page_size: number;
-            /** Format: int64 */
-            total: number;
-            /** Format: int64 */
-            total_pages: number;
-            type_code: string;
-        };
-        /** @description Agent 只读列表的固定分页参数；未知过滤条件由服务层审计后拒绝。 */
-        AgentPageQuery: {
-            /** Format: int64 */
-            page?: number | null;
-            /** Format: int64 */
-            page_size?: number | null;
-        };
-        AgentPostResponse: {
-            code: string;
-            id: string;
-            name: string;
-            status: string;
-        };
-        AgentUserResponse: {
-            dept_name?: string | null;
-            id: string;
-            nickname: string;
-            status: string;
-            username: string;
-        };
         /**
          * @description 不携带业务数据的统一响应。
          *
@@ -762,27 +680,6 @@ export interface components {
             code: number;
             data?: {
                 valid: boolean;
-            };
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_CreatedServiceDelegationVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                delegation: components["schemas"]["ServiceDelegationVo"];
-                /** @description 仅首次成功时返回委托令牌；幂等重放为 `null`。 */
-                token?: string | null;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -951,6 +848,27 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_ShellSettingsDto: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            /** @description 当前租户的界面设置；未配置的项目由客户端使用默认值。 */
+            data?: {
+                side_theme?: string | null;
+                skin_name?: string | null;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_UserProfileResponse: {
             /**
              * Format: int32
@@ -1046,62 +964,6 @@ export interface components {
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_ServiceDelegationTargetResponse: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                account_code: string;
-                account_id: string;
-                account_name: string;
-                capabilities: components["schemas"]["ServiceCapabilityVo"][];
-            }[];
-            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
-            details?: unknown;
-            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
-            error_key?: string | null;
-            /** @description 面向用户的可读消息。 */
-            message: string;
-            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
-            request_id: string;
-        };
-        /** @description 统一 API 响应结构。 */
-        ApiResponse_Vec_ServiceDelegationVo: {
-            /**
-             * Format: int32
-             * @description 与 HTTP 状态码一致的业务结果码。
-             */
-            code: number;
-            data?: {
-                account_id: string;
-                capability_keys: string[];
-                /** Format: date-time */
-                created_at: string;
-                /** Format: date-time */
-                expires_at: string;
-                id: string;
-                /** Format: date-time */
-                not_before: string;
-                reason: string;
-                /** Format: date-time */
-                revoked_at?: string | null;
-                status: string;
-                user_id: string;
-                /** Format: int32 */
-                version: number;
             }[];
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -1544,23 +1406,6 @@ export interface components {
             remark?: string | null;
             value: string;
         };
-        CreateServiceDelegationDto: {
-            capability_keys: string[];
-            /** Format: date-time */
-            expires_at?: string | null;
-            reason: string;
-            service_account_id: string;
-        };
-        CreatedServiceCredentialVo: {
-            credential: components["schemas"]["ServiceCredentialVo"];
-            /** @description 仅首次成功时返回完整 API Key；幂等重放为 `null`。 */
-            secret?: string | null;
-        };
-        CreatedServiceDelegationVo: {
-            delegation: components["schemas"]["ServiceDelegationVo"];
-            /** @description 仅首次成功时返回委托令牌；幂等重放为 `null`。 */
-            token?: string | null;
-        };
         CsrfResponse: {
             csrf_token: string;
             expires_in: number;
@@ -1603,8 +1448,6 @@ export interface components {
             retention_run_days: number;
             /** Format: int32 */
             schedule_execution_days: number;
-            /** Format: int32 */
-            service_access_audit_days: number;
             /** Format: int32 */
             tenant_config_artifact_hours: number;
             /** Format: int32 */
@@ -2432,6 +2275,40 @@ export interface components {
             sort: number;
             status: string;
         };
+        /** @enum {string} */
+        RuntimeBackupCollectionStatus: "unknown" | "available" | "unavailable" | "stale";
+        RuntimeBackupHealth: {
+            /** Format: int64 */
+            expired_resources: number;
+            /** Format: int64 */
+            invalid_resources: number;
+            /** Format: date-time */
+            last_restore_completed?: string | null;
+            last_restore_succeeded: boolean;
+            /** Format: int64 */
+            missing_resources: number;
+            /** Format: date-time */
+            oldest_capture?: string | null;
+            /** Format: int64 */
+            recovery_point_age_seconds?: number | null;
+            /** Format: int64 */
+            required_resources: number;
+            /** Format: int64 */
+            restore_duration_seconds?: number | null;
+            /** Format: int64 */
+            restore_overdue: number;
+            /** Format: int64 */
+            restore_running: number;
+        };
+        RuntimeBackupStatus: {
+            available: boolean;
+            collector_status: components["schemas"]["RuntimeBackupCollectionStatus"];
+            health?: null | components["schemas"]["RuntimeBackupHealth"];
+            /** Format: date-time */
+            last_attempt_at?: string | null;
+            /** Format: date-time */
+            last_success_at?: string | null;
+        };
         RuntimeCircuitBreakerStatus: {
             state: string;
         };
@@ -2473,6 +2350,7 @@ export interface components {
             connected: boolean;
         };
         RuntimeStatus: {
+            backup: components["schemas"]["RuntimeBackupStatus"];
             database: components["schemas"]["RuntimeDatabaseStatus"];
             jobs: components["schemas"]["RuntimeJobsStatus"];
             object_storage: components["schemas"]["RuntimeStorageStatus"];
@@ -2547,110 +2425,6 @@ export interface components {
              */
             used_memory: number;
         };
-        ServiceAccessAuditVo: {
-            access_mode: string;
-            /** Format: int32 */
-            account_authorization_version?: number | null;
-            account_id?: string | null;
-            capability_key: string;
-            /** Format: date-time */
-            completed_at: string;
-            credential_id?: string | null;
-            delegation_id?: string | null;
-            /** Format: int32 */
-            delegation_version?: number | null;
-            /** Format: int32 */
-            http_status: number;
-            id: string;
-            operation_id: string;
-            reason_code: string;
-            represented_user_id?: string | null;
-            request_id: string;
-            required_permission: string;
-            /** Format: int64 */
-            response_bytes?: number | null;
-            result: string;
-            /** Format: int32 */
-            row_count?: number | null;
-            /** Format: date-time */
-            started_at: string;
-            tenant_epoch?: string | null;
-            tenant_id?: string | null;
-            /** Format: int32 */
-            user_authorization_version?: number | null;
-        };
-        ServiceAccountDetailVo: {
-            account: components["schemas"]["ServiceAccountVo"];
-            role_ids: string[];
-        };
-        ServiceAccountVo: {
-            /** Format: int32 */
-            authorization_version: number;
-            code: string;
-            /** Format: date-time */
-            created_at: string;
-            dept_id?: string | null;
-            description?: string | null;
-            id: string;
-            /** Format: int32 */
-            max_requests_per_minute: number;
-            name: string;
-            status: string;
-            /** Format: date-time */
-            updated_at: string;
-        };
-        ServiceCapabilityVo: {
-            delegated: boolean;
-            direct: boolean;
-            key: string;
-            permission: string;
-        };
-        ServiceCredentialVo: {
-            account_id: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            expires_at: string;
-            id: string;
-            key_id: string;
-            label: string;
-            /** Format: date-time */
-            last_used_at?: string | null;
-            /** Format: date-time */
-            revoked_at?: string | null;
-            status: string;
-        };
-        ServiceDelegationTargetResponse: {
-            account_code: string;
-            account_id: string;
-            account_name: string;
-            capabilities: components["schemas"]["ServiceCapabilityVo"][];
-        };
-        ServiceDelegationVo: {
-            account_id: string;
-            capability_keys: string[];
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            expires_at: string;
-            id: string;
-            /** Format: date-time */
-            not_before: string;
-            reason: string;
-            /** Format: date-time */
-            revoked_at?: string | null;
-            status: string;
-            user_id: string;
-            /** Format: int32 */
-            version: number;
-        };
-        /** @description 服务账号、委托与访问审计共用的分页参数。 */
-        ServiceResourcePageQuery: {
-            /** Format: int64 */
-            page?: number | null;
-            /** Format: int64 */
-            page_size?: number | null;
-        };
         SessionCapabilityVo: {
             client_config: {
                 [key: string]: unknown;
@@ -2691,6 +2465,11 @@ export interface components {
             tenant_id: string;
             tenant_name: string;
             username: string;
+        };
+        /** @description 当前租户的界面设置；未配置的项目由客户端使用默认值。 */
+        ShellSettingsDto: {
+            side_theme?: string | null;
+            skin_name?: string | null;
         };
         /** @description 租户后台运行状态汇总。 */
         TenantAuxiliaryUsageVo: {
@@ -3488,7 +3267,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_AvatarResponse"];
                 };
             };
-            /** @description 上传内容超过 5 MiB 限制 */
+            /** @description 上传表单或头像内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的头像大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -4227,6 +4021,34 @@ export interface operations {
             };
         };
     };
+    get_common_shell_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前租户界面设置 */
+            200: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_ShellSettingsDto"];
+                };
+            };
+        };
+    };
     post_common_upload: {
         parameters: {
             query?: never;
@@ -4257,7 +4079,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
             };
-            /** @description 上传内容超过 10 MiB 限制 */
+            /** @description 上传表单或文件内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的文件大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -4319,7 +4156,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
             };
-            /** @description 上传内容超过 5 MiB 限制 */
+            /** @description 上传表单或头像内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的头像大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -4381,7 +4233,22 @@ export interface operations {
                     "application/json": components["schemas"]["ApiResponse_Vec_UploadResponse"];
                 };
             };
-            /** @description 上传内容超过 10 MiB 限制 */
+            /** @description 上传表单或文件内容无效 */
+            400: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 上传内容超过配置的文件大小限制 */
             413: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */
@@ -4397,366 +4264,6 @@ export interface operations {
                 content?: never;
             };
             /** @description 对象存储暂不可用 */
-            503: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_profile_service_delegations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 当前用户本人创建的委托 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_ServiceDelegationVo"];
-                };
-            };
-            /** @description 未认证 */
-            401: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 服务账号功能未启用或数据库不可用 */
-            503: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    post_profile_service_delegations: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateServiceDelegationDto"];
-            };
-        };
-        responses: {
-            /** @description 委托已创建；令牌只显示一次 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_CreatedServiceDelegationVo"];
-                };
-            };
-            /** @description 参数、能力或幂等键无效 */
-            400: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 未认证 */
-            401: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 能力不是双方共同拥有或账号不可委托 */
-            403: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 服务账号不存在 */
-            404: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 幂等键冲突 */
-            409: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 服务账号功能、Pepper 或数据库不可用 */
-            503: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_profile_service_delegations_capabilities: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 当前用户与服务账号共同可委托的编译期能力 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Vec_ServiceDelegationTargetResponse"];
-                };
-            };
-            /** @description 未认证 */
-            401: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 服务账号功能未启用或数据库不可用 */
-            503: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    delete_profile_service_delegations_by_id: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 本人委托已撤销 */
-            200: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiEmptyResponse"];
-                };
-            };
-            /** @description 委托 ID 无效 */
-            400: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 未认证 */
-            401: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 只能撤销本人委托 */
-            403: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 委托不存在 */
-            404: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 委托已撤销 */
-            409: {
-                headers: {
-                    /** @description 本次响应所依据的租户授权纪元 */
-                    "X-Authorization-Epoch"?: string;
-                    /** @description 本次响应所依据的租户数据放置代次 */
-                    "X-Tenant-Data-Generation"?: string;
-                    /** @description 本次响应所依据的租户业务数据状态 */
-                    "X-Tenant-Data-State"?: string;
-                    /** @description 本次响应所依据的租户产品运行纪元 */
-                    "X-Tenant-Runtime-Epoch"?: string;
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 服务账号功能未启用或数据库不可用 */
             503: {
                 headers: {
                     /** @description 本次响应所依据的租户授权纪元 */

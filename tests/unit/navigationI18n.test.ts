@@ -12,30 +12,37 @@ import { initialMessageCatalogs, messages } from '@/i18n/messages'
 
 vi.mock('@/views/system/role/index.vue', () => ({ default: { name: 'RolePageStub' } }))
 vi.mock('@/views/monitor/jobs/index.vue', () => ({ default: { name: 'JobPageStub' } }))
-vi.mock('@/views/system/service-accounts/index.vue', () => ({
-  default: { name: 'ServiceAccountPageStub' },
-}))
 vi.mock('@/views/platform/data-targets/index.vue', () => ({
   default: { name: 'DataTargetPageStub' },
 }))
 
 const originalLocale = getApplicationLocale()
 
-afterEach(() => setApplicationLocale(originalLocale))
+afterEach(() => {
+  setApplicationLocale(originalLocale)
+})
 
 describe('菜单国际化目录', () => {
   it('中文翻译与后端访问目录默认名称完全一致', () => {
-    const navigation = messages['zh-CN'].navigation as Record<string, string>
+    setApplicationLocale('zh-CN')
     for (const menu of menuRouteCatalog) {
-      expect(navigation[menu.titleKey], menu.routeKey).toBe(menu.defaultName)
+      expect(translateNavigationTitle(menu.routeKey, menu.defaultName), menu.routeKey).toBe(
+        menu.defaultName,
+      )
     }
+  })
+
+  it('服务端遗留 route key 时回退到生成菜单的默认名称', () => {
+    setApplicationLocale('zh-CN')
+    expect(translateNavigationTitle('system.post', 'system.post')).toBe('岗位管理')
+    expect(translateNavigationTitle('system.post')).toBe('岗位管理')
   })
 
   it('所有菜单 route key 在中英文环境下都能显示友好名称', () => {
     for (const locale of ['zh-CN', 'en-US'] as const) {
       setApplicationLocale(locale)
       for (const menu of menuRouteCatalog) {
-        const title = translateNavigationTitle(menu.routeKey)
+        const title = translateNavigationTitle(menu.routeKey, menu.defaultName)
         expect(title, `${locale}:${menu.routeKey}`).not.toBe(menu.routeKey)
         expect(title.trim(), `${locale}:${menu.routeKey}`).not.toBe('')
       }
@@ -60,12 +67,10 @@ describe('菜单国际化目录', () => {
   it('页面加载器按 route namespace 自动安装领域文案目录', async () => {
     await getMenuPage('system.role')?.component?.()
     await getMenuPage('monitor.jobs')?.component?.()
-    await getMenuPage('system.service-accounts')?.component?.()
     await getMenuPage('platform.data-targets')?.component?.()
     setApplicationLocale('zh-CN')
     expect(translate('system.common.search')).toBe('搜索')
     expect(translate('monitor.jobs.title')).toBe('后台任务')
-    expect(translate('serviceAccounts.title')).toBe('服务账号')
     setApplicationLocale('en-US')
     expect(translate('tenantData.targetsTitle')).toBe('Data targets')
   })

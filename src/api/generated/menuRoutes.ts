@@ -145,11 +145,6 @@ export const menuRouteCatalog = [
     "titleKey": "role"
   },
   {
-    "defaultName": "服务账号",
-    "routeKey": "system.service-accounts",
-    "titleKey": "serviceAccounts"
-  },
-  {
     "defaultName": "用户管理",
     "routeKey": "system.user",
     "titleKey": "user"
@@ -160,63 +155,42 @@ export type MenuRouteKey = typeof menuRouteCatalog[number]['routeKey']
 
 export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object.freeze({
   "home": "dashboard",
-  "首页": "dashboard",
   "monitor": "systemMonitor",
-  "系统监控": "systemMonitor",
   "monitor.cache": "cache",
-  "缓存监控": "cache",
   "monitor.db-pool": "dbPoolMonitor",
-  "连接池监控": "dbPoolMonitor",
   "monitor.jobs": "jobs",
-  "后台任务": "jobs",
   "monitor.online": "online",
-  "在线用户": "online",
   "monitor.overview": "overview",
-  "运维总览": "overview",
   "monitor.retention": "retention",
-  "数据保留": "retention",
   "monitor.runtime": "runtimeMonitor",
-  "运行时监控": "runtimeMonitor",
   "monitor.schedules": "schedules",
-  "定时任务": "schedules",
   "monitor.server": "server",
-  "服务监控": "server",
   "platform": "platform",
-  "平台管理": "platform",
   "platform.data-targets": "dataTargets",
-  "数据目标": "dataTargets",
   "platform.product-plans": "productPlans",
-  "产品套餐": "productPlans",
   "platform.tenant": "tenant",
-  "租户管理": "tenant",
   "system": "system",
-  "系统管理": "system",
   "system.authorization-diagnostics": "authorizationDiagnostics",
-  "权限诊断": "authorizationDiagnostics",
   "system.config": "config",
-  "参数设置": "config",
   "system.config-transfer": "configTransfer",
-  "配置迁移": "configTransfer",
   "system.dept": "dept",
-  "部门管理": "dept",
   "system.dict": "dict",
-  "字典管理": "dict",
   "system.logininfor": "loginlog",
-  "登录日志": "loginlog",
   "system.menu": "menu",
-  "菜单管理": "menu",
   "system.notice": "notice",
-  "通知公告": "notice",
   "system.operlog": "operlog",
-  "操作日志": "operlog",
   "system.perm": "permission",
-  "权限管理": "permission",
   "system.post": "post",
-  "岗位管理": "post",
   "system.role": "role",
-  "角色管理": "role",
-  "system.service-accounts": "serviceAccounts",
-  "服务账号": "serviceAccounts",
-  "system.user": "user",
-  "用户管理": "user"
+  "system.user": "user"
+})
+
+export const navigationResourceDefaultNames = Object.freeze({
+  "notice": "通知公告",
+  "post": "岗位管理"
+})
+
+export const navigationResourceNames = Object.freeze({
+  "notice": "Notices",
+  "post": "Posts"
 })

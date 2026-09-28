@@ -1,5 +1,5 @@
 import { readonly, shallowRef, type DeepReadonly, type Ref } from 'vue'
-import { MutationCache, QueryCache, QueryClient } from '@tanstack/vue-query'
+import { isCancelledError, MutationCache, QueryCache, QueryClient } from '@tanstack/vue-query'
 import { HttpError } from '@/shared/http/client'
 import type {
   ActiveServerStateScope,
@@ -26,7 +26,7 @@ declare module '@tanstack/vue-query' {
 let errorReporter: ServerStateErrorReporter | undefined
 let sessionEpoch = 0
 let authorizationFingerprint = ''
-let sessionController: AbortController | undefined
+let sessionController = new AbortController()
 const activeScope = shallowRef<ActiveServerStateScope>()
 const readonlyActiveScope = readonly(activeScope)
 
@@ -45,7 +45,7 @@ function normalizeServerStateError(error: unknown): HttpError {
   return error instanceof HttpError
     ? error
     : new HttpError(error instanceof Error ? error.message : '服务端状态请求失败', {
-        kind: 'unknown',
+        kind: isCancelledError(error) ? 'cancelled' : 'unknown',
         cause: error,
       })
 }
@@ -63,6 +63,7 @@ function reportServerStateError(error: unknown, meta: ServerStateMeta | undefine
 }
 
 function shouldRetry(failureCount: number, error: unknown): boolean {
+  if (isCancelledError(error)) return false
   if (error instanceof HttpError) {
     // 主动取消不是失败，不应重新发起已失效的请求。
     if (error.kind === 'cancelled') return false
@@ -107,6 +108,11 @@ export function getServerStateSessionEpoch(): number {
   return sessionEpoch
 }
 
+/** 匿名初始化与已认证请求共享同一纪元的取消信号。 */
+export function getServerStateRequestContext(): { sessionEpoch: number; signal: AbortSignal } {
+  return { sessionEpoch, signal: sessionController.signal }
+}
+
 export function assertServerStateScopeCurrent(expected: ServerStateScope, cause?: unknown): void {
   if (!isServerStateScopeCurrent(expected)) {
     throw new HttpError('会话已切换，请求已取消', {
@@ -147,15 +153,19 @@ export function transitionServerStateScope(
     }
   }
 
-  sessionController?.abort()
+  sessionController.abort()
   activeScope.value = undefined
-  sessionController = undefined
   authorizationFingerprint = ''
   sessionEpoch += 1
   queryClient.clear()
 
   // 所有已校验的客户端投影必须先同步完成，活跃观察者随后才能看到新范围。
-  applyProjection()
+  try {
+    applyProjection()
+  } catch (error) {
+    sessionController = new AbortController()
+    throw error
+  }
 
   authorizationFingerprint = identity.authorizationFingerprint
   sessionController = new AbortController()
@@ -170,12 +180,12 @@ export function transitionServerStateScope(
 
 /** 失败关闭或退出时同步撤销请求、隐藏观察结果并清空全部服务端状态。 */
 export function deactivateServerStateScope(): void {
-  sessionController?.abort()
-  sessionController = undefined
+  sessionController.abort()
   authorizationFingerprint = ''
   activeScope.value = undefined
   sessionEpoch += 1
   queryClient.clear()
+  sessionController = new AbortController()
 }
 
 export function serverStateScopePrefix(scope: ServerStateScope) {

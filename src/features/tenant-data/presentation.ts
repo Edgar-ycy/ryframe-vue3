@@ -22,8 +22,19 @@ const ACTIVE_POLLING_STATES = new Set<TenantDataMigrationState>([
   'succeeded',
 ])
 
-export function isMigrationInProgress(state: TenantDataMigrationState): boolean {
-  return ACTIVE_POLLING_STATES.has(state)
+export function blocksNewMigration(state: TenantDataMigrationState): boolean {
+  return state !== 'finalized' && state !== 'failed' && state !== 'cancelled'
+}
+
+export function shouldPollMigration(
+  migration: Pick<TenantDataMigration, 'state' | 'cancel_requested' | 'finalize_requested'>,
+): boolean {
+  return (
+    blocksNewMigration(migration.state) &&
+    (ACTIVE_POLLING_STATES.has(migration.state) ||
+      migration.cancel_requested ||
+      migration.finalize_requested)
+  )
 }
 
 export function canCancelMigration(migration: TenantDataMigration): boolean {

@@ -4,7 +4,9 @@
   --color-primary: #4f46e5;
   --color-primary-light: #6366f1;
   --color-primary-dark: #3730a3;
-  --color-primary-readable: #3730a3;
+  --color-primary-readable-light: #3730a3;
+  --color-primary-readable-dark: #7b75eb;
+  --color-primary-readable: var(--color-primary-readable-light);
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;

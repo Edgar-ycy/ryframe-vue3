@@ -7,14 +7,12 @@ import type { components as coreComponents, operations as coreOperations } from 
 import type { components as systemComponents, operations as systemOperations } from './system'
 import type { components as platformComponents, operations as platformOperations } from './platform'
 import type { components as monitorComponents, operations as monitorOperations } from './monitor'
-import type { components as agentComponents, operations as agentOperations } from './agent'
 
 export type operations =
   coreOperations
   & systemOperations
   & platformOperations
   & monitorOperations
-  & agentOperations
 
 export interface components {
   schemas:
@@ -22,5 +20,4 @@ export interface components {
     & systemComponents['schemas']
     & platformComponents['schemas']
     & monitorComponents['schemas']
-    & agentComponents['schemas']
 }

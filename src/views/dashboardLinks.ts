@@ -2,6 +2,7 @@ import type { RouteProjection } from '@/shared/navigation/routeProjection'
 
 export interface DashboardLink {
   title: string
+  defaultTitle?: string
   path: string
   icon?: string
 }
@@ -34,6 +35,7 @@ export function collectDashboardLinks(
     seenPaths.add(fullPath)
     links.push({
       title,
+      defaultTitle: route.meta?.defaultTitle,
       path: fullPath,
       icon: typeof route.meta?.icon === 'string' ? route.meta.icon : undefined,
     })

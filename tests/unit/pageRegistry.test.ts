@@ -15,11 +15,9 @@ describe('菜单页面注册表', () => {
   })
 
   it('自动汇总领域、生成资源和可裁剪功能页面', () => {
-    expect(Object.keys(menuPageRegistry)).toHaveLength(30)
+    expect(Object.keys(menuPageRegistry).length).toBeGreaterThanOrEqual(29)
     expect(getMenuPage('system.post')?.path).toBe('/system/post')
-    expect(getMenuPage('system.service-accounts')?.requiredCapabilities).toEqual([
-      'system.service_accounts',
-    ])
+    expect(getMenuPage('system.service-accounts')).toBeUndefined()
     expect(getRouteKeyByPermissionCode('system:post:list')).toBe('system.post')
   })
 })

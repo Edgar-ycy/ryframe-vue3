@@ -12,21 +12,9 @@ vi.mock('element-plus', () => ({
   ElMessageBox: { confirm: ui.confirm },
 }))
 
-import type {
-  CreateProfileServiceDelegationInput,
-  CreatedProfileServiceDelegation,
-  ProfileServiceDelegation,
-} from '@/api/modules/profileServiceDelegation'
-import type {
-  CreatedServiceCredential,
-  CreateServiceCredentialInput,
-  ServiceAccount,
-} from '@/api/modules/serviceAccount'
 import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
 import { deactivateServerStateScope, transitionServerStateScope } from '@/shared/query/client'
-import { createProfileServiceDelegationPageActions } from '@/views/profile/serviceDelegationPageActions'
 import { createConfigTransferPageActions } from '@/views/system/config-transfer/configTransferPageActions'
-import { createServiceAccountPageActions } from '@/views/system/service-accounts/serviceAccountPageActions'
 
 function activate(fingerprint: string): void {
   transitionServerStateScope(
@@ -46,34 +34,6 @@ function deferred<T>() {
     resolve = accept
   })
   return { promise, resolve }
-}
-
-function delegation(): ProfileServiceDelegation {
-  return {
-    account_id: 'account-1',
-    capability_keys: ['reports.read'],
-    created_at: '2026-08-29T00:00:00.000Z',
-    expires_at: '2026-08-30T00:00:00.000Z',
-    id: 'delegation-1',
-    not_before: '2026-08-29T00:00:00.000Z',
-    reason: 'test',
-    status: 'active',
-    user_id: 'user-a',
-    version: 1,
-  }
-}
-
-function serviceAccount(): ServiceAccount {
-  return {
-    authorization_version: 1,
-    code: 'automation',
-    created_at: '2026-08-29T00:00:00.000Z',
-    id: 'account-1',
-    max_requests_per_minute: 60,
-    name: 'Automation',
-    status: '1',
-    updated_at: '2026-08-29T00:00:00.000Z',
-  }
 }
 
 function configBundle(): TenantConfigBundle {
@@ -127,88 +87,6 @@ afterEach(() => {
 })
 
 describe('页面异步操作 scope', () => {
-  it('Profile 失活后迟到委托结果不提示且不回传一次性令牌', async () => {
-    let identityCurrent = true
-    const pending = deferred<CreatedProfileServiceDelegation>()
-    const done = vi.fn()
-    const actions = createProfileServiceDelegationPageActions({
-      identityMatches: () => identityCurrent,
-      issueDelegation: () => pending.promise,
-      notifyCreated: ui.success,
-      notifyRevoked: vi.fn(),
-      revokeDelegation: vi.fn(),
-    })
-    const input: CreateProfileServiceDelegationInput = {
-      capability_keys: ['reports.read'],
-      reason: 'test',
-      service_account_id: 'account-1',
-    }
-
-    const operation = actions.createServiceDelegation(input, 'guard-a', done)
-    identityCurrent = false
-    pending.resolve({ delegation: delegation(), token: 'old-token' })
-
-    await expect(operation).rejects.toMatchObject({ kind: 'cancelled' })
-    expect(ui.success).not.toHaveBeenCalled()
-    expect(done).not.toHaveBeenCalled()
-  })
-
-  it('Service Account 失活后迟到密钥不打开对话框且不提示', async () => {
-    let identityCurrent = true
-    const pending = deferred<CreatedServiceCredential>()
-    const account = serviceAccount()
-    const management: Parameters<typeof createServiceAccountPageActions>[0]['management'] = {
-      captureIdentity: () => 'guard-a',
-      identityMatches: () => identityCurrent,
-      issueCredential: () => pending.promise,
-      removeAccount: vi.fn(),
-      revokeCredential: vi.fn(),
-      revokeDelegation: vi.fn(),
-      saveAccount: vi.fn(async () => account),
-      saveRoles: vi.fn(),
-      selectAccount: vi.fn(),
-      selectedAccount: ref<ServiceAccount | null>(account),
-      setAccountStatus: vi.fn(),
-    }
-    const state: Parameters<typeof createServiceAccountPageActions>[0]['state'] = {
-      accountDialogVisible: ref(false),
-      accountFormIdentity: ref('guard-a'),
-      credentialDialogVisible: ref(true),
-      credentialSecret: ref(null),
-      detailDrawerVisible: ref(true),
-      detailIdentity: ref('guard-a'),
-      editingAccount: ref(null),
-      pendingAccountId: ref(),
-      secretDialogVisible: ref(false),
-    }
-    const actions = createServiceAccountPageActions({ management, state, t: (key) => key })
-    const input: CreateServiceCredentialInput = {
-      expires_at: '2026-08-30T00:00:00.000Z',
-      label: 'automation',
-    }
-
-    const operation = actions.submitCredential(input)
-    identityCurrent = false
-    pending.resolve({
-      credential: {
-        account_id: account.id,
-        created_at: '2026-08-29T00:00:00.000Z',
-        expires_at: input.expires_at,
-        id: 'credential-1',
-        key_id: 'key-1',
-        label: input.label,
-        status: 'active',
-      },
-      secret: 'old-secret',
-    })
-
-    await expect(operation).rejects.toMatchObject({ kind: 'cancelled' })
-    expect(ui.success).not.toHaveBeenCalled()
-    expect(state.credentialSecret.value).toBeNull()
-    expect(state.secretDialogVisible.value).toBe(false)
-    expect(state.credentialDialogVisible.value).toBe(true)
-  })
-
   it('Config Transfer epoch 切换后迟到上传不关闭对话框且零提示', async () => {
     const pending = deferred<TenantConfigTransfer>()
     const bundle = configBundle()

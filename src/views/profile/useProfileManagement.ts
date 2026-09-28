@@ -1,5 +1,6 @@
 import { onActivated, onDeactivated, ref, watch } from 'vue'
 import { getProfile, type ProfileInfo, type ProfileUpdateParams } from '@/api/modules/auth'
+import { setLocale } from '@/app/settings/coordinator'
 import { normalizeLocale } from '@/i18n'
 import { HttpError } from '@/shared/http/client'
 import {
@@ -9,7 +10,6 @@ import {
 } from '@/shared/query/client'
 import type { ServerStateScope } from '@/shared/query/scope'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
-import { useSettingsStore } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 
 type Translate = (key: string) => string
@@ -37,7 +37,6 @@ function emptyProfile(): ProfileInfo {
 
 export function useProfileManagement(t: Translate) {
   const userStore = useUserStore()
-  const settingsStore = useSettingsStore()
   const serverStateScope = useServerStateScope()
   const pageActive = ref(true)
 
@@ -93,7 +92,7 @@ export function useProfileManagement(t: Translate) {
     const preferredLocale = normalizeLocale(nextProfile.preferred_locale)
     if (preferredLocale) {
       userStore.setPreferredLocale(preferredLocale)
-      settingsStore.setLocale(preferredLocale)
+      setLocale(preferredLocale)
     }
   }
 

@@ -32,7 +32,7 @@
           <ThemePicker
             :model-value="settingsStore.themeColor"
             :label="t('settings.themeColor')"
-            @update:model-value="settingsStore.setThemeColor"
+            @update:model-value="setThemeColor"
           />
         </div>
 
@@ -52,25 +52,19 @@
 
         <div class="setting-section">
           <div class="setting-label">{{ t('settings.tagsView') }}</div>
-          <el-switch
-            :model-value="settingsStore.tagsView"
-            @change="settingsStore.toggleTagsView()"
-          />
+          <el-switch :model-value="settingsStore.tagsView" @change="toggleTagsView()" />
           <span class="setting-hint">{{ t('settings.tagsViewHint') }}</span>
         </div>
 
         <div class="setting-section">
           <div class="setting-label">{{ t('settings.sidebarLogo') }}</div>
-          <el-switch
-            :model-value="settingsStore.sidebarLogo"
-            @change="settingsStore.toggleSidebarLogo()"
-          />
+          <el-switch :model-value="settingsStore.sidebarLogo" @change="toggleSidebarLogo()" />
           <span class="setting-hint">{{ t('settings.sidebarLogoHint') }}</span>
         </div>
 
         <el-divider />
 
-        <el-button type="primary" style="width: 100%" @click="settingsStore.resetSettings()">
+        <el-button type="primary" style="width: 100%" @click="resetSettings()">
           {{ t('settings.restore') }}
         </el-button>
       </div>
@@ -82,14 +76,20 @@
 import { useI18n } from 'vue-i18n'
 import { updateProfile } from '@/api/modules/auth'
 import { messageController } from '@/app/messages/messageController'
+import {
+  resetSettings,
+  setComponentSize,
+  setLocale,
+  setTheme,
+  setThemeColor,
+  toggleSidebarLogo,
+  toggleTagsView,
+} from '@/app/settings/coordinator'
 import { normalizeLocale, type AppLocale } from '@/i18n'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
-import { useSettingsStore } from '@/stores/settings'
+import { useSettingsStore, type ColorTheme, type ComponentSize } from '@/stores/settings'
 import { useUserStore } from '@/stores/user'
 import ThemePicker from './ThemePicker.vue'
-
-type ComponentSize = 'large' | 'default' | 'small'
-type Theme = 'light' | 'dark'
 
 const visible = defineModel<boolean>({ default: false })
 const settingsStore = useSettingsStore()
@@ -115,7 +115,7 @@ async function handleLocaleChange(value: string | number | boolean | undefined):
   const locale = normalizeLocale(value)
   if (!locale || locale === settingsStore.locale || localeMutation.pending.value) return
 
-  settingsStore.setLocale(locale)
+  setLocale(locale)
   if (userStore.sessionStatus !== 'authenticated' || !userStore.nickname) return
 
   await localeMutation.mutateAsync(locale)
@@ -125,12 +125,12 @@ async function handleLocaleChange(value: string | number | boolean | undefined):
 }
 
 function handleThemeChange(value: string | number | boolean | undefined): void {
-  if (value === 'light' || value === 'dark') settingsStore.setTheme(value satisfies Theme)
+  if (value === 'light' || value === 'dark') setTheme(value satisfies ColorTheme)
 }
 
 function handleComponentSizeChange(value: string | number | boolean | undefined): void {
   if (value === 'large' || value === 'default' || value === 'small') {
-    settingsStore.setComponentSize(value satisfies ComponentSize)
+    setComponentSize(value satisfies ComponentSize)
   }
 }
 </script>

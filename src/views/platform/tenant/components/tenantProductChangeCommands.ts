@@ -1,3 +1,4 @@
+import { toRaw } from 'vue'
 import {
   applyTenantProductChange,
   previewTenantProductChange,
@@ -22,6 +23,19 @@ export type TenantProductApplyCommand = TenantProductPreviewCommand & {
 }
 
 export const TENANT_PRODUCT_CONTEXT_RESOURCE = 'platform-tenant-product-context'
+
+/** 只提取可提交字段，并隔离响应式表单与嵌套能力配置的后续编辑。 */
+export function snapshotCapabilityOverrides(
+  values: readonly CapabilityOverrideInput[],
+): CapabilityOverrideInput[] {
+  return values.map((value) => ({
+    capability_code: value.capability_code,
+    enabled: value.enabled,
+    variant_code: value.variant_code,
+    schema_version: value.schema_version,
+    config: structuredClone(toRaw(value.config)),
+  }))
+}
 
 export function invalidateTenantProductContext(scope: ServerStateScope): Promise<void> {
   return invalidateServerStateResource(scope, TENANT_PRODUCT_CONTEXT_RESOURCE)

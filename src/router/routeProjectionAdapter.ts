@@ -5,6 +5,7 @@ function projectMeta(meta: RouteRecordRaw['meta']): RouteProjectionMeta | undefi
   if (!meta) return undefined
   return {
     title: meta.title,
+    defaultTitle: typeof meta.defaultTitle === 'string' ? meta.defaultTitle : undefined,
     icon: meta.icon,
     hidden: meta.hidden,
     affix: meta.affix,

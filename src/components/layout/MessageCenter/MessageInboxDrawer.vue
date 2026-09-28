@@ -209,6 +209,8 @@ function severityLabel(severity: string): string {
 
 .message-center__selection {
   display: block;
+  font-size: var(--el-font-size-base);
+  line-height: 1.5;
 }
 
 .message-item {

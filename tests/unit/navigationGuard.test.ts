@@ -2,6 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createNavigationGuard, type NavigationGuardDependencies } from '@/router/navigationGuard'
 
+vi.mock('@/features/pageRegistry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/pageRegistry')>()
+  return {
+    ...actual,
+    getMenuPageByPath: (path: string) =>
+      path === '/example-reports'
+        ? { permission: 'system:user:list', requiredCapabilities: ['example.reports'] }
+        : actual.getMenuPageByPath(path),
+  }
+})
+
 function dependencies(options?: {
   capabilities?: string[]
   permissions?: string[]
@@ -41,13 +52,13 @@ describe('导航守卫错误语义', () => {
   it('直达已授权但未开通能力的页面进入功能不可用页', async () => {
     const guard = createNavigationGuard(
       dependencies({
-        permissions: ['system:service-account:list'],
+        permissions: ['system:user:list'],
       }),
     )
     await expect(
       guard({
         path: '/404',
-        redirectedFrom: { fullPath: '/system/service-accounts' },
+        redirectedFrom: { fullPath: '/example-reports' },
       }),
     ).resolves.toEqual({ path: '/feature-unavailable', replace: true })
   })

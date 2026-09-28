@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   updateProfile: vi.fn(),
 }))
 const session = vi.hoisted(() => ({ terminateSession: vi.fn() }))
+const settings = vi.hoisted(() => ({ setLocale: vi.fn() }))
 
 vi.mock('vue', async (importOriginal) => {
   const vue = await importOriginal<typeof import('vue')>()
@@ -26,9 +27,9 @@ vi.mock('vue', async (importOriginal) => {
 })
 vi.mock('@/api/modules/auth', () => api)
 vi.mock('@/app/session/sessionCoordinator', () => session)
-vi.mock('@/i18n', () => ({ normalizeLocale: () => undefined }))
-vi.mock('@/stores/settings', () => ({
-  useSettingsStore: () => ({ setLocale: vi.fn() }),
+vi.mock('@/app/settings/coordinator', () => settings)
+vi.mock('@/i18n', () => ({
+  normalizeLocale: (value: unknown) => (value === 'zh-CN' || value === 'en-US' ? value : undefined),
 }))
 vi.mock('element-plus', () => ({ ElMessage: { success: vi.fn() } }))
 
@@ -71,6 +72,7 @@ function profile(subject: 'user-a' | 'user-b'): ProfileInfo {
     status: '1',
     user_id: subject,
     username: subject,
+    preferred_locale: subject === 'user-a' ? 'zh-CN' : 'en-US',
   }
 }
 
@@ -124,6 +126,7 @@ describe('个人资料完整会话范围', () => {
     api.updateProfile.mockResolvedValue(undefined)
     api.changePassword.mockResolvedValue(undefined)
     api.updateAvatar.mockResolvedValue({ data: { avatar_url: '/avatar-b.png' } })
+    settings.setLocale.mockReset()
   })
 
   afterEach(() => {
@@ -152,6 +155,8 @@ describe('个人资料完整会话范围', () => {
     await Promise.resolve()
     expect(composable.result.profile.value.email).not.toBe('user-a@example.com')
     expect(composable.result.profile.value.avatar).not.toBe('user-a-avatar')
+    await vi.waitFor(() => expect(settings.setLocale).toHaveBeenCalledWith('en-US'))
+    expect(settings.setLocale).not.toHaveBeenCalledWith('zh-CN')
 
     lifecycle.deactivated?.()
     expect(composable.result.profile.value.email).toBe('')

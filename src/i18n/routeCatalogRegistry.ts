@@ -20,14 +20,8 @@ export const messageCatalogLoaders = Object.freeze({
   'product-plans': defineCatalogLoader('product-plans', () =>
     import('./catalog/product-plans').then((module) => module.messageCatalog),
   ),
-  'profile-service-delegations': defineCatalogLoader('profile-service-delegations', () =>
-    import('./catalog/profile-service-delegations').then((module) => module.messageCatalog),
-  ),
   'profile-sessions': defineCatalogLoader('profile-sessions', () =>
     import('./catalog/profile-sessions').then((module) => module.messageCatalog),
-  ),
-  'service-accounts': defineCatalogLoader('service-accounts', () =>
-    import('./catalog/service-accounts').then((module) => module.messageCatalog),
   ),
   system: defineCatalogLoader('system', () =>
     import('./catalog/system').then((module) => module.messageCatalog),
@@ -48,7 +42,7 @@ export type MessageCatalogName = keyof typeof messageCatalogLoaders
 /** 路由命名空间是领域目录的唯一装配事实源；更具体的命名空间会叠加专用目录。 */
 export const routeCatalogRegistry = Object.freeze({
   account: ['account'],
-  'account.profile': ['profile-sessions', 'profile-service-delegations'],
+  'account.profile': ['profile-sessions'],
   home: ['account', 'platform-operations'],
   monitor: ['monitor-tools'],
   'monitor.jobs': ['monitor-jobs'],
@@ -63,7 +57,6 @@ export const routeCatalogRegistry = Object.freeze({
   'system.config-transfer': ['tenant-config-transfer'],
   'system.logininfor': ['monitor-tools'],
   'system.operlog': ['monitor-tools'],
-  'system.service-accounts': ['service-accounts'],
   'system.user': ['platform-operations'],
 } satisfies Readonly<Record<string, readonly MessageCatalogName[]>>)
 

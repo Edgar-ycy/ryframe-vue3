@@ -33,6 +33,42 @@
   justify-content: flex-end;
 }
 
+.tenant-heading__tags :deep(.el-tag--success) {
+  --el-tag-bg-color: #dcfce7;
+  --el-tag-border-color: #86efac;
+  --el-tag-text-color: #14532d;
+}
+
+.tenant-heading__tags :deep(.el-tag--info) {
+  --el-tag-bg-color: #dbeafe;
+  --el-tag-border-color: #93c5fd;
+  --el-tag-text-color: #1e3a8a;
+}
+
+.tenant-heading__tags :deep(.el-tag--warning) {
+  --el-tag-bg-color: #fef3c7;
+  --el-tag-border-color: #fcd34d;
+  --el-tag-text-color: #78350f;
+}
+
+.tenant-heading__tags :deep(.el-tag--danger) {
+  --el-tag-bg-color: #fee2e2;
+  --el-tag-border-color: #fca5a5;
+  --el-tag-text-color: #7f1d1d;
+}
+
+.tenant-heading__tags :deep(.el-tag--primary) {
+  --el-tag-bg-color: #e0e7ff;
+  --el-tag-border-color: #a5b4fc;
+  --el-tag-text-color: #312e81;
+}
+
+.tenant-heading__tags :deep(.el-tag--default) {
+  --el-tag-bg-color: #e2e8f0;
+  --el-tag-border-color: #94a3b8;
+  --el-tag-text-color: #1e293b;
+}
+
 .drawer-hint,
 .section-description,
 .window-remaining {

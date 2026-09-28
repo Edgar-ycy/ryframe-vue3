@@ -1,13 +1,33 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyComponentSize, applyTheme, applyThemeColor } from '@/stores/settings/domAdapter'
+import { applyComponentSize, applyTheme, applyThemeColor } from '@/app/settings/domAdapter'
+import { loadSettings, saveSettings } from '@/app/settings/persistence'
 import { createDefaultSettings, DEFAULT_THEME_COLOR, SKIN_COLOR_MAP } from '@/stores/settings/model'
-import { loadSettings, saveSettings } from '@/stores/settings/persistence'
 import {
   hslToHex,
   parseThemeColor,
+  resolveReadableDarkThemeColor,
   resolveReadableThemeColor,
   rgbToHsl,
 } from '@/stores/settings/theme'
+
+function colorChannels(value: string): [number, number, number] {
+  const parsed = parseThemeColor(value)
+  if (!parsed) throw new Error(`测试颜色无效: ${value}`)
+  return [parsed.red, parsed.green, parsed.blue]
+}
+
+function relativeLuminance(value: string): number {
+  const channels = colorChannels(value).map((channel) => {
+    const normalized = channel / 255
+    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const values = [relativeLuminance(foreground), relativeLuminance(background)]
+  return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05)
+}
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -41,6 +61,29 @@ describe('设置主题模型', () => {
     expect(resolveReadableThemeColor('#FFFFFF')).not.toBe('#FFFFFF')
     expect(resolveReadableThemeColor('invalid')).toMatch(/^#[0-9A-F]{6}$/u)
     expect(resolveReadableThemeColor('#111827')).toBe('#111827')
+    expect(resolveReadableDarkThemeColor('#000000')).not.toBe('#000000')
+    expect(resolveReadableDarkThemeColor('#FFFFFF')).toBe('#FFFFFF')
+    expect(resolveReadableDarkThemeColor('invalid')).toMatch(/^#[0-9A-F]{6}$/u)
+  })
+
+  it('全部内置皮肤和回退色在实际明暗表面满足普通文本对比度', () => {
+    const colors = [...Object.values(SKIN_COLOR_MAP), '#000000', '#FFFFFF', 'invalid']
+    for (const color of colors) {
+      const light = resolveReadableThemeColor(color)
+      for (const background of ['#F3F4F6', '#FFFFFF']) {
+        expect(
+          contrastRatio(light, background),
+          `${color} on ${background}`,
+        ).toBeGreaterThanOrEqual(4.5)
+      }
+
+      const dark = resolveReadableDarkThemeColor(color)
+      for (const background of ['#0F172A', '#111827', '#1E293B']) {
+        expect(contrastRatio(dark, background), `${color} on ${background}`).toBeGreaterThanOrEqual(
+          4.5,
+        )
+      }
+    }
   })
 
   it('提供完整且不可变语义的默认设置', () => {
@@ -164,7 +207,8 @@ describe('设置 DOM 适配器', () => {
     expect(setAttribute).toHaveBeenCalledWith('data-theme', 'dark')
     expect(setAttribute).toHaveBeenCalledWith('data-size', 'small')
     expect(properties.get('--el-color-primary')).toBe('#4F46E5')
-    expect(properties.get('--color-primary-readable')).toMatch(/^#[0-9A-F]{6}$/u)
+    expect(properties.get('--color-primary-readable-light')).toMatch(/^#[0-9A-F]{6}$/u)
+    expect(properties.get('--color-primary-readable-dark')).toMatch(/^#[0-9A-F]{6}$/u)
     expect(properties.has('--el-color-primary-light-9')).toBe(true)
     expect(properties.get('--sidebar-bg')).toContain('linear-gradient')
     expect(properties.get('--el-color-primary-dark-2')).toMatch(/^#[0-9a-f]{6}$/u)

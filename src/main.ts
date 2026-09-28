@@ -12,6 +12,7 @@ import pinia from './stores'
 import { installGlobalErrorHandlers } from '@/app/errorHandler'
 import { installRouteRuntime } from '@/app/navigation/runtime'
 import { ensureRuntimeCapabilitiesLoaded } from '@/app/runtime-capabilities/coordinator'
+import { initializeSettings } from '@/app/settings/coordinator'
 import {
   clearSession,
   initializeSession,
@@ -37,10 +38,10 @@ configureHttpLocalization({
 
 const app = createApp(App)
 
-installRouteProjection({ constantRoutes: projectRouteRecords(constantRoutes) })
-
 app.use(pinia)
 app.use(i18n)
+initializeSettings()
+installRouteProjection({ constantRoutes: projectRouteRecords(constantRoutes) })
 app.use(VueQueryPlugin, { queryClient })
 installRouterApplicationRuntime({
   clearSession,

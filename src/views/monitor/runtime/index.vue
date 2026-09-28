@@ -95,6 +95,8 @@
           <el-tag :type="schedulerTagType()" size="large">{{ schedulerStatusText() }}</el-tag>
         </el-card>
       </el-col>
+
+      <RuntimeBackupCard :backup="runtime?.backup" />
     </el-row>
 
     <section class="monitor-section-card">
@@ -134,6 +136,7 @@ import { getRuntimeStatus, type RuntimeStatus } from '@/api/modules/monitor'
 import { useKeepAlivePageActive } from '@/hooks/useKeepAlivePageActive'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
+import RuntimeBackupCard from './RuntimeBackupCard.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()

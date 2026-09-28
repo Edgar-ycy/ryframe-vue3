@@ -97,6 +97,7 @@ import {
   resolveRuntimeAccessibleRoute,
 } from '@/app/navigation/runtime'
 import { authenticateWithPassword } from '@/app/session/login'
+import { HttpError } from '@/shared/http/client'
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { DEFAULT_TENANT_ID, getTenantId } from '@/utils/auth'
@@ -250,6 +251,7 @@ const handleLogin = async () => {
     const redirect = resolveLoginRedirect(route.query.redirect)
     await router.replace(resolveRuntimeAccessibleRoute(redirect))
   } catch (error) {
+    if (error instanceof HttpError && error.kind === 'cancelled') return
     ElMessage.error(
       error instanceof Error && error.message ? error.message : t('shell.http.requestFailed'),
     )

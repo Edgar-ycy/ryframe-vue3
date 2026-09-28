@@ -83,7 +83,7 @@ function contrastRatio(foreground: ParsedThemeColor, background: [number, number
   )
 }
 
-function findReadableThemeColor(
+function findReadableThemeColorOnLight(
   hue: number,
   saturation: number,
   lightness: number,
@@ -118,5 +118,36 @@ function findReadableThemeColor(
 export function resolveReadableThemeColor(value: string): string {
   const parsed = parseThemeColor(value) ?? parseThemeColor(DEFAULT_THEME_COLOR)!
   const [hue, saturation, lightness] = rgbToHsl(parsed.red, parsed.green, parsed.blue)
-  return findReadableThemeColor(hue, saturation, lightness, parsed.red, parsed.green, parsed.blue)
+  return findReadableThemeColorOnLight(
+    hue,
+    saturation,
+    lightness,
+    parsed.red,
+    parsed.green,
+    parsed.blue,
+  )
+}
+
+/** 为深色页面和浮层选择满足普通文本对比度的同色系主色。 */
+export function resolveReadableDarkThemeColor(value: string): string {
+  const parsed = parseThemeColor(value) ?? parseThemeColor(DEFAULT_THEME_COLOR)!
+  const [hue, saturation, lightness] = rgbToHsl(parsed.red, parsed.green, parsed.blue)
+  const backgrounds: [number, number, number][] = [
+    [15, 23, 42],
+    [17, 24, 39],
+    [30, 41, 59],
+  ]
+
+  for (
+    let candidateLightness = Math.max(lightness, 50);
+    candidateLightness <= 100;
+    candidateLightness += 1
+  ) {
+    const candidate = parseThemeColor(hslToHex(hue, saturation, candidateLightness))!
+    if (backgrounds.every((background) => contrastRatio(candidate, background) >= 4.5)) {
+      return candidate.css
+    }
+  }
+
+  return '#F8FAFC'
 }

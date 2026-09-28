@@ -15,18 +15,11 @@ const emptyContext = {
 describe('页面访问语义', () => {
   it('将已知页面的缺权限、缺能力和未知路由分开', () => {
     expect(registeredPageAccessResult('/system/user', emptyContext)).toBe('forbidden')
+    expect(registeredPageAccessResult('/system/service-accounts', emptyContext)).toBe('unknown')
+    const feature = { requiredCapabilities: ['example.reports'] }
+    expect(routeMetaAccessResult(feature, emptyContext)).toBe('capability-unavailable')
     expect(
-      registeredPageAccessResult('/system/service-accounts', {
-        ...emptyContext,
-        permissions: ['system:service-account:list'],
-      }),
-    ).toBe('capability-unavailable')
-    expect(
-      registeredPageAccessResult('/system/service-accounts', {
-        ...emptyContext,
-        capabilities: ['system.service_accounts'],
-        permissions: ['system:service-account:list'],
-      }),
+      routeMetaAccessResult(feature, { ...emptyContext, capabilities: ['example.reports'] }),
     ).toBe('allowed')
     expect(registeredPageAccessResult('/not-a-real-page', emptyContext)).toBe('unknown')
   })

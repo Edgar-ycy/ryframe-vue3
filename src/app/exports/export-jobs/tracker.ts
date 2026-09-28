@@ -15,6 +15,7 @@ import {
   removeExportJobs,
 } from '../exportJobCache'
 import { useExportJobActions } from './actions'
+import { refreshExportJob } from './detailRefresh'
 import { currentExportJobScope, sameExportJobScope, shouldEnableExportJobs } from './identity'
 import { useExportJobList } from './list'
 import { useExportNotificationState } from './notifications'
@@ -75,44 +76,6 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
     }
   }
 
-  async function refreshOne(
-    scope: ServerStateScope,
-    jobId: string,
-    controller: AbortController,
-  ): Promise<void> {
-    if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
-    try {
-      const job = requireOperationData(await getExportJob(jobId, controller.signal))
-      if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
-      mergeExportJob(queryClient, scope, job)
-    } catch (error) {
-      if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
-      if (!(error instanceof HttpError)) return
-      if (error.kind === 'cancelled') return
-      if (error.status === 403 || error.status === 404) {
-        removeExportJob(queryClient, scope, jobId)
-        return
-      }
-      if (error.status === 409) {
-        try {
-          if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
-          const latest = requireOperationData(await getExportJob(jobId, controller.signal))
-          if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
-          mergeExportJob(queryClient, scope, latest)
-        } catch (retryError) {
-          if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
-          if (retryError instanceof HttpError && retryError.kind === 'cancelled') return
-          try {
-            if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
-            await list.refresh()
-          } catch {
-            // 本轮对账失败时保留活跃任务，下一轮继续确认。
-          }
-        }
-      }
-    }
-  }
-
   async function refreshActiveDetails(
     scope: ServerStateScope,
     controller: AbortController,
@@ -131,7 +94,7 @@ export function useExportJobTracker(options: ExportJobTrackerOptions = {}) {
           if (controller.signal.aborted || !isServerStateScopeCurrent(scope)) return
           const jobId = ids[cursor]
           cursor += 1
-          if (jobId) await refreshOne(scope, jobId, controller)
+          if (jobId) await refreshExportJob(scope, jobId, controller, list.refresh)
         }
       },
     )

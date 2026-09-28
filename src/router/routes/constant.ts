@@ -42,7 +42,7 @@ export const constantRoutes: RouteRecordRaw[] = [
         path: 'index',
         name: 'Index',
         component: withRouteComponentName('Index', dashboardPage),
-        meta: { title: '首页', icon: 'HomeFilled', affix: true },
+        meta: { title: 'home', defaultTitle: '首页', icon: 'HomeFilled', affix: true },
       },
       {
         path: 'profile',

@@ -1,3 +1,4 @@
+import { toRaw } from 'vue'
 import {
   createTenantDataMigration,
   previewTenantDataMigration,
@@ -26,6 +27,13 @@ export interface TenantMigrationCreateCommand {
 
 export const TENANT_DATA_MIGRATIONS_RESOURCE = 'platform-tenant-data-migrations'
 export const TENANT_DATA_PLACEMENT_RESOURCE = 'platform-tenant-data-placement'
+
+/** 隔离响应式预览，保证后续页面更新不会改变已确认的创建命令。 */
+export function snapshotTenantDataMigrationPreview(
+  preview: TenantDataMigrationPreview,
+): TenantDataMigrationPreview {
+  return structuredClone(toRaw(preview))
+}
 
 export function invalidateTenantMigrationResources(scope: ServerStateScope): Promise<void[]> {
   return Promise.all([

@@ -104,7 +104,7 @@ async function sync() {
     metadata = requireSyncMetadata()
   } catch (error) {
     throw new Error(
-      `${error.message}。api:sync 需要 RYFRAME_BACKEND_REPOSITORY 和 RYFRAME_BACKEND_COMMIT。`,
+      `${error.message}。契约同步需要 RYFRAME_BACKEND_REPOSITORY 和 RYFRAME_BACKEND_COMMIT。`,
     )
   }
 
@@ -119,7 +119,9 @@ async function sync() {
 async function verifyUpstream() {
   const local = await verifyLocalContractState(root)
   if (local.mode !== 'formal') {
-    throw new Error('候选契约不能执行 --verify-upstream；请先运行 cargo api-sync --commit <提交>')
+    throw new Error(
+      '候选契约不能执行 --verify-upstream；请先运行 cargo xtask generate api --commit <提交> --write',
+    )
   }
   const source = pinnedSourceLabel(local.metadata)
   const upstream = parseContract(await readPinnedSource(local.metadata), source)

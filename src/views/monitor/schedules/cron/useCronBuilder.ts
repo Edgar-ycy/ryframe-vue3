@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 import { confirmAction } from '@/utils/confirmAction'
 import {
   ALL_MONTH_DAYS,
@@ -43,6 +43,17 @@ export function useCronBuilder(options: CronBuilderOptions) {
   const yearlyDayOptions = ref<number[]>(range(1, 31))
   const summary = ref('')
   const advancedOutsideBuilder = ref(false)
+  let writingCronExpression = false
+
+  function writeCronExpression(expression: string): void {
+    if (cronExpression.value === expression) return
+    writingCronExpression = true
+    try {
+      cronExpression.value = expression
+    } finally {
+      writingCronExpression = false
+    }
+  }
 
   function values(): CronBuilderValues {
     return {
@@ -71,7 +82,7 @@ export function useCronBuilder(options: CronBuilderOptions) {
 
   function syncCronExpression(): void {
     const expression = buildCronExpression(mode.value, values(), cronExpression.value)
-    cronExpression.value = expression ?? ''
+    writeCronExpression(expression ?? '')
     advancedOutsideBuilder.value = false
     updateSummary()
     emitChange({ complete: Boolean(expression), summary: summary.value })
@@ -179,7 +190,7 @@ export function useCronBuilder(options: CronBuilderOptions) {
   }
 
   function updateAdvancedExpression(value: string): void {
-    cronExpression.value = value
+    writeCronExpression(value)
     advancedOutsideBuilder.value = !recognizeCronExpression(value)
     updateSummary()
     emitChange({ complete: Boolean(value.trim()), summary: summary.value })
@@ -212,7 +223,11 @@ export function useCronBuilder(options: CronBuilderOptions) {
   }
 
   function loadExpression(expression: string): BuilderState {
-    cronExpression.value = expression
+    writeCronExpression(expression)
+    return applyExpression(expression)
+  }
+
+  function applyExpression(expression: string): BuilderState {
     const recognized = recognizeCronExpression(expression)
     if (recognized) {
       applyRecognizedExpression(recognized)
@@ -240,6 +255,14 @@ export function useCronBuilder(options: CronBuilderOptions) {
     advancedOutsideBuilder.value = false
     updateSummary()
   }
+
+  function syncExternalExpression(expression: string): void {
+    if (writingCronExpression) return
+    emitChange(applyExpression(expression))
+  }
+
+  watch(cronExpression, syncExternalExpression, { flush: 'sync' })
+  applyExpression(cronExpression.value)
 
   return {
     advancedOutsideBuilder,

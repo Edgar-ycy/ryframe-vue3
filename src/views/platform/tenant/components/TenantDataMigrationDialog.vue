@@ -175,6 +175,7 @@ import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
   invalidateTenantMigrationResources,
+  snapshotTenantDataMigrationPreview,
   tenantMigrationRetryOwner,
   useTenantDataMigrationCommands,
 } from './tenantDataMigrationCommand'
@@ -318,7 +319,7 @@ async function handleCreate(): Promise<void> {
     confirmationError.value = t('tenantData.confirmTenantIdMismatch')
     return
   }
-  const snapshot = structuredClone(preview.value)
+  const snapshot = snapshotTenantDataMigrationPreview(preview.value)
   const tenantId = props.tenantId
   const generation = pageGeneration.value
   const operation = beginServerStatePageOperation()

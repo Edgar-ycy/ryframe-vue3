@@ -157,7 +157,7 @@ import { getTenantDataMigration, type TenantDataMigration } from '@/api/modules/
 import {
   canCancelMigration,
   canFinalizeMigration,
-  isMigrationInProgress,
+  shouldPollMigration,
   stateTagType,
 } from '@/features/tenant-data/presentation'
 import { useActivePolling } from '@/features/tenant-data/useActivePolling'
@@ -225,13 +225,7 @@ const {
 
 useActivePolling(
   () => props.active && visible.value,
-  () =>
-    Boolean(
-      migration.value &&
-      (isMigrationInProgress(migration.value.state) ||
-        migration.value.cancel_requested ||
-        migration.value.finalize_requested),
-    ),
+  () => Boolean(migration.value && shouldPollMigration(migration.value)),
   async () => {
     await detailQuery.refetch()
   },

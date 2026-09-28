@@ -20,7 +20,7 @@
               <el-icon v-if="menu.meta?.icon"
                 ><component :is="resolveElementIcon(menu.meta.icon)"
               /></el-icon>
-              <span>{{ translateNavigationTitle(menu.meta?.title) }}</span>
+              <span>{{ translateNavigationTitle(menu.meta?.title, menu.meta?.defaultTitle) }}</span>
             </template>
             <el-menu-item
               v-for="child in visibleChildren(menu)"
@@ -30,7 +30,9 @@
               <el-icon v-if="child.meta?.icon"
                 ><component :is="resolveElementIcon(child.meta.icon)"
               /></el-icon>
-              <template #title>{{ translateNavigationTitle(child.meta?.title) }}</template>
+              <template #title>{{
+                translateNavigationTitle(child.meta?.title, child.meta?.defaultTitle)
+              }}</template>
             </el-menu-item>
           </el-sub-menu>
 
@@ -38,7 +40,9 @@
             <el-icon v-if="leafMeta(menu).icon">
               <component :is="resolveElementIcon(leafMeta(menu).icon)" />
             </el-icon>
-            <template #title>{{ translateNavigationTitle(leafMeta(menu).title) }}</template>
+            <template #title>{{
+              translateNavigationTitle(leafMeta(menu).title, leafMeta(menu).defaultTitle)
+            }}</template>
           </el-menu-item>
         </template>
       </el-menu>

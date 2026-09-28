@@ -185,15 +185,15 @@ export function useFlatCrudResource<
     await refresh()
   }
 
-  function search(): void {
+  function search(): Promise<void> {
     page.value = 1
-    void applyAndRefresh()
+    return applyAndRefresh()
   }
 
-  function reset(): void {
+  function reset(): Promise<void> {
     const preservedPageSize = pageSize.value
     draftQuery.value = Object.assign(resource.initialQuery(), { page_size: preservedPageSize })
-    void applyAndRefresh()
+    return applyAndRefresh()
   }
 
   async function submit(operation: ServerStatePageOperation): Promise<void> {

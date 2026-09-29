@@ -47,11 +47,10 @@ src/
    没有这些策略时可直接调用生成 caller。
 4. 从 `src/api/contract.ts` 取得 operation 的请求与响应类型。
 5. 在页面 composable 或应用用例中调用请求函数。
-6. 运行 `corepack pnpm check --stage contract` 和相关单元测试。
+6. 按当前项目可用的验证入口检查受影响模块。
 
 可参考 `src/api/modules/post.ts` 中的导出筛选规范化。业务模块不得手写 URL、HTTP method，
-也不得直接调用 `operationRequest`；运行 `corepack pnpm generate --write` 会更新四个领域 caller，连续生成
-应保持零差异。
+也不得直接调用 `operationRequest`。OpenAPI 派生文件由后端生成接口统一更新。
 
 ## 导入与状态边界
 
@@ -63,8 +62,7 @@ API、QueryClient 或其他 Store；也不以 type-only import 引入 Vue Router
 Element Plus。权限 Store 只保存 `src/shared/navigation/routeProjection.ts` 定义的中立路由投影，
 `src/router/routeProjectionAdapter.ts` 负责在 Router 边界转换。跨状态副作用放入 `src/app/`
 coordinator。API module 不直接依赖外部 package，也不依赖 Router、Store、Query 或 UI；
-`src/shared/http/` 只依赖 Axios 和同层纯模块。`corepack pnpm check --stage static` 同时检查内部路径、
-外部 package、运行时环和 Store 定义位置。
+`src/shared/http/` 只依赖 Axios 和同层纯模块。
 
 ## 管理状态
 
@@ -118,42 +116,16 @@ SessionContext
 按钮展示可使用 `v-perm`，页面可访问性由页面声明中的权限和 capability 参与计算。403、功能
 不可用和 404 页面可用于分别验证权限不足、能力缺失和未知路由。
 
-## 任务运行器与进程边界
+## 构建入口
 
-`corepack pnpm dev`、`check`、`build` 和 `generate` 是四个公开入口，共同使用任务运行器的任务图。
-`--plan` 只输出依赖、编译覆盖和允许写入，不启动任务或创建产物；定向检查通过 `check` 参数选择节点。
-`build --real` 将来源前像和最终收据列为任务图节点；同一前后像按前端产物角色派生 product、tools、full 三域，并绑定 Node、固定与实际 pnpm、Vite、production 环境摘要及完整 `dist` 清单。收据只在构建及包体积核验后写入；预览只读核对当前来源、环境文件、工具链和产物，不要求另一个终端重现构建时临时注入的 `VITE_*` 值。
-
-`scripts/task-process.mjs` 负责外部任务生命周期。Unix 使用独立进程组。Windows 为每个任务启动 Node
-worker；worker 在执行任务代码前加入启用 `KILL_ON_JOB_CLOSE` 的私有 Job Object，任务后代继承该
-Job。完成时 worker 通过 IPC 返回真实退出码、信号和派生错误后关闭 Job；取消时先停止直接任务，
-宽限结束后终止 worker，由句柄关闭回收后代。每个任务的 Job 相互隔离。
-
-Windows Job API 只在 worker 内通过锁定版本的 Koffi 预构建绑定调用；依赖安装脚本保持禁用，四个
-入口不在运行时编译本机扩展。任务运行器以 IPC 结果为事实，不以 worker 退出状态替代任务结果。
+公开入口只保留 `corepack pnpm dev` 与 `corepack pnpm build`。前者直接启动 Vite，后者先执行
+Vue TypeScript 项目构建，再执行 Vite 生产构建。前端自动化 CI、任务图、契约生成与浏览器验收入口
+当前均不提供。
 
 ## 编写与运行测试
 
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。
-- `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文 smoke 测试；开发服务与生产 preview 都执行，生产包复用同次 CI 构建产物。
-- `tests/browser-real/`：连接真实 API、MySQL 与 Redis 的完整浏览器流程。
+- `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文测试源码。
+- `tests/browser-real/`：连接真实 API、MySQL 与 Redis 的历史浏览器测试源码。
 
-开发时可先运行相邻测试：
-
-```bash
-corepack pnpm check --test tests/unit/postPage.component.test.ts
-corepack pnpm check
-```
-
-修改路由、会话、消息、Cron 或设置流程后，可运行定向测试与浏览器 smoke：
-
-```bash
-corepack pnpm check --stage unit
-corepack pnpm check --stage browser
-```
-
-准备生产构建时运行：
-
-```bash
-corepack pnpm check --full
-```
+当前仓库未配置测试任务入口；生产构建使用 `corepack pnpm build`。

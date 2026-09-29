@@ -8,7 +8,10 @@
     "node": "^22.22.2 || >=24.15.0"
   },
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5173"
+    "dev": "node scripts/task-runner.mjs dev",
+    "check": "node scripts/task-runner.mjs check",
+    "build": "node scripts/task-runner.mjs build",
+    "generate": "node scripts/task-runner.mjs generate"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

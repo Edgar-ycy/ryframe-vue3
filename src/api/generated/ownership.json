@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generator": "cargo xtask generate api --write",
+  "generator": "scripts/generate-api-artifacts.mjs",
   "files": [
     "src/api/generated/crudResources.ts",
     "src/api/generated/menuRoutes.ts",

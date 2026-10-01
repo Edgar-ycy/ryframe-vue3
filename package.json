@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "check": "node scripts/check.mjs",
     "build": "vue-tsc -p tsconfig.app.json && vite build"
   },
   "dependencies": {

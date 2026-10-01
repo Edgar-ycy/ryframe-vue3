@@ -14,8 +14,10 @@
     </el-alert>
     <template v-else>
       <el-alert
-        v-if="unknownCodes.length"
-        :title="t('productPlans.capabilityClientMismatch', { codes: unknownCodes.join(', ') })"
+        v-if="catalogMismatchCodes.length"
+        :title="
+          t('productPlans.capabilityClientMismatch', { codes: catalogMismatchCodes.join(', ') })
+        "
         type="error"
         show-icon
         :closable="false"
@@ -42,7 +44,10 @@
             </el-tag>
             <el-switch
               :model-value="Boolean(selectedCapability(descriptor.code))"
-              :disabled="!descriptor.deployment_available && !selectedCapability(descriptor.code)"
+              :disabled="
+                !findFeatureManifest(descriptor.code) ||
+                (!descriptor.deployment_available && !selectedCapability(descriptor.code))
+              "
               :aria-label="descriptor.name"
               @change="toggleCapability(descriptor, Boolean($event))"
             />
@@ -121,6 +126,14 @@ const unknownCodes = computed(() => {
     .filter((code) => !known.has(code))
 })
 
+const missingManifestCodes = computed(() =>
+  catalog.value.map((descriptor) => descriptor.code).filter((code) => !findFeatureManifest(code)),
+)
+
+const catalogMismatchCodes = computed(() =>
+  [...new Set([...unknownCodes.value, ...missingManifestCodes.value])].sort(),
+)
+
 onMounted(() => {
   void loadCatalog()
 })
@@ -144,6 +157,7 @@ function selectedCapability(code: string): ProductCapability | undefined {
 }
 
 function toggleCapability(descriptor: ProductCapabilityDescriptor, enabled: boolean): void {
+  if (!findFeatureManifest(descriptor.code)) return
   const current = selectedCapability(descriptor.code)
   if (!enabled) {
     model.value = model.value.filter((capability) => capability.capability_code !== descriptor.code)
@@ -200,7 +214,7 @@ function editorFor(code: string): Component | undefined {
 }
 
 function validate(): boolean {
-  if (loading.value || loadError.value || unknownCodes.value.length > 0) return false
+  if (loading.value || loadError.value || catalogMismatchCodes.value.length > 0) return false
   if (new Set(model.value.map((item) => item.capability_code)).size !== model.value.length) {
     return false
   }

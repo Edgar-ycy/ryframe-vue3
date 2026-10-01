@@ -1,6 +1,5 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
@@ -139,7 +138,7 @@ export default defineConfig(({ mode }) => {
 
     resolve: {
       alias: {
-        '@': resolve(__dirname, 'src'),
+        '@': `${import.meta.dirname}/src`,
       },
     },
 
@@ -170,7 +169,7 @@ export default defineConfig(({ mode }) => {
       port: devServerPort,
       host: env.VITE_APP_DEV_HOST || '127.0.0.1',
       // 只排除当前前端的验收产物；隔离工作树的祖先目录也可能名为 .local-tests。
-      watch: { ignored: [normalizedModuleId(resolve(__dirname, '.local-tests')) + '/**'] },
+      watch: { ignored: [normalizedModuleId(`${import.meta.dirname}/.local-tests`) + '/**'] },
       proxy: {
         '/api': {
           target: proxyTarget,
@@ -197,6 +196,7 @@ export default defineConfig(({ mode }) => {
               },
               {
                 name: operationChunkName,
+                debugName: 'operations',
                 test: (id) => operationChunkName(id) !== null,
                 priority: 90,
                 includeDependenciesRecursively: false,

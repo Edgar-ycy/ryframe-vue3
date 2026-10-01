@@ -1282,10 +1282,10 @@ export interface components {
             available: boolean;
             /** @description 键统计 */
             keys: components["schemas"]["CacheKeysInfo"];
-            memory?: null | components["schemas"]["RedisMemoryInfo"];
+            memory?: components["schemas"]["RedisMemoryInfo"] | null;
             /** @description 缓存模式: "redis" 或 "memory" */
             mode: string;
-            server?: null | components["schemas"]["RedisServerInfo"];
+            server?: components["schemas"]["RedisServerInfo"] | null;
         };
         /** @description 缓存键统计 */
         CacheKeysInfo: {
@@ -1512,7 +1512,7 @@ export interface components {
          */
         DataTargetKind: "control" | "mysql";
         DataTargetListQuery: {
-            eligible_for?: null | components["schemas"]["DataTargetEligibility"];
+            eligible_for?: components["schemas"]["DataTargetEligibility"] | null;
             /** Format: int64 */
             page?: number | null;
             /** Format: int64 */
@@ -2303,7 +2303,7 @@ export interface components {
         RuntimeBackupStatus: {
             available: boolean;
             collector_status: components["schemas"]["RuntimeBackupCollectionStatus"];
-            health?: null | components["schemas"]["RuntimeBackupHealth"];
+            health?: components["schemas"]["RuntimeBackupHealth"] | null;
             /** Format: date-time */
             last_attempt_at?: string | null;
             /** Format: date-time */
@@ -2496,8 +2496,8 @@ export interface components {
         TenantBusinessDataState: "provisioning" | "active" | "maintenance" | "failed";
         /** @description 平台租户容量分页查询参数。 */
         TenantCapacityPageQuery: {
-            capacity_status?: null | components["schemas"]["TenantCapacityStatusFilter"];
-            expiration_status?: null | components["schemas"]["TenantExpirationStatusFilter"];
+            capacity_status?: components["schemas"]["TenantCapacityStatusFilter"] | null;
+            expiration_status?: components["schemas"]["TenantExpirationStatusFilter"] | null;
             /** @description 按租户名称模糊搜索。 */
             name?: string | null;
             /**
@@ -2510,7 +2510,7 @@ export interface components {
              * @description 每页记录数，省略时为 20，最大为 100。
              */
             page_size?: number | null;
-            status?: null | components["schemas"]["TenantStatusFilter"];
+            status?: components["schemas"]["TenantStatusFilter"] | null;
             /** @description 按租户标识模糊搜索。 */
             tenant_id?: string | null;
         };
@@ -2539,7 +2539,7 @@ export interface components {
             /** @description 对外统一使用 `enabled` 或 `disabled`。 */
             status: string;
             tenant_id: string;
-            usage?: null | components["schemas"]["TenantUsageVo"];
+            usage?: components["schemas"]["TenantUsageVo"] | null;
         };
         /** @description 配置迁移中关联配置包的安全摘要，不包含数据库内部标识。 */
         TenantConfigBundleSummaryVo: {
@@ -2731,7 +2731,7 @@ export interface components {
         };
         /** @description 用户详情响应。 */
         UserDetailVo: components["schemas"]["UserVo"] & {
-            department?: null | components["schemas"]["DeptVo"];
+            department?: components["schemas"]["DeptVo"] | null;
             roles: components["schemas"]["RoleBriefVo"][];
         };
         UserImportJobVo: {

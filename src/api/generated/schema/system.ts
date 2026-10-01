@@ -1950,7 +1950,7 @@ export interface components {
             code: number;
             /** @description 用户详情响应。 */
             data?: components["schemas"]["UserVo"] & {
-                department?: null | components["schemas"]["DeptVo"];
+                department?: components["schemas"]["DeptVo"] | null;
                 roles: components["schemas"]["RoleBriefVo"][];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */

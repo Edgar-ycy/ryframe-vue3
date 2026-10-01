@@ -725,7 +725,7 @@ export interface components {
                 /** @description 对外统一使用 `enabled` 或 `disabled`。 */
                 status: string;
                 tenant_id: string;
-                usage?: null | components["schemas"]["TenantUsageVo"];
+                usage?: components["schemas"]["TenantUsageVo"] | null;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -1225,7 +1225,7 @@ export interface components {
                 /** @description 对外统一使用 `enabled` 或 `disabled`。 */
                 status: string;
                 tenant_id: string;
-                usage?: null | components["schemas"]["TenantUsageVo"];
+                usage?: components["schemas"]["TenantUsageVo"] | null;
             }[];
             /** Format: int64 */
             max_page_size: number;

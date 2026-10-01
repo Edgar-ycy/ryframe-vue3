@@ -532,10 +532,10 @@ export interface components {
                 available: boolean;
                 /** @description 键统计 */
                 keys: components["schemas"]["CacheKeysInfo"];
-                memory?: null | components["schemas"]["RedisMemoryInfo"];
+                memory?: components["schemas"]["RedisMemoryInfo"] | null;
                 /** @description 缓存模式: "redis" 或 "memory" */
                 mode: string;
-                server?: null | components["schemas"]["RedisServerInfo"];
+                server?: components["schemas"]["RedisServerInfo"] | null;
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -1267,7 +1267,7 @@ export interface components {
         RuntimeBackupStatus: {
             available: boolean;
             collector_status: components["schemas"]["RuntimeBackupCollectionStatus"];
-            health?: null | components["schemas"]["RuntimeBackupHealth"];
+            health?: components["schemas"]["RuntimeBackupHealth"] | null;
             /** Format: date-time */
             last_attempt_at?: string | null;
             /** Format: date-time */

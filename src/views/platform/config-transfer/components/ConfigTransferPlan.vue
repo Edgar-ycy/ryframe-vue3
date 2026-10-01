@@ -9,7 +9,7 @@
         <div v-if="transfer" class="panel-actions">
           <el-button
             v-if="canPreviewTenantConfigTransfer(transfer)"
-            v-perm="'system:config-transfer:preview'"
+            v-perm="'platform:config-transfer:preview'"
             type="primary"
             icon="View"
             :loading="previewing"
@@ -24,7 +24,7 @@
           </el-button>
           <el-button
             v-if="canApplyTenantConfigTransfer(transfer)"
-            v-perm="'system:config-transfer:apply'"
+            v-perm="'platform:config-transfer:apply'"
             type="success"
             icon="CircleCheck"
             :loading="applying"
@@ -35,7 +35,7 @@
           </el-button>
           <el-button
             v-if="canRollbackTenantConfigTransfer(transfer)"
-            v-perm="'system:config-transfer:rollback'"
+            v-perm="'platform:config-transfer:rollback'"
             type="warning"
             icon="RefreshLeft"
             :loading="rollingBack"

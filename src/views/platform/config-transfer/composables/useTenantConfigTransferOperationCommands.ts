@@ -15,6 +15,7 @@ import { TENANT_CONFIG_TRANSFERS_RESOURCE } from '../queryResources'
 import { useTenantConfigTransferCommandContext } from './useTenantConfigTransferCommandContext'
 
 interface TransferOperationCommand {
+  tenantId: string
   controller: AbortController
   idempotencyKey: string
   kind: 'preview' | 'apply' | 'rollback'
@@ -47,6 +48,7 @@ export function useTenantConfigTransferOperationCommands(
         if (command.kind === 'preview') {
           return requireOperationData(
             await previewTenantConfigTransfer(
+              command.tenantId,
               transfer.id,
               command.idempotencyKey,
               command.controller.signal,
@@ -56,6 +58,7 @@ export function useTenantConfigTransferOperationCommands(
         if (command.kind === 'rollback') {
           return requireOperationData(
             await rollbackTenantConfigTransfer(
+              command.tenantId,
               transfer.id,
               command.idempotencyKey,
               command.controller.signal,
@@ -67,6 +70,7 @@ export function useTenantConfigTransferOperationCommands(
         }
         return requireOperationData(
           await applyTenantConfigTransfer(
+            command.tenantId,
             transfer.id,
             {
               plan_hash: transfer.plan_hash,
@@ -103,6 +107,7 @@ export function useTenantConfigTransferOperationCommands(
         `tenant-config-${kind}`,
         (idempotencyKey, controller) =>
           operationMutation.mutateAsync({
+            tenantId: identity.targetTenantId,
             kind,
             transfer,
             idempotencyKey,
@@ -128,7 +133,11 @@ export function useTenantConfigTransferOperationCommands(
     downloadToken = token
     downloadingPackageId.value = bundle.id
     try {
-      const blob = await downloadTenantConfigPackage(bundle.id, controller.signal)
+      const blob = await downloadTenantConfigPackage(
+        identity.targetTenantId,
+        bundle.id,
+        controller.signal,
+      )
       context.ensureOperationContext(identity, guard)
       downloadBlobDirect(blob, safePackageFilename(bundle))
     } catch (error) {
@@ -140,7 +149,9 @@ export function useTenantConfigTransferOperationCommands(
         try {
           context.mergePackage(
             identity,
-            requireOperationData(await getTenantConfigPackage(bundle.id, controller.signal)),
+            requireOperationData(
+              await getTenantConfigPackage(identity.targetTenantId, bundle.id, controller.signal),
+            ),
           )
         } catch {
           if (context.operationContextMatches(identity, guard)) {

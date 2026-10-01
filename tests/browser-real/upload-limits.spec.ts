@@ -47,7 +47,7 @@ const uploads = [
   },
   {
     method: 'POST',
-    pathname: '/api/v1/system/config-transfers/upload',
+    pathname: '/api/v1/platform/tenants/system/config-transfers/upload',
     maxFileBytes: 5 * MIB,
     fileName: 'oversized.ryframe-config.zip',
     mimeType: 'application/zip',

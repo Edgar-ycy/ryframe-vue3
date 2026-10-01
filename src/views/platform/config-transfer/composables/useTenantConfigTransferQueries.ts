@@ -22,7 +22,7 @@ import {
   TENANT_CONFIG_TRANSFERS_RESOURCE,
 } from '../queryResources'
 
-export type TenantConfigIdentity = ServerStateScope
+export type TenantConfigIdentity = ServerStateScope & { targetTenantId: string }
 
 interface TenantConfigTransferQueriesOptions {
   pageActive: Ref<boolean>
@@ -52,6 +52,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   function packageListParams(params = activePackageQueryParams.value) {
     return {
       scope: 'list',
+      targetTenantId: options.currentIdentity()?.targetTenantId ?? '',
       userId: options.currentIdentity()?.subjectId ?? 'anonymous',
       filters: { ...params },
     }
@@ -60,6 +61,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   function transferListParams(params = activeQueryParams.value) {
     return {
       scope: 'list',
+      targetTenantId: options.currentIdentity()?.targetTenantId ?? '',
       userId: options.currentIdentity()?.subjectId ?? 'anonymous',
       filters: { ...params },
     }
@@ -71,6 +73,7 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
   ) {
     return {
       scope: 'items',
+      targetTenantId: options.currentIdentity()?.targetTenantId ?? '',
       userId: options.currentIdentity()?.subjectId ?? 'anonymous',
       transferId,
       filters: { ...params },
@@ -91,7 +94,11 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     packageListParams,
     async (signal) =>
       requireOperationData(
-        await listTenantConfigPackages({ ...activePackageQueryParams.value }, signal),
+        await listTenantConfigPackages(
+          options.currentIdentity()?.targetTenantId ?? '',
+          { ...activePackageQueryParams.value },
+          signal,
+        ),
       ),
     {
       staleTime: 0,
@@ -108,7 +115,13 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
     TENANT_CONFIG_TRANSFERS_RESOURCE,
     transferListParams,
     async (signal) =>
-      requireOperationData(await listTenantConfigTransfers({ ...activeQueryParams.value }, signal)),
+      requireOperationData(
+        await listTenantConfigTransfers(
+          options.currentIdentity()?.targetTenantId ?? '',
+          { ...activeQueryParams.value },
+          signal,
+        ),
+      ),
     {
       staleTime: 0,
       refetchInterval: false,
@@ -127,7 +140,12 @@ export function useTenantConfigTransferQueries(options: TenantConfigTransferQuer
       const transferId = selectedTransfer.value?.id
       if (!transferId) return emptyPageResponse<TenantConfigTransferItem>(itemQueryParams.value)
       return requireOperationData(
-        await listTenantConfigTransferItems(transferId, { ...itemQueryParams.value }, signal),
+        await listTenantConfigTransferItems(
+          options.currentIdentity()?.targetTenantId ?? '',
+          transferId,
+          { ...itemQueryParams.value },
+          signal,
+        ),
       )
     },
     {

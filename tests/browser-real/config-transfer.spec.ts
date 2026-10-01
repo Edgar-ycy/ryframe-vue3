@@ -29,7 +29,7 @@ async function selectLatestTransfer(page: Page, transferId: string, status: stri
   const history = page.getByRole('dialog', { name: '迁移历史', exact: true })
   const latest = history.locator('.history-card').first()
   await expect(latest).toContainText(status)
-  const selected = await act(page, 'GET', `/api/v1/system/config-transfers/${transferId}`, () =>
+  const selected = await act(page, 'GET', `/api/v1/platform/tenants/system/config-transfers/${transferId}`, () =>
     latest.getByRole('button', { name: '查看', exact: true }).click(),
   )
   expect((await selected.json()).data).toMatchObject({ id: transferId })
@@ -57,7 +57,9 @@ test('真实配置包导出、下载、上传、预览、应用与回滚保留�
     dialog.getByRole('button', { name: '确定', exact: true }).click(),
   )
   await page.getByRole('menuitem', { name: '配置迁移', exact: true }).click()
-  await act(page, 'POST', '/api/v1/system/config-packages', () =>
+  await page.getByRole('combobox', { name: '操作租户' }).click()
+  await page.getByRole('option', { name: /系统租户.*system/u }).click()
+  await act(page, 'POST', '/api/v1/platform/tenants/system/config-packages', () =>
     page.getByRole('button', { name: '生成配置包', exact: true }).click(),
   )
   const bundle = page.locator('.desktop-package-table .el-table__body tr').first()
@@ -81,6 +83,8 @@ test('真实配置包导出、下载、上传、预览、应用与回滚保留�
   )
 
   await page.getByRole('menuitem', { name: '配置迁移', exact: true }).click()
+  await page.getByRole('combobox', { name: '操作租户' }).click()
+  await page.getByRole('option', { name: /系统租户.*system/u }).click()
   await page.getByRole('button', { name: '上传配置包', exact: true }).click()
   const upload = page.getByRole('dialog', { name: '上传配置包', exact: true })
   await upload.locator('input[type=file]').setInputFiles({
@@ -88,7 +92,7 @@ test('真实配置包导出、下载、上传、预览、应用与回滚保留�
     mimeType: 'application/zip',
     buffer: await readFile(output),
   })
-  const created = await act(page, 'POST', '/api/v1/system/config-transfers/upload', () =>
+  const created = await act(page, 'POST', '/api/v1/platform/tenants/system/config-transfers/upload', () =>
     upload.getByRole('button', { name: '上传并创建迁移', exact: true }).click(),
   )
   const transferId: string = (await created.json()).data.id

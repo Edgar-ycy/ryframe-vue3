@@ -52,7 +52,7 @@ export function useTenantConfigTransferCommandContext(
   } = queries
 
   function scopedIntentKey(identity: TenantConfigIdentity, signature: string): string {
-    return `${identity.tenantId}\u0000${identity.subjectId}\u0000${identity.sessionEpoch}\u0000${signature}`
+    return `${identity.tenantId}\u0000${identity.subjectId}\u0000${identity.sessionEpoch}\u0000${identity.targetTenantId}\u0000${signature}`
   }
 
   function mergeTransfer(identity: TenantConfigIdentity, transfer: TenantConfigTransfer): void {
@@ -177,7 +177,7 @@ export function useTenantConfigTransferCommandContext(
     const controller = options.operationScope.beginController()
     try {
       const latest = requireOperationData(
-        await getTenantConfigTransfer(transferId, controller.signal),
+        await getTenantConfigTransfer(identity.targetTenantId, transferId, controller.signal),
       )
       ensureOperationContext(identity, guard)
       mergeTransfer(identity, latest)

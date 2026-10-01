@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   resetConfigPackageUploadSelection,
   resetConfigTransferOverlays,
-} from '@/views/system/config-transfer/configTransferOverlayState'
+} from '@/views/platform/config-transfer/configTransferOverlayState'
 
 describe('配置迁移浮层会话范围', () => {
   it.each(['同租户主体切换', 'KeepAlive 页面失活'])('%s 时同步关闭浮层并清空旧文件', () => {

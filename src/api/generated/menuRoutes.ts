@@ -65,6 +65,11 @@ export const menuRouteCatalog = [
     "titleKey": "platform"
   },
   {
+    "defaultName": "配置迁移",
+    "routeKey": "platform.config-transfer",
+    "titleKey": "configTransfer"
+  },
+  {
     "defaultName": "数据目标",
     "routeKey": "platform.data-targets",
     "titleKey": "dataTargets"
@@ -93,11 +98,6 @@ export const menuRouteCatalog = [
     "defaultName": "参数设置",
     "routeKey": "system.config",
     "titleKey": "config"
-  },
-  {
-    "defaultName": "配置迁移",
-    "routeKey": "system.config-transfer",
-    "titleKey": "configTransfer"
   },
   {
     "defaultName": "部门管理",
@@ -166,13 +166,13 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
   "monitor.schedules": "schedules",
   "monitor.server": "server",
   "platform": "platform",
+  "platform.config-transfer": "configTransfer",
   "platform.data-targets": "dataTargets",
   "platform.product-plans": "productPlans",
   "platform.tenant": "tenant",
   "system": "system",
   "system.authorization-diagnostics": "authorizationDiagnostics",
   "system.config": "config",
-  "system.config-transfer": "configTransfer",
   "system.dept": "dept",
   "system.dict": "dict",
   "system.logininfor": "loginlog",

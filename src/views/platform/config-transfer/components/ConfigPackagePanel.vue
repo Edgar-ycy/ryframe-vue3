@@ -9,7 +9,7 @@
         <div class="panel-actions">
           <el-button
             v-if="canList"
-            v-perm="'system:config-package:list'"
+            v-perm="'platform:config-package:list'"
             icon="Refresh"
             :loading="loading"
             :title="t('tenantConfigTransfer.refresh')"
@@ -17,11 +17,11 @@
           >
             {{ t('tenantConfigTransfer.refresh') }}
           </el-button>
-          <el-button v-perm="'system:config-transfer:add'" icon="Upload" @click="emit('upload')">
+          <el-button v-perm="'platform:config-transfer:add'" icon="Upload" @click="emit('upload')">
             {{ t('tenantConfigTransfer.uploadPackage') }}
           </el-button>
           <el-button
-            v-perm="'system:config-package:export'"
+            v-perm="'platform:config-package:export'"
             type="primary"
             icon="Box"
             :loading="creating"
@@ -105,7 +105,7 @@
             <template #default="{ row }">
               <el-button
                 v-if="row.status === 'succeeded'"
-                v-perm="'system:config-transfer:add'"
+                v-perm="'platform:config-transfer:add'"
                 type="primary"
                 link
                 :loading="creatingTransfer && selectedPackageId === row.id"
@@ -116,7 +116,7 @@
               </el-button>
               <el-button
                 v-if="row.status === 'succeeded'"
-                v-perm="'system:config-package:download'"
+                v-perm="'platform:config-package:download'"
                 link
                 :loading="downloadingPackageId === row.id"
                 :disabled="Boolean(downloadingPackageId) || !canDownloadPackageById(row.id)"
@@ -168,7 +168,7 @@
           </dl>
           <footer v-if="item.status === 'succeeded'">
             <el-button
-              v-perm="'system:config-transfer:add'"
+              v-perm="'platform:config-transfer:add'"
               type="primary"
               :loading="creatingTransfer && selectedPackageId === item.id"
               :disabled="creatingTransfer || !canDownloadTenantConfigPackage(item)"
@@ -177,7 +177,7 @@
               {{ t('tenantConfigTransfer.usePackage') }}
             </el-button>
             <el-button
-              v-perm="'system:config-package:download'"
+              v-perm="'platform:config-package:download'"
               :loading="downloadingPackageId === item.id"
               :disabled="Boolean(downloadingPackageId) || !canDownloadTenantConfigPackage(item)"
               @click="emit('download', item)"

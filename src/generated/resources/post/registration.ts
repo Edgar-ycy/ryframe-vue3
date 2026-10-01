@@ -11,6 +11,7 @@ export const pageManifest = definePageManifest({
       routeKey: "system.post",
       permissionCode: "system:post:list",
       path: "/system/post",
+      requiredCapabilities: ["system.post"],
       page: () => import("@/views/system/post/index.vue"),
     },
   ],

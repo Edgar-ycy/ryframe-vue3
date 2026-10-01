@@ -12,6 +12,7 @@ export interface PageManifestEntry {
   permissionCode?: PermissionCode
   path: string
   page?: RouteComponentLoader
+  requiredCapabilities?: readonly string[]
 }
 
 export interface PageManifest {

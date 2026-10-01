@@ -31,10 +31,25 @@ function addPage(
   permissions: Partial<Record<PermissionCode, string>>,
   entry: PageManifestEntry,
 ): void {
-  if (registry[entry.routeKey]) throw new Error(`重复的页面 route_key：${entry.routeKey}`)
+  const existing = registry[entry.routeKey]
+  if (existing) {
+    if (existing.path !== entry.path) throw new Error(`页面 route_key 路径冲突：${entry.routeKey}`)
+    existing.requiredCapabilities = Array.from(
+      new Set([...(existing.requiredCapabilities ?? []), ...(entry.requiredCapabilities ?? [])]),
+    )
+    if (entry.permissionCode) {
+      const registeredRouteKey = permissions[entry.permissionCode]
+      if (registeredRouteKey && registeredRouteKey !== entry.routeKey) {
+        throw new Error(`重复的页面权限：${entry.permissionCode}`)
+      }
+      permissions[entry.permissionCode] = entry.routeKey
+    }
+    return
+  }
   registry[entry.routeKey] = {
     path: entry.path,
     ...(entry.page ? { component: withRouteMessageCatalogs(entry.routeKey, entry.page) } : {}),
+    ...(entry.requiredCapabilities ? { requiredCapabilities: entry.requiredCapabilities } : {}),
   }
   if (!entry.permissionCode) return
   if (permissions[entry.permissionCode]) throw new Error(`重复的页面权限：${entry.permissionCode}`)

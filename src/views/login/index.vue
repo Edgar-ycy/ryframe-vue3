@@ -10,13 +10,35 @@
         @keyup.enter="handleLogin"
       >
         <el-form-item v-if="runtimeCapabilities.multiTenancyEnabled" prop="tenant_id">
-          <el-input
+          <el-select
             v-model="loginForm.tenant_id"
-            :placeholder="t('account.tenantId')"
-            prefix-icon="OfficeBuilding"
-            autocomplete="organization"
-            @blur="syncCaptchaForTenant"
-          />
+            :placeholder="t('account.selectTenant')"
+            :aria-label="t('account.selectTenant')"
+            filterable
+            remote
+            :remote-method="searchTenants"
+            :loading="tenantsLoading"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="tenant in tenantOptions"
+              :key="tenant.tenant_id"
+              :label="tenant.name"
+              :value="tenant.tenant_id"
+              :data-testid="`login-tenant-${tenant.tenant_id}`"
+            >
+              <span>{{ tenant.name }}</span>
+              <span class="tenant-option-id">{{ tenant.tenant_id }}</span>
+            </el-option>
+            <template #footer>
+              <el-button v-if="tenantsFailed" text @click="searchTenants('')">
+                {{ t('account.retry') }}
+              </el-button>
+              <el-button v-else-if="hasMoreTenants" text @click="loadMoreTenants">
+                {{ t('account.loadMoreTenants') }}
+              </el-button>
+            </template>
+          </el-select>
         </el-form-item>
         <el-form-item prop="username">
           <el-input
@@ -77,7 +99,16 @@
           </div>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="loading" style="width: 100%" @click="handleLogin">
+          <el-button
+            type="primary"
+            :loading="loading"
+            :disabled="
+              runtimeCapabilities.multiTenancyEnabled &&
+              !tenantOptions.some((item) => item.tenant_id === loginForm.tenant_id)
+            "
+            style="width: 100%"
+            @click="handleLogin"
+          >
             {{ t('account.signIn') }}
           </el-button>
         </el-form-item>
@@ -91,7 +122,8 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { getCaptcha, getCaptchaConfig } from '@/api/modules/auth'
+import { useLoginCaptcha } from './useLoginCaptcha'
+import { useLoginTenants } from './useLoginTenants'
 import {
   ensureRuntimeAccessibleRoutes,
   resolveRuntimeAccessibleRoute,
@@ -121,13 +153,13 @@ const loginRules = computed<FormRules>(() => {
   }
   if (runtimeCapabilities.multiTenancyEnabled) {
     rules.tenant_id = [
-      { required: true, message: t('account.enterTenantId'), trigger: 'blur' },
+      { required: true, message: t('account.selectTenant'), trigger: 'change' },
       {
         validator: (_rule, value, callback) => {
           callback(
-            isValidTenantId(String(value ?? ''))
+            tenantOptions.value.some((option) => option.tenant_id === value)
               ? undefined
-              : new Error(t('account.tenantIdInvalid')),
+              : new Error(t('account.selectTenant')),
           )
         },
         trigger: 'blur',
@@ -137,79 +169,30 @@ const loginRules = computed<FormRules>(() => {
   return rules
 })
 
-const captchaEnabled = ref(false)
-const captchaImage = ref('')
-const captchaId = ref('')
-const captchaRefreshing = ref(false)
-const captchaLoadFailed = ref(false)
-const captchaTenantId = ref('')
-let captchaRequestVersion = 0
-
-function resolveCaptchaTenantId(): string {
-  return runtimeCapabilities.multiTenancyEnabled
-    ? loginForm.value.tenant_id.trim()
-    : DEFAULT_TENANT_ID
-}
-
-function resetCaptcha(): void {
-  captchaId.value = ''
-  captchaImage.value = ''
-  loginForm.value.captcha_code = ''
-}
-
-function normalizeCaptchaCode(value: string): void {
-  loginForm.value.captcha_code = value.replaceAll(/\s/gu, '').toUpperCase()
-}
-
-async function syncCaptchaForTenant(): Promise<boolean> {
-  const tenantId = resolveCaptchaTenantId()
-  if (runtimeCapabilities.multiTenancyEnabled && !isValidTenantId(tenantId)) return false
-  if (captchaRefreshing.value) return false
-  if (captchaTenantId.value === tenantId && (captchaImage.value || !captchaEnabled.value))
-    return true
-
-  const requestVersion = ++captchaRequestVersion
-  captchaRefreshing.value = true
-  captchaLoadFailed.value = false
-  try {
-    try {
-      const res = await getCaptchaConfig(tenantId)
-      if (requestVersion !== captchaRequestVersion) return false
-      captchaEnabled.value = res.data?.captcha_enabled === true
-    } catch {
-      if (requestVersion !== captchaRequestVersion) return false
-      captchaEnabled.value = true
-    }
-    captchaTenantId.value = tenantId
-    resetCaptcha()
-    if (!captchaEnabled.value) return true
-
-    const res = await getCaptcha(tenantId)
-    if (requestVersion !== captchaRequestVersion) return false
-    if (!res.data) throw new Error(t('account.captchaResponseMissing'))
-    captchaId.value = res.data.captcha_id
-    captchaImage.value = res.data.image_base64
-    return true
-  } catch {
-    if (requestVersion === captchaRequestVersion) {
-      resetCaptcha()
-      captchaLoadFailed.value = true
-    }
-    return false
-  } finally {
-    if (requestVersion === captchaRequestVersion) captchaRefreshing.value = false
-  }
-}
-
-async function refreshCaptcha(): Promise<void> {
-  const tenantId = resolveCaptchaTenantId()
-  if (captchaTenantId.value !== tenantId) {
-    await syncCaptchaForTenant()
-    return
-  }
-  captchaTenantId.value = ''
-  await syncCaptchaForTenant()
-}
+const {
+  captchaEnabled,
+  captchaImage,
+  captchaId,
+  captchaRefreshing,
+  captchaLoadFailed,
+  captchaTenantId,
+  resolveCaptchaTenantId,
+  normalizeCaptchaCode,
+  syncCaptchaForTenant,
+  refreshCaptcha,
+} = useLoginCaptcha(
+  loginForm,
+  () => (runtimeCapabilities.multiTenancyEnabled ? loginForm.value.tenant_id : DEFAULT_TENANT_ID),
+  t,
+)
+const {
+  options: tenantOptions,
+  loading: tenantsLoading,
+  failed: tenantsFailed,
+  search: searchTenants,
+  loadMore: loadMoreTenants,
+  hasMore: hasMoreTenants,
+} = useLoginTenants(loginForm)
 
 const handleLogin = async () => {
   if (loading.value) return
@@ -264,11 +247,18 @@ const handleLogin = async () => {
 }
 
 onMounted(async () => {
+  if (runtimeCapabilities.multiTenancyEnabled) await searchTenants('')
   await syncCaptchaForTenant()
 })
 </script>
 
 <style scoped>
+.tenant-option-id {
+  float: right;
+  margin-left: 16px;
+  color: var(--el-text-color-secondary);
+}
+
 .login-container {
   min-height: 100dvh;
   padding: 24px 16px;

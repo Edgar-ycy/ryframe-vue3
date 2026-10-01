@@ -291,6 +291,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 登录前仅公开启用、未过期租户的名称和标识。 */
+        get: operations["get_auth_tenants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/ws-ticket": {
         parameters: {
             query?: never;
@@ -786,6 +803,26 @@ export interface components {
                 access_token: string;
                 expires_in: number;
                 session_context: components["schemas"]["SessionContextVo"];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_LoginTenantPage: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                has_more: boolean;
+                items: components["schemas"]["LoginTenantChoice"][];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -1736,6 +1773,14 @@ export interface components {
             access_token: string;
             expires_in: number;
             session_context: components["schemas"]["SessionContextVo"];
+        };
+        LoginTenantChoice: {
+            name: string;
+            tenant_id: string;
+        };
+        LoginTenantPage: {
+            has_more: boolean;
+            items: components["schemas"]["LoginTenantChoice"][];
         };
         /** @description 确认当前用户已经实际看到的导出完成或失败通知。 */
         MarkExportNotificationsReadDto: {
@@ -3640,6 +3685,44 @@ export interface operations {
                     "X-Tenant-Data-State"?: string;
                     /** @description 本次响应所依据的租户产品运行纪元 */
                     "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_auth_tenants: {
+        parameters: {
+            query?: {
+                search?: string;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 可登录租户 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_LoginTenantPage"];
+                };
+            };
+            /** @description 查询参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content?: never;

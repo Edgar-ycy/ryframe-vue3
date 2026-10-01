@@ -1,3 +1,4 @@
+import { selectLoginTenant } from './login-tenant'
 import { expect, type BrowserContext, type Page } from '@playwright/test'
 import { act, credentials, isolatedName, login, submitLogin } from './support'
 import { createOrdinaryUser, createWriterRole, logout } from './session-identities'
@@ -53,13 +54,7 @@ export async function prepareActors(
 /** 保持原标签的 JavaScript 生命周期，用实际表单完成新身份登录。 */
 export async function submitVisibleLogin(page: Page, identity = credentials) {
   await expect(page).toHaveURL(/\/login(?:\?|$)/u)
-  const tenant = page.getByPlaceholder('租户标识')
-  if ((await tenant.isVisible()) && (await tenant.inputValue()) !== identity.tenantId) {
-    await act(page, 'GET', '/api/v1/auth/captcha/config', async () => {
-      await tenant.fill(identity.tenantId)
-      await tenant.press('Tab')
-    })
-  }
+  await selectLoginTenant(page, identity.tenantId)
   await page.getByPlaceholder('用户名').fill(identity.username)
   await page.getByPlaceholder('密码').fill(identity.password)
   const captcha = page.getByPlaceholder('验证码')

@@ -13,6 +13,7 @@ export const get_auth_context = bindJsonOperation({"operationId":"get_auth_conte
 export const get_auth_csrf = bindJsonOperation({"operationId":"get_auth_csrf","method":"get","path":"/auth/csrf"})
 export const get_auth_profile = bindJsonOperation({"operationId":"get_auth_profile","method":"get","path":"/auth/profile"})
 export const get_auth_sessions = bindJsonOperation({"operationId":"get_auth_sessions","method":"get","path":"/auth/sessions"})
+export const get_auth_tenants = bindJsonOperation({"operationId":"get_auth_tenants","method":"get","path":"/auth/tenants"})
 export const get_common_file_download = bindBlobOperation({"operationId":"get_common_file_download","method":"get","path":"/common/file/download"})
 export const get_common_jobs = bindJsonOperation({"operationId":"get_common_jobs","method":"get","path":"/common/jobs"})
 export const get_common_jobs_by_id = bindJsonOperation({"operationId":"get_common_jobs_by_id","method":"get","path":"/common/jobs/{id}"})

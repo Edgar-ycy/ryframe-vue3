@@ -22,6 +22,13 @@ export function createCoreHandler(options: ApiFixtureOptions): FixtureHandler {
       })
       return true
     }
+    if (key === 'GET /auth/tenants') {
+      await fulfillJson(route, {
+        items: [{ tenant_id: sessionContext.user.tenant_id, name: '测试租户' }],
+        has_more: false,
+      })
+      return true
+    }
     if (key === 'GET /auth/csrf') {
       await fulfillJson(route, { csrf_token: 'csrf-smoke', expires_in: 300 })
       return true

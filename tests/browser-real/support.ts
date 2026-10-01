@@ -1,3 +1,4 @@
+import { selectLoginTenant } from './login-tenant'
 import { expect, type Page, type Response } from '@playwright/test'
 import { expectNoSeriousAccessibilityViolations } from '../browser/support/accessibility'
 import { randomUUID } from 'node:crypto'
@@ -66,26 +67,11 @@ export async function submitLogin(page: Page, identity = credentials): Promise<R
 }
 
 export async function login(page: Page, identity = credentials): Promise<void> {
-  const captchaConfigResponse = waitForApiResponse(page, 'GET', '/api/v1/auth/captcha/config')
   await page.goto('/login')
-  await expectSuccessfulResponse(await captchaConfigResponse)
   await expect(page.getByRole('heading', { name: 'RyFrame' })).toBeVisible()
   await expectNoSeriousAccessibilityViolations(page, '真实登录页')
 
-  const tenantInput = page.getByPlaceholder('租户标识')
-  if (await tenantInput.isVisible()) {
-    const currentTenantId = await tenantInput.inputValue()
-    if (currentTenantId !== identity.tenantId) {
-      const tenantCaptchaConfigResponse = waitForApiResponse(
-        page,
-        'GET',
-        '/api/v1/auth/captcha/config',
-      )
-      await tenantInput.fill(identity.tenantId)
-      await tenantInput.press('Tab')
-      await expectSuccessfulResponse(await tenantCaptchaConfigResponse)
-    }
-  }
+  await selectLoginTenant(page, identity.tenantId)
   await page.getByPlaceholder('用户名').fill(identity.username)
   await page.getByPlaceholder('密码').fill(identity.password)
 

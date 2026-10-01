@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build"
+    "build": "vue-tsc -p tsconfig.app.json && vite build"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

@@ -77,7 +77,12 @@ async function runContractCheck() {
   const consumer = consumerArguments()
   if (consumer) {
     if (consumer.get('--mode') !== state.mode) throw new Error('前端契约状态与消费检查模式不一致')
-    const candidate = await readFile(path.join(root, 'openapi', 'candidate.json'))
+    const contractPath = path.join(
+      root,
+      'openapi',
+      state.mode === 'candidate' ? 'candidate.json' : 'openapi.json',
+    )
+    const candidate = await readFile(contractPath)
     const backendOpenapi = await readFile(consumer.get('--openapi'))
     if (!candidate.equals(backendOpenapi)) throw new Error('前端 OpenAPI 与后端本次快照不一致')
     if (state.metadata.backend_repository !== consumer.get('--backend-repository')) {

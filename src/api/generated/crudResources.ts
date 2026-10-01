@@ -6,6 +6,7 @@
 export const crudResourceCatalog = [
   {
     "access": {
+      "capability": "system.notice",
       "owner_field": "created_by",
       "permissions": {
         "create": "system:notice:add",

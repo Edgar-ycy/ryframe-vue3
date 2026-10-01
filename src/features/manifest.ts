@@ -11,10 +11,10 @@ export type CapabilityCode = string
  */
 export interface FeatureManifest {
   capabilityCode: CapabilityCode
-  routeKey: string
-  permissionCode: PermissionCode
-  path: string
-  page: RouteComponentLoader
+  routeKey?: string
+  permissionCode?: PermissionCode
+  path?: string
+  page?: RouteComponentLoader
   allowedVariants: readonly string[]
   planConfigEditor: RouteComponentLoader
   /** 业务数据不可写期间应禁用的写权限；系统管理权限不得放入此集合。 */

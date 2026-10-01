@@ -1113,7 +1113,7 @@ export interface components {
          * @description 有效能力配置的来源。
          * @enum {string}
          */
-        EffectiveCapabilitySource: "plan" | "override" | "none";
+        EffectiveCapabilitySource: "platform" | "plan" | "override" | "none";
         EffectiveCapabilityVo: {
             capability_code: string;
             config?: {

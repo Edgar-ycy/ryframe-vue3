@@ -16,11 +16,13 @@ import { tenantConfigTransferFileFingerprint } from './tenantConfigTransferFileF
 import { useTenantConfigTransferCommandContext } from './useTenantConfigTransferCommandContext'
 
 interface PackageCommand {
+  tenantId: string
   controller: AbortController
   idempotencyKey: string
 }
 
 type CreateTransferCommand = {
+  tenantId: string
   controller: AbortController
   idempotencyKey: string
 } & ({ kind: 'from-package'; bundleId: string } | { kind: 'upload'; file: File })
@@ -42,7 +44,11 @@ export function useTenantConfigTransferCreationCommands(
       meta: { errorMode: 'silent' },
       mutationFn: async (command) =>
         requireOperationData(
-          await createTenantConfigPackage(command.idempotencyKey, command.controller.signal),
+          await createTenantConfigPackage(
+            command.tenantId,
+            command.idempotencyKey,
+            command.controller.signal,
+          ),
         ),
     },
   )
@@ -55,11 +61,13 @@ export function useTenantConfigTransferCreationCommands(
       const response =
         command.kind === 'upload'
           ? await uploadTenantConfigTransfer(
+              command.tenantId,
               command.file,
               command.idempotencyKey,
               command.controller.signal,
             )
           : await createTenantConfigTransferFromPackage(
+              command.tenantId,
               command.bundleId,
               command.idempotencyKey,
               command.controller.signal,
@@ -79,7 +87,12 @@ export function useTenantConfigTransferCreationCommands(
       guard,
       'package-export',
       'tenant-config-export',
-      (idempotencyKey, controller) => packageMutation.mutateAsync({ idempotencyKey, controller }),
+      (idempotencyKey, controller) =>
+        packageMutation.mutateAsync({
+          tenantId: identity.targetTenantId,
+          idempotencyKey,
+          controller,
+        }),
     )
     await context.selectFirstListPage(identity, guard, 'package')
     context.ensureOperationContext(identity, guard)
@@ -107,6 +120,7 @@ export function useTenantConfigTransferCreationCommands(
         'tenant-config-from-package',
         (idempotencyKey, controller) =>
           createTransferMutation.mutateAsync({
+            tenantId: identity.targetTenantId,
             kind: 'from-package',
             bundleId: bundle.id,
             idempotencyKey,
@@ -148,6 +162,7 @@ export function useTenantConfigTransferCreationCommands(
         'tenant-config-upload',
         (idempotencyKey, controller) =>
           createTransferMutation.mutateAsync({
+            tenantId: identity.targetTenantId,
             kind: 'upload',
             file,
             idempotencyKey,

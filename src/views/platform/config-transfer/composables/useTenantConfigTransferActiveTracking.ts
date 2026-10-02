@@ -48,7 +48,10 @@ export function useTenantConfigTransferActiveTracking(
     signal: AbortSignal,
   ): Promise<void> {
     try {
-      mergePackage(identity, requireOperationData(await getTenantConfigPackage(id, signal)))
+      mergePackage(
+        identity,
+        requireOperationData(await getTenantConfigPackage(identity.targetTenantId, id, signal)),
+      )
     } catch (error) {
       if (!options.isCurrentIdentity(identity) || !(error instanceof HttpError)) return
       if (error.kind === 'cancelled') return
@@ -68,7 +71,7 @@ export function useTenantConfigTransferActiveTracking(
     try {
       options.mergeTransfer(
         identity,
-        requireOperationData(await getTenantConfigTransfer(id, signal)),
+        requireOperationData(await getTenantConfigTransfer(identity.targetTenantId, id, signal)),
       )
     } catch (error) {
       if (!options.isCurrentIdentity(identity) || !(error instanceof HttpError)) return
@@ -79,7 +82,9 @@ export function useTenantConfigTransferActiveTracking(
         try {
           options.mergeTransfer(
             identity,
-            requireOperationData(await getTenantConfigTransfer(id, signal)),
+            requireOperationData(
+              await getTenantConfigTransfer(identity.targetTenantId, id, signal),
+            ),
           )
         } catch {
           if (options.isCurrentIdentity(identity)) {

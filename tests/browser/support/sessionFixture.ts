@@ -28,7 +28,10 @@ export function createSessionContext(options: ApiFixtureOptions = {}): SessionCo
   return {
     authorization_epoch: '11',
     business_data: { placement_generation: '3', state: 'active' },
-    capabilities: [],
+    capabilities: [
+      { client_config: {}, code: 'system.post', schema_version: 1, variant: 'standard' },
+      { client_config: {}, code: 'system.user', schema_version: 1, variant: 'standard' },
+    ],
     is_super_admin: false,
     menus: [
       {

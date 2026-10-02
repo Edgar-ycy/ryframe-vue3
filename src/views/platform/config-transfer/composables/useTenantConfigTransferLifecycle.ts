@@ -41,7 +41,7 @@ function sameIdentity(
   left: TenantConfigIdentity | undefined,
   right: TenantConfigIdentity | undefined,
 ): boolean {
-  return sameServerStateScope(left, right)
+  return sameServerStateScope(left, right) && left?.targetTenantId === right?.targetTenantId
 }
 
 /** 配置迁移页面的身份切换、Query 清理和 KeepAlive 生命周期接线。 */
@@ -87,8 +87,9 @@ export function useTenantConfigTransferLifecycle(options: TenantConfigTransferLi
     options.activeTracking.scheduleActiveCycle()
   })
 
+  const sessionScope = useServerStateScope()
   const stopScopeWatch = watch(
-    useServerStateScope(),
+    () => [sessionScope.value, options.currentIdentity()?.targetTenantId],
     () => {
       const nextIdentity = options.currentIdentity()
       if (sameIdentity(trackedIdentity, nextIdentity)) return

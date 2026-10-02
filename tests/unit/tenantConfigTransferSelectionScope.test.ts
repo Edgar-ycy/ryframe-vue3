@@ -23,14 +23,20 @@ vi.mock('@/api/modules/tenantConfigTransfer', () => ({
 vi.mock('@/hooks/usePermission', () => ({
   usePermission: () => ({ hasPermission: () => true }),
 }))
-vi.mock('@/views/system/config-transfer/composables/useTenantConfigTransferActiveTracking', () => ({
-  useTenantConfigTransferActiveTracking: () => ({
-    abortActiveRequest: vi.fn(),
-    scheduleActiveCycle: vi.fn(),
-    stopActiveCycle: vi.fn(),
-  }),
+vi.mock('@/shared/query/useServerStateQuery', () => ({
+  useServerStateQuery: () => ({ data: ref({ items: [] }), isFetching: ref(false) }),
 }))
-vi.mock('@/views/system/config-transfer/composables/useTenantConfigTransferCommands', () => ({
+vi.mock(
+  '@/views/platform/config-transfer/composables/useTenantConfigTransferActiveTracking',
+  () => ({
+    useTenantConfigTransferActiveTracking: () => ({
+      abortActiveRequest: vi.fn(),
+      scheduleActiveCycle: vi.fn(),
+      stopActiveCycle: vi.fn(),
+    }),
+  }),
+)
+vi.mock('@/views/platform/config-transfer/composables/useTenantConfigTransferCommands', () => ({
   useTenantConfigTransferCommands: () => ({
     applyPending: ref(false),
     applyTransfer: vi.fn(),
@@ -45,16 +51,21 @@ vi.mock('@/views/system/config-transfer/composables/useTenantConfigTransferComma
     mergeTransfer: vi.fn(),
     operationKind: ref(),
     previewTransfer: vi.fn(),
-    requireIdentity: () => ({ tenantId: 'tenant-a', subjectId: 'user-a', sessionEpoch: 1 }),
+    requireIdentity: () => ({
+      tenantId: 'system',
+      subjectId: 'user-a',
+      sessionEpoch: 1,
+      targetTenantId: 'tenant-a',
+    }),
     requireOperationContext: () => 'guard-a',
     rollbackTransfer: vi.fn(),
     uploadPackage: vi.fn(),
   }),
 }))
-vi.mock('@/views/system/config-transfer/composables/useTenantConfigTransferLifecycle', () => ({
+vi.mock('@/views/platform/config-transfer/composables/useTenantConfigTransferLifecycle', () => ({
   useTenantConfigTransferLifecycle: vi.fn(),
 }))
-vi.mock('@/views/system/config-transfer/composables/useTenantConfigTransferQueries', () => ({
+vi.mock('@/views/platform/config-transfer/composables/useTenantConfigTransferQueries', () => ({
   useTenantConfigTransferQueries: () => {
     runtime.selectedPackage = ref()
     runtime.selectedTransfer = ref()
@@ -81,7 +92,7 @@ import type { TenantConfigBundle } from '@/api/modules/tenantConfigTransfer'
 import type { ApiResponse } from '@/shared/http/types'
 import { deactivateServerStateScope, transitionServerStateScope } from '@/shared/query/client'
 import { useUserStore } from '@/stores/user'
-import { useTenantConfigTransferManagement } from '@/views/system/config-transfer/composables/useTenantConfigTransferManagement'
+import { useTenantConfigTransferManagement } from '@/views/platform/config-transfer/composables/useTenantConfigTransferManagement'
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -115,12 +126,12 @@ beforeEach(() => {
   setActivePinia(createPinia())
   useUserStore().$patch({
     sessionStatus: 'authenticated',
-    tenantId: 'tenant-a',
+    tenantId: 'system',
     userId: 'user-a',
   })
   transitionServerStateScope(
     {
-      tenantId: 'tenant-a',
+      tenantId: 'system',
       subjectId: 'user-a',
       authorizationFingerprint: 'authorization-a',
     },
@@ -142,12 +153,13 @@ describe('配置包选择所有权', () => {
     runtime.getPackage.mockReturnValueOnce(requestA.promise).mockReturnValueOnce(requestB.promise)
     const scope = effectScope()
     const management = scope.run(() => useTenantConfigTransferManagement())!
+    management.targetTenantId.value = 'tenant-a'
     const bundleA = bundle('bundle-a')
     const bundleB = bundle('bundle-b')
 
     const selectA = management.selectPackage(bundleA)
     const selectB = management.selectPackage(bundleB)
-    const signalA = runtime.getPackage.mock.calls[0]?.[1] as AbortSignal
+    const signalA = runtime.getPackage.mock.calls[0]?.[2] as AbortSignal
     expect(signalA.aborted).toBe(true)
 
     requestB.resolve(response(bundleB))

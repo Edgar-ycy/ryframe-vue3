@@ -7,7 +7,7 @@ import {
   canRollbackTenantConfigTransfer,
   tenantConfigResourceCounts,
   tenantConfigResourceLabel,
-} from '@/views/system/config-transfer/presentation'
+} from '@/views/platform/config-transfer/presentation'
 
 function transfer(status: string, extra: Partial<TenantConfigTransfer> = {}): TenantConfigTransfer {
   return {

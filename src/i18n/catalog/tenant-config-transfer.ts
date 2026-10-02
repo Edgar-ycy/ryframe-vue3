@@ -2,7 +2,10 @@ export const tenantConfigTransferMessages = {
   'zh-CN': {
     tenantConfigTransfer: {
       title: '配置迁移',
-      subtitle: '将当前租户的部门、岗位、字典、可迁移参数、权限、菜单和角色安全迁移到目标环境。',
+      subtitle: '由系统租户选择目标，迁移部门、岗位、字典、参数、权限、菜单和角色。',
+      targetTenant: '操作租户',
+      chooseTargetTenant: '请选择租户名称',
+      chooseTargetHint: '选择租户后可生成其配置包，或将配置包上传到该租户。',
       securityHint: '配置包不包含用户、密码、API Key、Secret、文件和业务数据。',
       sourceStep: '选择来源',
       inspectStep: '核对配置包',
@@ -132,6 +135,9 @@ export const tenantConfigTransferMessages = {
   'en-US': {
     tenantConfigTransfer: {
       title: 'Configuration transfer',
+      targetTenant: 'Tenant to manage',
+      chooseTargetTenant: 'Select a tenant by name',
+      chooseTargetHint: 'Select a tenant to export its configuration or upload a package to it.',
       subtitle:
         'Safely move departments, positions, dictionaries, portable parameters, permissions, menus, and roles between environments.',
       securityHint:

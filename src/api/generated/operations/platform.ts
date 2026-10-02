@@ -3,7 +3,7 @@
  * 请勿直接修改此文件。
  */
 
-import { bindJsonOperation } from '@/api/operationRequest'
+import { bindBlobOperation, bindJsonOperation, bindMultipartOperation } from '@/api/operationRequest'
 
 export const get_platform_capabilities = bindJsonOperation({"operationId":"get_platform_capabilities","method":"get","path":"/platform/capabilities"})
 export const get_platform_data_targets = bindJsonOperation({"operationId":"get_platform_data_targets","method":"get","path":"/platform/data-targets"})
@@ -15,6 +15,12 @@ export const get_platform_product_plans_by_plan_id_versions = bindJsonOperation(
 export const get_platform_tenant_data_migrations_by_migration_id = bindJsonOperation({"operationId":"get_platform_tenant_data_migrations_by_migration_id","method":"get","path":"/platform/tenant-data-migrations/{migration_id}"})
 export const get_platform_tenants = bindJsonOperation({"operationId":"get_platform_tenants","method":"get","path":"/platform/tenants"})
 export const get_platform_tenants_by_tenant_id = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id","method":"get","path":"/platform/tenants/{tenant_id}"})
+export const get_platform_tenants_by_tenant_id_config_packages = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_config_packages","method":"get","path":"/platform/tenants/{tenant_id}/config-packages"})
+export const get_platform_tenants_by_tenant_id_config_packages_by_id = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_config_packages_by_id","method":"get","path":"/platform/tenants/{tenant_id}/config-packages/{id}"})
+export const get_platform_tenants_by_tenant_id_config_packages_by_id_download = bindBlobOperation({"operationId":"get_platform_tenants_by_tenant_id_config_packages_by_id_download","method":"get","path":"/platform/tenants/{tenant_id}/config-packages/{id}/download"})
+export const get_platform_tenants_by_tenant_id_config_transfers = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_config_transfers","method":"get","path":"/platform/tenants/{tenant_id}/config-transfers"})
+export const get_platform_tenants_by_tenant_id_config_transfers_by_id = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_config_transfers_by_id","method":"get","path":"/platform/tenants/{tenant_id}/config-transfers/{id}"})
+export const get_platform_tenants_by_tenant_id_config_transfers_by_id_items = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_config_transfers_by_id_items","method":"get","path":"/platform/tenants/{tenant_id}/config-transfers/{id}/items"})
 export const get_platform_tenants_by_tenant_id_data_migrations = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_data_migrations","method":"get","path":"/platform/tenants/{tenant_id}/data-migrations"})
 export const get_platform_tenants_by_tenant_id_data_placement = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_data_placement","method":"get","path":"/platform/tenants/{tenant_id}/data-placement"})
 export const get_platform_tenants_by_tenant_id_product_context = bindJsonOperation({"operationId":"get_platform_tenants_by_tenant_id_product_context","method":"get","path":"/platform/tenants/{tenant_id}/product-context"})
@@ -27,6 +33,12 @@ export const post_platform_product_plans_by_plan_id_versions_by_version_retire =
 export const post_platform_tenant_data_migrations_by_migration_id_cancel = bindJsonOperation({"operationId":"post_platform_tenant_data_migrations_by_migration_id_cancel","method":"post","path":"/platform/tenant-data-migrations/{migration_id}/cancel"})
 export const post_platform_tenant_data_migrations_by_migration_id_finalize = bindJsonOperation({"operationId":"post_platform_tenant_data_migrations_by_migration_id_finalize","method":"post","path":"/platform/tenant-data-migrations/{migration_id}/finalize"})
 export const post_platform_tenants = bindJsonOperation({"operationId":"post_platform_tenants","method":"post","path":"/platform/tenants"})
+export const post_platform_tenants_by_tenant_id_config_packages = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_config_packages","method":"post","path":"/platform/tenants/{tenant_id}/config-packages"})
+export const post_platform_tenants_by_tenant_id_config_transfers_by_id_apply = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_config_transfers_by_id_apply","method":"post","path":"/platform/tenants/{tenant_id}/config-transfers/{id}/apply"})
+export const post_platform_tenants_by_tenant_id_config_transfers_by_id_preview = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_config_transfers_by_id_preview","method":"post","path":"/platform/tenants/{tenant_id}/config-transfers/{id}/preview"})
+export const post_platform_tenants_by_tenant_id_config_transfers_by_id_rollback = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_config_transfers_by_id_rollback","method":"post","path":"/platform/tenants/{tenant_id}/config-transfers/{id}/rollback"})
+export const post_platform_tenants_by_tenant_id_config_transfers_from_package = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_config_transfers_from_package","method":"post","path":"/platform/tenants/{tenant_id}/config-transfers/from-package"})
+export const post_platform_tenants_by_tenant_id_config_transfers_upload = bindMultipartOperation({"operationId":"post_platform_tenants_by_tenant_id_config_transfers_upload","method":"post","path":"/platform/tenants/{tenant_id}/config-transfers/upload"})
 export const post_platform_tenants_by_tenant_id_data_migration_previews = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_data_migration_previews","method":"post","path":"/platform/tenants/{tenant_id}/data-migration-previews"})
 export const post_platform_tenants_by_tenant_id_data_migrations = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_data_migrations","method":"post","path":"/platform/tenants/{tenant_id}/data-migrations"})
 export const post_platform_tenants_by_tenant_id_product_change_previews = bindJsonOperation({"operationId":"post_platform_tenants_by_tenant_id_product_change_previews","method":"post","path":"/platform/tenants/{tenant_id}/product-change-previews"})

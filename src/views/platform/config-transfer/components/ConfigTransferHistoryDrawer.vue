@@ -9,7 +9,7 @@
   >
     <p class="drawer-hint">{{ t('tenantConfigTransfer.historyHint') }}</p>
     <el-button
-      v-perm="'system:config-transfer:list'"
+      v-perm="'platform:config-transfer:list'"
       icon="Refresh"
       :loading="loading"
       class="refresh-button"
@@ -65,7 +65,7 @@
         />
         <footer>
           <el-button
-            v-perm="'system:config-transfer:list'"
+            v-perm="'platform:config-transfer:list'"
             type="primary"
             :plain="selectedTransferId !== transfer.id"
             @click="emit('select', transfer)"

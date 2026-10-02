@@ -6,6 +6,272 @@
 export const crudResourceCatalog = [
   {
     "access": {
+      "permissions": {
+        "create": "business:device:create",
+        "delete": "business:device:delete",
+        "list": "business:device:list",
+        "read": "business:device:read",
+        "update": "business:device:update"
+      }
+    },
+    "api": {
+      "operations": {
+        "create": "post_business_devices",
+        "delete": "delete_business_devices_by_id",
+        "list": "get_business_devices",
+        "read": "get_business_devices_by_id",
+        "update": "put_business_devices_by_id"
+      },
+      "path": "/api/v1/business/devices"
+    },
+    "extension_permissions": {},
+    "fields": [
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Tenant",
+          "zh_cn": "租户"
+        },
+        "name": "tenant_id",
+        "nullable": false,
+        "order": 10,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": true,
+          "list": false,
+          "read": true,
+          "sort": false,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "string",
+        "widget": "hidden",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Device ID",
+          "zh_cn": "设备编号"
+        },
+        "name": "id",
+        "nullable": false,
+        "order": 20,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": true,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "i64",
+        "widget": "hidden",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Device name",
+          "zh_cn": "设备名称"
+        },
+        "name": "name",
+        "nullable": false,
+        "order": 30,
+        "usage": {
+          "create": true,
+          "create_optional": false,
+          "filter": true,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": true,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": 100,
+          "maximum": null,
+          "min_length": 1,
+          "minimum": null,
+          "required": true
+        },
+        "value_type": "string",
+        "widget": "text",
+        "wire_type": "string"
+      },
+      {
+        "enum_values": {
+          "0": {
+            "en": "Disabled",
+            "zh_cn": "停用"
+          },
+          "1": {
+            "en": "Enabled",
+            "zh_cn": "启用"
+          }
+        },
+        "labels": {
+          "en": "Status",
+          "zh_cn": "状态"
+        },
+        "name": "status",
+        "nullable": false,
+        "order": 40,
+        "usage": {
+          "create": true,
+          "create_optional": false,
+          "filter": true,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": true,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": 1,
+          "min_length": null,
+          "minimum": 0,
+          "required": true
+        },
+        "value_type": "i32",
+        "widget": "select",
+        "wire_type": "i32"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Created at",
+          "zh_cn": "创建时间"
+        },
+        "name": "created_at",
+        "nullable": false,
+        "order": 50,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "date_time",
+        "widget": "date_time",
+        "wire_type": "date_time"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Updated at",
+          "zh_cn": "更新时间"
+        },
+        "name": "updated_at",
+        "nullable": true,
+        "order": 60,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "date_time",
+        "widget": "date_time",
+        "wire_type": "date_time"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Deleted flag",
+          "zh_cn": "删除标记"
+        },
+        "name": "del_flag",
+        "nullable": false,
+        "order": 70,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": false,
+          "read": true,
+          "sort": false,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": null,
+          "required": false
+        },
+        "value_type": "i32",
+        "widget": "hidden",
+        "wire_type": "i32"
+      }
+    ],
+    "labels": {
+      "en": "Device",
+      "zh_cn": "设备"
+    },
+    "menu": {
+      "icon": "monitor",
+      "key": "business.device",
+      "labels": {
+        "en": "Devices",
+        "zh_cn": "设备管理"
+      },
+      "order": 80,
+      "parent": "business"
+    },
+    "module": "business",
+    "name": "device",
+    "profile": "flat_crud",
+    "route": {
+      "key": "business.device",
+      "path": "/business/device"
+    },
+    "storage": "tenant_data"
+  },
+  {
+    "access": {
+      "capability": "system.notice",
       "owner_field": "created_by",
       "permissions": {
         "create": "system:notice:add",
@@ -540,8 +806,9 @@ export type CrudResourceDescriptor = typeof crudResourceCatalog[number]
 export type CrudResourceName = CrudResourceDescriptor['name']
 
 export const crudResourceCatalogByName = {
-  "notice": crudResourceCatalog[0],
-  "post": crudResourceCatalog[1],
+  "device": crudResourceCatalog[0],
+  "notice": crudResourceCatalog[1],
+  "post": crudResourceCatalog[2],
 } as const satisfies Readonly<Record<CrudResourceName, CrudResourceDescriptor>>
 
 export type CrudResourceDescriptorByName<Name extends CrudResourceName> =

@@ -21,5 +21,11 @@ export const pageManifest = definePageManifest({
       path: '/platform/tenants',
       page: () => import('@/views/platform/tenant/index.vue'),
     },
+    {
+      routeKey: 'platform.config-transfer',
+      permissionCode: 'platform:config-transfer:list',
+      path: '/platform/config-transfer',
+      page: () => import('@/views/platform/config-transfer/index.vue'),
+    },
   ],
 })

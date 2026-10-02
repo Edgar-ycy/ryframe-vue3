@@ -61,6 +61,10 @@ const permissionRoutes: Partial<Record<PermissionCode, string>> = {}
 
 for (const entry of pageEntries) addPage(menuPages, permissionRoutes, entry)
 for (const feature of featureManifests) {
+  if (!feature.routeKey) continue
+  if (!feature.permissionCode || !feature.path || !feature.page) {
+    throw new Error(`能力页面声明不完整：${feature.capabilityCode}`)
+  }
   addPage(menuPages, permissionRoutes, {
     routeKey: feature.routeKey,
     permissionCode: feature.permissionCode,

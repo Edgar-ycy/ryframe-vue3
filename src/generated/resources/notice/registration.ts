@@ -11,6 +11,7 @@ export const pageManifest = definePageManifest({
       routeKey: "system.notice",
       permissionCode: "system:notice:list",
       path: "/system/notice",
+      requiredCapabilities: ["system.notice"],
       page: () => import("@/views/system/notice/index.vue"),
     },
   ],

@@ -5,6 +5,16 @@
 
 export const menuRouteCatalog = [
   {
+    "defaultName": "业务管理",
+    "routeKey": "business",
+    "titleKey": "business"
+  },
+  {
+    "defaultName": "设备管理",
+    "routeKey": "business.device",
+    "titleKey": "device"
+  },
+  {
     "defaultName": "首页",
     "routeKey": "home",
     "titleKey": "dashboard"
@@ -65,6 +75,11 @@ export const menuRouteCatalog = [
     "titleKey": "platform"
   },
   {
+    "defaultName": "配置迁移",
+    "routeKey": "platform.config-transfer",
+    "titleKey": "configTransfer"
+  },
+  {
     "defaultName": "数据目标",
     "routeKey": "platform.data-targets",
     "titleKey": "dataTargets"
@@ -93,11 +108,6 @@ export const menuRouteCatalog = [
     "defaultName": "参数设置",
     "routeKey": "system.config",
     "titleKey": "config"
-  },
-  {
-    "defaultName": "配置迁移",
-    "routeKey": "system.config-transfer",
-    "titleKey": "configTransfer"
   },
   {
     "defaultName": "部门管理",
@@ -154,6 +164,8 @@ export const menuRouteCatalog = [
 export type MenuRouteKey = typeof menuRouteCatalog[number]['routeKey']
 
 export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object.freeze({
+  "business": "business",
+  "business.device": "device",
   "home": "dashboard",
   "monitor": "systemMonitor",
   "monitor.cache": "cache",
@@ -166,13 +178,13 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
   "monitor.schedules": "schedules",
   "monitor.server": "server",
   "platform": "platform",
+  "platform.config-transfer": "configTransfer",
   "platform.data-targets": "dataTargets",
   "platform.product-plans": "productPlans",
   "platform.tenant": "tenant",
   "system": "system",
   "system.authorization-diagnostics": "authorizationDiagnostics",
   "system.config": "config",
-  "system.config-transfer": "configTransfer",
   "system.dept": "dept",
   "system.dict": "dict",
   "system.logininfor": "loginlog",
@@ -186,11 +198,13 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
 })
 
 export const navigationResourceDefaultNames = Object.freeze({
+  "device": "设备管理",
   "notice": "通知公告",
   "post": "岗位管理"
 })
 
 export const navigationResourceNames = Object.freeze({
+  "device": "Devices",
   "notice": "Notices",
   "post": "Posts"
 })

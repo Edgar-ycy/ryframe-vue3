@@ -291,6 +291,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 登录前仅公开启用、未过期租户的名称和标识。 */
+        get: operations["get_auth_tenants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/ws-ticket": {
         parameters: {
             query?: never;
@@ -306,6 +323,38 @@ export interface paths {
          */
         post: operations["post_auth_ws_ticket"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_business_devices"];
+        put?: never;
+        post: operations["post_business_devices"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/business/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_business_devices_by_id"];
+        put: operations["put_business_devices_by_id"];
+        post?: never;
+        delete: operations["delete_business_devices_by_id"];
         options?: never;
         head?: never;
         patch?: never;
@@ -584,6 +633,16 @@ export interface components {
             message: string;
             request_id: string;
         };
+        /** @description 统一分页 API 响应结构。 */
+        ApiPageResponse_DeviceVo: {
+            /** Format: int32 */
+            code: number;
+            data: components["schemas"]["PageData_DeviceVo"];
+            details?: unknown;
+            error_key?: string | null;
+            message: string;
+            request_id: string;
+        };
         /** @description 统一 API 响应结构。 */
         ApiResponse_ApiVersionInfo: {
             /**
@@ -711,6 +770,35 @@ export interface components {
             request_id: string;
         };
         /** @description 统一 API 响应结构。 */
+        ApiResponse_DeviceVo: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: int32 */
+                del_flag: number;
+                id: string;
+                name: string;
+                /** Format: int32 */
+                status: number;
+                tenant_id: string;
+                /** Format: date-time */
+                updated_at?: string | null;
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
         ApiResponse_ExportDeletionAcceptedDto: {
             /**
              * Format: int32
@@ -786,6 +874,26 @@ export interface components {
                 access_token: string;
                 expires_in: number;
                 session_context: components["schemas"]["SessionContextVo"];
+            };
+            /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
+            details?: unknown;
+            /** @description 面向程序处理的稳定错误键；成功时为 `null`。 */
+            error_key?: string | null;
+            /** @description 面向用户的可读消息。 */
+            message: string;
+            /** @description 与 `X-Request-Id` 响应头一致的 UUID v7。 */
+            request_id: string;
+        };
+        /** @description 统一 API 响应结构。 */
+        ApiResponse_LoginTenantPage: {
+            /**
+             * Format: int32
+             * @description 与 HTTP 状态码一致的业务结果码。
+             */
+            code: number;
+            data?: {
+                has_more: boolean;
+                items: components["schemas"]["LoginTenantChoice"][];
             };
             /** @description 可安全公开的结构化错误参数；无参数时为 `null`。 */
             details?: unknown;
@@ -1406,6 +1514,11 @@ export interface components {
             remark?: string | null;
             value: string;
         };
+        CreateDeviceDto: {
+            name: string;
+            /** Format: int32 */
+            status: number;
+        };
         CsrfResponse: {
             csrf_token: string;
             expires_in: number;
@@ -1563,6 +1676,28 @@ export interface components {
             sort: number;
             status: string;
         };
+        DeviceListQuery: {
+            name?: string | null;
+            /** Format: int64 */
+            page?: number | null;
+            /** Format: int64 */
+            page_size?: number | null;
+            /** Format: int32 */
+            status?: number | null;
+        };
+        DeviceVo: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int32 */
+            del_flag: number;
+            id: string;
+            name: string;
+            /** Format: int32 */
+            status: number;
+            tenant_id: string;
+            /** Format: date-time */
+            updated_at?: string | null;
+        };
         /** @description 字典数据响应。 */
         DictDataVo: {
             css_class?: string | null;
@@ -1593,7 +1728,7 @@ export interface components {
          * @description 有效能力配置的来源。
          * @enum {string}
          */
-        EffectiveCapabilitySource: "plan" | "override" | "none";
+        EffectiveCapabilitySource: "platform" | "plan" | "override" | "none";
         EffectiveCapabilityVo: {
             capability_code: string;
             config?: {
@@ -1736,6 +1871,14 @@ export interface components {
             access_token: string;
             expires_in: number;
             session_context: components["schemas"]["SessionContextVo"];
+        };
+        LoginTenantChoice: {
+            name: string;
+            tenant_id: string;
+        };
+        LoginTenantPage: {
+            has_more: boolean;
+            items: components["schemas"]["LoginTenantChoice"][];
         };
         /** @description 确认当前用户已经实际看到的导出完成或失败通知。 */
         MarkExportNotificationsReadDto: {
@@ -2067,6 +2210,32 @@ export interface components {
         };
         OverviewTrendQuery: {
             range?: string;
+        };
+        /** @description 分页接口的业务数据。 */
+        PageData_DeviceVo: {
+            items: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: int32 */
+                del_flag: number;
+                id: string;
+                name: string;
+                /** Format: int32 */
+                status: number;
+                tenant_id: string;
+                /** Format: date-time */
+                updated_at?: string | null;
+            }[];
+            /** Format: int64 */
+            max_page_size: number;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            page_size: number;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            total_pages: number;
         };
         PasswordResetRequestResponse: {
             expires_at: string;
@@ -2714,6 +2883,11 @@ export interface components {
             name: string;
             status: string;
             tenant_id: string;
+        };
+        UpdateDeviceDto: {
+            name: string;
+            /** Format: int32 */
+            status: number;
         };
         UpdateProfileRequest: {
             email?: string | null;
@@ -3646,6 +3820,44 @@ export interface operations {
             };
         };
     };
+    get_auth_tenants: {
+        parameters: {
+            query?: {
+                search?: string;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 可登录租户 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_LoginTenantPage"];
+                };
+            };
+            /** @description 查询参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     post_auth_ws_ticket: {
         parameters: {
             query?: never;
@@ -3705,6 +3917,125 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    get_business_devices: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                name?: string;
+                status?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiPageResponse_DeviceVo"];
+                };
+            };
+        };
+    };
+    post_business_devices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDeviceDto"];
+            };
+        };
+        responses: {
+            /** @description 创建成功 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DeviceVo"];
+                };
+            };
+        };
+    };
+    get_business_devices_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DeviceVo"];
+                };
+            };
+        };
+    };
+    put_business_devices_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDeviceDto"];
+            };
+        };
+        responses: {
+            /** @description 更新成功 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DeviceVo"];
+                };
+            };
+        };
+    };
+    delete_business_devices_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 删除成功 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEmptyResponse"];
+                };
             };
         };
     };

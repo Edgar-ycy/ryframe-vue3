@@ -14,7 +14,7 @@ vi.mock('element-plus', () => ({
 
 import type { TenantConfigBundle, TenantConfigTransfer } from '@/api/modules/tenantConfigTransfer'
 import { deactivateServerStateScope, transitionServerStateScope } from '@/shared/query/client'
-import { createConfigTransferPageActions } from '@/views/system/config-transfer/configTransferPageActions'
+import { createConfigTransferPageActions } from '@/views/platform/config-transfer/configTransferPageActions'
 
 function activate(fingerprint: string): void {
   transitionServerStateScope(

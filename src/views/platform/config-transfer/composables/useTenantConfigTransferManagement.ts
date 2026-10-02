@@ -14,6 +14,8 @@ import {
 } from '@/shared/query/createIdentityOperationScope'
 import { sameServerStateScope } from '@/shared/query/scope'
 import { useUserStore } from '@/stores/user'
+import { listTenantCapacities } from '@/api/modules/tenant'
+import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useTenantConfigTransferActiveTracking } from './useTenantConfigTransferActiveTracking'
 import { useTenantConfigTransferCommands } from './useTenantConfigTransferCommands'
 import { useTenantConfigTransferLifecycle } from './useTenantConfigTransferLifecycle'
@@ -27,9 +29,32 @@ export function useTenantConfigTransferManagement() {
   const userStore = useUserStore()
   const { hasPermission } = usePermission()
   const pageActive = ref(true)
+  const targetTenantId = ref<string>()
+  const targetSearch = ref('')
+  const targetChoices = useServerStateQuery(
+    () =>
+      pageActive.value &&
+      userStore.sessionStatus === 'authenticated' &&
+      userStore.tenantId === 'system',
+    'platform-config-target-choices',
+    () => ({ name: targetSearch.value }),
+    async (signal) =>
+      requireOperationData(
+        await listTenantCapacities(
+          { name: targetSearch.value || undefined, page: 1, page_size: 100 },
+          signal,
+        ),
+      ),
+    { staleTime: 0, meta: { errorMode: 'silent' } },
+  )
 
   function currentIdentity(): TenantConfigIdentity | undefined {
-    if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId)
+    if (
+      userStore.sessionStatus !== 'authenticated' ||
+      userStore.tenantId !== 'system' ||
+      !userStore.userId ||
+      !targetTenantId.value
+    )
       return undefined
     const active = getServerStateScope()
     if (
@@ -42,13 +67,15 @@ export function useTenantConfigTransferManagement() {
       tenantId: active.tenantId,
       subjectId: active.subjectId,
       sessionEpoch: active.sessionEpoch,
+      targetTenantId: targetTenantId.value,
     }
   }
 
   const operationScope = createIdentityOperationScope({
     currentIdentity,
     isActive: () => pageActive.value,
-    sameIdentity: sameServerStateScope,
+    sameIdentity: (left, right) =>
+      sameServerStateScope(left, right) && left?.targetTenantId === right?.targetTenantId,
   })
   let packageSelectionController: AbortController | undefined
   let packageSelectionGeneration = 0
@@ -62,7 +89,7 @@ export function useTenantConfigTransferManagement() {
   })
   const isCurrentIdentity = (identity: TenantConfigIdentity) =>
     operationScope.isCurrentIdentity(identity)
-  const canListPackages = () => hasPermission('system:config-package:list')
+  const canListPackages = () => hasPermission('platform:config-package:list')
   const queries = useTenantConfigTransferQueries({
     pageActive,
     currentIdentity,
@@ -157,7 +184,7 @@ export function useTenantConfigTransferManagement() {
       queries.selectedPackage.value = bundle
       if (!bundle || !canListPackages()) return
       const latest = requireOperationData(
-        await getTenantConfigPackage(bundle.id, controller.signal),
+        await getTenantConfigPackage(identity.targetTenantId, bundle.id, controller.signal),
       )
       ensureSelectionCurrent()
       queries.mergePackage(identity, latest)
@@ -195,7 +222,7 @@ export function useTenantConfigTransferManagement() {
       queries.itemQueryParams.value.page = 1
       if (!transfer) return
       const latest = requireOperationData(
-        await getTenantConfigTransfer(transfer.id, controller.signal),
+        await getTenantConfigTransfer(identity.targetTenantId, transfer.id, controller.signal),
       )
       ensureSelectionCurrent()
       commands.mergeTransfer(identity, latest)
@@ -223,6 +250,11 @@ export function useTenantConfigTransferManagement() {
   })
 
   return {
+    targetTenantId,
+    targetSearch,
+    targetChoices: targetChoices.data,
+    targetChoicesError: targetChoices.error,
+    targetChoicesLoading: targetChoices.isFetching,
     applyPending: commands.applyPending,
     applyTransfer: commands.applyTransfer,
     canListPackages,

@@ -329,9 +329,10 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
   const name = requireString(resource.name, `${location}.name`, /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/u)
   if (seen.names.has(name)) throw new Error(`${location}.name: 资源名重复 ${name}`)
   seen.names.add(name)
-  requireString(resource.module, `${location}.module`, snakeIdentifierPattern)
-  if (resource.module !== 'system')
-    throw new Error(`${location}.module: flat_crud v1 仅支持 system`)
+  const module = requireString(resource.module, `${location}.module`, snakeIdentifierPattern)
+  if (!['system', 'business'].includes(module)) {
+    throw new Error(`${location}.module: flat_crud v1 仅支持 system 或 business`)
+  }
   if (resource.profile !== 'flat_crud') throw new Error(`${location}.profile: 只支持 flat_crud`)
   if (!['control_row', 'tenant_data'].includes(resource.storage)) {
     throw new Error(`${location}.storage: 不支持的存储类型`)
@@ -342,7 +343,7 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
   const apiPath = requireString(
     resource.api.path,
     `${location}.api.path`,
-    /^\/api\/v1\/system\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*$/u,
+    new RegExp(`^/api/v1/${module}/[a-z0-9_-]+(?:/[a-z0-9_-]+)*$`, 'u'),
   )
   if (seen.paths.has(apiPath)) throw new Error(`${location}.api.path: API 路径重复 ${apiPath}`)
   seen.paths.add(apiPath)

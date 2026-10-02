@@ -40,12 +40,6 @@ export const pageManifest = definePageManifest({
       page: () => import('@/views/system/config/index.vue'),
     },
     {
-      routeKey: 'system.config-transfer',
-      permissionCode: 'system:config-transfer:list',
-      path: '/system/config-transfer',
-      page: () => import('@/views/system/config-transfer/index.vue'),
-    },
-    {
       routeKey: 'system.operlog',
       permissionCode: 'system:operlog:list',
       path: '/system/operlog',

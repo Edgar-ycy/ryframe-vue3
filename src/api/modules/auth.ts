@@ -3,6 +3,7 @@ import {
   get_auth_captcha_config,
   get_auth_captcha_generate,
   get_auth_csrf,
+  get_auth_tenants,
   get_auth_profile,
   get_auth_sessions,
   post_auth_captcha_verify,
@@ -95,9 +96,16 @@ export function completePasswordReset(data: CompletePasswordResetParams) {
 // ========== 验证码 ==========
 
 /** 生成指定租户的验证码 */
-export function getCaptcha(tenantId: string, params?: OperationQuery<'get_auth_captcha_generate'>) {
+export function getCaptcha(
+  tenantId: string,
+  params?: OperationQuery<'get_auth_captcha_generate'>,
+  signal?: AbortSignal,
+) {
   return get_auth_captcha_generate({
     params,
+    signal,
+    skipAuthRefresh: true,
+    transport: 'raw',
     headers: { 'X-Tenant-Id': tenantId },
     skipTenantHeader: true,
   })
@@ -109,8 +117,11 @@ export function verifyCaptcha(data: OperationJsonBody<'post_auth_captcha_verify'
 }
 
 /** 查询指定租户的验证码开关状态（公开接口） */
-export function getCaptchaConfig(tenantId: string) {
+export function getCaptchaConfig(tenantId: string, signal?: AbortSignal) {
   return get_auth_captcha_config({
+    signal,
+    skipAuthRefresh: true,
+    transport: 'raw',
     headers: { 'X-Tenant-Id': tenantId },
     skipTenantHeader: true,
   })
@@ -167,5 +178,16 @@ export function revokeOtherAuthSessions(csrfToken: string, signal?: AbortSignal)
     data: {},
     headers: { 'X-CSRF-Token': csrfToken },
     signal,
+  })
+}
+
+/** 登录前只读取可公开的租户名称。 */
+export function getLoginTenants(params: OperationQuery<'get_auth_tenants'>, signal?: AbortSignal) {
+  return get_auth_tenants({
+    params,
+    signal,
+    skipAuthRefresh: true,
+    skipTenantHeader: true,
+    transport: 'raw',
   })
 }

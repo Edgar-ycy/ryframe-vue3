@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vite",
     "check": "node scripts/check.mjs",
-    "build": "vue-tsc -p tsconfig.app.json && vite build"
+    "build": "vue-tsc -p tsconfig.app.json && vite build",
+    "generate": "node scripts/generate-api-artifacts.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

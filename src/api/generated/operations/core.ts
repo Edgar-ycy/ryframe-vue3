@@ -6,6 +6,7 @@
 import { bindBlobOperation, bindJsonOperation, bindMultipartOperation } from '@/api/operationRequest'
 
 export const delete_auth_sessions_by_sid = bindJsonOperation({"operationId":"delete_auth_sessions_by_sid","method":"delete","path":"/auth/sessions/{sid}"})
+export const delete_business_devices_by_id = bindJsonOperation({"operationId":"delete_business_devices_by_id","method":"delete","path":"/business/devices/{id}"})
 export const get_auth_captcha_config = bindJsonOperation({"operationId":"get_auth_captcha_config","method":"get","path":"/auth/captcha/config"})
 export const get_auth_captcha_generate = bindJsonOperation({"operationId":"get_auth_captcha_generate","method":"get","path":"/auth/captcha/generate"})
 export const get_auth_captcha_image = bindBlobOperation({"operationId":"get_auth_captcha_image","method":"get","path":"/auth/captcha/image"})
@@ -14,6 +15,8 @@ export const get_auth_csrf = bindJsonOperation({"operationId":"get_auth_csrf","m
 export const get_auth_profile = bindJsonOperation({"operationId":"get_auth_profile","method":"get","path":"/auth/profile"})
 export const get_auth_sessions = bindJsonOperation({"operationId":"get_auth_sessions","method":"get","path":"/auth/sessions"})
 export const get_auth_tenants = bindJsonOperation({"operationId":"get_auth_tenants","method":"get","path":"/auth/tenants"})
+export const get_business_devices = bindJsonOperation({"operationId":"get_business_devices","method":"get","path":"/business/devices"})
+export const get_business_devices_by_id = bindJsonOperation({"operationId":"get_business_devices_by_id","method":"get","path":"/business/devices/{id}"})
 export const get_common_file_download = bindBlobOperation({"operationId":"get_common_file_download","method":"get","path":"/common/file/download"})
 export const get_common_jobs = bindJsonOperation({"operationId":"get_common_jobs","method":"get","path":"/common/jobs"})
 export const get_common_jobs_by_id = bindJsonOperation({"operationId":"get_common_jobs_by_id","method":"get","path":"/common/jobs/{id}"})
@@ -28,6 +31,7 @@ export const post_auth_password_reset_complete = bindJsonOperation({"operationId
 export const post_auth_refresh = bindJsonOperation({"operationId":"post_auth_refresh","method":"post","path":"/auth/refresh"})
 export const post_auth_sessions_revoke_others = bindJsonOperation({"operationId":"post_auth_sessions_revoke_others","method":"post","path":"/auth/sessions/revoke-others"})
 export const post_auth_ws_ticket = bindJsonOperation({"operationId":"post_auth_ws_ticket","method":"post","path":"/auth/ws-ticket"})
+export const post_business_devices = bindJsonOperation({"operationId":"post_business_devices","method":"post","path":"/business/devices"})
 export const post_common_jobs_by_id_cancel = bindJsonOperation({"operationId":"post_common_jobs_by_id_cancel","method":"post","path":"/common/jobs/{id}/cancel"})
 export const post_common_jobs_deletions = bindJsonOperation({"operationId":"post_common_jobs_deletions","method":"post","path":"/common/jobs/deletions"})
 export const post_common_jobs_notifications_read = bindJsonOperation({"operationId":"post_common_jobs_notifications_read","method":"post","path":"/common/jobs/notifications/read"})
@@ -37,3 +41,4 @@ export const post_common_upload_image = bindMultipartOperation({"operationId":"p
 export const put_auth_profile = bindJsonOperation({"operationId":"put_auth_profile","method":"put","path":"/auth/profile"})
 export const put_auth_profile_avatar = bindMultipartOperation({"operationId":"put_auth_profile_avatar","method":"put","path":"/auth/profile/avatar"})
 export const put_auth_profile_password = bindJsonOperation({"operationId":"put_auth_profile_password","method":"put","path":"/auth/profile/password"})
+export const put_business_devices_by_id = bindJsonOperation({"operationId":"put_business_devices_by_id","method":"put","path":"/business/devices/{id}"})

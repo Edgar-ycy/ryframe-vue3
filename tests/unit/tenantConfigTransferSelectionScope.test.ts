@@ -26,13 +26,16 @@ vi.mock('@/hooks/usePermission', () => ({
 vi.mock('@/shared/query/useServerStateQuery', () => ({
   useServerStateQuery: () => ({ data: ref({ items: [] }), isFetching: ref(false) }),
 }))
-vi.mock('@/views/platform/config-transfer/composables/useTenantConfigTransferActiveTracking', () => ({
-  useTenantConfigTransferActiveTracking: () => ({
-    abortActiveRequest: vi.fn(),
-    scheduleActiveCycle: vi.fn(),
-    stopActiveCycle: vi.fn(),
+vi.mock(
+  '@/views/platform/config-transfer/composables/useTenantConfigTransferActiveTracking',
+  () => ({
+    useTenantConfigTransferActiveTracking: () => ({
+      abortActiveRequest: vi.fn(),
+      scheduleActiveCycle: vi.fn(),
+      stopActiveCycle: vi.fn(),
+    }),
   }),
-}))
+)
 vi.mock('@/views/platform/config-transfer/composables/useTenantConfigTransferCommands', () => ({
   useTenantConfigTransferCommands: () => ({
     applyPending: ref(false),
@@ -48,7 +51,12 @@ vi.mock('@/views/platform/config-transfer/composables/useTenantConfigTransferCom
     mergeTransfer: vi.fn(),
     operationKind: ref(),
     previewTransfer: vi.fn(),
-    requireIdentity: () => ({ tenantId: 'system', subjectId: 'user-a', sessionEpoch: 1, targetTenantId: 'tenant-a' }),
+    requireIdentity: () => ({
+      tenantId: 'system',
+      subjectId: 'user-a',
+      sessionEpoch: 1,
+      targetTenantId: 'tenant-a',
+    }),
     requireOperationContext: () => 'guard-a',
     rollbackTransfer: vi.fn(),
     uploadPackage: vi.fn(),

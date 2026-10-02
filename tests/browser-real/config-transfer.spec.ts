@@ -29,8 +29,11 @@ async function selectLatestTransfer(page: Page, transferId: string, status: stri
   const history = page.getByRole('dialog', { name: '迁移历史', exact: true })
   const latest = history.locator('.history-card').first()
   await expect(latest).toContainText(status)
-  const selected = await act(page, 'GET', `/api/v1/platform/tenants/system/config-transfers/${transferId}`, () =>
-    latest.getByRole('button', { name: '查看', exact: true }).click(),
+  const selected = await act(
+    page,
+    'GET',
+    `/api/v1/platform/tenants/system/config-transfers/${transferId}`,
+    () => latest.getByRole('button', { name: '查看', exact: true }).click(),
   )
   expect((await selected.json()).data).toMatchObject({ id: transferId })
   await expect(history).not.toBeVisible()
@@ -92,8 +95,11 @@ test('真实配置包导出、下载、上传、预览、应用与回滚保留�
     mimeType: 'application/zip',
     buffer: await readFile(output),
   })
-  const created = await act(page, 'POST', '/api/v1/platform/tenants/system/config-transfers/upload', () =>
-    upload.getByRole('button', { name: '上传并创建迁移', exact: true }).click(),
+  const created = await act(
+    page,
+    'POST',
+    '/api/v1/platform/tenants/system/config-transfers/upload',
+    () => upload.getByRole('button', { name: '上传并创建迁移', exact: true }).click(),
   )
   const transferId: string = (await created.json()).data.id
   const plan = page.locator('.plan-card')

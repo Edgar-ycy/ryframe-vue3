@@ -2,7 +2,7 @@ import { EventEmitter, once } from 'node:events'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { describe, expect, it } from 'vitest'
-import { holdMigrationGate } from '../browser-device/migration-gate'
+import { holdMigrationGate } from '../support/migration-gate'
 
 const tenant = 'tenant-1'
 const migration = 'migration-1'

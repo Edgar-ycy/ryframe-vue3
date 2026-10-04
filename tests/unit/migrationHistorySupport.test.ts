@@ -5,7 +5,7 @@ import {
   migrationHistory,
   migrationHistoryArguments,
   parseMigrationHistoryReceipt,
-} from '../browser-device/migration-history'
+} from '../support/migration-history'
 
 describe('迁移历史夹具命令', () => {
   const runtime = 'D:\\项目 空间\\.local-tests\\运行目录'

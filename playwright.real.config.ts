@@ -29,16 +29,6 @@ if (restore.reporter)
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })
 }
-if (fixture === 'device') {
-  reporters.push([
-    './scripts/device-reporter.mjs',
-    {
-      output: resolve(resultsDirectory, 'device-tests.json'),
-      server: serverMode,
-      runId,
-    },
-  ])
-}
 if (!externalBaseUrl) {
   const controlId = `ryframe-browser-${process.pid}-${randomUUID().slice(0, 8)}`
   process.env.RYFRAME_E2E_GATE_ENDPOINT ||=
@@ -48,7 +38,7 @@ if (!externalBaseUrl) {
 }
 
 export default defineConfig({
-  testDir: fixture === 'device' ? 'tests/browser-device' : 'tests/browser-real',
+  testDir: 'tests/browser-real',
   ...restore.selection,
   timeout: 120_000,
   expect: { timeout: 15_000 },

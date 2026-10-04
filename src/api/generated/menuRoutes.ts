@@ -10,11 +10,6 @@ export const menuRouteCatalog = [
     "titleKey": "business"
   },
   {
-    "defaultName": "设备管理",
-    "routeKey": "business.device",
-    "titleKey": "device"
-  },
-  {
     "defaultName": "首页",
     "routeKey": "home",
     "titleKey": "dashboard"
@@ -165,7 +160,6 @@ export type MenuRouteKey = typeof menuRouteCatalog[number]['routeKey']
 
 export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object.freeze({
   "business": "business",
-  "business.device": "device",
   "home": "dashboard",
   "monitor": "systemMonitor",
   "monitor.cache": "cache",
@@ -198,13 +192,11 @@ export const navigationRouteTitleKeys: Readonly<Record<string, string>> = Object
 })
 
 export const navigationResourceDefaultNames = Object.freeze({
-  "device": "设备管理",
   "notice": "通知公告",
   "post": "岗位管理"
 })
 
 export const navigationResourceNames = Object.freeze({
-  "device": "Devices",
   "notice": "Notices",
   "post": "Posts"
 })

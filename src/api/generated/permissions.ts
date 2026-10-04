@@ -4,11 +4,6 @@
  */
 
 export const permissionCatalog = [
-  "business:device:create",
-  "business:device:delete",
-  "business:device:list",
-  "business:device:read",
-  "business:device:update",
   "monitor:cache:list",
   "monitor:db-pool:list",
   "monitor:job:list",

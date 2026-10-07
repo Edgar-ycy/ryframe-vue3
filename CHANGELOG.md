@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.13.0] - 2026-10-07
+
 ### Fixed
 
 - Windows 任务改由启动前加入私有 Job Object 的 Node worker 执行；真实退出码与信号先经 IPC 返回，任务失败或取消后关闭 Job 回收完整后代进程树，独立任务互不影响。

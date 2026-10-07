@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [v0.13.1] - 2026-10-07
+
+### Fixed
+
+- 前端 CI 分别执行契约检查、单元测试、生产构建、浏览器 smoke 和 Windows smoke；默认 `pnpm check` 现在运行完整契约检查。
+- 前端标签独立验证前端源码后创建 GitHub Release，不再依赖后端发布工作流。
+
 ## [v0.13.0] - 2026-10-07
 
 ### Fixed

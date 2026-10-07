@@ -1,0 +1,51 @@
+name: Release
+run-name: Release ${{ github.ref_name }}
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+concurrency:
+  group: frontend-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Validate and publish frontend source release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+      - name: 验证标签属于 main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin +main:refs/remotes/origin/main
+          git merge-base --is-ancestor HEAD origin/main
+          test "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" = tag
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: {node-version: '24.21.0', package-manager-cache: false}
+      - uses: ./.github/actions/setup-pnpm
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm check --stage contract
+      - run: corepack pnpm exec vitest run
+      - run: corepack pnpm build
+      - name: 创建前端源码 Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          notes="$RUNNER_TEMP/release-notes.md"
+          git for-each-ref --format='%(contents)' "refs/tags/${GITHUB_REF_NAME}" > "$notes"
+          test -s "$notes"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "RyFrame Vue3 ${GITHUB_REF_NAME}" --notes-file "$notes" --latest
+          else
+            gh release create "$GITHUB_REF_NAME" --title "RyFrame Vue3 ${GITHUB_REF_NAME}" --notes-file "$notes" --latest
+          fi

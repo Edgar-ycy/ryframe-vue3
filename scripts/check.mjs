@@ -9,7 +9,7 @@ import { verifyLocalContractState } from './api-contract-state.mjs'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 function parseArguments(argv) {
-  let stage = 'fast'
+  let stage = 'contract'
   let full = false
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]

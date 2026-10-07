@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
@@ -28,6 +29,39 @@ jobs:
           git fetch --no-tags origin +main:refs/remotes/origin/main
           git merge-base --is-ancestor HEAD origin/main
           test "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" = tag
+      - name: 等待同一标签的前端 CI 与扩展 CI
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          deadline="$((SECONDS + 5400))"
+          for workflow in ci.yml extended-ci.yml; do
+            while true; do
+              (( SECONDS < deadline )) || {
+                echo "Timed out waiting for ${workflow} on ${GITHUB_REF_NAME}." >&2
+                exit 1
+              }
+              run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${sha}&event=push&per_page=100" \
+                --jq '.workflow_runs | map(select(.head_branch == env.GITHUB_REF_NAME)) | max_by(.run_number) // empty')"
+              if [[ -z "$run" ]]; then
+                sleep 10
+                continue
+              fi
+              status="$(jq -r '.status' <<<"$run")"
+              conclusion="$(jq -r '.conclusion // empty' <<<"$run")"
+              if [[ "$status" != completed ]]; then
+                sleep 20
+                continue
+              fi
+              [[ "$conclusion" == success ]] || {
+                echo "${workflow} concluded ${conclusion}." >&2
+                exit 1
+              }
+              break
+            done
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with: {node-version: '24.21.0', package-manager-cache: false}
       - uses: ./.github/actions/setup-pnpm

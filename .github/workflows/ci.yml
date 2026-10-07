@@ -1,0 +1,43 @@
+name: CI
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  static:
+    name: Static Gate (Node 24)
+    runs-on: ubuntu-24.04
+    steps: &setup
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: {node-version: '24.21.0', package-manager-cache: false}
+      - uses: ./.github/actions/setup-pnpm
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm check --stage contract
+  unit:
+    name: Unit Tests (Node 24)
+    runs-on: ubuntu-24.04
+    steps: *setup
+  build:
+    name: Production Build (Node 24)
+    runs-on: ubuntu-24.04
+    steps: *setup
+  browser:
+    name: Browser Smoke (Node 24)
+    runs-on: ubuntu-24.04
+    steps: *setup
+  windows-smoke:
+    name: Windows Smoke
+    runs-on: windows-2025
+    steps: *setup
+  required:
+    name: Required
+    if: always()
+    needs: [static, unit, build, browser, windows-smoke]
+    runs-on: ubuntu-24.04
+    steps:
+      - run: test '${{ join(needs.*.result, ',') }}' = 'success,success,success,success,success'

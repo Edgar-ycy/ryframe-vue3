@@ -59,6 +59,57 @@ describe('登录前的 CSRF 挑战', () => {
 })
 
 describe('密码登录', () => {
+  it('租户信息完整但菜单权限不在当前目录时明确报告契约不一致', async () => {
+    const context = {
+      ...sessionContext(true),
+      menus: [
+        {
+          children: [],
+          id: '20009',
+          menu_type: 'C',
+          name: '配置迁移',
+          perm_code: 'system:config-transfer:list',
+          route_key: 'system.config-transfer',
+          sort: 10,
+          status: '1',
+          visible: true,
+        },
+      ],
+    }
+    mocks.login.mockResolvedValue({ data: { access_token: 'access', session_context: context } })
+    await expect(login.authenticateWithPassword(credentials, 'tenant-a')).rejects.toMatchObject({
+      kind: 'invalid_response',
+      message: 'shell.session.loginResponseInvalid',
+    })
+    expect(mocks.publish).not.toHaveBeenCalled()
+  })
+
+  it('成功响应校验失败后重新获取挑战，避免重用已绑定旧 Cookie 的令牌', async () => {
+    mocks.login.mockResolvedValueOnce({ data: { access_token: 'access', session_context: {} } })
+    await expect(login.authenticateWithPassword(credentials, 'tenant-a')).rejects.toThrow()
+    mocks.challenge.mockResolvedValueOnce({ data: { csrf_token: 'new-challenge', expires_in: 30 } })
+    const context = sessionContext(false)
+    mocks.login.mockResolvedValueOnce({
+      data: { access_token: 'access', session_context: context },
+    })
+    await login.authenticateWithPassword(credentials, 'tenant-a')
+    expect(mocks.challenge).toHaveBeenCalledTimes(2)
+    expect(mocks.login).toHaveBeenLastCalledWith(
+      credentials,
+      'tenant-a',
+      'new-challenge',
+      expect.any(AbortSignal),
+    )
+    expect(mocks.publish).toHaveBeenCalledExactlyOnceWith('access', context)
+  })
+
+  it('登录请求失败后也不会重用旧挑战', async () => {
+    mocks.login.mockRejectedValueOnce(new Error('denied'))
+    await expect(login.authenticateWithPassword(credentials, 'tenant-a')).rejects.toThrow('denied')
+    await csrf.ensureCsrfToken()
+    expect(mocks.challenge).toHaveBeenCalledTimes(2)
+  })
+
   it('完整校验上下文后才发布身份，并使用同次 CSRF 挑战', async () => {
     const context = sessionContext(false)
     const response = { data: { access_token: 'access', session_context: context } }

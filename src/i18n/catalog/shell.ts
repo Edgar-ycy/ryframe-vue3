@@ -22,7 +22,7 @@ export const shellMessages = {
         refreshResponseInvalid: '刷新会话响应无效',
         operationCancelled: '会话操作已取消',
         loginResponseMissingAuth: '登录响应缺少认证数据',
-        loginResponseMissingTenant: '登录响应缺少租户信息',
+        loginResponseInvalid: '登录会话信息与当前接口契约不一致，请核对后端和数据库版本',
         userInfoResponseMissing: '用户信息响应缺少数据',
       },
       http: {
@@ -115,7 +115,8 @@ export const shellMessages = {
         refreshResponseInvalid: 'The session refresh response is invalid.',
         operationCancelled: 'The session operation was cancelled.',
         loginResponseMissingAuth: 'The sign-in response is missing authentication data.',
-        loginResponseMissingTenant: 'The sign-in response is missing tenant information.',
+        loginResponseInvalid:
+          'The sign-in session does not match the current API contract. Check the backend and database versions.',
         userInfoResponseMissing: 'The user information response is missing data.',
       },
       http: {

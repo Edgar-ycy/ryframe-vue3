@@ -24,6 +24,7 @@ export function schemaDomainForPath(routePath, apiPrefix) {
         ? routePath.slice(apiPrefix.length)
         : routePath
   const segment = relative.split('/').filter(Boolean)[0]
+  if (segment === 'business') return 'system'
   return domainNames.includes(segment) && segment !== 'core' ? segment : 'core'
 }
 

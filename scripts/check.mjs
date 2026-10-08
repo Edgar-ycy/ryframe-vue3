@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import console from 'node:console'
 import { spawn } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -8,9 +9,10 @@ import { verifyLocalContractState } from './api-contract-state.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-function parseArguments(argv) {
+export function parseArguments(argv) {
   let stage = 'contract'
   let full = false
+  let explicitStage = false
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
     if (value === '--full') {
@@ -18,13 +20,14 @@ function parseArguments(argv) {
       continue
     }
     if (value === '--stage') {
+      explicitStage = true
       stage = argv[++index]
       if (!stage) throw new Error('--stage 缺少值')
       continue
     }
     throw new Error(`未知参数：${value}`)
   }
-  if (full && stage !== 'fast') throw new Error('--full 不能与 --stage 同时使用')
+  if (full && explicitStage) throw new Error('--full 不能与 --stage 同时使用')
   return { full, stage: full ? 'full' : stage }
 }
 
@@ -50,7 +53,13 @@ function consumerArguments() {
     if (result.has(key)) throw new Error(`消费契约上下文重复参数：${key}`)
     result.set(key, value)
   }
-  const required = ['--mode', '--openapi', '--backend-commit', '--backend-repository', '--require-pin']
+  const required = [
+    '--mode',
+    '--openapi',
+    '--backend-commit',
+    '--backend-repository',
+    '--require-pin',
+  ]
   if (required.some((key) => !result.has(key))) throw new Error('消费契约上下文缺少必需参数')
   return result
 }
@@ -106,7 +115,8 @@ async function main() {
   throw new Error(`当前前端只提供契约门禁，暂不支持阶段：${options.stage}`)
 }
 
-const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url
+const isMain =
+  process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url
 if (isMain) {
   main().catch((error) => {
     console.error(error.stack ?? error.message)

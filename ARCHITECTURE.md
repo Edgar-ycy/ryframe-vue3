@@ -23,6 +23,10 @@ src/
 `hooks/`，跨页面流程放入 `app/`，纯展示组件放入 `components/`。服务端请求从
 `api/modules/` 调用，通用传输和查询能力位于 `shared/`。
 
+页面或组件专属样式放在对应 Vue 的 `<style scoped lang="scss">` 中；多个组件共享的样式
+保留独立 SCSS 文件。全局主题、布局、响应式规则与通用组件覆盖位于 `src/styles/`，
+通过 `src/styles/index.scss` 统一引入。
+
 ## 添加页面
 
 1. 在 `src/views/` 对应业务目录创建页面和局部组件。

@@ -13,6 +13,11 @@
       </el-button>
     </el-alert>
     <template v-else>
+      <el-empty
+        v-if="catalog.length === 0"
+        :description="t('productPlans.capabilityCatalogEmpty')"
+        :image-size="56"
+      />
       <el-alert
         v-if="unknownCodes.length"
         :title="t('productPlans.capabilityClientMismatch', { codes: unknownCodes.join(', ') })"

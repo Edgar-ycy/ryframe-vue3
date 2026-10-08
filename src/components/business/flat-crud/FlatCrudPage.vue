@@ -17,7 +17,18 @@
         <div class="card-header">
           <span>{{ labels.title }}</span>
           <div class="flat-crud-actions">
-            <slot name="actions" />
+            <ExportSelectionToolbar
+              v-if="slots.actions"
+              :disabled="loading"
+              :row-count="rows.length"
+              :selected-count="selectedExportIds.length"
+              @select-page="selectCurrentPage"
+            />
+            <slot
+              name="actions"
+              :selected-export-ids="selectedExportIds"
+              :capture-selection-ownership="captureSelectionOwnership"
+            />
             <el-button v-perm="permissions.create" type="primary" icon="Plus" @click="$emit('add')">
               {{ labels.add }}
             </el-button>
@@ -32,8 +43,11 @@
         :permissions="permissions"
         :row-key="rowKey"
         :rows="rows"
+        :selection-enabled="!!slots.actions"
         @edit="$emit('edit', $event)"
         @remove="$emit('remove', $event)"
+        @selection-change="handleExportSelectionChange"
+        @table-ready="exportTableRef = $event"
       />
       <el-pagination
         v-pagination-a11y="t('common.pageSize')"
@@ -71,6 +85,8 @@
   generic="TRecord extends object, TQuery extends object, TForm extends object"
 >
 import { useI18n } from 'vue-i18n'
+import ExportSelectionToolbar from '../ExportSelectionToolbar.vue'
+import { useExportRowSelection } from '@/hooks/useExportRowSelection'
 import FlatCrudFormDialog from './FlatCrudFormDialog.vue'
 import FlatCrudQueryForm from './FlatCrudQueryForm.vue'
 import FlatCrudTable from './FlatCrudTable.vue'
@@ -86,7 +102,7 @@ import type { ServerStatePageOperation } from '@/shared/query/pageOperationScope
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   columns: readonly FlatCrudColumn<TRecord>[]
   deletingKey: string | null
   dialogTitle: string
@@ -106,6 +122,24 @@ defineProps<{
   saving: boolean
   total: number
 }>()
+
+const slots = defineSlots<{
+  actions?(props: {
+    selectedExportIds: string[]
+    captureSelectionOwnership: () => () => boolean
+  }): unknown
+}>()
+const {
+  exportTableRef,
+  selectedExportIds,
+  handleExportSelectionChange,
+  selectCurrentPage,
+  captureSelectionOwnership,
+} = useExportRowSelection(
+  () => props.rows,
+  () => props.loading,
+  props.rowKey,
+)
 
 defineEmits<{
   'update:dialogVisible': [value: boolean]

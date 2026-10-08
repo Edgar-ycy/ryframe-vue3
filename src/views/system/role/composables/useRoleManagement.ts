@@ -9,6 +9,7 @@ import {
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { getPermissionTree, type PermissionTreeNode } from '@/api/modules/permission'
 import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { useExportRowSelection } from '@/hooks/useExportRowSelection'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { translate } from '@/i18n'
@@ -86,6 +87,18 @@ export function useRoleManagement() {
 
   const tableResponse = rolesQuery.data
   const loading = rolesQuery.isFetching
+  const {
+    setExportTableRef,
+    selectedExportIds,
+    handleExportSelectionChange,
+    selectCurrentPage,
+    captureSelectionOwnership,
+  } = useExportRowSelection(
+    () => tableResponse.value?.items ?? [],
+    () => loading.value,
+    (row) => row.id,
+  )
+
   const deptTree = departmentsQuery.data
   const permissionTree = permissionsQuery.data
 
@@ -141,14 +154,14 @@ export function useRoleManagement() {
       ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
       return
     }
-    const intent = normalizeExportIntent('roles', successfulQuery)
+    const intent = normalizeExportIntent('roles', successfulQuery, selectedExportIds.value)
     await confirmAndSubmitExportIntent(
       intent,
       (scope) =>
         submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-          exportRole(intent.filter, idempotencyKey, signal, intent.isEmpty),
+          exportRole(intent.filter, idempotencyKey, signal, intent.isEmpty, intent.ids),
         ),
-      { ownsOperation: pageLifecycle.captureOwnership() },
+      { ownsOperation: captureSelectionOwnership() },
     )
   }
 
@@ -211,6 +224,10 @@ export function useRoleManagement() {
   }
 
   return {
+    setExportTableRef,
+    selectedExportIds,
+    handleExportSelectionChange,
+    selectCurrentPage,
     canExport,
     dataScopeDialogVisible,
     dataScopeRole,

@@ -1,13 +1,15 @@
 <template>
   <PostPage>
-    <template #actions="{ canExport, lastSuccessfulQuery }">
+    <template
+      #actions="{ canExport, lastSuccessfulQuery, selectedExportIds, captureSelectionOwnership }"
+    >
       <el-button
         v-perm="postExportPermission"
         icon="Download"
         :disabled="!canExport"
         :loading="exportLoading"
         :title="canExport ? undefined : t('system.common.exportRequiresSuccessfulQuery')"
-        @click="handleExport(lastSuccessfulQuery)"
+        @click="handleExport(lastSuccessfulQuery, selectedExportIds, captureSelectionOwnership())"
       >
         {{ t('system.common.export') }}
       </el-button>
@@ -29,16 +31,23 @@ const { t } = useI18n()
 const { pending: exportLoading, submitExport } = useExportJobRequest()
 const postExportPermission = findCrudResource('post').extension_permissions.export
 
-async function handleExport(successfulQuery: PostQuery | null): Promise<void> {
+async function handleExport(
+  successfulQuery: PostQuery | null,
+  selectedIds: readonly string[],
+  ownsOperation: () => boolean,
+): Promise<void> {
   if (!successfulQuery) {
     ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
     return
   }
-  const intent = normalizeExportIntent('posts', successfulQuery)
-  await confirmAndSubmitExportIntent(intent, (scope) =>
-    submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-      exportPost(intent.filter, idempotencyKey, signal, intent.isEmpty),
-    ),
+  const intent = normalizeExportIntent('posts', successfulQuery, selectedIds)
+  await confirmAndSubmitExportIntent(
+    intent,
+    (scope) =>
+      submitExport(scope, intent.signature, (idempotencyKey, signal) =>
+        exportPost(intent.filter, idempotencyKey, signal, intent.isEmpty, intent.ids),
+      ),
+    { ownsOperation },
   )
 }
 </script>

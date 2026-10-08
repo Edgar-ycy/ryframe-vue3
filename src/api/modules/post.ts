@@ -9,11 +9,13 @@ export function exportPost(
   idempotencyKey: string,
   signal?: AbortSignal,
   confirmAll = false,
+  ids: readonly string[] = [],
 ) {
   return post_system_posts_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,
+      ids: [...ids],
     },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,

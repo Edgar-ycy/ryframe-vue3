@@ -38,6 +38,13 @@
         <div class="card-header">
           <span>{{ t('system.config.list') }}</span>
           <div>
+            <ExportSelectionToolbar
+              v-perm="'system:config:export'"
+              :disabled="loading || !canExport"
+              :row-count="tableResponse?.items.length ?? 0"
+              :selected-count="selectedExportIds.length"
+              @select-page="selectCurrentPage"
+            />
             <el-button
               v-perm="'system:config:export'"
               icon="Download"
@@ -54,7 +61,15 @@
           </div>
         </div>
       </template>
-      <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
+      <el-table
+        :ref="setExportTableRef"
+        @selection-change="handleExportSelectionChange"
+        v-loading="loading"
+        :data="tableResponse?.items ?? []"
+        border
+        stripe
+      >
+        <el-table-column type="selection" width="48" />
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
         <el-table-column
           prop="name"
@@ -134,6 +149,7 @@
 </template>
 
 <script setup lang="ts">
+import ExportSelectionToolbar from '@/components/business/ExportSelectionToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
@@ -144,6 +160,7 @@ import {
   type ConfigRecord,
 } from '@/api/modules/config'
 import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { useExportRowSelection } from '@/hooks/useExportRowSelection'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { formatLocalizedDate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
@@ -193,6 +210,17 @@ const configsQuery = useServerStateQuery<PageResponse<ConfigRecord>>(
 )
 const tableResponse = configsQuery.data
 const loading = configsQuery.isFetching
+const {
+  setExportTableRef,
+  selectedExportIds,
+  handleExportSelectionChange,
+  selectCurrentPage,
+  captureSelectionOwnership,
+} = useExportRowSelection(
+  () => tableResponse.value?.items ?? [],
+  () => loading.value,
+  (row) => row.id,
+)
 
 async function handleExport(): Promise<void> {
   const successfulQuery = lastSuccessfulQuery.value
@@ -200,14 +228,14 @@ async function handleExport(): Promise<void> {
     ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
     return
   }
-  const intent = normalizeExportIntent('configs', successfulQuery)
+  const intent = normalizeExportIntent('configs', successfulQuery, selectedExportIds.value)
   await confirmAndSubmitExportIntent(
     intent,
     (scope) =>
       submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-        exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty),
+        exportConfig(intent.filter, idempotencyKey, signal, intent.isEmpty, intent.ids),
       ),
-    { ownsOperation: pageLifecycle.captureOwnership() },
+    { ownsOperation: captureSelectionOwnership() },
   )
 }
 

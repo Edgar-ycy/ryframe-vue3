@@ -1,5 +1,14 @@
 <template>
-  <el-table v-loading="loading" :data="[...rows]" border stripe>
+  <el-table
+    ref="tableInstance"
+    v-loading="loading"
+    :data="[...rows]"
+    :row-key="rowKey"
+    border
+    stripe
+    @selection-change="$emit('selectionChange', $event)"
+  >
+    <el-table-column v-if="selectionEnabled" type="selection" width="48" />
     <el-table-column
       v-for="column in columns"
       :key="column.key"
@@ -52,6 +61,8 @@
 </template>
 
 <script setup lang="ts" generic="TRecord extends object">
+import { ref, watch } from 'vue'
+import type { TableInstance } from 'element-plus'
 import type {
   FlatCrudColumn,
   FlatCrudLabels,
@@ -68,12 +79,18 @@ defineProps<{
   permissions: Pick<FlatCrudPermissions, 'update' | 'remove'>
   rowKey: (record: TRecord) => string
   rows: readonly TRecord[]
+  selectionEnabled?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   edit: [record: TRecord]
   remove: [record: TRecord]
+  selectionChange: [records: TRecord[]]
+  tableReady: [table: TableInstance | undefined]
 }>()
+
+const tableInstance = ref<TableInstance>()
+watch(tableInstance, (table) => emit('tableReady', table), { flush: 'post' })
 
 function cellValue(record: TRecord, column: FlatCrudColumn<TRecord>): FlatCrudScalar {
   const value: unknown = Reflect.get(record, column.key)

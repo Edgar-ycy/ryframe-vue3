@@ -96,43 +96,43 @@ describe('operation 领域请求', () => {
 
     expect(httpClient.request.mock.calls.map(([config]) => config)).toEqual([
       {
-        data: { filter: { username: 'alice' }, confirm_all: false },
+        data: { filter: { username: 'alice' }, confirm_all: false, ids: [] },
         headers: { 'Idempotency-Key': 'user-key' },
         method: 'post',
         url: '/system/users/exports',
       },
       {
-        data: { filter: { name: 'operator' }, confirm_all: false },
+        data: { filter: { name: 'operator' }, confirm_all: false, ids: [] },
         headers: { 'Idempotency-Key': 'role-key' },
         method: 'post',
         url: '/system/roles/exports',
       },
       {
-        data: { filter: { status: '1' }, confirm_all: false },
+        data: { filter: { status: '1' }, confirm_all: false, ids: [] },
         headers: { 'Idempotency-Key': 'post-key' },
         method: 'post',
         url: '/system/posts/exports',
       },
       {
-        data: { filter: {}, confirm_all: true },
+        data: { filter: {}, confirm_all: true, ids: [] },
         headers: { 'Idempotency-Key': 'config-key' },
         method: 'post',
         url: '/system/configs/exports',
       },
       {
-        data: { filter: { code: 'sys_user_sex' }, confirm_all: false },
+        data: { filter: { code: 'sys_user_sex' }, confirm_all: false, ids: [] },
         headers: { 'Idempotency-Key': 'dict-key' },
         method: 'post',
         url: '/system/dict/types/exports',
       },
       {
-        data: { filter: { oper_name: 'alice' }, confirm_all: false },
+        data: { filter: { oper_name: 'alice' }, confirm_all: false, ids: [] },
         headers: { 'Idempotency-Key': 'oper-key' },
         method: 'post',
         url: '/system/operlogs/exports',
       },
       {
-        data: { filter: { user_name: 'alice' }, confirm_all: false },
+        data: { filter: { user_name: 'alice' }, confirm_all: false, ids: [] },
         headers: { 'Idempotency-Key': 'login-key' },
         method: 'post',
         url: '/system/loginlogs/exports',
@@ -167,5 +167,24 @@ describe('operation 领域请求', () => {
       method: 'get',
       url: '/common/jobs/job%2F1/download',
     })
+  })
+
+  it('七类选中导出将字符串 ID 与筛选一起发送', async () => {
+    httpClient.request.mockResolvedValue({})
+    const ids = ['9007199254740993', '2']
+    for (const submit of [
+      exportUser,
+      exportRole,
+      exportPost,
+      exportConfig,
+      exportDictType,
+      exportOperLog,
+      exportLoginLog,
+    ]) {
+      await submit({}, 'selected-key', undefined, false, ids)
+    }
+    for (const [request] of httpClient.request.mock.calls) {
+      expect(request.data).toEqual({ filter: {}, confirm_all: false, ids })
+    }
   })
 })

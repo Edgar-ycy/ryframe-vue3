@@ -45,6 +45,13 @@
         <div class="card-header">
           <span>{{ t('system.role.list') }}</span>
           <div>
+            <ExportSelectionToolbar
+              v-perm="'system:role:export'"
+              :disabled="loading || !canExport"
+              :row-count="tableResponse?.items.length ?? 0"
+              :selected-count="selectedExportIds.length"
+              @select-page="selectCurrentPage"
+            />
             <el-button
               v-perm="'system:role:export'"
               icon="Download"
@@ -62,7 +69,15 @@
         </div>
       </template>
 
-      <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
+      <el-table
+        :ref="setExportTableRef"
+        @selection-change="handleExportSelectionChange"
+        v-loading="loading"
+        :data="tableResponse?.items ?? []"
+        border
+        stripe
+      >
+        <el-table-column type="selection" width="48" />
         <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
         <el-table-column
           prop="name"
@@ -181,6 +196,7 @@
 </template>
 
 <script setup lang="ts">
+import ExportSelectionToolbar from '@/components/business/ExportSelectionToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import type { RoleRecord } from '@/api/modules/role'
 import { formatLocalizedDate } from '@/i18n'
@@ -199,6 +215,10 @@ const {
   deletingId,
   deptTree,
   editingRole,
+  setExportTableRef,
+  selectedExportIds,
+  handleExportSelectionChange,
+  selectCurrentPage,
   exportLoading,
   fetchData,
   handleAdd,

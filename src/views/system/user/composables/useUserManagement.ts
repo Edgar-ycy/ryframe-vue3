@@ -10,6 +10,7 @@ import {
 } from '@/api/modules/user'
 import { getDeptTree, type DeptNode } from '@/api/modules/dept'
 import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { useExportRowSelection } from '@/hooks/useExportRowSelection'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { usePermission } from '@/hooks/usePermission'
 import { useUserStore } from '@/stores/user'
@@ -82,6 +83,18 @@ export function useUserManagement() {
 
   const tableResponse = usersQuery.data
   const loading = usersQuery.isFetching
+  const {
+    setExportTableRef,
+    selectedExportIds,
+    handleExportSelectionChange,
+    selectCurrentPage,
+    captureSelectionOwnership,
+  } = useExportRowSelection(
+    () => tableResponse.value?.items ?? [],
+    () => loading.value,
+    (row) => row.id,
+  )
+
   const deptTree = departmentsQuery.data
   const deptTreeLoading = departmentsQuery.isFetching
 
@@ -151,14 +164,14 @@ export function useUserManagement() {
       ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
       return
     }
-    const intent = normalizeExportIntent('users', successfulQuery)
+    const intent = normalizeExportIntent('users', successfulQuery, selectedExportIds.value)
     await confirmAndSubmitExportIntent(
       intent,
       (scope) =>
         submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-          exportUser(intent.filter, idempotencyKey, signal, intent.isEmpty),
+          exportUser(intent.filter, idempotencyKey, signal, intent.isEmpty, intent.ids),
         ),
-      { ownsOperation: pageLifecycle.captureOwnership() },
+      { ownsOperation: captureSelectionOwnership() },
     )
   }
 
@@ -243,6 +256,10 @@ export function useUserManagement() {
   }
 
   return {
+    setExportTableRef,
+    selectedExportIds,
+    handleExportSelectionChange,
+    selectCurrentPage,
     canExport,
     clearDeptFilter,
     deletingId,

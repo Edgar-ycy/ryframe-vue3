@@ -14,7 +14,7 @@ describe('normalizeExportIntent', () => {
 
     expect(intent.filter).toEqual({ username: 'alice' })
     expect(intent.isEmpty).toBe(false)
-    expect(intent.signature).toBe('users:{"username":"alice"}')
+    expect(intent.signature).toBe('users:{"filter":{"username":"alice"},"ids":[]}')
   })
 
   it('保留0和false并生成稳定意图', () => {
@@ -43,7 +43,22 @@ describe('normalizeExportIntent', () => {
 
     expect(intent.filter).toEqual({})
     expect(intent.isEmpty).toBe(true)
-    expect(intent.signature).toBe('roles:{}')
+    expect(intent.signature).toBe('roles:{"filter":{},"ids":[]}')
+  })
+
+  it('选中行优先限制结果，字符串 ID 保留精度并固定快照', async () => {
+    const selected = ['9007199254740993', '2', '2']
+    const intent = normalizeExportIntent('users', { page: 2, page_size: 10 }, selected)
+    selected.push('3')
+    expect(intent.ids).toEqual(['2', '9007199254740993'])
+    expect(intent.isEmpty).toBe(false)
+    const confirmation = vi.fn(async () => false)
+    await expect(confirmExportIntent(intent, confirmation)).resolves.toBe(true)
+    expect(confirmation).not.toHaveBeenCalled()
+    expect(intent.signature).toBe(
+      normalizeExportIntent('users', {}, ['2', '9007199254740993']).signature,
+    )
+    expect(intent.signature).not.toBe(normalizeExportIntent('users', {}, ['2']).signature)
   })
 })
 

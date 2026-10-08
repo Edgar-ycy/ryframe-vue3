@@ -19,7 +19,14 @@ vi.mock('@/components/business/flat-crud', async () => {
     FlatCrudPage: defineComponent({
       setup(_props, { slots }) {
         return () =>
-          h('div', { 'data-has-actions': String(Boolean(slots.actions)) }, slots.actions?.())
+          h(
+            'div',
+            { 'data-has-actions': String(Boolean(slots.actions)) },
+            slots.actions?.({
+              selectedExportIds: ['7'],
+              captureSelectionOwnership: () => () => true,
+            }),
+          )
       },
     }),
     defineFlatCrudResource: <T>(resource: T): T => resource,
@@ -64,10 +71,19 @@ async function renderPostPage(
         null,
         withActions
           ? {
-              actions: (props: { canExport: boolean; lastSuccessfulQuery: unknown }) =>
+              actions: (props: {
+                canExport: boolean
+                lastSuccessfulQuery: unknown
+                selectedExportIds: string[]
+                captureSelectionOwnership: () => () => boolean
+              }) =>
                 h(
                   'span',
-                  { id: 'post-actions' },
+                  {
+                    id: 'post-actions',
+                    'data-selected': props.selectedExportIds.join(','),
+                    'data-owns-selection': String(props.captureSelectionOwnership()()),
+                  },
                   `${props.canExport}:${JSON.stringify(props.lastSuccessfulQuery)}`,
                 ),
             }
@@ -98,5 +114,7 @@ describe('生成的岗位页面', () => {
     expect(beforeQuery).toContain('data-has-actions="true"')
     expect(beforeQuery).toContain('false:null')
     expect(afterQuery).toContain('true:{&quot;name&quot;:&quot;研发&quot;}')
+    expect(afterQuery).toContain('data-selected="7"')
+    expect(afterQuery).toContain('data-owns-selection="true"')
   })
 })

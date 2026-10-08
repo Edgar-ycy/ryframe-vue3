@@ -10,6 +10,7 @@ import {
   type DictTypeRecord,
 } from '@/api/modules/dict'
 import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { useExportRowSelection } from '@/hooks/useExportRowSelection'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { translate } from '@/i18n'
 import { emptyPageResponse, type Id, type PageResponse } from '@/shared/http/types'
@@ -84,11 +85,20 @@ export function useDictManagement() {
       return response.data ?? []
     },
   )
-
   const typeLoading = typesQuery.isFetching
+  const {
+    setExportTableRef,
+    selectedExportIds,
+    handleExportSelectionChange,
+    selectCurrentPage,
+    captureSelectionOwnership,
+  } = useExportRowSelection(
+    () => typePageResponse.value?.items ?? [],
+    () => typeLoading.value,
+    (row) => row.id,
+  )
   const dataList = dataQuery.data
   const dataLoading = dataQuery.isFetching
-
   const deleteTypeMutation = useServerStateMutation<void, DictTypeRecord>('dict-types', {
     mutationFn: async (dictType) => {
       await deleteDictType(dictType.id)
@@ -141,14 +151,14 @@ export function useDictManagement() {
       ElMessage.warning(translate('system.common.exportRequiresSuccessfulQuery'))
       return
     }
-    const intent = normalizeExportIntent('dict-types', successfulQuery)
+    const intent = normalizeExportIntent('dict-types', successfulQuery, selectedExportIds.value)
     await confirmAndSubmitExportIntent(
       intent,
       (scope) =>
         submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-          exportDictType(intent.filter, idempotencyKey, signal, intent.isEmpty),
+          exportDictType(intent.filter, idempotencyKey, signal, intent.isEmpty, intent.ids),
         ),
-      { ownsOperation: pageLifecycle.captureOwnership() },
+      { ownsOperation: captureSelectionOwnership() },
     )
   }
 
@@ -255,6 +265,10 @@ export function useDictManagement() {
   }
 
   return {
+    setExportTableRef,
+    selectedExportIds,
+    handleExportSelectionChange,
+    selectCurrentPage,
     canExport,
     currentType,
     dataDialogVisible,

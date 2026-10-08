@@ -12,6 +12,7 @@ export type NormalizedExportFilter<TQuery extends object> = Omit<TQuery, 'page' 
 
 export interface ExportIntent<TQuery extends object> {
   filter: NormalizedExportFilter<TQuery>
+  ids: string[]
   isEmpty: boolean
   signature: string
 }
@@ -32,6 +33,7 @@ interface ConfirmExportIntentOptions {
 export function normalizeExportIntent<TQuery extends object>(
   resource: string,
   query: TQuery,
+  selectedIds: readonly string[] = [],
 ): ExportIntent<TQuery> {
   const source = query as Record<string, unknown>
   const filter: Record<string, string | number | boolean> = {}
@@ -55,10 +57,12 @@ export function normalizeExportIntent<TQuery extends object>(
     }
   }
 
+  const ids = [...new Set(selectedIds)].sort()
   return {
     filter: filter as NormalizedExportFilter<TQuery>,
-    isEmpty: filterCount === 0,
-    signature: `${resource}:${JSON.stringify(filter)}`,
+    ids,
+    isEmpty: filterCount === 0 && ids.length === 0,
+    signature: `${resource}:${JSON.stringify({ filter, ids })}`,
   }
 }
 

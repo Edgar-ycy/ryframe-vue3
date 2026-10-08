@@ -2000,6 +2000,8 @@ export interface components {
         ConfigExportRequestDto: {
             confirm_all: boolean;
             filter: components["schemas"]["ConfigExportFilterDto"];
+            /** @description 只导出选中的记录；Snowflake ID 始终按字符串传输。 */
+            ids?: string[] | null;
         };
         CreateConfigDto: {
             key: string;
@@ -2115,6 +2117,8 @@ export interface components {
         DictTypeExportRequestDto: {
             confirm_all: boolean;
             filter: components["schemas"]["DictTypeExportFilterDto"];
+            /** @description 只导出选中的记录；Snowflake ID 始终按字符串传输。 */
+            ids?: string[] | null;
         };
         /** @description 不携带业务字段的写操作请求体。 */
         EmptyRequestDto: Record<string, never>;
@@ -2128,6 +2132,8 @@ export interface components {
         LoginLogExportRequestDto: {
             confirm_all: boolean;
             filter: components["schemas"]["LoginLogExportFilterDto"];
+            /** @description 只导出选中的记录；Snowflake ID 始终按字符串传输。 */
+            ids?: string[] | null;
         };
         /** @description 菜单树节点。 */
         MenuTreeNode: {
@@ -2184,6 +2190,8 @@ export interface components {
         OperLogExportRequestDto: {
             confirm_all: boolean;
             filter: components["schemas"]["OperLogExportFilterDto"];
+            /** @description 只导出选中的记录；Snowflake ID 始终按字符串传输。 */
+            ids?: string[] | null;
         };
         /** @description 选择器候选项。 */
         OptionItem: {
@@ -2566,6 +2574,8 @@ export interface components {
         PostExportRequestDto: {
             confirm_all: boolean;
             filter: components["schemas"]["PostExportFilterDto"];
+            /** @description 只导出选中的记录；Snowflake ID 始终按字符串传输。 */
+            ids?: string[] | null;
         };
         /** @description 创建消息请求。 */
         PublishMessageDto: {
@@ -2617,6 +2627,8 @@ export interface components {
         RoleExportRequestDto: {
             confirm_all: boolean;
             filter: components["schemas"]["RoleExportFilterDto"];
+            /** @description 只导出选中的记录；Snowflake ID 始终按字符串传输。 */
+            ids?: string[] | null;
         };
         /**
          * @description 角色选项的使用场景。
@@ -2709,6 +2721,8 @@ export interface components {
         UserExportRequestDto: {
             confirm_all: boolean;
             filter: components["schemas"]["UserExportFilterDto"];
+            /** @description 只导出选中的记录；Snowflake ID 始终按字符串传输。 */
+            ids?: string[] | null;
         };
         /** @description OpenAPI 中的严格单文件上传表单。 */
         UserImportUploadForm: {

@@ -66,6 +66,7 @@ declare module 'vue' {
     ElUpload: typeof import('element-plus/es')['ElUpload']
     ExportCenter: typeof import('./components/layout/ExportCenter/index.vue')['default']
     ExportJobDrawer: typeof import('./components/layout/ExportCenter/ExportJobDrawer.vue')['default']
+    ExportSelectionToolbar: typeof import('./components/business/ExportSelectionToolbar.vue')['default']
     FlatCrudFormDialog: typeof import('./components/business/flat-crud/FlatCrudFormDialog.vue')['default']
     FlatCrudPage: typeof import('./components/business/flat-crud/FlatCrudPage.vue')['default']
     FlatCrudQueryForm: typeof import('./components/business/flat-crud/FlatCrudQueryForm.vue')['default']

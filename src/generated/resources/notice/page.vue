@@ -29,9 +29,11 @@
     @submit="submit"
     @update:query="setQuery"
   >
-    <template v-if="slots.actions" #actions>
+    <template v-if="slots.actions" #actions="{ selectedExportIds, captureSelectionOwnership }">
       <slot
         name="actions"
+        :selected-export-ids="selectedExportIds"
+        :capture-selection-ownership="captureSelectionOwnership"
         :can-export="canExport"
         :last-successful-query="lastSuccessfulQuery ?? null"
       />
@@ -49,7 +51,7 @@ import type { NoticeQuery } from './api'
 import { createNoticePresentation } from './fields'
 
 const slots = defineSlots<{
-  actions?(props: { canExport: boolean; lastSuccessfulQuery: NoticeQuery | null }): unknown
+  actions?(props: { selectedExportIds: string[]; captureSelectionOwnership: () => () => boolean; canExport: boolean; lastSuccessfulQuery: NoticeQuery | null }): unknown
 }>()
 
 const { locale } = useI18n()

@@ -25,11 +25,13 @@ export function exportConfig(
   idempotencyKey: string,
   signal?: AbortSignal,
   confirmAll = false,
+  ids: readonly string[] = [],
 ) {
   return post_system_configs_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,
+      ids: [...ids],
     },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,

@@ -50,6 +50,13 @@
       <template #header>
         <div class="card-header">
           <span>{{ t('monitor.operationLog.title') }}</span>
+          <ExportSelectionToolbar
+            v-perm="'system:operlog:export'"
+            :disabled="loading || !canExport"
+            :row-count="operationLogPage?.items.length ?? 0"
+            :selected-count="selectedExportIds.length"
+            @select-page="selectCurrentPage"
+          />
           <el-button
             v-perm="'system:operlog:export'"
             icon="Download"
@@ -62,7 +69,15 @@
           </el-button>
         </div>
       </template>
-      <el-table v-loading="loading" :data="operationLogPage?.items ?? []" border stripe>
+      <el-table
+        :ref="setExportTableRef"
+        @selection-change="handleExportSelectionChange"
+        v-loading="loading"
+        :data="operationLogPage?.items ?? []"
+        border
+        stripe
+      >
+        <el-table-column type="selection" width="48" />
         <el-table-column
           prop="id"
           :label="t('monitor.operationLog.id')"
@@ -201,6 +216,7 @@
 </template>
 
 <script setup lang="ts">
+import ExportSelectionToolbar from '@/components/business/ExportSelectionToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { onActivated } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -212,6 +228,7 @@ import {
   type OperLogRecord,
 } from '@/api/modules/monitor'
 import { confirmAndSubmitExportIntent, normalizeExportIntent } from '@/app/exports/exportIntent'
+import { useExportRowSelection } from '@/hooks/useExportRowSelection'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
 import { emptyPageResponse, type PageResponse } from '@/shared/http/types'
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
@@ -242,7 +259,7 @@ const {
   end_time: '',
 })
 
-const { captureOwnership, detailRow, detailVisible, pageActive, showDetail } =
+const { detailRow, detailVisible, pageActive, showDetail } =
   useLogPageScope<OperLogRecord>(clearSuccessfulQuery)
 
 const operationLogsQuery = useServerStateQuery<PageResponse<OperLogRecord>>(
@@ -257,8 +274,19 @@ const operationLogsQuery = useServerStateQuery<PageResponse<OperLogRecord>>(
     }),
 )
 
-const loading = operationLogsQuery.isFetching
 const operationLogPage = operationLogsQuery.data
+const loading = operationLogsQuery.isFetching
+const {
+  setExportTableRef,
+  selectedExportIds,
+  handleExportSelectionChange,
+  selectCurrentPage,
+  captureSelectionOwnership,
+} = useExportRowSelection(
+  () => operationLogPage.value?.items ?? [],
+  () => loading.value,
+  (row) => row.id,
+)
 
 async function handleExport(): Promise<void> {
   const successfulQuery = lastSuccessfulQuery.value
@@ -266,14 +294,14 @@ async function handleExport(): Promise<void> {
     ElMessage.warning(t('system.common.exportRequiresSuccessfulQuery'))
     return
   }
-  const intent = normalizeExportIntent('operlogs', successfulQuery)
+  const intent = normalizeExportIntent('operlogs', successfulQuery, selectedExportIds.value)
   await confirmAndSubmitExportIntent(
     intent,
     (scope) =>
       submitExport(scope, intent.signature, (idempotencyKey, signal) =>
-        exportOperLog(intent.filter, idempotencyKey, signal, intent.isEmpty),
+        exportOperLog(intent.filter, idempotencyKey, signal, intent.isEmpty, intent.ids),
       ),
-    { ownsOperation: captureOwnership() },
+    { ownsOperation: captureSelectionOwnership() },
   )
 }
 

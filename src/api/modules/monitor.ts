@@ -92,11 +92,13 @@ export function exportOperLog(
   idempotencyKey: string,
   signal?: AbortSignal,
   confirmAll = false,
+  ids: readonly string[] = [],
 ) {
   return post_system_operlogs_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,
+      ids: [...ids],
     },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,
@@ -120,11 +122,13 @@ export function exportLoginLog(
   idempotencyKey: string,
   signal?: AbortSignal,
   confirmAll = false,
+  ids: readonly string[] = [],
 ) {
   return post_system_loginlogs_exports({
     data: {
       filter: stripPagination(params) ?? {},
       confirm_all: confirmAll,
+      ids: [...ids],
     },
     headers: { 'Idempotency-Key': idempotencyKey },
     signal,

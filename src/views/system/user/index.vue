@@ -94,6 +94,13 @@
               >
                 {{ t('system.userImport.open') }}
               </el-button>
+              <ExportSelectionToolbar
+                v-perm="'system:user:export'"
+                :disabled="loading || !canExport"
+                :row-count="tableResponse?.items.length ?? 0"
+                :selected-count="selectedExportIds.length"
+                @select-page="selectCurrentPage"
+              />
               <el-button
                 v-perm="'system:user:export'"
                 icon="Download"
@@ -111,7 +118,15 @@
           </div>
         </template>
 
-        <el-table v-loading="loading" :data="tableResponse?.items ?? []" border stripe>
+        <el-table
+          :ref="setExportTableRef"
+          @selection-change="handleExportSelectionChange"
+          v-loading="loading"
+          :data="tableResponse?.items ?? []"
+          border
+          stripe
+        >
+          <el-table-column type="selection" width="48" />
           <el-table-column prop="id" :label="t('system.common.id')" width="70" align="center" />
           <el-table-column
             prop="username"
@@ -237,6 +252,7 @@
 </template>
 
 <script setup lang="ts">
+import ExportSelectionToolbar from '@/components/business/ExportSelectionToolbar.vue'
 import { ArrowRight } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { UserRecord } from '@/api/modules/user'
@@ -259,6 +275,10 @@ const {
   deptTree,
   deptTreeLoading,
   editingUser,
+  setExportTableRef,
+  selectedExportIds,
+  handleExportSelectionChange,
+  selectCurrentPage,
   exportLoading,
   fetchData,
   handleAdd,

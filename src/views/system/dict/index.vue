@@ -7,6 +7,13 @@
             <div class="card-header">
               <span>{{ t('system.dict.typeTitle') }}</span>
               <div>
+                <ExportSelectionToolbar
+                  v-perm="'system:dict:export'"
+                  :disabled="typeLoading || !canExport"
+                  :row-count="typePageResponse?.items.length ?? 0"
+                  :selected-count="selectedExportIds.length"
+                  @select-page="selectCurrentPage"
+                />
                 <el-button
                   v-perm="'system:dict:export'"
                   size="small"
@@ -75,6 +82,9 @@
           </el-form>
 
           <el-table
+            :ref="setExportTableRef"
+            @selection-change="handleExportSelectionChange"
+            row-key="id"
             v-loading="typeLoading"
             :data="typePageResponse?.items ?? []"
             border
@@ -82,6 +92,7 @@
             highlight-current-row
             @row-click="handleTypeClick"
           >
+            <el-table-column type="selection" width="48" />
             <el-table-column
               prop="name"
               :label="t('system.dict.name')"
@@ -217,6 +228,7 @@
 </template>
 
 <script setup lang="ts">
+import ExportSelectionToolbar from '@/components/business/ExportSelectionToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import type { DictDataRecord, DictTypeRecord } from '@/api/modules/dict'
 import type { Id } from '@/shared/http/types'
@@ -236,6 +248,10 @@ const {
   deletingTypeId,
   editingData,
   editingType,
+  setExportTableRef,
+  selectedExportIds,
+  handleExportSelectionChange,
+  selectCurrentPage,
   exportLoading,
   fetchTypeList,
   handleAddData,

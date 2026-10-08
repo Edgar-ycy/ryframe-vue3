@@ -1,10 +1,65 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { isEmptyPlanConfig } from '@/features/manifest'
+import {
+  capabilityCatalogMismatchCodes,
+  isEmptyPlanConfig,
+  isStandardEmptyVariant,
+  type CapabilityVariantSchema,
+} from '@/features/manifest'
 import { registeredPageAccessResult } from '@/features/navigation/routeAccess'
 import { featureManifests, isBusinessWritePermission } from '@/features/registry'
 
 describe('首批可选能力边界', () => {
+  const variant = {
+    code: 'standard',
+    schema_version: 1,
+    config_schema: { type: 'object', properties: {}, additionalProperties: false },
+  }
+  const matching = (): { code: string; variants: CapabilityVariantSchema[] }[] =>
+    featureManifests.map((item) => ({ code: item.capabilityCode, variants: [variant] }))
+
+  it('允许空目录，完整目录没有漂移', () => {
+    expect(capabilityCatalogMismatchCodes([], featureManifests)).toEqual([])
+    expect(capabilityCatalogMismatchCodes(matching(), featureManifests)).toEqual([])
+  })
+
+  it('缺项、未知项与重复项均失败关闭，即使套餐没有选中能力', () => {
+    const catalog = matching()
+    expect(capabilityCatalogMismatchCodes(catalog.slice(1), featureManifests)).toContain(
+      catalog[0]!.code,
+    )
+    expect(
+      capabilityCatalogMismatchCodes(
+        [...catalog, { code: 'system.post', variants: [variant] }],
+        featureManifests,
+      ),
+    ).toContain('system.post')
+    expect(capabilityCatalogMismatchCodes([...catalog, catalog[0]!], featureManifests)).toContain(
+      catalog[0]!.code,
+    )
+  })
+
+  it('拒绝变体、Schema 版本或非空对象 Schema 的漂移', () => {
+    for (const change of [
+      { ...variant, code: 'other' },
+      { ...variant, schema_version: 2 },
+      {
+        ...variant,
+        config_schema: {
+          type: 'object',
+          properties: { limit: { type: 'number' } },
+          additionalProperties: false,
+        },
+      },
+      { ...variant, config_schema: { type: 'object', properties: {}, additionalProperties: true } },
+      { ...variant, config_schema: null },
+    ]) {
+      expect(isStandardEmptyVariant(change)).toBe(false)
+      const catalog = matching()
+      catalog[0]!.variants = [change]
+      expect(capabilityCatalogMismatchCodes(catalog, featureManifests)).toContain(catalog[0]!.code)
+    }
+  })
   it('前后端能力及变体配置 Schema 完全一致', () => {
     const formal = new URL('../../openapi/openapi.json', import.meta.url)
     const contract: {

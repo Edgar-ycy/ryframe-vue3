@@ -90,7 +90,8 @@ import {
   type EffectiveProductCapability,
   type ProductCapabilityDescriptor,
 } from '@/api/modules/productPlan'
-import { findFeatureManifest } from '@/features/registry'
+import { capabilityCatalogMismatchCodes } from '@/features/manifest'
+import { featureManifests, findFeatureManifest } from '@/features/registry'
 import { requireOperationData } from '@/shared/http/client'
 
 const props = defineProps<{ effectiveCapabilities: EffectiveProductCapability[] }>()
@@ -103,7 +104,12 @@ const editorCache = new Map<string, Component>()
 
 const unknownCodes = computed(() => {
   const known = new Set(catalog.value.map((descriptor) => descriptor.code))
-  return model.value.map((item) => item.capability_code).filter((code) => !known.has(code))
+  return [
+    ...new Set([
+      ...model.value.map((item) => item.capability_code).filter((code) => !known.has(code)),
+      ...capabilityCatalogMismatchCodes(catalog.value, featureManifests),
+    ]),
+  ].sort()
 })
 
 onMounted(() => {
@@ -207,6 +213,7 @@ function validate(): boolean {
     const manifest = findFeatureManifest(item.capability_code)
     return Boolean(
       descriptor &&
+      (!item.enabled || descriptor.deployment_available) &&
       variant &&
       (manifest?.allowedVariants as readonly string[] | undefined)?.includes(item.variant_code) &&
       manifest?.validatePlanConfig(item.config),

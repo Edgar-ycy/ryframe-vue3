@@ -5,7 +5,7 @@ import { createTenantWithPlan, openTenantDetails } from './tenant-support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 import { expectNoSeriousAccessibilityViolations } from '../browser/support/accessibility'
 
-test('空能力目录仍可发布、分配套餐并开通带配额的租户', async ({
+test('空能力套餐仍可发布、分配并开通带配额的租户', async ({
   page,
   newClientContext,
   clientAddress,

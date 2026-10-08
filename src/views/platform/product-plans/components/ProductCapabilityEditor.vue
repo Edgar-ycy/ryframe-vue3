@@ -109,7 +109,8 @@ import {
   type ProductCapability,
   type ProductCapabilityDescriptor,
 } from '@/api/modules/productPlan'
-import { findFeatureManifest } from '@/features/registry'
+import { capabilityCatalogMismatchCodes } from '@/features/manifest'
+import { featureManifests, findFeatureManifest } from '@/features/registry'
 import { requireOperationData } from '@/shared/http/client'
 
 const model = defineModel<ProductCapability[]>({ required: true })
@@ -127,7 +128,7 @@ const unknownCodes = computed(() => {
 })
 
 const missingManifestCodes = computed(() =>
-  catalog.value.map((descriptor) => descriptor.code).filter((code) => !findFeatureManifest(code)),
+  capabilityCatalogMismatchCodes(catalog.value, featureManifests),
 )
 
 const catalogMismatchCodes = computed(() =>
@@ -227,6 +228,7 @@ function validate(): boolean {
     const manifest = findFeatureManifest(capability.capability_code)
     return Boolean(
       descriptor &&
+      descriptor.deployment_available &&
       variant &&
       (manifest?.allowedVariants as readonly string[] | undefined)?.includes(
         capability.variant_code,

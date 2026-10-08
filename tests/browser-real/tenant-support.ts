@@ -29,7 +29,12 @@ export async function createTenantWithPlan(page: Page, target = 'shared-control'
     page.getByRole('button', { name: '新建版本', exact: true }).click(),
   )
   const catalogBody: unknown = await catalog.json()
-  expect(catalogBody).toMatchObject({ data: [] })
+  expect(catalogBody).toMatchObject({
+    data: [
+      { code: 'system.message', variants: [{ code: 'standard', schema_version: 1 }] },
+      { code: 'system.notice', variants: [{ code: 'standard', schema_version: 1 }] },
+    ],
+  })
   const version = page.getByRole('dialog', { name: '新建版本', exact: true })
   await field(version, '版本名称').locator('input').fill(`${name}-版本`)
   const created = await act(page, 'POST', /\/product-plans\/\d+\/versions$/u, () =>

@@ -22,7 +22,7 @@
   transition: all 0.2s;
 }
 
-.el-button--primary {
+.el-button--primary:not(.is-plain, .is-link, .is-text, .is-disabled) {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   border: none;
 

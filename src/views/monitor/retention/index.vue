@@ -27,7 +27,6 @@
             <el-button
               v-perm="'monitor:retention:list'"
               type="primary"
-              plain
               icon="View"
               :loading="previewLoading"
               @click="loadPreview"

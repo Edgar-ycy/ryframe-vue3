@@ -13,8 +13,13 @@ export function parseArguments(argv) {
   let stage = 'contract'
   let full = false
   let explicitStage = false
+  let plan = false
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
+    if (value === '--plan') {
+      plan = true
+      continue
+    }
     if (value === '--full') {
       full = true
       continue
@@ -28,7 +33,61 @@ export function parseArguments(argv) {
     throw new Error(`未知参数：${value}`)
   }
   if (full && explicitStage) throw new Error('--full 不能与 --stage 同时使用')
-  return { full, stage: full ? 'full' : stage }
+  const selected = full ? 'full' : stage
+  if (!['contract', 'static', 'unit', 'build', 'browser', 'full'].includes(selected)) {
+    throw new Error(`未知检查阶段：${selected}`)
+  }
+  return { full, stage: selected, plan }
+}
+
+export function checkTasks(stage) {
+  const tasks = {
+    contract: [{ name: 'contract' }],
+    static: [
+      { name: 'import-boundaries', node: ['scripts/check-import-boundaries.mjs'] },
+      { name: 'workflows', node: ['scripts/check-workflows.mjs'] },
+      { name: 'eslint', args: ['exec', 'eslint', '.', '--max-warnings', '0'] },
+      { name: 'prettier', args: ['exec', 'prettier', '--check', '.'] },
+      { name: 'stylelint', args: ['exec', 'stylelint', 'src/**/*.{vue,scss}'] },
+    ],
+    unit: [
+      { name: 'script-tests', node: ['--test', 'scripts/tests/*.test.mjs'] },
+      { name: 'test-types', args: ['exec', 'vue-tsc', '-p', 'tsconfig.test.json'] },
+      { name: 'unit-coverage', args: ['exec', 'vitest', 'run', '--coverage'] },
+    ],
+    build: [
+      { name: 'production-build', args: ['build'] },
+      { name: 'bundle-budget', node: ['scripts/check-bundle-budget.mjs'] },
+    ],
+    browser: [{ name: 'browser-smoke', args: ['exec', 'playwright', 'test'] }],
+  }
+  if (stage === 'full') return ['contract', 'static', 'unit', 'build'].flatMap(checkTasks)
+  if (!tasks[stage]) throw new Error(`未知检查阶段：${stage}`)
+  return tasks[stage]
+}
+
+function runTask(task) {
+  if (task.name === 'contract') return runContractCheck()
+  return new Promise((resolve, reject) => {
+    const windows = process.platform === 'win32'
+    const command = windows || task.node ? process.execPath : 'corepack'
+    const corepack = path.join(
+      path.dirname(process.execPath),
+      'node_modules/corepack/dist/corepack.js',
+    )
+    const args = task.node ?? [...(windows ? [corepack] : []), 'pnpm', ...task.args]
+    const child = spawn(command, args, {
+      cwd: root,
+      env: process.env,
+      stdio: 'inherit',
+      windowsHide: true,
+    })
+    child.once('error', reject)
+    child.once('exit', (code, signal) => {
+      if (signal || code !== 0) reject(new Error(`${task.name} 失败：${signal ?? code}`))
+      else resolve()
+    })
+  })
 }
 
 function consumerArguments() {
@@ -111,8 +170,12 @@ async function runContractCheck() {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2))
-  if (options.stage === 'contract' || options.stage === 'full') return runContractCheck()
-  throw new Error(`当前前端只提供契约门禁，暂不支持阶段：${options.stage}`)
+  const tasks = checkTasks(options.stage)
+  if (options.plan) {
+    console.log(JSON.stringify({ stage: options.stage, tasks }, null, 2))
+    return
+  }
+  for (const task of tasks) await runTask(task)
 }
 
 const isMain =

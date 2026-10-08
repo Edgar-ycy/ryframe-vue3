@@ -184,6 +184,9 @@ describe('operation 领域请求', () => {
       await submit({}, 'selected-key', undefined, false, ids)
     }
     for (const [request] of httpClient.request.mock.calls) {
+      if (!request || typeof request !== 'object' || !('data' in request)) {
+        throw new Error('导出请求缺少数据')
+      }
       expect(request.data).toEqual({ filter: {}, confirm_all: false, ids })
     }
   })

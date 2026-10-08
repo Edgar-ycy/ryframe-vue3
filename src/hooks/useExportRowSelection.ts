@@ -9,7 +9,7 @@ export function useExportRowSelection<TRecord extends object>(
   loading: () => boolean,
   recordId: (record: TRecord) => Id,
 ) {
-  const exportTableRef = ref<TableInstance>()
+  const exportTableRef = ref<Pick<TableInstance, 'clearSelection' | 'toggleRowSelection'>>()
   const selectedExportIds = ref<Id[]>([])
   const lifecycle = useServerStatePageLifecycle(clearSelection)
   let selectionRevision = 0

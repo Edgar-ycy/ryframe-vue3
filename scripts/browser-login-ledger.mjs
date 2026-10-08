@@ -14,7 +14,7 @@ async function acquire(path) {
     } catch (error) {
       if (error.code !== 'EEXIST') throw error
       if (Date.now() >= deadline) {
-        throw new Error('登录预算文件锁持续占用，请核验对应测试进程；不会强抢锁')
+        throw new Error('登录预算文件锁持续占用，请核验对应测试进程；不会强抢锁', { cause: error })
       }
       await setTimeout(50)
     }

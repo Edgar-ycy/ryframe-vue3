@@ -1,5 +1,4 @@
 import { effectScope, ref } from 'vue'
-import type { TableInstance } from 'element-plus'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const lifecycle = vi.hoisted(() => ({ deactivate: undefined as (() => void) | undefined }))
@@ -44,7 +43,7 @@ describe('当前页导出选择', () => {
     selection.exportTableRef.value = {
       toggleRowSelection,
       clearSelection: vi.fn(),
-    } as TableInstance
+    }
     selection.selectCurrentPage()
     expect(toggleRowSelection.mock.calls).toEqual(rows.value.map((row) => [row, true]))
     loading.value = true

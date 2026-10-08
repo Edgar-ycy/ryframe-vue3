@@ -45,7 +45,10 @@ corepack pnpm build     # 类型检查并生成生产构建
 corepack pnpm generate  # 预览契约派生文件差异，写入需显式 --write
 ```
 
-仓库 CI 分别执行契约检查、单元测试、生产构建、浏览器 smoke 和 Windows 检查。可通过 `corepack pnpm exec vitest run` 运行单测，通过 `corepack pnpm exec playwright test` 运行本地 Chrome 浏览器 smoke；真实后端联调使用隔离资源与对应的 real 配置。
+`corepack pnpm check --full` 依次检查契约、静态规则、测试类型、单元覆盖率和生产构建。
+`--stage contract|static|unit|build` 可单独运行相应阶段，`--plan` 输出同一任务图且不执行任务。
+浏览器 smoke 使用 `corepack pnpm check --stage browser`；真实后端联调使用隔离资源与对应的 real 配置。
+仓库 CI 分别执行这些阶段，并保留 Windows 检查。
 
 ## 同步 API 契约
 

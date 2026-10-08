@@ -17,10 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with: {node-version: '24.21.0', package-manager-cache: false}
+        with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm check --stage contract
+      - run: corepack pnpm check --stage static
 
   unit:
     name: Unit Tests (Node 24)
@@ -28,10 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with: {node-version: '24.21.0', package-manager-cache: false}
+        with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
-      - run: corepack pnpm exec vitest run
+      - run: corepack pnpm check --stage unit
 
   build:
     name: Production Build (Node 24)
@@ -39,10 +40,10 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with: {node-version: '24.21.0', package-manager-cache: false}
+        with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
-      - run: corepack pnpm build
+      - run: corepack pnpm check --stage build
 
   browser:
     name: Browser Smoke (Node 24)
@@ -50,11 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with: {node-version: '24.21.0', package-manager-cache: false}
+        with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm exec playwright install --with-deps chromium
-      - run: corepack pnpm exec playwright test
+      - run: corepack pnpm check --stage browser
       - name: 保存浏览器失败产物
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -70,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with: {node-version: '24.21.0', package-manager-cache: false}
+        with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm check --stage contract

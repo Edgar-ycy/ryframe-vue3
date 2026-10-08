@@ -141,13 +141,13 @@ export function parseContract(bytes, label) {
   try {
     source = decoder.decode(bytes)
   } catch (error) {
-    throw new Error(`${label} 不是有效 UTF-8：${error.message}`)
+    throw new Error(`${label} 不是有效 UTF-8：${error.message}`, { cause: error })
   }
   let document
   try {
     document = JSON.parse(source)
   } catch (error) {
-    throw new Error(`${label} 不是有效 JSON：${error.message}`)
+    throw new Error(`${label} 不是有效 JSON：${error.message}`, { cause: error })
   }
   validateContract(document, label)
   return document

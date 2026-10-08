@@ -18,6 +18,10 @@ export default tseslint.config(
     ],
   },
   js.configs.recommended,
+  {
+    files: ['scripts/**/*.{mjs,js}'],
+    languageOptions: { globals: globals.node },
+  },
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/recommended'],
   {

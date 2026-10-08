@@ -58,6 +58,7 @@ async function readRemoteSource(metadata) {
       throw new Error(
         `无法从 GitHub Raw（${rawError.message}）或 Contents API（${apiError.message}）` +
           '读取固定的 OpenAPI 契约',
+        { cause: apiError },
       )
     }
   }
@@ -78,6 +79,7 @@ async function readPinnedSource(metadata) {
   } catch (error) {
     throw new Error(
       `无法从后端 Git 对象 ${objectName} 读取 OpenAPI；请确认工作区和提交 SHA 正确：${error.message}`,
+      { cause: error },
     )
   }
 }
@@ -105,6 +107,7 @@ async function sync() {
   } catch (error) {
     throw new Error(
       `${error.message}。契约同步需要 RYFRAME_BACKEND_REPOSITORY 和 RYFRAME_BACKEND_COMMIT。`,
+      { cause: error },
     )
   }
 

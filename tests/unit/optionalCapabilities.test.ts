@@ -24,6 +24,7 @@ describe('首批可选能力边界', () => {
       const descriptor = catalog.find(
         (item: { code: string }) => item.code === manifest.capabilityCode,
       )
+      if (!descriptor) throw new Error(`缺少能力 ${manifest.capabilityCode}`)
       expect(descriptor.variants).toEqual([
         {
           code: 'standard',

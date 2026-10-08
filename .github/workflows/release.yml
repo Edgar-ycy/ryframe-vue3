@@ -63,7 +63,7 @@ jobs:
             done
           done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with: {node-version: '24.21.0', package-manager-cache: false}
+        with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm check --stage contract

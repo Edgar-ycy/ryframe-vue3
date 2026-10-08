@@ -29,7 +29,7 @@ export async function listAllDataTargetOptions(
 ): Promise<DataTargetSummary[]> {
   const items: DataTargetSummary[] = []
   let page = 1
-  let totalPages = 1
+  let totalPages: number
   do {
     const result = requireOperationData(
       await listDataTargets(

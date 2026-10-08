@@ -41,7 +41,7 @@ export const productPlanMessages = {
       capabilitiesHint: '从编译期能力目录选择能力和变体；配置编辑器会固定对应 Schema 版本。',
       capabilitiesInvalid: '能力目录尚未加载，或能力、变体与配置不匹配',
       capabilityCatalogUnavailable: '无法读取能力目录，当前不能保存套餐版本。',
-      capabilityCatalogEmpty: '当前版本没有可配置能力',
+      capabilityCatalogEmpty: '暂无可配置能力',
       capabilityClientMismatch: '前后端能力目录不一致：{codes}',
       capabilityEditorUnavailable: '当前前端版本没有该能力的配置编辑器。',
       deploymentAvailable: '部署可用',

@@ -1,6 +1,12 @@
 import { definePageManifest } from '@/features/pages'
 
 export const pageManifest = definePageManifest({
+  businessWritePermissions: [
+    'system:post:add',
+    'system:post:edit',
+    'system:post:remove',
+    'system:post:export',
+  ],
   pages: [
     { routeKey: 'system', path: '/system' },
     {

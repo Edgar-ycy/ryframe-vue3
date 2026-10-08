@@ -77,9 +77,12 @@ for (const feature of featureManifests) {
 export const registeredMenuPageRegistry = Object.freeze(menuPages)
 export const registeredPermissionRouteKeys = Object.freeze(permissionRoutes)
 
-const businessWritePermissions = new Set<PermissionCode>(
-  featureManifests.flatMap((feature) => feature.businessWritePermissions),
-)
+const businessWritePermissions = new Set<PermissionCode>([
+  ...featureManifests.flatMap((feature) => feature.businessWritePermissions),
+  ...Object.values(domainPageModules).flatMap(
+    (module) => module.pageManifest.businessWritePermissions ?? [],
+  ),
+])
 
 export function isBusinessWritePermission(permissionCode: PermissionCode): boolean {
   return businessWritePermissions.has(permissionCode)

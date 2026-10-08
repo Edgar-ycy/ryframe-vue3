@@ -269,7 +269,6 @@ export const crudResourceCatalog = [
   },
   {
     "access": {
-      "capability": "system.post",
       "permissions": {
         "create": "system:post:add",
         "delete": "system:post:remove",

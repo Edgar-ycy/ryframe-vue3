@@ -1328,6 +1328,8 @@ export interface components {
         };
         CapabilityVariantVo: {
             code: string;
+            /** @description 当前变体的完整配置 JSON Schema。 */
+            config_schema: unknown;
             /** Format: int32 */
             schema_version: number;
         };

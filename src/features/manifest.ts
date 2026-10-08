@@ -16,6 +16,7 @@ export interface FeatureManifest {
   path?: string
   page?: RouteComponentLoader
   allowedVariants: readonly string[]
+  validatePlanConfig: (config: unknown) => boolean
   planConfigEditor: RouteComponentLoader
   /** 业务数据不可写期间应禁用的写权限；系统管理权限不得放入此集合。 */
   businessWritePermissions: readonly PermissionCode[]
@@ -26,4 +27,14 @@ export function defineFeatureManifest<const Manifest extends FeatureManifest>(
   manifest: Manifest,
 ): Manifest {
   return manifest
+}
+
+/** 首批能力只接受严格空对象，不接受数组或额外配置字段。 */
+export function isEmptyPlanConfig(config: unknown): boolean {
+  return Boolean(
+    config &&
+    typeof config === 'object' &&
+    !Array.isArray(config) &&
+    Object.keys(config).length === 0,
+  )
 }

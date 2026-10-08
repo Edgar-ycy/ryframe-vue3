@@ -17,6 +17,8 @@ export interface PageManifestEntry {
 
 export interface PageManifest {
   pages: readonly PageManifestEntry[]
+  /** 基础页面的业务写权限，与套餐能力开关独立。 */
+  businessWritePermissions?: readonly PermissionCode[]
 }
 
 /** 保留路由键、权限和页面路径的字面量类型。 */

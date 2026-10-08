@@ -34,7 +34,8 @@ src/
 3. 将列表查询、保存、删除等页面流程提取到 composable。
 4. 在 `src/features/core/pages.ts`、`system/pages.ts` 或 `platform/pages.ts` 添加页面声明。
 5. 业务能力页面在对应的 `src/features/<feature>/manifest.ts` 中填写 route key、路径、权限和
-   capability。
+   capability。基础管理页面不登记套餐能力，业务写权限通过领域页面清单独立维护。
+   首批可选能力为公告和主动消息，`standard` 变体配置必须是严格空对象；目录与编辑器不一致时禁止保存。
 6. 启动开发服务器，用具备相应权限的会话打开菜单并验证加载、空数据、失败和保存流程。
 
 页面声明会汇入 `src/features/registry.ts`，会话加载后由路由投影生成可访问菜单和动态路由。

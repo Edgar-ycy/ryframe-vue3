@@ -231,9 +231,7 @@ function validate(): boolean {
       (manifest?.allowedVariants as readonly string[] | undefined)?.includes(
         capability.variant_code,
       ) &&
-      capability.config &&
-      typeof capability.config === 'object' &&
-      !Array.isArray(capability.config),
+      manifest?.validatePlanConfig(capability.config),
     )
   })
 }

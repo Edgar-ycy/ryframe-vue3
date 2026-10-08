@@ -209,9 +209,7 @@ function validate(): boolean {
       descriptor &&
       variant &&
       (manifest?.allowedVariants as readonly string[] | undefined)?.includes(item.variant_code) &&
-      item.config &&
-      typeof item.config === 'object' &&
-      !Array.isArray(item.config),
+      manifest?.validatePlanConfig(item.config),
     )
   })
 }

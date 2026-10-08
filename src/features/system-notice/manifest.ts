@@ -1,4 +1,4 @@
-import { defineFeatureManifest } from '@/features/manifest'
+import { defineFeatureManifest, isEmptyPlanConfig } from '@/features/manifest'
 
 export const featureManifest = defineFeatureManifest({
   capabilityCode: 'system.notice',
@@ -7,6 +7,7 @@ export const featureManifest = defineFeatureManifest({
   path: '/system/notice',
   page: () => import('@/views/system/notice/index.vue'),
   allowedVariants: ['standard'],
+  validatePlanConfig: isEmptyPlanConfig,
   planConfigEditor: () => import('../StandardPlanConfigEditor.vue'),
   businessWritePermissions: [],
 })

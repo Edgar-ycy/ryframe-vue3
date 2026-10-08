@@ -79,13 +79,15 @@ test('勾选与全选只导出当前页记录，翻页清空选择，空筛选�
     .locator('.card-header')
     .getByRole('button', { name: '导出', exact: true })
 
-  await checkbox.check()
+  await row.locator('.el-checkbox').click()
+  await expect(checkbox).toBeChecked()
   await expect(page.getByText('已选择 1 行', { exact: true })).toBeVisible()
   await exportButton.click()
   await expect.poll(() => exportBodies).toEqual([{ confirm_all: false, filter: {}, ids: ['1001'] }])
   await expect(page.locator('.el-message-box')).toHaveCount(0)
 
-  await checkbox.uncheck()
+  await row.locator('.el-checkbox').click()
+  await expect(checkbox).not.toBeChecked()
   await page.getByRole('button', { name: '全选当前页', exact: true }).click()
   await expect(checkbox).toBeChecked()
   await expect(page.getByText('共 21 条')).toBeVisible()

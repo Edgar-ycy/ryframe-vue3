@@ -46,6 +46,8 @@ src/
 
 后端接口变化后先在后端仓库运行 `cargo xtask generate api --write`。同步完成后：
 
+`/business/` 接口及引用模型归入延迟加载的 `system` 分片，业务请求使用该领域的 typed caller。
+
 1. 在 `src/api/generated/operations/` 对应领域文件查找 typed caller。
 2. JSON、multipart、文本和 Blob 传输由契约媒体类型自动绑定；媒体类型不唯一时生成会失败。
 3. 业务只需在 `src/api/modules/` 中保留规范化、幂等键、分页、响应校验或 raw session 策略；
@@ -123,14 +125,18 @@ SessionContext
 
 ## 构建入口
 
-公开入口只保留 `corepack pnpm dev` 与 `corepack pnpm build`。前者直接启动 Vite，后者先执行
-Vue TypeScript 项目构建，再执行 Vite 生产构建。前端自动化 CI、任务图、契约生成与浏览器验收入口
-当前均不提供。
+`corepack pnpm dev` 启动 Vite，`corepack pnpm build` 先执行 Vue TypeScript 检查，再构建生产产物。
+`corepack pnpm check` 校验当前契约与派生文件；`--full` 执行契约、静态检查、类型检查、工具测试、
+单测覆盖率及生产构建，`--plan` 只展示同一任务图。独立阶段使用 `--stage contract|static|unit|build|browser`。
+`corepack pnpm generate --check` 只读检查派生文件，显式 `--write` 才更新；后端契约同步使用上述正式入口。
+CI 执行对应阶段，浏览器阶段单独运行。
 
 ## 编写与运行测试
 
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。
 - `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文测试源码。
-- `tests/browser-real/`：连接真实 API、MySQL 与 Redis 的历史浏览器测试源码。
+- `tests/browser-real/`：在明确登记的隔离 API、MySQL、Redis 和对象存储环境中执行真实 Chrome 流程。
 
-当前仓库未配置测试任务入口；生产构建使用 `corepack pnpm build`。
+`corepack pnpm check --stage unit` 执行工具测试、测试类型检查和单测覆盖率；
+`corepack pnpm check --stage browser` 执行确定性浏览器 smoke。真实环境按登记配置执行
+`corepack pnpm exec playwright test --config playwright.real.config.ts`；恢复验收使用后端统一入口提供来源与资源绑定。

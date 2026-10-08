@@ -39,7 +39,8 @@
   align-items: baseline;
 }
 
-.panel-heading span {
+.panel-heading > span,
+.panel-heading > div > span {
   color: var(--el-text-color-secondary);
   font-size: 13px;
 }

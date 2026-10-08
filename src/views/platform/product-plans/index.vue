@@ -80,7 +80,6 @@
             <el-button
               v-if="selectedPlan && canEdit"
               type="primary"
-              plain
               icon="Plus"
               @click="openVersionDialog()"
             >

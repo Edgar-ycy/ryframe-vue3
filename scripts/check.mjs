@@ -145,14 +145,8 @@ async function runContractCheck() {
   const consumer = consumerArguments()
   if (consumer) {
     if (consumer.get('--mode') !== state.mode) throw new Error('前端契约状态与消费检查模式不一致')
-    const contractPath = path.join(
-      root,
-      'openapi',
-      state.mode === 'candidate' ? 'candidate.json' : 'openapi.json',
-    )
-    const candidate = await readFile(contractPath)
     const backendOpenapi = await readFile(consumer.get('--openapi'))
-    if (!candidate.equals(backendOpenapi)) throw new Error('前端 OpenAPI 与后端本次快照不一致')
+    verifyConsumerDocument(state, backendOpenapi)
     if (state.metadata.backend_repository !== consumer.get('--backend-repository')) {
       throw new Error('openapi/source.json 未指向本次后端仓库')
     }
@@ -166,6 +160,10 @@ async function runContractCheck() {
   }
   await runNodeScript('generate-api-artifacts.mjs', ['--check'])
   console.log(`契约门禁通过（${state.mode}）`)
+}
+
+export function verifyConsumerDocument(state, backendOpenapi) {
+  if (!state.bytes.equals(backendOpenapi)) throw new Error('前端 OpenAPI 与后端本次快照不一致')
 }
 
 async function main() {

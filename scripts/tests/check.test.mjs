@@ -1,6 +1,18 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { checkTasks, parseArguments } from '../check.mjs'
+import { checkTasks, parseArguments, verifyConsumerDocument } from '../check.mjs'
+
+test('正式和候选消费者均比较已验证的契约正文，候选标记不能替代正文', () => {
+  const bytes = Buffer.from('{"openapi":"3.1.0"}')
+  for (const mode of ['formal', 'candidate']) {
+    const state = { mode, bytes, marker: { candidate_sha256: '摘要' } }
+    assert.doesNotThrow(() => verifyConsumerDocument(state, Buffer.from(bytes)))
+    assert.throws(
+      () => verifyConsumerDocument(state, Buffer.from(JSON.stringify(state.marker))),
+      /前端 OpenAPI 与后端本次快照不一致/,
+    )
+  }
+})
 
 test('默认检查与完整消费者检查入口都可用', () => {
   assert.deepEqual(parseArguments([]), { full: false, stage: 'contract', plan: false })

@@ -99,7 +99,9 @@ test('生成的岗位页面完成查询、导出和增改删闭环', async ({ pa
   expect(postUpdateBodies).toEqual([
     { body: { name: '浏览器岗位已改', sort: 18, status: '0' }, id: '2002' },
   ])
-  expect(postExportBodies).toEqual([{ confirm_all: false, filter: { name: '浏览器岗位已改' } }])
+  expect(postExportBodies).toEqual([
+    { confirm_all: false, filter: { name: '浏览器岗位已改' }, ids: [] },
+  ])
   expect(postDeleteIds).toEqual(['2002'])
   expect(postRequestContexts.length).toBeGreaterThanOrEqual(8)
   for (const context of postRequestContexts) {

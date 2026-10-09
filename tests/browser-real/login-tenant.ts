@@ -6,9 +6,10 @@ export async function selectLoginTenant(page: Page, tenantId: string) {
   if (!(await select.isVisible())) return
   await select.click()
   const option = page.getByTestId(`login-tenant-${tenantId}`)
-  while (!(await option.isVisible())) {
-    const more = page.getByRole('button', { name: '加载更多租户' })
-    await expect(more).toBeVisible()
+  const more = page.getByRole('button', { name: '加载更多租户' })
+  while (true) {
+    await expect.poll(async () => (await option.isVisible()) || (await more.isVisible())).toBe(true)
+    if (await option.isVisible()) break
     const response = page.waitForResponse(
       (value) => new URL(value.url()).pathname === '/api/v1/auth/tenants',
     )

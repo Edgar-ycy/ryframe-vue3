@@ -136,6 +136,8 @@ CI 执行对应阶段，浏览器阶段单独运行。
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。
 - `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文测试源码。
 - `tests/browser-business/`：在隔离业务 crate 夹具上，通过正式 API 准备业务样本，使用 Chrome 的平台页面验证跨库迁移、保留期、取消和崩溃恢复。运行 `corepack pnpm check --stage browser --real --fixture business --server preview`；运行绑定、构建收据和静态响应审计必须完整，缺少场景或发生重试时验收失败。
+
+真实 preview 先运行 `corepack pnpm build --real`，在类型检查和 Vite 构建前后核验来源，并把完整产物摘要写入忽略的生产目录。`corepack pnpm build --real --plan` 只展示同一任务图；普通 `corepack pnpm build` 保持类型检查与生产构建行为。
 - `tests/browser-real/`：在明确登记的隔离 API、MySQL、Redis 和对象存储环境中执行真实 Chrome 流程。
 
 `corepack pnpm check --stage unit` 执行工具测试、测试类型检查和单测覆盖率；

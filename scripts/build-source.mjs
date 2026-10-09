@@ -45,6 +45,12 @@ function pinnedPnpm(root) {
   return /^pnpm@([^+]+)(?:\+.*)?$/u.exec(manifest.packageManager ?? '')?.[1]
 }
 
+export function packageManagerInvocation(cli) {
+  return /\.(?:c?js|mjs)$/u.test(cli)
+    ? { executable: process.execPath, arguments: [cli, '--version'] }
+    : { executable: cli, arguments: ['--version'] }
+}
+
 export function observedToolchain(root, environment = process.env) {
   const pinned = pinnedPnpm(root)
   const announced = /(?:^|\s)pnpm\/([^\s]+)/u.exec(environment.npm_config_user_agent ?? '')?.[1]
@@ -62,7 +68,8 @@ export function observedToolchain(root, environment = process.env) {
   if (!lstatSync(configuredCli).isFile() || lstatSync(configuredCli).isSymbolicLink()) {
     throw new Error('真实构建的 pnpm 入口不是普通文件')
   }
-  const observed = execFileSync(process.execPath, [cli, '--version'], {
+  const invocation = packageManagerInvocation(cli)
+  const observed = execFileSync(invocation.executable, invocation.arguments, {
     cwd: root,
     env: environment,
     encoding: 'utf8',

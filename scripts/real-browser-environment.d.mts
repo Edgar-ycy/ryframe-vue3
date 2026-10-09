@@ -11,7 +11,7 @@ export interface RealBrowserEnvironment {
   loginBudgetState: string
   port: number
   serverMode: 'dev' | 'preview'
-  fixture: 'core' | 'device'
+  fixture: 'core' | 'business'
   runId: string | undefined
   baseURL: string | undefined
   restore:

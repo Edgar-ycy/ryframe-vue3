@@ -71,8 +71,8 @@ function restoreFixture(t, options = {}) {
   }
 }
 
-test('普通 core 与 Device 保留故障验收且不加载恢复旧数据场景', () => {
-  for (const fixture of ['core', 'device'])
+test('普通 core 与 业务 保留故障验收且不加载恢复旧数据场景', () => {
+  for (const fixture of ['core', 'business'])
     assert.deepEqual(realTestSelection(undefined, fixture), {
       selection: { testIgnore: ['**/restore-existing.spec.ts'] },
       reporter: undefined,
@@ -178,7 +178,7 @@ test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', 
       (directory) => path.resolve(directory),
       value.datasetAuthority,
     )
-  assert.throws(() => select(value.restore, 'device'), /core/u)
+  assert.throws(() => select(value.restore, 'business'), /core/u)
   assert.throws(() => select({ ...value.restore, unknown: true }), /字段/u)
   assert.throws(() => select({ ...value.restore, bindings: 'bindings.json' }), /绝对路径/u)
   writeFileSync(value.restore.targetPlan, '{invalid')

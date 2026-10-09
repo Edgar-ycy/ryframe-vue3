@@ -111,10 +111,10 @@ export function validateRealBrowserEnvironment(environment = process.env) {
   const tenantId = required(environment, 'RYFRAME_E2E_TENANT_ID').trim()
   const username = required(environment, 'RYFRAME_E2E_USERNAME').trim()
   required(environment, 'RYFRAME_E2E_PASSWORD')
-  const fixture = choice(environment, 'RYFRAME_E2E_FIXTURE', 'core', ['core', 'device'])
+  const fixture = choice(environment, 'RYFRAME_E2E_FIXTURE', 'core', ['core', 'business'])
   const runId = optionalRunId(environment)
-  if (fixture === 'device' && !runId) {
-    throw new Error('Device 浏览器环境必须绑定全新的 RYFRAME_E2E_RUN_ID')
+  if (fixture === 'business' && !runId) {
+    throw new Error('业务浏览器环境必须绑定全新的 RYFRAME_E2E_RUN_ID')
   }
   const binding = {
     scopeId,

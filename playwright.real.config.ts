@@ -25,6 +25,15 @@ const reporters: ReporterDescription[] = [
 ]
 if (restore.reporter)
   reporters.push(['./scripts/restore-reporter.mjs', { expectedRestore: restore.reporter }])
+if (fixture === 'business')
+  reporters.push([
+    './scripts/business-reporter.mjs',
+    {
+      output: `${resultsDirectory}/business-tests.json`,
+      server: serverMode,
+      runId,
+    },
+  ])
 
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })
@@ -38,7 +47,7 @@ if (!externalBaseUrl) {
 }
 
 export default defineConfig({
-  testDir: 'tests/browser-real',
+  testDir: fixture === 'business' ? 'tests/browser-business' : 'tests/browser-real',
   ...restore.selection,
   timeout: 120_000,
   expect: { timeout: 15_000 },

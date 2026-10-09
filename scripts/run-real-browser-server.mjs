@@ -8,11 +8,11 @@ function responseAudit(mode, environment) {
   const output = environment.RYFRAME_E2E_PREVIEW_RESPONSE_AUDIT
   const formal =
     mode === 'preview' &&
-    environment.RYFRAME_E2E_FIXTURE === 'device' &&
+    environment.RYFRAME_E2E_FIXTURE === 'business' &&
     typeof environment.RYFRAME_E2E_RUN_ID === 'string'
   if (!formal) {
     if (output !== undefined) {
-      throw new BrowserServerUsageError('静态响应审计只允许用于正式 Device preview')
+      throw new BrowserServerUsageError('静态响应审计只允许用于正式 业务 preview')
     }
     return undefined
   }
@@ -26,7 +26,7 @@ function responseAudit(mode, environment) {
     /[\r\n\0]/u.test(output) ||
     !isAbsolute(output)
   ) {
-    throw new BrowserServerUsageError('正式 Device preview 缺少有效的静态响应审计绑定')
+    throw new BrowserServerUsageError('正式 业务 preview 缺少有效的静态响应审计绑定')
   }
   return Object.freeze({ output: resolve(output), runId, scopeId })
 }

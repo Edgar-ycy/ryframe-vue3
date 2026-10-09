@@ -14,8 +14,23 @@ export function parseArguments(argv) {
   let full = false
   let explicitStage = false
   let plan = false
+  let real = false
+  let fixture
+  let server
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
+    if (value === '--real') {
+      real = true
+      continue
+    }
+    if (value === '--fixture' || value === '--server') {
+      const selected = argv[++index]
+      const choices = value === '--fixture' ? ['core', 'business'] : ['dev', 'preview']
+      if (!choices.includes(selected)) throw new Error(`${value} 必须为 ${choices.join(' 或 ')}`)
+      if (value === '--fixture') fixture = selected
+      else server = selected
+      continue
+    }
     if (value === '--plan') {
       plan = true
       continue
@@ -37,10 +52,26 @@ export function parseArguments(argv) {
   if (!['contract', 'static', 'unit', 'build', 'browser', 'full'].includes(selected)) {
     throw new Error(`未知检查阶段：${selected}`)
   }
-  return { full, stage: selected, plan }
+  if ((real || fixture || server) && selected !== 'browser')
+    throw new Error('真实浏览器参数只能用于 browser 阶段')
+  if ((fixture || server) && !real) throw new Error('--fixture 和 --server 必须与 --real 一起使用')
+  return {
+    full,
+    stage: selected,
+    plan,
+    ...(real ? { real, fixture: fixture || 'core', server: server || 'dev' } : {}),
+  }
 }
 
-export function checkTasks(stage) {
+export function checkTasks(stage, options = {}) {
+  if (stage === 'browser' && options.real)
+    return [
+      {
+        name: 'browser-real',
+        args: ['exec', 'playwright', 'test', '--config', 'playwright.real.config.ts'],
+        environment: { RYFRAME_E2E_FIXTURE: options.fixture, RYFRAME_E2E_SERVER: options.server },
+      },
+    ]
   const tasks = {
     contract: [{ name: 'contract' }],
     static: [
@@ -78,7 +109,7 @@ function runTask(task) {
     const args = task.node ?? [...(windows ? [corepack] : []), 'pnpm', ...task.args]
     const child = spawn(command, args, {
       cwd: root,
-      env: process.env,
+      env: { ...process.env, ...task.environment },
       stdio: 'inherit',
       windowsHide: true,
     })
@@ -168,7 +199,7 @@ export function verifyConsumerDocument(state, backendOpenapi) {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2))
-  const tasks = checkTasks(options.stage)
+  const tasks = checkTasks(options.stage, options)
   if (options.plan) {
     console.log(JSON.stringify({ stage: options.stage, tasks }, null, 2))
     return

@@ -56,7 +56,7 @@ export async function holdMigrationGate(
       '-X',
       'utf8',
       '-u',
-      path.join(backend, 'scripts/full_stack_migration_gate.py'),
+      path.join(backend, 'tools/python/full_stack_migration_gate.py'),
       '--backend-root',
       path.resolve(backend),
       '--runtime-dir',

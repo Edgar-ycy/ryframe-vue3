@@ -77,7 +77,7 @@ function spawnFixture(
   }
 }
 
-describe('Device 迁移 gate 进程生命周期', () => {
+describe('业务迁移 gate 进程生命周期', () => {
   it('传递固定调用参数并等待正常 close 后才完成释放', async () => {
     const child = new FakeMigrationGateProcess()
     const captured: { arguments?: string[]; command?: string; options?: SpawnOptions } = {}
@@ -90,7 +90,7 @@ describe('Device 迁移 gate 进程生命周期', () => {
       '-X',
       'utf8',
       '-u',
-      path.join(backend, 'scripts/full_stack_migration_gate.py'),
+      path.join(backend, 'tools/python/full_stack_migration_gate.py'),
       '--backend-root',
       backend,
       '--runtime-dir',

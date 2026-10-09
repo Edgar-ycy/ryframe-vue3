@@ -96,7 +96,7 @@ test('运行选项经过统一校验并保留显式选择', () => {
     ...validEnvironment(),
     RYFRAME_E2E_FRONTEND_PORT: '49152',
     RYFRAME_E2E_SERVER: 'preview',
-    RYFRAME_E2E_FIXTURE: 'device',
+    RYFRAME_E2E_FIXTURE: 'business',
     RYFRAME_E2E_RUN_ID: 'attempt-12',
   })
   assert.deepEqual(
@@ -106,7 +106,7 @@ test('运行选项经过统一校验并保留显式选择', () => {
       fixture: binding.fixture,
       runId: binding.runId,
     },
-    { port: 49152, serverMode: 'preview', fixture: 'device', runId: 'attempt-12' },
+    { port: 49152, serverMode: 'preview', fixture: 'business', runId: 'attempt-12' },
   )
 })
 
@@ -125,9 +125,9 @@ test('非法运行选项在创建产物和服务前失败', () => {
     () =>
       validateRealBrowserEnvironment({
         ...validEnvironment(),
-        RYFRAME_E2E_FIXTURE: 'device',
+        RYFRAME_E2E_FIXTURE: 'business',
       }),
-    /Device.*RYFRAME_E2E_RUN_ID/u,
+    /业务.*RYFRAME_E2E_RUN_ID/u,
   )
 })
 

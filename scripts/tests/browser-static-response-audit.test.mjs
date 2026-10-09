@@ -42,7 +42,7 @@ test('preview 代理只记录浏览器实际收到的 identity 静态响应', as
   const output = resolve(root, 'responses.json')
   const audit = await createStaticResponseAudit({
     output,
-    runId: 'r24-device-preview',
+    runId: 'r24-business-preview',
     scopeId: 'fixture-source',
   })
   const proxy = await startDelayProxy({
@@ -84,7 +84,7 @@ test('查询、片段和非规范化静态 URL 失败，API/XHR/WebSocket 不进
   t.after(() => rm(root, { recursive: true, force: true }))
   const audit = await createStaticResponseAudit({
     output: resolve(root, 'responses.json'),
-    runId: 'r24-device-preview',
+    runId: 'r24-business-preview',
     scopeId: 'fixture-source',
   })
   assert.equal(
@@ -131,7 +131,7 @@ test('编码或未完整传送的响应不能发布成功收据', async (t) => {
   const output = resolve(root, 'responses.json')
   const audit = await createStaticResponseAudit({
     output,
-    runId: 'r24-device-preview',
+    runId: 'r24-business-preview',
     scopeId: 'fixture-source',
   })
   const proxy = await startDelayProxy({

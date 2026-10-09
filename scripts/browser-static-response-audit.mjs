@@ -181,7 +181,7 @@ export async function createStaticResponseAudit({ output, runId, scopeId }) {
       }
       const receipt = {
         format_version: 1,
-        kind: 'device-preview-static-responses',
+        kind: 'business-preview-static-responses',
         status: 'complete',
         run_id: runId,
         scope_id: scopeId,

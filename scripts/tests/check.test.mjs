@@ -46,3 +46,31 @@ test('计划与执行共用任务图，完整门禁包含静态、类型、覆�
   assert.equal(checkTasks('browser')[0].name, 'browser-smoke')
   assert.throws(() => checkTasks('missing'), /未知检查阶段/)
 })
+
+test('真实业务浏览器计划与执行共用明确的配置与运行绑定', () => {
+  const options = parseArguments([
+    '--stage',
+    'browser',
+    '--real',
+    '--fixture',
+    'business',
+    '--server',
+    'preview',
+    '--plan',
+  ])
+  assert.equal(options.plan, true)
+  assert.deepEqual(checkTasks(options.stage, options), [
+    {
+      name: 'browser-real',
+      args: ['exec', 'playwright', 'test', '--config', 'playwright.real.config.ts'],
+      environment: { RYFRAME_E2E_FIXTURE: 'business', RYFRAME_E2E_SERVER: 'preview' },
+    },
+  ])
+  for (const args of [
+    ['--real'],
+    ['--full', '--real'],
+    ['--stage', 'browser', '--fixture', 'business'],
+    ['--stage', 'browser', '--real', '--fixture', 'device'],
+  ])
+    assert.throws(() => parseArguments(args))
+})

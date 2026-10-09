@@ -120,7 +120,7 @@ async function prepareFixture(
     [
       '-X',
       'utf8',
-      path.join(backend, 'scripts/user_import_fixture.py'),
+      path.join(backend, 'tools/python/user_import_fixture.py'),
       'browser',
       '--template',
       template,

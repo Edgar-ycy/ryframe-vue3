@@ -13,7 +13,7 @@ export async function controlWorker(operation: WorkerOperation): Promise<'runnin
   const { stdout } = await execute(
     process.env.RYFRAME_E2E_PYTHON || 'python',
     [
-      path.join(backend, 'scripts/full_stack_worker.py'),
+      path.join(backend, 'tools/python/full_stack_worker.py'),
       operation,
       '--backend-root',
       path.resolve(backend),

@@ -52,7 +52,8 @@ async function waitForCompletedJob(tenant: string, migration: string) {
         const result = await migrationHistory('inspect', tenant, migration)
         return record(result.snapshot).job_status
       },
-      { timeout: 30_000 },
+      // 冷夹具首次调用可能需要构建维护入口；单次命令自身允许 150 秒，轮询预算必须覆盖它。
+      { timeout: 180_000 },
     )
     .toBe('succeeded')
 }

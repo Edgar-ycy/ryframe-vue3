@@ -38,7 +38,7 @@ for (const [source, target] of [
     })
     if (source === 'dedicated-a')
       info.annotations.push({ type: 'business-scenario', description: 'retention' })
-    test.setTimeout(source === 'dedicated-a' ? 420_000 : 240_000)
+    test.setTimeout(source === 'dedicated-a' ? 600_000 : 240_000)
     // 登录后的首页趋势查询可能在立即进入数据目标页时按 Query 生命周期取消；只放行一次。
     const diagnostics = observeDiagnostics(page, expectedHomeNavigationCancellation())
     await login(page)

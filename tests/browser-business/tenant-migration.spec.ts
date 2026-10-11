@@ -1,3 +1,4 @@
+import type { Request } from '@playwright/test'
 import { test } from '../browser-real/fixture'
 import { credentials, login } from '../browser-real/support'
 import {
@@ -9,6 +10,18 @@ import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/d
 import { createOrders, verifyAndDeleteOrders } from './business-support'
 import { verifyHistoricalRetention } from './migration-retention'
 import { migrateOrders } from './migration-support'
+
+function expectedHomeNavigationCancellation() {
+  let pending = true
+  return (request: Request) => {
+    const expected =
+      pending &&
+      request.method() === 'GET' &&
+      new URL(request.url()).pathname === '/api/v1/monitor/overview/trends'
+    if (expected) pending = false
+    return expected
+  }
+}
 
 for (const [source, target] of [
   ['shared-control', 'shared'],
@@ -26,7 +39,8 @@ for (const [source, target] of [
     if (source === 'dedicated-a')
       info.annotations.push({ type: 'business-scenario', description: 'retention' })
     test.setTimeout(source === 'dedicated-a' ? 420_000 : 240_000)
-    const diagnostics = observeDiagnostics(page)
+    // 登录后的首页趋势查询可能在立即进入数据目标页时按 Query 生命周期取消；只放行一次。
+    const diagnostics = observeDiagnostics(page, expectedHomeNavigationCancellation())
     await login(page)
     await verifyDataTargets(page, ['shared', 'dedicated-a', 'dedicated-b'])
     const { tenant } = await createTenantWithPlan(page, source)

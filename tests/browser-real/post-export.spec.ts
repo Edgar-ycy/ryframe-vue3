@@ -1,6 +1,7 @@
 import { test } from './fixture'
 import { expect } from '@playwright/test'
 import { readFile, stat } from 'node:fs/promises'
+import path from 'node:path'
 import { act, isolatedName, login } from './support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 import { inspectExportArtifact, verifyDownloadedExportContent } from './artifact-support'
@@ -91,7 +92,11 @@ test('真实岗位增改查删、已应用筛选导出、Worker 下载与删除'
   const destination = info.outputPath('posts.xlsx')
   await download.saveAs(destination)
   expect((await stat(destination)).size).toBeGreaterThan(100)
-  const receipt = info.outputPath('export-artifact.json')
+  // 产物快照收据必须位于当前后端的 .local-tests 内，用运行目录承载并保持每次运行唯一。
+  const receipt = path.join(
+    process.env.RYFRAME_E2E_RUNTIME_DIR || '',
+    `export-artifact-${jobId}.json`,
+  )
   expect(await inspectExportArtifact('snapshot', jobId, receipt)).toBe('present')
   verifyDownloadedExportContent(await readFile(receipt, 'utf8'), jobId, await readFile(destination))
   await completed.getByRole('button', { name: '删除', exact: true }).click()

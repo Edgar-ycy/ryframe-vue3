@@ -18,7 +18,11 @@ async function changeCapabilities(
   await admin
     .getByRole('option', { name: `${plan.planName} (${plan.planKey})`, exact: true })
     .click()
-  await dialog.getByRole('combobox', { name: '目标套餐版本', exact: true }).click()
+  // 空选项的下拉框输入被占位节点覆盖，必须点击选择器容器触发下拉。
+  await dialog
+    .locator('.el-select')
+    .filter({ has: dialog.getByRole('combobox', { name: '目标套餐版本', exact: true }) })
+    .click()
   await admin.getByRole('option', { name: '版本号 1', exact: true }).click()
   for (const [code, enabled] of [
     ['system.notice', notice],

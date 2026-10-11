@@ -4,6 +4,23 @@ import { readFile, stat } from 'node:fs/promises'
 import { act, isolatedName, login } from './support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 
+async function openConfigMigration(page: Page) {
+  const menu = page.getByRole('menuitem', { name: '配置迁移', exact: true })
+  if (!(await menu.isVisible())) {
+    await page.getByRole('menuitem', { name: '平台管理', exact: true }).click()
+  }
+  await menu.click()
+}
+
+async function selectOperationTenant(page: Page) {
+  // 空选项的下拉框输入被占位节点覆盖，必须点击选择器容器触发下拉。
+  await page
+    .locator('.el-select')
+    .filter({ has: page.getByRole('combobox', { name: '操作租户' }) })
+    .click()
+  await page.getByRole('option', { name: /系统租户.*system/u }).click()
+}
+
 async function selectConfig(page: Page, name: string, changedScope = false) {
   if (page.url() === 'about:blank' || changedScope) {
     await act(page, 'GET', '/api/v1/system/configs', () =>
@@ -59,9 +76,8 @@ test('真实配置包导出、下载、上传、预览、应用与回滚保留�
   await act(page, 'POST', '/api/v1/system/configs', () =>
     dialog.getByRole('button', { name: '确定', exact: true }).click(),
   )
-  await page.getByRole('menuitem', { name: '配置迁移', exact: true }).click()
-  await page.getByRole('combobox', { name: '操作租户' }).click()
-  await page.getByRole('option', { name: /系统租户.*system/u }).click()
+  await openConfigMigration(page)
+  await selectOperationTenant(page)
   await act(page, 'POST', '/api/v1/platform/tenants/system/config-packages', () =>
     page.getByRole('button', { name: '生成配置包', exact: true }).click(),
   )
@@ -85,9 +101,8 @@ test('真实配置包导出、下载、上传、预览、应用与回滚保留�
     edit.getByRole('button', { name: '确定', exact: true }).click(),
   )
 
-  await page.getByRole('menuitem', { name: '配置迁移', exact: true }).click()
-  await page.getByRole('combobox', { name: '操作租户' }).click()
-  await page.getByRole('option', { name: /系统租户.*system/u }).click()
+  await openConfigMigration(page)
+  await selectOperationTenant(page)
   await page.getByRole('button', { name: '上传配置包', exact: true }).click()
   const upload = page.getByRole('dialog', { name: '上传配置包', exact: true })
   await upload.locator('input[type=file]').setInputFiles({

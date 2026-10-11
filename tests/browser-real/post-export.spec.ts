@@ -55,6 +55,7 @@ test('真实岗位增改查删、已应用筛选导出、Worker 下载与删除'
   expect(exported.request().postDataJSON()).toEqual({
     confirm_all: false,
     filter: { name: updatedName },
+    ids: [],
   })
   const jobId: string = (await exported.json()).data.id
   await act(page, 'GET', '/api/v1/common/jobs', () => page.goto('/profile/exports'))

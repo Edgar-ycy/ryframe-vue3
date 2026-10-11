@@ -5,6 +5,24 @@ import { createTenantWithPlan, openTenantDetails } from './tenant-support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 import { expectNoSeriousAccessibilityViolations } from '../browser/support/accessibility'
 
+type CatalogCapability = Readonly<{
+  capability_code: string
+  entitled: boolean
+  enabled: boolean
+}>
+
+function expectDisabledCapabilityCatalog(context: { capabilities: CatalogCapability[] }) {
+  // 空能力套餐仍返回完整能力目录，只是全部未授权、未启用。
+  expect(
+    [...context.capabilities]
+      .map((item) => [item.capability_code, item.entitled, item.enabled] as const)
+      .sort(([left], [right]) => (left < right ? -1 : 1)),
+  ).toEqual([
+    ['system.message', false, false],
+    ['system.notice', false, false],
+  ])
+}
+
 test('空能力套餐仍可发布、分配并开通带配额的租户', async ({
   page,
   newClientContext,
@@ -28,7 +46,8 @@ test('空能力套餐仍可发布、分配并开通带配额的租户', async ({
     page.getByRole('tab', { name: '套餐与能力', exact: true }).click(),
   )
   const previous = (await context.json()).data
-  expect(previous).toMatchObject({ plan_name: planName, capabilities: [], overrides: [] })
+  expect(previous).toMatchObject({ plan_name: planName, overrides: [] })
+  expectDisabledCapabilityCatalog(previous)
   const previousEpoch: string = previous.runtime_epoch
 
   const ownerContext = await newClientContext(clientAddress.replace('198.18.', '198.20.'))
@@ -73,7 +92,8 @@ test('空能力套餐仍可发布、分配并开通带配额的租户', async ({
     () => change.getByRole('button', { name: '应用变更', exact: true }).click(),
   )
   const current = (await applied.json()).data
-  expect(current).toMatchObject({ plan_name: planName, capabilities: [], overrides: [] })
+  expect(current).toMatchObject({ plan_name: planName, overrides: [] })
+  expectDisabledCapabilityCatalog(current)
   expect(BigInt(current.runtime_epoch)).toBeGreaterThan(BigInt(previousEpoch))
   await expect(change).not.toBeVisible()
   await expectCleanDiagnostics(page, diagnostics)

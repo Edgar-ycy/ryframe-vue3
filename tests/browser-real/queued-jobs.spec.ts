@@ -27,7 +27,7 @@ test('真实空筛选确认、排队导出取消及 Worker 重启后删除', asy
     const created = await act(page, 'POST', '/api/v1/system/posts/exports', () =>
       confirmation.getByRole('button', { name: '继续导出', exact: true }).click(),
     )
-    expect(created.request().postDataJSON()).toEqual({ confirm_all: true, filter: {} })
+    expect(created.request().postDataJSON()).toEqual({ confirm_all: true, filter: {}, ids: [] })
     const job = (await created.json()).data
     expect(job.status).toBe('queued')
     await page.goto('/profile/exports')

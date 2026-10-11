@@ -96,7 +96,12 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
   const context = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
   try {
     const owner = await context.newPage()
-    const diagnostics = observeDiagnostics(owner)
+    const diagnostics = observeDiagnostics(
+      owner,
+      // 能力变更提升运行时纪元后，作用域刷新会按设计取消在途的公告列表查询。
+      (request) =>
+        request.method() === 'GET' && new URL(request.url()).pathname === '/api/v1/system/notices',
+    )
     await login(owner, {
       ...credentials,
       tenantId: plan.tenant,

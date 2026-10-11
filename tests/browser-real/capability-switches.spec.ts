@@ -21,7 +21,7 @@ async function changeCapabilities(
   // 空选项的下拉框输入被占位节点覆盖，必须点击选择器容器触发下拉。
   await dialog
     .locator('.el-select')
-    .filter({ has: dialog.getByRole('combobox', { name: '目标套餐版本', exact: true }) })
+    .filter({ has: admin.getByRole('combobox', { name: '目标套餐版本', exact: true }) })
     .click()
   await admin.getByRole('option', { name: '版本号 1', exact: true }).click()
   for (const [code, enabled] of [
@@ -86,7 +86,7 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     admin.getByRole('tab', { name: '套餐与能力', exact: true }).click(),
   )
   const enabledEpoch = await changeCapabilities(admin, plan, true, true)
-  const context = await newClientContext(clientAddress.replace('198.18.', '198.20.'))
+  const context = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
   try {
     const owner = await context.newPage()
     const diagnostics = observeDiagnostics(owner)

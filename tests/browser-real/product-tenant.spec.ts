@@ -50,7 +50,7 @@ test('空能力套餐仍可发布、分配并开通带配额的租户', async ({
   expectDisabledCapabilityCatalog(previous)
   const previousEpoch: string = previous.runtime_epoch
 
-  const ownerContext = await newClientContext(clientAddress.replace('198.18.', '198.20.'))
+  const ownerContext = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
   try {
     const owner = await ownerContext.newPage()
     const ownerLogin = waitForApiResponse(owner, 'POST', '/api/v1/auth/login')

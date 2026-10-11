@@ -12,6 +12,14 @@ async function openConfigMigration(page: Page) {
   await menu.click()
 }
 
+async function openSystemConfig(page: Page) {
+  const menu = page.getByRole('menuitem', { name: '参数设置', exact: true })
+  if (!(await menu.isVisible())) {
+    await page.getByRole('menuitem', { name: '系统管理', exact: true }).click()
+  }
+  await menu.click()
+}
+
 async function selectOperationTenant(page: Page) {
   // 空选项的下拉框输入被占位节点覆盖，必须点击选择器容器触发下拉。
   await page
@@ -24,11 +32,9 @@ async function selectOperationTenant(page: Page) {
 async function selectConfig(page: Page, name: string, changedScope = false) {
   if (page.url() === 'about:blank' || changedScope) {
     await act(page, 'GET', '/api/v1/system/configs', () =>
-      page.url() === 'about:blank'
-        ? page.goto('/system/config')
-        : page.getByRole('menuitem', { name: '参数设置', exact: true }).click(),
+      page.url() === 'about:blank' ? page.goto('/system/config') : openSystemConfig(page),
     )
-  } else await page.getByRole('menuitem', { name: '参数设置', exact: true }).click()
+  } else await openSystemConfig(page)
   await expect(page).toHaveURL(/\/system\/config$/u)
   await page.locator('.search-card').getByPlaceholder('请输入参数键名').fill(name)
   await act(page, 'GET', '/api/v1/system/configs', () =>

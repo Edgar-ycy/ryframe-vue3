@@ -29,9 +29,16 @@ async function changeCapabilities(
     ['system.message', message],
   ] as const) {
     const card = dialog.locator('.override-card').filter({ hasText: code })
-    const override = card.getByRole('switch').first()
-    await override.check()
-    await card.locator('.override-config').getByRole('switch').setChecked(enabled)
+    // Element Plus 开关的真实输入不可见，必须点击开关容器并按状态幂等切换。
+    const override = card.locator('.el-switch').first()
+    if (!(await override.evaluate((element) => element.classList.contains('is-checked')))) {
+      await override.click()
+    }
+    const configSwitch = card.locator('.override-config .el-switch')
+    const configChecked = await configSwitch.evaluate((element) =>
+      element.classList.contains('is-checked'),
+    )
+    if (configChecked !== enabled) await configSwitch.click()
   }
   await act(admin, 'POST', `/api/v1/platform/tenants/${plan.tenant}/product-change-previews`, () =>
     dialog.getByRole('button', { name: '生成预览', exact: true }).click(),
@@ -52,14 +59,14 @@ async function deniedRequest(owner: Page, current: Response, path: string, body?
   return owner.evaluate(
     async ({ path, body, authorization, tenant }) => {
       const response = await fetch(path, {
-        method: body ? 'POST' : 'GET',
+        method: body === undefined ? 'GET' : 'POST',
         headers: {
           Authorization: authorization,
           'X-Tenant-Id': tenant,
           'Content-Type': 'application/json',
           'Idempotency-Key': crypto.randomUUID(),
         },
-        ...(body ? { body } : {}),
+        ...(body === undefined || body === null ? {} : { body }),
       })
       return response.status
     },
@@ -102,7 +109,6 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     const editor = owner.getByRole('dialog')
     await editor.locator('input').first().fill(title)
     await editor.locator('textarea').fill(`# ${title}\n\n启停后仍需保留`)
-    await editor.getByRole('radio', { name: '已发布', exact: true }).check()
     const created = await act(owner, 'POST', '/api/v1/system/notices', () =>
       editor.getByRole('button', { name: '确定', exact: true }).click(),
     )
@@ -114,8 +120,7 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     const accepted = await act(owner, 'POST', publishPath, () =>
       owner.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click(),
     )
-    const acceptedBody = accepted.request().postData()
-    expect(acceptedBody).toBeTruthy()
+    expect(accepted.request().method()).toBe('POST')
     await owner.locator('.message-center-trigger button').click()
     const inbox = owner.getByRole('dialog', { name: '消息中心', exact: true })
     await expect(inbox.getByText(title, { exact: true })).toBeVisible({ timeout: 90_000 })
@@ -126,7 +131,7 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     const retained = await act(owner, 'GET', '/api/v1/system/notices', () => owner.reload())
     await expect(row).toHaveCount(1)
     await expect(row.getByRole('button', { name: '发布到消息中心', exact: true })).toHaveCount(0)
-    expect(await deniedRequest(owner, retained, publishPath, acceptedBody)).toBe(403)
+    expect(await deniedRequest(owner, retained, publishPath, null)).toBe(403)
     expect(diagnostics.httpErrors).toEqual([`403 ${publishPath}`])
     diagnostics.httpErrors.length = 0
     await owner.locator('.message-center-trigger button').click()

@@ -1,67 +1,65 @@
 <template>
-  <div class="reset-page">
-    <section class="reset-panel">
-      <div class="reset-brand">RyFrame</div>
-      <h1>{{ t('account.resetPassword') }}</h1>
+  <AuthLayout :brand="t('account.appTitle')" :description="t('account.welcomeDescription')">
+    <h1>{{ t('account.resetPassword') }}</h1>
 
-      <el-alert
-        v-if="missingParams"
-        type="error"
-        :title="t('account.invalidResetLink')"
-        :closable="false"
-        show-icon
-      />
+    <el-alert
+      v-if="missingParams"
+      type="error"
+      :title="t('account.invalidResetLink')"
+      :closable="false"
+      show-icon
+    />
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        size="large"
-        class="reset-form"
-        @keyup.enter="handleSubmit"
-      >
-        <el-form-item prop="newPassword">
-          <el-input
-            v-model="form.newPassword"
-            type="password"
-            :placeholder="t('account.passwordHint', { min: PASSWORD_POLICY.min_length })"
-            prefix-icon="Lock"
-            show-password
-            :maxlength="PASSWORD_POLICY.max_length"
-          />
-        </el-form-item>
-        <el-form-item prop="confirmPassword">
-          <el-input
-            v-model="form.confirmPassword"
-            type="password"
-            :placeholder="t('account.confirmNewPassword')"
-            prefix-icon="Lock"
-            show-password
-            :maxlength="PASSWORD_POLICY.max_length"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            icon="Check"
-            :loading="loading"
-            :disabled="missingParams"
-            class="submit-button"
-            @click="handleSubmit"
-          >
-            {{ t('account.submit') }}
-          </el-button>
-        </el-form-item>
-      </el-form>
+    <el-form
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      size="large"
+      class="reset-form"
+      @keyup.enter="handleSubmit"
+    >
+      <el-form-item prop="newPassword">
+        <el-input
+          v-model="form.newPassword"
+          type="password"
+          :placeholder="t('account.passwordHint', { min: PASSWORD_POLICY.min_length })"
+          prefix-icon="Lock"
+          show-password
+          :maxlength="PASSWORD_POLICY.max_length"
+        />
+      </el-form-item>
+      <el-form-item prop="confirmPassword">
+        <el-input
+          v-model="form.confirmPassword"
+          type="password"
+          :placeholder="t('account.confirmNewPassword')"
+          prefix-icon="Lock"
+          show-password
+          :maxlength="PASSWORD_POLICY.max_length"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary"
+          icon="Check"
+          :loading="loading"
+          :disabled="missingParams"
+          class="submit-button"
+          @click="handleSubmit"
+        >
+          {{ t('account.submit') }}
+        </el-button>
+      </el-form-item>
+    </el-form>
 
-      <el-button link icon="ArrowLeft" class="login-link" @click="goLogin">
-        {{ t('account.backToSignIn') }}
-      </el-button>
-    </section>
-  </div>
+    <el-button link icon="ArrowLeft" class="login-link" @click="goLogin">
+      {{ t('account.backToSignIn') }}
+    </el-button>
+  </AuthLayout>
 </template>
 
 <script setup lang="ts">
+import AuthLayout from '@/components/AuthLayout.vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
@@ -163,33 +161,9 @@ function passwordValidationMessage(password: string): string | undefined {
 </script>
 
 <style scoped>
-.reset-page {
-  min-height: 100dvh;
-  padding: 24px 16px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(255 255 255 / 90%)), #eef2f6;
-}
-
-.reset-panel {
-  width: min(420px, calc(100vw - 32px));
-  padding: 34px 32px 28px;
-  background: #fff;
-  border: 1px solid #d8dee8;
-  border-radius: 8px;
-  box-shadow: 0 18px 46px rgb(38 52 75 / 16%);
-}
-
-.reset-brand {
-  margin-bottom: 10px;
-  color: #2f5d62;
-  font-size: 14px;
-  font-weight: 700;
-}
-
 h1 {
   margin: 0 0 24px;
-  color: #1f2937;
+  color: var(--el-text-color-primary);
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
@@ -209,10 +183,6 @@ h1 {
 }
 
 @media (width <= 480px) {
-  .reset-panel {
-    padding: 28px 18px 22px;
-  }
-
   h1 {
     font-size: 22px;
   }

@@ -38,9 +38,7 @@ describe('登录租户请求隔离', () => {
         },
       })
     const scope = effectScope()
-    const choices = scope.run(() =>
-      useLoginTenants(ref(createInitialLoginForm('tenant-a', false))),
-    )!
+    const choices = scope.run(() => useLoginTenants(ref(createInitialLoginForm('tenant-a'))))!
     const first = choices.search('甲')
     const firstSignal = vi.mocked(getLoginTenants).mock.calls[0]![1]!
     await choices.search('乙')
@@ -72,7 +70,7 @@ describe('登录租户请求隔离', () => {
           has_more: false,
         },
       })
-    const form = ref(createInitialLoginForm('system', false))
+    const form = ref(createInitialLoginForm('system'))
     const scope = effectScope()
     const choices = scope.run(() => useLoginTenants(form))!
     await choices.search('')
@@ -94,7 +92,7 @@ describe('登录租户请求隔离', () => {
         request_id: '',
         data: { captcha_enabled: false },
       })
-    const form = ref(createInitialLoginForm('tenant-a', false))
+    const form = ref(createInitialLoginForm('tenant-a'))
     const scope = effectScope()
     const captcha = scope.run(() =>
       useLoginCaptcha(

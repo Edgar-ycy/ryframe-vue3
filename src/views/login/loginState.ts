@@ -5,11 +5,11 @@ export interface LoginFormModel {
   captcha_code: string
 }
 
-export function createInitialLoginForm(tenantId: string, isDevelopment: boolean): LoginFormModel {
+export function createInitialLoginForm(tenantId: string): LoginFormModel {
   return {
     tenant_id: tenantId,
-    username: isDevelopment ? 'admin' : '',
-    password: isDevelopment ? '123456' : '',
+    username: '',
+    password: '',
     captcha_code: '',
   }
 }

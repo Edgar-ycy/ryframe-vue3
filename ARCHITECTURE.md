@@ -2,6 +2,8 @@
 
 本文说明在 RyFrame Vue3 中添加页面、接入 API、管理状态、注册路由和编写测试的常用方式。
 
+会话上下文严格校验 `password_change_required`；受限会话不能携带业务授权。该标志参与会话范围指纹，并由被动 User Store 保存投影，路由守卫引导到 `/change-password`，消息运行时停止业务连接。登录、首次改密和密码重置通过 `AuthLayout` 复用响应式布局。
+
 ## 选择代码位置
 
 ```text

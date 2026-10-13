@@ -44,7 +44,13 @@ export function getRuntime(): MessageRuntime {
 export function currentIdentity(): MessageSessionIdentity | undefined {
   const user = useUserStore()
   const scope = getServerStateScope()
-  if (user.sessionStatus !== 'authenticated' || !user.token || !user.tenantId || !user.userId) {
+  if (
+    user.passwordChangeRequired ||
+    user.sessionStatus !== 'authenticated' ||
+    !user.token ||
+    !user.tenantId ||
+    !user.userId
+  ) {
     return undefined
   }
   const subjectId = String(user.userId)

@@ -12,6 +12,7 @@ const sessionContextKeys = [
   'capabilities',
   'is_super_admin',
   'menus',
+  'password_change_required',
   'permissions',
   'roles',
   'runtime_epoch',
@@ -41,6 +42,7 @@ const businessStates = new Set<DecodedBusinessState>([
 export function sessionContextUserInfo(context: DecodedSessionContext): ApiSchema<'UserInfo'> {
   return {
     ...context.user,
+    password_change_required: context.password_change_required,
     roles: [...context.roles],
     perms: [...context.permissions],
   }
@@ -52,6 +54,17 @@ export function isSessionContext(value: unknown): value is DecodedSessionContext
   return (
     isSessionUser(value.user) &&
     typeof value.is_super_admin === 'boolean' &&
+    typeof value.password_change_required === 'boolean' &&
+    (!value.password_change_required ||
+      (value.is_super_admin === false &&
+        Array.isArray(value.permissions) &&
+        value.permissions.length === 0 &&
+        Array.isArray(value.roles) &&
+        value.roles.length === 0 &&
+        Array.isArray(value.menus) &&
+        value.menus.length === 0 &&
+        Array.isArray(value.capabilities) &&
+        value.capabilities.length === 0)) &&
     isStringArray(value.roles) &&
     isStringArray(value.permissions) &&
     isDecimalString(value.authorization_epoch) &&

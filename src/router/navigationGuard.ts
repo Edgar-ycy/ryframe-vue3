@@ -19,6 +19,7 @@ export interface NavigationUser {
   token: string
   sessionStatus: 'initializing' | 'authenticated' | 'anonymous' | 'unavailable'
   permissions: string[]
+  passwordChangeRequired: boolean
 }
 
 export interface NavigationPermissionState {
@@ -72,6 +73,10 @@ export function createNavigationGuard(dependencies: NavigationGuardDependencies)
         : { path: '/login', query: { redirect: originalPath } }
     }
 
+    if (user.passwordChangeRequired) {
+      return target.path === '/change-password' ? true : { path: '/change-password', replace: true }
+    }
+    if (target.path === '/change-password') return { path: '/index', replace: true }
     if (target.path === '/login') return { path: '/index', replace: true }
     if (authenticatedErrorPaths.has(target.path)) return true
 

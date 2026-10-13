@@ -14,6 +14,7 @@ vi.mock('@/features/pageRegistry', async (importOriginal) => {
 })
 
 function dependencies(options?: {
+  passwordChangeRequired?: boolean
   capabilities?: string[]
   permissions?: string[]
 }): NavigationGuardDependencies {
@@ -28,6 +29,7 @@ function dependencies(options?: {
       capabilityCodes: options?.capabilities ?? [],
     }),
     getUser: () => ({
+      passwordChangeRequired: options?.passwordChangeRequired ?? false,
       permissions: options?.permissions ?? [],
       sessionStatus: 'authenticated',
       token: 'token',
@@ -39,6 +41,21 @@ function dependencies(options?: {
 }
 
 describe('导航守卫错误语义', () => {
+  it('首次改密会话只能进入改密页，不加载业务路由', async () => {
+    const ports = dependencies({ passwordChangeRequired: true })
+    const guard = createNavigationGuard(ports)
+    await expect(guard({ path: '/index' })).resolves.toEqual({
+      path: '/change-password',
+      replace: true,
+    })
+    await expect(guard({ path: '/login' })).resolves.toEqual({
+      path: '/change-password',
+      replace: true,
+    })
+    await expect(guard({ path: '/change-password' })).resolves.toBe(true)
+    expect(ports.ensureTenantContextLoaded).not.toHaveBeenCalled()
+    expect(ports.ensureAccessibleRoutes).not.toHaveBeenCalled()
+  })
   it('直达已知但缺权限的页面进入 403', async () => {
     const guard = createNavigationGuard(dependencies())
     await expect(

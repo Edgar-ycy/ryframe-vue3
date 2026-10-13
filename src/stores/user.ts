@@ -19,6 +19,7 @@ interface UserState {
   phone: string
   preferredLocale?: AppLocale
   isSuperAdmin: boolean
+  passwordChangeRequired: boolean
   roles: string[]
   permissions: string[]
 }
@@ -37,6 +38,7 @@ export const useUserStore = defineStore('user', {
     phone: '',
     preferredLocale: undefined,
     isSuperAdmin: false,
+    passwordChangeRequired: false,
     roles: [],
     permissions: [],
   }),
@@ -55,6 +57,7 @@ export const useUserStore = defineStore('user', {
         avatar: userInfo.avatar || '',
         email: userInfo.email || '',
         isSuperAdmin,
+        passwordChangeRequired: userInfo.password_change_required,
         nickname: userInfo.nickname || '',
         permissions: userInfo.perms || [],
         phone: userInfo.phone || '',
@@ -76,6 +79,7 @@ export const useUserStore = defineStore('user', {
         avatar: '',
         email: '',
         isSuperAdmin: false,
+        passwordChangeRequired: false,
         nickname: '',
         permissions: [],
         phone: '',

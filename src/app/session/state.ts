@@ -62,5 +62,6 @@ export function applyAuthenticatedSession(
 }
 
 export async function ensureRoutesAfterAuthentication(skipAuthRefresh = false): Promise<void> {
+  if (useUserStore().passwordChangeRequired) return
   await getRouteRuntime()?.ensureAccessibleRoutes({ skipAuthRefresh })
 }

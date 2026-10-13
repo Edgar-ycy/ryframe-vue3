@@ -33,6 +33,7 @@ export function createSessionContext(options: ApiFixtureOptions = {}): SessionCo
       { client_config: {}, code: 'system.message', schema_version: 1, variant: 'standard' },
     ],
     is_super_admin: false,
+    password_change_required: false,
     menus: [
       {
         children: [

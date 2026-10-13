@@ -12,6 +12,15 @@ const profilePage = withRouteMessageCatalogs(
 
 export const constantRoutes: RouteRecordRaw[] = [
   {
+    path: '/change-password',
+    name: 'ChangeInitialPassword',
+    component: withRouteComponentName(
+      'ChangeInitialPassword',
+      withRouteMessageCatalogs('account.login', () => import('@/views/change-password/index.vue')),
+    ),
+    meta: { title: '修改初始密码', hidden: true },
+  },
+  {
     path: '/login',
     name: 'Login',
     component: withRouteComponentName(

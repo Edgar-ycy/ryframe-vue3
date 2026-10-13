@@ -1,123 +1,123 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <h2 class="login-title">{{ t('account.appTitle') }}</h2>
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="loginRules"
-        size="large"
-        @keyup.enter="handleLogin"
-      >
-        <el-form-item v-if="runtimeCapabilities.multiTenancyEnabled" prop="tenant_id">
-          <el-select
-            v-model="loginForm.tenant_id"
-            :placeholder="t('account.selectTenant')"
-            :aria-label="t('account.selectTenant')"
-            filterable
-            remote
-            :remote-method="searchTenants"
-            :loading="tenantsLoading"
-            style="width: 100%"
+  <AuthLayout :brand="t('account.appTitle')" :description="t('account.welcomeDescription')">
+    <h2 class="login-title">{{ t('account.signIn') }}</h2>
+    <el-form
+      ref="loginFormRef"
+      :model="loginForm"
+      :rules="loginRules"
+      size="large"
+      @keyup.enter="handleLogin"
+    >
+      <el-form-item v-if="runtimeCapabilities.multiTenancyEnabled" prop="tenant_id">
+        <el-select
+          v-model="loginForm.tenant_id"
+          :placeholder="t('account.selectTenant')"
+          :aria-label="t('account.selectTenant')"
+          filterable
+          remote
+          :remote-method="searchTenants"
+          :loading="tenantsLoading"
+          style="width: 100%"
+        >
+          <el-option
+            v-for="tenant in tenantOptions"
+            :key="tenant.tenant_id"
+            :label="tenant.name"
+            :value="tenant.tenant_id"
+            :data-testid="`login-tenant-${tenant.tenant_id}`"
           >
-            <el-option
-              v-for="tenant in tenantOptions"
-              :key="tenant.tenant_id"
-              :label="tenant.name"
-              :value="tenant.tenant_id"
-              :data-testid="`login-tenant-${tenant.tenant_id}`"
+            <span>{{ tenant.name }}</span>
+            <span class="tenant-option-id">{{ tenant.tenant_id }}</span>
+          </el-option>
+          <template #footer>
+            <el-button v-if="tenantsFailed" text @click="searchTenants('')">
+              {{ t('account.retry') }}
+            </el-button>
+            <el-button v-else-if="hasMoreTenants" text @click="loadMoreTenants">
+              {{ t('account.loadMoreTenants') }}
+            </el-button>
+          </template>
+        </el-select>
+      </el-form-item>
+      <el-form-item prop="username">
+        <el-input
+          v-model="loginForm.username"
+          :placeholder="t('account.username')"
+          prefix-icon="User"
+        />
+      </el-form-item>
+      <el-form-item prop="password">
+        <el-input
+          v-model="loginForm.password"
+          type="password"
+          :placeholder="t('account.password')"
+          prefix-icon="Lock"
+          show-password
+        />
+      </el-form-item>
+      <el-form-item v-if="captchaEnabled" prop="captcha_code">
+        <div class="captcha-control">
+          <div class="captcha-field">
+            <el-input
+              v-model="loginForm.captcha_code"
+              class="captcha-input"
+              :placeholder="t('account.captcha')"
+              prefix-icon="Picture"
+              maxlength="4"
+              autocomplete="one-time-code"
+              autocapitalize="characters"
+              spellcheck="false"
+              :disabled="captchaRefreshing"
+              @input="normalizeCaptchaCode"
+            />
+            <button
+              type="button"
+              class="captcha-refresh"
+              :aria-label="t('account.refreshCaptcha')"
+              :aria-busy="captchaRefreshing"
+              :disabled="captchaRefreshing"
+              :title="t('account.refreshCaptcha')"
+              @click="refreshCaptcha"
             >
-              <span>{{ tenant.name }}</span>
-              <span class="tenant-option-id">{{ tenant.tenant_id }}</span>
-            </el-option>
-            <template #footer>
-              <el-button v-if="tenantsFailed" text @click="searchTenants('')">
-                {{ t('account.retry') }}
-              </el-button>
-              <el-button v-else-if="hasMoreTenants" text @click="loadMoreTenants">
-                {{ t('account.loadMoreTenants') }}
-              </el-button>
-            </template>
-          </el-select>
-        </el-form-item>
-        <el-form-item prop="username">
-          <el-input
-            v-model="loginForm.username"
-            :placeholder="t('account.username')"
-            prefix-icon="User"
-          />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input
-            v-model="loginForm.password"
-            type="password"
-            :placeholder="t('account.password')"
-            prefix-icon="Lock"
-            show-password
-          />
-        </el-form-item>
-        <el-form-item v-if="captchaEnabled" prop="captcha_code">
-          <div class="captcha-control">
-            <div class="captcha-field">
-              <el-input
-                v-model="loginForm.captcha_code"
-                class="captcha-input"
-                :placeholder="t('account.captcha')"
-                prefix-icon="Picture"
-                maxlength="4"
-                autocomplete="one-time-code"
-                autocapitalize="characters"
-                spellcheck="false"
-                :disabled="captchaRefreshing"
-                @input="normalizeCaptchaCode"
+              <img
+                v-if="captchaImage"
+                :src="captchaImage"
+                :alt="t('account.captcha')"
+                class="captcha-image"
               />
-              <button
-                type="button"
-                class="captcha-refresh"
-                :aria-label="t('account.refreshCaptcha')"
-                :aria-busy="captchaRefreshing"
-                :disabled="captchaRefreshing"
-                :title="t('account.refreshCaptcha')"
-                @click="refreshCaptcha"
-              >
-                <img
-                  v-if="captchaImage"
-                  :src="captchaImage"
-                  :alt="t('account.captcha')"
-                  class="captcha-image"
-                />
-                <span v-else class="captcha-placeholder">
-                  {{
-                    captchaLoadFailed ? t('account.captchaLoadFailed') : t('account.captchaLoading')
-                  }}
-                </span>
-              </button>
-            </div>
-            <p class="captcha-hint" aria-live="polite">
-              {{ t('account.captchaHint') }}
-            </p>
+              <span v-else class="captcha-placeholder">
+                {{
+                  captchaLoadFailed ? t('account.captchaLoadFailed') : t('account.captchaLoading')
+                }}
+              </span>
+            </button>
           </div>
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            :loading="loading"
-            :disabled="
-              runtimeCapabilities.multiTenancyEnabled &&
-              !tenantOptions.some((item) => item.tenant_id === loginForm.tenant_id)
-            "
-            style="width: 100%"
-            @click="handleLogin"
-          >
-            {{ t('account.signIn') }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-  </div>
+          <p class="captcha-hint" aria-live="polite">
+            {{ t('account.captchaHint') }}
+          </p>
+        </div>
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary"
+          :loading="loading"
+          :disabled="
+            runtimeCapabilities.multiTenancyEnabled &&
+            !tenantOptions.some((item) => item.tenant_id === loginForm.tenant_id)
+          "
+          style="width: 100%"
+          @click="handleLogin"
+        >
+          {{ t('account.signIn') }}
+        </el-button>
+      </el-form-item>
+    </el-form>
+  </AuthLayout>
 </template>
 
 <script setup lang="ts">
+import AuthLayout from '@/components/AuthLayout.vue'
+import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
@@ -143,7 +143,7 @@ const { t } = useI18n()
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
-const loginForm = ref(createInitialLoginForm(getTenantId(), import.meta.env.DEV))
+const loginForm = ref(createInitialLoginForm(getTenantId()))
 
 const loginRules = computed<FormRules>(() => {
   const rules: FormRules = {
@@ -229,10 +229,14 @@ const handleLogin = async () => {
         ? loginForm.value.tenant_id.trim()
         : DEFAULT_TENANT_ID,
     )
+    if (useUserStore().passwordChangeRequired) {
+      await router.replace('/change-password')
+      return
+    }
     await ensureRuntimeAccessibleRoutes({ skipAuthRefresh: true })
-    ElMessage.success(t('account.signInSuccess'))
     const redirect = resolveLoginRedirect(route.query.redirect)
     await router.replace(resolveRuntimeAccessibleRoute(redirect))
+    ElMessage.success(t('account.signInSuccess'))
   } catch (error) {
     if (error instanceof HttpError && error.kind === 'cancelled') return
     ElMessage.error(
@@ -257,23 +261,6 @@ onMounted(async () => {
   float: right;
   margin-left: 16px;
   color: var(--el-text-color-secondary);
-}
-
-.login-container {
-  min-height: 100dvh;
-  padding: 24px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.login-card {
-  width: min(400px, calc(100vw - 32px));
-  padding: 40px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 30px rgb(0 0 0 / 15%);
 }
 
 .login-title {

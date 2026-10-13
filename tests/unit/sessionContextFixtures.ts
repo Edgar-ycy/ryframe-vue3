@@ -7,6 +7,7 @@ export function sessionContext(isSuperAdmin: boolean) {
     },
     capabilities: [],
     is_super_admin: isSuperAdmin,
+    password_change_required: false,
     menus: [],
     permissions: ['*:*:*'],
     roles: ['admin'],

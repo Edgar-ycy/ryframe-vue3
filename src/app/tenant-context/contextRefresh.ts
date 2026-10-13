@@ -146,6 +146,12 @@ async function performTenantContextUiSynchronization(options?: {
   }
   assertSessionEpoch(expectedSessionEpoch)
   if (!isSameIdentity(tenantId, userId)) return
+  if (user.passwordChangeRequired) {
+    runtime.resetDynamicRoutes()
+    useTagsViewStore().closeAllViews()
+    await runtime.router.replace('/change-password')
+    return
+  }
   await runtime.refreshAccessibleRoutes(options)
   assertSessionEpoch(expectedSessionEpoch)
   if (!isSameIdentity(tenantId, userId)) return

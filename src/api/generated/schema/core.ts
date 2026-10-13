@@ -870,6 +870,7 @@ export interface components {
                 /** @description 仅由后端权威角色标记确定，客户端不得从角色编码或名称推断。 */
                 is_super_admin: boolean;
                 menus: components["schemas"]["MenuTreeNode"][];
+                password_change_required: boolean;
                 permissions: string[];
                 roles: string[];
                 runtime_epoch: string;
@@ -2490,6 +2491,7 @@ export interface components {
             /** @description 仅由后端权威角色标记确定，客户端不得从角色编码或名称推断。 */
             is_super_admin: boolean;
             menus: components["schemas"]["MenuTreeNode"][];
+            password_change_required: boolean;
             permissions: string[];
             roles: string[];
             runtime_epoch: string;
@@ -2841,6 +2843,7 @@ export interface components {
             email: string;
             id: string;
             nickname: string;
+            password_change_required: boolean;
             perms: string[];
             phone: string;
             preferred_locale?: string | null;

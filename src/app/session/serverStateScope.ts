@@ -26,6 +26,7 @@ function authorizationFingerprint(context: SessionContext): string {
       left.code.localeCompare(right.code),
     ),
     isSuperAdmin: context.is_super_admin,
+    passwordChangeRequired: context.password_change_required,
     menus: context.menus,
     permissions: [...context.permissions].sort(),
     roles: [...context.roles].sort(),

@@ -52,7 +52,12 @@ const MESSAGE_QUERY_POLICY = {
 function currentMessageIdentity(): MessageIdentity {
   const userStore = useUserStore()
   const scope = getServerStateScope()
-  if (userStore.sessionStatus !== 'authenticated' || !userStore.tenantId || !userStore.userId) {
+  if (
+    userStore.passwordChangeRequired ||
+    userStore.sessionStatus !== 'authenticated' ||
+    !userStore.tenantId ||
+    !userStore.userId
+  ) {
     throw new HttpError('消息会话尚未就绪', { status: 401, kind: 'http' })
   }
   const subjectId = String(userStore.userId)
@@ -82,6 +87,7 @@ export function useMessageCenterQueries(query: MaybeRefOrGetter<MessageInboxQuer
   function isMessageSessionActive(): boolean {
     return (
       userStore.sessionStatus === 'authenticated' &&
+      !userStore.passwordChangeRequired &&
       Boolean(userStore.tenantId) &&
       Boolean(userStore.userId)
     )

@@ -6,6 +6,7 @@ vi.mock('@/features/pageRegistry', () => {
   const component = () => Promise.resolve({ default: {} })
   const pages = {
     system: { path: '/system' },
+    'platform.tenant': { path: '/platform/tenants', component, requiresMultiTenancy: true },
     'system.absolute': { path: '/other', component },
     'system.missing': { path: '/system/missing' },
     'system.nested': { path: '/system/nested', component },
@@ -59,6 +60,16 @@ function route(
 describe('菜单树路由投影', () => {
   beforeEach(() => {
     installRouteProjection({ constantRoutes: [] })
+  })
+
+  it('仅在多租户模式注册租户页面', () => {
+    const nodes = [
+      menu({ id: 'tenant', menu_type: 'C', name: '租户', route_key: 'platform.tenant' }),
+    ]
+    expect(buildRoutesFromMenuTree(nodes)).toEqual([])
+    expect(buildRoutesFromMenuTree(nodes, undefined, true)).toMatchObject([
+      { path: '/platform/tenants', meta: { requiresMultiTenancy: true } },
+    ])
   })
 
   it('跳过禁用、按钮、固定页面和未知页面节点', () => {

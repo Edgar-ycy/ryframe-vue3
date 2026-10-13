@@ -31,6 +31,7 @@ const SKIP_PATHS = new Set([
 export function buildRoutesFromMenuTree(
   nodes: readonly MenuTreeNode[],
   parentPath?: string,
+  multiTenancyEnabled = false,
 ): RouteProjection[] {
   const routes: RouteProjection[] = []
 
@@ -41,8 +42,9 @@ export function buildRoutesFromMenuTree(
     if (type === 'F') continue
 
     const page = getMenuPage(node.route_key)
+    if (page?.requiresMultiTenancy && !multiTenancyEnabled) continue
     if (page && SKIP_PATHS.has(normalizePath(page.path))) continue
-    const route = nodeToRoute(node, parentPath)
+    const route = nodeToRoute(node, parentPath, multiTenancyEnabled)
     if (route) routes.push(route)
   }
 
@@ -86,18 +88,25 @@ function iconPascalCase(icon: string): string {
     .join('')
 }
 
-function nodeToRoute(node: MenuTreeNode, parentPath?: string): RouteProjection | null {
+function nodeToRoute(
+  node: MenuTreeNode,
+  parentPath: string | undefined,
+  multiTenancyEnabled: boolean,
+): RouteProjection | null {
   const type = getMenuType(node)
-  if (type === 'M') return buildDirectoryRoute(node)
+  if (type === 'M') return buildDirectoryRoute(node, multiTenancyEnabled)
   if (type === 'C') return buildMenuRoute(node, parentPath)
   return null
 }
 
-function buildDirectoryRoute(node: MenuTreeNode): RouteProjection | null {
+function buildDirectoryRoute(
+  node: MenuTreeNode,
+  multiTenancyEnabled: boolean,
+): RouteProjection | null {
   const page = getMenuPage(node.route_key)
   const directoryPath = normalizePath(page?.path || `/menu-${node.id}`)
   const children = node.children?.length
-    ? buildRoutesFromMenuTree(node.children, directoryPath)
+    ? buildRoutesFromMenuTree(node.children, directoryPath, multiTenancyEnabled)
     : []
   if (node.children?.length && children.length === 0) return null
   const firstChildPath = children.find((child) => child.meta?.hidden !== true)?.path
@@ -120,6 +129,7 @@ function buildDirectoryRoute(node: MenuTreeNode): RouteProjection | null {
       permission,
       requiresPermission: Boolean(node.perm_code),
       requiredCapabilities: page?.requiredCapabilities,
+      requiresMultiTenancy: page?.requiresMultiTenancy,
     },
     children,
   }
@@ -149,6 +159,7 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteProjectio
       permission,
       requiresPermission: true,
       requiredCapabilities: page.requiredCapabilities,
+      requiresMultiTenancy: page.requiresMultiTenancy,
     },
   }
 }

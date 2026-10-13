@@ -5,6 +5,7 @@ export const pageManifest = definePageManifest({
     { routeKey: 'platform', path: '/platform' },
     {
       routeKey: 'platform.product-plans',
+      requiresMultiTenancy: true,
       permissionCode: 'platform:product-plan:list',
       path: '/platform/product-plans',
       page: () => import('@/views/platform/product-plans/index.vue'),
@@ -17,6 +18,7 @@ export const pageManifest = definePageManifest({
     },
     {
       routeKey: 'platform.tenant',
+      requiresMultiTenancy: true,
       permissionCode: 'tenant:list',
       path: '/platform/tenants',
       page: () => import('@/views/platform/tenant/index.vue'),

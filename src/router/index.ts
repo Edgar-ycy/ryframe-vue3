@@ -73,7 +73,11 @@ async function buildAccessibleRoutes(generation: number): Promise<RouteProjectio
   const context = tenantContext.context
   if (!context) return undefined
   if (!permissionStore.isRoutesLoaded) {
-    const routes = buildRoutesFromMenuTree(context.menus)
+    const routes = buildRoutesFromMenuTree(
+      context.menus,
+      undefined,
+      useRuntimeCapabilitiesStore().multiTenancyEnabled,
+    )
     const menus = buildAccessibleMenus(routes, context.permissions, tenantContext.capabilityCodes)
     permissionStore.applyRouteProjection(routes, menus)
   }

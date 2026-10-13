@@ -5,6 +5,7 @@ export interface MenuPageRegistryEntry {
   path: string
   component?: RouteComponentLoader
   requiredCapabilities?: readonly string[]
+  requiresMultiTenancy?: boolean
 }
 
 export interface PageManifestEntry {
@@ -13,6 +14,7 @@ export interface PageManifestEntry {
   path: string
   page?: RouteComponentLoader
   requiredCapabilities?: readonly string[]
+  requiresMultiTenancy?: boolean
 }
 
 export interface PageManifest {

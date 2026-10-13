@@ -12,6 +12,7 @@ import { deactivateServerStateScope } from '@/shared/query/client'
 import { usePermissionStore } from '@/stores/permission'
 import { useUserStore } from '@/stores/user'
 import { useTenantContextStore } from '@/stores/tenantContext'
+import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 
 let loadGeneration = 0
 let loadingIdentity = ''
@@ -89,7 +90,11 @@ export function applyTenantSessionContext(
   }
 
   // 在局部变量中完成所有可失败的路由构建，避免留下半套授权状态。
-  const routes = buildRoutesFromMenuTree(context.menus)
+  const routes = buildRoutesFromMenuTree(
+    context.menus,
+    undefined,
+    useRuntimeCapabilitiesStore().multiTenancyEnabled,
+  )
   const menus = buildAccessibleMenus(routes, context.permissions, codes)
   const contextStore = useTenantContextStore()
   const permissions = usePermissionStore()

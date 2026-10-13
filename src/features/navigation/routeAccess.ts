@@ -51,6 +51,7 @@ export function registeredPageAccessResult(
   const page = getMenuPageByPath(path)
   if (!page) return 'unknown'
   if (page.permission && !hasPermission(context.permissions, page.permission)) return 'forbidden'
+  if (page.requiresMultiTenancy && !context.multiTenancyEnabled) return 'capability-unavailable'
   if (!hasRequiredCapabilities(context.capabilities, page.requiredCapabilities)) {
     return 'capability-unavailable'
   }

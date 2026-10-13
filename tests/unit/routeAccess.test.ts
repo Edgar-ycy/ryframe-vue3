@@ -43,4 +43,17 @@ describe('页面访问语义', () => {
     expect(accessResultPath('capability-unavailable')).toBe('/feature-unavailable')
     expect(accessResultPath('unknown')).toBe('/404')
   })
+
+  it('单租户隐藏租户和套餐管理，保留配置与数据维护', () => {
+    const context = { ...emptyContext, multiTenancyEnabled: false, permissions: ['*:*:*'] }
+    expect(registeredPageAccessResult('/platform/tenants', context)).toBe('capability-unavailable')
+    expect(registeredPageAccessResult('/platform/product-plans', context)).toBe(
+      'capability-unavailable',
+    )
+    expect(registeredPageAccessResult('/platform/config-transfer', context)).toBe('allowed')
+    expect(registeredPageAccessResult('/platform/data-targets', context)).toBe('allowed')
+    expect(
+      registeredPageAccessResult('/platform/tenants', { ...context, multiTenancyEnabled: true }),
+    ).toBe('allowed')
+  })
 })

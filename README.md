@@ -1,5 +1,7 @@
 # RyFrame Vue3
 
+[English](README.en.md)
+
 RyFrame 的 Vue 3 管理端，使用 TypeScript、Vite、Element Plus、Pinia 和 TanStack Query，
 通过 OpenAPI 契约连接 Rust 后端。
 
@@ -67,3 +69,5 @@ cargo xtask generate api --write
 页面、API、状态、路由和测试的开发方式见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 多租户登录通过名称搜索并选择租户，同名选项同时显示标识。租户列表加载失败可在选择框中重试；单租户模式自动使用系统租户。
+
+后端新配置默认单租户，登录页及导航栏不显示租户选择；租户和套餐管理不注册为可访问页面，配置迁移与数据维护仍可用。模式获取失败时显示重试，不猜测模式。亮暗主题采用统一语义色，支持响应式认证布局和单行权限操作列。

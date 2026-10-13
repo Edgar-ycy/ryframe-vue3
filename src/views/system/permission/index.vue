@@ -99,9 +99,10 @@
         </el-table-column>
         <el-table-column
           :label="t('system.common.actions')"
-          width="210"
+          width="260"
           fixed="right"
           align="center"
+          class-name="permission-actions"
         >
           <template #default="{ row }">
             <el-button
@@ -206,6 +207,18 @@ async function deletePermissionById(id: Id): Promise<void> {
 </script>
 
 <style scoped>
+:deep(.permission-actions .cell) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+:deep(.permission-actions .el-button + .el-button) {
+  margin-left: 0;
+}
+
 .sync-alert {
   margin-bottom: 12px;
 }

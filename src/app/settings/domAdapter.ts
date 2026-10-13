@@ -8,6 +8,20 @@ import {
   rgbToHsl,
 } from '@/stores/settings/theme'
 
+/** 与 Element Plus 一致：浅色向白色混合，深色向页面底色混合。 */
+function blendColor(red: number, green: number, blue: number, ratio: number): string {
+  const background = document.documentElement.classList.contains('dark')
+    ? [17, 24, 39]
+    : [255, 255, 255]
+  return `#${[red, green, blue]
+    .map((channel, index) =>
+      Math.round(channel * (1 - ratio) + background[index] * ratio)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`
+}
+
 export function applyThemeColor(color: string): void {
   const parsed = parseThemeColor(color) ?? parseThemeColor(DEFAULT_THEME_COLOR)!
   const { red, green, blue, css } = parsed
@@ -20,12 +34,8 @@ export function applyThemeColor(color: string): void {
   style.setProperty('--color-primary-readable-dark', resolveReadableDarkThemeColor(css))
   style.setProperty('--color-primary-rgb', `${red}, ${green}, ${blue}`)
 
-  for (let index = 3; index <= 9; index += 1) {
-    const lightnessVariant = Math.min(lightness + (index - 3) * 6.5, 95)
-    style.setProperty(
-      `--el-color-primary-light-${index}`,
-      hslToHex(hue, saturation, lightnessVariant),
-    )
+  for (let index = 1; index <= 9; index += 1) {
+    style.setProperty(`--el-color-primary-light-${index}`, blendColor(red, green, blue, index / 10))
   }
 
   const darkColor = hslToHex(hue, Math.min(saturation + 8, 100), Math.max(lightness - 8, 8))
@@ -52,6 +62,9 @@ export function applyThemeColor(color: string): void {
 export function applyTheme(theme: ColorTheme): void {
   document.documentElement.classList.toggle('dark', theme === 'dark')
   document.documentElement.setAttribute('data-theme', theme)
+  applyThemeColor(
+    document.documentElement.style.getPropertyValue('--color-primary') || DEFAULT_THEME_COLOR,
+  )
 }
 
 export function applyComponentSize(size: ComponentSize): void {

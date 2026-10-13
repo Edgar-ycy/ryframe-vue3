@@ -1,4 +1,5 @@
 /* ====== 全局样式入口：以下顺序与原样式输出顺序一致 ====== */
+@use 'element-plus/theme-chalk/src/dark/css-vars';
 @use './variables';
 @use './mixins';
 @use './transition';

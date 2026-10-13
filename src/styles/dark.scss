@@ -17,7 +17,7 @@ html.dark {
   --el-text-color-regular: #cbd5e1;
   --el-text-color-secondary: #94a3b8;
   --el-text-color-placeholder: #94a3b8;
-  --el-text-color-disabled: #4b5563;
+  --el-text-color-disabled: #64748b;
   --el-border-color: #1e293b;
   --el-border-color-light: #334155;
   --el-border-color-lighter: #1e293b;
@@ -62,11 +62,6 @@ html.dark {
   --el-dropdown-menuItem-hover-fill: var(--border-color-light);
   --el-dropdown-menuItem-hover-color: var(--color-primary);
   --el-select-option-hover-bg: #334155;
-
-  /* 标签 */
-  --el-tag-bg-color: #1e293b;
-  --el-tag-border-color: #334155;
-  --el-tag-text-color: #cbd5e1;
 
   .sidebar-container {
     background: var(--sidebar-bg);
@@ -159,6 +154,13 @@ html.dark {
 
   .el-tree {
     --el-tree-bg-color: var(--bg-color);
+    --el-tree-text-color: var(--color-text-regular);
+    --el-tree-node-hover-bg-color: var(--el-fill-color-light);
+
+    &.el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content {
+      background-color: var(--el-color-primary-light-9);
+      color: var(--color-primary-readable);
+    }
   }
 
   .el-radio {

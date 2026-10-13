@@ -191,11 +191,15 @@ describe('设置 DOM 适配器', () => {
     const properties = new Map<string, string>()
     const setAttribute = vi.fn()
     const toggle = vi.fn()
+    const contains = vi.fn(() => true)
     vi.stubGlobal('document', {
       documentElement: {
-        classList: { toggle },
+        classList: { toggle, contains },
         setAttribute,
-        style: { setProperty: (key: string, value: string) => properties.set(key, value) },
+        style: {
+          setProperty: (key: string, value: string) => properties.set(key, value),
+          getPropertyValue: (key: string) => properties.get(key) ?? '',
+        },
       },
     })
 
@@ -212,6 +216,12 @@ describe('设置 DOM 适配器', () => {
     expect(properties.has('--el-color-primary-light-9')).toBe(true)
     expect(properties.get('--sidebar-bg')).toContain('linear-gradient')
     expect(properties.get('--el-color-primary-dark-2')).toMatch(/^#[0-9a-f]{6}$/u)
+    const darkFill = properties.get('--el-color-primary-light-9')
+    contains.mockReturnValue(false)
+    applyTheme('light')
+    expect(properties.get('--el-color-primary')).toBe('#4F46E5')
+    expect(properties.get('--el-color-primary-light-9')).not.toBe(darkFill)
+    expect(properties.get('--el-color-primary-light-9')).toBe('#ededfc')
   })
 
   it('无效颜色使用默认主题色并可切换回浅色和大号组件', () => {
@@ -220,9 +230,12 @@ describe('设置 DOM 适配器', () => {
     const toggle = vi.fn()
     vi.stubGlobal('document', {
       documentElement: {
-        classList: { toggle },
+        classList: { toggle, contains: () => false },
         setAttribute,
-        style: { setProperty: (key: string, value: string) => properties.set(key, value) },
+        style: {
+          setProperty: (key: string, value: string) => properties.set(key, value),
+          getPropertyValue: (key: string) => properties.get(key) ?? '',
+        },
       },
     })
 

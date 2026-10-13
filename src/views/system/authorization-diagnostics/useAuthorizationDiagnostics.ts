@@ -24,7 +24,8 @@ const WARNING_KEYS: Record<string, string> = {
   tenant_disabled: 'warningTenantDisabled',
   tenant_expired: 'warningTenantExpired',
   no_enabled_roles: 'warningNoEnabledRoles',
-  authorization_cache_stale: 'warningCacheStale',
+  authorization_cache_behind: 'warningCacheBehind',
+  authorization_cache_ahead: 'warningCacheAhead',
   authorization_cache_missing: 'warningCacheMissing',
   authorization_cache_unavailable: 'warningCacheUnavailable',
   invalid_menu_permission_reference: 'warningInvalidMenuPermission',
@@ -182,7 +183,9 @@ export function useAuthorizationDiagnostics(t: Translate) {
     const key =
       {
         current: 'cacheCurrent',
-        stale: 'cacheStale',
+        behind: 'cacheBehind',
+        ahead: 'cacheAhead',
+        disabled: 'cacheDisabled',
         missing: 'cacheMissing',
         unavailable: 'cacheUnavailable',
       }[status] ?? 'cacheUnavailable'
@@ -191,8 +194,8 @@ export function useAuthorizationDiagnostics(t: Translate) {
 
   function cacheStatusTag(status: string): 'danger' | 'info' | 'success' | 'warning' {
     if (status === 'current') return 'success'
-    if (status === 'stale') return 'warning'
-    if (status === 'missing') return 'info'
+    if (status === 'behind') return 'warning'
+    if (status === 'missing' || status === 'disabled') return 'info'
     return 'danger'
   }
 

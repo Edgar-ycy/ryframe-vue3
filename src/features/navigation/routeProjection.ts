@@ -32,6 +32,7 @@ export function buildRoutesFromMenuTree(
   nodes: readonly MenuTreeNode[],
   parentPath?: string,
   multiTenancyEnabled = false,
+  tenantId?: string,
 ): RouteProjection[] {
   const routes: RouteProjection[] = []
 
@@ -43,8 +44,9 @@ export function buildRoutesFromMenuTree(
 
     const page = getMenuPage(node.route_key)
     if (page?.requiresMultiTenancy && !multiTenancyEnabled) continue
+    if (page?.requiresSystemTenant && tenantId !== 'system') continue
     if (page && SKIP_PATHS.has(normalizePath(page.path))) continue
-    const route = nodeToRoute(node, parentPath, multiTenancyEnabled)
+    const route = nodeToRoute(node, parentPath, multiTenancyEnabled, tenantId)
     if (route) routes.push(route)
   }
 
@@ -92,9 +94,10 @@ function nodeToRoute(
   node: MenuTreeNode,
   parentPath: string | undefined,
   multiTenancyEnabled: boolean,
+  tenantId?: string,
 ): RouteProjection | null {
   const type = getMenuType(node)
-  if (type === 'M') return buildDirectoryRoute(node, multiTenancyEnabled)
+  if (type === 'M') return buildDirectoryRoute(node, multiTenancyEnabled, tenantId)
   if (type === 'C') return buildMenuRoute(node, parentPath)
   return null
 }
@@ -102,11 +105,12 @@ function nodeToRoute(
 function buildDirectoryRoute(
   node: MenuTreeNode,
   multiTenancyEnabled: boolean,
+  tenantId?: string,
 ): RouteProjection | null {
   const page = getMenuPage(node.route_key)
   const directoryPath = normalizePath(page?.path || `/menu-${node.id}`)
   const children = node.children?.length
-    ? buildRoutesFromMenuTree(node.children, directoryPath, multiTenancyEnabled)
+    ? buildRoutesFromMenuTree(node.children, directoryPath, multiTenancyEnabled, tenantId)
     : []
   if (node.children?.length && children.length === 0) return null
   const firstChildPath = children.find((child) => child.meta?.hidden !== true)?.path
@@ -130,6 +134,7 @@ function buildDirectoryRoute(
       requiresPermission: Boolean(node.perm_code),
       requiredCapabilities: page?.requiredCapabilities,
       requiresMultiTenancy: page?.requiresMultiTenancy,
+      requiresSystemTenant: page?.requiresSystemTenant,
     },
     children,
   }
@@ -160,6 +165,7 @@ function buildMenuRoute(node: MenuTreeNode, parentPath?: string): RouteProjectio
       requiresPermission: true,
       requiredCapabilities: page.requiredCapabilities,
       requiresMultiTenancy: page.requiresMultiTenancy,
+      requiresSystemTenant: page.requiresSystemTenant,
     },
   }
 }

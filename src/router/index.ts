@@ -77,6 +77,7 @@ async function buildAccessibleRoutes(generation: number): Promise<RouteProjectio
       context.menus,
       undefined,
       useRuntimeCapabilitiesStore().multiTenancyEnabled,
+      useUserStore().tenantId,
     )
     const menus = buildAccessibleMenus(routes, context.permissions, tenantContext.capabilityCodes)
     permissionStore.applyRouteProjection(routes, menus)
@@ -184,6 +185,7 @@ export function resolveAccessibleRoute(candidate: string): RouteLocationRaw {
     {
       capabilities: tenantContext.capabilityCodes,
       multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
+      tenantId: user.tenantId,
       permissions: user.permissions,
     },
   )

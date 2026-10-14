@@ -8,6 +8,7 @@ export type RouteAccessResult = 'allowed' | 'forbidden' | 'capability-unavailabl
 export const CAPABILITY_UNAVAILABLE_PATH = '/feature-unavailable'
 
 export interface RouteAccessContext {
+  tenantId?: string
   capabilities: readonly string[]
   multiTenancyEnabled: boolean
   permissions: readonly string[]
@@ -18,6 +19,7 @@ export function routeMetaAccessResult(
   meta: RouteMeta | undefined,
   context: RouteAccessContext,
 ): Exclude<RouteAccessResult, 'unknown'> {
+  if (meta?.requiresSystemTenant && context.tenantId !== 'system') return 'forbidden'
   if (meta?.requiresPermission) {
     const required = meta.permission
     if (!required || !hasPermission(context.permissions, required)) return 'forbidden'
@@ -50,6 +52,7 @@ export function registeredPageAccessResult(
 ): RouteAccessResult {
   const page = getMenuPageByPath(path)
   if (!page) return 'unknown'
+  if (page.requiresSystemTenant && context.tenantId !== 'system') return 'forbidden'
   if (page.permission && !hasPermission(context.permissions, page.permission)) return 'forbidden'
   if (page.requiresMultiTenancy && !context.multiTenancyEnabled) return 'capability-unavailable'
   if (!hasRequiredCapabilities(context.capabilities, page.requiredCapabilities)) {

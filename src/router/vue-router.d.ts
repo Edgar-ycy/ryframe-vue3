@@ -15,6 +15,7 @@ declare module 'vue-router' {
     buttonPerms?: readonly PermissionCode[]
     requiresPermission?: boolean
     requiresMultiTenancy?: boolean
+    requiresSystemTenant?: boolean
     requiredCapabilities?: readonly string[]
   }
 }

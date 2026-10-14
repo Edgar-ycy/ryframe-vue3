@@ -18,6 +18,7 @@ function projectMeta(meta: RouteRecordRaw['meta']): RouteProjectionMeta | undefi
     buttonPerms: meta.buttonPerms,
     requiresPermission: meta.requiresPermission,
     requiresMultiTenancy: meta.requiresMultiTenancy,
+    requiresSystemTenant: meta.requiresSystemTenant,
     requiredCapabilities: meta.requiredCapabilities,
   }
 }

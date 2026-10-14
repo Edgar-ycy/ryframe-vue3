@@ -198,6 +198,7 @@ function currentRouteAccessContext(): RouteAccessContext {
   return {
     capabilities: tenantContext.capabilityCodes,
     multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
+    tenantId: user.tenantId,
     permissions: user.permissions,
   }
 }

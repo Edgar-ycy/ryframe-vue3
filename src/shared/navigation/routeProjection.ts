@@ -15,6 +15,7 @@ export interface RouteProjectionMeta {
   buttonPerms?: readonly string[]
   requiresPermission?: boolean
   requiresMultiTenancy?: boolean
+  requiresSystemTenant?: boolean
   requiredCapabilities?: readonly string[]
 }
 

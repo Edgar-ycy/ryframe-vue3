@@ -16,6 +16,7 @@ export interface NavigationTarget {
 }
 
 export interface NavigationUser {
+  tenantId?: string
   token: string
   sessionStatus: 'initializing' | 'authenticated' | 'anonymous' | 'unavailable'
   permissions: string[]
@@ -141,6 +142,7 @@ function routeAccessContext(
 ): RouteAccessContext {
   return {
     capabilities,
+    tenantId: user.tenantId,
     multiTenancyEnabled,
     permissions: user.permissions,
   }

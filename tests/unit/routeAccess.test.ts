@@ -13,6 +13,13 @@ const emptyContext = {
 }
 
 describe('页面访问语义', () => {
+  it('全局业务即使具备通配权限也仅允许系统租户访问', () => {
+    const context = { ...emptyContext, permissions: ['*:*:*'] }
+    const meta = { requiresSystemTenant: true }
+    expect(routeMetaAccessResult(meta, context)).toBe('forbidden')
+    expect(routeMetaAccessResult(meta, { ...context, tenantId: 'tenant-a' })).toBe('forbidden')
+    expect(routeMetaAccessResult(meta, { ...context, tenantId: 'system' })).toBe('allowed')
+  })
   it('将已知页面的缺权限、缺能力和未知路由分开', () => {
     expect(registeredPageAccessResult('/system/user', emptyContext)).toBe('forbidden')
     expect(registeredPageAccessResult('/system/service-accounts', emptyContext)).toBe('unknown')

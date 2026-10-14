@@ -94,6 +94,7 @@ export function applyTenantSessionContext(
     context.menus,
     undefined,
     useRuntimeCapabilitiesStore().multiTenancyEnabled,
+    userInfo.tenant_id,
   )
   const menus = buildAccessibleMenus(routes, context.permissions, codes)
   const contextStore = useTenantContextStore()

@@ -35,6 +35,7 @@ function addPage(
   if (existing) {
     if (existing.path !== entry.path) throw new Error(`页面 route_key 路径冲突：${entry.routeKey}`)
     existing.requiresMultiTenancy ||= entry.requiresMultiTenancy
+    existing.requiresSystemTenant ||= entry.requiresSystemTenant
     existing.requiredCapabilities = Array.from(
       new Set([...(existing.requiredCapabilities ?? []), ...(entry.requiredCapabilities ?? [])]),
     )
@@ -50,6 +51,7 @@ function addPage(
   registry[entry.routeKey] = {
     path: entry.path,
     requiresMultiTenancy: entry.requiresMultiTenancy,
+    requiresSystemTenant: entry.requiresSystemTenant,
     ...(entry.page ? { component: withRouteMessageCatalogs(entry.routeKey, entry.page) } : {}),
     ...(entry.requiredCapabilities ? { requiredCapabilities: entry.requiredCapabilities } : {}),
   }

@@ -352,6 +352,12 @@ function requireResource(resource, index, operationMap, permissionCodes, seen) {
   const accessKeys = ['permissions']
   if ('capability' in resource.access) accessKeys.push('capability')
   if ('owner_field' in resource.access) accessKeys.push('owner_field')
+  if ('system_tenant_only' in resource.access) {
+    accessKeys.push('system_tenant_only')
+    if (resource.access.system_tenant_only !== true || resource.storage !== 'control_row') {
+      throw new Error(`${location}.access.system_tenant_only: 必须是控制库全局业务的 true 标志`)
+    }
+  }
   requireExactKeys(resource.access, accessKeys, `${location}.access`)
   if ('capability' in resource.access) {
     requireString(resource.access.capability, `${location}.access.capability`, /^[a-z0-9_.-]+$/u)

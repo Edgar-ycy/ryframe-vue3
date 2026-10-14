@@ -17,6 +17,7 @@ vi.mock('@/features/pageRegistry', () => {
       requiredCapabilities: ['example.reports'],
     },
     'system.user': { path: '/system/user', component },
+    'business.global': { path: '/business/global', component, requiresSystemTenant: true },
   }
   return {
     getMenuPage: (routeKey?: string | null) =>
@@ -58,6 +59,14 @@ function route(
 }
 
 describe('菜单树路由投影', () => {
+  it('全局业务菜单只进入系统租户的路由投影', () => {
+    const node = menu({ id: '99', menu_type: 'C', name: '全局业务', route_key: 'business.global' })
+    expect(buildRoutesFromMenuTree([node], undefined, true, 'tenant-a')).toEqual([])
+    expect(buildRoutesFromMenuTree([node], undefined, true)).toEqual([])
+    const routes = buildRoutesFromMenuTree([node], undefined, true, 'system')
+    expect(routes).toHaveLength(1)
+    expect(routes[0]?.meta?.requiresSystemTenant).toBe(true)
+  })
   beforeEach(() => {
     installRouteProjection({ constantRoutes: [] })
   })

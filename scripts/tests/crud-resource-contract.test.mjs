@@ -78,3 +78,13 @@ test('常用整数接受完整边界，拒绝范围溢出和非规范枚举', ()
     assert.throws(() => requireCrudResourceCatalog(catalog, document), /wire_type/u)
   }
 })
+
+test('字符串传输的64位整数只能使用保持精度的表单控件', () => {
+  const { document, catalog, field } = integerCatalog('i64', 0, 1)
+  field.wire_type = 'string'
+  field.enum_values = {}
+  field.widget = 'text'
+  assert.ok(requireCrudResourceCatalog(catalog, document))
+  field.widget = 'number'
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /丢失精度/u)
+})

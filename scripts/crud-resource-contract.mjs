@@ -303,6 +303,14 @@ function requireField(field, location) {
     throw new Error(`${location}.usage: nullable 与 update_optional 无法表达明确更新语义`)
   }
   const editable = usage.create || usage.update
+  if (
+    editable &&
+    field.value_type === 'i64' &&
+    field.wire_type === 'string' &&
+    field.widget === 'number'
+  ) {
+    throw new Error(`${location}.widget: 字符串传输的 i64 须使用 text 或 select，number 会丢失精度`)
+  }
   if (editable && !editableWidgets.has(field.widget)) {
     throw new Error(`${location}.widget: flat_crud v1 可编辑字段只支持 text、number、select`)
   }

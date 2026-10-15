@@ -47,6 +47,7 @@ const integerRanges = new Map([
   ['u8', [0n, 255n]],
   ['u16', [0n, 65535n]],
   ['u32', [0n, 4294967295n]],
+  ['u64', [0n, 18446744073709551615n]],
 ])
 const valueTypes = new Set([
   'bool',
@@ -184,9 +185,12 @@ function requireField(field, location) {
   if (!valueTypes.has(field.wire_type)) throw new Error(`${location}.wire_type: 不支持的传输类型`)
   if (
     field.wire_type !== field.value_type &&
-    !(field.value_type === 'i64' && field.wire_type === 'string')
+    !(['i64', 'u64'].includes(field.value_type) && field.wire_type === 'string')
   ) {
-    throw new Error(`${location}.wire_type: 只允许 i64 使用 string 传输`)
+    throw new Error(`${location}.wire_type: 只允许 i64、u64 使用 string 传输`)
+  }
+  if (field.value_type === 'u64' && field.wire_type !== 'string') {
+    throw new Error(`${location}.wire_type: u64 必须使用 string 传输`)
   }
   if (typeof field.nullable !== 'boolean') throw new Error(`${location}.nullable: 必须是布尔值`)
   if (!Number.isInteger(field.order) || field.order < 0) {
@@ -305,11 +309,13 @@ function requireField(field, location) {
   const editable = usage.create || usage.update
   if (
     editable &&
-    field.value_type === 'i64' &&
+    ['i64', 'u64'].includes(field.value_type) &&
     field.wire_type === 'string' &&
     field.widget === 'number'
   ) {
-    throw new Error(`${location}.widget: 字符串传输的 i64 须使用 text 或 select，number 会丢失精度`)
+    throw new Error(
+      `${location}.widget: 字符串传输的 64 位整数须使用 text 或 select，number 会丢失精度`,
+    )
   }
   if (editable && !editableWidgets.has(field.widget)) {
     throw new Error(`${location}.widget: flat_crud v1 可编辑字段只支持 text、number、select`)
@@ -321,11 +327,11 @@ function requireField(field, location) {
   const enumValues = requireRecord(field.enum_values, `${location}.enum_values`)
   for (const [value, labels] of Object.entries(enumValues)) {
     requireEnumKey(value, field.value_type, `${location}.enum_values 的键`)
-    if (integerRanges.has(field.value_type) && field.value_type !== 'i64') {
-      const numeric = Number(value)
+    if (integerRanges.has(field.value_type)) {
+      const numeric = BigInt(value)
       if (
-        (validation.minimum !== null && numeric < validation.minimum) ||
-        (validation.maximum !== null && numeric > validation.maximum)
+        (validation.minimum !== null && numeric < BigInt(validation.minimum)) ||
+        (validation.maximum !== null && numeric > BigInt(validation.maximum))
       ) {
         throw new Error(`${location}.enum_values: 枚举键超出字段范围约束`)
       }

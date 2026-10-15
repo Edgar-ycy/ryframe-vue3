@@ -88,3 +88,32 @@ test('字符串传输的64位整数只能使用保持精度的表单控件', () 
   field.widget = 'number'
   assert.throws(() => requireCrudResourceCatalog(catalog, document), /丢失精度/u)
 })
+
+test('u64 字符串枚举保持完整容量并拒绝负数、溢出和数字控件', () => {
+  const { document, catalog, field } = integerCatalog('u64', 0, null)
+  field.wire_type = 'string'
+  field.enum_values = {
+    0: { zh_cn: '零', en: 'Zero' },
+    '18446744073709551615': { zh_cn: '最大值', en: 'Maximum' },
+  }
+  assert.ok(requireCrudResourceCatalog(catalog, document))
+  for (const value of ['-1', '-0', '18446744073709551616', '01', '+1', '1e3']) {
+    field.enum_values = { [value]: { zh_cn: '无效', en: 'Invalid' } }
+    assert.throws(() => requireCrudResourceCatalog(catalog, document), /整数范围|规范十进制/u)
+  }
+  field.enum_values = {}
+  field.widget = 'text'
+  assert.ok(requireCrudResourceCatalog(catalog, document))
+  field.wire_type = 'u64'
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /wire_type/u)
+  field.wire_type = 'string'
+  field.widget = 'number'
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /丢失精度/u)
+  field.widget = 'select'
+  field.enum_values = { '9007199254740993': { zh_cn: '精确值', en: 'Exact' } }
+  field.validation.maximum = 42
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /范围约束/u)
+  field.validation.maximum = null
+  field.validation.minimum = -1
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /整数范围/u)
+})

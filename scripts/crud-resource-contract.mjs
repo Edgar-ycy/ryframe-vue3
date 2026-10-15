@@ -39,7 +39,24 @@ const usageKeys = [
 const optionalUsageKeys = ['filter_exact', 'sort_desc']
 const validationKeys = ['max_length', 'maximum', 'min_length', 'minimum', 'required']
 const optionalValidationKeys = ['max_utf8_bytes', 'min_utf8_bytes']
-const valueTypes = new Set(['bool', 'date', 'date_time', 'decimal', 'i32', 'i64', 'json', 'string'])
+const integerRanges = new Map([
+  ['i8', [-128n, 127n]],
+  ['i16', [-32768n, 32767n]],
+  ['i32', [-2147483648n, 2147483647n]],
+  ['i64', [-9223372036854775808n, 9223372036854775807n]],
+  ['u8', [0n, 255n]],
+  ['u16', [0n, 65535n]],
+  ['u32', [0n, 4294967295n]],
+])
+const valueTypes = new Set([
+  'bool',
+  'date',
+  'date_time',
+  'decimal',
+  'json',
+  'string',
+  ...integerRanges.keys(),
+])
 const editableWidgets = new Set(['number', 'select', 'text'])
 const widgets = new Set([
   'date',
@@ -55,8 +72,6 @@ const httpMethods = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put',
 const snakeIdentifierPattern = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/u
 const kebabIdentifierPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
 const operationPattern = /^[A-Za-z_][A-Za-z0-9_]*$/u
-const i64Minimum = -9223372036854775808n
-const i64Maximum = 9223372036854775807n
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -243,9 +258,23 @@ function requireField(field, location) {
   }
   if (
     (validation.minimum !== null || validation.maximum !== null) &&
-    !['i32', 'i64'].includes(field.value_type)
+    !integerRanges.has(field.value_type)
   ) {
-    throw new Error(`${location}.validation: 数值范围只能用于 i32/i64 字段`)
+    throw new Error(`${location}.validation: 数值范围只能用于整数字段`)
+  }
+  const integerRange = integerRanges.get(field.value_type)
+  if (integerRange && field.value_type !== 'i64') {
+    for (const key of ['minimum', 'maximum']) {
+      const value = validation[key]
+      if (
+        value !== null &&
+        (!Number.isSafeInteger(value) ||
+          BigInt(value) < integerRange[0] ||
+          BigInt(value) > integerRange[1])
+      ) {
+        throw new Error(`${location}.validation.${key}: 超出 ${field.value_type} 整数范围`)
+      }
+    }
   }
   if (
     (validation.min_utf8_bytes !== undefined || validation.max_utf8_bytes !== undefined) &&
@@ -284,6 +313,15 @@ function requireField(field, location) {
   const enumValues = requireRecord(field.enum_values, `${location}.enum_values`)
   for (const [value, labels] of Object.entries(enumValues)) {
     requireEnumKey(value, field.value_type, `${location}.enum_values 的键`)
+    if (integerRanges.has(field.value_type) && field.value_type !== 'i64') {
+      const numeric = Number(value)
+      if (
+        (validation.minimum !== null && numeric < validation.minimum) ||
+        (validation.maximum !== null && numeric > validation.maximum)
+      ) {
+        throw new Error(`${location}.enum_values: 枚举键超出字段范围约束`)
+      }
+    }
     requireLabels(labels, `${location}.enum_values.${value}`)
   }
   if (field.widget !== 'select' && Object.keys(enumValues).length > 0) {
@@ -312,12 +350,9 @@ function requireEnumKey(value, valueType, location) {
       throw new Error(`${location}: bool 枚举仅支持 false/true`)
     return
   }
-  if (valueType === 'i32') {
-    requireCanonicalInteger(value, -2147483648n, 2147483647n, location)
-    return
-  }
-  if (valueType === 'i64') {
-    requireCanonicalInteger(value, i64Minimum, i64Maximum, location)
+  const range = integerRanges.get(valueType)
+  if (range) {
+    requireCanonicalInteger(value, range[0], range[1], location)
     return
   }
   throw new Error(`${location}: ${valueType} 字段不支持 flat_crud v1 枚举`)

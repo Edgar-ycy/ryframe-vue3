@@ -185,12 +185,12 @@ function requireField(field, location) {
   if (!valueTypes.has(field.wire_type)) throw new Error(`${location}.wire_type: 不支持的传输类型`)
   if (
     field.wire_type !== field.value_type &&
-    !(['i64', 'u64'].includes(field.value_type) && field.wire_type === 'string')
+    !(['i64', 'u64', 'decimal'].includes(field.value_type) && field.wire_type === 'string')
   ) {
-    throw new Error(`${location}.wire_type: 只允许 i64、u64 使用 string 传输`)
+    throw new Error(`${location}.wire_type: 只允许 i64、u64、decimal 使用 string 传输`)
   }
-  if (field.value_type === 'u64' && field.wire_type !== 'string') {
-    throw new Error(`${location}.wire_type: u64 必须使用 string 传输`)
+  if (['u64', 'decimal'].includes(field.value_type) && field.wire_type !== 'string') {
+    throw new Error(`${location}.wire_type: u64、decimal 必须使用 string 传输`)
   }
   if (typeof field.nullable !== 'boolean') throw new Error(`${location}.nullable: 必须是布尔值`)
   if (!Number.isInteger(field.order) || field.order < 0) {
@@ -309,13 +309,11 @@ function requireField(field, location) {
   const editable = usage.create || usage.update
   if (
     editable &&
-    ['i64', 'u64'].includes(field.value_type) &&
+    ['i64', 'u64', 'decimal'].includes(field.value_type) &&
     field.wire_type === 'string' &&
     field.widget === 'number'
   ) {
-    throw new Error(
-      `${location}.widget: 字符串传输的 64 位整数须使用 text 或 select，number 会丢失精度`,
-    )
+    throw new Error(`${location}.widget: 精确数值字段须使用 text 或 select，number 会丢失精度`)
   }
   if (editable && !editableWidgets.has(field.widget)) {
     throw new Error(`${location}.widget: flat_crud v1 可编辑字段只支持 text、number、select`)

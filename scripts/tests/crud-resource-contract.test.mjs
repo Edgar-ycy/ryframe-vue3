@@ -117,3 +117,16 @@ test('u64 字符串枚举保持完整容量并拒绝负数、溢出和数字控�
   field.validation.minimum = -1
   assert.throws(() => requireCrudResourceCatalog(catalog, document), /整数范围/u)
 })
+
+test('Decimal 只能使用字符串传输及文本控件，不能退回数字输入', () => {
+  const { document, catalog, field } = integerCatalog('decimal', null, null)
+  field.wire_type = 'string'
+  field.enum_values = {}
+  field.widget = 'text'
+  assert.ok(requireCrudResourceCatalog(catalog, document))
+  field.widget = 'number'
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /丢失精度/u)
+  field.widget = 'text'
+  field.wire_type = 'decimal'
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /wire_type/u)
+})

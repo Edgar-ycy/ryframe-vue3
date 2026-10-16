@@ -58,6 +58,8 @@ cargo xtask generate api --write
 
 The command updates the OpenAPI snapshot, request descriptions and derived types. Then integrate the corresponding operation in `src/api/modules/`.
 
+For custom business development, backend `cargo generate -- resource` or `import` with `schema-import` can synchronize the current batch's contracts, standard lists, forms and routes through `generator.sync_frontend=true` / `--sync-frontend`. Install frontend dependencies first. The generator checks types and lint in candidate copies before `--write` installs both repositories together. Default preview preserves official source files; `--no-sync-frontend` temporarily disables synchronization. Set the frontend directory in the backend tool configuration.
+
 See [ARCHITECTURE.md](ARCHITECTURE.md) for pages, APIs, state, routes and testing.
 
 Multi-tenant login searches and selects tenants by name; duplicate names show their identifiers. Failed tenant loading can be retried in the selector. Single tenancy uses the internal system tenant automatically.

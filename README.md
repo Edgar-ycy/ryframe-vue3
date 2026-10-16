@@ -66,6 +66,8 @@ cargo xtask generate api --write
 
 命令会更新 OpenAPI 快照、前端请求描述和派生类型。同步后在 `src/api/modules/` 中接入对应 operation。
 
+开发自有业务时，后端 `cargo generate -- resource` 或启用 `schema-import` 的 `import` 可通过 `generator.sync_frontend=true` / `--sync-frontend` 同步本批契约与标准列表、表单和路由。先安装前端依赖；生成器在候选副本完成类型与 lint 检查后，只有 `--write` 才统一安装两仓文件。默认预览保持正式源码原样，`--no-sync-frontend` 可临时关闭同步；前端目录在后端工具配置中指定。
+
 页面、API、状态、路由和测试的开发方式见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 多租户登录通过名称搜索并选择租户，同名选项同时显示标识。租户列表加载失败可在选择框中重试；单租户模式自动使用系统租户。

@@ -226,12 +226,7 @@ function requireField(field, location) {
       throw new Error(`${location}.validation.${key}: 必须是非负安全整数`)
     }
   }
-  for (const key of ['minimum', 'maximum']) {
-    const boundary = field.validation[key]
-    if (boundary !== null && !Number.isSafeInteger(boundary)) {
-      throw new Error(`${location}.validation.${key}: 必须是安全整数或 null`)
-    }
-  }
+  requireIntegerBoundaries(field, location)
   const validation = field.validation
   if (
     validation.min_length !== null &&
@@ -239,13 +234,6 @@ function requireField(field, location) {
     validation.min_length > validation.max_length
   ) {
     throw new Error(`${location}.validation: min_length 不能大于 max_length`)
-  }
-  if (
-    validation.minimum !== null &&
-    validation.maximum !== null &&
-    validation.minimum > validation.maximum
-  ) {
-    throw new Error(`${location}.validation: minimum 不能大于 maximum`)
   }
   if (
     validation.min_utf8_bytes !== undefined &&
@@ -259,26 +247,6 @@ function requireField(field, location) {
     field.value_type !== 'string'
   ) {
     throw new Error(`${location}.validation: 长度约束只能用于 string 字段`)
-  }
-  if (
-    (validation.minimum !== null || validation.maximum !== null) &&
-    !integerRanges.has(field.value_type)
-  ) {
-    throw new Error(`${location}.validation: 数值范围只能用于整数字段`)
-  }
-  const integerRange = integerRanges.get(field.value_type)
-  if (integerRange && field.value_type !== 'i64') {
-    for (const key of ['minimum', 'maximum']) {
-      const value = validation[key]
-      if (
-        value !== null &&
-        (!Number.isSafeInteger(value) ||
-          BigInt(value) < integerRange[0] ||
-          BigInt(value) > integerRange[1])
-      ) {
-        throw new Error(`${location}.validation.${key}: 超出 ${field.value_type} 整数范围`)
-      }
-    }
   }
   if (
     (validation.min_utf8_bytes !== undefined || validation.max_utf8_bytes !== undefined) &&
@@ -341,6 +309,30 @@ function requireField(field, location) {
   }
   if (field.widget === 'select' && Object.keys(enumValues).length === 0) {
     throw new Error(`${location}: select 控件必须声明有限枚举`)
+  }
+}
+
+function requireIntegerBoundaries(field, location) {
+  const range = integerRanges.get(field.value_type)
+  const exactString = field.wire_type === 'string' && ['i64', 'u64'].includes(field.value_type)
+  const { minimum, maximum } = field.validation
+  for (const key of ['minimum', 'maximum']) {
+    const value = field.validation[key]
+    if (value === null) continue
+    const path = `${location}.validation.${key}`
+    if (!range) throw new Error(`${path}: 数值范围只能用于整数字段`)
+    if (exactString) {
+      requireString(value, path)
+      requireCanonicalInteger(value, range[0], range[1], path)
+    } else {
+      if (!Number.isSafeInteger(value)) throw new Error(`${path}: 必须是安全整数或 null`)
+      if (BigInt(value) < range[0] || BigInt(value) > range[1]) {
+        throw new Error(`${path}: 超出 ${field.value_type} 整数范围`)
+      }
+    }
+  }
+  if (minimum !== null && maximum !== null && BigInt(minimum) > BigInt(maximum)) {
+    throw new Error(`${location}.validation: minimum 不能大于 maximum`)
   }
 }
 

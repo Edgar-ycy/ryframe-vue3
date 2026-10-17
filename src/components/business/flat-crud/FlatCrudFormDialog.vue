@@ -22,6 +22,7 @@
         />
         <el-input-number
           v-else-if="field.kind === 'number'"
+          :disabled="editing && field.disabledOnEdit"
           :max="field.max"
           :min="field.min"
           :model-value="numberValue(field)"
@@ -29,6 +30,7 @@
         />
         <el-radio-group
           v-else
+          :disabled="editing && field.disabledOnEdit"
           :model-value="optionValue(field)"
           @update:model-value="updateField(field, $event)"
         >
@@ -57,6 +59,7 @@
 </template>
 
 <script setup lang="ts" generic="TModel extends object">
+import { computed, ref, watch } from 'vue'
 import type { FormInstance } from 'element-plus'
 import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
 import type { ServerStatePageOperation } from '@/shared/query/pageOperationScope'
@@ -123,6 +126,7 @@ function optionValue(field: FlatCrudFormField<TModel>): string | number | boolea
 }
 
 function updateField(field: FlatCrudFormField<TModel>, value: FlatCrudScalar): void {
+  if (props.editing && field.disabledOnEdit) return
   emit('update:modelValue', Object.assign({}, props.modelValue, { [field.key]: value }))
 }
 

@@ -80,7 +80,7 @@ test('常用整数接受完整边界，拒绝范围溢出和非规范枚举', ()
 })
 
 test('字符串传输的64位整数只能使用保持精度的表单控件', () => {
-  const { document, catalog, field } = integerCatalog('i64', 0, 1)
+  const { document, catalog, field } = integerCatalog('i64', '0', '1')
   field.wire_type = 'string'
   field.enum_values = {}
   field.widget = 'text'
@@ -90,7 +90,7 @@ test('字符串传输的64位整数只能使用保持精度的表单控件', () 
 })
 
 test('u64 字符串枚举保持完整容量并拒绝负数、溢出和数字控件', () => {
-  const { document, catalog, field } = integerCatalog('u64', 0, null)
+  const { document, catalog, field } = integerCatalog('u64', '0', null)
   field.wire_type = 'string'
   field.enum_values = {
     0: { zh_cn: '零', en: 'Zero' },
@@ -111,11 +111,39 @@ test('u64 字符串枚举保持完整容量并拒绝负数、溢出和数字控�
   assert.throws(() => requireCrudResourceCatalog(catalog, document), /丢失精度/u)
   field.widget = 'select'
   field.enum_values = { '9007199254740993': { zh_cn: '精确值', en: 'Exact' } }
-  field.validation.maximum = 42
+  field.validation.maximum = '42'
   assert.throws(() => requireCrudResourceCatalog(catalog, document), /范围约束/u)
   field.validation.maximum = null
-  field.validation.minimum = -1
+  field.validation.minimum = '-1'
   assert.throws(() => requireCrudResourceCatalog(catalog, document), /整数范围/u)
+})
+
+test('64位范围以精确字符串校验，拒绝舍入、非法格式、溢出与倒置', () => {
+  for (const [kind, minimum, maximum] of [
+    ['i64', '-9223372036854775808', '9223372036854775807'],
+    ['u64', '0', '18446744073709551615'],
+  ]) {
+    const { document, catalog, field } = integerCatalog(kind, minimum, maximum)
+    field.wire_type = 'string'
+    assert.ok(requireCrudResourceCatalog(catalog, document))
+    for (const value of [Number(maximum), 0, '01', '-0', '+1', '1e3', ' 1', '0.5', true, {}]) {
+      field.validation.maximum = value
+      assert.throws(() => requireCrudResourceCatalog(catalog, document), /字符串|规范十进制/u)
+    }
+    field.validation.maximum = String(BigInt(maximum) + 1n)
+    assert.throws(() => requireCrudResourceCatalog(catalog, document), /整数范围/u)
+    field.validation.maximum = maximum
+    field.validation.minimum = String(BigInt(minimum) - 1n)
+    assert.throws(() => requireCrudResourceCatalog(catalog, document), /整数范围/u)
+    field.enum_values = {}
+    field.widget = 'text'
+    field.validation.minimum = '10'
+    field.validation.maximum = '2'
+    assert.throws(() => requireCrudResourceCatalog(catalog, document), /不能大于/u)
+    field.validation.minimum = '2'
+    field.validation.maximum = '10'
+    assert.ok(requireCrudResourceCatalog(catalog, document))
+  }
 })
 
 test('Decimal 只能使用字符串传输及文本控件，不能退回数字输入', () => {

@@ -25,19 +25,22 @@ export type FlatCrudQueryField<TModel extends object> =
       options: readonly FlatCrudOption[]
     })
 
+interface FlatCrudFormFieldBase<TModel extends object> extends FlatCrudFieldBase<TModel> {
+  disabledOnEdit?: boolean
+}
+
 export type FlatCrudFormField<TModel extends object> =
-  | (FlatCrudFieldBase<TModel> & {
+  | (FlatCrudFormFieldBase<TModel> & {
       kind: 'text'
       placeholder: string
       requiredMessage?: string
-      disabledOnEdit?: boolean
     })
-  | (FlatCrudFieldBase<TModel> & {
+  | (FlatCrudFormFieldBase<TModel> & {
       kind: 'number'
       min?: number
       max?: number
     })
-  | (FlatCrudFieldBase<TModel> & {
+  | (FlatCrudFormFieldBase<TModel> & {
       kind: 'radio'
       options: readonly FlatCrudOption[]
     })

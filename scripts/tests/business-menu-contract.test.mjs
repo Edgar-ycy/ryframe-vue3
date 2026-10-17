@@ -91,3 +91,22 @@ test('不同业务路由不能覆盖同一个标题翻译键', () => {
   document['x-ryframe-menu-routes'].routes.push({ ...route, route_key: 'other.order-item' })
   assert.throws(() => renderMenuRouteCatalog(document), /title_key 重复/u)
 })
+
+test('业务根目录使用独立标题键且不伪装为页面或权限', () => {
+  const { document } = businessDocument()
+  document['x-ryframe-menu-routes'].routes.push({
+    route_key: 'sales-orders',
+    title_key: 'salesOrdersBusinessDirectory',
+    name: 'sales-orders',
+    menu_type: 'M',
+    page_key: null,
+    permission_code: null,
+    capability_code: null,
+  })
+  const rendered = renderMenuRouteCatalog(document)
+  assert.match(rendered, /"sales-orders": "salesOrdersBusinessDirectory"/u)
+  assert.match(
+    rendered,
+    /"defaultName": "sales-orders",\s+"routeKey": "sales-orders",\s+"titleKey": "salesOrdersBusinessDirectory"/u,
+  )
+})

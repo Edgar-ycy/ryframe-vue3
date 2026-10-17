@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppMain: typeof import('./components/layout/AppMain/index.vue')['default']
+    AuthLayout: typeof import('./components/AuthLayout.vue')['default']
     EChartContainer: typeof import('./components/charts/EChartContainer.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']

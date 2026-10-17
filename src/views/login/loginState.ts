@@ -5,6 +5,11 @@ export interface LoginFormModel {
   captcha_code: string
 }
 
+export interface LoginTenantCapabilities {
+  loaded: boolean
+  multiTenancyEnabled: boolean
+}
+
 export function createInitialLoginForm(tenantId: string): LoginFormModel {
   return {
     tenant_id: tenantId,
@@ -12,6 +17,19 @@ export function createInitialLoginForm(tenantId: string): LoginFormModel {
     password: '',
     captcha_code: '',
   }
+}
+
+export function showLoginTenantSelector(capabilities: LoginTenantCapabilities): boolean {
+  return capabilities.loaded && capabilities.multiTenancyEnabled
+}
+
+export function resolveLoginTenantId(
+  selectedTenantId: string,
+  capabilities: LoginTenantCapabilities,
+  defaultTenantId: string,
+): string {
+  if (!capabilities.loaded) return ''
+  return capabilities.multiTenancyEnabled ? selectedTenantId.trim() : defaultTenantId
 }
 
 export function resolveLoginRedirect(value: unknown): string {

@@ -20,12 +20,56 @@
           :placeholder="field.placeholder"
           @update:model-value="updateField(field, $event)"
         />
+        <el-input
+          v-else-if="field.kind === 'textarea'"
+          :disabled="editing && field.disabledOnEdit"
+          :model-value="textValue(field)"
+          :placeholder="field.placeholder"
+          :rows="4"
+          type="textarea"
+          @update:model-value="updateField(field, $event)"
+        />
+        <el-input
+          v-else-if="field.kind === 'json'"
+          :disabled="editing && field.disabledOnEdit"
+          :model-value="textValue(field)"
+          :placeholder="field.placeholder"
+          :rows="6"
+          class="json-input"
+          spellcheck="false"
+          type="textarea"
+          @update:model-value="updateField(field, $event)"
+        />
         <el-input-number
           v-else-if="field.kind === 'number'"
           :disabled="editing && field.disabledOnEdit"
           :max="field.max"
           :min="field.min"
           :model-value="numberValue(field)"
+          @update:model-value="updateField(field, $event)"
+        />
+        <el-switch
+          v-else-if="field.kind === 'switch'"
+          :disabled="editing && field.disabledOnEdit"
+          :model-value="switchValue(field)"
+          @update:model-value="updateField(field, $event)"
+        />
+        <el-date-picker
+          v-else-if="field.kind === 'date'"
+          :disabled="editing && field.disabledOnEdit"
+          :model-value="dateValue(field)"
+          :placeholder="field.placeholder"
+          type="date"
+          value-format="YYYY-MM-DD"
+          @update:model-value="updateField(field, $event)"
+        />
+        <el-date-picker
+          v-else-if="field.kind === 'date_time'"
+          :disabled="editing && field.disabledOnEdit"
+          :model-value="dateValue(field)"
+          :placeholder="field.placeholder"
+          type="datetime"
+          value-format="YYYY-MM-DDTHH:mm:ss.SSSZ"
           @update:model-value="updateField(field, $event)"
         />
         <el-radio-group
@@ -60,7 +104,7 @@
 
 <script setup lang="ts" generic="TModel extends object">
 import { computed, ref, watch } from 'vue'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
 import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
 import type { ServerStatePageOperation } from '@/shared/query/pageOperationScope'
 
@@ -93,15 +137,44 @@ let submissionGeneration = 0
 const visibleFields = computed(() =>
   props.fields.filter((field) => !field.editOnly || props.editing),
 )
-const rules = computed(() =>
-  Object.fromEntries(
-    props.fields.flatMap((field) =>
-      field.kind === 'text' && field.requiredMessage
-        ? [[field.key, [{ required: true, message: field.requiredMessage, trigger: 'blur' }]]]
-        : [],
-    ),
-  ),
+const rules = computed<FormRules>(() =>
+  Object.fromEntries(props.fields.map((field) => [field.key, fieldRules(field)])),
 )
+
+function fieldRules(field: FlatCrudFormField<TModel>): FormItemRule[] {
+  const rules: FormItemRule[] = []
+  const requiredMessage =
+    field.kind !== 'switch' && 'requiredMessage' in field ? field.requiredMessage : undefined
+  if (requiredMessage) {
+    rules.push({
+      required: true,
+      message: requiredMessage,
+      trigger: ['blur', 'change'],
+    })
+  }
+  if (field.kind === 'json') {
+    rules.push({
+      validator: (_rule, value, callback) => {
+        if (value === null || value === undefined || value === '') {
+          callback()
+          return
+        }
+        if (typeof value !== 'string') {
+          callback(new Error(field.invalidMessage))
+          return
+        }
+        try {
+          JSON.parse(value)
+          callback()
+        } catch {
+          callback(new Error(field.invalidMessage))
+        }
+      },
+      trigger: ['blur', 'change'],
+    })
+  }
+  return rules
+}
 
 function fieldValue(field: FlatCrudFormField<TModel>): FlatCrudScalar {
   const value: unknown = Reflect.get(props.modelValue, field.key)
@@ -113,6 +186,17 @@ function fieldValue(field: FlatCrudFormField<TModel>): FlatCrudScalar {
 function numberValue(field: FlatCrudFormField<TModel>): number | undefined {
   const value = fieldValue(field)
   return typeof value === 'number' ? value : undefined
+}
+
+function switchValue(field: FlatCrudFormField<TModel>): boolean {
+  return fieldValue(field) === true
+}
+
+function dateValue(field: FlatCrudFormField<TModel>): string | null | undefined {
+  const value = fieldValue(field)
+  if (value === null || value === undefined) return value
+  if (typeof value !== 'string') throw new Error(`日期字段 ${field.key} 必须使用字符串`)
+  return value
 }
 
 function textValue(field: FlatCrudFormField<TModel>): string | number | null | undefined {

@@ -180,8 +180,8 @@ export function isPermissionCode(value: string): value is PermissionCode {
 }
 
 function requireMenuRouteCatalog(value, location) {
-  if (!value || typeof value !== 'object' || value.version !== 2 || !Array.isArray(value.routes)) {
-    throw new Error(`${location}: 菜单路由契约必须是 version=2 的对象`)
+  if (!value || typeof value !== 'object' || value.version !== 3 || !Array.isArray(value.routes)) {
+    throw new Error(`${location}: 菜单路由契约必须是 version=3 的对象`)
   }
   const routeKeys = new Set()
   const titleKeys = new Set()
@@ -203,11 +203,15 @@ function requireMenuRouteCatalog(value, location) {
     if (typeof titleKey !== 'string' || !/^[A-Za-z][A-Za-z0-9]*$/u.test(titleKey)) {
       throw new Error(`${location}.routes[${index}]: title_key 无效`)
     }
+    const icon = route?.icon ?? null
+    if (icon !== null && (typeof icon !== 'string' || !/^[A-Z][A-Za-z0-9]*$/u.test(icon))) {
+      throw new Error(`${location}.routes[${index}]: icon 无效`)
+    }
     if (routeKeys.has(routeKey)) throw new Error(`${location}: route_key 重复：${routeKey}`)
     if (titleKeys.has(titleKey)) throw new Error(`${location}: title_key 重复：${titleKey}`)
     routeKeys.add(routeKey)
     titleKeys.add(titleKey)
-    return { defaultName, routeKey, titleKey }
+    return { defaultName, icon, routeKey, titleKey }
   })
 }
 

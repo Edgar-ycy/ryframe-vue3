@@ -1,14 +1,29 @@
 <template>
   <AuthLayout :brand="t('account.appTitle')" :description="t('account.welcomeDescription')">
-    <h2 class="login-title">{{ t('account.signIn') }}</h2>
+    <h2 class="auth-title">{{ t('account.signIn') }}</h2>
     <el-form
       ref="loginFormRef"
       :model="loginForm"
       :rules="loginRules"
       size="large"
+      class="auth-form"
       @keyup.enter="handleLogin"
     >
-      <el-form-item v-if="runtimeCapabilities.multiTenancyEnabled" prop="tenant_id">
+      <el-form-item v-if="runtimeCapabilitiesFailed">
+        <div class="capability-status capability-status--error" role="alert">
+          <span>{{ t('account.runtimeCapabilitiesLoadFailed') }}</span>
+          <el-button text type="primary" @click="loadRuntimeCapabilities">
+            {{ t('account.retry') }}
+          </el-button>
+        </div>
+      </el-form-item>
+      <el-form-item v-else-if="!runtimeCapabilities.loaded">
+        <div class="capability-status" role="status">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <span>{{ t('account.checkingRuntimeCapabilities') }}</span>
+        </div>
+      </el-form-item>
+      <el-form-item v-else-if="showTenantSelector" prop="tenant_id">
         <el-select
           v-model="loginForm.tenant_id"
           :placeholder="t('account.selectTenant')"
@@ -102,8 +117,10 @@
           type="primary"
           :loading="loading"
           :disabled="
-            runtimeCapabilities.multiTenancyEnabled &&
-            !tenantOptions.some((item) => item.tenant_id === loginForm.tenant_id)
+            !runtimeCapabilities.loaded ||
+            runtimeCapabilitiesLoading ||
+            (showTenantSelector &&
+              !tenantOptions.some((item) => item.tenant_id === loginForm.tenant_id))
           "
           style="width: 100%"
           @click="handleLogin"
@@ -117,6 +134,7 @@
 
 <script setup lang="ts">
 import AuthLayout from '@/components/AuthLayout.vue'
+import { Loading } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -128,12 +146,18 @@ import {
   ensureRuntimeAccessibleRoutes,
   resolveRuntimeAccessibleRoute,
 } from '@/app/navigation/runtime'
+import { ensureRuntimeCapabilitiesLoaded } from '@/app/runtime-capabilities/coordinator'
 import { authenticateWithPassword } from '@/app/session/login'
 import { HttpError } from '@/shared/http/client'
 import { isValidTenantId } from '@/shared/security/tenantId'
 import { useRuntimeCapabilitiesStore } from '@/stores/runtimeCapabilities'
 import { DEFAULT_TENANT_ID, getTenantId } from '@/utils/auth'
-import { createInitialLoginForm, resolveLoginRedirect } from './loginState'
+import {
+  createInitialLoginForm,
+  resolveLoginRedirect,
+  resolveLoginTenantId,
+  showLoginTenantSelector as hasLoadedMultiTenancy,
+} from './loginState'
 
 const router = useRouter()
 const route = useRoute()
@@ -142,8 +166,26 @@ const { t } = useI18n()
 
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
+const runtimeCapabilitiesLoading = ref(false)
+const runtimeCapabilitiesFailed = ref(false)
 
 const loginForm = ref(createInitialLoginForm(getTenantId()))
+const showTenantSelector = computed(() =>
+  hasLoadedMultiTenancy({
+    loaded: runtimeCapabilities.loaded,
+    multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
+  }),
+)
+const loginTenantId = computed(() =>
+  resolveLoginTenantId(
+    loginForm.value.tenant_id,
+    {
+      loaded: runtimeCapabilities.loaded,
+      multiTenancyEnabled: runtimeCapabilities.multiTenancyEnabled,
+    },
+    DEFAULT_TENANT_ID,
+  ),
+)
 
 const loginRules = computed<FormRules>(() => {
   const rules: FormRules = {
@@ -151,7 +193,7 @@ const loginRules = computed<FormRules>(() => {
     password: [{ required: true, message: t('account.enterPassword'), trigger: 'blur' }],
     captcha_code: [{ required: true, message: t('account.enterCaptcha'), trigger: 'blur' }],
   }
-  if (runtimeCapabilities.multiTenancyEnabled) {
+  if (showTenantSelector.value) {
     rules.tenant_id = [
       { required: true, message: t('account.selectTenant'), trigger: 'change' },
       {
@@ -180,11 +222,7 @@ const {
   normalizeCaptchaCode,
   syncCaptchaForTenant,
   refreshCaptcha,
-} = useLoginCaptcha(
-  loginForm,
-  () => (runtimeCapabilities.multiTenancyEnabled ? loginForm.value.tenant_id : DEFAULT_TENANT_ID),
-  t,
-)
+} = useLoginCaptcha(loginForm, () => loginTenantId.value, t)
 const {
   options: tenantOptions,
   loading: tenantsLoading,
@@ -195,7 +233,7 @@ const {
 } = useLoginTenants(loginForm)
 
 const handleLogin = async () => {
-  if (loading.value) return
+  if (loading.value || !runtimeCapabilities.loaded) return
   loading.value = true
   try {
     const tenantId = resolveCaptchaTenantId()
@@ -225,9 +263,7 @@ const handleLogin = async () => {
         captcha_id: captchaEnabled.value ? captchaId.value : undefined,
         captcha_code: captchaEnabled.value ? loginForm.value.captcha_code : undefined,
       },
-      runtimeCapabilities.multiTenancyEnabled
-        ? loginForm.value.tenant_id.trim()
-        : DEFAULT_TENANT_ID,
+      loginTenantId.value,
     )
     if (useUserStore().passwordChangeRequired) {
       await router.replace('/change-password')
@@ -250,10 +286,22 @@ const handleLogin = async () => {
   }
 }
 
-onMounted(async () => {
-  if (runtimeCapabilities.multiTenancyEnabled) await searchTenants('')
-  await syncCaptchaForTenant()
-})
+async function loadRuntimeCapabilities(): Promise<void> {
+  if (runtimeCapabilitiesLoading.value) return
+  runtimeCapabilitiesLoading.value = true
+  runtimeCapabilitiesFailed.value = false
+  try {
+    await ensureRuntimeCapabilitiesLoaded()
+    if (showTenantSelector.value) await searchTenants('')
+    await syncCaptchaForTenant()
+  } catch {
+    runtimeCapabilitiesFailed.value = true
+  } finally {
+    runtimeCapabilitiesLoading.value = false
+  }
+}
+
+onMounted(loadRuntimeCapabilities)
 </script>
 
 <style scoped>
@@ -263,11 +311,16 @@ onMounted(async () => {
   color: var(--el-text-color-secondary);
 }
 
-.login-title {
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 24px;
-  color: var(--color-text-primary);
+.capability-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--el-text-color-secondary);
+}
+
+.capability-status--error {
+  justify-content: space-between;
+  color: var(--el-color-danger);
 }
 
 .captcha-placeholder {
@@ -339,11 +392,6 @@ onMounted(async () => {
 @media (width <= 480px) {
   .login-card {
     padding: 24px 18px;
-  }
-
-  .login-title {
-    margin-bottom: 22px;
-    font-size: 20px;
   }
 
   .captcha-refresh {

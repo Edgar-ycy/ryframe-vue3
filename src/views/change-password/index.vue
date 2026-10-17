@@ -1,8 +1,15 @@
 <template>
   <AuthLayout :brand="t('account.appTitle')" :description="t('account.welcomeDescription')">
-    <h2>{{ t('account.initialPasswordTitle') }}</h2>
-    <p class="password-description">{{ t('account.initialPasswordDescription') }}</p>
-    <el-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="submit">
+    <h2 class="auth-title">{{ t('account.initialPasswordTitle') }}</h2>
+    <p class="auth-description">{{ t('account.initialPasswordDescription') }}</p>
+    <el-form
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      size="large"
+      class="auth-form"
+      @submit.prevent="submit"
+    >
       <el-form-item prop="old_password" :label="t('account.currentPassword')">
         <el-input
           v-model="form.old_password"
@@ -109,17 +116,6 @@ async function submit(): Promise<void> {
 </script>
 
 <style scoped>
-h2 {
-  margin: 0 0 16px;
-  color: var(--el-text-color-primary);
-}
-
-.password-description {
-  margin: 0 0 28px;
-  color: var(--el-text-color-regular);
-  line-height: 1.7;
-}
-
 :deep(.el-form-item) {
   display: block;
 }

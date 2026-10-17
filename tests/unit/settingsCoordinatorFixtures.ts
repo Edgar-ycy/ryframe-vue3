@@ -6,6 +6,7 @@ export function installSettingsEnvironment(storedSettings?: string) {
   const properties = new Map<string, string>()
   const attributes = new Map<string, string>()
   const classToggle = vi.fn()
+  const classContains = vi.fn(() => false)
   const getItem = vi.fn((key: string) => values.get(key) ?? null)
   const setItem = vi.fn((key: string, value: string) => values.set(key, value))
   const setAttribute = vi.fn((key: string, value: string) => attributes.set(key, value))
@@ -15,7 +16,7 @@ export function installSettingsEnvironment(storedSettings?: string) {
   vi.stubGlobal('localStorage', { getItem, setItem })
   vi.stubGlobal('document', {
     documentElement: {
-      classList: { toggle: classToggle },
+      classList: { contains: classContains, toggle: classToggle },
       get lang() {
         return attributes.get('lang') ?? ''
       },
@@ -23,12 +24,12 @@ export function installSettingsEnvironment(storedSettings?: string) {
         setLang(value)
       },
       setAttribute,
-      style: { setProperty },
+      style: { getPropertyValue: (key: string) => properties.get(key) ?? '', setProperty },
     },
   })
 
   const writes = [classToggle, setAttribute, setProperty, setLang, setItem]
-  return { attributes, classToggle, getItem, properties, setItem, values, writes }
+  return { attributes, classContains, classToggle, getItem, properties, setItem, values, writes }
 }
 
 export function settingsWriteCount(setItem: ReturnType<typeof vi.fn>): number {

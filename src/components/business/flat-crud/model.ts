@@ -36,17 +36,43 @@ export type FlatCrudFormField<TModel extends object> =
       requiredMessage?: string
     })
   | (FlatCrudFormFieldBase<TModel> & {
+      kind: 'textarea'
+      placeholder: string
+      requiredMessage?: string
+    })
+  | (FlatCrudFormFieldBase<TModel> & {
       kind: 'number'
       min?: number
       max?: number
+      requiredMessage?: string
     })
   | (FlatCrudFormFieldBase<TModel> & {
       kind: 'radio'
       options: readonly FlatCrudOption[]
+      requiredMessage?: string
+    })
+  | (FlatCrudFormFieldBase<TModel> & {
+      kind: 'switch'
+    })
+  | (FlatCrudFormFieldBase<TModel> & {
+      kind: 'date'
+      placeholder: string
+      requiredMessage?: string
+    })
+  | (FlatCrudFormFieldBase<TModel> & {
+      kind: 'date_time'
+      placeholder: string
+      requiredMessage?: string
+    })
+  | (FlatCrudFormFieldBase<TModel> & {
+      kind: 'json'
+      placeholder: string
+      requiredMessage?: string
+      invalidMessage: string
     })
 
 interface FlatCrudColumnBase<TRecord extends object> {
-  key: ScalarFieldKey<TRecord>
+  key: Extract<keyof TRecord, string>
   label: string
   align?: 'left' | 'center' | 'right'
   minWidth?: number
@@ -65,6 +91,9 @@ export type FlatCrudColumn<TRecord extends object> =
       display: 'status'
       options: readonly FlatCrudOption[]
       positiveValue: string | number | boolean
+    })
+  | (FlatCrudColumnBase<TRecord> & {
+      display: 'json'
     })
 
 export interface FlatCrudPermissions {

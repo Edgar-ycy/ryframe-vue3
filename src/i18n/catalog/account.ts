@@ -26,6 +26,8 @@ export const accountMessages = {
       refreshCaptcha: '刷新验证码',
       signIn: '登录',
       signInSuccess: '登录成功',
+      checkingRuntimeCapabilities: '正在检查运行能力…',
+      runtimeCapabilitiesLoadFailed: '无法读取运行模式，请检查后端连接后重试。',
       enterUsername: '请输入用户名',
       enterPassword: '请输入密码',
       enterCaptcha: '请输入验证码',
@@ -122,6 +124,9 @@ export const accountMessages = {
       refreshCaptcha: 'Refresh verification code',
       signIn: 'Sign in',
       signInSuccess: 'Signed in successfully',
+      checkingRuntimeCapabilities: 'Checking runtime capabilities…',
+      runtimeCapabilitiesLoadFailed:
+        'Unable to load the runtime mode. Check the server connection and retry.',
       enterUsername: 'Enter a username',
       enterPassword: 'Enter a password',
       enterCaptcha: 'Enter the verification code',

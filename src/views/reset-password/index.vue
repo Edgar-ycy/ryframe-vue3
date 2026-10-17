@@ -1,6 +1,6 @@
 <template>
   <AuthLayout :brand="t('account.appTitle')" :description="t('account.welcomeDescription')">
-    <h1>{{ t('account.resetPassword') }}</h1>
+    <h2 class="auth-title">{{ t('account.resetPassword') }}</h2>
 
     <el-alert
       v-if="missingParams"
@@ -15,7 +15,7 @@
       :model="form"
       :rules="rules"
       size="large"
-      class="reset-form"
+      class="auth-form"
       @keyup.enter="handleSubmit"
     >
       <el-form-item prop="newPassword">
@@ -161,18 +161,6 @@ function passwordValidationMessage(password: string): string | undefined {
 </script>
 
 <style scoped>
-h1 {
-  margin: 0 0 24px;
-  color: var(--el-text-color-primary);
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.reset-form {
-  margin-top: 18px;
-}
-
 .submit-button {
   width: 100%;
 }
@@ -180,11 +168,5 @@ h1 {
 .login-link {
   width: 100%;
   margin-top: 4px;
-}
-
-@media (width <= 480px) {
-  h1 {
-    font-size: 22px;
-  }
 }
 </style>

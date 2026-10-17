@@ -29,8 +29,11 @@
         <template v-else-if="column.display === 'datetime'">
           {{ column.format(String(cellValue(row, column) ?? '')) }}
         </template>
+        <code v-else-if="column.display === 'json'" class="json-cell">
+          {{ jsonValue(cellValue(row, column)) }}
+        </code>
         <template v-else>
-          {{ cellValue(row, column) }}
+          {{ String(cellValue(row, column) ?? '') }}
         </template>
       </template>
     </el-table-column>
@@ -63,13 +66,7 @@
 <script setup lang="ts" generic="TRecord extends object">
 import { ref, watch } from 'vue'
 import type { TableInstance } from 'element-plus'
-import type {
-  FlatCrudColumn,
-  FlatCrudLabels,
-  FlatCrudOption,
-  FlatCrudPermissions,
-  FlatCrudScalar,
-} from './model'
+import type { FlatCrudColumn, FlatCrudLabels, FlatCrudOption, FlatCrudPermissions } from './model'
 
 defineProps<{
   columns: readonly FlatCrudColumn<TRecord>[]
@@ -92,14 +89,31 @@ const emit = defineEmits<{
 const tableInstance = ref<TableInstance>()
 watch(tableInstance, (table) => emit('tableReady', table), { flush: 'post' })
 
-function cellValue(record: TRecord, column: FlatCrudColumn<TRecord>): FlatCrudScalar {
+function cellValue(record: TRecord, column: FlatCrudColumn<TRecord>): unknown {
   const value: unknown = Reflect.get(record, column.key)
-  if (value === null || value === undefined) return value
-  if (['string', 'number', 'boolean'].includes(typeof value)) return value as FlatCrudScalar
-  throw new Error(`平面资源列表字段 ${column.key} 不是标量值`)
+  return value
 }
 
-function optionLabel(options: readonly FlatCrudOption[], value: FlatCrudScalar): string {
+function optionLabel(options: readonly FlatCrudOption[], value: unknown): string {
   return options.find((option) => option.value === value)?.label ?? String(value ?? '')
 }
+
+function jsonValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
 </script>
+
+<style scoped>
+.json-cell {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>

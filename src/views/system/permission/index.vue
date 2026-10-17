@@ -53,92 +53,100 @@
         </template>
       </el-alert>
 
-      <el-table
-        v-loading="loading"
-        :data="tableData ?? []"
-        border
-        stripe
-        row-key="id"
-        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
-      >
-        <el-table-column
-          prop="name"
-          :label="t('system.permission.name')"
-          min-width="160"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="code"
-          :label="t('system.permission.code')"
-          min-width="220"
-          show-overflow-tooltip
+      <div class="permission-table-scroll">
+        <el-table
+          v-loading="loading"
+          :data="tableData ?? []"
+          border
+          stripe
+          row-key="id"
+          class="permission-table"
+          :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
         >
-          <template #default="{ row }">
-            <el-tag>{{ row.code }}</el-tag>
+          <el-table-column
+            prop="name"
+            :label="t('system.permission.name')"
+            min-width="160"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="code"
+            :label="t('system.permission.code')"
+            min-width="220"
+            show-overflow-tooltip
+          >
+            <template #default="{ row }">
+              <el-tag>{{ row.code }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="perm_type"
+            :label="t('system.common.type')"
+            width="90"
+            align="center"
+          >
+            <template #default="{ row }">
+              <el-tag :type="row.perm_type === 'api' ? 'info' : 'success'" size="small">
+                {{ row.perm_type === 'api' ? t('system.common.api') : t('system.common.menu') }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="sort" :label="t('system.common.sort')" width="80" align="center" />
+          <el-table-column
+            prop="status"
+            :label="t('system.common.status')"
+            width="90"
+            align="center"
+          >
+            <template #default="{ row }">
+              <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
+                {{ row.status === '1' ? t('system.common.normal') : t('system.common.disabled') }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column
+            :label="t('system.common.actions')"
+            width="260"
+            fixed="right"
+            align="center"
+            class-name="permission-actions"
+          >
+            <template #default="{ row }">
+              <el-button
+                v-perm="'system:perm:add'"
+                type="success"
+                link
+                icon="Plus"
+                @click="handleAdd(row.id)"
+              >
+                {{ t('system.common.add') }}
+              </el-button>
+              <el-button
+                v-perm="'system:perm:edit'"
+                type="primary"
+                link
+                icon="Edit"
+                @click="editPermissionById(row.id)"
+              >
+                {{ t('system.common.edit') }}
+              </el-button>
+              <el-button
+                v-perm="'system:perm:remove'"
+                type="danger"
+                link
+                icon="Delete"
+                :loading="deletingId === row.id"
+                @click="deletePermissionById(row.id)"
+              >
+                {{ t('system.common.delete') }}
+              </el-button>
+            </template>
+          </el-table-column>
+          <template #empty>
+            <el-empty :description="t('system.permission.noData')" :image-size="100" />
           </template>
-        </el-table-column>
-        <el-table-column
-          prop="perm_type"
-          :label="t('system.common.type')"
-          width="90"
-          align="center"
-        >
-          <template #default="{ row }">
-            <el-tag :type="row.perm_type === 'api' ? 'info' : 'success'" size="small">
-              {{ row.perm_type === 'api' ? t('system.common.api') : t('system.common.menu') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="sort" :label="t('system.common.sort')" width="80" align="center" />
-        <el-table-column prop="status" :label="t('system.common.status')" width="90" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
-              {{ row.status === '1' ? t('system.common.normal') : t('system.common.disabled') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column
-          :label="t('system.common.actions')"
-          width="260"
-          fixed="right"
-          align="center"
-          class-name="permission-actions"
-        >
-          <template #default="{ row }">
-            <el-button
-              v-perm="'system:perm:add'"
-              type="success"
-              link
-              icon="Plus"
-              @click="handleAdd(row.id)"
-            >
-              {{ t('system.common.add') }}
-            </el-button>
-            <el-button
-              v-perm="'system:perm:edit'"
-              type="primary"
-              link
-              icon="Edit"
-              @click="editPermissionById(row.id)"
-            >
-              {{ t('system.common.edit') }}
-            </el-button>
-            <el-button
-              v-perm="'system:perm:remove'"
-              type="danger"
-              link
-              icon="Delete"
-              :loading="deletingId === row.id"
-              @click="deletePermissionById(row.id)"
-            >
-              {{ t('system.common.delete') }}
-            </el-button>
-          </template>
-        </el-table-column>
-        <template #empty>
-          <el-empty :description="t('system.permission.noData')" :image-size="100" />
-        </template>
-      </el-table>
+        </el-table>
+      </div>
     </el-card>
 
     <PermissionFormDialog
@@ -207,6 +215,15 @@ async function deletePermissionById(id: Id): Promise<void> {
 </script>
 
 <style scoped>
+.permission-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.permission-table {
+  min-width: 900px;
+}
+
 :deep(.permission-actions .cell) {
   display: flex;
   align-items: center;
@@ -217,6 +234,11 @@ async function deletePermissionById(id: Id): Promise<void> {
 
 :deep(.permission-actions .el-button + .el-button) {
   margin-left: 0;
+}
+
+:deep(.permission-actions .el-button) {
+  flex: none;
+  white-space: nowrap;
 }
 
 .sync-alert {

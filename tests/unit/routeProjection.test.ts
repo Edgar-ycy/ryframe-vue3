@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MenuTreeNode } from '@/api/modules/menu'
+import { menuRouteCatalog } from '@/api/generated/menuRoutes'
 import type { RouteProjection, RouteProjectionMeta } from '@/shared/navigation/routeProjection'
 
 vi.mock('@/features/pageRegistry', () => {
@@ -15,6 +16,10 @@ vi.mock('@/features/pageRegistry', () => {
       path: '/system/service',
       component,
       requiredCapabilities: ['example.reports'],
+    },
+    'system.authorization-diagnostics': {
+      path: '/system/authorization-diagnostics',
+      component,
     },
     'system.user': { path: '/system/user', component },
     'business.global': { path: '/business/global', component, requiresSystemTenant: true },
@@ -128,6 +133,31 @@ describe('菜单树路由投影', () => {
     })
     expect(routes[0].children?.map((child) => child.path)).toEqual(['user', 'nested'])
     expect(routes[0].children?.[0].meta?.hidden).toBe(true)
+  })
+
+  it('权限诊断菜单图标沿用会话访问目录节点', () => {
+    const [route] = buildRoutesFromMenuTree([
+      menu({
+        id: '40',
+        menu_type: 'C',
+        name: '权限诊断',
+        route_key: 'system.authorization-diagnostics',
+        icon: 'View',
+        perm_code: 'system:authorization-diagnostic:list',
+      }),
+    ])
+
+    expect(route?.meta).toMatchObject({
+      defaultTitle: '权限诊断',
+      icon: 'View',
+      permission: 'system:authorization-diagnostic:list',
+    })
+  })
+
+  it('权限诊断图标同时进入生成的菜单目录契约', () => {
+    expect(
+      menuRouteCatalog.find((entry) => entry.routeKey === 'system.authorization-diagnostics'),
+    ).toMatchObject({ icon: 'View' })
   })
 
   it('过滤没有有效子页面的目录并为匿名目录生成稳定路径', () => {

@@ -136,6 +136,12 @@ export function resolveReadableDarkThemeColor(value: string): string {
     [15, 23, 42],
     [17, 24, 39],
     [30, 41, 59],
+    // 活动标签在页面底色上叠加 20% 主色，前景必须针对合成后的实际表面校验。
+    [
+      Math.round(17 * 0.8 + parsed.red * 0.2),
+      Math.round(24 * 0.8 + parsed.green * 0.2),
+      Math.round(39 * 0.8 + parsed.blue * 0.2),
+    ],
   ]
 
   for (

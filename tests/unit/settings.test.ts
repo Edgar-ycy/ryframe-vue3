@@ -78,7 +78,15 @@ describe('设置主题模型', () => {
       }
 
       const dark = resolveReadableDarkThemeColor(color)
-      for (const background of ['#0F172A', '#111827', '#1E293B']) {
+      const source = parseThemeColor(color) ?? parseThemeColor(DEFAULT_THEME_COLOR)!
+      const activeTagBackground = `#${[17, 24, 39]
+        .map((base, index) =>
+          Math.round(base * 0.8 + [source.red, source.green, source.blue][index] * 0.2)
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`
+      for (const background of ['#0F172A', '#111827', '#1E293B', activeTagBackground]) {
         expect(contrastRatio(dark, background), `${color} on ${background}`).toBeGreaterThanOrEqual(
           4.5,
         )

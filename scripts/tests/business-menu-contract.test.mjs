@@ -107,6 +107,6 @@ test('业务根目录使用独立标题键且不伪装为页面或权限', () =>
   assert.match(rendered, /"sales-orders": "salesOrdersBusinessDirectory"/u)
   assert.match(
     rendered,
-    /"defaultName": "sales-orders",\s+"routeKey": "sales-orders",\s+"titleKey": "salesOrdersBusinessDirectory"/u,
+    /"defaultName": "sales-orders",\s+"icon": null,\s+"routeKey": "sales-orders",\s+"titleKey": "salesOrdersBusinessDirectory"/u,
   )
 })

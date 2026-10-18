@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import console from 'node:console'
 import { spawn } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { verifyLocalContractState } from './api-contract-state.mjs'
@@ -97,6 +98,14 @@ export function checkTasks(stage, options = {}) {
   return tasks[stage]
 }
 
+export function checkTaskEnvironment(task, environment = process.env) {
+  return {
+    ...environment,
+    ...task.environment,
+    ...(task.name === 'browser-smoke' ? { RYFRAME_E2E_SMOKE_ATTEMPT: randomUUID() } : {}),
+  }
+}
+
 function runTask(task) {
   if (task.name === 'contract') return runContractCheck()
   return new Promise((resolve, reject) => {
@@ -109,7 +118,7 @@ function runTask(task) {
     const args = task.node ?? [...(windows ? [corepack] : []), 'pnpm', ...task.args]
     const child = spawn(command, args, {
       cwd: root,
-      env: { ...process.env, ...task.environment },
+      env: checkTaskEnvironment(task),
       stdio: 'inherit',
       windowsHide: true,
     })

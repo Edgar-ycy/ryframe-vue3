@@ -1,6 +1,31 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { checkTasks, parseArguments, verifyConsumerDocument } from '../check.mjs'
+import {
+  checkTaskEnvironment,
+  checkTasks,
+  parseArguments,
+  verifyConsumerDocument,
+} from '../check.mjs'
+
+test('每次 smoke 使用新证据代次，不复用父进程遗留的运行编号', () => {
+  const inherited = { RYFRAME_E2E_SMOKE_ATTEMPT: 'previous-attempt', PATH: 'host-tools' }
+  const first = checkTaskEnvironment(checkTasks('browser')[0], inherited)
+  const second = checkTaskEnvironment(checkTasks('browser')[0], inherited)
+  assert.match(first.RYFRAME_E2E_SMOKE_ATTEMPT, /^[a-f0-9-]{36}$/u)
+  assert.notEqual(first.RYFRAME_E2E_SMOKE_ATTEMPT, second.RYFRAME_E2E_SMOKE_ATTEMPT)
+  assert.equal(first.PATH, 'host-tools')
+  assert.equal(inherited.RYFRAME_E2E_SMOKE_ATTEMPT, 'previous-attempt')
+})
+
+test('真实浏览器的资源绑定与运行编号保持原任务配置', () => {
+  const inherited = { RYFRAME_E2E_RUN_ID: 'formal-run', APP_SCOPE_ID: 'owned-scope' }
+  const task = checkTasks('browser', { real: true, fixture: 'business', server: 'preview' })[0]
+  assert.deepEqual(checkTaskEnvironment(task, inherited), {
+    ...inherited,
+    RYFRAME_E2E_FIXTURE: 'business',
+    RYFRAME_E2E_SERVER: 'preview',
+  })
+})
 
 test('正式和候选消费者均比较已验证的契约正文，候选标记不能替代正文', () => {
   const bytes = Buffer.from('{"openapi":"3.1.0"}')

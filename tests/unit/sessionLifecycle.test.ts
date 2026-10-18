@@ -189,6 +189,33 @@ describe('会话生命周期', () => {
     else expect(mocks.failClosed).toHaveBeenCalledOnce()
   })
 
+  it('普通业务 403 只提示一次，保留已认证会话且不触发会话清理', async () => {
+    mocks.user.sessionStatus = 'authenticated'
+    lifecycle.installSessionCoordinator()
+    const reporter = mocks.configureReporter.mock.calls[0]![0]
+
+    reporter(new HttpError('业务操作无权限', { status: 403, kind: 'http' }))
+    await Promise.resolve()
+
+    expect(mocks.user.token).toBe('access')
+    expect(mocks.user.sessionStatus).toBe('authenticated')
+    for (const action of [
+      mocks.resetUser,
+      mocks.clearEpoch,
+      mocks.logout,
+      mocks.publishLogout,
+      mocks.replace,
+      mocks.failClosed,
+      mocks.resetTenant,
+      mocks.permissionReset,
+      mocks.resetRoutes,
+      mocks.closeViews,
+    ]) {
+      expect(action).not.toHaveBeenCalled()
+    }
+    expect(mocks.error).toHaveBeenCalledExactlyOnceWith('shell.session.forbidden')
+  })
+
   it.each([401, 403, 404, 423, 503, 500, undefined])('全局错误 %s 恰好显示一次', (status) => {
     lifecycle.installSessionCoordinator()
     const reporter = mocks.configureReporter.mock.calls[0]![0]

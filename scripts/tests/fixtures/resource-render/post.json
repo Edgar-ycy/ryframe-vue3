@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "name": "post",
+  "pascal_name": "Post",
+  "module": "system",
+  "profile": "flat_crud",
+  "storage": "control_row",
+  "tenant_field": null,
+  "configuration_versioned": true,
+  "table": "sys_post",
+  "primary_key": ["id"],
+  "bootstrap_migration": false,
+  "schema_hash": "2f4af73c2cfc449e270f2cf5eae8104ebe75cf19f7001cbfcf2ac750feb4fdc9",
+  "schema_revision": null,
+  "indexes": [
+    {
+      "name": "idx_tenant_id",
+      "fields": ["tenant_id"],
+      "unique": false
+    },
+    {
+      "name": "uk_tenant_code",
+      "fields": ["tenant_id", "code"],
+      "unique": true
+    }
+  ],
+  "soft_delete": {
+    "field": "del_flag",
+    "active": "0",
+    "deleted": "2"
+  },
+  "audit": {
+    "created_at": "created_at",
+    "created_by": null,
+    "updated_at": "updated_at",
+    "updated_by": null
+  },
+  "fields": [
+    {
+      "name": "id",
+      "column": "id",
+      "value_type": "i64",
+      "wire_type": "string",
+      "rust_type": "i64",
+      "typescript_type": "string",
+      "order": 10,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "岗位编号",
+        "en": "Post ID"
+      },
+      "widget": "hidden",
+      "enum_values": {}
+    },
+    {
+      "name": "tenant_id",
+      "column": "tenant_id",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 20,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": false,
+        "list": false,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "租户",
+        "en": "Tenant"
+      },
+      "widget": "hidden",
+      "enum_values": {}
+    },
+    {
+      "name": "name",
+      "column": "name",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 30,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": true,
+        "create_optional": false,
+        "update": true,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": true,
+        "sort": false
+      },
+      "validation": {
+        "min_length": 1,
+        "max_length": 64,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": true
+      },
+      "labels": {
+        "zh_cn": "岗位名称",
+        "en": "Post name"
+      },
+      "widget": "text",
+      "enum_values": {}
+    },
+    {
+      "name": "code",
+      "column": "code",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 40,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": true,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": true,
+        "sort": false
+      },
+      "validation": {
+        "min_length": 1,
+        "max_length": 64,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": true
+      },
+      "labels": {
+        "zh_cn": "岗位编码",
+        "en": "Post code"
+      },
+      "widget": "text",
+      "enum_values": {}
+    },
+    {
+      "name": "sort",
+      "column": "sort",
+      "value_type": "i32",
+      "wire_type": "i32",
+      "rust_type": "i32",
+      "typescript_type": "number",
+      "order": 50,
+      "nullable": false,
+      "default": 0,
+      "usage": {
+        "create": true,
+        "create_optional": true,
+        "update": true,
+        "update_optional": true,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": true
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": 0,
+        "maximum": 999,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "显示顺序",
+        "en": "Display order"
+      },
+      "widget": "number",
+      "enum_values": {}
+    },
+    {
+      "name": "status",
+      "column": "status",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 60,
+      "nullable": false,
+      "default": "1",
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": true,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": true,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": true
+      },
+      "labels": {
+        "zh_cn": "状态",
+        "en": "Status"
+      },
+      "widget": "select",
+      "enum_values": {
+        "0": {
+          "zh_cn": "停用",
+          "en": "Disabled"
+        },
+        "1": {
+          "zh_cn": "正常",
+          "en": "Active"
+        }
+      }
+    },
+    {
+      "name": "remark",
+      "column": "remark",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "Option<String>",
+      "typescript_type": "string | null",
+      "order": 70,
+      "nullable": true,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": false,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": 512,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "备注",
+        "en": "Remark"
+      },
+      "widget": "textarea",
+      "enum_values": {}
+    },
+    {
+      "name": "del_flag",
+      "column": "del_flag",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 80,
+      "nullable": false,
+      "default": "0",
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": false,
+        "list": false,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "删除标记",
+        "en": "Deleted flag"
+      },
+      "widget": "hidden",
+      "enum_values": {}
+    },
+    {
+      "name": "created_at",
+      "column": "created_at",
+      "value_type": "date_time",
+      "wire_type": "date_time",
+      "rust_type": "chrono::DateTime<chrono::Utc>",
+      "typescript_type": "string",
+      "order": 90,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "创建时间",
+        "en": "Created at"
+      },
+      "widget": "date_time",
+      "enum_values": {}
+    },
+    {
+      "name": "updated_at",
+      "column": "updated_at",
+      "value_type": "date_time",
+      "wire_type": "date_time",
+      "rust_type": "chrono::DateTime<chrono::Utc>",
+      "typescript_type": "string",
+      "order": 100,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": false,
+        "list": false,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "更新时间",
+        "en": "Updated at"
+      },
+      "widget": "date_time",
+      "enum_values": {}
+    }
+  ],
+  "relations": [],
+  "api": {
+    "path": "/api/v1/system/posts",
+    "operations": {
+      "create": "post_system_posts",
+      "read": "get_system_posts_by_id",
+      "list": "get_system_posts",
+      "update": "put_system_posts_by_id",
+      "delete": "delete_system_posts_by_id"
+    }
+  },
+  "access": {
+    "permissions": {
+      "create": "system:post:add",
+      "read": "system:post:list",
+      "list": "system:post:list",
+      "update": "system:post:edit",
+      "delete": "system:post:remove"
+    }
+  },
+  "menu": {
+    "key": "system.post",
+    "parent": "system",
+    "order": 8,
+    "labels": {
+      "zh_cn": "岗位管理",
+      "en": "Posts"
+    },
+    "icon": null
+  },
+  "route": {
+    "key": "system.post",
+    "path": "/system/post"
+  },
+  "labels": {
+    "zh_cn": "岗位",
+    "en": "Post"
+  },
+  "extension_permissions": {
+    "export": "system:post:export"
+  },
+  "backend_extensions": {
+    "export": "post",
+    "export_operation": "post_system_posts_exports",
+    "export_permission": "system:post:export"
+  },
+  "frontend_extensions": {
+    "export": "post",
+    "page": "@/views/system/post/index.vue"
+  },
+  "source_path": "catalog/resources/post.toml",
+  "source_hash": "1e4cc234204ac1def97cf88ed4548ec2fa3990698e32477838dd45a31269e63f"
+}

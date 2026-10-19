@@ -55,6 +55,8 @@ src/
 
 标准表单中创建后不可修改的文本、数字和枚举字段在新建时可以输入，编辑时禁用并阻止更新事件回写；允许更新的字段仍可编辑。
 
+`scripts/resource-render/` 提供标准 CRUD 页面的纯渲染模块，模板与 TypeScript 表单转换逻辑在前端仓库维护。内部 `cli.mjs` 从标准输入读取版本为 1 的资源 IR 批次，只在标准输出返回确定排序的完整资产 JSON，不直接写入源码、ownership 或契约；输入上限为 16 MiB，结果上限为 64 MiB。每批显式绑定生成器版本，框架聚合入口由 `aggregate` 指定；重复资源、字段不完整或版本不支持时整批失败。后端候选生成流程负责资源校验、契约同步、审阅及受管文件安装。模板测试逐字节核对 Post、Notice，并验证宽模型拆分和严格 TypeScript 类型及运行时转换。
+
 1. 在 `src/api/generated/operations/` 对应领域文件查找 typed caller。
 2. JSON、multipart、文本和 Blob 传输由契约媒体类型自动绑定；媒体类型不唯一时生成会失败。
 3. 业务只需在 `src/api/modules/` 中保留规范化、幂等键、分页、响应校验或 raw session 策略；

@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "name": "notice",
+  "pascal_name": "Notice",
+  "module": "system",
+  "profile": "flat_crud",
+  "storage": "control_row",
+  "tenant_field": null,
+  "configuration_versioned": false,
+  "table": "sys_notice",
+  "primary_key": ["id"],
+  "bootstrap_migration": false,
+  "schema_hash": "b68503cbce094b4575d4b533331cf0e09c0b3ea55291b17d2b06cfba23d80803",
+  "schema_revision": null,
+  "indexes": [
+    {
+      "name": "idx_created_by",
+      "fields": ["created_by"],
+      "unique": false
+    },
+    {
+      "name": "idx_tenant_id",
+      "fields": ["tenant_id"],
+      "unique": false
+    }
+  ],
+  "soft_delete": {
+    "field": "del_flag",
+    "active": "0",
+    "deleted": "2"
+  },
+  "audit": {
+    "created_at": "created_at",
+    "created_by": "created_by",
+    "updated_at": "updated_at",
+    "updated_by": null
+  },
+  "fields": [
+    {
+      "name": "id",
+      "column": "id",
+      "value_type": "i64",
+      "wire_type": "string",
+      "rust_type": "i64",
+      "typescript_type": "string",
+      "order": 10,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "公告编号",
+        "en": "Notice ID"
+      },
+      "widget": "hidden",
+      "enum_values": {}
+    },
+    {
+      "name": "tenant_id",
+      "column": "tenant_id",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 20,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": false,
+        "list": false,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "租户",
+        "en": "Tenant"
+      },
+      "widget": "hidden",
+      "enum_values": {}
+    },
+    {
+      "name": "title",
+      "column": "title",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 30,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": true,
+        "create_optional": false,
+        "update": true,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": true,
+        "sort": false
+      },
+      "validation": {
+        "min_length": 1,
+        "max_length": 200,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": true
+      },
+      "labels": {
+        "zh_cn": "公告标题",
+        "en": "Notice title"
+      },
+      "widget": "text",
+      "enum_values": {}
+    },
+    {
+      "name": "content_markdown",
+      "column": "content",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 40,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": true,
+        "create_optional": false,
+        "update": true,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": true,
+        "min_utf8_bytes": 1,
+        "max_utf8_bytes": 60000
+      },
+      "labels": {
+        "zh_cn": "公告内容",
+        "en": "Notice content"
+      },
+      "widget": "text",
+      "enum_values": {}
+    },
+    {
+      "name": "notice_type",
+      "column": "type",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "Option<String>",
+      "typescript_type": "string | null",
+      "order": 50,
+      "nullable": true,
+      "default": null,
+      "usage": {
+        "create": true,
+        "create_optional": false,
+        "update": true,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": true,
+        "sort": false,
+        "filter_exact": true
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "公告类型",
+        "en": "Notice type"
+      },
+      "widget": "text",
+      "enum_values": {}
+    },
+    {
+      "name": "status",
+      "column": "status",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 60,
+      "nullable": false,
+      "default": "1",
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": true,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": true,
+        "sort": false,
+        "filter_exact": true
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "公告状态",
+        "en": "Notice status"
+      },
+      "widget": "text",
+      "enum_values": {}
+    },
+    {
+      "name": "created_by",
+      "column": "created_by",
+      "value_type": "i64",
+      "wire_type": "string",
+      "rust_type": "Option<i64>",
+      "typescript_type": "string | null",
+      "order": 70,
+      "nullable": true,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "创建人",
+        "en": "Created by"
+      },
+      "widget": "hidden",
+      "enum_values": {}
+    },
+    {
+      "name": "del_flag",
+      "column": "del_flag",
+      "value_type": "string",
+      "wire_type": "string",
+      "rust_type": "String",
+      "typescript_type": "string",
+      "order": 80,
+      "nullable": false,
+      "default": "0",
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": false,
+        "list": false,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "删除标记",
+        "en": "Deleted flag"
+      },
+      "widget": "hidden",
+      "enum_values": {}
+    },
+    {
+      "name": "created_at",
+      "column": "created_at",
+      "value_type": "date_time",
+      "wire_type": "date_time",
+      "rust_type": "chrono::DateTime<chrono::Utc>",
+      "typescript_type": "string",
+      "order": 90,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": true,
+        "sort_desc": true
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "创建时间",
+        "en": "Created at"
+      },
+      "widget": "date_time",
+      "enum_values": {}
+    },
+    {
+      "name": "updated_at",
+      "column": "updated_at",
+      "value_type": "date_time",
+      "wire_type": "date_time",
+      "rust_type": "chrono::DateTime<chrono::Utc>",
+      "typescript_type": "string",
+      "order": 100,
+      "nullable": false,
+      "default": null,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": false,
+        "list": false,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "更新时间",
+        "en": "Updated at"
+      },
+      "widget": "date_time",
+      "enum_values": {}
+    }
+  ],
+  "relations": [],
+  "api": {
+    "path": "/api/v1/system/notices",
+    "operations": {
+      "create": "post_system_notices",
+      "read": "get_system_notices_by_id",
+      "list": "get_system_notices",
+      "update": "put_system_notices_by_id",
+      "delete": "delete_system_notices_by_id"
+    }
+  },
+  "access": {
+    "capability": "system.notice",
+    "owner_field": "created_by",
+    "permissions": {
+      "create": "system:notice:add",
+      "read": "system:notice:list",
+      "list": "system:notice:list",
+      "update": "system:notice:edit",
+      "delete": "system:notice:remove"
+    }
+  },
+  "menu": {
+    "key": "system.notice",
+    "parent": "system",
+    "order": 15,
+    "labels": {
+      "zh_cn": "通知公告",
+      "en": "Notices"
+    },
+    "icon": null
+  },
+  "route": {
+    "key": "system.notice",
+    "path": "/system/notice"
+  },
+  "labels": {
+    "zh_cn": "通知公告",
+    "en": "Notice"
+  },
+  "extension_permissions": {},
+  "backend_extensions": {},
+  "frontend_extensions": {
+    "page": "@/views/system/notice/index.vue"
+  },
+  "source_path": "catalog/resources/notice.toml",
+  "source_hash": "9c7717ecf319783c9296cc84459c3b661dcadc10a233acf1bf058176b737d151"
+}

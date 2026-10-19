@@ -1,0 +1,1 @@
+export const generationFailure: string = 1

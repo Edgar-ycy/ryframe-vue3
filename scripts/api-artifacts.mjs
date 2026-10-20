@@ -6,6 +6,7 @@ import openapiTS, { astToString } from 'openapi-typescript'
 import { requireApiPrefixContract } from './api-prefix-contract.mjs'
 import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
+import { artifactPaths } from './api-artifact-manifest.mjs'
 import {
   createSchemaDomainDocuments,
   renderSchemaIndex,
@@ -14,27 +15,10 @@ import {
 } from './openapi-schema-domains.mjs'
 
 export const ownershipManifestPath = 'src/api/generated/ownership.json'
-export const generatedOperationArtifactPaths = Object.freeze([
-  'src/api/generated/operations/core.ts',
-  'src/api/generated/operations/system.ts',
-  'src/api/generated/operations/platform.ts',
-  'src/api/generated/operations/monitor.ts',
-])
-export const generatedArtifactPaths = Object.freeze([
-  'src/api/generated/schema/core.ts',
-  'src/api/generated/schema/system.ts',
-  'src/api/generated/schema/platform.ts',
-  'src/api/generated/schema/monitor.ts',
-  'src/api/generated/schema/index.ts',
-  ...generatedOperationArtifactPaths,
-  'src/api/generated/permissions.ts',
-  'src/api/generated/menuRoutes.ts',
-  'src/api/generated/crudResources.ts',
-  'src/shared/security/passwordPolicy.generated.json',
-  'src/shared/markdown/noticePolicy.generated.json',
-  'src/shared/config/apiPrefix.generated.json',
-  'src/api/generated/ownership.json',
-])
+export const generatedArtifactPaths = artifactPaths
+export const generatedOperationArtifactPaths = Object.freeze(
+  artifactPaths.filter((file) => file.startsWith('src/api/generated/operations/')),
+)
 
 const generatedHeader = `/**
  * 此文件由 OpenAPI 契约自动生成。

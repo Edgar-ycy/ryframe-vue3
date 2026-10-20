@@ -49,6 +49,8 @@ src/
 
 ## 接入 API
 
+`scripts/api-artifact-manifest.json` 是 OpenAPI 派生文件的跨仓清单事实源。前端生成器与后端 Rust 契约事务读取版本 1 的 `files` 数组，并拒绝重复字段、重复路径及越界路径；新增派生文件时同步该清单和生成器，不能只增加文件而遗漏 ownership。
+
 后端接口变化后先在后端仓库运行 `cargo xtask generate api --write`。同步完成后：
 
 `/business/` 接口及引用模型归入延迟加载的 `system` 分片，业务请求使用该领域的 typed caller。标准资源整数的位宽、符号和传输类型来自后端契约；生成前验证范围约束和有限枚举，越界或非规范十进制值会阻止生成。字符串传输的 `i64/u64` 使用文本或枚举控件，正文与查询保留十进制字符串，不经过 Number；数字控件在生成前被拒绝。此类字段的非空 minimum/maximum 也使用规范十进制字符串，生成前以 BigInt 校验完整类型范围及大小关系，数字边界和非法字符串均拒绝。Decimal 使用文本控件和十进制字符串，保留后端声明的精确值；超出列容量由服务端拒绝，禁止转换为 Number 或自动舍入。业务模型改变后通过后端生成器同步本次候选契约及页面，类型和 lint 通过后统一写入；业务页面 ownership 保存在 `.ryframe/generated.toml`，路由沿用生成目录的注册发现。默认页面使用同目录的 page.vue，`frontend_page` 可指定手写扩展页面。

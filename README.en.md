@@ -40,13 +40,15 @@ Place local environment values in `.env.development` and production values in `.
 ## Development commands
 
 ```bash
-corepack pnpm dev       # Start the development server
-corepack pnpm check     # Validate OpenAPI and generated contracts
-corepack pnpm build     # Check types and build production assets
-corepack pnpm generate  # Preview generated differences; writing requires --write
+corepack pnpm dev
+corepack pnpm check
+corepack pnpm build
+corepack pnpm generate
 ```
 
-`corepack pnpm check --full` runs contract checks, static checks, test type checks, unit coverage and production builds. Select an individual stage with `--stage contract|static|unit|build`. `--plan` prints the same task graph without executing tasks. Browser smoke uses `corepack pnpm check --stage browser`; real-backend acceptance uses isolated resources and its matching real configuration. Each smoke attempt writes its HTML report to `.local-tests/playwright/report/<dev-or-preview>/<attempt-UUID>/` and test attachments to `.local-tests/playwright/results/<dev-or-preview>/<attempt-UUID>/`. Failed attempts retain screenshots, videos and traces; reruns keep earlier attempts intact. CI runs these stages and retains Windows checks.
+`corepack pnpm dev` starts the development server, `corepack pnpm check` validates current OpenAPI and generated contracts, `corepack pnpm build` checks types and creates production assets, and `corepack pnpm generate` previews generated differences; writing requires explicit `--write`.
+
+`corepack pnpm check --full` runs contract checks, static checks, test type checks, unit coverage and production builds. Select an individual stage with `--stage contract|static|unit|build`. `--plan` prints the same task graph without executing tasks. Browser smoke uses `corepack pnpm check --stage browser`; real-backend acceptance uses isolated resources and its matching real configuration. Each smoke attempt writes its HTML report to `.local-tests/playwright/report/<dev-or-preview>/<attempt-UUID>/` and test attachments to `.local-tests/playwright/results/<dev-or-preview>/<attempt-UUID>/`. Failed attempts retain screenshots, videos and traces; reruns keep earlier attempts intact. CI runs these stages and retains Windows checks. The static stage also validates Chinese and English document pairs, language links, local section references and command examples.
 
 ## Synchronize API contracts
 
@@ -60,7 +62,7 @@ The command updates the OpenAPI snapshot, request descriptions and derived types
 
 For custom business development, backend `cargo generate -- resource` or `import` with `schema-import` can synchronize the current batch's contracts, standard lists, forms and routes through `generator.sync_frontend=true` / `--sync-frontend`. Install frontend dependencies first. The generator checks types and lint in candidate copies before `--write` installs both repositories together. Default preview preserves official source files; `--no-sync-frontend` temporarily disables synchronization. Set the frontend directory in the backend tool configuration.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for pages, APIs, state, routes and testing.
+See [ARCHITECTURE.md](ARCHITECTURE.en.md) for pages, APIs, state, routes and testing.
 
 Multi-tenant login searches and selects tenants by name; duplicate names show their identifiers. Failed tenant loading can be retried in the selector. Single tenancy uses the internal system tenant automatically.
 

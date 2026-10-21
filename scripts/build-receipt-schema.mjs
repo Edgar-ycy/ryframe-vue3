@@ -58,8 +58,10 @@ function backendProductRoles(relative) {
   if (
     [
       'CHANGELOG.md',
+      'CHANGELOG.en.md',
       'LICENSE',
       'README.md',
+      'README.en.md',
       '.dockerignore',
       '.editorconfig',
       '.gitattributes',

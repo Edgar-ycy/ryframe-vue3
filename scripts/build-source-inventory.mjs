@@ -198,9 +198,12 @@ function frontendProduct(relative) {
       '.prettierignore',
       '.env.production.example',
       'ARCHITECTURE.md',
+      'ARCHITECTURE.en.md',
       'CHANGELOG.md',
+      'CHANGELOG.en.md',
       'LICENSE',
       'README.md',
+      'README.en.md',
     ].includes(relative)
   )
     return false

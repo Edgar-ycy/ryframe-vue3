@@ -76,6 +76,7 @@ export function checkTasks(stage, options = {}) {
   const tasks = {
     contract: [{ name: 'contract' }],
     static: [
+      { name: 'documentation', node: ['scripts/check-documentation.mjs'] },
       { name: 'import-boundaries', node: ['scripts/check-import-boundaries.mjs'] },
       { name: 'workflows', node: ['scripts/check-workflows.mjs'] },
       { name: 'eslint', args: ['exec', 'eslint', '.', '--max-warnings', '0'] },

@@ -90,6 +90,21 @@ test('工具源码变化不改变产品摘要，完整来源和工具摘要仍�
   assert.notEqual(after.full.source.worktree_fingerprint, before.full.source.worktree_fingerprint)
 })
 
+test('中英文说明文档变化只更新完整来源，不伪造产品或工具重建', (t) => {
+  const root = fixture(t)
+  for (const name of ['README.en.md', 'ARCHITECTURE.en.md', 'CHANGELOG.en.md']) {
+    writeFileSync(path.join(root, name), '# English guide\n')
+  }
+  const before = sourceDomains(captureSourceInventory(root))
+  for (const name of ['README.en.md', 'ARCHITECTURE.en.md', 'CHANGELOG.en.md']) {
+    writeFileSync(path.join(root, name), '# Updated English guide\n')
+  }
+  const after = sourceDomains(captureSourceInventory(root))
+  assert.deepEqual(after.product, before.product)
+  assert.deepEqual(after.tools, before.tools)
+  assert.notEqual(after.full.source.worktree_fingerprint, before.full.source.worktree_fingerprint)
+})
+
 test('Vite 忽略环境文件、构建参数和工具链变化都不能复用收据', (t) => {
   const root = fixture(t)
   const environment = { ...buildEnvironment(root), VITE_lowercase_input: 'fixture' }

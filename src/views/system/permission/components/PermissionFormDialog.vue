@@ -10,6 +10,7 @@
       <el-form-item :label="t('system.permission.parent')">
         <el-tree-select
           v-model="form.parent_id"
+          node-key="id"
           :data="parentTree"
           :props="{ label: 'name', children: 'children' }"
           :placeholder="t('system.permission.selectParent')"

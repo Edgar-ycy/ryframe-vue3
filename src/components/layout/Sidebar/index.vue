@@ -15,7 +15,11 @@
         @select="handleMenuSelect"
       >
         <template v-for="menu in permissionStore.menus" :key="menu.path">
-          <el-sub-menu v-if="isSubMenu(menu)" :index="menu.path">
+          <el-sub-menu
+            v-if="isSubMenu(menu)"
+            :index="menu.path"
+            :aria-label="translateNavigationTitle(menu.meta?.title, menu.meta?.defaultTitle)"
+          >
             <template #title>
               <el-icon v-if="menu.meta?.icon"
                 ><component :is="resolveElementIcon(menu.meta.icon)"
@@ -26,6 +30,7 @@
               v-for="child in visibleChildren(menu)"
               :key="child.path"
               :index="resolvePath(menu.path, child.path)"
+              :aria-label="translateNavigationTitle(child.meta?.title, child.meta?.defaultTitle)"
             >
               <el-icon v-if="child.meta?.icon"
                 ><component :is="resolveElementIcon(child.meta.icon)"
@@ -36,7 +41,13 @@
             </el-menu-item>
           </el-sub-menu>
 
-          <el-menu-item v-else :index="leafPath(menu)">
+          <el-menu-item
+            v-else
+            :index="leafPath(menu)"
+            :aria-label="
+              translateNavigationTitle(leafMeta(menu).title, leafMeta(menu).defaultTitle)
+            "
+          >
             <el-icon v-if="leafMeta(menu).icon">
               <component :is="resolveElementIcon(leafMeta(menu).icon)" />
             </el-icon>

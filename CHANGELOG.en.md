@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Parent permissions are selected by their actual node IDs, eliminating missing-node-value warnings; collapsed menus retain localized accessible names. Added desktop and narrow-screen browser coverage for single-line actions, dark tag and tree-node contrast, and permission-page accessibility.
+
 - Added English versions of the architecture guide and complete change history. Static checks validate language pairs, language links, local section references, and command examples; English documentation changes retain provenance without triggering product rebuilds.
 
 - The OpenAPI-derived file manifest uses versioned JSON as the cross-repository source of truth. The frontend generator and Rust contract transaction jointly validate paths, duplicates, and format; the backend no longer parses a JavaScript manifest.

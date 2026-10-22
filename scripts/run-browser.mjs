@@ -1,0 +1,69 @@
+import { toolProcessEnvironment } from './tool-inputs.mjs'
+import { spawn } from 'node:child_process'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { createBrowserControl } from './browser-control.mjs'
+import { loadRealBrowserEnvironment } from './real-browser-environment.mjs'
+
+export function parseBrowserArguments(argv) {
+  const options = {}
+  for (let index = 0; index < argv.length; index += 1) {
+    const flag = argv[index]
+    if (flag === '--real' && !options.real) options.real = true
+    else if (['--fixture', '--server'].includes(flag)) {
+      const key = flag.slice(2)
+      const value = argv[++index]
+      if (
+        options[key] ||
+        !(key === 'fixture' ? ['core', 'business'] : ['dev', 'preview']).includes(value)
+      )
+        throw new Error('浏览器参数无效或重复')
+      options[key] = value
+    } else throw new Error('浏览器参数无效或重复')
+  }
+  if (options.fixture && !options.real) throw new Error('--fixture 仅适用于真实验收')
+  return options
+}
+
+export async function runBrowser(options, root = process.cwd(), execute = spawn) {
+  const close = createBrowserControl(root, options)
+  try {
+    if (options.real) loadRealBrowserEnvironment(root)
+    const windows = process.platform === 'win32'
+    const corepack = path.join(
+      path.dirname(process.execPath),
+      'node_modules/corepack/dist/corepack.js',
+    )
+    const args = [
+      'pnpm',
+      'exec',
+      'playwright',
+      'test',
+      '--config',
+      options.real ? 'playwright.real.config.ts' : 'playwright.config.ts',
+    ]
+    await new Promise((resolve, reject) => {
+      const child = execute(
+        windows ? process.execPath : 'corepack',
+        windows ? [corepack, ...args] : args,
+        { cwd: root, env: toolProcessEnvironment(), stdio: 'inherit', windowsHide: true },
+      )
+      child.once('error', reject)
+      child.once('exit', (code, signal) => {
+        if (signal || code !== 0) reject(new Error(`浏览器验收失败：${signal ?? code}`))
+        else resolve()
+      })
+    })
+  } finally {
+    close()
+  }
+}
+
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  Promise.resolve()
+    .then(() => runBrowser(parseBrowserArguments(process.argv.slice(2))))
+    .catch((error) => {
+      console.error(error.message)
+      process.exitCode = 1
+    })
+}

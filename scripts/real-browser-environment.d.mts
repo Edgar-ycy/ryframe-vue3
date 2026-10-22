@@ -2,6 +2,10 @@ export interface RealBrowserEnvironment {
   scopeId: string
   tenantId: string
   username: string
+  python: string
+  channel: string | undefined
+  gateEndpoint: string | undefined
+  previewResponseAudit: string | undefined
   backendDir: string
   runtimeDir: string
   requestCapacity: number
@@ -28,5 +32,14 @@ export interface RealBrowserEnvironment {
 }
 
 export function validateRealBrowserEnvironment(
-  environment?: NodeJS.ProcessEnv,
+  environment: unknown,
 ): Readonly<RealBrowserEnvironment>
+
+export function loadRealBrowserEnvironment(root?: string): Readonly<RealBrowserEnvironment>
+export function realBrowserCredentials(root?: string): {
+  tenantId: string
+  username: string
+  password: string
+  captchaCode?: string
+}
+export function restorePassword(tenantId: string, root?: string): string

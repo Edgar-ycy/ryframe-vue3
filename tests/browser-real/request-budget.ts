@@ -1,9 +1,10 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import type { Page } from '@playwright/test'
 import { createRequestBudget } from '../../scripts/browser-request-budget.mjs'
 
 export function observeRequestBudget(page: Page) {
-  const capacity = Number(process.env.RYFRAME_E2E_RATE_LIMIT_CAPACITY)
-  const windowMs = Number(process.env.RYFRAME_E2E_RATE_LIMIT_WINDOW_SECS) * 1000
+  const capacity = Number(loadRealBrowserEnvironment().requestCapacity)
+  const windowMs = Number(loadRealBrowserEnvironment().requestWindowSeconds) * 1000
   const budget = createRequestBudget({
     capacity,
     windowMs,

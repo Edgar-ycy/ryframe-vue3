@@ -82,7 +82,52 @@ corepack pnpm generate
 
 Cross-repository consumer checks explicitly use `corepack pnpm check --stage contract --consumer-context <file>` (also supported with `--full`), validating the contract before running actual Node→Python receipt proofs. The context binds the selected frontend/backend directories, Python entry point, and backend tool provenance. Ordinary single-repository checks require no backend or Python. `--plan` reads no context, writes no files, and starts no tasks.
 
+Put browser and tool inputs in `config/tools.json` or the higher-priority ignored `.local-tests/frontend-tools.json`. Top-level fields override earlier files; nested sections are replaced as a whole. Keep actual accounts, passwords, and machine paths only in the latter file; public application TOML does not accept these private inputs. The example limits must match the bound backend's actual configuration, and paths must identify a registered isolated runtime:
+
+```json
+{
+  "real_browser": {
+    "scopeId": "acceptance-local",
+    "tenantId": "system",
+    "username": "admin",
+    "password": "<isolated-account-password>",
+    "backendDir": "D:/project/rustProject/ryframe/ryframe",
+    "runtimeDir": "D:/project/rustProject/ryframe/ryframe/.local-tests/acceptance-local",
+    "python": "D:/tools/python/python.exe",
+    "requestCapacity": 100,
+    "requestWindowSeconds": 60,
+    "loginCapacity": 5,
+    "loginWindowSeconds": 60,
+    "loginBudgetState": "D:/project/rustProject/ryframe/ryframe/.local-tests/acceptance-local/login-budget.json",
+    "channel": "chrome"
+  },
+  "browser_smoke": { "serverMode": "dev", "channel": "chrome" }
+}
+```
+
+```powershell
+corepack pnpm check --stage browser --real --fixture core --server dev
+corepack pnpm check --stage browser --real --fixture business --server preview --plan
+```
+
+Runtime options use `real_browser` fields `fixture`, `serverMode`, `port` (default 4174), `runId`, `baseURL`, `gateEndpoint`, `previewResponseAudit`, and `captchaCode`. Business suites require a fresh `runId`; formal business preview also requires an absolute `previewResponseAudit` path. `baseURL` accepts only a local HTTP origin with an explicit port; bind an external service's IPC explicitly through an absolute `gateEndpoint`. `channel` accepts `chrome`, `msedge`, and their beta/dev/canary channels; `chromium` selects Playwright's bundled browser. Defaults are Chrome locally and the bundled browser in CI.
+
+Recovery acceptance must supply all of `bindings`, `runtimeReceipt`, `targetPlan`, `coordinatorDir`, `verifierSha`, `runnerSha`, and `python` in `real_browser.restore`. Paths must be absolute and both SHAs must be complete lowercase commits. Put restored tenant passwords in `real_browser.restorePasswords`, keyed by tenant ID. Legacy password-environment fields returned by the backend no longer select environment variables. Backend verification and fixtures invoked through Cargo select Python from the chosen backend's tool files. Register the same interpreter used by this acceptance in `[verification].python_program` of the backend's ignored `.local-tests/tools.toml`; the frontend does not rewrite backend configuration.
+
+The unified check passes CLI options through `scripts/run-browser.mjs`, exclusively recording the controller, attempt, tool-file digests, and credential-free options at fixed ignored `.local-tests/browser-control.json`. Tool-file drift during a run fails the task. Completion removes only the task's own unchanged control file; inspect task identity before handling a file left after abnormal termination. `--plan` only displays tasks, creating no control file or process. Old project environment variables and browser-channel environment overrides are no longer read. `APP_ENV` still selects only application configuration; operating-system and third-party tool environments remain supported.
+
 ## Synchronize API contracts
+
+To synchronize formally from a committed backend source, run the following in the frontend. The default validates and previews; explicit `--write` replaces the formal contract and provenance manifest. Sources require a complete 40-character commit SHA. An absolute `--backend-worktree` reads only that SHA's Git object, excluding uncommitted working files. Without a worktree, it reads the pinned GitHub commit. `--openapi-path` selects a repository-relative JSON path without traversal, defaulting to `openapi/openapi.json`.
+
+```powershell
+node scripts/sync-api-contract.mjs --backend-repository owner/backend --backend-commit <SHA> --backend-worktree D:/project/rustProject/ryframe/ryframe
+node scripts/sync-api-contract.mjs --backend-repository owner/backend --backend-commit <SHA> --backend-worktree D:/project/rustProject/ryframe/ryframe --write
+node scripts/sync-api-contract.mjs --verify-local
+node scripts/sync-api-contract.mjs --verify-upstream --backend-worktree D:/project/rustProject/ryframe/ryframe
+```
+
+The same source can be stored in the tool file's `api_contract` object: `backend_repository`, `backend_commit`, `backend_worktree`, and `openapi_path`. Explicit CLI values take precedence. Verification modes reject source replacement and `--write`; upstream verification always uses formal `openapi/source.json` provenance. Missing pinned sources, unreadable Git objects, and mismatched upstream content fail without falling back to branches or working files.
 
 After changing backend DTOs or endpoints, run this from the backend repository root:
 

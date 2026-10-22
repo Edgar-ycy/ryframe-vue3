@@ -1,9 +1,10 @@
+import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { expect, type Page, type TestInfo } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { act } from './support'
 
 const XLSX_MEDIA_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 const MIN_LARGE_IMPORT_BYTES = 2 * 1024 * 1024
@@ -114,9 +115,9 @@ async function prepareFixture(
   const output = info.outputPath(`${username}.xlsx`)
   const templateContent = await readFile(template)
   const templateSha256 = sha256(templateContent)
-  const backend = path.resolve(process.env.RYFRAME_E2E_BACKEND_DIR || '../ryframe')
+  const { backendDir: backend, python } = loadRealBrowserEnvironment()
   const stdout = execFileSync(
-    process.env.RYFRAME_E2E_PYTHON || 'python',
+    python,
     [
       '-X',
       'utf8',
@@ -132,7 +133,13 @@ async function prepareFixture(
       username,
       ...(large ? ['--large'] : []),
     ],
-    { encoding: 'utf8', maxBuffer: 1024 * 1024, timeout: 10_000, windowsHide: true },
+    {
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024,
+      timeout: 10_000,
+      windowsHide: true,
+      env: toolProcessEnvironment(),
+    },
   )
   const receipt = parseUserImportFixtureReceipt(stdout, {
     path: output,
@@ -146,6 +153,7 @@ async function prepareFixture(
 }
 
 export async function createImport(page: Page, info: TestInfo, username: string, large = false) {
+  const { act } = await import('./support')
   await act(page, 'GET', '/api/v1/system/users', () => page.goto('/system/user'))
   const templateDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: '下载模板', exact: true }).click()

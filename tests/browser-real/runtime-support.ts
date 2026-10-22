@@ -1,3 +1,4 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { expect, type Page, type TestInfo } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { writeFile } from 'node:fs/promises'
@@ -31,7 +32,7 @@ export async function verifyRuntimeBackup(page: Page, info: TestInfo): Promise<v
   await expect(card.getByText('异常项', { exact: true })).toBeVisible()
 
   // 恢复验收读取实际恢复快照；普通新建环境必须明确展示尚未登记的备份与演练。
-  if (!process.env.RYFRAME_RESTORE_BINDINGS) {
+  if (!loadRealBrowserEnvironment().restore?.bindings) {
     expect(health.missing_resources).toBeGreaterThan(0)
     expect(health).toMatchObject({
       oldest_capture: null,
@@ -48,7 +49,7 @@ export async function verifyRuntimeBackup(page: Page, info: TestInfo): Promise<v
     await expect(card.getByText(/恢复结果：\s*成功/u)).toHaveCount(0)
   }
   await verifyCardAccessibility(page, info, 'light')
-  if (process.env.RYFRAME_E2E_SERVER === 'preview') {
+  if (loadRealBrowserEnvironment().serverMode === 'preview') {
     const themeSwitch = page.locator('.theme-switch .el-switch__core')
     await themeSwitch.click()
     try {
@@ -69,7 +70,7 @@ async function verifyCardAccessibility(
   const suffix = theme === 'light' ? '' : '-dark'
   // 数据先于加载遮罩退场；遮罩移除后再检查实际卡片背景，不能跳过不确定结果。
   await expect(page.locator('.monitor-page .el-loading-mask')).toHaveCount(0)
-  if (process.env.RYFRAME_E2E_SERVER === 'preview') {
+  if (loadRealBrowserEnvironment().serverMode === 'preview') {
     const path = info.outputPath(`runtime-backup${suffix}.png`)
     const card = page.locator('.runtime-backup-card')
     await card.screenshot({ path, animations: 'disabled' })

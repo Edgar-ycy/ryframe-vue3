@@ -37,22 +37,14 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
   writeFileSync(runtime, value.runtimeBytes)
   writeFileSync(targetPlan, lineage.bytes)
   const environment = {
-    RYFRAME_RESTORE_BINDINGS: value.paths.bindings,
-    RYFRAME_RESTORE_RUNTIME_RECEIPT: runtime,
-    RYFRAME_RESTORE_TARGET_PLAN: targetPlan,
-    RYFRAME_RESTORE_BACKEND_DIR: directory,
-    RYFRAME_RESTORE_VERIFIER_SHA: 'e'.repeat(40),
-    RYFRAME_RESTORE_RUNNER_SHA: 'f'.repeat(40),
-    RYFRAME_PYTHON: path.join(directory, 'python.exe'),
-    RYFRAME_E2E_SCOPE_ID: 'restore-unit',
-  }
-  for (const [key, configured] of Object.entries(environment)) {
-    const previous = process.env[key]
-    process.env[key] = configured
-    t.after(() => {
-      if (previous === undefined) delete process.env[key]
-      else process.env[key] = previous
-    })
+    bindings: value.paths.bindings,
+    runtimeReceipt: runtime,
+    targetPlan: targetPlan,
+    coordinatorDir: directory,
+    verifierSha: 'e'.repeat(40),
+    runnerSha: 'f'.repeat(40),
+    python: path.join(directory, 'python.exe'),
+    scopeId: 'restore-unit',
   }
   const output = path.resolve(`.local-tests/playwright-real/restore-${id}.json`)
   for (const suffix of ['', '-runtime', '-tests'])
@@ -91,6 +83,7 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
       return { authority, lineage: lineage.lineage }
     })
   const reporter = new RestoreReporter({
+    browserBinding: { scopeId: environment.scopeId, restore: environment },
     checkout,
     verify: () => verify(digest),
     datasetAuthority,
@@ -107,7 +100,7 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
       verifierSha: 'e'.repeat(40),
       runnerRoot: process.cwd(),
       runnerSha: 'f'.repeat(40),
-      python: environment.RYFRAME_PYTHON,
+      python: environment.python,
       datasetAuthority: authority,
     },
   })
@@ -270,13 +263,13 @@ test('任一证明输出已存在时不会留下其他部分收据', (t) => {
 
 test('恢复输入必须使用绝对普通文件且 scope 必须精确匹配', (t) => {
   const item = fixture(t, (digest) => digest)
-  process.env.RYFRAME_RESTORE_BINDINGS = 'bindings.json'
+  item.reporter.browserBinding.restore.bindings = 'bindings.json'
   assert.throws(
     () => item.reporter.onBegin({ projects: [{ use: { baseURL: 'http://127.0.0.1:4174' } }] }),
     /绝对路径/u,
   )
-  process.env.RYFRAME_RESTORE_BINDINGS = item.bindings
-  process.env.RYFRAME_E2E_SCOPE_ID = 'other'
+  item.reporter.browserBinding.restore.bindings = item.bindings
+  item.reporter.browserBinding.scopeId = 'other'
   assert.throws(
     () => item.reporter.onBegin({ projects: [{ use: { baseURL: 'http://127.0.0.1:4174' } }] }),
     /scope/u,

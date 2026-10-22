@@ -1,3 +1,6 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
+import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
+import type { RealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { createInterface } from 'node:readline'
@@ -23,6 +26,7 @@ type SpawnMigrationGate = (
 ) => MigrationGateProcess
 
 interface MigrationGateOptions {
+  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'python' | 'scopeId'>
   environment?: NodeJS.ProcessEnv
   forceCloseTimeoutMs?: number
   gracefulCloseTimeoutMs?: number
@@ -40,18 +44,19 @@ export async function holdMigrationGate(
   tenant: string,
   migration: string,
   {
+    binding = loadRealBrowserEnvironment(),
     environment = process.env,
     forceCloseTimeoutMs = 5_000,
     gracefulCloseTimeoutMs = 15_000,
     spawnProcess = spawn,
   }: MigrationGateOptions = {},
 ) {
-  const backend = environment.RYFRAME_E2E_BACKEND_DIR
-  const runtime = environment.RYFRAME_E2E_RUNTIME_DIR
-  const scope = environment.RYFRAME_E2E_SCOPE_ID || environment.APP_SCOPE_ID
+  const backend = binding.backendDir
+  const runtime = binding.runtimeDir
+  const scope = binding.scopeId
   if (!backend || !runtime || !scope) throw new Error('迁移 gate 缺少隔离运行配置')
   const child = spawnProcess(
-    environment.RYFRAME_E2E_PYTHON || 'python',
+    binding.python,
     [
       '-X',
       'utf8',
@@ -66,7 +71,7 @@ export async function holdMigrationGate(
       '--migration',
       migration,
     ],
-    { env: environment, stdio: 'pipe', windowsHide: true },
+    { env: toolProcessEnvironment(environment), stdio: 'pipe', windowsHide: true },
   )
   const lines: string[] = []
   let transportFailure: Error | undefined

@@ -57,7 +57,7 @@ async function writeLedger(path, state) {
 }
 
 export async function updateLedger(path, binding, now, update) {
-  if (!isAbsolute(path)) throw new Error('RYFRAME_E2E_LOGIN_BUDGET_STATE 必须是绝对文件路径')
+  if (!isAbsolute(path)) throw new Error('loginBudgetState 必须是绝对文件路径')
   await mkdir(dirname(path), { recursive: true })
   const lockPath = `${path}.lock`
   const lock = await acquire(lockPath)

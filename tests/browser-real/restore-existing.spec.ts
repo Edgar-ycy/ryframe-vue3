@@ -1,3 +1,5 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
+import { restorePassword } from '../../scripts/real-browser-environment.mjs'
 import { expect } from '@playwright/test'
 import { test } from './fixture'
 import { act, credentials, login } from './support'
@@ -8,15 +10,10 @@ import {
   verifyRestoredDataset,
 } from '../../scripts/restore-dataset.mjs'
 
-function required(name: string): string {
-  const value = process.env[name]?.trim()
-  if (!value) throw new Error(`恢复旧数据验收缺少 ${name}`)
-  return value
-}
-
 test('恢复前已有岗位与文件在全部参考租户中仍可读取', async ({ newClientContext }, info) => {
   test.setTimeout(20 * 60_000)
-  const verifierRoot = required('RYFRAME_RESTORE_BACKEND_DIR')
+  const verifierRoot = loadRealBrowserEnvironment().restore?.coordinatorDir
+  if (!verifierRoot) throw new Error('恢复旧数据验收缺少协调后端绑定')
   const frontendEndpoint = info.project.use.baseURL
   if (typeof frontendEndpoint !== 'string' || !frontendEndpoint)
     throw new Error('恢复旧数据验收缺少唯一前端地址')
@@ -24,11 +21,11 @@ test('恢复前已有岗位与文件在全部参考租户中仍可读取', async
   const restored = restoreDatasetEvidence(expectedAuthority)
   const dataset = restored.lineage
   const passwords = new Map(
-    dataset.tenants.map((tenant) => [tenant.tenant_id, required(tenant.password_env)]),
+    dataset.tenants.map((tenant) => [tenant.tenant_id, restorePassword(tenant.tenant_id)]),
   )
   for (const [index, tenant] of dataset.tenants.entries()) {
     const password = passwords.get(tenant.tenant_id)
-    if (!password) throw new Error(`恢复旧数据验收缺少 ${tenant.password_env}`)
+    if (!password) throw new Error('恢复旧数据验收缺少租户密码')
     const context = await newClientContext(`198.19.11.${index + 1}`)
     const page = await context.newPage()
     const diagnostics = observeDiagnostics(page)

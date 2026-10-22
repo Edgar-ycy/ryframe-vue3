@@ -39,16 +39,15 @@ describe('迁移历史夹具命令', () => {
     expect(args.every((value) => !value.endsWith('.py'))).toBe(true)
   })
 
-  it('从后端 cwd 执行、映射 Python 并解析日志后的唯一收据', async () => {
+  it('从后端 cwd 执行、读取后端工具文件 并解析日志后的唯一收据', async () => {
     const backend = path.resolve('测试 空间/backend')
     const runtimeRoot = path.resolve('测试 空间/.local-tests/runtime')
     const python = path.resolve('测试 工具/python')
-    const environment = {
-      PATH: 'fixed-path',
-      RYFRAME_E2E_BACKEND_DIR: backend,
-      RYFRAME_E2E_PYTHON: python,
-      RYFRAME_E2E_RUNTIME_DIR: runtimeRoot,
-      RYFRAME_E2E_SCOPE_ID: 'retention-test',
+    const binding = {
+      backendDir: backend,
+      python: python,
+      runtimeDir: runtimeRoot,
+      scopeId: 'retention-test',
     }
     const execute = vi.fn(
       async () =>
@@ -60,7 +59,11 @@ describe('迁移历史夹具命令', () => {
     )
 
     await expect(
-      migrationHistory('inspect', tenant, migration, undefined, { environment, execute }),
+      migrationHistory('inspect', tenant, migration, undefined, {
+        binding,
+        environment: { PATH: 'fixed-path' },
+        execute,
+      }),
     ).resolves.toMatchObject({ migration_id: migration, scope_id: 'retention-test' })
     expect(execute).toHaveBeenCalledWith({
       executable: 'cargo',
@@ -68,7 +71,7 @@ describe('迁移历史夹具命令', () => {
       options: {
         cwd: backend,
         encoding: 'utf8',
-        env: { ...environment, RYFRAME_PYTHON: python },
+        env: { PATH: 'fixed-path' },
         maxBuffer: 256 * 1024,
         timeout: 150_000,
         windowsHide: true,
@@ -81,11 +84,11 @@ describe('迁移历史夹具命令', () => {
     const root = path.resolve('测试 空间')
     await expect(
       migrationHistory('inspect', tenant, migration, undefined, {
-        environment: {
-          RYFRAME_E2E_BACKEND_DIR: path.join(root, 'backend'),
-          RYFRAME_E2E_PYTHON: path.join(root, 'python'),
-          RYFRAME_E2E_RUNTIME_DIR: path.join(root, '.local-tests', 'runtime'),
-          RYFRAME_E2E_SCOPE_ID: 'retention-test',
+        binding: {
+          backendDir: path.join(root, 'backend'),
+          python: path.join(root, 'python'),
+          runtimeDir: path.join(root, '.local-tests', 'runtime'),
+          scopeId: 'retention-test',
         },
         execute: () => Promise.reject(failure),
       }),

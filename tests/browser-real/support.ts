@@ -1,3 +1,5 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
+import { realBrowserCredentials } from '../../scripts/real-browser-environment.mjs'
 import { selectLoginTenant } from './login-tenant'
 import { expect, type Page, type Response } from '@playwright/test'
 import { expectNoSeriousAccessibilityViolations } from '../browser/support/accessibility'
@@ -7,9 +9,9 @@ import { isResourceScopeId } from '../../scripts/resource-scope.mjs'
 import { clientAddress } from './client-address'
 
 export function isolatedName(prefix: string): string {
-  const scope = process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID
+  const scope = loadRealBrowserEnvironment().scopeId
   if (!isResourceScopeId(scope)) {
-    throw new Error('业务写入验收必须显式设置隔离环境的 RYFRAME_E2E_SCOPE_ID')
+    throw new Error('业务写入验收必须显式设置隔离环境的 scopeId')
   }
   return `${prefix}-${randomUUID().slice(0, 8)}`
 }
@@ -32,12 +34,7 @@ export async function act(
   return result
 }
 
-export const credentials = {
-  tenantId: process.env.RYFRAME_E2E_TENANT_ID?.trim() || 'system',
-  username: process.env.RYFRAME_E2E_USERNAME?.trim() || 'admin',
-  password: process.env.RYFRAME_E2E_PASSWORD || 'Valid!Admin123',
-  captchaCode: process.env.RYFRAME_E2E_CAPTCHA_CODE?.trim(),
-}
+export const credentials = realBrowserCredentials()
 
 export function waitForApiResponse(
   page: Page,
@@ -79,7 +76,7 @@ export async function login(page: Page, identity = credentials): Promise<void> {
   if (await captchaInput.isVisible()) {
     expect(
       identity.captchaCode,
-      '真实环境启用了验证码，请设置 RYFRAME_E2E_CAPTCHA_CODE',
+      '真实环境启用了验证码，请设置 real_browser.captchaCode',
     ).toBeTruthy()
     await captchaInput.fill(identity.captchaCode ?? '')
   }

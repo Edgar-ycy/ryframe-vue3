@@ -53,14 +53,13 @@ function samePath(left, right) {
   return normalize(left) === normalize(right)
 }
 
-function boundEvidence(environmentName, expected, label) {
+function boundEvidence(configured, expected, label) {
   if (
     !expected ||
     typeof expected !== 'object' ||
     Object.keys(expected).sort().join('\0') !== 'path\0sha256'
   )
     throw new Error(`恢复证明 reporter 缺少${label}预检结果`)
-  const configured = process.env[environmentName]
   const evidence = evidenceFile(configured, label)
   if (!samePath(evidence.path, expected.path) || sha256(evidence.bytes) !== expected.sha256)
     throw new Error(`${label}与配置预检结果不一致`)
@@ -75,37 +74,37 @@ export default class RestoreReporter {
     checkout = verifiedCheckout,
     datasetAuthority = verifyRestoreDatasetAuthority,
     expectedRestore,
+    browserBinding,
   } = {}) {
     this.verify = verify
     this.checkout = checkout
     this.datasetAuthority = datasetAuthority
     this.expectedRestore = expectedRestore
+    this.browserBinding = browserBinding
   }
 
   onBegin(config) {
     this.started = Date.now()
     const expected = this.expectedRestore
+    const browser = this.browserBinding
+    if (!browser?.restore) throw new Error('恢复证明 reporter 缺少浏览器文件配置绑定')
     if (!expected) throw new Error('恢复证明 reporter 未绑定配置预检结果')
-    const binding = boundEvidence('RYFRAME_RESTORE_BINDINGS', expected.binding, '恢复绑定收据')
-    const target = boundEvidence('RYFRAME_RESTORE_TARGET_PLAN', expected.target, '恢复目标计划')
-    const runtime = boundEvidence(
-      'RYFRAME_RESTORE_RUNTIME_RECEIPT',
-      expected.runtime,
-      '恢复运行收据',
-    )
+    const binding = boundEvidence(browser.restore.bindings, expected.binding, '恢复绑定收据')
+    const target = boundEvidence(browser.restore.targetPlan, expected.target, '恢复目标计划')
+    const runtime = boundEvidence(browser.restore.runtimeReceipt, expected.runtime, '恢复运行收据')
     const { bindings, record, manifest } = restoreProofBindings(binding.bytes)
-    const scope = (process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID)?.trim()
+    const scope = browser.scopeId
     if (!scope || scope !== record.plan.scope_id)
       throw new Error('恢复验收 scope 或后端源码目录未显式绑定')
-    const configuredVerifierSha = process.env.RYFRAME_RESTORE_VERIFIER_SHA
+    const configuredVerifierSha = browser.restore.verifierSha
     const verifierRoot = this.checkout(
-      process.env.RYFRAME_RESTORE_BACKEND_DIR,
+      browser.restore.coordinatorDir,
       configuredVerifierSha,
       '恢复证明协调后端',
     )
     if (configuredVerifierSha !== expected.verifierSha || verifierRoot !== expected.verifierRoot)
       throw new Error('恢复证明协调后端与配置预检结果不一致')
-    const python = process.env.RYFRAME_PYTHON
+    const python = browser.restore.python
     if (python !== expected.python) throw new Error('恢复数据预检 Python 与配置预检结果不一致')
     const urls = new Set(config.projects.map((project) => project.use.baseURL))
     if (urls.size !== 1 || typeof [...urls][0] !== 'string' || ![...urls][0])
@@ -122,7 +121,7 @@ export default class RestoreReporter {
       runtimeBinding.authority.frontend_sha,
       '恢复产品前端源码',
     )
-    const configuredRunnerSha = process.env.RYFRAME_RESTORE_RUNNER_SHA
+    const configuredRunnerSha = browser.restore.runnerSha
     const runnerRoot = this.checkout(process.cwd(), configuredRunnerSha, '恢复测试 runner 源码')
     if (configuredRunnerSha !== expected.runnerSha || runnerRoot !== expected.runnerRoot)
       throw new Error('恢复测试 runner 与配置预检结果不一致')

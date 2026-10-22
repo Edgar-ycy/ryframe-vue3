@@ -1,13 +1,11 @@
 import { defineConfig, type ReporterDescription } from '@playwright/test'
-import { randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateRealBrowserEnvironment } from './scripts/real-browser-environment.mjs'
+import { loadRealBrowserEnvironment } from './scripts/real-browser-environment.mjs'
 import { verifyBuildReceipt } from './scripts/restore-build.mjs'
 import { realTestSelection } from './scripts/restore-scenarios.mjs'
 
-const environment = validateRealBrowserEnvironment()
+const environment = loadRealBrowserEnvironment()
 const { fixture, port, runId, serverMode } = environment
 const externalBaseUrl = environment.baseURL
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
@@ -15,7 +13,7 @@ if (serverMode === 'preview' && !externalBaseUrl) {
   verifyBuildReceipt(fileURLToPath(new URL('.', import.meta.url)))
 }
 const restore = realTestSelection(environment.restore, fixture, baseURL)
-const channel = process.env.PLAYWRIGHT_CHANNEL?.trim() || (process.env.CI ? undefined : 'chrome')
+const channel = environment.channel
 const artifactSuffix = `${fixture}/${serverMode}${runId ? `/${runId}` : ''}`
 const reportDirectory = `.local-tests/playwright-real/report/${artifactSuffix}`
 const resultsDirectory = `.local-tests/playwright-real/results/${artifactSuffix}`
@@ -24,7 +22,10 @@ const reporters: ReporterDescription[] = [
   ['html', { open: 'never', outputFolder: reportDirectory }],
 ]
 if (restore.reporter)
-  reporters.push(['./scripts/restore-reporter.mjs', { expectedRestore: restore.reporter }])
+  reporters.push([
+    './scripts/restore-reporter.mjs',
+    { expectedRestore: restore.reporter, browserBinding: environment },
+  ])
 if (fixture === 'business')
   reporters.push([
     './scripts/business-reporter.mjs',
@@ -37,13 +38,6 @@ if (fixture === 'business')
 
 for (const directory of [reportDirectory, resultsDirectory]) {
   mkdirSync(directory, { recursive: true })
-}
-if (!externalBaseUrl) {
-  const controlId = `ryframe-browser-${process.pid}-${randomUUID().slice(0, 8)}`
-  process.env.RYFRAME_E2E_GATE_ENDPOINT ||=
-    process.platform === 'win32'
-      ? `\\\\.\\pipe\\${controlId}`
-      : resolve(process.env.RUNNER_TEMP || '.local-tests', `${controlId}.sock`)
 }
 
 export default defineConfig({

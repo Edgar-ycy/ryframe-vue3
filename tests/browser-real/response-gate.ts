@@ -1,3 +1,4 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { connect } from 'node:net'
 import { randomUUID } from 'node:crypto'
 import { expect, type Page, type Request, type TestInfo } from '@playwright/test'
@@ -14,7 +15,7 @@ interface GateProof {
 }
 
 async function command(message: object): Promise<GateProof> {
-  const endpoint = process.env.RYFRAME_E2E_GATE_ENDPOINT
+  const endpoint = loadRealBrowserEnvironment().gateEndpoint
   if (!endpoint) throw new Error('会话竞争验收必须连接真实浏览器透明代理的 IPC')
   return new Promise((resolve, reject) => {
     const socket = connect(endpoint)

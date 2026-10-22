@@ -7,24 +7,22 @@ import {
   verifyConsumerDocument,
 } from '../check.mjs'
 
-test('每次 smoke 使用新证据代次，不复用父进程遗留的运行编号', () => {
-  const inherited = { RYFRAME_E2E_SMOKE_ATTEMPT: 'previous-attempt', PATH: 'host-tools' }
-  const first = checkTaskEnvironment(checkTasks('browser')[0], inherited)
-  const second = checkTaskEnvironment(checkTasks('browser')[0], inherited)
-  assert.match(first.RYFRAME_E2E_SMOKE_ATTEMPT, /^[a-f0-9-]{36}$/u)
-  assert.notEqual(first.RYFRAME_E2E_SMOKE_ATTEMPT, second.RYFRAME_E2E_SMOKE_ATTEMPT)
-  assert.equal(first.PATH, 'host-tools')
-  assert.equal(inherited.RYFRAME_E2E_SMOKE_ATTEMPT, 'previous-attempt')
-})
-
-test('真实浏览器的资源绑定与运行编号保持原任务配置', () => {
-  const inherited = { RYFRAME_E2E_RUN_ID: 'formal-run', APP_SCOPE_ID: 'owned-scope' }
-  const task = checkTasks('browser', { real: true, fixture: 'business', server: 'preview' })[0]
-  assert.deepEqual(checkTaskEnvironment(task, inherited), {
-    ...inherited,
-    RYFRAME_E2E_FIXTURE: 'business',
-    RYFRAME_E2E_SERVER: 'preview',
-  })
+test('浏览器任务通过 CLI 控制，子进程只继承应用选择与第三方环境', () => {
+  const inherited = {
+    RYFRAME_E2E_RUN_ID: 'old',
+    APP_SCOPE_ID: 'old',
+    PLAYWRIGHT_CHANNEL: 'old',
+    APP_ENV: 'test',
+    PATH: 'host-tools',
+  }
+  for (const task of [
+    checkTasks('browser')[0],
+    checkTasks('browser', { real: true, fixture: 'business', server: 'preview' })[0],
+  ]) {
+    assert.deepEqual(checkTaskEnvironment(task, inherited), { APP_ENV: 'test', PATH: 'host-tools' })
+    assert.equal(task.node[0], 'scripts/run-browser.mjs')
+  }
+  assert.equal(inherited.RYFRAME_E2E_RUN_ID, 'old')
 })
 
 test('正式和候选消费者均比较已验证的契约正文，候选标记不能替代正文', () => {
@@ -87,8 +85,7 @@ test('真实业务浏览器计划与执行共用明确的配置与运行绑定',
   assert.deepEqual(checkTasks(options.stage, options), [
     {
       name: 'browser-real',
-      args: ['exec', 'playwright', 'test', '--config', 'playwright.real.config.ts'],
-      environment: { RYFRAME_E2E_FIXTURE: 'business', RYFRAME_E2E_SERVER: 'preview' },
+      node: ['scripts/run-browser.mjs', '--real', '--fixture', 'business', '--server', 'preview'],
     },
   ])
   for (const args of [

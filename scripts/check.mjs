@@ -1,9 +1,9 @@
+import { toolProcessEnvironment } from './tool-inputs.mjs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import console from 'node:console'
 import { spawn } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { verifyLocalContractState } from './api-contract-state.mjs'
@@ -86,8 +86,14 @@ export function checkTasks(stage, options = {}) {
     return [
       {
         name: 'browser-real',
-        args: ['exec', 'playwright', 'test', '--config', 'playwright.real.config.ts'],
-        environment: { RYFRAME_E2E_FIXTURE: options.fixture, RYFRAME_E2E_SERVER: options.server },
+        node: [
+          'scripts/run-browser.mjs',
+          '--real',
+          '--fixture',
+          options.fixture,
+          '--server',
+          options.server,
+        ],
       },
     ]
   const tasks = {
@@ -124,7 +130,7 @@ export function checkTasks(stage, options = {}) {
       { name: 'production-build', args: ['build'] },
       { name: 'bundle-budget', node: ['scripts/check-bundle-budget.mjs'] },
     ],
-    browser: [{ name: 'browser-smoke', args: ['exec', 'playwright', 'test'] }],
+    browser: [{ name: 'browser-smoke', node: ['scripts/run-browser.mjs'] }],
   }
   if (stage === 'full') {
     return ['contract', 'static', 'unit', 'build'].flatMap((name) =>
@@ -135,11 +141,9 @@ export function checkTasks(stage, options = {}) {
   return tasks[stage]
 }
 
-export function checkTaskEnvironment(task, environment = process.env) {
+export function checkTaskEnvironment(_task, environment = process.env) {
   return {
-    ...environment,
-    ...task.environment,
-    ...(task.name === 'browser-smoke' ? { RYFRAME_E2E_SMOKE_ATTEMPT: randomUUID() } : {}),
+    ...toolProcessEnvironment(environment),
   }
 }
 

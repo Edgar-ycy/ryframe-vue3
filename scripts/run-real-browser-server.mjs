@@ -1,23 +1,24 @@
 import { isAbsolute, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { loadRealBrowserEnvironment } from './real-browser-environment.mjs'
 import { isResourceScopeId } from './resource-scope.mjs'
 
 export class BrowserServerUsageError extends Error {}
 
 function responseAudit(mode, environment) {
-  const output = environment.RYFRAME_E2E_PREVIEW_RESPONSE_AUDIT
+  const output = environment.previewResponseAudit
   const formal =
     mode === 'preview' &&
-    environment.RYFRAME_E2E_FIXTURE === 'business' &&
-    typeof environment.RYFRAME_E2E_RUN_ID === 'string'
+    environment.fixture === 'business' &&
+    typeof environment.runId === 'string'
   if (!formal) {
     if (output !== undefined) {
       throw new BrowserServerUsageError('静态响应审计只允许用于正式 业务 preview')
     }
     return undefined
   }
-  const runId = environment.RYFRAME_E2E_RUN_ID
-  const scopeId = environment.RYFRAME_E2E_SCOPE_ID || environment.APP_SCOPE_ID
+  const runId = environment.runId
+  const scopeId = environment.scopeId
   if (
     !/^[a-z0-9][a-z0-9-]{0,63}$/u.test(runId) ||
     !isResourceScopeId(scopeId) ||
@@ -31,7 +32,7 @@ function responseAudit(mode, environment) {
   return Object.freeze({ output: resolve(output), runId, scopeId })
 }
 
-export function parseBrowserServerArguments(argv, environment = process.env) {
+export function parseBrowserServerArguments(argv, environment) {
   if (
     !Array.isArray(argv) ||
     argv.length !== 2 ||
@@ -48,12 +49,13 @@ export function parseBrowserServerArguments(argv, environment = process.env) {
   }
   const port = Number(rawPort)
   if (port > 65535) throw new BrowserServerUsageError('真实浏览器服务端口超出范围')
-  const endpoint = environment.RYFRAME_E2E_GATE_ENDPOINT
+  environment ??= loadRealBrowserEnvironment()
+  const endpoint = environment.gateEndpoint
   if (
     !endpoint ||
     endpoint !== endpoint.trim() ||
     endpoint.includes('\0') ||
-    endpoint.includes('\n') ||
+    /[\r\n]/u.test(endpoint) ||
     endpoint.length > 240 ||
     !isAbsolute(endpoint)
   ) {

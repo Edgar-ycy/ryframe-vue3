@@ -1,3 +1,4 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { BrowserContext } from '@playwright/test'
@@ -30,7 +31,7 @@ export const test = base.extend<{
       await mkdir(path.dirname(receiptPath), { recursive: true })
       let saving = Promise.resolve()
       const resources = await createSessionResources({
-        scopeId: process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID,
+        scopeId: loadRealBrowserEnvironment().scopeId,
         tenantId: credentials.tenantId,
         testId: info.testId,
         save: (receipt) => {

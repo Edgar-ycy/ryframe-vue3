@@ -8,11 +8,11 @@ const tenant = 'tenant-1'
 const migration = 'migration-1'
 const backend = path.resolve('.local-tests', '迁移 gate', 'backend root')
 const runtime = path.resolve('.local-tests', '迁移 gate', 'runtime root')
-const environment = {
-  RYFRAME_E2E_BACKEND_DIR: backend,
-  RYFRAME_E2E_PYTHON: 'python-fixture',
-  RYFRAME_E2E_RUNTIME_DIR: runtime,
-  RYFRAME_E2E_SCOPE_ID: 'scope-1',
+const binding = {
+  backendDir: backend,
+  python: path.resolve('python-fixture'),
+  runtimeDir: runtime,
+  scopeId: 'scope-1',
 }
 
 type SpawnOptions = { env: NodeJS.ProcessEnv; stdio: 'pipe'; windowsHide: true }
@@ -48,7 +48,7 @@ class FakeMigrationGateProcess extends EventEmitter {
     this.stdout.write(
       JSON.stringify({
         migration_id: migration,
-        scope_id: environment.RYFRAME_E2E_SCOPE_ID,
+        scope_id: binding.scopeId,
         state,
         tenant_id: tenant,
         ...extra,
@@ -82,10 +82,11 @@ describe('业务迁移 gate 进程生命周期', () => {
     const child = new FakeMigrationGateProcess()
     const captured: { arguments?: string[]; command?: string; options?: SpawnOptions } = {}
     const gate = await holdMigrationGate(tenant, migration, {
-      environment,
+      binding,
+      environment: {},
       spawnProcess: spawnFixture(child, captured),
     })
-    expect(captured.command).toBe('python-fixture')
+    expect(captured.command).toBe(binding.python)
     expect(captured.arguments).toEqual([
       '-X',
       'utf8',
@@ -100,7 +101,7 @@ describe('业务迁移 gate 进程生命周期', () => {
       '--migration',
       migration,
     ])
-    expect(captured.options).toEqual({ env: environment, stdio: 'pipe', windowsHide: true })
+    expect(captured.options).toEqual({ env: {}, stdio: 'pipe', windowsHide: true })
 
     const finished = once(child.stdin, 'finish')
     let settled = false
@@ -123,7 +124,8 @@ describe('业务迁移 gate 进程生命周期', () => {
     const child = new FakeMigrationGateProcess()
     child.onKill = () => setTimeout(() => child.close(null, 'SIGKILL'), 10)
     const gate = await holdMigrationGate(tenant, migration, {
-      environment,
+      binding,
+      environment: {},
       forceCloseTimeoutMs: 100,
       gracefulCloseTimeoutMs: 5,
       spawnProcess: spawnFixture(child),
@@ -138,7 +140,8 @@ describe('业务迁移 gate 进程生命周期', () => {
     const child = new FakeMigrationGateProcess()
     child.stdin.once('finish', () => child.close(17))
     const gate = await holdMigrationGate(tenant, migration, {
-      environment,
+      binding,
+      environment: {},
       spawnProcess: spawnFixture(child),
     })
 
@@ -154,7 +157,8 @@ describe('业务迁移 gate 进程生命周期', () => {
       if (killCount === 2) queueMicrotask(() => child.close(null, 'SIGKILL'))
     }
     const gate = await holdMigrationGate(tenant, migration, {
-      environment,
+      binding,
+      environment: {},
       forceCloseTimeoutMs: 5,
       gracefulCloseTimeoutMs: 5,
       spawnProcess: spawnFixture(child),
@@ -187,7 +191,8 @@ describe('业务迁移 gate 进程生命周期', () => {
         child.close()
       })
       const gate = await holdMigrationGate(tenant, migration, {
-        environment,
+        binding,
+        environment: {},
         spawnProcess: spawnFixture(child),
       })
 
@@ -203,7 +208,8 @@ describe('业务迁移 gate 进程生命周期', () => {
     let failure: unknown
     try {
       await holdMigrationGate(tenant, migration, {
-        environment,
+        binding,
+        environment: {},
         forceCloseTimeoutMs: 100,
         gracefulCloseTimeoutMs: 5,
         spawnProcess: spawnFixture(child, {}, { scope_id: 'wrong-scope' }),

@@ -1,3 +1,4 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { test as base, type BrowserContext } from '@playwright/test'
 import { guardNetwork } from './network'
 import { fixedClientAddress } from '../../scripts/browser-login-budget.mjs'
@@ -11,10 +12,7 @@ export const test = base.extend<{
     async ({ context, baseURL }, use, info) => {
       const verify = await guardNetwork(context, baseURL)
       // 同一 scope 的 dev、preview 与重跑使用相同客户，不能换地址绕过限流。
-      const address = fixedClientAddress(
-        process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID,
-        info.testId,
-      )
+      const address = fixedClientAddress(loadRealBrowserEnvironment().scopeId, info.testId)
       await context.setExtraHTTPHeaders({ 'X-Forwarded-For': address })
       registerClientAddress(context, address)
       await use(address)

@@ -1,3 +1,4 @@
+import { toolProcessEnvironment } from './tool-inputs.mjs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
@@ -164,7 +165,7 @@ function sameDescriptor(actual, expected, label) {
 
 function pythonPath(value) {
   if (typeof value !== 'string' || !value || value !== value.trim() || !path.isAbsolute(value))
-    throw new Error('恢复数据预检必须显式绑定绝对 RYFRAME_PYTHON')
+    throw new Error('恢复数据预检必须显式绑定绝对 python')
   return value
 }
 
@@ -184,7 +185,13 @@ function authorityCommand(input, runtime, targetPlan, execute) {
       '--target-plan',
       targetPlan.path,
     ],
-    { encoding: 'utf8', windowsHide: true, timeout: 300_000, maxBuffer: 1024 * 1024 },
+    {
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 300_000,
+      maxBuffer: 1024 * 1024,
+      env: toolProcessEnvironment(),
+    },
   )
 }
 

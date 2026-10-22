@@ -20,9 +20,14 @@ export function loadFrontendToolConfig(root) {
       !value ||
       typeof value !== 'object' ||
       Array.isArray(value) ||
-      Object.keys(value).some((key) => key !== 'application_config_dir')
+      Object.keys(value).some(
+        (key) =>
+          !['application_config_dir', 'api_contract', 'real_browser', 'browser_smoke'].includes(
+            key,
+          ),
+      )
     ) {
-      throw new Error(`前端工具配置 ${inputs[index]} 字段无效；仅允许 application_config_dir`)
+      throw new Error(`前端工具配置 ${inputs[index]} 字段无效；请核对工具配置结构`)
     }
     if (Object.hasOwn(value, 'application_config_dir')) {
       if (

@@ -1,3 +1,4 @@
+import { loadRealBrowserEnvironment } from './real-browser-environment.mjs'
 import { setTimeout } from 'node:timers/promises'
 import {
   completeLogin,
@@ -12,7 +13,7 @@ export { fixedClientAddress } from './browser-login-budget-model.mjs'
 export function createLoginBudget(options) {
   const binding = loginBinding(options)
   const { statePath, now = Date.now, sleep = setTimeout, onWait = () => {} } = options
-  if (!statePath) throw new Error('真实登录必须显式提供 RYFRAME_E2E_LOGIN_BUDGET_STATE')
+  if (!statePath) throw new Error('真实登录必须显式提供 loginBudgetState')
   const update = (change) => updateLedger(statePath, binding, now, change)
   return {
     async reserve(identity, address) {
@@ -32,12 +33,12 @@ export function createLoginBudget(options) {
   }
 }
 
-export function configuredLoginBudget(environment = process.env) {
+export function configuredLoginBudget(environment = loadRealBrowserEnvironment()) {
   return createLoginBudget({
-    statePath: environment.RYFRAME_E2E_LOGIN_BUDGET_STATE,
-    scope: environment.RYFRAME_E2E_SCOPE_ID || environment.APP_SCOPE_ID,
-    capacity: Number(environment.RYFRAME_E2E_LOGIN_RATE_LIMIT_CAPACITY),
-    windowMs: Number(environment.RYFRAME_E2E_LOGIN_RATE_LIMIT_WINDOW_SECS) * 1000,
+    statePath: environment.loginBudgetState,
+    scope: environment.scopeId,
+    capacity: Number(environment.loginCapacity),
+    windowMs: Number(environment.loginWindowSeconds) * 1000,
     onWait: (waitMs) => console.info(`登录前等待共享预算 ${waitMs}ms`),
   })
 }

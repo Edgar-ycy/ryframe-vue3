@@ -6,7 +6,7 @@ import { installApiFixture } from './support/apiFixture'
 import { observeDiagnostics } from './support/diagnostics'
 
 test('开发热更新保留源码监听并排除本地验收产物', async ({ context }) => {
-  test.skip(process.env.RYFRAME_E2E_SERVER === 'preview', '生产预览不运行文件监听器')
+  test.skip(test.info().config.metadata.serverMode === 'preview', '生产预览不运行文件监听器')
   const page = await context.newPage()
   await installApiFixture(page, observeDiagnostics(page))
   const changes: string[] = []

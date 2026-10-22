@@ -1,3 +1,4 @@
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { test } from './fixture'
 import { expect } from '@playwright/test'
 import { readFile, stat } from 'node:fs/promises'
@@ -94,7 +95,7 @@ test('真实岗位增改查删、已应用筛选导出、Worker 下载与删除'
   expect((await stat(destination)).size).toBeGreaterThan(100)
   // 产物快照收据必须位于当前后端的 .local-tests 内，用运行目录承载并保持每次运行唯一。
   const receipt = path.join(
-    process.env.RYFRAME_E2E_RUNTIME_DIR || '',
+    loadRealBrowserEnvironment().runtimeDir || '',
     `export-artifact-${jobId}.json`,
   )
   expect(await inspectExportArtifact('snapshot', jobId, receipt)).toBe('present')

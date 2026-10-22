@@ -1,3 +1,5 @@
+import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
@@ -105,14 +107,6 @@ export function verifyDownloadedExportContent(
   }
 }
 
-function absoluteEnvironmentPath(name: string): string {
-  const value = process.env[name]?.trim()
-  if (!value || !path.isAbsolute(value)) {
-    throw new Error(`对象清理验收缺少绝对路径配置 ${name}`)
-  }
-  return path.resolve(value)
-}
-
 export function artifactInspectionArguments(
   runtime: string,
   operation: ArtifactInspectionOperation,
@@ -138,7 +132,6 @@ export function artifactInspectionArguments(
 export function artifactInspectionInvocation(
   backend: string,
   runtime: string,
-  python: string,
   operation: ArtifactInspectionOperation,
   jobId: string,
   receipt: string,
@@ -150,7 +143,7 @@ export function artifactInspectionInvocation(
     options: {
       cwd: backend,
       encoding: 'utf8' as const,
-      env: { ...environment, RYFRAME_PYTHON: python },
+      env: toolProcessEnvironment(environment),
       maxBuffer: 64 * 1024,
       timeout: 45_000,
       windowsHide: true,
@@ -166,13 +159,10 @@ export async function inspectExportArtifact(
   if (!snowflakeId(jobId) || !path.isAbsolute(receipt)) {
     throw new Error('对象清理验收的任务或收据路径无效')
   }
-  const backend = absoluteEnvironmentPath('RYFRAME_E2E_BACKEND_DIR')
-  const runtime = absoluteEnvironmentPath('RYFRAME_E2E_RUNTIME_DIR')
-  const python = absoluteEnvironmentPath('RYFRAME_E2E_PYTHON')
+  const { backendDir: backend, runtimeDir: runtime } = loadRealBrowserEnvironment()
   const invocation = artifactInspectionInvocation(
     backend,
     runtime,
-    python,
     operation,
     jobId,
     path.resolve(receipt),

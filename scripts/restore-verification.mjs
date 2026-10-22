@@ -1,3 +1,4 @@
+import { toolProcessEnvironment } from './tool-inputs.mjs'
 import { execFileSync } from 'node:child_process'
 import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
@@ -336,26 +337,12 @@ export function verifyRuntime(
   if (!samePath(roots.frontend, frontendRoot))
     throw new Error('恢复目标计划没有绑定当前前端源码目录')
   const authority = expected.authority
-  const pythonPath = absolutePath(python, '恢复运行核验 Python')
-  const childEnvironment = { ...environment }
+  absolutePath(python, '恢复运行核验 Python')
+  const childEnvironment = toolProcessEnvironment(environment)
   for (const name of Object.keys(childEnvironment)) {
-    const normalized = name.toUpperCase()
-    if (
-      normalized.startsWith('RYFRAME_RESTORE_RUNTIME_') ||
-      [
-        'RYFRAME_RESTORE_SOURCE_PROTOCOL',
-        'RYFRAME_DEVEX_TARGET_ROOT',
-        'RYFRAME_WORKSPACE_ROOT',
-        'RYFRAME_PYTHON',
-        'PYTHONUTF8',
-        'PYTHONIOENCODING',
-      ].includes(normalized)
-    ) {
+    if (['PYTHONUTF8', 'PYTHONIOENCODING'].includes(name.toUpperCase()))
       delete childEnvironment[name]
-    }
   }
-  childEnvironment.RYFRAME_WORKSPACE_ROOT = backendRoot
-  childEnvironment.RYFRAME_PYTHON = pythonPath
   childEnvironment.PYTHONUTF8 = '1'
   childEnvironment.PYTHONIOENCODING = 'utf-8'
   const result = execute(

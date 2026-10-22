@@ -16,4 +16,6 @@ export function createLoginBudget(options: {
   sleep?: (milliseconds: number) => Promise<unknown>
   onWait?: (milliseconds: number) => void
 }): LoginBudget
-export function configuredLoginBudget(environment?: NodeJS.ProcessEnv): LoginBudget
+export function configuredLoginBudget(
+  environment?: import('./real-browser-environment.mjs').RealBrowserEnvironment,
+): LoginBudget

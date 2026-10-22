@@ -24,9 +24,9 @@ await runCheck(parseArguments(JSON.parse(process.argv[2])))
 `
 
 test('普通与 ctx contract/full 的 plan 只输出真实任务图，不读输入、不落盘、不派生进程', () => {
-  for (const stage of ['contract', 'full', 'unit']) {
+  for (const stage of ['contract', 'full', 'unit', 'browser']) {
     for (const consumer of [false, true]) {
-      if (consumer && stage === 'unit') continue
+      if (consumer && ['unit', 'browser'].includes(stage)) continue
       const args = [
         stage === 'full' ? '--full' : '--stage',
         ...(stage === 'full' ? [] : [stage]),

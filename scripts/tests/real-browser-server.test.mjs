@@ -15,13 +15,15 @@ const endpoint =
     : '/tmp/含 空格 browser-gate.sock'
 
 test('模式、端口和中文空格 IPC 地址按独立参数解析', () => {
-  assert.deepEqual(
-    parseBrowserServerArguments(['preview', '4174'], { RYFRAME_E2E_GATE_ENDPOINT: endpoint }),
-    { mode: 'preview', port: 4174, endpoint, responseAudit: undefined },
-  )
+  assert.deepEqual(parseBrowserServerArguments(['preview', '4174'], { gateEndpoint: endpoint }), {
+    mode: 'preview',
+    port: 4174,
+    endpoint,
+    responseAudit: undefined,
+  })
   for (const args of [[], ['dev'], ['build', '4174'], ['dev', '0'], ['dev', '65536']]) {
     assert.throws(
-      () => parseBrowserServerArguments(args, { RYFRAME_E2E_GATE_ENDPOINT: endpoint }),
+      () => parseBrowserServerArguments(args, { gateEndpoint: endpoint }),
       BrowserServerUsageError,
     )
   }
@@ -31,11 +33,11 @@ test('模式、端口和中文空格 IPC 地址按独立参数解析', () => {
 test('正式 业务 preview 强制绑定响应审计，其他模式拒绝该输出', () => {
   const output = resolve('.local-tests', 'business preview', 'responses.json')
   const environment = {
-    RYFRAME_E2E_GATE_ENDPOINT: endpoint,
-    RYFRAME_E2E_FIXTURE: 'business',
-    RYFRAME_E2E_RUN_ID: 'r24-business-preview',
-    RYFRAME_E2E_SCOPE_ID: 'fixture-source',
-    RYFRAME_E2E_PREVIEW_RESPONSE_AUDIT: output,
+    gateEndpoint: endpoint,
+    fixture: 'business',
+    runId: 'r24-business-preview',
+    scopeId: 'fixture-source',
+    previewResponseAudit: output,
   }
   assert.deepEqual(parseBrowserServerArguments(['preview', '4174'], environment), {
     mode: 'preview',
@@ -47,7 +49,7 @@ test('正式 业务 preview 强制绑定响应审计，其他模式拒绝该输�
     () =>
       parseBrowserServerArguments(['preview', '4174'], {
         ...environment,
-        RYFRAME_E2E_PREVIEW_RESPONSE_AUDIT: undefined,
+        previewResponseAudit: undefined,
       }),
     BrowserServerUsageError,
   )

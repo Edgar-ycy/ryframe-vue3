@@ -87,7 +87,52 @@ corepack pnpm generate
 浏览器 smoke 使用 `corepack pnpm check --stage browser`；真实后端联调使用隔离资源与对应的 real 配置。每次 smoke 将 HTML 报告和测试附件分别保存在 `.local-tests/playwright/report/<dev或preview>/<代次UUID>/` 与 `.local-tests/playwright/results/<dev或preview>/<代次UUID>/`，失败时保留截图、视频和 trace，重跑不会覆盖之前的代次。
 仓库 CI 分别执行这些阶段，并保留 Windows 检查。
 
+真实浏览器与工具输入写入 `config/tools.json` 或优先级更高的忽略文件 `.local-tests/frontend-tools.json`，顶层字段按文件覆盖，嵌套配置整体替换。实际账号、密码和本机路径只放在后者；公开应用 TOML 不接收这些私有输入。下面的数值必须与所绑定后端的实际限流配置一致，路径指向已登记的隔离运行环境：
+
+```json
+{
+  "real_browser": {
+    "scopeId": "acceptance-local",
+    "tenantId": "system",
+    "username": "admin",
+    "password": "<isolated-account-password>",
+    "backendDir": "D:/project/rustProject/ryframe/ryframe",
+    "runtimeDir": "D:/project/rustProject/ryframe/ryframe/.local-tests/acceptance-local",
+    "python": "D:/tools/python/python.exe",
+    "requestCapacity": 100,
+    "requestWindowSeconds": 60,
+    "loginCapacity": 5,
+    "loginWindowSeconds": 60,
+    "loginBudgetState": "D:/project/rustProject/ryframe/ryframe/.local-tests/acceptance-local/login-budget.json",
+    "channel": "chrome"
+  },
+  "browser_smoke": { "serverMode": "dev", "channel": "chrome" }
+}
+```
+
+```powershell
+corepack pnpm check --stage browser --real --fixture core --server dev
+corepack pnpm check --stage browser --real --fixture business --server preview --plan
+```
+
+运行参数使用 `real_browser` 的 `fixture`、`serverMode`、`port`（默认 4174）、`runId`、`baseURL`、`gateEndpoint`、`previewResponseAudit` 和 `captchaCode`。业务套件必须提供全新的 `runId`；正式业务 preview 还必须提供绝对 `previewResponseAudit` 路径。`baseURL` 只接受带端口的本机 HTTP 原点，外部服务的 IPC 通过绝对 `gateEndpoint` 显式绑定。`channel` 可用 `chrome`、`msedge` 及其 beta/dev/canary 通道；`chromium` 选择 Playwright 内置浏览器，缺省本机用 Chrome、CI 用内置浏览器。
+
+恢复验收在 `real_browser.restore` 中完整提供 `bindings`、`runtimeReceipt`、`targetPlan`、`coordinatorDir`、`verifierSha`、`runnerSha`、`python`；路径必须绝对，两项 SHA 必须为完整小写提交。恢复租户密码放入 `real_browser.restorePasswords`，以租户 ID 为键。后端返回的旧密码环境字段不再用于读取环境变量。通过 Cargo 调用的后端核验与夹具从所选后端的工具文件选择 Python，须在后端忽略文件 `.local-tests/tools.toml` 的 `[verification].python_program` 登记与本次验收一致的解释器；前端不改写后端配置。
+
+统一检查通过 `scripts/run-browser.mjs` 传递 CLI 选项，在固定忽略路径 `.local-tests/browser-control.json` 独占登记控制器、代次、工具文件摘要和无凭据参数。工具文件运行期间漂移即失败；任务结束只清理自己未被替换的控制文件，异常遗留文件须先核查任务身份。`--plan` 只显示任务，不创建控制文件或启动进程。旧项目环境变量与浏览器通道环境覆盖不再读取；`APP_ENV` 继续只选择应用配置，操作系统与第三方工具环境仍可使用。
+
 ## 同步 API 契约
+
+按已提交的后端来源正式同步时，在前端运行下列命令；默认只校验和预览，显式 `--write` 才替换正式契约与来源清单。来源只能是完整的 40 字符提交 SHA。提供绝对 `--backend-worktree` 时只读取该 SHA 的 Git 对象，不读取工作区中的未提交文件；省略工作树时读取 GitHub 固定提交。`--openapi-path` 可指定不含路径穿越的仓库相对 JSON 路径，默认 `openapi/openapi.json`。
+
+```powershell
+node scripts/sync-api-contract.mjs --backend-repository owner/backend --backend-commit <SHA> --backend-worktree D:/project/rustProject/ryframe/ryframe
+node scripts/sync-api-contract.mjs --backend-repository owner/backend --backend-commit <SHA> --backend-worktree D:/project/rustProject/ryframe/ryframe --write
+node scripts/sync-api-contract.mjs --verify-local
+node scripts/sync-api-contract.mjs --verify-upstream --backend-worktree D:/project/rustProject/ryframe/ryframe
+```
+
+同样的来源可写入工具文件的 `api_contract` 对象：`backend_repository`、`backend_commit`、`backend_worktree`、`openapi_path`；显式 CLI 值优先。校验模式不接受来源替换或 `--write`，上游核验始终使用正式 `openapi/source.json` 的来源。缺少固定来源、Git 对象不可读或上游正文不一致时失败，不回退到分支或工作区文件。
 
 后端 DTO 或接口变化后，在后端仓库根目录运行：
 

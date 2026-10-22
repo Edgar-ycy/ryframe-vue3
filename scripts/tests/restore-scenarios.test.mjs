@@ -226,13 +226,13 @@ test('runner 核验失败会在报告目录和服务创建前传播', (t) => {
   }
 })
 
-test('真实浏览器配置先完成恢复选择，再创建目录与控制端点', async () => {
+test('真实浏览器配置先完成恢复选择，再创建报告目录', async () => {
   const source = await readFile(path.join(root, 'playwright.real.config.ts'), 'utf8')
   const selection = source.indexOf('const restore = realTestSelection(')
   const report = source.indexOf('const reportDirectory =')
   const directory = source.indexOf('mkdirSync(directory')
-  const control = source.indexOf('const controlId =')
-  assert.ok(selection >= 0 && selection < report && report < directory && directory < control)
+  assert.ok(selection >= 0 && selection < report && report < directory)
+  assert.doesNotMatch(source, /process\.env\.(RYFRAME_|PLAYWRIGHT_CHANNEL)/u)
   assert.match(source, /if \(restore\.reporter\)[\s\S]+restore-reporter\.mjs/u)
   assert.match(source, /metadata: restore\.worker/u)
   assert.match(source, /actionTimeout: 15_000/u)

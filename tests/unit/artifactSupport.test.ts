@@ -11,7 +11,6 @@ import {
 describe('导出物理对象验收结果', () => {
   const backend = 'D:\\工作 空间\\backend'
   const runtime = 'D:\\工作 空间\\.local-tests\\runtime'
-  const python = 'D:\\工具 目录\\python.exe'
   const receipt = 'D:\\工作 空间\\.local-tests\\物理对象.json'
 
   it.each(['snapshot', 'verify-deleted'] as const)(
@@ -37,22 +36,16 @@ describe('导出物理对象验收结果', () => {
     },
   )
 
-  it('从后端 cwd 执行并将已登记 Python 映射给 xtask', () => {
-    const invocation = artifactInspectionInvocation(
-      backend,
-      runtime,
-      python,
-      'snapshot',
-      '42',
-      receipt,
-      { PATH: 'fixed-path' },
-    )
+  it('从后端 cwd 执行并使用后端工具文件选择解释器', () => {
+    const invocation = artifactInspectionInvocation(backend, runtime, 'snapshot', '42', receipt, {
+      PATH: 'fixed-path',
+    })
     expect(invocation.executable).toBe('cargo')
     expect(invocation.arguments).toEqual(
       artifactInspectionArguments(runtime, 'snapshot', '42', receipt),
     )
     expect(invocation.options.cwd).toBe(backend)
-    expect(invocation.options.env).toEqual({ PATH: 'fixed-path', RYFRAME_PYTHON: python })
+    expect(invocation.options.env).toEqual({ PATH: 'fixed-path' })
   })
 
   it.each([

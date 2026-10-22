@@ -1,3 +1,4 @@
+import { toolProcessEnvironment } from '../tool-inputs.mjs'
 import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
@@ -116,6 +117,7 @@ test('后端唯一预检以固定 Python 无 stdin 返回完整且递归冻结�
         item.input.targetPlan,
       ],
       settings: {
+        env: toolProcessEnvironment(),
         encoding: 'utf8',
         windowsHide: true,
         timeout: 300_000,
@@ -205,13 +207,13 @@ test('证据拒绝 canonical 路径不符和同文件同长度改写', () => {
   )
 })
 
-test('缺少绝对 RYFRAME_PYTHON 会在执行预检前失败', () => {
+test('缺少绝对 python 会在执行预检前失败', () => {
   for (const python of ['', 'python']) {
     const item = fixture()
     item.input.python = python
     assert.throws(
       () => verifyRestoreDatasetAuthority(item.input, { execute: item.execute }),
-      /RYFRAME_PYTHON/u,
+      /python/u,
     )
     assert.equal(item.calls.length, 0)
   }

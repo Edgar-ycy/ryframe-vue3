@@ -1,3 +1,5 @@
+import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
@@ -6,12 +8,15 @@ const execute = promisify(execFile)
 type WorkerOperation = 'start' | 'stop' | 'crash' | 'status'
 
 export async function controlWorker(operation: WorkerOperation): Promise<'running' | 'stopped'> {
-  const backend = process.env.RYFRAME_E2E_BACKEND_DIR
-  const runtime = process.env.RYFRAME_E2E_RUNTIME_DIR
-  const scope = process.env.RYFRAME_E2E_SCOPE_ID || process.env.APP_SCOPE_ID
+  const {
+    backendDir: backend,
+    runtimeDir: runtime,
+    scopeId: scope,
+    python,
+  } = loadRealBrowserEnvironment()
   if (!backend || !runtime || !scope) throw new Error('Worker 测试缺少明确的后端、运行目录或 scope')
   const { stdout } = await execute(
-    process.env.RYFRAME_E2E_PYTHON || 'python',
+    python,
     [
       path.join(backend, 'tools/python/full_stack_worker.py'),
       operation,
@@ -20,7 +25,7 @@ export async function controlWorker(operation: WorkerOperation): Promise<'runnin
       '--runtime-dir',
       path.resolve(runtime),
     ],
-    { timeout: 75_000, windowsHide: true },
+    { timeout: 75_000, windowsHide: true, env: toolProcessEnvironment() },
   )
   const result: unknown = JSON.parse(stdout)
   if (

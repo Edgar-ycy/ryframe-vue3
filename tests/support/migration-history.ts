@@ -1,5 +1,7 @@
+import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
+import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
+import type { RealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { execFile } from 'node:child_process'
-import path from 'node:path'
 import { promisify } from 'node:util'
 import { parseXtaskJsonReceipt } from '../../scripts/xtask-receipt.mjs'
 
@@ -22,6 +24,7 @@ interface MigrationHistoryInvocation {
 }
 
 interface MigrationHistoryDependencies {
+  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'python' | 'scopeId'>
   environment?: NodeJS.ProcessEnv
   execute?: (invocation: MigrationHistoryInvocation) => Promise<string>
 }
@@ -58,18 +61,9 @@ export function migrationHistoryArguments(
   ]
 }
 
-function absoluteEnvironmentPath(environment: NodeJS.ProcessEnv, name: string): string {
-  const value = environment[name]?.trim()
-  if (!value || !path.isAbsolute(value)) {
-    throw new Error(`历史保留期 fixture 缺少绝对路径配置 ${name}`)
-  }
-  return path.resolve(value)
-}
-
 function invocation(
   backend: string,
   runtime: string,
-  python: string,
   operation: Operation,
   tenant: string,
   migration: string,
@@ -82,7 +76,7 @@ function invocation(
     options: {
       cwd: backend,
       encoding: 'utf8',
-      env: { ...environment, RYFRAME_PYTHON: python },
+      env: toolProcessEnvironment(environment),
       maxBuffer: 256 * 1024,
       timeout: 150_000,
       windowsHide: true,
@@ -120,15 +114,14 @@ export async function migrationHistory(
   dependencies: MigrationHistoryDependencies = {},
 ): Promise<Record<string, unknown>> {
   const environment = dependencies.environment ?? process.env
-  const scope = environment.RYFRAME_E2E_SCOPE_ID || environment.APP_SCOPE_ID
+  const binding = dependencies.binding ?? loadRealBrowserEnvironment()
+  const scope = binding.scopeId
   if (!scope) throw new Error('历史保留期 fixture 缺少明确隔离运行配置')
-  const backend = absoluteEnvironmentPath(environment, 'RYFRAME_E2E_BACKEND_DIR')
-  const runtime = absoluteEnvironmentPath(environment, 'RYFRAME_E2E_RUNTIME_DIR')
-  const python = absoluteEnvironmentPath(environment, 'RYFRAME_E2E_PYTHON')
+  const backend = binding.backendDir
+  const runtime = binding.runtimeDir
   const command = invocation(
     backend,
     runtime,
-    python,
     operation,
     tenant,
     migration,

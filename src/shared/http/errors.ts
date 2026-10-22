@@ -64,6 +64,13 @@ const errorKeyTranslation: Record<string, string> = {
   internal: 'shell.http.errors.internal',
 }
 
+const reasonTranslation: Record<string, string> = {
+  invalid_parameters: 'shell.http.reasons.invalidParameters',
+  captcha_invalid_or_expired: 'shell.http.reasons.captchaInvalidOrExpired',
+  fixed_tenant_required: 'shell.http.reasons.fixedTenantRequired',
+  system_tenant_required: 'shell.http.reasons.systemTenantRequired',
+}
+
 function isApiEnvelope(value: unknown): value is ApiResponse {
   return (
     typeof value === 'object' &&
@@ -78,8 +85,16 @@ function isApiEnvelope(value: unknown): value is ApiResponse {
 }
 
 function translatedErrorMessage(envelope: ApiResponse, fallback: string): string {
+  const reason = publicReason(envelope.details)
+  const reasonKey = reason ? reasonTranslation[reason] : undefined
+  if (reasonKey) return httpTranslate(reasonKey)
   const key = envelope.error_key ? errorKeyTranslation[envelope.error_key] : undefined
   return key ? httpTranslate(key) : envelope.message || fallback
+}
+
+function publicReason(details: unknown): string | undefined {
+  if (typeof details !== 'object' || details === null || !('reason' in details)) return undefined
+  return typeof details.reason === 'string' ? details.reason : undefined
 }
 
 interface ErrorPayload {

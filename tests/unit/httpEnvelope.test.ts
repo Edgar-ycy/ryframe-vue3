@@ -39,4 +39,34 @@ describe('HTTP 响应包络', () => {
 
     expect(() => parseEnvelope(response(202, envelope))).toThrow(HttpError)
   })
+
+  it('优先使用后端白名单公开的具体错误原因', () => {
+    const envelope: ApiResponse<undefined> = {
+      code: 400,
+      data: undefined,
+      details: { reason: 'captcha_invalid_or_expired', field: 'captcha' },
+      error_key: 'validation',
+      message: '请求参数无效',
+      request_id: '019c0000-0000-7000-8000-000000000003',
+    }
+
+    expect(() => parseEnvelope(response(400, envelope))).toThrowError(
+      'shell.http.reasons.captchaInvalidOrExpired',
+    )
+  })
+
+  it('忽略未知公开原因并退回稳定错误键', () => {
+    const envelope: ApiResponse<undefined> = {
+      code: 403,
+      data: undefined,
+      details: { reason: 'untrusted_server_message' },
+      error_key: 'authorization',
+      message: '不应直接展示的服务端文字',
+      request_id: '019c0000-0000-7000-8000-000000000004',
+    }
+
+    expect(() => parseEnvelope(response(403, envelope))).toThrowError(
+      'shell.http.errors.authorization',
+    )
+  })
 })

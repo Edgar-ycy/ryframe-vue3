@@ -49,6 +49,12 @@ export const shellMessages = {
           tenantDataTargetUnavailable: '租户业务数据目标暂不可用',
           internal: '服务器内部错误',
         },
+        reasons: {
+          invalidParameters: '请求参数无效，请检查必填项和格式后重试',
+          captchaInvalidOrExpired: '验证码错误或已过期，请刷新验证码后重试',
+          fixedTenantRequired: '当前部署使用固定租户，请刷新登录页后重试',
+          systemTenantRequired: '此操作仅允许系统租户执行，请切换到系统租户后重试',
+        },
       },
       tenant: {
         idRequired: '请输入租户标识',
@@ -142,6 +148,12 @@ export const shellMessages = {
           tenantDataMaintenance: 'Business data is in a maintenance window.',
           tenantDataTargetUnavailable: 'The tenant business-data target is unavailable.',
           internal: 'Internal server error.',
+        },
+        reasons: {
+          invalidParameters: 'Check the required fields and formats, then try again.',
+          captchaInvalidOrExpired: 'The captcha is incorrect or expired. Refresh it and try again.',
+          fixedTenantRequired: 'This deployment uses a fixed tenant. Refresh the sign-in page and try again.',
+          systemTenantRequired: 'This operation requires the system tenant. Switch tenants and try again.',
         },
       },
       tenant: {

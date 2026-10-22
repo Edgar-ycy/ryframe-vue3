@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { verifyLocalContractState } from './api-contract-state.mjs'
+import { readConsumerContext } from './consumer-context.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -18,8 +19,17 @@ export function parseArguments(argv) {
   let real = false
   let fixture
   let server
+  let consumerContext
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
+    if (value === '--consumer-context') {
+      if (consumerContext !== undefined) throw new Error('--consumer-context 不能重复')
+      consumerContext = argv[++index]
+      if (!consumerContext || consumerContext.startsWith('--')) {
+        throw new Error('--consumer-context 缺少文件路径')
+      }
+      continue
+    }
     if (value === '--real') {
       real = true
       continue
@@ -56,15 +66,22 @@ export function parseArguments(argv) {
   if ((real || fixture || server) && selected !== 'browser')
     throw new Error('真实浏览器参数只能用于 browser 阶段')
   if ((fixture || server) && !real) throw new Error('--fixture 和 --server 必须与 --real 一起使用')
+  if (consumerContext && !['contract', 'full'].includes(selected)) {
+    throw new Error('--consumer-context 只能用于 contract 或 full 阶段')
+  }
   return {
     full,
     stage: selected,
     plan,
+    ...(consumerContext ? { consumerContext } : {}),
     ...(real ? { real, fixture: fixture || 'core', server: server || 'dev' } : {}),
   }
 }
 
 export function checkTasks(stage, options = {}) {
+  if (options.consumerContext && !['contract', 'full'].includes(stage)) {
+    throw new Error('--consumer-context 只能用于 contract 或 full 阶段')
+  }
   if (stage === 'browser' && options.real)
     return [
       {
@@ -74,7 +91,22 @@ export function checkTasks(stage, options = {}) {
       },
     ]
   const tasks = {
-    contract: [{ name: 'contract' }],
+    contract: [
+      { name: 'contract' },
+      ...(options.consumerContext
+        ? [
+            {
+              name: 'consumer-proof',
+              dependsOn: ['contract'],
+              node: [
+                'scripts/contract-tests/frontend-python-receipt.mjs',
+                '--consumer-context',
+                options.consumerContext,
+              ],
+            },
+          ]
+        : []),
+    ],
     static: [
       { name: 'documentation', node: ['scripts/check-documentation.mjs'] },
       { name: 'import-boundaries', node: ['scripts/check-import-boundaries.mjs'] },
@@ -94,7 +126,11 @@ export function checkTasks(stage, options = {}) {
     ],
     browser: [{ name: 'browser-smoke', args: ['exec', 'playwright', 'test'] }],
   }
-  if (stage === 'full') return ['contract', 'static', 'unit', 'build'].flatMap(checkTasks)
+  if (stage === 'full') {
+    return ['contract', 'static', 'unit', 'build'].flatMap((name) =>
+      checkTasks(name, name === 'contract' ? options : {}),
+    )
+  }
   if (!tasks[stage]) throw new Error(`未知检查阶段：${stage}`)
   return tasks[stage]
 }
@@ -107,8 +143,8 @@ export function checkTaskEnvironment(task, environment = process.env) {
   }
 }
 
-function runTask(task) {
-  if (task.name === 'contract') return runContractCheck()
+function runTask(task, consumer) {
+  if (task.name === 'contract') return runContractCheck(consumer?.arguments)
   return new Promise((resolve, reject) => {
     const windows = process.platform === 'win32'
     const command = windows || task.node ? process.execPath : 'corepack'
@@ -131,39 +167,6 @@ function runTask(task) {
   })
 }
 
-function consumerArguments() {
-  const raw = process.env.RYFRAME_CONSUMER_CONTRACT
-  if (!raw) return null
-  let values
-  try {
-    values = JSON.parse(raw)
-  } catch {
-    throw new Error('RYFRAME_CONSUMER_CONTRACT 不是合法 JSON')
-  }
-  if (!Array.isArray(values) || values.length % 2 !== 0) {
-    throw new Error('消费契约上下文必须是键值参数数组')
-  }
-  const result = new Map()
-  for (let index = 0; index < values.length; index += 2) {
-    const key = values[index]
-    const value = values[index + 1]
-    if (typeof key !== 'string' || !key.startsWith('--') || typeof value !== 'string') {
-      throw new Error('消费契约上下文参数无效')
-    }
-    if (result.has(key)) throw new Error(`消费契约上下文重复参数：${key}`)
-    result.set(key, value)
-  }
-  const required = [
-    '--mode',
-    '--openapi',
-    '--backend-commit',
-    '--backend-repository',
-    '--require-pin',
-  ]
-  if (required.some((key) => !result.has(key))) throw new Error('消费契约上下文缺少必需参数')
-  return result
-}
-
 function runNodeScript(script, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [path.join(root, 'scripts', script), ...args], {
@@ -181,9 +184,8 @@ function runNodeScript(script, args) {
   })
 }
 
-async function runContractCheck() {
+async function runContractCheck(consumer) {
   const state = await verifyLocalContractState(root)
-  const consumer = consumerArguments()
   if (consumer) {
     if (consumer.get('--mode') !== state.mode) throw new Error('前端契约状态与消费检查模式不一致')
     const backendOpenapi = await readFile(consumer.get('--openapi'))
@@ -207,21 +209,30 @@ export function verifyConsumerDocument(state, backendOpenapi) {
   if (!state.bytes.equals(backendOpenapi)) throw new Error('前端 OpenAPI 与后端本次快照不一致')
 }
 
-async function main() {
-  const options = parseArguments(process.argv.slice(2))
+export async function runCheck(options) {
   const tasks = checkTasks(options.stage, options)
   if (options.plan) {
     console.log(JSON.stringify({ stage: options.stage, tasks }, null, 2))
     return
   }
-  for (const task of tasks) await runTask(task)
+  const consumer = options.consumerContext ? readConsumerContext(options.consumerContext) : null
+  for (const task of tasks) {
+    consumer?.verifyUnchanged()
+    try {
+      await runTask(task, consumer)
+    } finally {
+      consumer?.verifyUnchanged()
+    }
+  }
 }
 
 const isMain =
   process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url
 if (isMain) {
-  main().catch((error) => {
-    console.error(error.stack ?? error.message)
-    process.exitCode = 1
-  })
+  Promise.resolve()
+    .then(() => runCheck(parseArguments(process.argv.slice(2))))
+    .catch((error) => {
+      console.error(error.stack ?? error.message)
+      process.exitCode = 1
+    })
 }

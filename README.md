@@ -22,8 +22,7 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm dev
 ```
 
-开发服务器默认监听 `http://127.0.0.1:5173`，并将 `/api` 代理到
-`VITE_APP_PROXY_TARGET`。联调前先启动后端 API。
+开发服务器默认监听 `http://localhost:5173`，并将 `/api` 代理到文件配置的 `server.proxy_target`。联调前先启动后端 API。
 
 若登录返回成功，但页面提示“登录会话信息与当前接口契约不一致”，检查后端源码、
 前端 OpenAPI 和数据库访问目录是否配套。租户信息完整时，旧菜单权限码也可能使会话
@@ -31,16 +30,45 @@ corepack pnpm dev
 
 ## 运行配置
 
-| 变量                    | 用途                                       |
-| ----------------------- | ------------------------------------------ |
-| `VITE_APP_TITLE`        | 浏览器标题                                 |
-| `VITE_APP_API_ORIGIN`   | 生产 API 的绝对 HTTPS origin               |
-| `VITE_APP_PROXY_TARGET` | 本地代理目标，默认 `http://localhost:8080` |
-| `VITE_APP_DEV_HOST`     | 开发监听地址，默认 `127.0.0.1`             |
-| `VITE_APP_DEV_PORT`     | 开发端口，默认 `5173`                      |
+项目配置只从公开 TOML 文件读取，环境入口仅 `APP_ENV`，精确接受 `dev`、`test`、`prod`，缺省为 `dev`。Vite 的 `production` mode 不会自动选择 `prod`。公开应用配置不再读取 `.env*` 或 `VITE_*` 覆盖；Vite 内置 `DEV`、`MODE` 继续可用。
 
-本地环境值可放入 `.env.development`，生产环境值可放入 `.env.production`。API 版本前缀
-由 OpenAPI 契约提供。
+```powershell
+$env:APP_ENV = "dev"
+corepack pnpm dev
+```
+
+默认目录为前端根下 `config`。可选 `app.toml` 提供公共默认值，再深合并必需的 `app.<APP_ENV>.toml`；公共文件缺失时，环境文件必须独立提供全部字段。未知字段、数组、非法类型、链接和错误 UTF-8 均拒绝，报错不回显原文或字段值。
+
+| TOML 字段             | 用途与默认值                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| `api_origin`          | 浏览器 API origin，默认空字符串，使用页面同源；非空仅允许 HTTP(S) origin，不含凭据、路径、查询或片段 |
+| `server.host`         | 开发监听地址，默认 `localhost`                                                                       |
+| `server.port`         | 开发端口，默认 `5173`，范围 `1..65535`                                                               |
+| `server.proxy_target` | 开发代理 HTTP(S) origin，默认 `http://localhost:8080`                                                |
+
+应用 TOML 使用 `smol-toml` 1.9.1 解析，拒绝 unsafe keys；超出安全整数范围的整数保留为 BigInt 并按既定字段类型拒绝，不做隐式转换。inline object/array 深度上限为 32；语法错误只投影安全的正整数行列位置，不输出原文。工具配置、构建身份和收据继续使用各自的 JSON 协议。
+
+API 前缀继续只由 OpenAPI 生成的 `apiPrefix.generated.json` 提供。浏览器包仅包含 `{apiOrigin}` 公开投影，不能放入密码、E2E、恢复或契约工具凭据。
+
+`config/tools.json` 为公开空对象 `{}`。本机可在忽略的 `.local-tests/frontend-tools.json` 设置 `{"application_config_dir":".local-tests/public-config"}`；本机文件优先于公共工具文件，相对路径从前端根解析。两份工具文件均可缺省，存在但非法时不会跳过。把真实部署公开 TOML 放在此类忽略目录中，不改 tracked 模板，也不要将任何私有凭据混入公开文件。
+
+```powershell
+$env:APP_ENV = "prod"
+corepack pnpm build
+```
+
+真实验收使用 `APP_ENV=test` 或显式选择的合适配置文件。`corepack pnpm build --real` 在执行前要求合并后的 `api_origin` 为空；否则修正报错所指的环境文件，构建工具不会覆盖或改写用户配置。
+
+```powershell
+$env:APP_ENV = "test"
+corepack pnpm build --real
+```
+
+普通构建在固定受管 `.local-tests/build/source.json` 原子写入 `development` 身份。正式身份使用 `corepack pnpm build --real --source-commit <SHA>`，只接受目标干净 Git HEAD 的完整小写 SHA。身份不再从环境变量取得。`--plan` 仅解析参数、展示同一任务图，不读配置或 Git、不写身份、不派生进程。
+
+显式传入 `--source-commit` 的构建，无论是否使用 `--real`，都会在任务前后核对完整源码、配置、身份和工具链；发生漂移时失败。发布使用的 `corepack pnpm build --source-commit <SHA>` 同样执行此核对，只有 `--real` 签发恢复构建收据。
+
+真实构建签发 v3 收据，绑定三域源码、工具链、实际配置与工具文件路径/摘要、身份来源和全部产物；失败不签发，已有收据拒绝覆盖，构建中来源漂移拒绝。preview 只核验现有产物，不重建；它按收据保存的 `APP_ENV` 重读配置，不要求当前 shell 的选择相同。旧 v2 前端构建收据不再接受，需重新构建。
 
 ## 常用开发命令
 
@@ -55,6 +83,7 @@ corepack pnpm generate
 
 `corepack pnpm check --full` 依次检查契约、静态规则、测试类型、单元覆盖率和生产构建。 静态阶段同时检查中英文文档配对、语言切换、本地章节引用和命令示例。
 `--stage contract|static|unit|build` 可单独运行相应阶段，`--plan` 输出同一任务图且不执行任务。
+跨仓消费者检查显式使用 `corepack pnpm check --stage contract --consumer-context <file>`（也可配合 `--full`），先验证契约，再执行真实 Node→Python 收据证明；上下文绑定本次前后端目录、Python 入口及后端工具来源。普通单仓检查无需后端或 Python。`--plan` 不读取上下文，也不写文件或启动任务。
 浏览器 smoke 使用 `corepack pnpm check --stage browser`；真实后端联调使用隔离资源与对应的 real 配置。每次 smoke 将 HTML 报告和测试附件分别保存在 `.local-tests/playwright/report/<dev或preview>/<代次UUID>/` 与 `.local-tests/playwright/results/<dev或preview>/<代次UUID>/`，失败时保留截图、视频和 trace，重跑不会覆盖之前的代次。
 仓库 CI 分别执行这些阶段，并保留 Windows 检查。
 

@@ -18,7 +18,7 @@ export function normalizeApiOrigin(value: string | undefined, fallbackOrigin: st
   try {
     url = new URL(candidate)
   } catch {
-    throw new Error('VITE_APP_API_ORIGIN 必须是有效的绝对 URL origin')
+    throw new Error('api_origin 必须是有效的绝对 URL origin')
   }
   if (
     url.origin === 'null' ||
@@ -29,7 +29,7 @@ export function normalizeApiOrigin(value: string | undefined, fallbackOrigin: st
     url.hash ||
     !['http:', 'https:'].includes(url.protocol)
   ) {
-    throw new Error('VITE_APP_API_ORIGIN 只能包含 HTTP(S) origin，不能包含路径、查询或片段')
+    throw new Error('api_origin 只能包含 HTTP(S) origin，不能包含路径、查询或片段')
   }
   return url.origin
 }

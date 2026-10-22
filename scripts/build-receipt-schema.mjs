@@ -3,7 +3,7 @@ import {
   validateSourceDomains as validateFrontendSourceDomains,
   validateSourceInventory,
 } from './build-source-inventory.mjs'
-import { validateBuildContext as validateFrontendBuildContext } from './build-source.mjs'
+import { validateBuildContext as validateFrontendBuildContext } from './build-context-schema.mjs'
 
 const validHex = (value, size) =>
   typeof value === 'string' && new RegExp(`^[a-f0-9]{${size}}$`, 'u').test(value)
@@ -179,4 +179,7 @@ export function validateFrontendBuildSources(receipt, expectedSha) {
   validateFrontendSourceDomains(receipt.sources)
   verifyBuildSource(receipt.sources, expectedSha)
   validateFrontendBuildContext(receipt.build)
+  if (receipt.format_version !== 3 || receipt.build.identity.frontend_commit !== expectedSha) {
+    throw new Error('前端构建格式或身份与声明来源不一致')
+  }
 }

@@ -1,0 +1,6 @@
+api_origin = ''
+
+[server]
+host = 'localhost'
+port = 5173
+proxy_target = 'http://localhost:8080'

@@ -3,11 +3,14 @@ import { lstatSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
+import { checkApplicationPath } from './application-config-paths.mjs'
+import { parseJson } from './resource-render/json.mjs'
 import { pathToFileURL } from 'node:url'
+import { readBuildIdentity, prepareBuildIdentity } from './build-identity.mjs'
+import { loadFrontendConfiguration, requireSameOrigin } from './frontend-tool-config.mjs'
 
 import {
   buildSourceSnapshot,
-  environmentFiles,
   observedExternalToolchain,
   observedToolchain,
   validateBuildContext,
@@ -51,12 +54,14 @@ function executeViteBuild(root, environment) {
 }
 
 export function productionFiles(dist) {
+  checkApplicationPath(dist, { directory: true, label: '生产构建目录' })
   const files = []
   function visit(directory) {
     for (const name of readdirSync(directory).sort()) {
       const file = path.join(directory, name)
       const relative = path.relative(dist, file).replaceAll('\\', '/')
       const stat = lstatSync(file)
+      checkApplicationPath(file, { directory: stat.isDirectory(), label: '生产构建产物' })
       if (stat.isSymbolicLink()) throw new Error('生产构建不能通过链接引用外部文件')
       if (stat.isDirectory()) visit(file)
       else if (stat.isFile() && relative !== receiptPath) {
@@ -73,17 +78,34 @@ export function productionFiles(dist) {
   return files
 }
 
+function verifyDistIdentity(root, commit) {
+  let value
+  try {
+    const file = checkApplicationPath(`${root}/dist/build-identity.json`, { label: '生产构建身份' })
+    value = parseJson(new TextDecoder('utf-8', { fatal: true }).decode(readFileSync(file)))
+  } catch {
+    throw new Error('生产构建缺少有效 build-identity.json；请重新构建')
+  }
+  if (
+    !value ||
+    Object.keys(value).join(',') !== 'frontend_commit' ||
+    value.frontend_commit !== commit
+  ) {
+    throw new Error('生产构建身份与受管来源提交不一致')
+  }
+}
+
 export function writeBuildReceipt(
   root,
   before,
-  overrides = {},
   environment = process.env,
   observeToolchain = undefined,
 ) {
-  const after = buildSourceSnapshot(root, overrides, environment, observeToolchain)
-  if (!isDeepStrictEqual(before, after)) throw new Error('构建期间源码或有效构建环境发生变化')
+  const after = buildSourceSnapshot(root, environment, observeToolchain)
+  if (!isDeepStrictEqual(before, after)) throw new Error('构建期间源码或有效构建配置或身份发生变化')
+  verifyDistIdentity(root, after.build.identity.frontend_commit)
   const receipt = {
-    format_version: 2,
+    format_version: 3,
     kind: 'restore-frontend-build',
     sources: after.sources,
     build: after.build,
@@ -95,19 +117,20 @@ export function writeBuildReceipt(
   return receipt
 }
 
-/** 真实 preview 只接受当前源码、环境文件和工具链对应的完整生产产物。 */
+/** 真实 preview 只接受当前源码、配置文件、身份和工具链对应的完整生产产物。 */
 export function verifyBuildReceipt(root, environment = process.env, observeToolchain = undefined) {
   let receipt
   try {
-    receipt = JSON.parse(readFileSync(path.join(root, 'dist', receiptPath), 'utf8'))
-  } catch (error) {
-    throw new Error('真实 preview 需要先执行 corepack pnpm build --real', { cause: error })
+    const file = checkApplicationPath(`${root}/dist/${receiptPath}`, { label: '生产构建收据' })
+    receipt = parseJson(new TextDecoder('utf-8', { fatal: true }).decode(readFileSync(file)))
+  } catch {
+    throw new Error('真实 preview 需要有效普通文件收据；请先执行 corepack pnpm build --real')
   }
   try {
     if (
       Object.keys(receipt).sort().join('\0') !==
         ['format_version', 'kind', 'sources', 'build', 'files'].sort().join('\0') ||
-      receipt.format_version !== 2 ||
+      receipt.format_version !== 3 ||
       receipt.kind !== 'restore-frontend-build'
     )
       throw new Error('字段无效')
@@ -117,15 +140,18 @@ export function verifyBuildReceipt(root, environment = process.env, observeToolc
     throw new Error('真实 preview 的生产构建收据无效', { cause: error })
   }
   const currentSources = sourceDomains(captureSourceInventory(root))
+  const { configuration } = loadFrontendConfiguration(root, receipt.build.configuration.environment)
   if (
     !isDeepStrictEqual(receipt.sources, currentSources) ||
-    !isDeepStrictEqual(receipt.build.environment_files, environmentFiles(root)) ||
+    !isDeepStrictEqual(receipt.build.configuration, configuration) ||
+    !isDeepStrictEqual(receipt.build.identity, readBuildIdentity(root)) ||
     !isDeepStrictEqual(
       receipt.build.toolchain,
       (observeToolchain ?? observedToolchain)(root, environment),
     )
   )
-    throw new Error('真实 preview 的生产构建与当前源码、环境文件或工具链不一致')
+    throw new Error('真实 preview 的生产构建与当前源码、配置文件、身份或工具链不一致')
+  verifyDistIdentity(root, receipt.build.identity.frontend_commit)
   if (!isDeepStrictEqual(receipt.files, productionFiles(path.join(root, 'dist')))) {
     throw new Error('真实 preview 的生产构建内容已发生变化')
   }
@@ -144,11 +170,13 @@ export function buildExternalReceipt(
 ) {
   root = path.resolve(root)
   if (!/^[a-f0-9]{40}$/u.test(expectedHead)) throw new Error('目标前端提交必须是完整小写 SHA')
-  const effective = { ...environment, VITE_APP_API_ORIGIN: '' }
-  const before = buildSourceSnapshot(root, { VITE_APP_API_ORIGIN: '' }, effective, observeToolchain)
-  const snapshot = before.sources.full.source.snapshot
-  if (snapshot.head !== expectedHead || !snapshot.clean) {
-    throw new Error('外部恢复构建必须使用声明的精确干净前端源码')
+  for (const file of [
+    'vite.config.ts',
+    'scripts/application-config.mjs',
+    'scripts/frontend-tool-config.mjs',
+    'scripts/build-identity.mjs',
+  ]) {
+    checkApplicationPath(`${root}/${file}`, { label: '外部前端必须具备已接入的文件配置布局' })
   }
   const output = path.join(root, 'dist', receiptPath)
   try {
@@ -157,15 +185,20 @@ export function buildExternalReceipt(
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error
   }
-  executeBuild(root, effective)
-  const receipt = writeBuildReceipt(
-    root,
-    before,
-    { VITE_APP_API_ORIGIN: '' },
-    effective,
-    observeToolchain,
-  )
-  verifyBuildReceipt(root, effective, observeToolchain)
+  const configuration = loadFrontendConfiguration(root, environment.APP_ENV ?? 'dev')
+  requireSameOrigin(configuration)
+  prepareBuildIdentity(root, expectedHead)
+  const before = buildSourceSnapshot(root, environment, observeToolchain)
+  const snapshot = before.sources.full.source.snapshot
+  if (snapshot.head !== expectedHead || !snapshot.clean) {
+    throw new Error('外部恢复构建必须使用声明的精确干净前端源码')
+  }
+  if (!isDeepStrictEqual(configuration.configuration, before.build.configuration)) {
+    throw new Error('外部恢复构建执行前公开配置或工具来源发生漂移；请稳定文件后重试')
+  }
+  executeBuild(root, environment)
+  const receipt = writeBuildReceipt(root, before, environment, observeToolchain)
+  verifyBuildReceipt(root, environment, observeToolchain)
   return receipt
 }
 

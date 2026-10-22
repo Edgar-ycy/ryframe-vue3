@@ -1,36 +1,13 @@
 import { execFileSync } from 'node:child_process'
 import { lstatSync, readFileSync, realpathSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
+import { loadFrontendConfiguration } from './frontend-tool-config.mjs'
+import { readBuildIdentity } from './build-identity.mjs'
+import { captureSourceInventory, sourceDomains } from './build-source-inventory.mjs'
 
-import {
-  canonicalDigest,
-  captureSourceInventory,
-  exactObject,
-  hex,
-  localSourceFile,
-  sha256,
-  sourceDomains,
-  validateFiles,
-} from './build-source-inventory.mjs'
-
-export const environmentPaths = Object.freeze([
-  '.env',
-  '.env.local',
-  '.env.production',
-  '.env.production.local',
-])
-
-export function environmentFiles(root) {
-  return environmentPaths.flatMap((relative) => {
-    const file = localSourceFile(root, relative, 'Vite 环境文件必须是前端仓库内的普通文件', {
-      allowMissing: true,
-    })
-    return file ? [{ path: relative, sha256: sha256(readFileSync(file)) }] : []
-  })
-}
+export { validateBuildContext } from './build-context-schema.mjs'
 
 function packageVersion(root, name) {
   const manifest = JSON.parse(
@@ -112,78 +89,39 @@ export function observedExternalToolchain(root) {
 
 export function buildContext(
   root,
-  overrides = {},
   environment = process.env,
   observeToolchain = observedToolchain,
+  selectedEnvironment = environment.APP_ENV ?? 'dev',
 ) {
-  // 只在真实来源捕获时加载 Vite；--plan 可在禁止原生扩展和派生进程的权限模型中运行。
-  const requireFromSource = createRequire(path.join(root, 'package.json'))
-  const effective = { ...requireFromSource('vite').loadEnv('production', root, 'VITE_') }
-  for (const [name, value] of Object.entries(environment)) {
-    if (name.startsWith('VITE_') && typeof value === 'string') effective[name] = value
-  }
-  for (const [name, value] of Object.entries(overrides)) {
-    if (name.startsWith('VITE_') && typeof value === 'string') effective[name] = value
-  }
-  const entries = Object.keys(effective)
-    .sort()
-    .map((name) => ({ name, sha256: sha256(effective[name]) }))
+  const toolchain = observeToolchain(root, environment)
+  const { configuration } = loadFrontendConfiguration(root, selectedEnvironment)
   return {
     command: ['vite', 'build'],
     mode: 'production',
     target: 'vite-default',
-    toolchain: observeToolchain(root, environment),
-    environment: { variables: entries.map((item) => item.name), sha256: canonicalDigest(entries) },
-    environment_files: environmentFiles(root),
+    toolchain,
+    configuration,
+    identity: readBuildIdentity(root),
   }
-}
-
-export function validateBuildContext(value) {
-  exactObject(
-    value,
-    ['command', 'mode', 'target', 'toolchain', 'environment', 'environment_files'],
-    '前端构建上下文字段无效',
-  )
-  exactObject(value.toolchain, ['node', 'pnpm', 'vite'], '前端构建工具链字段无效')
-  exactObject(value.toolchain.pnpm, ['pinned', 'observed'], '前端 pnpm 工具链字段无效')
-  exactObject(value.environment, ['variables', 'sha256'], '前端构建环境摘要无效')
-  if (
-    !isDeepStrictEqual(value.command, ['vite', 'build']) ||
-    value.mode !== 'production' ||
-    value.target !== 'vite-default' ||
-    typeof value.toolchain.node !== 'string' ||
-    !value.toolchain.node ||
-    typeof value.toolchain.vite !== 'string' ||
-    !value.toolchain.vite ||
-    typeof value.toolchain.pnpm.pinned !== 'string' ||
-    !value.toolchain.pnpm.pinned ||
-    value.toolchain.pnpm.observed !== value.toolchain.pnpm.pinned ||
-    !Array.isArray(value.environment.variables) ||
-    !isDeepStrictEqual(
-      value.environment.variables,
-      [...new Set(value.environment.variables)].sort(),
-    ) ||
-    !value.environment.variables.every(
-      (name) => typeof name === 'string' && name.startsWith('VITE_'),
-    ) ||
-    !hex(value.environment.sha256, 64)
-  )
-    throw new Error('前端构建命令、工具链或环境摘要无效')
-  validateFiles(value.environment_files, ['path', 'sha256'], '前端构建环境文件无效')
-  if (value.environment_files.some((item) => !environmentPaths.includes(item.path))) {
-    throw new Error('前端构建环境文件无效')
-  }
-  return value
 }
 
 export function buildSourceSnapshot(
   root,
-  overrides = {},
   environment = process.env,
   observeToolchain = observedToolchain,
+  selectedEnvironment = environment.APP_ENV ?? 'dev',
 ) {
-  return {
-    sources: sourceDomains(captureSourceInventory(root)),
-    build: buildContext(root, overrides, environment, observeToolchain),
+  const sources = sourceDomains(captureSourceInventory(root))
+  const build = buildContext(root, environment, observeToolchain, selectedEnvironment)
+  if (!isDeepStrictEqual(sources, sourceDomains(captureSourceInventory(root)))) {
+    throw new Error('采集构建上下文期间源码发生变化')
   }
+  const snapshot = sources.full.source.snapshot
+  if (
+    build.identity.frontend_commit !== 'development' &&
+    (!snapshot.clean || build.identity.frontend_commit !== snapshot.head)
+  ) {
+    throw new Error('正式构建身份与精确干净前端源码不一致')
+  }
+  return { sources, build }
 }

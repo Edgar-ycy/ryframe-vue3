@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 
+import { buildEnvironment, fixture } from './restore-build-fixture.mjs'
 import { buildSourceSnapshot } from '../build-source.mjs'
 import { captureSourceInventory, sourceDomains } from '../build-source-inventory.mjs'
 import {
@@ -14,70 +15,23 @@ import {
   writeBuildReceipt,
 } from '../restore-build.mjs'
 
-function buildEnvironment(root) {
-  const cli = path.join(root, '.local-tests/pnpm.mjs')
-  mkdirSync(path.dirname(cli), { recursive: true })
-  writeFileSync(cli, "console.log('11.20.0')\n")
-  return {
-    ...process.env,
-    npm_config_user_agent: 'pnpm/11.20.0 npm/? node/? win32 x64',
-    npm_execpath: cli,
-  }
-}
-
-function fixture(t) {
-  const local = path.resolve('.local-tests/node-unit')
-  mkdirSync(local, { recursive: true })
-  const root = mkdtempSync(path.join(local, 'restore-build-'))
-  t.after(() => rmSync(root, { recursive: true, force: true }))
-  const git = (...args) => execFileSync('git', ['-C', root, ...args], { windowsHide: true })
-  git('init', '--quiet')
-  git('config', 'core.autocrlf', 'false')
-  writeFileSync(
-    path.join(root, '.gitignore'),
-    'dist/\n.local-tests/\nnode_modules/\n.env.production\n.env*.local\n',
-  )
-  writeFileSync(path.join(root, 'app.js'), 'export const answer = 42\n')
-  writeFileSync(path.join(root, 'package.json'), '{"packageManager":"pnpm@11.20.0"}\n')
-  mkdirSync(path.join(root, 'scripts'), { recursive: true })
-  writeFileSync(path.join(root, 'scripts/tool.mjs'), 'export const tool = true\n')
-  git('add', '.')
-  git(
-    '-c',
-    'user.name=Test',
-    '-c',
-    'user.email=test@localhost',
-    'commit',
-    '--quiet',
-    '-m',
-    'fixture',
-  )
-  mkdirSync(path.join(root, 'node_modules/vite'), { recursive: true })
-  writeFileSync(path.join(root, 'node_modules/vite/package.json'), '{"version":"7.1.7"}\n')
-  mkdirSync(path.join(root, 'dist/.vite'), { recursive: true })
-  writeFileSync(path.join(root, 'dist/index.html'), '<script src="/app.js"></script>')
-  writeFileSync(path.join(root, 'dist/app.js'), 'console.log(42)')
-  writeFileSync(path.join(root, 'dist/.vite/manifest.json'), '{}')
-  return root
-}
-
 test('生产构建收据绑定三域、工具链和完整 dist，非干净候选不能伪装', (t) => {
   const root = fixture(t)
   const environment = buildEnvironment(root)
-  const before = buildSourceSnapshot(root, {}, environment)
+  const before = buildSourceSnapshot(root, environment)
   assert.equal(before.sources.full.source.snapshot.clean, true)
   writeFileSync(path.join(root, 'new.js'), 'export const untracked = true')
-  const candidate = buildSourceSnapshot(root, {}, environment)
+  const candidate = buildSourceSnapshot(root, environment)
   assert.equal(candidate.sources.full.source.snapshot.clean, false)
   assert.deepEqual(Object.keys(candidate.sources).sort(), ['full', 'product', 'tools'])
-  assert.throws(() => writeBuildReceipt(root, before, {}, environment), /发生变化/u)
-  const receipt = writeBuildReceipt(root, candidate, {}, environment)
-  assert.equal(receipt.format_version, 2)
+  assert.throws(() => writeBuildReceipt(root, before, environment), /发生变化/u)
+  const receipt = writeBuildReceipt(root, candidate, environment)
+  assert.equal(receipt.format_version, 3)
   assert.equal(receipt.sources.full.source.snapshot.clean, false)
   assert.deepEqual(receipt.files, productionFiles(path.join(root, 'dist')))
   assert.deepEqual(JSON.parse(readFileSync(path.join(root, 'dist', receiptPath))), receipt)
   assert.deepEqual(verifyBuildReceipt(root, environment), receipt)
-  assert.throws(() => writeBuildReceipt(root, candidate, {}, environment), /EEXIST/u)
+  assert.throws(() => writeBuildReceipt(root, candidate, environment), /EEXIST/u)
 })
 
 test('工具源码变化不改变产品摘要，完整来源和工具摘要仍会变化', (t) => {
@@ -105,15 +59,18 @@ test('中英文说明文档变化只更新完整来源，不伪造产品或工�
   assert.notEqual(after.full.source.worktree_fingerprint, before.full.source.worktree_fingerprint)
 })
 
-test('Vite 忽略环境文件、构建参数和工具链变化都不能复用收据', (t) => {
+test('公开配置文件、构建参数和工具链变化都不能复用收据', (t) => {
   const root = fixture(t)
-  const environment = { ...buildEnvironment(root), VITE_lowercase_input: 'fixture' }
-  const before = buildSourceSnapshot(root, {}, environment)
-  assert.ok(before.build.environment.variables.includes('VITE_lowercase_input'))
-  writeFileSync(path.join(root, '.env.production'), 'VITE_FLAG=before\n')
-  assert.throws(() => writeBuildReceipt(root, before, {}, environment), /有效构建环境/u)
-  rmSync(path.join(root, '.env.production'))
-  const receipt = writeBuildReceipt(root, before, {}, environment)
+  const environment = { ...buildEnvironment(root), VITE_lowercase_input: 'PRIVATE-LEGACY-SENTINEL' }
+  const before = buildSourceSnapshot(root, environment)
+  assert.equal(before.build.configuration.environment, environment.APP_ENV ?? 'dev')
+  assert.doesNotMatch(JSON.stringify(before.build), /PRIVATE-LEGACY-SENTINEL|VITE_lowercase_input/u)
+  const selected = path.join(root, `config/app.${before.build.configuration.environment}.toml`)
+  const original = readFileSync(selected)
+  writeFileSync(selected, '[server]\nport = 6001\n')
+  assert.throws(() => writeBuildReceipt(root, before, environment), /有效构建配置/u)
+  writeFileSync(selected, original)
+  const receipt = writeBuildReceipt(root, before, environment)
   const receiptFile = path.join(root, 'dist', receiptPath)
   const changed = structuredClone(receipt)
   changed.build.command.push('--debug')
@@ -136,14 +93,14 @@ test('Vite 忽略环境文件、构建参数和工具链变化都不能复用收
   )
 })
 
-test('preview 不要求当前 VITE 进程环境重现构建值，但仍核对环境文件与产物', (t) => {
+test('preview 按保存的 APP_ENV 核对文件而不要求当前 shell 重现选择，仍核对产物', (t) => {
   const root = fixture(t)
   const environment = buildEnvironment(root)
-  const builtWith = { ...environment, VITE_BUILD_LABEL: 'candidate' }
-  const before = buildSourceSnapshot(root, { VITE_APP_API_ORIGIN: '' }, builtWith)
-  const receipt = writeBuildReceipt(root, before, { VITE_APP_API_ORIGIN: '' }, builtWith)
+  const builtWith = { ...environment, APP_ENV: 'test', VITE_BUILD_LABEL: 'candidate' }
+  const before = buildSourceSnapshot(root, builtWith)
+  const receipt = writeBuildReceipt(root, before, builtWith)
   assert.deepEqual(
-    verifyBuildReceipt(root, { ...environment, VITE_BUILD_LABEL: 'another-shell' }),
+    verifyBuildReceipt(root, { ...environment, APP_ENV: 'prod', VITE_BUILD_LABEL: 'other-shell' }),
     receipt,
   )
   writeFileSync(path.join(root, 'dist/app.js'), 'console.log(43)')
@@ -154,9 +111,9 @@ test('缺少 manifest 和源码中途变动可被识别', (t) => {
   const root = fixture(t)
   const environment = buildEnvironment(root)
   assert.throws(() => verifyBuildReceipt(root, environment), /build --real/u)
-  const before = buildSourceSnapshot(root, {}, environment)
+  const before = buildSourceSnapshot(root, environment)
   writeFileSync(path.join(root, 'app.js'), 'export const answer = 43\n')
-  assert.throws(() => writeBuildReceipt(root, before, {}, environment), /发生变化/u)
+  assert.throws(() => writeBuildReceipt(root, before, environment), /发生变化/u)
   rmSync(path.join(root, 'dist/.vite/manifest.json'))
   assert.throws(() => productionFiles(path.join(root, 'dist')), /manifest/u)
 })
@@ -187,10 +144,14 @@ test('当前工具可以为声明的精确干净外部工作树签发同格式�
     }),
     executeBuild: () => {
       builds += 1
+      writeFileSync(
+        path.join(root, 'dist/build-identity.json'),
+        JSON.stringify({ frontend_commit: head }),
+      )
     },
   })
   assert.equal(builds, 1)
-  assert.equal(receipt.format_version, 2)
+  assert.equal(receipt.format_version, 3)
   assert.equal(receipt.sources.full.source.snapshot.head, head)
   assert.equal(receipt.sources.full.source.snapshot.clean, true)
   assert.deepEqual(verifyBuildReceipt(root, environment), receipt)

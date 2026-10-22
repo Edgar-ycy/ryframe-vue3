@@ -1,4 +1,6 @@
-import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
+import { loadFrontendConfiguration } from './scripts/frontend-tool-config.mjs'
+import { readBuildIdentity } from './scripts/build-identity.mjs'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -60,23 +62,6 @@ const vueCompositionPrimitives = [
   'watchSyncEffect',
 ]
 
-function normalizeBuildCommit(value: string | undefined): string {
-  const commit = value?.trim().toLowerCase()
-  if (!commit) return 'development'
-  if (!/^[0-9a-f]{40}$/.test(commit)) {
-    throw new Error('VITE_APP_BUILD_COMMIT must be a full 40-character Git commit SHA')
-  }
-  return commit
-}
-
-function normalizeDevServerPort(value: string | undefined): number {
-  const port = Number(value?.trim() || '5173')
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error('VITE_APP_DEV_PORT must be an integer between 1 and 65535')
-  }
-  return port
-}
-
 function buildIdentityPlugin(frontendCommit: string): Plugin {
   return {
     name: 'ryframe-build-identity',
@@ -113,17 +98,20 @@ function operationChunkName(id: string): string | null {
   return operation ? `api-${operation[1]}` : null
 }
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  const proxyTarget = env.VITE_APP_PROXY_TARGET || 'http://localhost:8080'
-  const frontendCommit = normalizeBuildCommit(env.VITE_APP_BUILD_COMMIT)
-  const devServerPort = normalizeDevServerPort(env.VITE_APP_DEV_PORT)
+export default defineConfig(() => {
+  const configuration = loadFrontendConfiguration(import.meta.dirname)
+  const identity = readBuildIdentity(import.meta.dirname)
 
   return {
     // 项目统一使用 Composition API，与 createI18n 的 legacy: false 保持一致。
-    define: { __VUE_I18N_LEGACY_API__: false },
+    envDir: false,
+    envPrefix: [],
+    define: {
+      __VUE_I18N_LEGACY_API__: false,
+      __RYFRAME_PUBLIC_CONFIG__: JSON.stringify(configuration.publicConfig),
+    },
     plugins: [
-      buildIdentityPlugin(frontendCommit),
+      buildIdentityPlugin(identity.frontend_commit),
       vue(),
       AutoImport({
         imports: [{ vue: vueCompositionPrimitives }],
@@ -166,13 +154,13 @@ export default defineConfig(({ mode }) => {
     },
 
     server: {
-      port: devServerPort,
-      host: env.VITE_APP_DEV_HOST || '127.0.0.1',
+      port: configuration.server.port,
+      host: configuration.server.host,
       // 只排除当前前端的验收产物；隔离工作树的祖先目录也可能名为 .local-tests。
       watch: { ignored: [normalizedModuleId(`${import.meta.dirname}/.local-tests`) + '/**'] },
       proxy: {
         '/api': {
-          target: proxyTarget,
+          target: configuration.server.proxyTarget,
           changeOrigin: true,
           ws: true,
         },

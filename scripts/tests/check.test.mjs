@@ -99,3 +99,48 @@ test('真实业务浏览器计划与执行共用明确的配置与运行绑定',
   ])
     assert.throws(() => parseArguments(args))
 })
+
+test('消费 ctx 仅 contract/full 接受，要求单个非空文件参数', () => {
+  for (const args of [[], ['--stage', 'contract'], ['--full']]) {
+    const options = parseArguments([...args, '--consumer-context', 'context.json'])
+    assert.equal(options.consumerContext, 'context.json')
+    assert.ok(['contract', 'full'].includes(options.stage))
+  }
+  for (const args of [
+    ['--consumer-context'],
+    ['--consumer-context', '--plan'],
+    ['--consumer-context', ''],
+    ['--consumer-context', 'a', '--consumer-context', 'b'],
+    ...['static', 'unit', 'build', 'browser'].map((stage) => [
+      '--stage',
+      stage,
+      '--consumer-context',
+      'context.json',
+    ]),
+  ])
+    assert.throws(() => parseArguments(args), /consumer-context/u)
+})
+
+test('显式 ctx 追加一次 contract 证明，完整门禁保持原任务和 unit glob', () => {
+  const options = { consumerContext: 'unread-context.json' }
+  const proof = {
+    name: 'consumer-proof',
+    dependsOn: ['contract'],
+    node: [
+      'scripts/contract-tests/frontend-python-receipt.mjs',
+      '--consumer-context',
+      'unread-context.json',
+    ],
+  }
+  assert.deepEqual(checkTasks('contract', options), [{ name: 'contract' }, proof])
+  assert.deepEqual(checkTasks('full', options), [
+    { name: 'contract' },
+    proof,
+    ...checkTasks('full').slice(1),
+  ])
+  for (const stage of ['unit', 'contract', 'full']) {
+    assert.ok(!checkTasks(stage).some((task) => task.name === 'consumer-proof'))
+  }
+  assert.deepEqual(checkTasks('unit')[0].node, ['--test', 'scripts/tests/*.test.mjs'])
+  assert.throws(() => checkTasks('unit', options), /consumer-context/u)
+})

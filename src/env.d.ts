@@ -6,12 +6,4 @@ declare module '*.vue' {
   export default component
 }
 
-interface ImportMetaEnv {
-  readonly VITE_APP_TITLE: string
-  readonly VITE_APP_API_ORIGIN?: string
-  readonly VITE_APP_PROXY_TARGET?: string
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv
-}
+declare const __RYFRAME_PUBLIC_CONFIG__: Readonly<{ apiOrigin: string }>

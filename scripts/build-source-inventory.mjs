@@ -167,9 +167,21 @@ export function captureSourceInventory(root) {
 function frontendProduct(relative) {
   const first = relative.split('/')[0]
   if (['src', 'public', 'openapi'].includes(first)) return true
+  // Vite 直接或间接导入的配置与身份实现也会改变生产产物。
   if (
     [
-      '.env',
+      'scripts/application-config.mjs',
+      'scripts/application-config-files.mjs',
+      'scripts/application-config-paths.mjs',
+      'scripts/application-config-toml.mjs',
+      'scripts/frontend-tool-config.mjs',
+      'scripts/build-identity.mjs',
+      'scripts/resource-render/json.mjs',
+    ].includes(relative)
+  )
+    return true
+  if (
+    [
       '.node-version',
       'index.html',
       'package.json',
@@ -184,6 +196,7 @@ function frontendProduct(relative) {
   )
     return true
   if (
+    relative === 'config/tools.json' ||
     ['scripts', 'tests', '.github'].includes(first) ||
     [
       'eslint.config.js',
@@ -196,7 +209,6 @@ function frontendProduct(relative) {
       '.gitattributes',
       '.gitignore',
       '.prettierignore',
-      '.env.production.example',
       'ARCHITECTURE.md',
       'ARCHITECTURE.en.md',
       'CHANGELOG.md',
@@ -213,6 +225,7 @@ function frontendProduct(relative) {
 function frontendTool(relative) {
   const first = relative.split('/')[0]
   return (
+    relative === 'config/tools.json' ||
     ['scripts', 'tests', '.github'].includes(first) ||
     [
       'eslint.config.js',

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
+import { loadFrontendConfiguration } from './scripts/frontend-tool-config.mjs'
 
 const thresholds = {
   statements: 90,
@@ -15,6 +16,13 @@ const coverageGroups = {
 }
 
 export default defineConfig({
+  envDir: false,
+  envPrefix: [],
+  define: {
+    __RYFRAME_PUBLIC_CONFIG__: JSON.stringify(
+      loadFrontendConfiguration(import.meta.dirname).publicConfig,
+    ),
+  },
   plugins: [vue()],
   resolve: {
     alias: {

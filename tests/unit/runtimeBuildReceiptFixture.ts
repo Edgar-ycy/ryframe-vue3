@@ -63,7 +63,7 @@ export function backendBuildFixture(head: string) {
 
 export function frontendBuildFixture(head: string) {
   return {
-    format_version: 2,
+    format_version: 3,
     kind: 'restore-frontend-build',
     sources: {
       product: { frontend: emptyGroup() },
@@ -79,8 +79,16 @@ export function frontendBuildFixture(head: string) {
         pnpm: { pinned: '11.20.0', observed: '11.20.0' },
         vite: '7.1.7',
       },
-      environment: { variables: [], sha256: digest([]) },
-      environment_files: [],
+      configuration: {
+        environment: 'test',
+        directory: 'config',
+        files: [{ path: 'config/app.test.toml', sha256: '6'.repeat(64) }],
+        tools: [],
+      },
+      identity: {
+        frontend_commit: head,
+        source_file: { path: '.local-tests/build/source.json', sha256: '7'.repeat(64) },
+      },
     },
     files: [{ path: 'index.html', bytes: 1, sha256: '5'.repeat(64) }],
   }

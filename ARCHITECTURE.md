@@ -144,11 +144,23 @@ SessionContext
 `corepack pnpm generate --check` 只读检查派生文件，显式 `--write` 才更新；后端契约同步使用上述正式入口。
 CI 执行对应阶段，浏览器阶段单独运行。
 
+`--consumer-context <file>` 仅用于 contract/full。`scripts/consumer-context.mjs` 严格读取 UTF-8 JSON v1 的七字段协议：`format_version`、`arguments`、`backend_root`、`frontend_root`、`python_program`、`origin_tool_binding`、`tool_configuration`；拒绝重复或未知字段，前端根必须等于当前工作目录。五对参数继续校验消费契约，来源绑定固定为后端 `.local-tests/frontend-origin-tool.json`，工具配置按后端实际存在的 `config/tools.toml`、`.local-tests/tools.toml` 排序绑定。配置、上下文、来源绑定和来源路径拒绝 ParentDir、链接和祖先重解析点，任务前后核对上下文摘要、绑定字节数/摘要及配置存在性集合/摘要。Python 入口独立校验为不含 ParentDir/控制字符的绝对路径，允许显式选择指向普通可执行文件的 symlink；始终保留 venv 入口调用，不改写为 canonical 目标，并在任务前后复核入口/目标身份和目标内容摘要。带上下文的任务图为 contract→consumer-proof；full 继续执行原有静态、unit 和构建任务。`--plan` 只展示相同任务图，不读上下文或派生进程。普通单仓 unit/contract/full 不读取后端绑定。
+
+跨语言证明位于 `scripts/contract-tests/frontend-python-receipt.mjs`，不在 unit 通配符中；它保留七个实际 Node 生产者→Python validator 场景，并从同一上下文选择 Python 与后端。手动执行仍可显式传 `--python <绝对路径> --backend-root <绝对路径>`，不得与 `--consumer-context` 混用；缺少来源绑定或发生漂移时失败，不跳过证明。
+
 ## 编写与运行测试
 
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。
 - `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文测试源码。
 - `tests/browser-business/`：在隔离业务 crate 夹具上，通过正式 API 准备业务样本，使用 Chrome 的平台页面验证跨库迁移、保留期、取消和崩溃恢复。运行 `corepack pnpm check --stage browser --real --fixture business --server preview`；运行绑定、构建收据和静态响应审计必须完整，缺少场景或发生重试时验收失败。
+
+公开应用配置由 `scripts/application-config.mjs` 统一读取 `app.toml` 与必需的 `app.<APP_ENV>.toml` 并投影，Vite、客户端与构建来源共用该事实。`envDir:false` 与 `envPrefix:[]` 禁止旧项目环境自动读取及暴露，保留 Vite 内置 `DEV`、`MODE`。`APP_ENV` 独立选择 dev/test/prod 文件，mode 不改变该选择；普通文件、祖先重解析点、严格 UTF-8、字段及读取期间漂移均校验。TOML 由 `smol-toml` 1.9.1 解析，显式拒绝 unsafe keys，超大整数保留 BigInt，inline 深度限制为 32；既定字段类型拒绝特殊数值、日期时间和数组，错误只取安全正整数行列。工具目录选择来自 `config/tools.json` 与优先级更高的忽略文件 `.local-tests/frontend-tools.json`，仅允许 `application_config_dir`；公开配置与私有测试控制输入分开。
+
+运行时只读取强类型 `__RYFRAME_PUBLIC_CONFIG__={apiOrigin}`，API 前缀继续由唯一生成契约提供，HTTP 与 socket 共用原有地址规范化逻辑。配置结构及操作示例见 [README](README.md#运行配置)。
+
+Vite 直接或间接导入的公开配置、工具配置选择、身份及 JSON 解析实现同时计入产品与工具来源摘要；只修改验收脚本仍只改变工具摘要。显式 `--source-commit` 的普通发布构建也执行任务前后来源核对。外部恢复构建在同源检查后将已验证配置与采集上下文再次比较，配置漂移时不派生 Vite。
+
+构建身份由 `scripts/build-identity.mjs` 读取固定 `.local-tests/build/source.json`；普通 wrapper 原子写 development，显式 `--source-commit <SHA>` 核对干净 Git HEAD 后写正式值。v3 前端构建收据的上下文只含 `command/mode/target/toolchain/configuration/identity`；配置绑定环境、目录及实际公共/环境/工具文件的有序路径和摘要，身份绑定提交与来源文件。构建前后核对来源、配置与身份，产物 `build-identity.json` 必须匹配。核验按收据保存的环境重读文件并核对完整产物，不继承当前 shell 的环境选择，也不接受旧 v2 前端构建收据。其他运行收据版本保持其既有协议。
 
 真实 preview 先运行 `corepack pnpm build --real`，在类型检查和 Vite 构建前后核验来源，并把完整产物摘要写入忽略的生产目录。`corepack pnpm build --real --plan` 只展示同一任务图；普通 `corepack pnpm build` 保持类型检查与生产构建行为。
 

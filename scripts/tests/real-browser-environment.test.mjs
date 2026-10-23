@@ -113,6 +113,8 @@ test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭',
 test('运行选项经过统一校验并保留显式选择', () => {
   const binding = validateRealBrowserEnvironment({
     ...validEnvironment(),
+    password: undefined,
+    credentialEndpoint: 'http://127.0.0.1:49152/v1/credentials',
     port: 49152,
     serverMode: 'preview',
     fixture: 'business',
@@ -144,6 +146,8 @@ test('非法运行选项在创建产物和服务前失败', () => {
     () =>
       validateRealBrowserEnvironment({
         ...validEnvironment(),
+        password: undefined,
+        credentialEndpoint: 'http://127.0.0.1:49152/v1/credentials',
         fixture: 'business',
       }),
     /业务.*runId/u,

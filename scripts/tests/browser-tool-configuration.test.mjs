@@ -19,7 +19,7 @@ function configured(t) {
     scopeId: 'browser-tool-unit',
     tenantId: 'system',
     username: 'admin',
-    password: 'PRIVATE-SENTINEL',
+    credentialEndpoint: 'http://127.0.0.1:49152/v1/credentials',
     backendDir: path.resolve('中文 后端'),
     runtimeDir: path.resolve('中文 运行目录'),
     python: path.resolve('工具/python.exe'),
@@ -29,15 +29,15 @@ function configured(t) {
     loginWindowSeconds: 60,
     loginBudgetState: path.resolve('登录 预算.json'),
     channel: 'chromium',
+    fixture: 'business',
     runId: 'unit-run',
-    restorePasswords: { restored: 'RESTORE-SECRET' },
   }
   fs.mkdirSync(path.join(selected.root, '.local-tests'))
   selected.write('.local-tests/frontend-tools.json', { real_browser: input })
   return { ...selected, input }
 }
 
-test('受管文件读取凭据但公开绑定和控制文件均不包含密码', (t) => {
+test('业务凭据由受管代理读取且公开绑定和控制文件均不包含密码', (t) => {
   const { root, input } = configured(t)
   const close = createBrowserControl(root, { real: true, fixture: 'business', server: 'preview' })
   try {
@@ -46,12 +46,15 @@ test('受管文件读取凭据但公开绑定和控制文件均不包含密码',
     assert.equal(binding.fixture, 'business')
     assert.equal(binding.channel, undefined)
     assert.ok(path.isAbsolute(binding.gateEndpoint))
-    assert.equal(realBrowserCredentials(root).password, input.password)
-    assert.equal(restorePassword('restored', root), 'RESTORE-SECRET')
-    assert.throws(() => restorePassword('unknown', root), /密码/u)
+    const execute = (_command, argv, options) => {
+      assert.equal(argv.at(-1), input.credentialEndpoint)
+      assert.equal(options.encoding, 'utf8')
+      return '{"password":"PRIVATE-SENTINEL"}'
+    }
+    assert.equal(realBrowserCredentials(root, execute).password, 'PRIVATE-SENTINEL')
     const bytes = fs.readFileSync(path.join(root, '.local-tests/browser-control.json'), 'utf8')
     for (const value of [bytes, JSON.stringify(binding)])
-      assert.doesNotMatch(value, /PRIVATE-SENTINEL|RESTORE-SECRET/u)
+      assert.doesNotMatch(value, /PRIVATE-SENTINEL/u)
     assert.throws(() => createBrowserControl(root, { real: true }), /独占/u)
   } finally {
     close()
@@ -64,12 +67,14 @@ test('工具文件运行中漂移即失败，未知字段和坏 JSON 不回显�
   const close = createBrowserControl(root, { real: true })
   const file = path.join(root, '.local-tests/frontend-tools.json')
   const original = fs.readFileSync(file)
-  write('.local-tests/frontend-tools.json', { real_browser: { ...input, password: 'changed' } })
+  write('.local-tests/frontend-tools.json', {
+    real_browser: { ...input, credentialEndpoint: 'http://127.0.0.1:49153/v1/credentials' },
+  })
   assert.throws(() => loadRealBrowserEnvironment(root), /漂移/u)
   fs.writeFileSync(file, original)
   close()
   for (const text of [
-    '{"real_browser":{"password":"PRIVATE-SENTINEL",',
+    '{"real_browser":{"credentialEndpoint":"PRIVATE-SENTINEL",',
     JSON.stringify({ real_browser: { ...input, wrong: 'PRIVATE-SENTINEL' } }),
   ]) {
     fs.writeFileSync(file, text)
@@ -124,9 +129,26 @@ test('外部代理保留显式 IPC 绑定；无效配置在假进程启动前失
   write('.local-tests/frontend-tools.json', { real_browser: { ...input, password: '' } })
   await assert.rejects(
     runBrowser({ real: true }, root, () => assert.fail('无效配置不得启动进程')),
-    /password/u,
+    /凭据/u,
   )
   assert.equal(readBrowserControl(root), undefined)
+})
+
+test('普通真实浏览器仍从本机工具配置读取显式凭据', (t) => {
+  const { root, write, input } = configured(t)
+  write('.local-tests/frontend-tools.json', {
+    real_browser: {
+      ...input,
+      fixture: 'core',
+      runId: undefined,
+      credentialEndpoint: undefined,
+      password: 'CORE-PRIVATE',
+      restorePasswords: { restored: 'RESTORE-SECRET' },
+    },
+  })
+  assert.equal(realBrowserCredentials(root).password, 'CORE-PRIVATE')
+  assert.equal(restorePassword('restored', root), 'RESTORE-SECRET')
+  assert.throws(() => restorePassword('unknown', root), /密码/u)
 })
 
 test('运行器保留失败语义和清理，使用假进程不启动浏览器或服务', async (t) => {

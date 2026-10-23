@@ -1,4 +1,6 @@
 import { isAbsolute } from 'node:path'
+import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { loadToolInputs, toolObject } from './tool-inputs.mjs'
 import { readBrowserControl } from './browser-control.mjs'
 import { isResourceScopeId } from './resource-scope.mjs'
@@ -130,6 +132,7 @@ export function validateRealBrowserEnvironment(environment) {
       'tenantId',
       'username',
       'password',
+      'credentialEndpoint',
       'backendDir',
       'runtimeDir',
       'python',
@@ -158,7 +161,6 @@ export function validateRealBrowserEnvironment(environment) {
   }
   const tenantId = required(environment, 'tenantId').trim()
   const username = required(environment, 'username').trim()
-  required(environment, 'password')
   if (environment.captchaCode !== undefined && typeof environment.captchaCode !== 'string')
     throw new Error('captchaCode 必须为字符串')
   if (
@@ -172,6 +174,15 @@ export function validateRealBrowserEnvironment(environment) {
   )
     throw new Error('restorePasswords 必须为租户 ID 到非空密码的映射')
   const fixture = choice(environment, 'fixture', 'core', ['core', 'business'])
+  if (fixture === 'business') {
+    if (environment.password !== undefined || environment.restorePasswords !== undefined)
+      throw new Error('业务浏览器凭据不得写入工具配置')
+    localCredentialEndpoint(required(environment, 'credentialEndpoint'))
+  } else {
+    required(environment, 'password')
+    if (environment.credentialEndpoint !== undefined)
+      throw new Error('普通浏览器配置不得使用业务夹具凭据端点')
+  }
   const runId = optionalRunId(environment)
   if (fixture === 'business' && !runId) {
     throw new Error('业务浏览器环境必须绑定全新的 runId')
@@ -240,15 +251,70 @@ export function loadRealBrowserEnvironment(root = process.cwd()) {
   return validateRealBrowserEnvironment(loadRealBrowserInput(root))
 }
 
-export function realBrowserCredentials(root = process.cwd()) {
+export function realBrowserCredentials(root = process.cwd(), execute = execFileSync) {
   const input = loadRealBrowserInput(root)
   validateRealBrowserEnvironment(input)
+  const broker =
+    input.fixture === 'business'
+      ? readBrokerCredentials(input.credentialEndpoint, execute)
+      : undefined
   return {
     tenantId: input.tenantId.trim(),
     username: input.username.trim(),
-    password: input.password,
+    password: broker?.password ?? input.password,
     captchaCode: input.captchaCode,
   }
+}
+
+function localCredentialEndpoint(value) {
+  let url
+  try {
+    url = new URL(value)
+  } catch {
+    throw new Error('credentialEndpoint 必须是本机凭据代理地址')
+  }
+  if (
+    url.protocol !== 'http:' ||
+    url.hostname !== '127.0.0.1' ||
+    !url.port ||
+    url.pathname !== '/v1/credentials' ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  )
+    throw new Error('credentialEndpoint 必须是本机凭据代理地址')
+  return url.href
+}
+
+export function readBrokerCredentials(endpoint, execute = execFileSync) {
+  const script = fileURLToPath(new URL('./browser-credential-client.mjs', import.meta.url))
+  let output
+  try {
+    output = execute(process.execPath, [script, localCredentialEndpoint(endpoint)], {
+      encoding: 'utf8',
+      maxBuffer: 4096,
+      windowsHide: true,
+    })
+  } catch {
+    throw new Error('无法从受管代理读取浏览器凭据')
+  }
+  let value
+  try {
+    value = JSON.parse(output)
+  } catch {
+    throw new Error('浏览器凭据代理返回无效结果')
+  }
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.keys(value).join(',') !== 'password' ||
+    typeof value.password !== 'string' ||
+    !value.password
+  )
+    throw new Error('浏览器凭据代理返回无效结果')
+  return Object.freeze(value)
 }
 
 export function restorePassword(tenantId, root = process.cwd()) {

@@ -5,6 +5,7 @@ export interface RealBrowserEnvironment {
   python: string
   channel: string | undefined
   gateEndpoint: string | undefined
+  credentialEndpoint?: string
   previewResponseAudit: string | undefined
   backendDir: string
   runtimeDir: string
@@ -36,10 +37,17 @@ export function validateRealBrowserEnvironment(
 ): Readonly<RealBrowserEnvironment>
 
 export function loadRealBrowserEnvironment(root?: string): Readonly<RealBrowserEnvironment>
-export function realBrowserCredentials(root?: string): {
+export function realBrowserCredentials(
+  root?: string,
+  execute?: typeof import('node:child_process').execFileSync,
+): {
   tenantId: string
   username: string
   password: string
   captchaCode?: string
 }
+export function readBrokerCredentials(
+  endpoint: string,
+  execute?: typeof import('node:child_process').execFileSync,
+): Readonly<{ password: string }>
 export function restorePassword(tenantId: string, root?: string): string

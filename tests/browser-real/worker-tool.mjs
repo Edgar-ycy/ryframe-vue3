@@ -36,7 +36,8 @@ function sourcePaths(backend) {
     policy.format_version !== 1 ||
     ['files', 'trees', 'excluded_directories'].some(
       (key) => !Array.isArray(policy[key]) || !policy[key].every(relativePath),
-    )
+    ) ||
+    policy.excluded_directories.length !== 0
   ) {
     throw new Error('来源清单规则无效')
   }
@@ -47,7 +48,7 @@ function sourcePaths(backend) {
     checkApplicationPath(file, { directory: info.isDirectory(), label: 'Worker 来源清单' })
     if (info.isDirectory()) {
       for (const name of fs.readdirSync(file)) {
-        if (!policy.excluded_directories.includes(name)) walk(`${relative}/${name}`)
+        walk(`${relative}/${name}`)
       }
     } else if (info.isFile()) found.add(relative)
     else throw new Error('来源不是普通文件')

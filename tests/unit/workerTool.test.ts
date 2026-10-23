@@ -17,7 +17,7 @@ const policy = {
   format_version: 1,
   files: ['Cargo.lock', 'Cargo.toml', 'xtask/source-inventory.json'],
   trees: ['xtask/src'],
-  excluded_directories: ['target'],
+  excluded_directories: [],
 }
 let backend: string
 let bindingFile: string
@@ -65,6 +65,29 @@ describe('Worker 跨仓正式工具绑定', () => {
     const tool = bindWorkerTool(backend)
     expect(tool.executable).toBe(executable)
     tool.verifyUnchanged()
+  })
+
+  it('拒绝目录排除策略，即使绑定包含该策略的当前摘要', () => {
+    write(
+      path.join(backend, 'xtask/source-inventory.json'),
+      JSON.stringify({ ...policy, excluded_directories: ['target'] }),
+    )
+    write(bindingFile, JSON.stringify(binding()))
+    expect(() => bindWorkerTool(backend)).toThrow('正式工具绑定无效或漂移')
+  })
+
+  it('名为 target 的嵌套目录也必须进入完整来源绑定', () => {
+    const tool = bindWorkerTool(backend)
+    const relative = 'xtask/src/target/control.rs'
+    write(path.join(backend, relative), 'nested source')
+    expect(tool.verifyUnchanged).toThrow('正式工具绑定无效或漂移')
+    const value = binding()
+    value.sources.push({ path: relative, sha256: digest(path.join(backend, relative)) })
+    value.sources.sort((left, right) =>
+      Buffer.compare(Buffer.from(left.path), Buffer.from(right.path)),
+    )
+    write(bindingFile, JSON.stringify(value))
+    bindWorkerTool(backend).verifyUnchanged()
   })
 
   it.each(['missing', 'duplicate', 'unknown', 'version', 'source-order', 'relative', 'parent'])(

@@ -10,12 +10,11 @@ const backend = path.resolve('.local-tests', '迁移 gate', 'backend root')
 const runtime = path.resolve('.local-tests', '迁移 gate', 'runtime root')
 const binding = {
   backendDir: backend,
-  python: path.resolve('python-fixture'),
   runtimeDir: runtime,
   scopeId: 'scope-1',
 }
 
-type SpawnOptions = { env: NodeJS.ProcessEnv; stdio: 'pipe'; windowsHide: true }
+type SpawnOptions = { cwd: string; env: NodeJS.ProcessEnv; stdio: 'pipe'; windowsHide: true }
 
 class FakeMigrationGateProcess extends EventEmitter {
   readonly stdin = new PassThrough()
@@ -86,14 +85,14 @@ describe('业务迁移 gate 进程生命周期', () => {
       environment: {},
       spawnProcess: spawnFixture(child, captured),
     })
-    expect(captured.command).toBe(binding.python)
+    expect(captured.command).toBe('cargo')
     expect(captured.arguments).toEqual([
-      '-X',
-      'utf8',
-      '-u',
-      path.join(backend, 'tools/python/full_stack_migration_gate.py'),
-      '--backend-root',
-      backend,
+      'xtask',
+      'check',
+      'recovery',
+      'fixture',
+      'retention',
+      'hold-copy',
       '--runtime-dir',
       runtime,
       '--tenant',
@@ -101,7 +100,7 @@ describe('业务迁移 gate 进程生命周期', () => {
       '--migration',
       migration,
     ])
-    expect(captured.options).toEqual({ env: {}, stdio: 'pipe', windowsHide: true })
+    expect(captured.options).toEqual({ cwd: backend, env: {}, stdio: 'pipe', windowsHide: true })
 
     const finished = once(child.stdin, 'finish')
     let settled = false

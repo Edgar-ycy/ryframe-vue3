@@ -22,11 +22,11 @@ interface MigrationGateProcess {
 type SpawnMigrationGate = (
   command: string,
   arguments_: string[],
-  options: { env: NodeJS.ProcessEnv; stdio: 'pipe'; windowsHide: true },
+  options: { cwd: string; env: NodeJS.ProcessEnv; stdio: 'pipe'; windowsHide: true },
 ) => MigrationGateProcess
 
 interface MigrationGateOptions {
-  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'python' | 'scopeId'>
+  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'scopeId'>
   environment?: NodeJS.ProcessEnv
   forceCloseTimeoutMs?: number
   gracefulCloseTimeoutMs?: number
@@ -56,14 +56,14 @@ export async function holdMigrationGate(
   const scope = binding.scopeId
   if (!backend || !runtime || !scope) throw new Error('迁移 gate 缺少隔离运行配置')
   const child = spawnProcess(
-    binding.python,
+    environment.CARGO?.trim() || 'cargo',
     [
-      '-X',
-      'utf8',
-      '-u',
-      path.join(backend, 'tools/python/full_stack_migration_gate.py'),
-      '--backend-root',
-      path.resolve(backend),
+      'xtask',
+      'check',
+      'recovery',
+      'fixture',
+      'retention',
+      'hold-copy',
       '--runtime-dir',
       path.resolve(runtime),
       '--tenant',
@@ -71,7 +71,12 @@ export async function holdMigrationGate(
       '--migration',
       migration,
     ],
-    { env: toolProcessEnvironment(environment), stdio: 'pipe', windowsHide: true },
+    {
+      cwd: path.resolve(backend),
+      env: toolProcessEnvironment(environment),
+      stdio: 'pipe',
+      windowsHide: true,
+    },
   )
   const lines: string[] = []
   let transportFailure: Error | undefined

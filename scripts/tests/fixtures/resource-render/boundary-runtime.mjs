@@ -4,9 +4,7 @@ import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
-const frontend =
-  process.env.RYFRAME_RESOURCE_WORKSPACE_FRONTEND_DIR ??
-  fileURLToPath(new URL('../../../../', import.meta.url))
+const frontend = fileURLToPath(new URL('../../../../', import.meta.url))
 const require = createRequire(path.join(frontend, 'package.json'))
 const ts = require('typescript')
 

@@ -121,6 +121,8 @@ corepack pnpm check --stage browser --real --fixture business --server preview -
 
 统一检查通过 `scripts/run-browser.mjs` 传递 CLI 选项，在固定忽略路径 `.local-tests/browser-control.json` 独占登记控制器、代次、工具文件摘要和无凭据参数。工具文件运行期间漂移即失败；任务结束只清理自己未被替换的控制文件，异常遗留文件须先核查任务身份。`--plan` 只显示任务，不创建控制文件或启动进程。旧项目环境变量与浏览器通道环境覆盖不再读取；`APP_ENV` 继续只选择应用配置，操作系统与第三方工具环境仍可使用。
 
+后端原生 DevEx 首页测量通过 `scripts/devex-homepage.mjs` 调用前端浏览器工具。该入口只接收控制器通过标准输入传入的 JSON，不读取项目配置环境变量，也不连接共享浏览器。控制器必须绑定本机 HTTP 原点、身份与固定客户地址、已建立的产物目录及其中的 `identity-selection.json`、当前前端 runner 的源码指纹；绑定不符或运行期间漂移会失败。Windows 使用本机 Chrome，Linux 使用已安装的 Playwright Chromium。测量账号须事先完成首次改密，验收环境须关闭验证码。每个身份使用独立上下文，登录后测量冷缓存或先预热再测量暖缓存，记录真实导航、LCP 和首页账号区可见耗时。标准输出仅包含单个 JSON 结果；失败项保留阶段与固定诊断码，不输出密码、请求正文或原始浏览器异常。此入口由 DevEx 控制器调度，不能替代正式业务验收。
+
 ## 同步 API 契约
 
 按已提交的后端来源正式同步时，在前端运行下列命令；默认只校验和预览，显式 `--write` 才替换正式契约与来源清单。来源只能是完整的 40 字符提交 SHA。提供绝对 `--backend-worktree` 时只读取该 SHA 的 Git 对象，不读取工作区中的未提交文件；省略工作树时读取 GitHub 固定提交。`--openapi-path` 可指定不含路径穿越的仓库相对 JSON 路径，默认 `openapi/openapi.json`。

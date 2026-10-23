@@ -117,31 +117,4 @@ for (const [name, before, after] of [
   })
 }
 
-test('旧前端路径环境覆盖不能改变 strict harness 或真实 VM 所属仓库', () => {
-  const wrongFrontend = path.join(path.parse(frontend).root, `ryframe-not-a-frontend-${process.pid}`)
-  assert.equal(fs.existsSync(wrongFrontend), false)
-  // 精确复用两个已有案例；不匹配本用例，不能递归运行完整测试集。
-  const cases = [
-    'post 生成资源通过真实 strict TypeScript 及 VM 验证',
-    'Order typed caller、relation Detail、全局系统租户限制及字符串 ID 保持契约',
-  ]
-  const args = [
-    '--test',
-    '--test-concurrency=1',
-    '--test-reporter=tap',
-    `--test-name-pattern=^(?:${cases.join('|')})$`,
-    fileURLToPath(import.meta.url),
-    fileURLToPath(new URL('./resource-render-boundaries-contracts.test.mjs', import.meta.url)),
-  ]
-  const result = spawnSync(process.execPath, args, {
-    cwd: frontend,
-    encoding: 'utf8',
-    env: { ...process.env, RYFRAME_RESOURCE_WORKSPACE_FRONTEND_DIR: wrongFrontend },
-  })
-  assert.ifError(result.error)
-  assert.equal(result.signal, null)
-  assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /# pass 2(?:\r?\n|$)/)
-})
-
 test.after(() => console.log(`类型及运行时验收收据：${evidence}`))

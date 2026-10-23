@@ -8,13 +8,8 @@ import { readManagedJson, unchangedManagedJson } from '../../scripts/application
 export { parseJson as parseWorkerJson } from '../../scripts/resource-render/json.mjs'
 
 const bindingFile = '.local-tests/frontend-origin-tool.json'
-const sources = [
-  'xtask/src/frontend_origin.rs',
-  'xtask/src/main.rs',
-  'xtask/Cargo.toml',
-  'Cargo.lock',
-  'rust-toolchain.toml',
-]
+const policyFile = 'xtask/source-inventory.json'
+const bindingLimit = 4 * 1024 * 1024
 
 function exact(value, keys) {
   return (
@@ -23,6 +18,42 @@ function exact(value, keys) {
     !Array.isArray(value) &&
     isDeepStrictEqual(Object.keys(value).sort(), [...keys].sort())
   )
+}
+
+function relativePath(value) {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    !/[\\:\0\r\n]/u.test(value) &&
+    value.split('/').every((part) => !['', '.', '..'].includes(part))
+  )
+}
+
+function sourcePaths(backend) {
+  const policy = readManagedJson(backend, policyFile, 'Worker 来源清单规则')?.value
+  if (
+    !exact(policy, ['format_version', 'files', 'trees', 'excluded_directories']) ||
+    policy.format_version !== 1 ||
+    ['files', 'trees', 'excluded_directories'].some(
+      (key) => !Array.isArray(policy[key]) || !policy[key].every(relativePath),
+    )
+  ) {
+    throw new Error('来源清单规则无效')
+  }
+  const found = new Set()
+  const walk = (relative) => {
+    const file = path.join(backend, relative)
+    const info = fs.lstatSync(file)
+    checkApplicationPath(file, { directory: info.isDirectory(), label: 'Worker 来源清单' })
+    if (info.isDirectory()) {
+      for (const name of fs.readdirSync(file)) {
+        if (!policy.excluded_directories.includes(name)) walk(`${relative}/${name}`)
+      }
+    } else if (info.isFile()) found.add(relative)
+    else throw new Error('来源不是普通文件')
+  }
+  for (const relative of [...policy.files, ...policy.trees]) walk(relative)
+  return [...found].sort((left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right)))
 }
 
 function snapshot(file, expected) {
@@ -61,7 +92,7 @@ export function bindWorkerTool(backend) {
     )
   try {
     const binding = readManagedJson(backend, bindingFile, 'Worker 正式工具绑定')
-    if (!binding || binding.bytes.length > 64 * 1024) throw failure()
+    if (!binding || binding.bytes.length > bindingLimit) throw failure()
     const value = binding.value
     const digest = (item) =>
       exact(item, ['path', 'sha256']) &&
@@ -74,17 +105,27 @@ export function bindWorkerTool(backend) {
       value.kind !== 'frontend-origin-tool' ||
       !digest(value.executable) ||
       !Array.isArray(value.sources) ||
-      value.sources.length !== sources.length ||
-      value.sources.some((item, index) => !digest(item) || item.path !== sources[index])
+      value.sources.length === 0 ||
+      !value.sources.some((item) => item.path === policyFile) ||
+      value.sources.some(
+        (item, index) =>
+          !digest(item) ||
+          !relativePath(item.path) ||
+          (index > 0 &&
+            Buffer.compare(Buffer.from(value.sources[index - 1].path), Buffer.from(item.path)) >=
+              0),
+      )
     ) {
       throw failure()
     }
     const inputs = value.sources.map((item) => ({ ...item, path: path.join(backend, item.path) }))
     inputs.push(value.executable)
+    const expectedPaths = value.sources.map((item) => item.path)
     const before = inputs.map((item) => snapshot(item.path, item.sha256))
     const verifyUnchanged = () => {
       try {
         unchangedManagedJson(backend, bindingFile, binding, 'Worker 正式工具绑定')
+        if (!isDeepStrictEqual(sourcePaths(backend), expectedPaths)) throw failure()
         inputs.forEach((item, index) => {
           if (!isDeepStrictEqual(before[index], snapshot(item.path, item.sha256))) throw failure()
         })

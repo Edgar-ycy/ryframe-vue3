@@ -6,12 +6,19 @@ import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
 
 const temporaryRoot = path.resolve('.local-tests/worker-tool-tests')
 const sources = [
+  'Cargo.lock',
+  'Cargo.toml',
+  'xtask/source-inventory.json',
   'xtask/src/frontend_origin.rs',
   'xtask/src/main.rs',
-  'xtask/Cargo.toml',
-  'Cargo.lock',
-  'rust-toolchain.toml',
+  'xtask/src/recovery/full_stack/worker/controller.rs',
 ]
+const policy = {
+  format_version: 1,
+  files: ['Cargo.lock', 'Cargo.toml', 'xtask/source-inventory.json'],
+  trees: ['xtask/src'],
+  excluded_directories: ['target'],
+}
 let backend: string
 let bindingFile: string
 let executable: string
@@ -40,6 +47,7 @@ beforeEach(() => {
   executable = path.join(backend, 'native tool.exe')
   bindingFile = path.join(backend, '.local-tests/frontend-origin-tool.json')
   sources.forEach((file) => write(path.join(backend, file), file))
+  write(path.join(backend, 'xtask/source-inventory.json'), JSON.stringify(policy))
   write(executable, 'executable-fixture')
   write(bindingFile, JSON.stringify(binding()))
 })
@@ -53,7 +61,7 @@ afterEach(() => {
 })
 
 describe('Worker 跨仓正式工具绑定', () => {
-  it('接受既有固定绑定并支持中文、空格路径', () => {
+  it('接受完整来源绑定并支持中文、空格路径', () => {
     const tool = bindWorkerTool(backend)
     expect(tool.executable).toBe(executable)
     tool.verifyUnchanged()
@@ -91,6 +99,26 @@ describe('Worker 跨仓正式工具绑定', () => {
     write(file, `${fs.readFileSync(file, 'utf8')} `)
     expect(tool.verifyUnchanged).toThrow('正式工具绑定无效或漂移')
   })
+
+  it.each(['modified-worker', 'added-worker', 'removed-worker', 'omitted-worker', 'policy-drift'])(
+    '完整集合拒绝 %s，旧程序不能继续运行',
+    (mode) => {
+      const file = path.join(backend, sources.at(-1)!)
+      const tool = bindWorkerTool(backend)
+      if (mode === 'modified-worker') write(file, 'changed worker')
+      if (mode === 'added-worker')
+        write(path.join(backend, 'xtask/src/new-worker.rs'), 'new worker')
+      if (mode === 'removed-worker') fs.unlinkSync(file)
+      if (mode === 'policy-drift') write(path.join(backend, 'xtask/source-inventory.json'), '{}')
+      if (mode === 'omitted-worker') {
+        const value = binding()
+        value.sources.pop()
+        write(bindingFile, JSON.stringify(value))
+      }
+      expect(tool.verifyUnchanged).toThrow('正式工具绑定无效或漂移')
+      expect(() => bindWorkerTool(backend)).toThrow('正式工具绑定无效或漂移')
+    },
+  )
 
   it('相同字节程序被替换仍属于身份漂移', () => {
     const tool = bindWorkerTool(backend)

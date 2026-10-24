@@ -64,7 +64,17 @@ async function existingFile(relative) {
     return await readFile(path.join(root, relative))
   } catch (error) {
     if (error?.code === 'ENOENT') return undefined
-    throw error
+    const reason =
+      error?.code === 'EISDIR'
+        ? '路径是目录，不能作为受管文件读取'
+        : ['EACCES', 'EPERM'].includes(error?.code)
+          ? '没有读取受管文件的权限'
+          : '读取受管文件失败'
+    throw new Error(
+      `读取受管文件 ${relative} 失败：IO ${error?.code ?? 'UNKNOWN'}；${reason}；` +
+        '请检查文件类型和读取权限；保留未知目录及文件现场，确认后再处理',
+      { cause: error },
+    )
   }
 }
 

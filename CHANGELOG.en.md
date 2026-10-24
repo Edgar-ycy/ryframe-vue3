@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- API generation reports the managed relative path, IO error code, and file-type and permission guidance when a managed file cannot be read. It retains the original error cause and advises preserving unknown directories and files for inspection.
+
 - Parent permissions are selected by their actual node IDs, eliminating missing-node-value warnings; collapsed menus retain localized accessible names. Added desktop and narrow-screen browser coverage for single-line actions, dark tag and tree-node contrast, and permission-page accessibility.
 
 - Added English versions of the architecture guide and complete change history. Static checks validate language pairs, language links, local section references, and command examples; English documentation changes retain provenance without triggering product rebuilds.

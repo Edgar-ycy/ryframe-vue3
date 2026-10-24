@@ -142,14 +142,25 @@ test('深层工作区正式生成完整 API 产物并清理暂存，保留非受
 test('深层工作区备份中途失败恢复原字节并清理暂存，不删除阻塞目录', async (t) => {
   const root = await isolatedGenerator(t)
   const original = await seedOwnedFiles(root)
-  const blocked = 'src/shared/security/passwordPolicy.generated.json'
+  const previousOwnership = [
+    ownershipManifestPath,
+    ...artifactPaths.filter((relative) => relative !== ownershipManifestPath),
+  ]
+  const blocked = previousOwnership.at(-1)
+  assert(blocked !== ownershipManifestPath && previousOwnership.indexOf(blocked) > 0)
+  // 按明确的 ownership 顺序先备份普通文件，再遇到最后一项的未知目录。
+  const manifest = JSON.stringify({ version: 1, files: previousOwnership })
+  await writeFile(path.join(root, ownershipManifestPath), manifest)
+  original.set(ownershipManifestPath, manifest)
   await rm(path.join(root, blocked))
   await mkdir(path.join(root, blocked))
   await writeFile(path.join(root, blocked, 'unknown.txt'), '保留未知现场\n')
   const rejected = runGenerator(root, '--write')
   assert.equal(rejected.status, 1)
   assert.match(rejected.stderr, /EISDIR|EPERM|EACCES/)
-  assert.match(rejected.stderr, /passwordPolicy\.generated\.json/)
+  assert(rejected.stderr.includes(blocked))
+  assert.match(rejected.stderr, /检查文件类型和读取权限/)
+  assert.match(rejected.stderr, /保留未知目录及文件现场/)
   assert.equal(rejected.stdout, '')
   for (const [relative, content] of original) {
     if (relative !== blocked) {

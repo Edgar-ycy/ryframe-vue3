@@ -72,7 +72,12 @@ export function common() {
     field.widget = widget
     field.nullable = name === 'nullable_metadata'
     if (field.nullable) {
-      field.validation = { ...field.validation, required: false, min_length: null, max_length: null }
+      field.validation = {
+        ...field.validation,
+        required: false,
+        min_length: null,
+        max_length: null,
+      }
     }
     field.default = null
     field.enum_values = {}

@@ -61,6 +61,8 @@ API 生成的暂存目录始终位于当前前端工作区的 `target/`。Window
 
 标准表单中创建后不可修改的文本、数字和枚举字段在新建时可以输入，编辑时禁用并阻止更新事件回写；允许更新的字段仍可编辑。
 
+公共 CRUD 契约与渲染器使用相同的控件类型约束：text 用于字符串、整数或 Decimal，textarea 用于字符串，number 用于整数，switch 用于布尔值，date、date_time、json 分别用于对应类型；select 必须提供有效有限枚举，hidden 不可编辑。字符串传输的精确数值仍禁止 number，JSON 保持原生 JSON 传输，nullable 与创建、更新的可选语义继续严格校验。
+
 `scripts/resource-render/` 提供标准 CRUD 页面的纯渲染模块，模板与 TypeScript 表单转换逻辑在前端仓库维护。内部 `cli.mjs` 从标准输入读取版本为 1 的资源 IR 批次，只在标准输出返回确定排序的完整资产 JSON，不直接写入源码、ownership 或契约；输入上限为 16 MiB，结果上限为 64 MiB。每批显式绑定生成器版本，框架聚合入口由 `aggregate` 指定；重复资源、字段不完整或版本不支持时整批失败。后端候选生成流程负责资源校验、契约同步、审阅及受管文件安装。模板测试逐字节核对 Post、Notice，并验证宽模型拆分和严格 TypeScript 类型及运行时转换。
 
 1. 在 `src/api/generated/operations/` 对应领域文件查找 typed caller。

@@ -60,6 +60,7 @@ export function common() {
     ['happens_at', 'date_time', 'string', 'date_time'],
     ['amount', 'decimal', 'string', 'text'],
     ['metadata', 'json', 'unknown', 'json'],
+    ['nullable_metadata', 'json', 'unknown', 'json'],
     ['note', 'string', 'string', 'textarea'],
     ['count', 'i32', 'number', 'number'],
   ]) {
@@ -69,7 +70,10 @@ export function common() {
     field.wire_type = valueType === 'decimal' ? 'string' : valueType
     field.typescript_type = typescriptType
     field.widget = widget
-    field.nullable = false
+    field.nullable = name === 'nullable_metadata'
+    if (field.nullable) {
+      field.validation = { ...field.validation, required: false, min_length: null, max_length: null }
+    }
     field.default = null
     field.enum_values = {}
     Object.assign(field.usage, {

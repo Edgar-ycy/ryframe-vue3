@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- The public CRUD contract now accepts the existing resource renderer's type-compatible JSON, boolean switch, date, date-time, and multiline text editing controls. It continues to reject type mismatches, unknown widgets, editable hidden fields, number inputs for exact numeric strings, and invalid transport, enumeration, or nullable/action combinations.
+
 - API generation reports the managed relative path, IO error code, and file-type and permission guidance when a managed file cannot be read. It retains the original error cause and advises preserving unknown directories and files for inspection.
 
 - Parent permissions are selected by their actual node IDs, eliminating missing-node-value warnings; collapsed menus retain localized accessible names. Added desktop and narrow-screen browser coverage for single-line actions, dark tag and tree-node contrast, and permission-page accessibility.

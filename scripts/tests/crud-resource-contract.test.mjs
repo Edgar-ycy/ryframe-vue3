@@ -60,6 +60,19 @@ function integerCatalog(kind, minimum, maximum) {
   return { ...fixture, field }
 }
 
+function editableCatalog(kind, widget, nullable = false) {
+  const fixture = integerCatalog(kind, null, null)
+  const { field } = fixture
+  field.wire_type = ['i64', 'u64', 'decimal'].includes(kind) ? 'string' : kind
+  field.widget = widget
+  field.enum_values = {}
+  field.nullable = nullable
+  field.validation.required = !nullable
+  field.usage.create = field.usage.update = field.usage.read = true
+  field.usage.create_optional = field.usage.update_optional = false
+  return fixture
+}
+
 test('常用整数接受完整边界，拒绝范围溢出和非规范枚举', () => {
   for (const [kind, minimum, maximum] of integerKinds) {
     const { document, catalog, field } = integerCatalog(kind, minimum, maximum)
@@ -157,4 +170,77 @@ test('Decimal 只能使用字符串传输及文本控件，不能退回数字输
   field.widget = 'text'
   field.wire_type = 'decimal'
   assert.throws(() => requireCrudResourceCatalog(catalog, document), /wire_type/u)
+})
+
+test('公共契约接受现有渲染器的类型匹配控件并保留输入', () => {
+  for (const [type, widget, nullable = false] of [
+    ['json', 'json'],
+    ['json', 'json', true],
+    ['bool', 'switch'],
+    ['date', 'date'],
+    ['date_time', 'date_time'],
+    ['string', 'textarea'],
+    ['string', 'text'],
+    ['i32', 'number'],
+    ['i32', 'text'],
+  ]) {
+    const { document, catalog, resource, field } = editableCatalog(type, widget, nullable)
+    field.usage.create_optional = true
+    field.usage.update_optional = !nullable
+    const before = structuredClone(catalog)
+    assert(requireCrudResourceCatalog(catalog, document).includes(resource))
+    assert.deepEqual(catalog, before)
+  }
+  const { document, catalog, field } = editableCatalog('bool', 'select')
+  field.enum_values = {
+    false: { zh_cn: '否', en: 'No' },
+    true: { zh_cn: '是', en: 'Yes' },
+  }
+  assert(requireCrudResourceCatalog(catalog, document))
+})
+
+test('控件不能跨类型使用，未知控件及可编辑 hidden 仍拒绝', () => {
+  for (const [type, widget] of [
+    ['string', 'json'],
+    ['json', 'textarea'],
+    ['json', 'text'],
+    ['json', 'number'],
+    ['bool', 'text'],
+    ['i32', 'switch'],
+    ['date', 'date_time'],
+    ['date_time', 'date'],
+    ['bool', 'textarea'],
+    ['string', 'number'],
+    ['string', 'unsupported'],
+    ['string', 'hidden'],
+  ]) {
+    const { document, catalog } = editableCatalog(type, widget)
+    assert.throws(() => requireCrudResourceCatalog(catalog, document), /\.widget:/u)
+  }
+  const { document, catalog, field } = editableCatalog('json', 'hidden')
+  field.usage.create = field.usage.update = false
+  assert(requireCrudResourceCatalog(catalog, document))
+})
+
+test('新增编辑控件仍校验传输、有限枚举及 nullable 和动作语义', () => {
+  for (const [type, widget, mutate, diagnostic] of [
+    ['json', 'json', (f) => (f.wire_type = 'string'), /wire_type/u],
+    ['bool', 'switch', (f) => (f.wire_type = 'string'), /wire_type/u],
+    ['json', 'json', (f) => (f.nullable = true), /required=true/u],
+    ['date', 'date', (f) => (f.usage.create = false), /create_optional/u],
+    ['date_time', 'date_time', (f) => (f.usage.update = false), /update_optional/u],
+    ['string', 'textarea', (f) => (f.usage.read = f.usage.list = false), /read 或 list/u],
+    ['json', 'select', (f) => (f.enum_values = { a: f.labels }), /不支持.*枚举/u],
+    ['bool', 'select', (f) => (f.enum_values = { 0: f.labels }), /false\/true/u],
+    ['bool', 'switch', (f) => (f.enum_values = { true: f.labels }), /只能配合 select/u],
+    ['bool', 'select', () => {}, /必须声明有限枚举/u],
+  ]) {
+    const { document, catalog, field } = editableCatalog(type, widget)
+    field.usage.create_optional = field.usage.update_optional = true
+    mutate(field)
+    assert.throws(() => requireCrudResourceCatalog(catalog, document), diagnostic)
+  }
+  const { document, catalog, field } = editableCatalog('json', 'json', true)
+  field.usage.update_optional = true
+  assert.throws(() => requireCrudResourceCatalog(catalog, document), /明确更新语义/u)
 })

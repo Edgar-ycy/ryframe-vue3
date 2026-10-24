@@ -58,16 +58,25 @@ const valueTypes = new Set([
   'string',
   ...integerRanges.keys(),
 ])
-const editableWidgets = new Set(['number', 'select', 'text'])
-const widgets = new Set([
+const editableWidgets = new Set([
   'date',
   'date_time',
-  'hidden',
+  'json',
   'number',
   'select',
   'switch',
   'text',
   'textarea',
+])
+const widgets = new Set([...editableWidgets, 'hidden'])
+const widgetValueTypes = new Map([
+  ['text', new Set(['string', 'decimal', ...integerRanges.keys()])],
+  ['textarea', new Set(['string'])],
+  ['number', new Set(integerRanges.keys())],
+  ['switch', new Set(['bool'])],
+  ['date', new Set(['date'])],
+  ['date_time', new Set(['date_time'])],
+  ['json', new Set(['json'])],
 ])
 const httpMethods = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace']
 const snakeIdentifierPattern = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/u
@@ -284,8 +293,9 @@ function requireField(field, location) {
     throw new Error(`${location}.widget: 精确数值字段须使用 text 或 select，number 会丢失精度`)
   }
   if (editable && !editableWidgets.has(field.widget)) {
-    throw new Error(`${location}.widget: flat_crud v1 可编辑字段只支持 text、number、select`)
+    throw new Error(`${location}.widget: 可编辑字段不能使用 hidden 控件`)
   }
+  requireWidgetValueType(field, location)
   if (editable && !(usage.read || usage.list)) {
     throw new Error(`${location}.usage: 可编辑字段必须同时出现在 read 或 list 视图`)
   }
@@ -309,6 +319,13 @@ function requireField(field, location) {
   }
   if (field.widget === 'select' && Object.keys(enumValues).length === 0) {
     throw new Error(`${location}: select 控件必须声明有限枚举`)
+  }
+}
+
+function requireWidgetValueType(field, location) {
+  const supported = widgetValueTypes.get(field.widget)
+  if (supported && !supported.has(field.value_type)) {
+    throw new Error(`${location}.widget: ${field.widget} 与 value_type=${field.value_type} 不匹配`)
   }
 }
 

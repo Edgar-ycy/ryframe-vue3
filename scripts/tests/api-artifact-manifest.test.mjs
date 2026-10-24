@@ -20,7 +20,13 @@ async function isolatedGenerator(t) {
   const directory = await createTemporaryDirectory(path.join(parent, 'attempt-'))
   t.after(() => rm(directory, { recursive: true, force: true }))
   let root = directory
-  while (root.length < 320) root = path.join(root, '深层隔离业务-workspace-contract-stage')
+  while (root.length < 235) root = path.join(root, 'stage')
+  assert(root.length >= 235 && root.length <= 249, '隔离 cwd 必须在 235–249 字符范围内')
+  assert(root.length < 260, '子进程 cwd 不触发 Windows 的进程目录长度限制')
+  assert(
+    path.join(root, 'target', 'api-artifacts-XXXXXX').length > 260,
+    '正式生成器的临时目录模板必须实际跨越 Windows 普通路径边界',
+  )
   await mkdir(path.join(root, 'src'), { recursive: true })
   const scripts = path.join(frontend, 'scripts')
   await cp(scripts, path.join(root, 'scripts'), {

@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+import { createTemporaryDirectory } from '../temporary-directory.mjs'
 
 import { renderResourceAssets } from '../resource-render/index.mjs'
 import { parseJson } from '../resource-render/json.mjs'
@@ -92,11 +93,13 @@ test('重复键、转义后的同名键与过深 JSON 拒绝，正常字符串�
 })
 
 test('真实 CLI 只从 stdin 接收请求，stdout 仅包含一份 JSON，不创建文件', async () => {
-  const scratch = fileURLToPath(
+  let scratch = fileURLToPath(
     new URL('../../.local-tests/resource-render-protocol/', import.meta.url),
   )
+  while (scratch.length < 300) scratch = path.join(scratch, '深层隔离资源-contract-stage')
   await mkdir(scratch, { recursive: true })
-  const cwd = await mkdtemp(path.join(scratch, 'attempt-'))
+  const cwd = await createTemporaryDirectory(path.join(scratch, 'attempt-'))
+  assert(!cwd.startsWith('\\\\?\\'), '协议 cwd 保持普通路径')
   try {
     const result = spawnSync(process.execPath, [cli], {
       cwd,

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { createTemporaryDirectorySync } from '../temporary-directory.mjs'
 
 import { renderFields } from '../resource-render/fields.mjs'
 import { renderTransport } from '../resource-render/transport.mjs'
@@ -13,7 +14,7 @@ const frontend = fileURLToPath(new URL('../../', import.meta.url))
 const harness = fileURLToPath(new URL('../resource-render/typecheck.mjs', import.meta.url))
 const parent = path.join(frontend, '.local-tests', 'resource-render-typecheck')
 fs.mkdirSync(parent, { recursive: true })
-const evidence = fs.mkdtempSync(path.join(parent, 'run-'))
+const evidence = createTemporaryDirectorySync(path.join(parent, 'run-'))
 const receipts = []
 
 function run(name, resource, mutate = () => {}) {

@@ -1,7 +1,8 @@
-import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { createTemporaryDirectory } from './temporary-directory.mjs'
 
 import {
   buildApiArtifacts,
@@ -186,7 +187,7 @@ async function main() {
 
   const stagingParent = path.join(root, 'target')
   await mkdir(stagingParent, { recursive: true })
-  const stagingRoot = await mkdtemp(path.join(stagingParent, 'api-artifacts-'))
+  const stagingRoot = await createTemporaryDirectory(path.join(stagingParent, 'api-artifacts-'))
   try {
     await writeArtifacts(stagingRoot, artifacts)
     await validateStaging(stagingRoot, artifacts)

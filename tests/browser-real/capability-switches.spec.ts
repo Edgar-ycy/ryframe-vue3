@@ -109,9 +109,14 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     await changeInitialPassword(context, ownerIdentity, budget, 'Valid!Owner123')
     const diagnostics = observeDiagnostics(
       owner,
-      // 能力变更提升运行时纪元后，作用域刷新会按设计取消在途的公告列表查询。
+      // 能力变更及失权页面退出会取消在途只读查询；collector 仍只豁免 ERR_ABORTED。
       (request) =>
-        request.method() === 'GET' && new URL(request.url()).pathname === '/api/v1/system/notices',
+        request.method() === 'GET' &&
+        [
+          '/api/v1/system/notices',
+          '/api/v1/system/messages',
+          '/api/v1/system/messages/unread-count',
+        ].includes(new URL(request.url()).pathname),
     )
     await budget.beforePageBootstrap()
     await login(owner, ownerIdentity)

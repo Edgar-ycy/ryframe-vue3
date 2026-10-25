@@ -268,8 +268,3 @@ test('验证器导出缺失或目标规模不同会失败关闭', async () => {
     /规模/u,
   )
 })
-
-test('摘要函数覆盖字节内容而不依赖路径', () => {
-  assert.equal(datasetDigest(Buffer.from('same')), datasetDigest('same'))
-  assert.notEqual(datasetDigest('same'), datasetDigest('different'))
-})

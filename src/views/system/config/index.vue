@@ -168,6 +168,7 @@ import { confirmServerStatePageOperation } from '@/shared/query/scopedConfirmati
 import { useAppliedListQuery } from '@/shared/query/useAppliedListQuery'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { hasPermission as hasReadPermission } from '@/utils/permission'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
@@ -198,7 +199,7 @@ const authenticated = () =>
   pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
 const configsQuery = useServerStateQuery<PageResponse<ConfigRecord>>(
-  authenticated,
+  () => authenticated() && hasReadPermission(userStore.permissions, 'system:config:list'),
   'configs',
   () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
   (signal) =>

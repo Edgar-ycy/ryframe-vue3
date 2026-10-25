@@ -1,3 +1,4 @@
+import { hasPermission as hasReadPermission } from '@/utils/permission'
 import { ElMessage } from 'element-plus'
 import type { TagProps } from 'element-plus'
 import {
@@ -37,7 +38,7 @@ export function useMenuManagement() {
     pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
   const menusQuery = useServerStateQuery<MenuTreeNode[]>(
-    authenticated,
+    () => authenticated() && hasReadPermission(userStore.permissions, 'system:menu:list'),
     'menus',
     () => ({ scope: 'tree' }),
     async (signal) => {
@@ -46,7 +47,7 @@ export function useMenuManagement() {
     },
   )
   const permissionsQuery = useServerStateQuery<PermissionTreeNode[]>(
-    authenticated,
+    () => authenticated() && hasReadPermission(userStore.permissions, 'system:perm:list'),
     'permissions',
     () => ({ scope: 'tree' }),
     async (signal) => {

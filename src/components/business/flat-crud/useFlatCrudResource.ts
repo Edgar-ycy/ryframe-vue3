@@ -15,6 +15,7 @@ import {
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
+import { hasPermission } from '@/shared/navigation/permissionAccess'
 import { confirmAction } from '@/utils/confirmAction'
 import type { PageQuery, PageResponse, Id } from '@/shared/http/types'
 import type { ServerStateScope } from '@/shared/query/scope'
@@ -35,11 +36,14 @@ export function useFlatCrudResource<
   TForm extends object,
   TCreate extends object,
   TUpdate extends object,
->(resource: FlatCrudResource<TRecord, TQuery, TForm, TCreate, TUpdate>) {
+>(resource: FlatCrudResource<TRecord, TQuery, TForm, TCreate, TUpdate>, readPermission: string) {
   const userStore = useUserStore()
   const pageActive = ref(true)
   let pageGeneration = 0
-  const authenticated = () => pageActive.value && userStore.sessionStatus === 'authenticated'
+  const authenticated = () =>
+    pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    hasPermission(userStore.permissions, readPermission)
   const {
     appliedQuery,
     applyDraft,

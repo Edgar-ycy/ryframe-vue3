@@ -57,6 +57,7 @@ import type { Id } from '@/shared/http/types'
 import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { hasPermission as hasReadPermission } from '@/utils/permission'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { useRoleOptions } from '../composables/useRoleOptions'
@@ -91,6 +92,7 @@ const detailQuery = useServerStateQuery<UserDetail>(
   () =>
     pageLifecycle.pageActive.value &&
     userStore.sessionStatus === 'authenticated' &&
+    hasReadPermission(userStore.permissions, 'system:user:list') &&
     visible.value &&
     props.user !== null,
   'users',

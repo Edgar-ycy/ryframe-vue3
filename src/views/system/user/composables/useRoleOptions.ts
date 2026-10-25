@@ -1,3 +1,4 @@
+import { hasPermission } from '@/utils/permission'
 import { computed, onScopeDispose, ref, toValue, type MaybeRefOrGetter } from 'vue'
 import { listRoleOptions } from '@/api/modules/role'
 import type { SelectOption, SelectOptionList } from '@/api/modules/option'
@@ -28,7 +29,10 @@ export function useRoleOptions(
   }
 
   const rolesQuery = useServerStateQuery<SelectOptionList>(
-    () => userStore.sessionStatus === 'authenticated' && toValue(enabled),
+    () =>
+      userStore.sessionStatus === 'authenticated' &&
+      hasPermission(userStore.permissions, 'system:role:list') &&
+      toValue(enabled),
     'role-options',
     currentParams,
     async (signal) => {

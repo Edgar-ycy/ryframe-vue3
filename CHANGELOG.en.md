@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Standard CRUD list, detail, auxiliary tree and role-option queries now require their current read permissions. Revoking authorization prevents still-mounted pages from requesting data in the new session scope. Flat resource pages explicitly pass their existing list permission, and the formal renderer updates managed pages while preserving scope cancellation and error diagnostics.
+
 - Real session acceptance now prepares ordinary accounts through initial login with `123456` and mandatory page-based password change, retaining `Valid!Session123` for existing race scenarios. The separate `password-lifecycle.spec.ts` preserves administrator reset, same-origin fragment consumption, and page submission coverage, and checks old password and session invalidation plus successful new-password login using existing resource ownership cleanup and budgets from actual configuration.
 
 - The public CRUD contract now accepts the existing resource renderer's type-compatible JSON, boolean switch, date, date-time, and multiline text editing controls. It continues to reject type mismatches, unknown widgets, editable hidden fields, number inputs for exact numeric strings, and invalid transport, enumeration, or nullable/action combinations.

@@ -78,5 +78,5 @@ const {
   setQuery,
   submit,
   saving,
-} = useFlatCrudResource(presentation.value.resource)
+} = useFlatCrudResource(presentation.value.resource, presentation.value.permissions.list)
 </script>

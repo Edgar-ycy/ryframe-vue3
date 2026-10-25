@@ -1,7 +1,9 @@
 import { expect, type Page, type Response } from '@playwright/test'
 import { test } from './fixture'
-import { act, credentials, isolatedName, login } from './support'
+import { act, credentials, isolatedName, login, waitForApiResponse } from './support'
 import { createTenantWithPlan, openTenantDetails } from './tenant-support'
+import { changeInitialPassword } from './password-lifecycle-support'
+import { observeRequestBudget } from './request-budget'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 
 type TenantPlan = Awaited<ReturnType<typeof createTenantWithPlan>>
@@ -95,19 +97,25 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
   const enabledEpoch = await changeCapabilities(admin, plan, true, true)
   const context = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
   try {
+    // 预算依托整个业务阶段存活的页面，连续计入准备页与业务页请求。
     const owner = await context.newPage()
+    const budget = observeRequestBudget(owner)
+    const ownerIdentity = {
+      ...credentials,
+      tenantId: plan.tenant,
+      username: 'owner',
+      password: 'Valid!OwnerChanged123',
+    }
+    await changeInitialPassword(context, ownerIdentity, budget, 'Valid!Owner123')
     const diagnostics = observeDiagnostics(
       owner,
       // 能力变更提升运行时纪元后，作用域刷新会按设计取消在途的公告列表查询。
       (request) =>
         request.method() === 'GET' && new URL(request.url()).pathname === '/api/v1/system/notices',
     )
-    await login(owner, {
-      ...credentials,
-      tenantId: plan.tenant,
-      username: 'owner',
-      password: 'Valid!Owner123',
-    })
+    await budget.beforePageBootstrap()
+    await login(owner, ownerIdentity)
+    await budget.beforePageBootstrap()
     await act(owner, 'GET', '/api/v1/system/notices', () => owner.goto('/system/notice'))
     const title = isolatedName('能力验收')
     await owner.locator('.card-header').getByRole('button', { name: '新增', exact: true }).click()
@@ -131,8 +139,10 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     await expect(inbox.getByText(title, { exact: true })).toBeVisible({ timeout: 90_000 })
     await inbox.getByRole('button', { name: /close|关闭/iu }).click()
 
+    await budget.beforeProvisioning()
     const messageOffEpoch = await changeCapabilities(admin, plan, true, false)
     expect(messageOffEpoch).toBeGreaterThan(enabledEpoch)
+    await budget.beforePageBootstrap()
     const retained = await act(owner, 'GET', '/api/v1/system/notices', () => owner.reload())
     await expect(row).toHaveCount(1)
     await expect(row.getByRole('button', { name: '发布到消息中心', exact: true })).toHaveCount(0)
@@ -143,15 +153,29 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     await expect(inbox.getByText(title, { exact: true })).toBeVisible()
     await inbox.getByRole('button', { name: /close|关闭/iu }).click()
 
+    await budget.beforeProvisioning()
     const noticeOffEpoch = await changeCapabilities(admin, plan, false, false)
     expect(noticeOffEpoch).toBeGreaterThan(messageOffEpoch)
+    await budget.beforePageBootstrap()
     const basic = await act(owner, 'GET', '/api/v1/system/posts', () => owner.goto('/system/post'))
     expect(await deniedRequest(owner, basic, '/api/v1/system/notices')).toBe(403)
     expect(diagnostics.httpErrors).toEqual(['403 /api/v1/system/notices'])
     diagnostics.httpErrors.length = 0
     await expect(owner.locator('.el-table')).toBeVisible()
 
-    expect(await changeCapabilities(admin, plan, true, true)).toBeGreaterThan(noticeOffEpoch)
+    await budget.beforeProvisioning()
+    const [restoredContext, restoredEpoch] = await Promise.all([
+      waitForApiResponse(owner, 'GET', '/api/v1/auth/context'),
+      changeCapabilities(admin, plan, true, true),
+    ])
+    expect(restoredEpoch).toBeGreaterThan(noticeOffEpoch)
+    expect(restoredContext.status()).toBe(200)
+    const restoredSession = (await restoredContext.json()).data
+    expect(restoredSession.runtime_epoch).toBe(String(restoredEpoch))
+    expect(
+      restoredSession.capabilities.map((capability: { code: string }) => capability.code).sort(),
+    ).toEqual(['system.message', 'system.notice'])
+    await budget.beforePageBootstrap()
     await act(owner, 'GET', '/api/v1/system/notices', () => owner.goto('/system/notice'))
     await expect(row).toHaveCount(1)
     await expect(row).toContainText('启停后仍需保留')

@@ -1,7 +1,6 @@
 export interface RestoreLineageTenant {
   tenant_id: string
   username: string
-  password_env: string
   posts: { id: string; code: string; name: string }[]
   files: { file_path: string; bytes: number; sha256: string }[]
 }

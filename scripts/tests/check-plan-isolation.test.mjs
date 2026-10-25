@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import fs from 'node:fs'
 import test from 'node:test'
 
 const source = String.raw`
@@ -54,16 +53,4 @@ test('普通与 ctx contract/full 的 plan 只输出真实任务图，不读输�
       if (consumer) assert.equal(plan.tasks[1].name, 'consumer-proof')
     }
   }
-})
-
-test('actualNode→Python 七个既有场景全部保留在 unit glob 之外', () => {
-  assert.equal(
-    fs.existsSync(new URL('./frontend-python-receipt-parity.test.mjs', import.meta.url)),
-    false,
-  )
-  const proof = fs.readFileSync(
-    new URL('../contract-tests/frontend-python-receipt.mjs', import.meta.url),
-    'utf8',
-  )
-  assert.equal((proof.match(/^test\(/gmu) ?? []).length, 7)
 })

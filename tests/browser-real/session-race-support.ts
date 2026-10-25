@@ -40,6 +40,7 @@ export async function prepareActors(
     page,
     tab,
     context,
+    preparationContext: activation,
     first,
     second,
     role,

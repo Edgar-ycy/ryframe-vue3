@@ -35,6 +35,7 @@ export async function changeInitialPassword(
   context: BrowserContext,
   identity: Identity,
   sharedBudget?: ReturnType<typeof observeRequestBudget>,
+  initialPassword = '123456',
 ) {
   const page = await context.newPage()
   const diagnostics = observeSession(page)
@@ -42,7 +43,7 @@ export async function changeInitialPassword(
   budget.observePage(page)
   try {
     await budget.beforePageBootstrap()
-    const response = await submitPasswordLogin(page, { ...identity, password: '123456' })
+    const response = await submitPasswordLogin(page, { ...identity, password: initialPassword })
     const session = (await response.json()).data.session_context
     expect(session).toMatchObject({
       password_change_required: true,
@@ -61,7 +62,7 @@ export async function changeInitialPassword(
     await expect(page).toHaveURL(/\/change-password$/u)
     await expect(page.locator('main.workspace')).toHaveCount(0)
     const form = page.locator('.auth-form')
-    await form.getByLabel('旧密码', { exact: true }).fill('123456')
+    await form.getByLabel('旧密码', { exact: true }).fill(initialPassword)
     await form.getByLabel('新密码', { exact: true }).fill(identity.password)
     await form.getByLabel('确认新密码', { exact: true }).fill(identity.password)
     await act(page, 'PUT', '/api/v1/auth/profile/password', () =>

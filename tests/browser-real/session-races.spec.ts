@@ -5,6 +5,7 @@ import { holdResponse } from './response-gate'
 import { setRolePermissions } from './session-identities'
 import { watchCancellationToasts, watchStaleProjection } from './session-observation'
 import { createTenantWithPlan } from './tenant-support'
+import { changeInitialPassword } from './password-lifecycle-support'
 import {
   deletePost,
   fillNewPost,
@@ -95,6 +96,14 @@ test('跨租户切换清理 KeepAlive 页面中的真实旧数据', async ({ pag
   const { page, tab, diagnostics } = actor
   await adminBudget.beforeProvisioning()
   const { tenant } = await createTenantWithPlan(admin)
+  const targetIdentity = {
+    ...credentials,
+    tenantId: tenant,
+    username: 'owner',
+    password: 'Valid!OwnerChanged123',
+  }
+  // 使用已登记的准备 context 改密；不能改变被观察 actor 的 Cookie 和页面生命周期。
+  await changeInitialPassword(actor.preparationContext, targetIdentity, undefined, 'Valid!Owner123')
   await postPage(page)
   const marker = isolatedName('旧租户缓存')
   await act(page, 'POST', '/api/v1/system/posts', async () =>
@@ -108,12 +117,7 @@ test('跨租户切换清理 KeepAlive 页面中的真实旧数据', async ({ pag
   await expect(page.getByPlaceholder('请输入或选择岗位名称')).toHaveValue(marker)
   await page.getByRole('menuitem', { name: '通知公告', exact: true }).click()
   const verifyCancellation = await watchCancellationToasts(page)
-  await switchViaOtherTab(tab, page, {
-    ...credentials,
-    tenantId: tenant,
-    username: 'owner',
-    password: 'Valid!Owner123',
-  })
+  await switchViaOtherTab(tab, page, targetIdentity)
   const verifyProjection = await watchStaleProjection(page, [marker, actor.first.username])
   const request = page.waitForRequest(
     (value) => value.method() === 'GET' && new URL(value.url()).pathname === '/api/v1/system/posts',

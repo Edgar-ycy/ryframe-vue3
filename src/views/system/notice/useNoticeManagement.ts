@@ -24,8 +24,10 @@ import {
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
+import { useTenantContextStore } from '@/stores/tenantContext'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
+import { hasPermission } from '@/utils/permission'
 import { createEmptyNoticeForm, createNoticeRules, type NoticeForm } from './noticeFormModel'
 
 interface NoticeDialogState {
@@ -48,11 +50,16 @@ export function useNoticeManagement() {
   const activeQueryParams = ref<NoticeQuery>({ ...queryParams.value })
   const { t } = useI18n()
   const userStore = useUserStore()
+  const tenantContext = useTenantContextStore()
   const pageLifecycle = useServerStatePageLifecycle(resetDialog)
-  const authenticated = () =>
-    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
+  // 新会话范围发布时旧页面可能尚未卸载，读取资格必须同步遵循当前能力与权限。
+  const canReadNotices = () =>
+    pageLifecycle.pageActive.value &&
+    userStore.sessionStatus === 'authenticated' &&
+    tenantContext.hasCapability('system.notice') &&
+    hasPermission(userStore.permissions, 'system:notice:list')
   const noticesQuery = useServerStateQuery<PageResponse<NoticeRecord>>(
-    authenticated,
+    canReadNotices,
     'notices',
     () => ({ scope: 'list', filters: { ...activeQueryParams.value } }),
     async (signal) => {
@@ -109,7 +116,7 @@ export function useNoticeManagement() {
   }
 
   const detailQuery = useServerStateQuery<NoticeRecord>(
-    () => authenticated() && editingNotice.value !== null,
+    () => canReadNotices() && editingNotice.value !== null,
     'notices',
     () => ({ scope: 'detail', id: editingNotice.value?.id ?? null }),
     async (signal) => {

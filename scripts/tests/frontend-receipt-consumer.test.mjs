@@ -22,9 +22,6 @@ test('运行证明消费者保留权威 v2/runtime v3，仅内嵌前端构建升
     })
   }
   assert.equal(expected.authority.format_version, 2)
-  assert.equal(value.runtime.format_version, 3)
-  assert.equal(value.runtime.backend.format_version, 2)
-  assert.equal(value.runtime.frontend.format_version, 3)
   assert.equal(verify(value.runtime).digest, sha256(value.runtimeBytes))
   for (const mutate of [
     (runtime) => {

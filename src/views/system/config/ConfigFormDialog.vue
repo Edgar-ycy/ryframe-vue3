@@ -79,6 +79,7 @@ import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope
 import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { hasPermission as hasReadPermission } from '@/utils/permission'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import {
@@ -107,6 +108,7 @@ const detailQuery = useServerStateQuery<ConfigRecord>(
   () =>
     pageLifecycle.pageActive.value &&
     userStore.sessionStatus === 'authenticated' &&
+    hasReadPermission(userStore.permissions, 'system:config:list') &&
     editingConfig.value !== null,
   'configs',
   () => ({ scope: 'detail', id: editingConfig.value?.id ?? null }),

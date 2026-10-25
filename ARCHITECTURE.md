@@ -107,7 +107,7 @@ coordinator。API module 不直接依赖外部 package，也不依赖 Router、S
 Pinia 适合主题、标签页和客户端投影等跨页面状态。登录、刷新、租户切换、消息连接和导出任务
 这类包含多个状态源的流程，可放入 `src/app/` 由 coordinator 组织。
 
-页面筛选可拆成表单草稿、已应用查询和最后一次成功查询。需要从已应用筛选创建导出时，复用
+标准 CRUD 的 list/detail 查询除 active/authenticated 外还须满足当前读取权限，辅助树与角色选项使用各自接口权限；`useFlatCrudResource(resource, readPermission)` 的必需第二参数由受管页面传入 `presentation.value.permissions.list`，不以按钮可见性代替查询资格。页面筛选可拆成表单草稿、已应用查询和最后一次成功查询。需要从已应用筛选创建导出时，复用
 `src/shared/query/useAppliedListQuery.ts` 和 `src/app/exports/` 中的现有流程。
 
 普通请求错误由全局提示展示。页面需要内联错误或处理特定状态码时，在请求选项中使用静默模式，

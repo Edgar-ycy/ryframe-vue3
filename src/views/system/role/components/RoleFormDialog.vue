@@ -64,6 +64,7 @@ import type { Id } from '@/shared/http/types'
 import { validateServerStatePageOperation } from '@/shared/query/scopedConfirmation'
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLifecycle'
+import { hasPermission as hasReadPermission } from '@/utils/permission'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 
@@ -98,6 +99,7 @@ const detailQuery = useServerStateQuery<RoleRecord>(
   () =>
     pageLifecycle.pageActive.value &&
     userStore.sessionStatus === 'authenticated' &&
+    hasReadPermission(userStore.permissions, 'system:role:list') &&
     visible.value &&
     props.role !== null,
   'roles',

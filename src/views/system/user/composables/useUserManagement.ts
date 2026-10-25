@@ -1,3 +1,4 @@
+import { hasPermission as hasReadPermission } from '@/utils/permission'
 import { ElMessage } from 'element-plus'
 import {
   deleteUser,
@@ -61,7 +62,7 @@ export function useUserManagement() {
     pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
 
   const usersQuery = useServerStateQuery<PageResponse<UserRecord>>(
-    authenticated,
+    () => authenticated() && hasReadPermission(userStore.permissions, 'system:user:list'),
     'users',
     () => ({ scope: 'list', filters: { ...appliedQueryParams.value } }),
     (signal) =>
@@ -72,7 +73,7 @@ export function useUserManagement() {
       }),
   )
   const departmentsQuery = useServerStateQuery<DeptNode[]>(
-    authenticated,
+    () => authenticated() && hasReadPermission(userStore.permissions, 'system:dept:list'),
     'departments',
     () => ({ scope: 'tree' }),
     async (signal) => {

@@ -1,6 +1,5 @@
-import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia, setActivePinia } from 'pinia'
-import { createApp, effectScope, type EffectScope } from 'vue'
+import { nextTick, type EffectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const lifecycle = vi.hoisted(() => ({
@@ -19,7 +18,6 @@ vi.mock('vue', async (importOriginal) => {
 })
 vi.mock('element-plus', () => ({ ElMessage: message }))
 
-import type { FlatCrudResource } from '@/components/business/flat-crud/resource'
 import { useFlatCrudResource } from '@/components/business/flat-crud/useFlatCrudResource'
 import { emptyPageResponse } from '@/shared/http/types'
 import { HttpError } from '@/shared/http/client'
@@ -32,90 +30,14 @@ import {
   deactivateServerStateScope,
   queryClient,
   serverStateQueryKey,
-  transitionServerStateScope,
 } from '@/shared/query/client'
-import { useUserStore } from '@/stores/user'
-
-interface RecordValue {
-  id: string
-  name: string
-}
-
-interface QueryValue {
-  page: number
-  page_size: number
-}
-
-interface FormValue {
-  name: string
-}
-
-function deferred<T>() {
-  let resolve!: (value: T | PromiseLike<T>) => void
-  let reject!: (reason?: unknown) => void
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise
-    reject = rejectPromise
-  })
-  return { promise, reject, resolve }
-}
-
-function resource(key: string) {
-  const adapter = {
-    create: vi.fn().mockResolvedValue(undefined),
-    detail: vi.fn(async (id: string) => ({ id, name: '旧身份编辑值' })),
-    list: vi.fn(async (query: QueryValue) => emptyPageResponse<RecordValue>(query)),
-    remove: vi.fn().mockResolvedValue(undefined),
-    update: vi.fn().mockResolvedValue(undefined),
-  }
-  const definition: FlatCrudResource<RecordValue, QueryValue, FormValue, FormValue, FormValue> = {
-    adapter,
-    createInput: (form) => ({ ...form }),
-    editForm: (record) => ({ name: record.name }),
-    emptyForm: () => ({ name: '' }),
-    initialQuery: () => ({ page: 1, page_size: 10 }),
-    key,
-    messages: {
-      addSuccess: '新增成功',
-      addTitle: '新增',
-      deleteConfirm: () => '确认删除',
-      deleteSuccess: '删除成功',
-      detailMissing: '详情缺失',
-      editTitle: '编辑',
-      updateSuccess: '更新成功',
-      warningTitle: '警告',
-    },
-    recordId: (record) => record.id,
-    updateInput: (form) => ({ ...form }),
-  }
-  return { adapter, definition }
-}
-
-function activate(subjectId: string, fingerprint: string): void {
-  transitionServerStateScope(
-    {
-      tenantId: 'tenant-a',
-      subjectId,
-      authorizationFingerprint: fingerprint,
-    },
-    () => {
-      useUserStore().$patch({
-        sessionStatus: 'authenticated',
-        tenantId: 'tenant-a',
-        userId: subjectId,
-      })
-    },
-  )
-}
-
-function runComposable<T>(setup: () => T): { result: T; scope: EffectScope } {
-  const app = createApp({ render: () => null })
-  app.use(VueQueryPlugin, { queryClient })
-  const scope = effectScope()
-  const result = app.runWithContext(() => scope.run(setup))
-  if (!result) throw new Error('测试组合式函数未返回结果')
-  return { result, scope }
-}
+import {
+  activate,
+  deferred,
+  resource,
+  runComposable,
+  type RecordValue,
+} from './flatCrudScopeFixtures'
 
 describe('Post/Notice 平面资源会话范围', () => {
   const scopes: EffectScope[] = []
@@ -139,6 +61,37 @@ describe('Post/Notice 平面资源会话范围', () => {
     configureServerStateErrorReporter(undefined)
   })
 
+  it.each(['posts', 'notices'])('%s 撤销读取权后新范围不发列表或详情请求', async (key) => {
+    const current = resource(key)
+    const composable = runComposable(() =>
+      useFlatCrudResource(current.definition, current.readPermission),
+    )
+    scopes.push(composable.scope)
+    await vi.waitFor(() => expect(current.adapter.list).toHaveBeenCalledOnce())
+    await composable.result.edit({ id: 'old-record', name: '旧列表' })
+    const listCalls = current.adapter.list.mock.calls.length
+    const detailCalls = current.adapter.detail.mock.calls.length
+    activate('user-a', 'read-revoked', [])
+    await nextTick()
+    expect(current.adapter.list).toHaveBeenCalledTimes(listCalls)
+    expect(current.adapter.detail).toHaveBeenCalledTimes(detailCalls)
+    expect(composable.result.dialogVisible.value).toBe(false)
+    expect(composable.result.listQuery.data.value).toBeUndefined()
+    expect(reporter).not.toHaveBeenCalled()
+  })
+
+  it.each(['posts', 'notices'])('%s 保留读取权的授权变化仍可在新范围重查', async (key) => {
+    const current = resource(key)
+    const composable = runComposable(() =>
+      useFlatCrudResource(current.definition, current.readPermission),
+    )
+    scopes.push(composable.scope)
+    await vi.waitFor(() => expect(current.adapter.list).toHaveBeenCalledOnce())
+    activate('user-a', 'read-retained', [current.readPermission])
+    await vi.waitFor(() => expect(current.adapter.list).toHaveBeenCalledTimes(2))
+    expect(reporter).not.toHaveBeenCalled()
+  })
+
   it.each([
     ['posts', '同租户 A→B', 'user-b', 'authorization-b'],
     ['notices', '同租户 A→B', 'user-b', 'authorization-b'],
@@ -148,7 +101,9 @@ describe('Post/Notice 平面资源会话范围', () => {
     '%s 在%s时同步清空旧编辑投影且延迟 submit 不发请求',
     async (key, _scenario, nextSubject, nextFingerprint) => {
       const current = resource(key)
-      const composable = runComposable(() => useFlatCrudResource(current.definition))
+      const composable = runComposable(() =>
+        useFlatCrudResource(current.definition, current.readPermission),
+      )
       scopes.push(composable.scope)
       await composable.result.edit({ id: 'old-record', name: '列表旧值' })
       const staleOperation: ServerStatePageOperation = beginServerStatePageOperation()
@@ -173,7 +128,9 @@ describe('Post/Notice 平面资源会话范围', () => {
     '%s 在 KeepAlive 失活时同步清空旧编辑投影且延迟 submit 不发请求',
     async (key) => {
       const current = resource(key)
-      const composable = runComposable(() => useFlatCrudResource(current.definition))
+      const composable = runComposable(() =>
+        useFlatCrudResource(current.definition, current.readPermission),
+      )
       scopes.push(composable.scope)
       await composable.result.edit({ id: 'old-record', name: '列表旧值' })
       const staleOperation = beginServerStatePageOperation()
@@ -197,7 +154,9 @@ describe('Post/Notice 平面资源会话范围', () => {
     const pendingCreate = deferred<void>()
     const current = resource(key)
     current.adapter.create.mockImplementation(() => pendingCreate.promise)
-    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    const composable = runComposable(() =>
+      useFlatCrudResource(current.definition, current.readPermission),
+    )
     scopes.push(composable.scope)
     await vi.waitFor(() => expect(current.adapter.list).toHaveBeenCalledTimes(1))
     composable.result.add()
@@ -218,7 +177,9 @@ describe('Post/Notice 平面资源会话范围', () => {
   it('活跃页面 mutation 失败由统一 reporter 恰好提示一次', async () => {
     const current = resource('posts')
     current.adapter.create.mockRejectedValueOnce(new Error('save failed'))
-    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    const composable = runComposable(() =>
+      useFlatCrudResource(current.definition, current.readPermission),
+    )
     scopes.push(composable.scope)
     composable.result.add()
 
@@ -232,7 +193,9 @@ describe('Post/Notice 平面资源会话范围', () => {
     const pendingCreate = deferred<void>()
     const current = resource('posts')
     current.adapter.create.mockReturnValueOnce(pendingCreate.promise)
-    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    const composable = runComposable(() =>
+      useFlatCrudResource(current.definition, current.readPermission),
+    )
     scopes.push(composable.scope)
     composable.result.add()
     const pending = composable.result.submit(beginServerStatePageOperation())
@@ -246,7 +209,9 @@ describe('Post/Notice 平面资源会话范围', () => {
 
   it('成功写入会按完整 scope 失效同资源的其他缓存变体', async () => {
     const current = resource('posts')
-    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    const composable = runComposable(() =>
+      useFlatCrudResource(current.definition, current.readPermission),
+    )
     scopes.push(composable.scope)
     const operation = beginServerStatePageOperation()
     const otherKey = serverStateQueryKey(operation.scope, 'posts', { scope: 'other' })
@@ -262,7 +227,9 @@ describe('Post/Notice 平面资源会话范围', () => {
     '%s 将取消交回 Vue 事件调用方且不产生旧成功结果',
     async (action) => {
       const current = resource('posts')
-      const composable = runComposable(() => useFlatCrudResource(current.definition))
+      const composable = runComposable(() =>
+        useFlatCrudResource(current.definition, current.readPermission),
+      )
       scopes.push(composable.scope)
       await vi.waitFor(() => expect(composable.result.canExport.value).toBe(true))
       const pending = deferred<ReturnType<typeof emptyPageResponse<RecordValue>>>()
@@ -280,7 +247,9 @@ describe('Post/Notice 平面资源会话范围', () => {
 
   it('搜索普通失败保留 Promise 拒绝并且只提示一次', async () => {
     const current = resource('posts')
-    const composable = runComposable(() => useFlatCrudResource(current.definition))
+    const composable = runComposable(() =>
+      useFlatCrudResource(current.definition, current.readPermission),
+    )
     scopes.push(composable.scope)
     await vi.waitFor(() => expect(composable.result.canExport.value).toBe(true))
     const failure = new HttpError('没有权限', { status: 403 })

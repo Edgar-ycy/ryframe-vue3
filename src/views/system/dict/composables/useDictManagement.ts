@@ -1,3 +1,4 @@
+import { hasPermission as hasReadPermission } from '@/utils/permission'
 import { ElMessage } from 'element-plus'
 import {
   deleteDictData,
@@ -48,8 +49,9 @@ export function useDictManagement() {
   const userStore = useUserStore()
   const { pending: exportLoading, submitExport } = useExportJobRequest()
   const pageLifecycle = useServerStatePageLifecycle(resetPageState)
+  const canRead = () => hasReadPermission(userStore.permissions, 'system:dict:list')
   const authenticated = () =>
-    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated'
+    pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated' && canRead()
 
   const typesQuery = useServerStateQuery<PageResponse<DictTypeRecord>>(
     authenticated,
@@ -131,10 +133,10 @@ export function useDictManagement() {
 
   async function fetchTypeList(): Promise<void> {
     if (applyDraft()) return
-    await refreshTypeList()
+    await handleTypeSaved()
   }
 
-  async function refreshTypeList(): Promise<void> {
+  async function handleTypeSaved(): Promise<void> {
     await refreshApplied(async () => {
       await typesQuery.refetch({ throwOnError: true })
     })
@@ -194,10 +196,6 @@ export function useDictManagement() {
     typeDialogVisible.value = true
   }
 
-  async function handleTypeSaved(): Promise<void> {
-    await refreshTypeList()
-  }
-
   async function handleDeleteType(dictType: DictTypeRecord): Promise<void> {
     if (deleteTypeMutation.pending.value) return
     const ownsOperation = pageLifecycle.captureOwnership()
@@ -221,7 +219,7 @@ export function useDictManagement() {
       ownsOperation,
     )
     if (currentType.value?.id === dictType.id) clearCurrentType()
-    await refreshTypeList()
+    await handleTypeSaved()
   }
 
   function handleAddData(): void {

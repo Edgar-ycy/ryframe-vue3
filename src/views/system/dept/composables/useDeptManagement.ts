@@ -1,3 +1,4 @@
+import { hasPermission } from '@/utils/permission'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
@@ -40,7 +41,10 @@ export function useDeptManagement(t: Translate) {
   })
 
   const departmentsQuery = useServerStateQuery<DeptNode[]>(
-    () => pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated',
+    () =>
+      pageLifecycle.pageActive.value &&
+      hasPermission(userStore.permissions, 'system:dept:list') &&
+      userStore.sessionStatus === 'authenticated',
     'departments',
     () => ({ scope: 'tree' }),
     async (signal) => {
@@ -50,6 +54,7 @@ export function useDeptManagement(t: Translate) {
   )
   const detailQuery = useServerStateQuery<DeptRecord>(
     () =>
+      hasPermission(userStore.permissions, 'system:dept:list') &&
       userStore.sessionStatus === 'authenticated' &&
       pageLifecycle.pageActive.value &&
       dialog.value.visible &&

@@ -1,3 +1,4 @@
+import { hasPermission } from '@/utils/permission'
 import { ElMessage } from 'element-plus'
 import {
   deletePermission,
@@ -26,7 +27,10 @@ export function usePermissionManagement() {
   const pageLifecycle = useServerStatePageLifecycle(resetPageState)
 
   const permissionsQuery = useServerStateQuery<PermissionTreeNode[]>(
-    () => pageLifecycle.pageActive.value && userStore.sessionStatus === 'authenticated',
+    () =>
+      pageLifecycle.pageActive.value &&
+      userStore.sessionStatus === 'authenticated' &&
+      hasPermission(userStore.permissions, 'system:perm:list'),
     'permissions',
     () => ({ scope: 'tree' }),
     async (signal) => {

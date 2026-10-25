@@ -107,7 +107,7 @@ The request may still have committed on the server; the client guarantees that o
 Pinia is suitable for cross-page client state such as themes, tabs, and client projections. Flows involving multiple state sources, such as login,
 refresh, tenant switching, messaging connections, and export tasks, can be organized by coordinators under `src/app/`.
 
-Page filters can be split into a form draft, the applied query, and the last successful query. When creating an export from applied filters, reuse
+Standard CRUD list/detail queries require current read permission in addition to active/authenticated state; auxiliary trees and role options use their own API permissions. Managed pages pass `presentation.value.permissions.list` as the required second argument of `useFlatCrudResource(resource, readPermission)`; button visibility does not replace query eligibility. Page filters can be split into a form draft, the applied query, and the last successful query. When creating an export from applied filters, reuse
 the existing flows in `src/shared/query/useAppliedListQuery.ts` and `src/app/exports/`.
 
 Ordinary request errors are displayed by the global reporter. When a page needs an inline error or must handle a particular status code, use silent mode in the request options

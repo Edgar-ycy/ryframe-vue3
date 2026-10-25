@@ -1,6 +1,7 @@
 import type { Request } from '@playwright/test'
 import { test } from '../browser-real/fixture'
 import { credentials, login } from '../browser-real/support'
+import { changeInitialPassword } from '../browser-real/password-lifecycle-support'
 import {
   createTenantWithPlan,
   openTenantDetails,
@@ -45,14 +46,16 @@ for (const [source, target] of [
     await verifyDataTargets(page, ['shared', 'dedicated-a', 'dedicated-b'])
     const { tenant } = await createTenantWithPlan(page, source)
     const owner = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
-    const business = await owner.newPage()
-    const businessDiagnostics = observeDiagnostics(business)
-    await login(business, {
+    const ownerIdentity = {
       ...credentials,
       tenantId: tenant,
       username: 'owner',
-      password: 'Valid!Owner123',
-    })
+      password: 'Valid!OwnerChanged123',
+    }
+    await changeInitialPassword(owner, ownerIdentity, undefined, 'Valid!Owner123')
+    const business = await owner.newPage()
+    const businessDiagnostics = observeDiagnostics(business)
+    await login(business, ownerIdentity)
     const names = await createOrders(business)
     await expectCleanDiagnostics(business, businessDiagnostics)
     await business.close()

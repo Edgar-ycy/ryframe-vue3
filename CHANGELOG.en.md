@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Nonempty business migration acceptance completes the mandatory first password change in the same tenant administrator context before logging in with the new password. Order preparation supplies an exact Decimal string amount required by the current DTO, retaining shared and dedicated target migration, digest verification, and retention assertions.
+
 - Removed the restore-fact derivation helper and its dedicated test and fixtures, which had no formal browser or script consumers. Formal runtime-receipt and dataset-authority validation remain unchanged. Removed a duplicate POST-method assertion already guaranteed by the request waiter in capability-switch acceptance, retaining complete capability, permission, and historical-data behavior coverage.
 
 - Reviewed login, session, and CRUD generation tests, removing redundant generated-source fragment checks and merging duplicate authenticated-message samples. Invalid cross-tab sessions, route refresh arguments, byte-for-byte generated assets, actual slot behavior, mandatory first password changes, tenant isolation, and asynchronous race coverage remain protected.

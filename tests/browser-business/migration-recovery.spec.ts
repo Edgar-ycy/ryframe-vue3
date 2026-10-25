@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import { test } from '../browser-real/fixture'
 import { credentials, login } from '../browser-real/support'
+import { changeInitialPassword } from '../browser-real/password-lifecycle-support'
 import {
   createTenantWithPlan,
   openTenantDetails,
@@ -28,14 +29,16 @@ test('真实业务复制阻塞时 Worker 崩溃，重启后同一迁移恢复并
   await verifyDataTargets(page, ['shared'])
   const { tenant } = await createTenantWithPlan(page)
   const owner = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
-  const business = await owner.newPage()
-  const beforeDiagnostics = observeDiagnostics(business)
-  await login(business, {
+  const ownerIdentity = {
     ...credentials,
     tenantId: tenant,
     username: 'owner',
-    password: 'Valid!Owner123',
-  })
+    password: 'Valid!OwnerChanged123',
+  }
+  await changeInitialPassword(owner, ownerIdentity, undefined, 'Valid!Owner123')
+  const business = await owner.newPage()
+  const beforeDiagnostics = observeDiagnostics(business)
+  await login(business, ownerIdentity)
   const names = await createOrders(business)
   await expectCleanDiagnostics(business, beforeDiagnostics)
   await business.close()

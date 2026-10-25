@@ -20,7 +20,7 @@ describe('消息连接生命周期', () => {
     const states: string[] = []
     let closed: [number | undefined, string | undefined] | undefined
     const socket: MessageSocketLike = {
-      readyState: 0,
+      readyState: 1,
       onopen: null,
       onclose: null,
       onerror: null,
@@ -189,7 +189,7 @@ describe('消息连接生命周期', () => {
     connection.stop()
   })
 
-  it('创建连接期间停止会立即关闭已失效的连接', async () => {
+  it('创建连接期间停止会解除业务并在打开后关闭已失效连接', async () => {
     const socket = createSocket()
     const connection = new MessageSocket({
       requestTicket: async () => 'ticket',
@@ -203,7 +203,13 @@ describe('消息连接生命周期', () => {
     })
 
     connection.start()
-    await vi.waitFor(() => expect(socket.close).toHaveBeenCalledWith(1000, '已失效的消息连接'))
+    await vi.waitFor(() => expect(socket.onopen).toBeTypeOf('function'))
+    expect(socket.close).not.toHaveBeenCalled()
+    expect(socket.onmessage).toBeNull()
+    Object.defineProperty(socket, 'readyState', { value: 1 })
+    socket.onopen?.(new Event('open'))
+    expect(socket.close).toHaveBeenCalledWith(1000, '已失效的消息连接')
+    expect(socket.onopen).toBeNull()
   })
 
   it('停止后丢弃尚未返回的票据且不创建连接', async () => {

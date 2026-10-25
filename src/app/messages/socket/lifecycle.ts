@@ -15,6 +15,25 @@ const SOCKET_CONNECTING = 0
 const SOCKET_OPEN = 1
 const HEARTBEAT_INTERVAL_MS = 25_000
 
+/** 先解除业务回调；握手中的连接仅在打开后关闭，避免浏览器将主动停止报告为握手失败。 */
+function retireSocket(socket: MessageSocketLike, reason: string): void {
+  const clearCallbacks = () => {
+    socket.onopen = null
+    socket.onclose = null
+    socket.onerror = null
+    socket.onmessage = null
+  }
+  clearCallbacks()
+  if (socket.readyState === SOCKET_CONNECTING) {
+    socket.onopen = () => {
+      clearCallbacks()
+      socket.close(1000, reason)
+    }
+    socket.onerror = clearCallbacks
+    socket.onclose = clearCallbacks
+  } else if (socket.readyState === SOCKET_OPEN) socket.close(1000, reason)
+}
+
 export type { MessageSocketState } from '@/shared/messages/connection'
 
 export interface MessageSocketLike {
@@ -81,13 +100,7 @@ export class MessageSocket {
     this.clearHeartbeatTimer()
     const socket = this.socket
     this.socket = undefined
-    if (socket && (socket.readyState === SOCKET_CONNECTING || socket.readyState === SOCKET_OPEN)) {
-      socket.onopen = null
-      socket.onclose = null
-      socket.onerror = null
-      socket.onmessage = null
-      socket.close(1000, '消息中心已停止')
-    }
+    if (socket) retireSocket(socket, '消息中心已停止')
     this.setState('stopped')
   }
 
@@ -101,7 +114,7 @@ export class MessageSocket {
         buildMessageSocketUrl(ticket, this.options.apiBaseUrl, this.options.origin),
       )
       if (!this.active || generation !== this.generation) {
-        socket.close(1000, '已失效的消息连接')
+        retireSocket(socket, '已失效的消息连接')
         return
       }
       this.attachSocket(socket, generation)

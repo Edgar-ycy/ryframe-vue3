@@ -1,6 +1,13 @@
 import { expect, type Page, type Request } from '@playwright/test'
 import type { BrowserDiagnostics } from './types'
 
+/** 保留 URL 路径与原故障文字，凭据和查询/片段内容不得进入诊断摘要。 */
+function redactDiagnostic(value: string): string {
+  return value
+    .replace(/((?:https?|wss?):\/\/)[^/\s"'<>]*@/giu, '$1[REDACTED]@')
+    .replace(/((?:https?|wss?):\/\/[^\s"'<>?#]+)[?#][^\s"'<>]*/giu, '$1?[REDACTED]')
+}
+
 export function observeDiagnostics(
   page: Page,
   expectedCancellation?: (request: Request) => boolean,
@@ -15,7 +22,7 @@ export function observeDiagnostics(
   page.on('console', (message) => {
     if (message.text().startsWith('Failed to load resource:')) return
     if (message.type() === 'error' || message.type() === 'warning') {
-      diagnostics.console.push(`${message.type()}: ${message.text()}`)
+      diagnostics.console.push(`${message.type()}: ${redactDiagnostic(message.text())}`)
     }
   })
   page.on('response', (response) => {
@@ -24,13 +31,13 @@ export function observeDiagnostics(
     if (response.status() === 401 && url.pathname === '/api/v1/auth/refresh') return
     diagnostics.httpErrors.push(`${response.status()} ${url.pathname}`)
   })
-  page.on('pageerror', (error) => diagnostics.pageErrors.push(error.message))
+  page.on('pageerror', (error) => diagnostics.pageErrors.push(redactDiagnostic(error.message)))
   page.on('requestfailed', (request) => {
     if (request.failure()?.errorText === 'net::ERR_ABORTED' && expectedCancellation?.(request))
       return
-    diagnostics.requestFailures.push(
-      `${request.method()} ${request.url()}: ${request.failure()?.errorText}`,
-    )
+    const url = redactDiagnostic(request.url())
+    const failure = redactDiagnostic(request.failure()?.errorText ?? '')
+    diagnostics.requestFailures.push(`${request.method()} ${url}: ${failure}`)
   })
   return diagnostics
 }

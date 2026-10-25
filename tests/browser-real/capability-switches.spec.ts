@@ -135,10 +135,9 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
     await expect(row).toHaveCount(1)
     const publishPath = `/api/v1/system/notices/${notice.data.id}/publish-message`
     await row.getByRole('button', { name: '发布到消息中心', exact: true }).click()
-    const accepted = await act(owner, 'POST', publishPath, () =>
+    await act(owner, 'POST', publishPath, () =>
       owner.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click(),
     )
-    expect(accepted.request().method()).toBe('POST')
     await owner.locator('.message-center-trigger button').click()
     const inbox = owner.getByRole('dialog', { name: '消息中心', exact: true })
     await expect(inbox.getByText(title, { exact: true })).toBeVisible({ timeout: 90_000 })

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Removed the restore-fact derivation helper and its dedicated test and fixtures, which had no formal browser or script consumers. Formal runtime-receipt and dataset-authority validation remain unchanged. Removed a duplicate POST-method assertion already guaranteed by the request waiter in capability-switch acceptance, retaining complete capability, permission, and historical-data behavior coverage.
+
 - Reviewed login, session, and CRUD generation tests, removing redundant generated-source fragment checks and merging duplicate authenticated-message samples. Invalid cross-tab sessions, route refresh arguments, byte-for-byte generated assets, actual slot behavior, mandatory first password changes, tenant isolation, and asynchronous race coverage remain protected.
 
 - Notice list and detail queries follow the current session's capability and read permission, avoiding unauthorized queries while a revoked page is still mounted. Tenant business acceptance completes the administrator's mandatory first password change, and the restore lineage type removes the obsolete password-environment field.

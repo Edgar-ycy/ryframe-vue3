@@ -33,7 +33,7 @@ export async function createOrders(page: Page): Promise<string[]> {
   for (const code of names) {
     const response = await page.request.post(`${origin}${resourcePath}`, {
       headers,
-      data: { code, amount: '123.45' },
+      data: { code },
       maxRedirects: 0,
     })
     expect(response.status()).toBe(200)

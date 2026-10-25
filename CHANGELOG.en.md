@@ -6,7 +6,7 @@
 
 - Business migration cancellation and Worker crash recovery acceptance now prepare tenant administrators through the real mandatory first password change. Subsequent business pages retain the same context and new-password session, preserving cancellation, recovery, and data verification assertions.
 
-- Nonempty business migration acceptance completes the mandatory first password change in the same tenant administrator context before logging in with the new password. Order preparation supplies an exact Decimal string amount required by the current DTO, retaining shared and dedicated target migration, digest verification, and retention assertions.
+- Nonempty business migration acceptance completes the mandatory first password change in the same tenant administrator context before logging in with the new password. Order preparation supplies only the code declared by the formal default fixture's generated DTO, retaining shared and dedicated target migration, digest verification, and retention assertions. Amounts and ownership permissions are accepted separately using an evolved sample that declares those fields.
 
 - Removed the restore-fact derivation helper and its dedicated test and fixtures, which had no formal browser or script consumers. Formal runtime-receipt and dataset-authority validation remain unchanged. Removed a duplicate POST-method assertion already guaranteed by the request waiter in capability-switch acceptance, retaining complete capability, permission, and historical-data behavior coverage.
 

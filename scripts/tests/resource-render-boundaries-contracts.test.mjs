@@ -114,13 +114,10 @@ test('Post actions 插槽保留最后成功查询、选择归属及完整的强�
 test('Post radio 及创建更新限制、API 类型与菜单注册保持契约', () => {
   const resource = fixture('post')
   const fields = renderFields(resource, version).get('fields.ts')
-  for (const expected of [
-    'disabledOnEdit: true',
-    'editOnly: true',
-    'String(record.name)',
-    'kind: "radio"',
-  ])
+  for (const expected of ['disabledOnEdit: true', 'editOnly: true', 'String(record.name)'])
     assert.ok(fields.includes(expected), expected)
+  const view = execute(resource, assets(resource))
+  assert.equal(view.formFields.find((field) => field.key === 'status')?.kind, 'radio')
   const transport = renderTransport(resource, version)
   const api = transport.get('api.ts')
   for (const expected of [

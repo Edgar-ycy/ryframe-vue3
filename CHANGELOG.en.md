@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+- Notice list and detail queries follow the current session's capability and read permission, avoiding unauthorized queries while a revoked page is still mounted. Tenant business acceptance completes the administrator's mandatory first password change, and the restore lineage type removes the obsolete password-environment field.
+
+- Stopping a message connection immediately revokes the old generation's business callbacks, heartbeat and reconnection. A connecting socket closes after opening, avoiding browser handshake warnings caused by deliberate stops. Browser diagnostic summaries redact URL credentials and query contents while preserving warnings and failure status.
+
 - Real session acceptance now prepares ordinary accounts through initial login with `123456` and mandatory page-based password change, retaining `Valid!Session123` for existing race scenarios. The separate `password-lifecycle.spec.ts` preserves administrator reset, same-origin fragment consumption, and page submission coverage, and checks old password and session invalidation plus successful new-password login using existing resource ownership cleanup and budgets from actual configuration.
 
 - The public CRUD contract now accepts the existing resource renderer's type-compatible JSON, boolean switch, date, date-time, and multiline text editing controls. It continues to reject type mismatches, unknown widgets, editable hidden fields, number inputs for exact numeric strings, and invalid transport, enumeration, or nullable/action combinations.

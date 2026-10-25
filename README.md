@@ -15,7 +15,7 @@ RyFrame 的 Vue 3 管理端，使用 TypeScript、Vite、Element Plus、Pinia �
 
 ## 安装与运行
 
-先安装 `.node-version` 指定的 Node.js，并确认 Corepack 可用；缺少 Corepack 时按 [Corepack 官方安装说明](https://github.com/nodejs/corepack#installation)安装。进入前端仓库根目录后，先运行下列版本核对命令：Node.js 应与 `.node-version` 一致，pnpm 应与 `package.json#packageManager` 固定版本一致。随后通过 Corepack 安装锁定依赖并启动开发服务器。
+先安装 `.node-version` 指定的 Node.js，并确认 Corepack 可用；缺少 Corepack 时按 [Corepack 官方安装说明](https://github.com/nodejs/corepack#how-to-install)安装。进入前端仓库根目录后，先运行下列版本核对命令：Node.js 应与 `.node-version` 一致，pnpm 应与 `package.json#packageManager` 固定版本一致。随后通过 Corepack 安装锁定依赖并启动开发服务器。
 
 ```bash
 node --version

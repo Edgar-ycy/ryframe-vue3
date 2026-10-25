@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test'
+import { expect, type Request } from '@playwright/test'
 import { test } from './session-fixture'
 import { act, credentials, isolatedName } from './support'
 import { holdResponse } from './response-gate'
@@ -24,6 +24,7 @@ test('真实权限降低后，已完成的旧查询不能回写授权与列表',
   )
   await searchPost(page, marker)
   const gate = await holdResponse(page, 'GET', '/api/v1/system/posts', actor.clientAddress)
+  let retainedAuthorizationEpoch = actor.initial.authorization_epoch
   try {
     await page.locator('.search-card').getByRole('button', { name: '搜索', exact: true }).click()
     await gate.held()
@@ -33,6 +34,7 @@ test('真实权限降低后，已完成的旧查询不能回写授权与列表',
     await setRolePermissions(admin, actor.role, ['system:post:list'], actor.adminDiagnostics)
     const updated = await act(tab, 'POST', '/api/v1/auth/refresh', () => tab.reload())
     const context = (await updated.json()).data.session_context
+    retainedAuthorizationEpoch = context.authorization_epoch
     expect(BigInt(context.authorization_epoch)).toBeGreaterThan(
       BigInt(actor.initial.authorization_epoch),
     )
@@ -52,6 +54,34 @@ test('真实权限降低后，已完成的旧查询不能回写授权与列表',
     await actor.adminDiagnostics.verify()
   } finally {
     await gate.finish(info)
+  }
+
+  await expect(page.getByPlaceholder('请输入或选择岗位名称')).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  let postRequests = 0
+  const observePosts = (request: Request) => {
+    if (request.method() === 'GET' && new URL(request.url()).pathname === '/api/v1/system/posts') {
+      postRequests += 1
+    }
+  }
+  page.on('request', observePosts)
+  try {
+    await setRolePermissions(admin, actor.role, [], actor.adminDiagnostics)
+    const updated = await act(tab, 'POST', '/api/v1/auth/refresh', () => tab.reload())
+    const context = (await updated.json()).data.session_context
+    expect(context.user.id).toBe(actor.initial.user.id)
+    expect(context.user.tenant_id).toBe(actor.initial.user.tenant_id)
+    expect(BigInt(context.authorization_epoch)).toBeGreaterThan(BigInt(retainedAuthorizationEpoch))
+    expect(context.permissions).not.toContain('system:post:list')
+    await expect(page).toHaveURL(/\/403$/u)
+    await expect(page.getByPlaceholder('请输入或选择岗位名称')).toHaveCount(0)
+    await tab.waitForLoadState('networkidle')
+    expect(postRequests).toBe(0)
+    await diagnostics.verify()
+    await actor.tabDiagnostics.verify()
+    await actor.adminDiagnostics.verify()
+  } finally {
+    page.off('request', observePosts)
   }
 })
 

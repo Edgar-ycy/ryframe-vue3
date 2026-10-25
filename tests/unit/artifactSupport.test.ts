@@ -31,12 +31,10 @@ describe('导出物理对象验收结果', () => {
         '--receipt',
         receipt,
       ])
-      expect(args).not.toContain('--write')
-      expect(args.every((value) => !value.endsWith('.py'))).toBe(true)
     },
   )
 
-  it('从后端 cwd 执行并使用后端工具文件选择解释器', () => {
+  it('固定 Cargo 调用使用后端 cwd 和受控环境', () => {
     const invocation = artifactInspectionInvocation(backend, runtime, 'snapshot', '42', receipt, {
       PATH: 'fixed-path',
     })

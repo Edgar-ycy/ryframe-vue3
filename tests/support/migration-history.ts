@@ -24,7 +24,7 @@ interface MigrationHistoryInvocation {
 }
 
 interface MigrationHistoryDependencies {
-  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'python' | 'scopeId'>
+  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'scopeId'>
   environment?: NodeJS.ProcessEnv
   execute?: (invocation: MigrationHistoryInvocation) => Promise<string>
 }

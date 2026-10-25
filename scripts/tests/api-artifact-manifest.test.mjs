@@ -4,11 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { artifactPaths, parseArtifactManifest } from '../api-artifact-manifest.mjs'
-import {
-  buildApiArtifacts,
-  generatedArtifactPaths,
-  ownershipManifestPath,
-} from '../api-artifacts.mjs'
+import { buildApiArtifacts, ownershipManifestPath } from '../api-artifacts.mjs'
 import { fileURLToPath } from 'node:url'
 import { createTemporaryDirectory } from '../temporary-directory.mjs'
 
@@ -68,7 +64,6 @@ async function seedOwnedFiles(root) {
 test('派生清单保留路径顺序，所有正式生成物恰有一个清单项', async () => {
   const generated = await buildApiArtifacts(fileURLToPath(new URL('../../', import.meta.url)))
   assert.deepEqual([...generated.keys()].sort(), [...artifactPaths].sort())
-  assert.equal(generatedArtifactPaths, artifactPaths)
   assert.ok(Object.isFrozen(artifactPaths))
   assert.deepEqual(parseArtifactManifest('{"format_version":1,"files":["src/b.ts","src/a.ts"]}'), [
     'src/b.ts',

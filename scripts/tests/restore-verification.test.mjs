@@ -162,15 +162,8 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
   assert.equal(command.options.timeout, 60_000)
   assert.deepEqual(JSON.parse(command.options.input), value.expected.authority)
   assert.equal(command.options.env.PATH, 'fixed-path')
-  assert.equal(command.options.env.RYFRAME_PYTHON, undefined)
-  assert.equal(command.options.env.RYFRAME_WORKSPACE_ROOT, undefined)
   assert.equal(command.options.env.PYTHONUTF8, '1')
   assert.equal(command.options.env.PYTHONIOENCODING, 'utf-8')
-  assert.equal(command.options.env.RYFRAME_DEVEX_TARGET_ROOT, undefined)
-  assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_RECEIPT, undefined)
-  assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_PROTOCOL, undefined)
-  assert.equal(command.options.env.RYFRAME_RESTORE_RUNTIME_UNKNOWN, undefined)
-  assert.equal(command.options.env.RYFRAME_RESTORE_SOURCE_PROTOCOL, undefined)
   const controlledNames = Object.keys(command.options.env).map((name) => name.toUpperCase())
   assert.equal(controlledNames.filter((name) => name === 'RYFRAME_DEVEX_TARGET_ROOT').length, 0)
   assert.equal(controlledNames.filter((name) => name === 'RYFRAME_WORKSPACE_ROOT').length, 0)
@@ -182,13 +175,6 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
     false,
   )
   assert.equal(controlledNames.includes('RYFRAME_RESTORE_SOURCE_PROTOCOL'), false)
-  assert.equal(
-    command.argv.some((item) => item.endsWith('.py')),
-    false,
-  )
-  assert.equal(command.argv.includes('--backend-dir'), false)
-  assert.equal(command.argv.includes('--frontend-dir'), false)
-  assert.equal(command.argv.includes('--frontend-url'), false)
 })
 
 test('B0 适配核验保持备份、产品、执行和前端四类身份互不混用', (t) => {

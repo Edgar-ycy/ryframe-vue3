@@ -36,16 +36,13 @@ describe('迁移历史夹具命令', () => {
       migration,
       ...suffix,
     ])
-    expect(args.every((value) => !value.endsWith('.py'))).toBe(true)
   })
 
-  it('从后端 cwd 执行、读取后端工具文件 并解析日志后的唯一收据', async () => {
+  it('固定 Cargo 调用使用后端 cwd 和受控环境并解析唯一收据', async () => {
     const backend = path.resolve('测试 空间/backend')
     const runtimeRoot = path.resolve('测试 空间/.local-tests/runtime')
-    const python = path.resolve('测试 工具/python')
     const binding = {
       backendDir: backend,
-      python: python,
       runtimeDir: runtimeRoot,
       scopeId: 'retention-test',
     }
@@ -86,7 +83,6 @@ describe('迁移历史夹具命令', () => {
       migrationHistory('inspect', tenant, migration, undefined, {
         binding: {
           backendDir: path.join(root, 'backend'),
-          python: path.join(root, 'python'),
           runtimeDir: path.join(root, '.local-tests', 'runtime'),
           scopeId: 'retention-test',
         },

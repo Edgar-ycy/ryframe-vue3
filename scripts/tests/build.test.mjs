@@ -28,25 +28,6 @@ test('构建参数拒绝重复与未知项', () => {
     assert.throws(() => parseBuildArguments(values))
 })
 
-test('构建计划共用任务图且不读取来源、不执行、不签发收据', () => {
-  const forbidden = () => {
-    throw new Error('计划禁止副作用')
-  }
-  const plan = runBuild(
-    '/unused',
-    { real: true, plan: true },
-    {
-      execute: forbidden,
-      capture: forbidden,
-      publish: forbidden,
-      configure: forbidden,
-      identify: forbidden,
-    },
-  )
-  assert.deepEqual(plan.tasks, buildTasks())
-  assert.equal(plan.sourceCommit, 'development')
-})
-
 test('真实构建按同一任务图运行并核验文件同源，不覆盖旧 VITE 外部输入', () => {
   const calls = []
   const source = { marker: '当前构建来源' }

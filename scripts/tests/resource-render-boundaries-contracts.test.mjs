@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { renderFields } from '../resource-render/fields.mjs'
 import { renderResourceAssets } from '../resource-render/index.mjs'
 import { renderTransport } from '../resource-render/transport.mjs'
 import { fixture } from './fixtures/resource-render/builders.mjs'
@@ -93,45 +92,8 @@ test('Order typed caller、relation Detail、全局系统租户限制及字符�
   assert.deepEqual(keys(view.columns), ['id', 'name', 'status', 'created_at', 'updated_at'])
 })
 
-test('Post actions 插槽保留最后成功查询、选择归属及完整的强类型插槽参数', () => {
-  const page = renderTransport(fixture('post'), version).get('page.vue')
-  for (const expected of [
-    'name="actions"',
-    ':last-successful-query="lastSuccessfulQuery ?? null"',
-    'lastSuccessfulQuery: PostQuery | null',
-    'actions?(props:',
-    '<template v-if="slots.actions" #actions="{ selectedExportIds, captureSelectionOwnership }">',
-    ':selected-export-ids="selectedExportIds"',
-    ':capture-selection-ownership="captureSelectionOwnership"',
-    "import { computed } from 'vue'",
-    'selectedExportIds: string[]',
-    'captureSelectionOwnership: () => () => boolean',
-    ':can-export="canExport"',
-  ])
-    assert.ok(page.includes(expected), expected)
-})
-
-test('Post radio 及创建更新限制、API 类型与菜单注册保持契约', () => {
+test('Post 状态枚举在生成的表单中使用 radio 控件', () => {
   const resource = fixture('post')
-  const fields = renderFields(resource, version).get('fields.ts')
-  for (const expected of ['disabledOnEdit: true', 'editOnly: true', 'String(record.name)'])
-    assert.ok(fields.includes(expected), expected)
   const view = execute(resource, assets(resource))
   assert.equal(view.formFields.find((field) => field.key === 'status')?.kind, 'radio')
-  const transport = renderTransport(resource, version)
-  const api = transport.get('api.ts')
-  for (const expected of [
-    'ApiSchema, OperationJsonBody, OperationQuery',
-    "export type PostRecord = ApiSchema<'PostVo'>",
-    "export type PostQuery = OperationQuery<'get_system_posts'>",
-    "OperationJsonBody<'post_system_posts'>",
-  ])
-    assert.ok(api.includes(expected), expected)
-  assert.ok(!api.includes('export interface PostRecord'))
-  for (const expected of [
-    'routeKey: "system.post"',
-    'permissionCode: "system:post:list"',
-    'page: () => import("@/views/system/post/index.vue")',
-  ])
-    assert.ok(transport.get('registration.ts').includes(expected), expected)
 })

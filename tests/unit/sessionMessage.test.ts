@@ -5,30 +5,6 @@ import { isSessionMessage } from '@/app/session/sessionMessage'
 import { sessionContext } from './sessionContextFixtures'
 
 describe('跨标签会话消息', () => {
-  it('跨标签已认证消息复用同一严格校验', () => {
-    const context = sessionContext(true)
-    expect(
-      isSessionMessage({
-        type: 'authenticated',
-        source: 'tab-a',
-        operationId: 'refresh-1',
-        startedAt: 1,
-        accessToken: 'token',
-        sessionContext: context,
-      }),
-    ).toBe(true)
-    expect(
-      isSessionMessage({
-        type: 'authenticated',
-        source: 'tab-a',
-        operationId: 'refresh-1',
-        startedAt: 1,
-        accessToken: 'token',
-        sessionContext: { ...context, is_super_admin: 1 },
-      }),
-    ).toBe(false)
-  })
-
   it('严格校验四种跨标签消息及精确字段集合', () => {
     const context = sessionContext(false)
     const base = { source: 'tab-a', operationId: 'refresh-1', startedAt: 1 }
@@ -44,6 +20,15 @@ describe('跨标签会话消息', () => {
         sessionContext: context,
       }),
     ).toBe(true)
+
+    expect(
+      isSessionMessage({
+        type: 'authenticated',
+        ...base,
+        accessToken: 'token',
+        sessionContext: { ...context, is_super_admin: 1 },
+      }),
+    ).toBe(false)
 
     expect(isSessionMessage(null)).toBe(false)
     expect(isSessionMessage([])).toBe(false)

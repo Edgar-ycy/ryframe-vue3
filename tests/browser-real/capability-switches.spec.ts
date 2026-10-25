@@ -2,6 +2,7 @@ import { expect, type Page, type Response } from '@playwright/test'
 import { test } from './fixture'
 import { act, credentials, isolatedName, login } from './support'
 import { createTenantWithPlan, openTenantDetails } from './tenant-support'
+import { changeInitialPassword } from './password-lifecycle-support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 
 type TenantPlan = Awaited<ReturnType<typeof createTenantWithPlan>>
@@ -95,6 +96,13 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
   const enabledEpoch = await changeCapabilities(admin, plan, true, true)
   const context = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
   try {
+    const ownerIdentity = {
+      ...credentials,
+      tenantId: plan.tenant,
+      username: 'owner',
+      password: 'Valid!OwnerChanged123',
+    }
+    await changeInitialPassword(context, ownerIdentity, undefined, 'Valid!Owner123')
     const owner = await context.newPage()
     const diagnostics = observeDiagnostics(
       owner,
@@ -102,12 +110,7 @@ test('公告与主动消息启停保留历史数据、已接受消息和基础�
       (request) =>
         request.method() === 'GET' && new URL(request.url()).pathname === '/api/v1/system/notices',
     )
-    await login(owner, {
-      ...credentials,
-      tenantId: plan.tenant,
-      username: 'owner',
-      password: 'Valid!Owner123',
-    })
+    await login(owner, ownerIdentity)
     await act(owner, 'GET', '/api/v1/system/notices', () => owner.goto('/system/notice'))
     const title = isolatedName('能力验收')
     await owner.locator('.card-header').getByRole('button', { name: '新增', exact: true }).click()

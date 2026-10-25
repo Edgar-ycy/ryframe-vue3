@@ -2,6 +2,7 @@ import { test } from './fixture'
 import { expect } from '@playwright/test'
 import { act, credentials, login, waitForApiResponse } from './support'
 import { createTenantWithPlan, openTenantDetails } from './tenant-support'
+import { changeInitialPassword } from './password-lifecycle-support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 import { expectNoSeriousAccessibilityViolations } from '../browser/support/accessibility'
 
@@ -52,14 +53,16 @@ test('空能力套餐仍可发布、分配并开通带配额的租户', async ({
 
   const ownerContext = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
   try {
-    const owner = await ownerContext.newPage()
-    const ownerLogin = waitForApiResponse(owner, 'POST', '/api/v1/auth/login')
-    await login(owner, {
+    const ownerIdentity = {
       ...credentials,
       tenantId: tenant,
       username: 'owner',
-      password: 'Valid!Owner123',
-    })
+      password: 'Valid!OwnerChanged123',
+    }
+    await changeInitialPassword(ownerContext, ownerIdentity, undefined, 'Valid!Owner123')
+    const owner = await ownerContext.newPage()
+    const ownerLogin = waitForApiResponse(owner, 'POST', '/api/v1/auth/login')
+    await login(owner, ownerIdentity)
     const session = (await (await ownerLogin).json()).data.session_context
     expect(session).toMatchObject({
       user: { tenant_id: tenant, username: 'owner' },

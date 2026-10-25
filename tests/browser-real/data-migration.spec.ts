@@ -2,6 +2,7 @@ import { test } from './fixture'
 import { expect } from '@playwright/test'
 import { act, credentials, isolatedName, login } from './support'
 import { createTenantWithPlan, openTenantDetails, verifyDataTargets } from './tenant-support'
+import { changeInitialPassword } from './password-lifecycle-support'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
 
 test('真实租户迁移完成目标切换且控制面资源保持可读写', async ({
@@ -16,14 +17,16 @@ test('真实租户迁移完成目标切换且控制面资源保持可读写', as
   const { tenant } = await createTenantWithPlan(page)
   const owner = await newClientContext(clientAddress.replace('198.18.', '198.19.'))
   try {
-    const business = await owner.newPage()
-    const businessDiagnostics = observeDiagnostics(business)
-    await login(business, {
+    const ownerIdentity = {
       ...credentials,
       tenantId: tenant,
       username: 'owner',
-      password: 'Valid!Owner123',
-    })
+      password: 'Valid!OwnerChanged123',
+    }
+    await changeInitialPassword(owner, ownerIdentity, undefined, 'Valid!Owner123')
+    const business = await owner.newPage()
+    const businessDiagnostics = observeDiagnostics(business)
+    await login(business, ownerIdentity)
     const name = isolatedName('迁移岗位')
     const code = isolatedName('migrate')
     await act(business, 'GET', '/api/v1/system/posts', () => business.goto('/system/post'))

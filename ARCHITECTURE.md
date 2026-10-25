@@ -169,6 +169,7 @@ Vite 直接或间接导入的公开配置、工具配置选择、身份及 JSON 
 真实 preview 先运行 `corepack pnpm build --real`，在类型检查和 Vite 构建前后核验来源，并把完整产物摘要写入忽略的生产目录。`corepack pnpm build --real --plan` 只展示同一任务图；普通 `corepack pnpm build` 保持类型检查与生产构建行为。
 
 - `tests/browser-real/`：在明确登记的隔离 API、MySQL、Redis 和对象存储环境中执行真实 Chrome 流程。
+  会话竞争测试准备普通账号时，`createOrdinaryUser` 在已登记的独立浏览器上下文中使用 `123456` 登录，验证受限上下文和强制改密路由，再通过页面改为 `Valid!Session123`，不使用管理员重置代替首次改密。`password-lifecycle.spec.ts` 单独覆盖这条正常路径及管理员发起重置、同源链接片段消费、页面重置、旧密码和旧会话失效、新密码登录。账号和角色继续通过 `sessionResources` 登记并按权威 ID 清理；同一固定客户的页面共用请求预算，六次登录（包含两次预期 `401`）均使用实际配置的共享登录账本，等待窗口不通过换地址或提高容量绕过。
 
 `corepack pnpm check --stage unit` 执行工具测试、测试类型检查和单测覆盖率；
 `corepack pnpm check --stage browser` 执行确定性浏览器 smoke。真实环境按登记配置执行

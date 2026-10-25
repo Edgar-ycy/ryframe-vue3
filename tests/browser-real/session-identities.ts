@@ -15,6 +15,8 @@ import {
 import { observeSession } from './session-observation'
 import type { SessionResources } from '../../scripts/browser-session-resources.mjs'
 import { createOwnedIdentity } from './session-resources'
+import { changeInitialPassword } from './password-lifecycle-support'
+import type { observeRequestBudget } from './request-budget'
 
 export const writerPermissions = [
   'system:post:list',
@@ -191,6 +193,7 @@ export async function createOrdinaryUser(
   activation: BrowserContext,
   role: string,
   resources: SessionResources,
+  budget?: ReturnType<typeof observeRequestBudget>,
 ) {
   const username = isolatedName('session-user')
   await openIdentityPage(admin, 'user')
@@ -213,38 +216,9 @@ export async function createOrdinaryUser(
   const userId: string = (await created.json()).data.id
   expect(userId).toMatch(/^\d+$/u)
   await expect(dialog).not.toBeVisible()
-  await admin.locator('.search-card').getByPlaceholder('请输入用户名').fill(username)
-  await act(admin, 'GET', '/api/v1/system/users', () =>
-    admin.locator('.search-card').getByRole('button', { name: '搜索', exact: true }).click(),
-  )
-  const row = admin.locator('.el-table__body tr').filter({ hasText: username })
-  await row.getByRole('button', { name: '发起重置', exact: true }).click()
-  const reset = admin.getByRole('dialog', { name: '发起密码重置', exact: true })
-  await reset.getByPlaceholder('请输入发起密码重置的原因').fill('隔离会话竞争验收初始化')
-  const requested = await act(
-    admin,
-    'POST',
-    `/api/v1/system/users/${userId}/password-reset-requests`,
-    () => reset.getByRole('button', { name: '发起', exact: true }).click(),
-  )
-  const resetUrl: string = (await requested.json()).data.reset_url
-  const origin = new URL(admin.url()).origin
-  expect(new URL(resetUrl, origin).origin).toBe(origin)
-  const page = await activation.newPage()
-  const diagnostics = observeSession(page)
-  await page.goto(new URL(resetUrl, origin).href)
-  const password = 'Valid!Session123'
-  await page.locator('.reset-form input').nth(0).fill(password)
-  await page.locator('.reset-form input').nth(1).fill(password)
-  await act(page, 'POST', '/api/v1/auth/password-reset/complete', () =>
-    page.locator('.reset-form .submit-button').click(),
-  )
-  await expect(page).toHaveURL(/\/login$/u)
-  await page.waitForLoadState('networkidle')
-  await diagnostics.verify()
-  await page.close()
-  await reset.getByRole('button', { name: '取消', exact: true }).click()
-  return { ...credentials, username, password }
+  const identity = { ...credentials, username, password: 'Valid!Session123' }
+  await changeInitialPassword(activation, identity, budget)
+  return identity
 }
 
 export async function logout(page: Page) {

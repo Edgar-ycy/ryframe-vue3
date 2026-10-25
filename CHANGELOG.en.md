@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Real session acceptance now prepares ordinary accounts through initial login with `123456` and mandatory page-based password change, retaining `Valid!Session123` for existing race scenarios. The separate `password-lifecycle.spec.ts` preserves administrator reset, same-origin fragment consumption, and page submission coverage, and checks old password and session invalidation plus successful new-password login using existing resource ownership cleanup and budgets from actual configuration.
+
 - The public CRUD contract now accepts the existing resource renderer's type-compatible JSON, boolean switch, date, date-time, and multiline text editing controls. It continues to reject type mismatches, unknown widgets, editable hidden fields, number inputs for exact numeric strings, and invalid transport, enumeration, or nullable/action combinations.
 
 - API generation reports the managed relative path, IO error code, and file-type and permission guidance when a managed file cannot be read. It retains the original error cause and advises preserving unknown directories and files for inspection.

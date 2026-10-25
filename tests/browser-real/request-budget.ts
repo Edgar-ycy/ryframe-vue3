@@ -10,13 +10,20 @@ export function observeRequestBudget(page: Page) {
     windowMs,
     sleep: (delay) => page.waitForTimeout(delay),
   })
-  page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/v1/')) budget.record()
-  })
-  page.on('websocket', (socket) => {
-    if (new URL(socket.url()).pathname.startsWith('/api/v1/')) budget.record()
-  })
+  const tracked = new WeakSet<Page>()
+  function observePage(target: Page): void {
+    if (tracked.has(target)) return
+    tracked.add(target)
+    target.on('request', (request) => {
+      if (new URL(request.url()).pathname.startsWith('/api/v1/')) budget.record()
+    })
+    target.on('websocket', (socket) => {
+      if (new URL(socket.url()).pathname.startsWith('/api/v1/')) budget.record()
+    })
+  }
+  observePage(page)
   return {
+    observePage,
     // 完整页面启动还会请求刷新、菜单、消息和连接，不能只预留删除请求。
     beforePageBootstrap: () => budget.waitForAvailable(Math.ceil(capacity * 0.6)),
     beforeProvisioning: () => budget.waitForAvailable(Math.ceil(capacity * 0.6)),

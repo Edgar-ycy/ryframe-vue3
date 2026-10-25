@@ -51,13 +51,20 @@ export async function expectSuccessfulResponse(response: Response): Promise<void
   expect(response.ok(), `${response.status()} ${new URL(response.url()).pathname}`).toBe(true)
 }
 
-export async function submitLogin(page: Page, identity = credentials): Promise<Response> {
+export async function submitLogin(
+  page: Page,
+  identity = credentials,
+  expectedStatus: 200 | 401 = 200,
+): Promise<Response> {
   const budget = configuredLoginBudget()
   const reservation = await budget.reserve(identity, clientAddress(page.context()))
   try {
-    return await act(page, 'POST', '/api/v1/auth/login', () =>
+    const [response] = await Promise.all([
+      waitForApiResponse(page, 'POST', '/api/v1/auth/login'),
       page.getByRole('button', { name: '登录', exact: true }).click(),
-    )
+    ])
+    expect(response.status()).toBe(expectedStatus)
+    return response
   } finally {
     await budget.complete(reservation)
   }

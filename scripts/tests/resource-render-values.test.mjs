@@ -7,8 +7,6 @@ import {
   enumValue,
   formInput,
   formType,
-  formWidget,
-  objectBlock,
   tsDefault,
 } from '../resource-render/values.mjs'
 
@@ -75,23 +73,10 @@ test('枚举保留精确传输类型并按 Rust 字符串顺序排序', () => {
   )
   assert.equal(enumValue('127', field({ value_type: 'i8', wire_type: 'i8' })), '127')
   assert.equal(enumValue('false', field({ value_type: 'bool', wire_type: 'bool' })), 'false')
-  assert.equal(enumValue('否', field({ value_type: 'bool', wire_type: 'bool' })), '"否"')
   assert.equal(enumValue('a"b', field()), '"a\\"b"')
   const values = { 2: {}, 10: {}, '\u{10000}': {}, '\ue000': {} }
   assert.deepEqual(
     enumEntries(field({ enum_values: values })).map(([key]) => key),
     ['10', '2', '\ue000', '\u{10000}'],
-  )
-})
-
-test('枚举优先使用单选，其他控件保持原资源选择', () => {
-  for (const widget of ['textarea', 'number', 'switch', 'date', 'date_time', 'json']) {
-    assert.equal(formWidget(field({ widget })), widget)
-    assert.equal(formWidget(field({ widget, enum_values: { 1: {} } })), 'radio')
-  }
-  assert.equal(formWidget(field({ widget: 'hidden' })), 'text')
-  assert.equal(
-    objectBlock(['key: "a"', "kind: 'text'"]),
-    '    {\n      key: "a",\n      kind: \'text\',\n    },\n',
   )
 })

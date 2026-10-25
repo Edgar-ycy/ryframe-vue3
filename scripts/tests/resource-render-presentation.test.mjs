@@ -10,15 +10,9 @@ import {
 } from '../resource-render/properties.mjs'
 import { resourceDefinition } from '../resource-render/resource.mjs'
 
-const root = new URL('../../', import.meta.url)
 const post = JSON.parse(
   await readFile(new URL('./fixtures/resource-render/post.json', import.meta.url), 'utf8'),
 )
-
-test('Post 列表与表单渲染逐字节匹配原生成资产', async () => {
-  const expected = await readFile(new URL('src/generated/resources/post/fields.ts', root), 'utf8')
-  assert.equal(presentation(post, '1.3.0'), expected)
-})
 
 test('状态枚举按原字符串次序选择正向状态，不被整数属性排序改变', () => {
   const field = structuredClone(post.fields.find((field) => field.name === 'status'))

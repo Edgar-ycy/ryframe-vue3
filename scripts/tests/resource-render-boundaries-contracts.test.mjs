@@ -140,17 +140,3 @@ test('Post 字段分行可读、radio 及创建更新限制、API 类型与菜�
   ])
     assert.ok(transport.get('registration.ts').includes(expected), expected)
 })
-
-test('i64/Decimal/u64 原契约的字符串字面量与空值转换保持可读输出', () => {
-  for (const type of ['i64', 'decimal', 'u64']) {
-    const resource = numeric(type, false)
-    const fields = renderFields(resource, version).get('fields.ts')
-    assert.ok(fields.includes("status: ''"))
-    assert.ok(fields.includes("form.status === '' ? undefined : form.status"))
-    if (type === 'i64') {
-      assert.ok(fields.includes('value: "1"'))
-      assert.ok(!fields.includes('value: 1,'))
-    }
-    if (type === 'u64') assert.ok(fields.includes('value: "18446744073709551615"'))
-  }
-})

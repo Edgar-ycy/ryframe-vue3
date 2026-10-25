@@ -14,9 +14,12 @@ Export-enabled lists support selecting rows or selecting the current page. Selec
 
 ## Install and run
 
-Use the Node.js version in `.node-version`. Corepack selects the pnpm version pinned by `package.json#packageManager`.
+First install the Node.js version specified by `.node-version` and ensure Corepack is available. If Corepack is missing, follow the [official Corepack installation instructions](https://github.com/nodejs/corepack#installation). From the frontend repository root, run the version checks below: Node.js must match `.node-version`, and pnpm must match the version pinned by `package.json#packageManager`. Then use Corepack to install locked dependencies and start the development server.
 
 ```bash
+node --version
+corepack --version
+corepack pnpm --version
 corepack pnpm install --frozen-lockfile
 corepack pnpm dev
 ```

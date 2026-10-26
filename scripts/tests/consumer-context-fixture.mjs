@@ -18,11 +18,32 @@ export function consumerFixture(t) {
   const backend = path.join(root, 'backend')
   const frontend = path.join(root, 'frontend')
   fs.mkdirSync(frontend)
-  const binding = put('backend/.local-tests/frontend-origin-tool.json', sentinel)
-  const python = put('python.exe', '仅验证入口存在，不运行 Python')
-  fs.chmodSync(python, 0o755)
+  const executable = put('backend/native tool.exe', '仅验证工具绑定，不执行夹具程序')
+  const policy = 'xtask/source-inventory.json'
+  const source = 'xtask/src/main.rs'
+  put(`backend/${source}`, '// 原生来源夹具\n')
+  put(
+    `backend/${policy}`,
+    JSON.stringify({
+      format_version: 1,
+      files: [policy],
+      trees: ['xtask/src'],
+      excluded_directories: [],
+    }),
+  )
+  const binding = put(
+    'backend/.local-tests/frontend-origin-tool.json',
+    JSON.stringify({
+      format_version: 1,
+      kind: 'frontend-origin-tool',
+      executable: { path: executable, sha256: fileHash(fs.readFileSync(executable)) },
+      sources: [policy, source].map((relative) => ({
+        path: relative,
+        sha256: fileHash(fs.readFileSync(path.join(backend, relative))),
+      })),
+    }),
+  )
   const openapi = put('backend/openapi.json', '{}')
-  put('backend/tools/python/source_domain_contract.py', '# 不执行的测试入口')
   for (const relative of ['config/tools.toml', '.local-tests/tools.toml']) {
     put(`backend/${relative}`, '# 仅绑定字节，不解析凭据\n')
   }
@@ -42,7 +63,6 @@ export function consumerFixture(t) {
     ],
     backend_root: backend,
     frontend_root: frontend,
-    python_program: python,
     origin_tool_binding: {
       path: binding,
       bytes: fs.readFileSync(binding).length,
@@ -56,5 +76,5 @@ export function consumerFixture(t) {
   const file = path.join(root, 'consumer.json')
   const save = (document = value) => fs.writeFileSync(file, JSON.stringify(document))
   save()
-  return { root, backend, frontend, binding, python, file, value, save, put }
+  return { root, backend, frontend, binding, executable, file, value, save, put }
 }

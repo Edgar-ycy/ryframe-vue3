@@ -18,7 +18,7 @@ export const observe = () => ({
 export function fixture(t, { environment = 'test', formal = true, localTools = false } = {}) {
   const base = path.join(frontend, '.local-tests/node-unit')
   fs.mkdirSync(base, { recursive: true })
-  const root = fs.mkdtempSync(path.join(base, 'python-parity-中文 '))
+  const root = fs.mkdtempSync(path.join(base, 'native-parity-中文 '))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const put = (relative, bytes) => {
     const file = path.join(root, relative)

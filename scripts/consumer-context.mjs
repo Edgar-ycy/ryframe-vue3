@@ -3,7 +3,7 @@ import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { checkApplicationPath } from './application-config-paths.mjs'
 import { fileHash, optionalManagedFile, readManagedJson } from './application-config-files.mjs'
-import { capturePythonProgram } from './consumer-context-python.mjs'
+import { bindWorkerTool } from '../tests/browser-real/worker-tool.mjs'
 
 const configurationPaths = ['config/tools.toml', '.local-tests/tools.toml']
 const argumentKeys = [
@@ -18,7 +18,6 @@ const contextKeys = [
   'arguments',
   'backend_root',
   'frontend_root',
-  'python_program',
   'origin_tool_binding',
   'tool_configuration',
 ]
@@ -158,11 +157,10 @@ function readSnapshot(file, frontendRoot) {
   absolutePath(context.backend_root, 'backend_root', { directory: true })
   const frontend = absolutePath(context.frontend_root, 'frontend_root', { directory: true })
   if (!samePath(frontend, frontendRoot)) fail('frontend_root', '必须等于当前工作目录')
-  const python = capturePythonProgram(context.python_program)
   const argumentsMap = consumerArguments(context.arguments)
   verifyBinding(context)
   verifyConfiguration(context)
-  return { context, arguments: argumentsMap, sha256: fileHash(input.bytes), python }
+  return { context, arguments: argumentsMap, sha256: fileHash(input.bytes) }
 }
 
 /** 固定原始上下文摘要，并在每次任务前后重验文件、来源绑定和配置存在性集合。 */
@@ -172,12 +170,12 @@ export function readConsumerContext(raw, { frontendRoot = process.cwd() } = {}) 
   }
   const file = path.isAbsolute(raw) ? raw : `${process.cwd()}${path.sep}${raw}`
   const before = readSnapshot(file, frontendRoot)
+  const originTool = bindWorkerTool(before.context.backend_root)
   const verifyUnchanged = () => {
     const after = readSnapshot(file, frontendRoot)
     if (before.sha256 !== after.sha256) fail('file', '上下文字节摘要漂移')
-    if (!isDeepStrictEqual(before.python, after.python))
-      fail('python_program', '入口或目标身份/摘要漂移')
+    originTool.verifyUnchanged()
   }
   verifyUnchanged()
-  return { context: before.context, arguments: before.arguments, verifyUnchanged }
+  return { context: before.context, arguments: before.arguments, originTool, verifyUnchanged }
 }

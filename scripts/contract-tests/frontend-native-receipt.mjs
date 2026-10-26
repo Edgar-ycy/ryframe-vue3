@@ -1,36 +1,23 @@
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import test, { after } from 'node:test'
 import { buildSourceSnapshot } from '../build-source.mjs'
 import { captureSourceInventory, sha256, sourceDomains } from '../build-source-inventory.mjs'
 import { receiptPath, verifyBuildReceipt, writeBuildReceipt } from '../restore-build.mjs'
-import { fixture, observe } from './frontend-python-receipt-fixture.mjs'
-import { receiptBinding } from './frontend-python-binding.mjs'
+import { fixture, observe } from './frontend-native-receipt-fixture.mjs'
+import { receiptBinding } from './frontend-native-binding.mjs'
+import { parseJson } from '../resource-render/json.mjs'
 
 const sentinel = 'PRIVATE-PARITY-SENTINEL'
 const selected = receiptBinding()
-after(() => selected.verifyUnchanged?.())
+after(() => selected.verifyUnchanged())
 
-function pythonValidate(value) {
-  selected.verifyUnchanged?.()
-  const result = spawnSync(
-    selected.python,
-    ['-B', '-X', 'utf8', selected.validator, '--frontend-dir', value.root],
-    {
-      input: JSON.stringify({
-        frontend_inventories: [value.receipt.sources.full],
-        backend_inventories: [],
-      }),
-      encoding: 'utf8',
-      windowsHide: true,
-      maxBuffer: 4 * 1024 * 1024,
-      env: { ...process.env, APP_ENV: 'INVALID-SHELL', VITE_APP_API_ORIGIN: sentinel },
-    },
-  )
-  selected.verifyUnchanged?.()
-  return result
+function nativeValidate(value) {
+  return selected.invoke(value.root, {
+    frontend_inventories: [value.receipt.sources.full],
+    backend_inventories: [],
+  })
 }
 
 function nodeValidate(value) {
@@ -45,10 +32,12 @@ function rejectedByBoth(value) {
       return true
     },
   )
-  const result = pythonValidate(value)
+  const result = nativeValidate(value)
   assert.ifError(result.error)
-  assert.notEqual(result.status, 0, '实际 Python validator 必须拒绝同一损坏输入')
+  assert.ok(Number.isInteger(result.status) && result.status > 0, '原生消费者必须明确拒绝损坏输入')
+  assert.equal(result.signal, null)
   assert.equal(result.stdout, '')
+  assert.ok(result.stderr.trim())
   assert.ok(!result.stderr.includes(sentinel))
 }
 
@@ -70,14 +59,20 @@ function bindCurrentBytes(value) {
   value.json(`dist/${receiptPath}`, receipt)
 }
 
-test('真实 Node v3 生产者与 Python validator 共享文件配置、三域、身份和 Unicode dist', (t) => {
+test('真实 Node v3 生产者与 Rust 原生消费者 共享文件配置、三域、身份和 Unicode dist', (t) => {
   for (const environment of ['dev', 'test', 'prod']) {
     const value = fixture(t, { environment, localTools: true })
     assert.deepEqual(nodeValidate(value), value.receipt)
-    const result = pythonValidate(value)
+    const result = nativeValidate(value)
     assert.ifError(result.error)
     assert.equal(result.status, 0, result.stderr)
-    const checked = JSON.parse(result.stdout)
+    const checked = parseJson(result.stdout)
+    assert.deepEqual(Object.keys(checked).sort(), [
+      'backend_domains',
+      'frontend_build',
+      'frontend_domains',
+    ])
+    assert.deepEqual(checked.backend_domains, [])
     assert.deepEqual(checked.frontend_domains, [value.receipt.sources])
     assert.deepEqual(checked.frontend_build, {
       configuration: value.receipt.build.configuration,
@@ -89,6 +84,40 @@ test('真实 Node v3 生产者与 Python validator 共享文件配置、三域�
   }
 })
 
+test('工具文件已知配置节只记录元数据，节内字节漂移仍被两端拒绝', (t) => {
+  const value = fixture(t, { formal: false })
+  const tools = {
+    application_config_dir: 'config',
+    api_contract: { backend_repository: 'example/backend' },
+    real_browser: { password: sentinel },
+    browser_smoke: { serverMode: 'preview' },
+  }
+  value.json('config/tools.json', tools)
+  fs.rmSync(value.file)
+  const before = buildSourceSnapshot(value.root, { APP_ENV: 'test' }, observe)
+  value.receipt = writeBuildReceipt(value.root, before, { APP_ENV: 'test' }, observe)
+  assert.deepEqual(nodeValidate(value), value.receipt)
+  const result = nativeValidate(value)
+  assert.ifError(result.error)
+  assert.equal(result.status, 0, result.stderr)
+  const checked = parseJson(result.stdout)
+  assert.deepEqual(checked.frontend_build.configuration, value.receipt.build.configuration)
+  const descriptor = value.receipt.build.configuration.tools.find(
+    (item) => item.path === 'config/tools.json',
+  )
+  assert.deepEqual(descriptor, {
+    path: 'config/tools.json',
+    sha256: sha256(fs.readFileSync(path.join(value.root, 'config/tools.json'))),
+  })
+  assert.ok(!JSON.stringify(value.receipt).includes(sentinel))
+  assert.ok(!result.stdout.includes(sentinel))
+  value.json('config/tools.json', {
+    ...tools,
+    real_browser: { password: sentinel + '-changed' },
+  })
+  rejectedByBoth(value)
+})
+
 test('development 身份允许缺少受管 JSON 的全部父目录', (t) => {
   const value = fixture(t, { formal: false })
   fs.rmSync(path.join(value.root, '.local-tests'), { recursive: true })
@@ -97,7 +126,7 @@ test('development 身份允许缺少受管 JSON 的全部父目录', (t) => {
   value.receipt = writeBuildReceipt(value.root, before, { APP_ENV: 'test' }, observe)
   assert.equal(value.receipt.build.identity.source_file, null)
   assert.deepEqual(nodeValidate(value), value.receipt)
-  const result = pythonValidate(value)
+  const result = nativeValidate(value)
   assert.ifError(result.error)
   assert.equal(result.status, 0, result.stderr)
 })
@@ -190,7 +219,7 @@ test('相同畸形 UTF8/TOML/JSON、未知凭据、严格 host/port 与 URL 错�
   }
 })
 
-test('Node 接受的 URL 规范化和整值浮点端口也必须通过 Python', (t) => {
+test('Node 接受的 URL 规范化和整值浮点端口也必须通过 Rust 原生消费者', (t) => {
   const value = fixture(t, { formal: false })
   for (const override of [
     '[server]\nport=5173.0',
@@ -201,7 +230,7 @@ test('Node 接受的 URL 规范化和整值浮点端口也必须通过 Python', 
     const before = buildSourceSnapshot(value.root, { APP_ENV: 'test' }, observe)
     value.receipt = writeBuildReceipt(value.root, before, { APP_ENV: 'test' }, observe)
     assert.deepEqual(nodeValidate(value), value.receipt)
-    const result = pythonValidate(value)
+    const result = nativeValidate(value)
     assert.ifError(result.error)
     assert.equal(result.status, 0, result.stderr)
   }

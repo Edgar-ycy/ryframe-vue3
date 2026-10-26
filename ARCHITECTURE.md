@@ -148,9 +148,9 @@ SessionContext
 `corepack pnpm generate --check` 只读检查派生文件，显式 `--write` 才更新；后端契约同步使用上述正式入口。
 CI 执行对应阶段，浏览器阶段单独运行。
 
-`--consumer-context <file>` 仅用于 contract/full。`scripts/consumer-context.mjs` 严格读取 UTF-8 JSON v1 的七字段协议：`format_version`、`arguments`、`backend_root`、`frontend_root`、`python_program`、`origin_tool_binding`、`tool_configuration`；拒绝重复或未知字段，前端根必须等于当前工作目录。五对参数继续校验消费契约，来源绑定固定为后端 `.local-tests/frontend-origin-tool.json`，工具配置按后端实际存在的 `config/tools.toml`、`.local-tests/tools.toml` 排序绑定。配置、上下文、来源绑定和来源路径拒绝 ParentDir、链接和祖先重解析点，任务前后核对上下文摘要、绑定字节数/摘要及配置存在性集合/摘要。Python 入口独立校验为不含 ParentDir/控制字符的绝对路径，允许显式选择指向普通可执行文件的 symlink；始终保留 venv 入口调用，不改写为 canonical 目标，并在任务前后复核入口/目标身份和目标内容摘要。带上下文的任务图为 contract→consumer-proof；full 继续执行原有静态、unit 和构建任务。`--plan` 只展示相同任务图，不读上下文或派生进程。普通单仓 unit/contract/full 不读取后端绑定。
+`--consumer-context <file>` 仅用于 contract/full。`scripts/consumer-context.mjs` 严格读取 UTF-8 JSON v1 的六字段协议：`format_version`、`arguments`、`backend_root`、`frontend_root`、`origin_tool_binding`、`tool_configuration`；拒绝重复、未知及旧解释器字段，前端根必须等于当前工作目录。五对参数继续校验消费契约，来源绑定固定为后端 `.local-tests/frontend-origin-tool.json`，工具配置按后端实际存在的 `config/tools.toml`、`.local-tests/tools.toml` 排序绑定。配置、上下文、来源绑定和来源路径拒绝 ParentDir、链接和祖先重解析点；任务前后核对上下文摘要、绑定字节数/摘要、配置存在性集合/摘要，以及工具的完整来源集合和实际程序身份/SHA。父 Rust 协调器持续持有正式工具和源码读保护，前端不改写绑定。带上下文的任务图为 contract→consumer-proof；full 继续执行原有静态、unit 和构建任务。`--plan` 只展示相同任务图，不读上下文或派生进程。普通单仓 unit/contract/full 不读取后端绑定。
 
-跨语言证明位于 `scripts/contract-tests/frontend-python-receipt.mjs`，不在 unit 通配符中；它保留七个实际 Node 生产者→Python validator 场景，并从同一上下文选择 Python 与后端。手动执行仍可显式传 `--python <绝对路径> --backend-root <绝对路径>`，不得与 `--consumer-context` 混用；缺少来源绑定或发生漂移时失败，不跳过证明。
+跨仓证明位于 `scripts/contract-tests/frontend-native-receipt.mjs`，不在 unit 通配符中；实际 Node 生产者→Rust 消费者场景保留配置、身份、完整产物、Unicode、畸形输入和链接边界。入口只接受 `--consumer-context`，使用已绑定程序执行 `__frontend-build-contract --frontend-dir <absolute-path>`，通过 stdin 传递 `frontend_inventories`、`backend_inventories`，上限 16 MiB。原生入口复核自身编译来源闭包；缺少来源绑定或发生漂移时失败，不跳过证明，不使用解释器、PATH 猜测或编译回退。全局真实浏览器恢复链的 Python 配置职责保持独立。
 
 ## 编写与运行测试
 

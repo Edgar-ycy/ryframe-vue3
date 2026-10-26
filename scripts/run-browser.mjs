@@ -15,7 +15,12 @@ export function parseBrowserArguments(argv) {
     const flag = argv[index]
     if (flag === '--real' && !options.real) options.real = true
     else if (flag === '--generated' && !options.generated) options.generated = true
-    else if (['--fixture', '--server'].includes(flag)) {
+    else if (flag === '--spec') {
+      if (options.spec !== undefined) throw new Error('--spec 不能重复')
+      options.spec = argv[++index]
+      if (!options.spec || !/^[a-z0-9]+(?:-[a-z0-9]+)*\.spec\.ts$/.test(options.spec))
+        throw new Error('--spec 必须为生成页面测试文件名')
+    } else if (['--fixture', '--server'].includes(flag)) {
       const key = flag.slice(2)
       const value = argv[++index]
       if (
@@ -29,10 +34,24 @@ export function parseBrowserArguments(argv) {
   if (options.fixture && !options.real) throw new Error('--fixture 仅适用于真实验收')
   if (options.generated && (!options.real || (options.fixture && options.fixture !== 'core')))
     throw new Error('--generated 必须与 --real 及 core fixture 一起使用')
+  validateSpec(options)
   return options
 }
 
+function validateSpec(options) {
+  if (
+    options.spec !== undefined &&
+    (!options.generated ||
+      !options.real ||
+      (options.fixture && options.fixture !== 'core') ||
+      typeof options.spec !== 'string' ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*\.spec\.ts$/.test(options.spec))
+  )
+    throw new Error('--spec 仅接受真实 core 生成页面测试文件名')
+}
+
 export async function runBrowser(options, root = process.cwd(), execute = spawn) {
+  validateSpec(options)
   if (options.generated) {
     if (!options.real || (options.fixture && options.fixture !== 'core'))
       throw new Error('--generated 必须与 --real 及 core fixture 一起使用')
@@ -68,6 +87,11 @@ export async function runBrowser(options, root = process.cwd(), execute = spawn)
         : options.real
           ? 'playwright.real.config.ts'
           : 'playwright.config.ts',
+      ...(options.spec !== undefined
+        ? [
+            String.raw`(?:^|[/\\])tests[/\\]browser-generated[/\\]${options.spec.replaceAll('.', String.raw`\.`)}$`,
+          ]
+        : []),
     ]
     await new Promise((resolve, reject) => {
       const child = execute(

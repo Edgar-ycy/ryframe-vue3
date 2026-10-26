@@ -32,7 +32,8 @@ test('普通、生成页面与 ctx contract/full 的 plan 不读输入、不落�
         '--plan',
       ]
       if (consumer) args.push('--consumer-context', 'missing-secret-context.json')
-      if (stage === 'browser') args.push('--real', '--generated')
+      if (stage === 'browser')
+        args.push('--real', '--generated', '--spec', 'generated-catalog-page.spec.ts')
       const result = spawnSync(
         process.execPath,
         [
@@ -52,7 +53,10 @@ test('普通、生成页面与 ctx contract/full 的 plan 不读输入、不落�
         consumer,
       )
       if (consumer) assert.equal(plan.tasks[1].name, 'consumer-proof')
-      if (stage === 'browser') assert.ok(plan.tasks[0].node.includes('--generated'))
+      if (stage === 'browser') {
+        assert.ok(plan.tasks[0].node.includes('--generated'))
+        assert.deepEqual(plan.tasks[0].node.slice(-2), ['--spec', 'generated-catalog-page.spec.ts'])
+      }
     }
   }
 })

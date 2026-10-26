@@ -18,6 +18,7 @@ export function parseArguments(argv) {
   let plan = false
   let real = false
   let generated = false
+  let spec
   let fixture
   let server
   let consumerContext
@@ -26,6 +27,13 @@ export function parseArguments(argv) {
     if (value === '--generated') {
       if (generated) throw new Error('--generated 不能重复')
       generated = true
+      continue
+    }
+    if (value === '--spec') {
+      if (spec !== undefined) throw new Error('--spec 不能重复')
+      spec = argv[++index]
+      if (!spec || !/^[a-z0-9]+(?:-[a-z0-9]+)*\.spec\.ts$/.test(spec))
+        throw new Error('--spec 必须为生成页面测试文件名')
       continue
     }
     if (value === '--consumer-context') {
@@ -74,6 +82,11 @@ export function parseArguments(argv) {
   if ((fixture || server) && !real) throw new Error('--fixture 和 --server 必须与 --real 一起使用')
   if (generated && (!real || (fixture && fixture !== 'core')))
     throw new Error('--generated 必须与 --real 及 core fixture 一起使用')
+  if (
+    spec !== undefined &&
+    (selected !== 'browser' || !generated || !real || (fixture && fixture !== 'core'))
+  )
+    throw new Error('--spec 仅适用于 browser --generated --real 的 core 验收')
   if (consumerContext && !['contract', 'full'].includes(selected)) {
     throw new Error('--consumer-context 只能用于 contract 或 full 阶段')
   }
@@ -82,6 +95,7 @@ export function parseArguments(argv) {
     stage: selected,
     plan,
     ...(generated ? { generated } : {}),
+    ...(spec !== undefined ? { spec } : {}),
     ...(consumerContext ? { consumerContext } : {}),
     ...(real ? { real, fixture: fixture || 'core', server: server || 'dev' } : {}),
   }
@@ -93,6 +107,16 @@ export function checkTasks(stage, options = {}) {
     (stage !== 'browser' || !options.real || (options.fixture && options.fixture !== 'core'))
   )
     throw new Error('--generated 仅适用于 browser 阶段的真实 core 验收')
+  if (
+    options.spec !== undefined &&
+    (stage !== 'browser' ||
+      !options.generated ||
+      !options.real ||
+      (options.fixture && options.fixture !== 'core') ||
+      typeof options.spec !== 'string' ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*\.spec\.ts$/.test(options.spec))
+  )
+    throw new Error('--spec 仅接受真实 core 生成页面测试文件名')
   if (options.consumerContext && !['contract', 'full'].includes(stage)) {
     throw new Error('--consumer-context 只能用于 contract 或 full 阶段')
   }
@@ -108,6 +132,7 @@ export function checkTasks(stage, options = {}) {
           options.fixture,
           '--server',
           options.server,
+          ...(options.spec !== undefined ? ['--spec', options.spec] : []),
         ],
       },
     ]

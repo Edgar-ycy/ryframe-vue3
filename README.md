@@ -116,8 +116,11 @@ corepack pnpm generate
 ```powershell
 corepack pnpm check --stage browser --real --fixture core --server dev
 corepack pnpm check --stage browser --real --fixture core --server dev --generated
+corepack pnpm check --stage browser --real --fixture core --server dev --generated --spec generated-catalog-page.spec.ts
 corepack pnpm check --stage browser --real --fixture business --server preview --plan
 ```
+
+`--spec` 只与 `browser --generated --real` 的 core 验收组合，接受小写字母、数字及连字符组成的单个 `.spec.ts` 文件名，不接受路径；省略时执行完整 generated 套件，无匹配测试仍失败。
 
 `--generated` 仅用于 `browser --real` 的 core 验收，通过 `playwright.generated.config.ts` 独立选择 `tests/browser-generated/`。使用提供演进订单页面及匹配 API 的隔离环境、core 文件当前凭据和实际限流配置，不配置 `restore` 或 `credentialEndpoint`。入口保留原受管控制器、网络约束、预算和身份清理；只证明生成页面自身，不签发业务迁移或恢复证明，也不执行原 business 四场景。`--plan` 只检查参数并展示任务图，配置限制在实际执行前校验。
 

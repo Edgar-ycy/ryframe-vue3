@@ -111,8 +111,11 @@ Put browser and tool inputs in `config/tools.json` or the higher-priority ignore
 ```powershell
 corepack pnpm check --stage browser --real --fixture core --server dev
 corepack pnpm check --stage browser --real --fixture core --server dev --generated
+corepack pnpm check --stage browser --real --fixture core --server dev --generated --spec generated-catalog-page.spec.ts
 corepack pnpm check --stage browser --real --fixture business --server preview --plan
 ```
+
+`--spec` is restricted to core acceptance with `browser --generated --real`. It accepts one `.spec.ts` basename containing lowercase letters, digits, and hyphens, never a path. Omitting it runs the full generated suite; no matching tests still fails.
 
 `--generated` is limited to core acceptance with `browser --real`. It independently selects `tests/browser-generated/` through `playwright.generated.config.ts`. Use an isolated environment providing the evolved order page and matching API, current credentials in the core configuration file, and actual rate limits; configure neither `restore` nor `credentialEndpoint`. The entry preserves the managed controller, network constraints, budgets, and identity cleanup. It proves only the generated page itself, issues no business migration or recovery proof, and does not run the original four business scenarios. `--plan` only checks arguments and displays the task graph; configuration restrictions are validated before actual execution.
 

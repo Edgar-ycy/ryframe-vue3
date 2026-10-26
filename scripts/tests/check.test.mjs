@@ -60,7 +60,56 @@ test('生成页面计划选择受管真实 core 入口并拒绝混入其他阶�
     '--server',
     'dev',
   ])
+  const selected = parseArguments([
+    '--stage',
+    'browser',
+    '--real',
+    '--generated',
+    '--spec',
+    'generated-catalog-page.spec.ts',
+  ])
+  assert.deepEqual(checkTasks('browser', selected)[0].node, [
+    ...checkTasks(options.stage, options)[0].node,
+    '--spec',
+    'generated-catalog-page.spec.ts',
+  ])
+  for (const spec of [
+    '',
+    '../catalog.spec.ts',
+    'sub/catalog.spec.ts',
+    'sub\\catalog.spec.ts',
+    'catalog.ts',
+    '..',
+    'Catalog.spec.ts',
+  ]) {
+    assert.throws(
+      () => parseArguments(['--stage', 'browser', '--real', '--generated', '--spec', spec]),
+      /spec/u,
+    )
+    assert.throws(() => checkTasks('browser', { ...options, spec }), /spec/u)
+  }
+  for (const [invalid, reason] of [
+    [{}, /spec/u],
+    [{ ...options, generated: false }, /spec/u],
+    [{ ...options, fixture: 'business' }, /generated/u],
+  ])
+    assert.throws(() => checkTasks('browser', { ...invalid, spec: selected.spec }), reason)
+  assert.throws(() => checkTasks('unit', selected), /generated|spec/u)
   for (const args of [
+    ['--spec', 'catalog.spec.ts'],
+    ['--stage', 'browser', '--real', '--spec', 'catalog.spec.ts'],
+    ['--stage', 'browser', '--real', '--generated', '--spec'],
+    ['--stage', 'browser', '--real', '--generated', '--spec', '--plan'],
+    [
+      '--stage',
+      'browser',
+      '--real',
+      '--generated',
+      '--spec',
+      'catalog.spec.ts',
+      '--spec',
+      'catalog.spec.ts',
+    ],
     ['--generated'],
     ['--stage', 'browser', '--generated'],
     ['--stage', 'browser', '--real', '--generated', '--fixture', 'business'],

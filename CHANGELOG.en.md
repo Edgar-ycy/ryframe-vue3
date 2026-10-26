@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+- The managed generated-page browser entry supports `--spec` to select one test file while retaining IPC, isolation, and failure cleanup; omitting it still runs the complete suite.
+- Add independent generated Catalog page acceptance for the system administrator, checking exact JSON strings, nullable-object clearing, boolean toggling, and complete-preimage cleanup through the existing generated entry without expanding business migration receipts.
+
 - Count direct API requests in the generated-page acceptance client budget and reserve capacity before multi-page authorization refresh and tab reload, retaining existing rate limits, mounted-page revocation, and exact cleanup checks.
 
 - Remove renderer test expression and layout assertions already covered by generated-code behavior; reuse the existing VM for optional JSON omission, nullable clearing, exact values, boolean and Unicode enums, while retaining strict type rejection and primary-key mapping coverage.

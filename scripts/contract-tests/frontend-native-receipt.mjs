@@ -3,9 +3,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test, { after } from 'node:test'
 import { buildSourceSnapshot } from '../build-source.mjs'
-import { captureSourceInventory, sha256, sourceDomains } from '../build-source-inventory.mjs'
+import { sha256 } from '../build-source-inventory.mjs'
 import { receiptPath, verifyBuildReceipt, writeBuildReceipt } from '../restore-build.mjs'
-import { fixture, observe } from './frontend-native-receipt-fixture.mjs'
+import { bindCurrentBytes, fixture, observe } from './frontend-native-receipt-fixture.mjs'
+import './frontend-native-paths.mjs'
 import { receiptBinding } from './frontend-native-binding.mjs'
 import { parseJson } from '../resource-render/json.mjs'
 
@@ -39,24 +40,6 @@ function rejectedByBoth(value) {
   assert.equal(result.stdout, '')
   assert.ok(result.stderr.trim())
   assert.ok(!result.stderr.includes(sentinel))
-}
-
-// 更新字节事实以防畸形配置仅因过期摘要被拒绝，掩盖两端解析差异。
-function bindCurrentBytes(value) {
-  const receipt = structuredClone(value.receipt)
-  receipt.sources = sourceDomains(captureSourceInventory(value.root))
-  const descriptor = (relative) => ({
-    path: relative,
-    sha256: sha256(fs.readFileSync(path.join(value.root, relative))),
-  })
-  receipt.build.configuration.files = receipt.build.configuration.files.map((item) =>
-    descriptor(item.path),
-  )
-  receipt.build.configuration.tools = ['config/tools.json', '.local-tests/frontend-tools.json']
-    .filter((relative) => fs.existsSync(path.join(value.root, relative)))
-    .map(descriptor)
-  receipt.build.identity.source_file = descriptor('.local-tests/build/source.json')
-  value.json(`dist/${receiptPath}`, receipt)
 }
 
 test('真实 Node v3 生产者与 Rust 原生消费者 共享文件配置、三域、身份和 Unicode dist', (t) => {

@@ -1,4 +1,4 @@
-import { expect, type BrowserContext, type Page } from '@playwright/test'
+import { expect, type BrowserContext, type Page, type Request } from '@playwright/test'
 import type { SessionResources } from '../../scripts/browser-session-resources.mjs'
 import { act, credentials, login } from '../browser-real/support'
 import {
@@ -27,13 +27,28 @@ async function restrictToOwner(
   const refreshed = admin.waitForResponse(
     (response) => new URL(response.url()).pathname === '/api/v1/auth/context',
   )
-  const response = await act(admin, 'PUT', /\/system\/roles\/\d+\/data-scope$/u, () =>
-    dialog.getByRole('button', { name: '确定', exact: true }).click(),
-  )
-  expect(response.request().postDataJSON()).toMatchObject({ data_scope: '5' })
-  expect((await refreshed).status()).toBe(200)
-  await expect(dialog).not.toBeVisible()
-  await admin.waitForLoadState('networkidle')
+  // 数据范围变更提升授权纪元；只登记该变更窗口、本次角色的旧列表请求。
+  const observe = (request: Request) => {
+    const url = new URL(request.url())
+    if (
+      request.method() === 'GET' &&
+      url.pathname === '/api/v1/system/roles' &&
+      url.searchParams.get('code') === role
+    )
+      diagnostics.cancel(request)
+  }
+  admin.on('request', observe)
+  try {
+    const response = await act(admin, 'PUT', /\/system\/roles\/\d+\/data-scope$/u, () =>
+      dialog.getByRole('button', { name: '确定', exact: true }).click(),
+    )
+    expect(response.request().postDataJSON()).toMatchObject({ data_scope: '5' })
+    expect((await refreshed).status()).toBe(200)
+    await expect(dialog).not.toBeVisible()
+    await admin.waitForLoadState('networkidle')
+  } finally {
+    admin.off('request', observe)
+  }
   await diagnostics.verify()
 }
 
@@ -56,7 +71,9 @@ export async function prepareOrderUsers(
   const identities = []
   for (let index = 0; index < 2; index++) {
     await budget.beforeProvisioning()
-    identities.push(await createOrdinaryUser(admin, activation, role, resources, budget))
+    identities.push(
+      await createOrdinaryUser(admin, activation, role, resources, diagnostics, budget),
+    )
   }
   const actors = []
   for (const identity of identities) {

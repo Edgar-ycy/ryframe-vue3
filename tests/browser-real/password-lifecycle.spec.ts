@@ -62,6 +62,7 @@ test('真实普通账号首次改密、管理员重置与旧凭据会话失效',
     preparation,
     role,
     sessionResources.resources,
+    adminDiagnostics,
     sessionResources.budget,
   )
   const owned = sessionResources.resources

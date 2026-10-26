@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import { test } from '../browser-real/session-fixture'
 import { act, credentials, isolatedName } from '../browser-real/support'
 import { setRolePermissions } from '../browser-real/session-identities'
-import { observeSession } from '../browser-real/session-observation'
+import { observeSession, watchCancellationToasts } from '../browser-real/session-observation'
 import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { prepareOrderUsers } from './generated-order-identities'
 import {
@@ -21,7 +21,8 @@ test('生成订单页面精确金额 CRUD、mounted 按钮撤权与同租户 own
   clientAddress,
   sessionResources,
 }, info) => {
-  test.setTimeout(300_000)
+  // 完整身份准备和页面切换需等待限流窗口，须为撤权及精确清理保留总执行时间。
+  test.setTimeout(600_000)
   const { resources, budget, newContext } = sessionResources
   const prepared = await prepareOrderUsers(admin, newContext, clientAddress, resources, budget)
   const [first, second] = prepared.actors
@@ -93,12 +94,12 @@ test('生成订单页面精确金额 CRUD、mounted 按钮撤权与同租户 own
     const foreign = await searchOrders(first.page, other.code)
     expect(foreign.total).toBe(0)
     expect(foreign.items).toEqual([])
-    const statuses = await expectOrderDenied(first.page, foreign.response, other.row!)
+    const statuses = await expectOrderDenied(first.page, foreign.response, other.row!, budget)
     expect((await searchOrders(second.page, other.code)).items).toEqual(otherBefore)
     const ownBefore = (await searchOrders(first.page, own.code)).items
     const hidden = await searchOrders(second.page, own.code)
     expect(hidden.total).toBe(0)
-    const reverse = await expectOrderDenied(second.page, hidden.response, own.row!)
+    const reverse = await expectOrderDenied(second.page, hidden.response, own.row!, budget)
     expect((await searchOrders(first.page, own.code)).items).toEqual(ownBefore)
     own.phase = 'deleting'
     await save()
@@ -116,8 +117,10 @@ test('生成订单页面精确金额 CRUD、mounted 按钮撤权与同租户 own
     await first.page.waitForLoadState('networkidle')
     const mounted = await first.page.locator('.page-container').elementHandle()
     expect(mounted).not.toBeNull()
-    await budget.beforeProvisioning()
+    await budget.beforeAuthorizationChange()
+    const cancellationToasts = await watchCancellationToasts(first.page)
     await setRolePermissions(admin, prepared.role, ['order:order:list'], prepared.diagnostics)
+    await budget.beforePageBootstrap()
     const refreshed = await act(tab, 'POST', '/api/v1/auth/refresh', () => tab.reload())
     const current = (await refreshed.json()).data.session_context
     expect(current.user.id).toBe(before.user.id)
@@ -135,6 +138,7 @@ test('生成订单页面精确金额 CRUD、mounted 按钮撤权与同租户 own
     expect(await mounted!.evaluate((element) => element.isConnected)).toBe(true)
     await mounted!.dispose()
     expect((await searchOrders(first.page, own.code)).items).toEqual(mountedBefore)
+    await cancellationToasts()
     await info.attach('generated-order-behavior', {
       body: JSON.stringify({
         same_tenant_denials: statuses,

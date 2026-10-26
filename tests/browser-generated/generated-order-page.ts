@@ -1,6 +1,7 @@
-import { expect, type Page, type Response, type TestInfo } from '@playwright/test'
-import { act } from '../browser-real/support'
+import { expect, type Page, type Request, type Response, type TestInfo } from '@playwright/test'
+import { act, expectSuccessfulResponse } from '../browser-real/support'
 import { isolatedOrigin } from '../browser-real/network'
+import type { observeRequestBudget } from '../browser-real/request-budget'
 
 export const orderPath = '/api/v1/business/order/order'
 export const orderPermissions = [
@@ -29,9 +30,31 @@ export async function openOrders(page: Page) {
 
 export async function searchOrders(page: Page, code: string) {
   await page.getByPlaceholder('请输入或选择code', { exact: true }).fill(code)
-  const response = await act(page, 'GET', orderPath, () =>
-    page.locator('.search-card').getByRole('button', { name: '搜索', exact: true }).click(),
-  )
+  const search = page.locator('.search-card').getByRole('button', { name: '搜索', exact: true })
+  let observed: Request | undefined
+  const observe = (request: Request) => {
+    const url = new URL(request.url())
+    if (
+      request.method() === 'GET' &&
+      url.pathname === orderPath &&
+      url.searchParams.get('code') === code
+    )
+      observed = request
+  }
+  page.on('request', observe)
+  try {
+    await search.click()
+    await page.waitForLoadState('networkidle')
+  } finally {
+    page.off('request', observe)
+  }
+  // 已发出的请求必须完成，不能因响应尚未到达而再次点击并取消它。
+  // 只有新鲜 Query Key 未发请求时，才再次点击同一查询执行显式刷新。
+  const response = observed
+    ? await observed.response()
+    : await act(page, 'GET', orderPath, () => search.click())
+  if (!response) throw new Error('订单搜索请求未完成，保留失败诊断，不能自动重放')
+  await expectSuccessfulResponse(response)
   const data: { items: OrderRow[]; total: number } = (await response.json()).data
   expect(Array.isArray(data.items)).toBe(true)
   await page.waitForLoadState('networkidle')
@@ -101,7 +124,12 @@ export async function deleteOrder(page: Page, row: OrderRow, info: TestInfo) {
 }
 
 /** 复用 Playwright 既有请求端口和当前列表的权威请求头，不读取客户端存储。 */
-export async function expectOrderDenied(page: Page, current: Response, target: OrderRow) {
+export async function expectOrderDenied(
+  page: Page,
+  current: Response,
+  target: OrderRow,
+  budget: ReturnType<typeof observeRequestBudget>,
+) {
   const origin = isolatedOrigin(page.url())
   expect(new URL(current.url()).origin).toBe(origin)
   expect(new URL(current.url()).pathname).toBe(orderPath)
@@ -115,6 +143,7 @@ export async function expectOrderDenied(page: Page, current: Response, target: O
   expect(headers['x-tenant-id']).toBeTruthy()
   const statuses: number[] = []
   for (const method of ['GET', 'PUT', 'DELETE']) {
+    await budget.beforeApiRequest()
     const response = await page.request.fetch(`${origin}${orderPath}/${target.id}`, {
       method,
       headers,

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Count direct API requests in the generated-page acceptance client budget and reserve capacity before multi-page authorization refresh and tab reload, retaining existing rate limits, mounted-page revocation, and exact cleanup checks.
+
 - Remove renderer test expression and layout assertions already covered by generated-code behavior; reuse the existing VM for optional JSON omission, nullable clearing, exact values, boolean and Unicode enums, while retaining strict type rejection and primary-key mapping coverage.
 
 - Fix generated CRUD forms sending empty strings for blank nullable dates and receiving HTTP 422. Date and datetime fields now submit null or omit optional values according to the contract, preserve selected values, and are checked by executing the generated code.

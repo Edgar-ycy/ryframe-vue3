@@ -101,11 +101,13 @@ export async function setRolePermissions(
   }
 }
 
-function roleListAfterContext(
+function identityListAfterContext(
   page: Page,
-  code: string,
+  kind: 'role' | 'user',
+  name: string,
   diagnostics: ReturnType<typeof observeSession>,
 ) {
+  const listPath = `/api/v1/system/${kind}s`
   let created = false
   let contextReceived = false
   const requests = new WeakSet<Request>()
@@ -115,8 +117,8 @@ function roleListAfterContext(
     if (
       response.status() === 200 &&
       request.method() === 'POST' &&
-      path === '/api/v1/system/roles' &&
-      request.postDataJSON()?.code === code
+      path === listPath &&
+      request.postDataJSON()?.[kind === 'role' ? 'code' : 'username'] === name
     )
       created = true
     if (created && request.method() === 'GET' && path === '/api/v1/auth/context') {
@@ -128,15 +130,17 @@ function roleListAfterContext(
     if (
       created &&
       request.method() === 'GET' &&
-      url.pathname === '/api/v1/system/roles' &&
-      url.searchParams.get('code') === '' &&
-      url.searchParams.get('name') === '' &&
-      url.searchParams.get('status') === '' &&
+      url.pathname === listPath &&
+      url.searchParams.get(kind === 'role' ? 'code' : 'username') ===
+        (kind === 'role' ? '' : null) &&
+      [...url.searchParams].every(([key, value]) =>
+        ['page', 'page_size'].includes(key) ? true : value === '',
+      ) &&
       url.searchParams.get('page') === '1' &&
       url.searchParams.get('page_size') === '10'
     ) {
       if (contextReceived) requests.add(request)
-      // 仅角色提交成功至上下文响应之间产生的旧 scope 列表可以被取消。
+      // 仅本次身份提交成功至上下文响应之间产生的空筛选旧 scope 列表可以被取消。
       else diagnostics.cancel(request)
     }
   }
@@ -170,7 +174,7 @@ export async function createWriterRole(
   await dialog.getByPlaceholder('请输入角色名称').fill(code)
   await dialog.getByPlaceholder('请输入角色编码').fill(code)
   // 新角色改变授权上下文；等待随后真正完成的新 scope 列表，再改变搜索条件。
-  const refresh = roleListAfterContext(page, code, diagnostics)
+  const refresh = identityListAfterContext(page, 'role', code, diagnostics)
   try {
     const [response] = await Promise.all([
       createOwnedIdentity(page, resources, 'role', code, () =>
@@ -193,6 +197,7 @@ export async function createOrdinaryUser(
   activation: BrowserContext,
   role: string,
   resources: SessionResources,
+  diagnostics: ReturnType<typeof observeSession>,
   budget?: ReturnType<typeof observeRequestBudget>,
 ) {
   const username = isolatedName('session-user')
@@ -210,12 +215,20 @@ export async function createOrdinaryUser(
   await dialog.getByRole('combobox', { name: '角色', exact: true }).fill(role)
   await admin.getByRole('option').filter({ hasText: role }).click()
   await dialog.getByPlaceholder('请输入昵称').click()
-  const created = await createOwnedIdentity(admin, resources, 'user', username, () =>
-    dialog.getByRole('button', { name: '确定', exact: true }).click(),
-  )
-  const userId: string = (await created.json()).data.id
-  expect(userId).toMatch(/^\d+$/u)
-  await expect(dialog).not.toBeVisible()
+  const refresh = identityListAfterContext(admin, 'user', username, diagnostics)
+  try {
+    const [created] = await Promise.all([
+      createOwnedIdentity(admin, resources, 'user', username, () =>
+        dialog.getByRole('button', { name: '确定', exact: true }).click(),
+      ),
+      refresh.completed,
+    ])
+    const userId: string = (await created.json()).data.id
+    expect(userId).toMatch(/^\d+$/u)
+    await expect(dialog).not.toBeVisible()
+  } finally {
+    refresh.stop()
+  }
   const identity = { ...credentials, username, password: 'Valid!Session123' }
   await changeInitialPassword(activation, identity, budget)
   return identity

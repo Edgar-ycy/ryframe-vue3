@@ -24,6 +24,13 @@ export function observeRequestBudget(page: Page) {
   observePage(page)
   return {
     observePage,
+    // APIRequestContext 不触发 Page 的请求事件，发送前显式等待并计入同一客户预算。
+    beforeApiRequest: async () => {
+      await budget.waitForAvailable(1)
+      budget.record()
+    },
+    // 授权变化会让多个已挂载页面同时重载上下文与后台数据。
+    beforeAuthorizationChange: () => budget.waitForAvailable(Math.ceil(capacity * 0.85)),
     // 完整页面启动还会请求刷新、菜单、消息和连接，不能只预留删除请求。
     beforePageBootstrap: () => budget.waitForAvailable(Math.ceil(capacity * 0.6)),
     beforeProvisioning: () => budget.waitForAvailable(Math.ceil(capacity * 0.6)),

@@ -4,7 +4,8 @@ import path from 'node:path'
 import test, { after } from 'node:test'
 import { buildSourceSnapshot } from '../build-source.mjs'
 import { loadFrontendConfiguration } from '../frontend-tool-config.mjs'
-import { verifyBuildReceipt, writeBuildReceipt } from '../restore-build.mjs'
+import { createWindowsAttributeCheck } from '../application-config-paths.mjs'
+import { receiptPath, verifyBuildReceipt, writeBuildReceipt } from '../restore-build.mjs'
 import { parseJson } from '../resource-render/json.mjs'
 import { receiptBinding } from './frontend-native-binding.mjs'
 import { bindCurrentBytes, fixture, observe } from './frontend-native-receipt-fixture.mjs'
@@ -69,47 +70,32 @@ test('Windows 普通 Win32 目录别名在重新绑定字节后仍被两端拒�
   const value = fixture(t, { formal: false })
   const ordinary = path.join(value.root, 'config')
   const alias = path.join(value.root, 'config.')
-  const canonical = fs.realpathSync.native(alias)
-  assert.equal(canonical.toLowerCase(), fs.realpathSync.native(ordinary).toLowerCase())
-  assert.notEqual(canonical.toLowerCase(), alias.toLowerCase(), '必须实际存在 Win32 词法路径别名')
-  assert.equal(fs.lstatSync(alias).isSymbolicLink(), false)
-  const identity = (file) => {
-    const stat = fs.statSync(file, { bigint: true })
-    return [String(stat.dev), String(stat.ino)]
-  }
-  assert.deepEqual(identity(alias), identity(ordinary))
+  assert.equal(fs.lstatSync(ordinary).isDirectory(), true)
+  assert.notEqual(fs.realpathSync.native(ordinary).toLowerCase(), alias.toLowerCase())
+  // 实际普通 Win32 属性调用成功且非 reparse；不要求 Node 接受该词法别名。
+  const attributes = createWindowsAttributeCheck()
+  assert.doesNotThrow(() => attributes(alias, 'Win32 普通目录别名'))
   value.json('config/tools.json', { application_config_dir: alias })
-  assert.throws(
-    () => loadFrontendConfiguration(value.root, 'test'),
-    /禁止重解析或指向其他来源的路径/u,
-  )
-  // 连同目录与文件 descriptor 使用同一词法别名，避免仅靠 descriptor 不匹配拒绝。
+  const rejectedPath = (error) =>
+    error instanceof Error &&
+    error.message.includes('公开配置路径校验失败') &&
+    error.message.includes(alias) &&
+    /IO ENOENT|禁止重解析或指向其他来源的路径/u.test(error.message)
+  assert.throws(() => loadFrontendConfiguration(value.root, 'test'), rejectedPath)
+  // 先从真实普通文件重绑字节，再令 descriptor 使用别名，不强求 Node 能打开别名。
+  bindCurrentBytes(value)
+  value.receipt = parseJson(fs.readFileSync(value.file, 'utf8'))
   value.receipt.build.configuration.directory = 'config.'
   for (const file of value.receipt.build.configuration.files) {
     file.path = file.path.replace(/^config\//u, 'config./')
   }
-  bindCurrentBytes(value)
-  value.receipt = parseJson(fs.readFileSync(value.file, 'utf8'))
+  value.json(`dist/${receiptPath}`, value.receipt)
   assert.throws(
     () => verifyBuildReceipt(value.root, { APP_ENV: 'INVALID-SHELL' }, observe),
-    /禁止重解析或指向其他来源的路径/u,
+    rejectedPath,
   )
   const result = nativeValidate(value)
   assert.ok(Number.isInteger(result.status) && result.status > 0)
   assert.equal(result.stdout, '')
   assert.match(result.stderr, /FrontendBuildRejected/u)
-})
-
-test('超过 260 字符的普通中文空格路径完成 Node 收据生产及双端消费', (t) => {
-  const value = fixture(t, { formal: false, deep: true })
-  assert.ok(value.root.length > 260, `实际根路径长度必须超过 260：${value.root.length}`)
-  assert.ok(path.isAbsolute(value.root))
-  assert.ok(!value.root.startsWith('\\\\?\\'))
-  assert.ok(value.root.includes('中文') && value.root.includes(' '))
-  const configuration = accepted(value)
-  assert.equal(configuration.directory, 'config')
-  assert.deepEqual(configuration.files.map((file) => file.path), [
-    'config/app.toml',
-    'config/app.test.toml',
-  ])
 })

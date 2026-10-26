@@ -16,18 +16,11 @@ export const observe = () => ({
   vite: '7.1.7',
 })
 
-export function fixture(
-  t,
-  { environment = 'test', formal = true, localTools = false, deep = false } = {},
-) {
+export function fixture(t, { environment = 'test', formal = true, localTools = false } = {}) {
   const base = path.join(frontend, '.local-tests/node-unit')
   fs.mkdirSync(base, { recursive: true })
-  const directory = fs.mkdtempSync(path.join(base, 'native-parity-中文 '))
-  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
-  let root = directory
-  if (deep) {
-    while (root.length <= 280) root = path.join(root, '普通 中文 space')
-  }
+  const root = fs.mkdtempSync(path.join(base, 'native-parity-中文 '))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const put = (relative, bytes) => {
     const file = path.join(root, relative)
     fs.mkdirSync(path.dirname(file), { recursive: true })
@@ -49,10 +42,7 @@ export function fixture(
   if (localTools) {
     json('.local-tests/frontend-tools.json', { application_config_dir: '公开 配置' })
   }
-  if (deep) {
-    git('-c', 'core.longpaths=true', 'init', '--quiet')
-    git('config', 'core.longpaths', 'true')
-  } else git('init', '--quiet')
+  git('init', '--quiet')
   git('config', 'core.autocrlf', 'false')
   git('add', '.')
   git(

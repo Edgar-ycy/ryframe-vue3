@@ -22,7 +22,7 @@ async function restrictToOwner(
     row.getByRole('button', { name: '数据权限', exact: true }).click(),
   )
   const dialog = admin.getByRole('dialog', { name: '设置数据权限', exact: true })
-  await dialog.getByRole('combobox').click()
+  await dialog.getByRole('combobox').press('ArrowDown')
   await admin.getByRole('option', { name: '仅本人数据', exact: true }).click()
   const refreshed = admin.waitForResponse(
     (response) => new URL(response.url()).pathname === '/api/v1/auth/context',

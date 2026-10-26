@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+- Cross-repository consumer contexts remove repeated full-source scans from frequent Node hooks while retaining fixed descriptions, configuration, and executable identity checks. Existing parent Rust read protection and the native entry retain complete source verification.
+
+- Cross-repository build proofs align with the four current frontend tool-file root sections: unused sections bind the complete file digest without exposing values, and changed bytes still reject old receipts.
+
+- Formal frontend build proofs use the fixed-bound Rust native consumer. Consumer contexts remove interpreter fields and manual bypasses while retaining complete sources, executable identity, and before/after drift guards.
+
 - Business migration cancellation and Worker crash recovery acceptance now prepare tenant administrators through the real mandatory first password change. Subsequent business pages retain the same context and new-password session, preserving cancellation, recovery, and data verification assertions.
 
 - Nonempty business migration acceptance completes the mandatory first password change in the same tenant administrator context before logging in with the new password. Order preparation supplies only the code declared by the formal default fixture's generated DTO, retaining shared and dedicated target migration, digest verification, and retention assertions. Amounts and ownership permissions are accepted separately using an evolved sample that declares those fields.

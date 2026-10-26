@@ -3,7 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { readConsumerContext } from '../consumer-context.mjs'
-import { receiptBinding } from '../contract-tests/frontend-python-binding.mjs'
+import { fileHash } from '../application-config-files.mjs'
+import { receiptBinding } from '../contract-tests/frontend-native-binding.mjs'
 import { consumerFixture, sentinel } from './consumer-context-fixture.mjs'
 
 const read = (value) => readConsumerContext(value.file, { frontendRoot: value.frontend })
@@ -13,7 +14,7 @@ const safeFailure = (action) =>
     return true
   })
 
-test('v1 精确七字段绑定当前目录、参数、入口和工具来源，读取前后稳定', (t) => {
+test('v1 精确六字段绑定当前目录、参数和原生工具来源，读取前后稳定', (t) => {
   const value = consumerFixture(t)
   const selected = read(value)
   assert.deepEqual(selected.context, value.value)
@@ -24,11 +25,7 @@ test('v1 精确七字段绑定当前目录、参数、入口和工具来源，�
   value.value.frontend_root = process.cwd()
   value.save()
   const binding = receiptBinding(['--consumer-context', value.file])
-  assert.equal(binding.python, value.python)
-  assert.equal(
-    binding.validator,
-    path.join(value.backend, 'tools/python/source_domain_contract.py'),
-  )
+  assert.equal(binding.executable, value.executable)
   binding.verifyUnchanged()
 })
 
@@ -58,7 +55,7 @@ test('未知与缺失字段、旧版本、类型、非规范摘要和来源字�
       v.private = sentinel
     },
     (v) => {
-      delete v.python_program
+      delete v.origin_tool_binding
     },
     (v) => {
       v.format_version = 2
@@ -94,7 +91,7 @@ test('未知与缺失字段、旧版本、类型、非规范摘要和来源字�
       v.origin_tool_binding.sha256 = 'a'.repeat(64)
     },
     (v) => {
-      v.origin_tool_binding.path = value.python
+      v.origin_tool_binding.path = value.executable
     },
     (v) => {
       v.tool_configuration = null
@@ -155,7 +152,7 @@ test('arguments 恰有五对已知参数，验证唯一性、类型和既有值�
 
 test('全部路径拒绝相对根、ParentDir、目录冒充文件和缺失入口', (t) => {
   const value = consumerFixture(t)
-  for (const field of ['backend_root', 'frontend_root', 'python_program']) {
+  for (const field of ['backend_root', 'frontend_root']) {
     for (const replacement of [
       'relative',
       `${value.root}/frontend/../frontend`,
@@ -167,11 +164,9 @@ test('全部路径拒绝相对根、ParentDir、目录冒充文件和缺失入�
       safeFailure(() => read(value))
     }
   }
-  value.save({ ...value.value, python_program: value.frontend })
-  safeFailure(() => read(value))
   value.save()
   safeFailure(() => readConsumerContext(`${value.root}/frontend/../consumer.json`))
-  fs.rmSync(value.python)
+  fs.rmSync(value.executable)
   safeFailure(() => read(value))
 })
 
@@ -219,11 +214,6 @@ test('ctx、入口、binding 与配置的链接和祖先 junction 均拒绝', (t
   fs.symlinkSync(value.backend, linked, kind)
   value.save({ ...value.value, backend_root: linked })
   safeFailure(() => read(value))
-  value.save({
-    ...value.value,
-    python_program: path.join(linked, 'tools/python/source_domain_contract.py'),
-  })
-  safeFailure(() => read(value))
   value.save()
   const contextLink = path.join(value.root, 'context-link')
   fs.symlinkSync(value.root, contextLink, kind)
@@ -234,18 +224,41 @@ test('ctx、入口、binding 与配置的链接和祖先 junction 均拒绝', (t
   safeFailure(() => read(value))
 })
 
-test('手动 python/backend-root 仍支持，禁止 ctx 混用、重复或隐式绑定', (t) => {
+test('只接受正式上下文，拒绝旧解释器字段与手动旁路或重复参数', (t) => {
   const value = consumerFixture(t)
-  const selected = receiptBinding(['--python', value.python, '--backend-root', value.backend])
-  assert.equal(selected.python, value.python)
+  value.save({ ...value.value, python_program: value.executable })
+  safeFailure(() => read(value))
+  value.save()
   for (const args of [
     [],
-    ['--python', value.python],
+    ['--python', value.executable],
     ['--backend-root', value.backend],
-    ['--consumer-context', value.file, '--python', value.python],
+    ['--consumer-context', value.file, '--python', value.executable],
     ['--consumer-context', value.file, '--backend-root', value.backend],
     ['--consumer-context', value.file, '--consumer-context', value.file],
     ['--unknown', sentinel],
   ])
     safeFailure(() => receiptBinding(args))
+})
+
+test('重新绑定描述文件仍拒绝来源数组乱序和未知工具字段', (t) => {
+  const value = consumerFixture(t)
+  const original = fs.readFileSync(value.binding)
+  for (const mutate of [
+    (binding) => {
+      binding.sources.reverse()
+    },
+    (binding) => {
+      binding.private = sentinel
+    },
+  ]) {
+    const binding = JSON.parse(original)
+    mutate(binding)
+    const bytes = Buffer.from(JSON.stringify(binding))
+    fs.writeFileSync(value.binding, bytes)
+    value.value.origin_tool_binding.bytes = bytes.length
+    value.value.origin_tool_binding.sha256 = fileHash(bytes)
+    value.save()
+    safeFailure(() => read(value))
+  }
 })

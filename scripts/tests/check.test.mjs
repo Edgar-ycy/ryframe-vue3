@@ -124,7 +124,7 @@ test('显式 ctx 追加一次 contract 证明，完整门禁保持原任务和 u
     name: 'consumer-proof',
     dependsOn: ['contract'],
     node: [
-      'scripts/contract-tests/frontend-python-receipt.mjs',
+      'scripts/contract-tests/frontend-native-receipt.mjs',
       '--consumer-context',
       'unread-context.json',
     ],

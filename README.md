@@ -86,7 +86,7 @@ corepack pnpm generate
 
 `corepack pnpm check --full` 依次检查契约、静态规则、测试类型、单元覆盖率和生产构建。 静态阶段同时检查中英文文档配对、语言切换、本地章节引用和命令示例。
 `--stage contract|static|unit|build` 可单独运行相应阶段，`--plan` 输出同一任务图且不执行任务。
-跨仓消费者检查显式使用 `corepack pnpm check --stage contract --consumer-context <file>`（也可配合 `--full`），先验证契约，再执行真实 Node→Python 收据证明；上下文绑定本次前后端目录、Python 入口及后端工具来源。普通单仓检查无需后端或 Python。`--plan` 不读取上下文，也不写文件或启动任务。
+跨仓消费者检查显式使用 `corepack pnpm check --stage contract --consumer-context <file>`（也可配合 `--full`），先验证契约，再执行真实 Node→Rust 收据证明；上下文绑定本次前后端目录、后端原生工具与配置摘要。普通单仓检查无需后端或 Python。`--plan` 不读取上下文，也不写文件或启动任务。
 浏览器 smoke 使用 `corepack pnpm check --stage browser`；真实后端联调使用隔离资源与对应的 real 配置。每次 smoke 将 HTML 报告和测试附件分别保存在 `.local-tests/playwright/report/<dev或preview>/<代次UUID>/` 与 `.local-tests/playwright/results/<dev或preview>/<代次UUID>/`，失败时保留截图、视频和 trace，重跑不会覆盖之前的代次。
 仓库 CI 分别执行这些阶段，并保留 Windows 检查。
 

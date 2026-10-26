@@ -74,7 +74,7 @@ async function context(t) {
   return value
 }
 
-test('编排先校验内存来源夹具，再派生显式证明入口；拦截子进程，不运行 Python', async (t) => {
+test('编排先校验内存来源夹具，再派生显式证明入口；拦截子进程，不执行原生工具', async (t) => {
   const value = await context(t)
   const calls = interceptTasks(t)
   await runCheck(parseArguments(['--consumer-context', value.file]))
@@ -82,7 +82,7 @@ test('编排先校验内存来源夹具，再派生显式证明入口；拦截�
   assert.ok(calls[0].args[0].endsWith('generate-api-artifacts.mjs'))
   assert.deepEqual(calls[0].args.slice(1), ['--check'])
   assert.deepEqual(calls[1].args, [
-    'scripts/contract-tests/frontend-python-receipt.mjs',
+    'scripts/contract-tests/frontend-native-receipt.mjs',
     '--consumer-context',
     value.file,
   ])
@@ -129,6 +129,6 @@ test('无 ctx 的 unit/contract/full 独立编排，不消费旧环境 JSON 或�
   }
   assert.ok(calls.length > 3)
   assert.ok(
-    !calls.some((call) => call.args.some((arg) => arg.includes('frontend-python-receipt.mjs'))),
+    !calls.some((call) => call.args.some((arg) => arg.includes('frontend-native-receipt.mjs'))),
   )
 })

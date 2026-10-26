@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildSourceSnapshot } from '../build-source.mjs'
+import { captureSourceInventory, sha256, sourceDomains } from '../build-source-inventory.mjs'
 import { receiptPath, writeBuildReceipt } from '../restore-build.mjs'
 
 const frontend = fileURLToPath(new URL('../../', import.meta.url))
@@ -18,7 +19,7 @@ export const observe = () => ({
 export function fixture(t, { environment = 'test', formal = true, localTools = false } = {}) {
   const base = path.join(frontend, '.local-tests/node-unit')
   fs.mkdirSync(base, { recursive: true })
-  const root = fs.mkdtempSync(path.join(base, 'python-parity-中文 '))
+  const root = fs.mkdtempSync(path.join(base, 'native-parity-中文 '))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const put = (relative, bytes) => {
     const file = path.join(root, relative)
@@ -65,4 +66,22 @@ export function fixture(t, { environment = 'test', formal = true, localTools = f
   const before = buildSourceSnapshot(root, buildEnvironment, observe)
   const receipt = writeBuildReceipt(root, before, buildEnvironment, observe)
   return { root, put, json, receipt, head, file: path.join(root, 'dist', receiptPath) }
+}
+
+// 更新字节事实以防畸形配置仅因过期摘要被拒绝，掩盖两端解析差异。
+export function bindCurrentBytes(value) {
+  const receipt = structuredClone(value.receipt)
+  receipt.sources = sourceDomains(captureSourceInventory(value.root))
+  const descriptor = (relative) => ({
+    path: relative,
+    sha256: sha256(fs.readFileSync(path.join(value.root, relative))),
+  })
+  receipt.build.configuration.files = receipt.build.configuration.files.map((item) =>
+    descriptor(item.path),
+  )
+  receipt.build.configuration.tools = ['config/tools.json', '.local-tests/frontend-tools.json']
+    .filter((relative) => fs.existsSync(path.join(value.root, relative)))
+    .map(descriptor)
+  receipt.build.identity.source_file = descriptor('.local-tests/build/source.json')
+  value.json(`dist/${receiptPath}`, receipt)
 }

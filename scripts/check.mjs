@@ -105,7 +105,7 @@ export function checkTasks(stage, options = {}) {
               name: 'consumer-proof',
               dependsOn: ['contract'],
               node: [
-                'scripts/contract-tests/frontend-python-receipt.mjs',
+                'scripts/contract-tests/frontend-native-receipt.mjs',
                 '--consumer-context',
                 options.consumerContext,
               ],

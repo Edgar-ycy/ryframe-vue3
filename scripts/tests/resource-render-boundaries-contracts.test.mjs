@@ -48,6 +48,7 @@ test('整数/unsigned/Decimal 保留精确类型、枚举及 optional/nullable �
 
 test('Order typed caller、relation Detail、全局系统租户限制及字符串 ID 保持契约', () => {
   const resource = order()
+  assert.equal(execute(resource, assets(resource)).resource.storage, 'tenant_data')
   const base = renderTransport(resource, version)
   assert.ok(base.get('page.vue').includes('@/components/business/flat-crud'))
   assert.ok(!base.get('page.vue').includes('@/components/FlatCrudPage'))

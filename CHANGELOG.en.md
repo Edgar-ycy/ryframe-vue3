@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Generated `tenant_data` pages read only while business data is active. Maintenance, provisioning, and failed states block automatic list/detail queries and explicit refreshes; a new active scope resumes on the same page without old-request results leaking back. Control-row queries retain their existing behavior. The global maintenance banner now states that both reads and writes are paused.
+
 - Generated `tenant_data` CRUD registrations declare create, update, and delete permissions for existing business-maintenance write protection. Resource manifests join the unified permission set so generated write buttons reuse maintenance protection; reads and `control_row` resources gain no additional restriction.
 
 - Simplify session tests by replacing fixed broadcast totals and random identifier encoding assertions with checks for the secure random source and valid message identifiers. Merge duplicate login-failure setup while retaining challenge invalidation, zero identity publication, and cross-tab session isolation safeguards; product behavior is unchanged.

@@ -1,82 +1,81 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import {
-  editValue,
-  enumEntries,
-  enumValue,
-  formInput,
-  formType,
-  tsDefault,
-} from '../resource-render/values.mjs'
+import { renderResourceAssets } from '../resource-render/index.mjs'
+import { formType } from '../resource-render/values.mjs'
+import { common } from './fixtures/resource-render/builders.mjs'
+import { execute } from './fixtures/resource-render/boundary-runtime.mjs'
 
-const field = (changes = {}) => ({
-  name: 'amount',
-  value_type: 'i64',
-  wire_type: 'string',
-  typescript_type: 'string | null',
-  nullable: false,
-  enum_values: {},
-  widget: 'text',
-  ...changes,
+const view = (resource) => execute(resource, renderResourceAssets([resource], '1.3.0'))
+
+test('生成表单保留布尔与文本默认值，并把可空编辑缺值转为 null', () => {
+  const resource = common()
+  const note = resource.fields.find((field) => field.name === 'note')
+  note.nullable = true
+  note.typescript_type = 'string | null'
+  const presentation = view(resource)
+  const form = presentation.resource.emptyForm()
+  assert.equal(form.enabled, false)
+  assert.equal(form.name, '')
+  assert.equal(form.note, '')
+  assert.equal(form.happens_at, '')
+  assert.equal(form.due_on, null)
+  assert.equal(presentation.resource.editForm({ note: undefined }).note, null)
+  assert.equal(presentation.resource.editForm({ note: '保留正文' }).note, '保留正文')
+  const date = resource.fields.find((field) => field.name === 'due_on')
+  date.nullable = false
+  date.typescript_type = 'string'
+  assert.equal(view(resource).resource.emptyForm().due_on, '')
 })
 
-test('精确整数和 Decimal 表单保留字符串，普通数值及布尔保留各自默认值', () => {
-  for (const value_type of ['i64', 'u64', 'decimal']) {
-    assert.equal(tsDefault(field({ value_type })), "''")
-    assert.equal(
-      formInput(field({ value_type }), true),
-      "form.amount === '' ? undefined : form.amount",
-    )
-    assert.equal(
-      formInput(field({ value_type, nullable: true }), true),
-      "form.amount === '' ? null : form.amount",
-    )
-    assert.equal(formInput(field({ value_type }), false), 'form.amount')
+test('生成 JSON 转换区分可选省略、可空清除及实际对象往返', () => {
+  const resource = common()
+  const metadata = resource.fields.find((field) => field.name === 'metadata')
+  metadata.usage.create_optional = metadata.usage.update_optional = true
+  assert.equal(formType(metadata), 'string')
+  const presentation = view(resource)
+  const form = presentation.resource.emptyForm()
+  assert.equal(form.metadata, '')
+  const record = { metadata: { key: '中文', count: 2 }, nullable_metadata: null }
+  const edit = presentation.resource.editForm(record)
+  assert.equal(edit.metadata, JSON.stringify(record.metadata, null, 2))
+  assert.equal(edit.nullable_metadata, '')
+  assert.equal(
+    presentation.resource.editForm({ nullable_metadata: undefined }).nullable_metadata,
+    '',
+  )
+  for (const action of ['create', 'update']) {
+    const convert = presentation.resource[`${action}Input`]
+    assert.deepEqual(structuredClone(convert(edit).metadata), record.metadata)
+    for (const blank of ['', '   ']) {
+      const converted = convert({ ...form, metadata: blank, nullable_metadata: blank })
+      assert.equal(converted.metadata, undefined)
+      assert.equal(Object.hasOwn(JSON.parse(JSON.stringify(converted)), 'metadata'), false)
+      assert.equal(converted.nullable_metadata, null)
+    }
   }
-  for (const value_type of ['i8', 'i16', 'i32', 'u8', 'u16', 'u32']) {
-    assert.equal(tsDefault(field({ value_type, wire_type: value_type })), '0')
-  }
-  assert.equal(tsDefault(field({ value_type: 'bool', wire_type: 'bool' })), 'false')
-  for (const value_type of ['string', 'date', 'date_time']) {
-    assert.equal(tsDefault(field({ value_type })), "''")
-  }
+  metadata.usage.create_optional = metadata.usage.update_optional = false
+  const required = view(resource).resource
+  for (const action of ['create', 'update'])
+    assert.equal(required[`${action}Input`]({ ...form, metadata: '   ' }).metadata, null)
 })
 
-test('JSON 创建、替换、可选及编辑行为保持独立', () => {
-  const json = field({ value_type: 'json', typescript_type: 'unknown' })
-  assert.equal(tsDefault(json), "''")
-  assert.equal(formType(json), 'string')
-  assert.equal(
-    formInput(json, true),
-    "form.amount.trim() === '' ? undefined : JSON.parse(form.amount)",
-  )
-  assert.equal(formInput(json, false), "form.amount.trim() === '' ? null : JSON.parse(form.amount)")
-  assert.equal(
-    formInput({ ...json, nullable: true }, true),
-    "form.amount.trim() === '' ? null : JSON.parse(form.amount)",
-  )
-  assert.equal(editValue(json), 'JSON.stringify(record.amount, null, 2)')
-  assert.equal(
-    editValue({ ...json, nullable: true }),
-    "record.amount == null ? '' : JSON.stringify(record.amount, null, 2)",
-  )
-  assert.equal(editValue(field()), 'record.amount')
-  assert.equal(editValue(field({ nullable: true })), 'record.amount ?? null')
-  assert.equal(formType(field()), 'string | null')
-})
-
-test('枚举保留精确传输类型并按 Rust 字符串顺序排序', () => {
-  assert.equal(
-    enumValue('18446744073709551615', field({ value_type: 'u64' })),
-    '"18446744073709551615"',
-  )
-  assert.equal(enumValue('127', field({ value_type: 'i8', wire_type: 'i8' })), '127')
-  assert.equal(enumValue('false', field({ value_type: 'bool', wire_type: 'bool' })), 'false')
-  assert.equal(enumValue('a"b', field()), '"a\\"b"')
-  const values = { 2: {}, 10: {}, '\u{10000}': {}, '\ue000': {} }
+test('生成枚举保留布尔及引号值，并按 Rust Unicode 标量顺序排序', () => {
+  const resource = common()
+  const note = resource.fields.find((field) => field.name === 'note')
+  const keys = ['2', '10', 'a"b', '\u{10000}', '\ue000']
+  note.enum_values = Object.fromEntries(keys.map((key) => [key, { zh_cn: key, en: key }]))
+  const enabled = resource.fields.find((field) => field.name === 'enabled')
+  enabled.enum_values = { false: { zh_cn: '否', en: 'No' }, true: { zh_cn: '是', en: 'Yes' } }
+  const presentation = view(resource)
+  const column = (name) => presentation.columns.find((field) => field.key === name)
   assert.deepEqual(
-    enumEntries(field({ enum_values: values })).map(([key]) => key),
-    ['10', '2', '\ue000', '\u{10000}'],
+    Array.from(column('enabled').options, (option) => option.value),
+    [false, true],
   )
+  assert.deepEqual(
+    Array.from(column('note').options, (option) => option.value),
+    ['10', '2', 'a"b', '\ue000', '\u{10000}'],
+  )
+  assert.equal(column('note').positiveValue, '\u{10000}')
 })

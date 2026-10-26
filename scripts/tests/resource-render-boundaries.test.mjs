@@ -4,7 +4,6 @@ import test from 'node:test'
 import { renderFields } from '../resource-render/fields.mjs'
 import { renderResourceAssets } from '../resource-render/index.mjs'
 import { presentation } from '../resource-render/presentation.mjs'
-import { formProperties } from '../resource-render/properties.mjs'
 import { renderTransport } from '../resource-render/transport.mjs'
 import { fixture } from './fixtures/resource-render/builders.mjs'
 import {
@@ -138,7 +137,7 @@ test('1641 数值枚举和空表单递归分组，保留最后枚举值与全部
   )
 })
 
-test('所有控件创建专有禁用编辑、更新专有及可编辑状态准确投影且计数相等', () => {
+test('生成控件的创建专有、更新专有及可编辑状态保持准确投影', () => {
   const resource = commonOrder()
   field(resource, 'name').usage.update = false
   const kinds = {
@@ -159,19 +158,12 @@ test('所有控件创建专有禁用编辑、更新专有及可编辑状态准�
       [true, true],
     ]) {
       Object.assign(item.usage, { create, update })
-      const properties = formProperties(item)
-      assert.ok(properties.includes(`kind: "${kind}"`))
-      assert.equal(properties.includes('disabledOnEdit: true'), create && !update)
-      assert.equal(properties.includes('editOnly: true'), update && !create)
       const generated = assets(resource)
       const view = execute(resource, generated)
       const control = view.formFields.find((f) => f.key === name)
+      assert.equal(control.kind, kind)
       assert.equal(control.disabledOnEdit === true, create && !update)
       assert.equal(control.editOnly === true, update && !create)
-      assert.equal(
-        (joined(generated).match(/disabledOnEdit: true/g) ?? []).length,
-        resource.fields.filter((f) => f.usage.create && !f.usage.update).length,
-      )
     }
   }
 })
@@ -180,18 +172,8 @@ test('常用类型生成对应控件，JSON 往返及展示保持不变', () => 
   const resource = commonOrder()
   const generated = assets(resource)
   assert.ok(importsExist(generated) > 0)
-  const text = joined(generated)
-  for (const kind of ['switch', 'date', 'date_time', 'json', 'textarea', 'text', 'number']) {
-    assert.ok(text.includes(`kind: "${kind}"`), kind)
-  }
-  for (const expected of [
-    'metadata: string',
-    'JSON.stringify(record.metadata, null, 2)',
-    'JSON.parse(form.metadata)',
-    "display: 'json'",
-  ])
-    assert.ok(text.includes(expected), expected)
   const view = execute(resource, generated)
+  assert.equal(view.columns.find((field) => field.key === 'metadata').display, 'json')
   const record = Object.fromEntries(
     resource.fields.map((f) => [f.name, f.value_type === 'json' ? { count: 2 } : 'text']),
   )

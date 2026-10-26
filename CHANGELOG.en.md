@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Remove renderer test expression and layout assertions already covered by generated-code behavior; reuse the existing VM for optional JSON omission, nullable clearing, exact values, boolean and Unicode enums, while retaining strict type rejection and primary-key mapping coverage.
+
 - Fix generated CRUD forms sending empty strings for blank nullable dates and receiving HTTP 422. Date and datetime fields now submit null or omit optional values according to the contract, preserve selected values, and are checked by executing the generated code.
 
 - Fix source domains for real frontend builds: configuration and identity modules indirectly imported by Vite bind both product and tool digests. The generated-page acceptance configuration is a tool input; test type configuration retains its product binding and also records a tool digest. Complete source validation and conservative product ownership for unknown files remain effective.

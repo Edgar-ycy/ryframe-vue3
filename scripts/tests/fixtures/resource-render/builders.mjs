@@ -70,7 +70,12 @@ export function common() {
     field.wire_type = valueType === 'decimal' ? 'string' : valueType
     field.typescript_type = typescriptType
     field.widget = widget
-    field.nullable = name === 'nullable_metadata'
+    field.nullable = ['nullable_metadata', 'due_on'].includes(name)
+    if (name === 'due_on') field.typescript_type += ' | null'
+    if (name === 'happens_at') {
+      field.usage.create_optional = true
+      field.usage.update_optional = true
+    }
     if (field.nullable) {
       field.validation = {
         ...field.validation,

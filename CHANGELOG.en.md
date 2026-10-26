@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Fix generated CRUD forms sending empty strings for blank nullable dates and receiving HTTP 422. Date and datetime fields now submit null or omit optional values according to the contract, preserve selected values, and are checked by executing the generated code.
+
 - Fix source domains for real frontend builds: configuration and identity modules indirectly imported by Vite bind both product and tool digests. The generated-page acceptance configuration is a tool input; test type configuration retains its product binding and also records a tool digest. Complete source validation and conservative product ownership for unknown files remain effective.
 
 - Cross-repository consumer contexts remove repeated full-source scans from frequent Node hooks while retaining fixed descriptions, configuration, and executable identity checks. Existing parent Rust read protection and the native entry retain complete source verification.

@@ -87,6 +87,24 @@ const recordValues = Object.fromEntries(
 )
 const editForm = zh.resource.editForm(recordValues)
 for (const field of formFields) {
+  if (['date', 'date_time'].includes(field.value_type)) {
+    const present = field.value_type === 'date' ? '2026-10-18' : '2026-10-18T08:30:00.000Z'
+    if (field.nullable) assert.equal(form[field.name], null)
+    for (const action of ['create', 'update']) {
+      if (!field.usage[action]) continue
+      const convert = zh.resource[`${action}Input`]
+      assert.equal(convert({ ...form, [field.name]: present })[field.name], present)
+      assert.equal(
+        convert({ ...form, [field.name]: '' })[field.name],
+        field.nullable ? null : field.usage[`${action}_optional`] ? undefined : '',
+      )
+      if (field.nullable || field.usage[`${action}_optional`])
+        assert.equal(
+          convert({ ...form, [field.name]: null })[field.name],
+          field.nullable ? null : undefined,
+        )
+    }
+  }
   if (field.value_type === 'json') {
     const recordValue = recordValues[field.name]
     assert.equal(

@@ -8,6 +8,7 @@ export function objectBlock(properties) {
 }
 
 export function tsDefault(field) {
+  if (['date', 'date_time'].includes(field.value_type) && field.nullable) return 'null'
   if (field.value_type === 'json') return "''"
   if (exactText.has(field.value_type) && field.wire_type === 'string') return "''"
   if (integers.has(field.value_type)) return '0'
@@ -24,6 +25,10 @@ export function enumValue(value, field) {
 
 export function formInput(field, optional) {
   const value = `form.${field.name}`
+  if (['date', 'date_time'].includes(field.value_type)) {
+    if (field.nullable) return `${value} == null || ${value} === '' ? null : ${value}`
+    if (optional) return `${value} == null || ${value} === '' ? undefined : ${value}`
+  }
   if (field.value_type === 'json') {
     if (field.nullable) return `${value}.trim() === '' ? null : JSON.parse(${value})`
     if (optional) return `${value}.trim() === '' ? undefined : JSON.parse(${value})`

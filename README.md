@@ -115,8 +115,11 @@ corepack pnpm generate
 
 ```powershell
 corepack pnpm check --stage browser --real --fixture core --server dev
+corepack pnpm check --stage browser --real --fixture core --server dev --generated
 corepack pnpm check --stage browser --real --fixture business --server preview --plan
 ```
+
+`--generated` 仅用于 `browser --real` 的 core 验收，通过 `playwright.generated.config.ts` 独立选择 `tests/browser-generated/`。使用提供演进订单页面及匹配 API 的隔离环境、core 文件当前凭据和实际限流配置，不配置 `restore` 或 `credentialEndpoint`。入口保留原受管控制器、网络约束、预算和身份清理；只证明生成页面自身，不签发业务迁移或恢复证明，也不执行原 business 四场景。`--plan` 只检查参数并展示任务图，配置限制在实际执行前校验。
 
 运行参数使用 `real_browser` 的 `fixture`、`serverMode`、`port`（默认 4174）、`runId`、`baseURL`、`gateEndpoint`、`previewResponseAudit` 和 `captchaCode`。业务套件必须提供全新的 `runId`；正式业务 preview 还必须提供绝对 `previewResponseAudit` 路径。`baseURL` 只接受带端口的本机 HTTP 原点，外部服务的 IPC 通过绝对 `gateEndpoint` 显式绑定。`channel` 可用 `chrome`、`msedge` 及其 beta/dev/canary 通道；`chromium` 选择 Playwright 内置浏览器，缺省本机用 Chrome、CI 用内置浏览器。
 

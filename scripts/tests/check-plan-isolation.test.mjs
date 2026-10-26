@@ -22,7 +22,7 @@ syncBuiltinESMExports()
 await runCheck(parseArguments(JSON.parse(process.argv[2])))
 `
 
-test('普通与 ctx contract/full 的 plan 只输出真实任务图，不读输入、不落盘、不派生进程', () => {
+test('普通、生成页面与 ctx contract/full 的 plan 不读输入、不落盘、不派生进程', () => {
   for (const stage of ['contract', 'full', 'unit', 'browser']) {
     for (const consumer of [false, true]) {
       if (consumer && ['unit', 'browser'].includes(stage)) continue
@@ -32,6 +32,7 @@ test('普通与 ctx contract/full 的 plan 只输出真实任务图，不读输�
         '--plan',
       ]
       if (consumer) args.push('--consumer-context', 'missing-secret-context.json')
+      if (stage === 'browser') args.push('--real', '--generated')
       const result = spawnSync(
         process.execPath,
         [
@@ -51,6 +52,7 @@ test('普通与 ctx contract/full 的 plan 只输出真实任务图，不读输�
         consumer,
       )
       if (consumer) assert.equal(plan.tasks[1].name, 'consumer-proof')
+      if (stage === 'browser') assert.ok(plan.tasks[0].node.includes('--generated'))
     }
   }
 })

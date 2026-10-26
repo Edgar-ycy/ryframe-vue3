@@ -9,6 +9,7 @@
     "tests/**/*.tsx",
     "tests/**/*.mts",
     "tests/**/*.cts",
+    "playwright.generated.config.ts",
     "vitest.config.ts",
     "vite.config.ts"
   ]

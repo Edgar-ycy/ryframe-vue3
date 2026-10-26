@@ -17,11 +17,17 @@ export function parseArguments(argv) {
   let explicitStage = false
   let plan = false
   let real = false
+  let generated = false
   let fixture
   let server
   let consumerContext
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
+    if (value === '--generated') {
+      if (generated) throw new Error('--generated 不能重复')
+      generated = true
+      continue
+    }
     if (value === '--consumer-context') {
       if (consumerContext !== undefined) throw new Error('--consumer-context 不能重复')
       consumerContext = argv[++index]
@@ -63,9 +69,11 @@ export function parseArguments(argv) {
   if (!['contract', 'static', 'unit', 'build', 'browser', 'full'].includes(selected)) {
     throw new Error(`未知检查阶段：${selected}`)
   }
-  if ((real || fixture || server) && selected !== 'browser')
+  if ((real || fixture || server || generated) && selected !== 'browser')
     throw new Error('真实浏览器参数只能用于 browser 阶段')
   if ((fixture || server) && !real) throw new Error('--fixture 和 --server 必须与 --real 一起使用')
+  if (generated && (!real || (fixture && fixture !== 'core')))
+    throw new Error('--generated 必须与 --real 及 core fixture 一起使用')
   if (consumerContext && !['contract', 'full'].includes(selected)) {
     throw new Error('--consumer-context 只能用于 contract 或 full 阶段')
   }
@@ -73,12 +81,18 @@ export function parseArguments(argv) {
     full,
     stage: selected,
     plan,
+    ...(generated ? { generated } : {}),
     ...(consumerContext ? { consumerContext } : {}),
     ...(real ? { real, fixture: fixture || 'core', server: server || 'dev' } : {}),
   }
 }
 
 export function checkTasks(stage, options = {}) {
+  if (
+    options.generated &&
+    (stage !== 'browser' || !options.real || (options.fixture && options.fixture !== 'core'))
+  )
+    throw new Error('--generated 仅适用于 browser 阶段的真实 core 验收')
   if (options.consumerContext && !['contract', 'full'].includes(stage)) {
     throw new Error('--consumer-context 只能用于 contract 或 full 阶段')
   }
@@ -88,6 +102,7 @@ export function checkTasks(stage, options = {}) {
         name: 'browser-real',
         node: [
           'scripts/run-browser.mjs',
+          ...(options.generated ? ['--generated'] : []),
           '--real',
           '--fixture',
           options.fixture,

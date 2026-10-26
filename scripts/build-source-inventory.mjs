@@ -180,31 +180,10 @@ function frontendProduct(relative) {
     ].includes(relative)
   )
     return true
+  if (relative === 'tsconfig.test.json') return true
   if (
+    frontendTool(relative) ||
     [
-      '.node-version',
-      'index.html',
-      'package.json',
-      'pnpm-lock.yaml',
-      'pnpm-workspace.yaml',
-      'vite.config.ts',
-      'tsconfig.json',
-      'tsconfig.app.json',
-      'tsconfig.base.json',
-      'tsconfig.test.json',
-    ].includes(relative)
-  )
-    return true
-  if (
-    relative === 'config/tools.json' ||
-    ['scripts', 'tests', '.github'].includes(first) ||
-    [
-      'eslint.config.js',
-      'playwright.config.ts',
-      'playwright.real.config.ts',
-      'prettier.config.mjs',
-      'stylelint.config.js',
-      'vitest.config.ts',
       '.editorconfig',
       '.gitattributes',
       '.gitignore',
@@ -231,6 +210,8 @@ function frontendTool(relative) {
       'eslint.config.js',
       'playwright.config.ts',
       'playwright.real.config.ts',
+      'playwright.generated.config.ts',
+      'tsconfig.test.json',
       'prettier.config.mjs',
       'stylelint.config.js',
       'vitest.config.ts',

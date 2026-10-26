@@ -47,6 +47,29 @@ test('默认检查与完整消费者检查入口都可用', () => {
   })
 })
 
+test('生成页面计划选择受管真实 core 入口并拒绝混入其他阶段或业务套件', () => {
+  const options = parseArguments(['--stage', 'browser', '--real', '--generated', '--plan'])
+  assert.equal(options.fixture, 'core')
+  assert.equal(options.generated, true)
+  assert.deepEqual(checkTasks(options.stage, options)[0].node, [
+    'scripts/run-browser.mjs',
+    '--generated',
+    '--real',
+    '--fixture',
+    'core',
+    '--server',
+    'dev',
+  ])
+  for (const args of [
+    ['--generated'],
+    ['--stage', 'browser', '--generated'],
+    ['--stage', 'browser', '--real', '--generated', '--fixture', 'business'],
+    ['--stage', 'browser', '--real', '--generated', '--generated'],
+    ['--full', '--real', '--generated'],
+  ])
+    assert.throws(() => parseArguments(args))
+})
+
 test('完整检查不能与显式阶段混用，并拒绝缺失或未知参数', () => {
   for (const args of [
     ['--full', '--stage', 'contract'],

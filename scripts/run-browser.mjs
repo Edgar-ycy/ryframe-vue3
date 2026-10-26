@@ -3,13 +3,18 @@ import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createBrowserControl } from './browser-control.mjs'
-import { loadRealBrowserEnvironment } from './real-browser-environment.mjs'
+import {
+  loadRealBrowserEnvironment,
+  loadRealBrowserInput,
+  validateRealBrowserEnvironment,
+} from './real-browser-environment.mjs'
 
 export function parseBrowserArguments(argv) {
   const options = {}
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index]
     if (flag === '--real' && !options.real) options.real = true
+    else if (flag === '--generated' && !options.generated) options.generated = true
     else if (['--fixture', '--server'].includes(flag)) {
       const key = flag.slice(2)
       const value = argv[++index]
@@ -22,10 +27,28 @@ export function parseBrowserArguments(argv) {
     } else throw new Error('浏览器参数无效或重复')
   }
   if (options.fixture && !options.real) throw new Error('--fixture 仅适用于真实验收')
+  if (options.generated && (!options.real || (options.fixture && options.fixture !== 'core')))
+    throw new Error('--generated 必须与 --real 及 core fixture 一起使用')
   return options
 }
 
 export async function runBrowser(options, root = process.cwd(), execute = spawn) {
+  if (options.generated) {
+    if (!options.real || (options.fixture && options.fixture !== 'core'))
+      throw new Error('--generated 必须与 --real 及 core fixture 一起使用')
+    const input = loadRealBrowserInput(root)
+    if (
+      (options.fixture ?? input.fixture ?? 'core') !== 'core' ||
+      input.restore !== undefined ||
+      input.credentialEndpoint !== undefined
+    )
+      throw new Error('生成页面验收仅接受无 restore/credentialEndpoint 的 core 配置')
+    validateRealBrowserEnvironment({
+      ...input,
+      ...(options.fixture ? { fixture: options.fixture } : {}),
+      ...(options.server ? { serverMode: options.server } : {}),
+    })
+  }
   const close = createBrowserControl(root, options)
   try {
     if (options.real) loadRealBrowserEnvironment(root)
@@ -40,7 +63,11 @@ export async function runBrowser(options, root = process.cwd(), execute = spawn)
       'playwright',
       'test',
       '--config',
-      options.real ? 'playwright.real.config.ts' : 'playwright.config.ts',
+      options.generated
+        ? 'playwright.generated.config.ts'
+        : options.real
+          ? 'playwright.real.config.ts'
+          : 'playwright.config.ts',
     ]
     await new Promise((resolve, reject) => {
       const child = execute(

@@ -4,11 +4,17 @@
 
 ## [Unreleased]
 
+- Fix source domains for real frontend builds: configuration and identity modules indirectly imported by Vite bind both product and tool digests. The generated-page acceptance configuration is a tool input; test type configuration retains its product binding and also records a tool digest. Complete source validation and conservative product ownership for unknown files remain effective.
+
 - Cross-repository consumer contexts remove repeated full-source scans from frequent Node hooks while retaining fixed descriptions, configuration, and executable identity checks. Existing parent Rust read protection and the native entry retain complete source verification.
 
 - Cross-repository build proofs align with the four current frontend tool-file root sections: unused sections bind the complete file digest without exposing values, and changed bytes still reject old receipts.
 
 - Formal frontend build proofs use the fixed-bound Rust native consumer. Consumer contexts remove interpreter fields and manual bypasses while retaining complete sources, executable identity, and before/after drift guards.
+
+- Generated-page acceptance uses `--generated` with an independent test directory and a dedicated configuration reusing the real base and managed controller. It accepts only real core inputs without recovery bindings or a credential endpoint, preserving the original four-scenario business migration receipt.
+
+- Add a real acceptance case for the generated order page, checking large decimal strings during creation and edit population, page-based deletion, write-button revocation while retaining read permission, and owner-data isolation between ordinary subjects in one tenant. It reuses identity registration and mandatory first password changes and attaches exact order ownership and cleanup records. Unknown creation, editing, or deletion outcomes preserve the scene for reconciliation. Deletion first compares every field of the complete registered row and attaches registered and observed snapshots; failure to clean one row does not prevent exact cleanup of other confirmed rows.
 
 - Business migration cancellation and Worker crash recovery acceptance now prepare tenant administrators through the real mandatory first password change. Subsequent business pages retain the same context and new-password session, preserving cancellation, recovery, and data verification assertions.
 

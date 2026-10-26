@@ -157,6 +157,7 @@ CI 执行对应阶段，浏览器阶段单独运行。
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。
 - `tests/browser/`：使用确定性 fixture 的登录、权限、CRUD、导出和租户上下文测试源码。
 - `tests/browser-business/`：在隔离业务 crate 夹具上，通过正式 API 准备业务样本，使用 Chrome 的平台页面验证跨库迁移、保留期、取消和崩溃恢复。运行 `corepack pnpm check --stage browser --real --fixture business --server preview`；运行绑定、构建收据和静态响应审计必须完整，缺少场景或发生重试时验收失败。
+- `tests/browser-generated/`：演进订单生成页面的独立真实验收，使用 `corepack pnpm check --stage browser --real --fixture core --server dev --generated`。专用 config 复用 real base 已解析环境，只覆盖测试目录；拒绝 restore 和凭据端点，复用 core 身份、预算、网络与清理约束，不纳入四场景迁移收据或恢复证明。
 
 公开应用配置由 `scripts/application-config.mjs` 统一读取 `app.toml` 与必需的 `app.<APP_ENV>.toml` 并投影，Vite、客户端与构建来源共用该事实。`envDir:false` 与 `envPrefix:[]` 禁止旧项目环境自动读取及暴露，保留 Vite 内置 `DEV`、`MODE`。`APP_ENV` 独立选择 dev/test/prod 文件，mode 不改变该选择；普通文件、祖先重解析点、严格 UTF-8、字段及读取期间漂移均校验。TOML 由 `smol-toml` 1.9.1 解析，显式拒绝 unsafe keys，超大整数保留 BigInt，inline 深度限制为 32；既定字段类型拒绝特殊数值、日期时间和数组，错误只取安全正整数行列。工具目录选择来自 `config/tools.json` 与优先级更高的忽略文件 `.local-tests/frontend-tools.json`，允许 `application_config_dir`、`api_contract`、`real_browser` 与 `browser_smoke`；公开配置与私有测试控制输入分开。
 

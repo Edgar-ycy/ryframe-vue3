@@ -39,3 +39,22 @@ test('Vite 配置与身份的完整本地模块依赖同时绑定产品和工具
     fs.writeFileSync(target, original)
   }
 })
+
+test('专用页面配置只影响工具，测试类型配置继续绑定产品和完整来源', (t) => {
+  const root = fixture(t)
+  const generated = path.join(root, 'playwright.generated.config.ts')
+  const types = path.join(root, 'tsconfig.test.json')
+  fs.writeFileSync(generated, '// 受控验收配置\n')
+  fs.writeFileSync(types, '{"include":["tests/**/*.ts"]}\n')
+  const before = sourceDomains(captureSourceInventory(root))
+  fs.appendFileSync(generated, '// 配置字节变化\n')
+  const changedTool = sourceDomains(captureSourceInventory(root))
+  assert.deepEqual(before.product, changedTool.product)
+  assert.notDeepEqual(before.tools, changedTool.tools)
+  assert.notDeepEqual(before.full, changedTool.full)
+  fs.appendFileSync(types, '\n')
+  const changedTypes = sourceDomains(captureSourceInventory(root))
+  assert.notDeepEqual(changedTool.product, changedTypes.product)
+  assert.notDeepEqual(changedTool.tools, changedTypes.tools)
+  assert.notDeepEqual(changedTool.full, changedTypes.full)
+})

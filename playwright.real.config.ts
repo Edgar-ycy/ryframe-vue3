@@ -5,7 +5,7 @@ import { loadRealBrowserEnvironment } from './scripts/real-browser-environment.m
 import { verifyBuildReceipt } from './scripts/restore-build.mjs'
 import { realTestSelection } from './scripts/restore-scenarios.mjs'
 
-const environment = loadRealBrowserEnvironment()
+export const environment = loadRealBrowserEnvironment()
 const { fixture, port, runId, serverMode } = environment
 const externalBaseUrl = environment.baseURL
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`

@@ -174,3 +174,42 @@ test('运行器保留失败语义和清理，使用假进程不启动浏览器�
   ])
     assert.throws(() => parseBrowserArguments(argv))
 })
+
+test('生成页面运行器独占执行专用 config，拒绝恢复和业务凭据且不留下控制文件', async (t) => {
+  const { root, write, input } = configured(t)
+  const core = {
+    ...input,
+    fixture: 'core',
+    credentialEndpoint: undefined,
+    password: 'CORE-PRIVATE',
+  }
+  const options = parseBrowserArguments(['--real', '--fixture', 'core', '--generated'])
+  for (const invalid of [
+    input,
+    { ...core, restore: {} },
+    { ...core, credentialEndpoint: input.credentialEndpoint },
+  ]) {
+    write('.local-tests/frontend-tools.json', { real_browser: invalid })
+    await assert.rejects(runBrowser(options, root, () => assert.fail('非法组合不得启动进程')))
+    assert.equal(fs.existsSync(path.join(root, '.local-tests/browser-control.json')), false)
+  }
+  write('.local-tests/frontend-tools.json', { real_browser: core })
+  for (const status of [0, 9]) {
+    const running = runBrowser(options, root, (_command, argv) => {
+      assert.equal(argv[argv.indexOf('--config') + 1], 'playwright.generated.config.ts')
+      assert.equal(readBrowserControl(root).overrides.fixture, 'core')
+      const child = new EventEmitter()
+      queueMicrotask(() => child.emit('exit', status, null))
+      return child
+    })
+    if (status) await assert.rejects(running, /9/u)
+    else await running
+    assert.equal(readBrowserControl(root), undefined)
+  }
+  for (const args of [
+    ['--generated'],
+    ['--real', '--generated', '--fixture', 'business'],
+    ['--real', '--generated', '--generated'],
+  ])
+    assert.throws(() => parseBrowserArguments(args))
+})

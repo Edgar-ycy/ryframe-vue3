@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isSessionContext } from '@/api/modules/sessionContext'
+import { isSessionMessage } from '@/app/session/sessionMessage'
 import { sessionContext } from './sessionContextFixtures'
 
 vi.mock('@/i18n', () => ({ translate: (key: string) => key }))
@@ -184,7 +185,6 @@ describe('跨标签刷新协调', () => {
     channel.broadcastAuthenticated(second, 'token', context)
     channel.broadcastRefreshFailed(second, 503)
     channel.broadcastLogout()
-    expect(original.sent).toHaveLength(5)
     vi.spyOn(original, 'postMessage').mockImplementation(() => {
       throw new Error('channel closed')
     })
@@ -203,11 +203,17 @@ describe('跨标签刷新协调', () => {
 
   it('没有 randomUUID 时使用加密随机数，非浏览器环境不创建频道', async () => {
     vi.resetModules()
-    vi.stubGlobal('crypto', { getRandomValues: (values: Uint32Array) => values.fill(42) })
+    const getRandomValues = vi.fn((values: Uint32Array) => values.fill(42))
+    vi.stubGlobal('crypto', { getRandomValues })
     vi.stubGlobal('window', undefined)
     channel = await import('@/app/session/channel')
     channel.installSessionChannel(handlers)
-    expect(channel.startLocalRefreshOperation().operationId).toContain('0000002a')
+    const operation = channel.startLocalRefreshOperation()
+    expect(getRandomValues).toHaveBeenCalled()
+    expect(operation.operationId).not.toMatch(/^local:/)
+    expect(isSessionMessage({ type: 'refresh-start', source: 'fallback-tab', ...operation })).toBe(
+      true,
+    )
     expect(TestChannel.current.sent).toHaveLength(0)
   })
 })

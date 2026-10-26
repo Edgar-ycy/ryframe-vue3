@@ -103,11 +103,12 @@ describe('密码登录', () => {
     expect(mocks.publish).toHaveBeenCalledExactlyOnceWith('access', context)
   })
 
-  it('登录请求失败后也不会重用旧挑战', async () => {
+  it('登录请求失败后不发布身份，也不会重用旧挑战', async () => {
     mocks.login.mockRejectedValueOnce(new Error('denied'))
     await expect(login.authenticateWithPassword(credentials, 'tenant-a')).rejects.toThrow('denied')
     await csrf.ensureCsrfToken()
     expect(mocks.challenge).toHaveBeenCalledTimes(2)
+    expect(mocks.publish).not.toHaveBeenCalled()
   })
 
   it('完整校验上下文后才发布身份，并使用同次 CSRF 挑战', async () => {
@@ -136,12 +137,10 @@ describe('密码登录', () => {
     expect(mocks.publish).not.toHaveBeenCalled()
   })
 
-  it('挑战失败不发登录请求，登录失败不发布身份', async () => {
+  it('挑战失败不发登录请求或发布身份', async () => {
     mocks.challenge.mockRejectedValueOnce(new Error('challenge unavailable'))
     await expect(login.authenticateWithPassword(credentials, 'tenant-a')).rejects.toThrow()
     expect(mocks.login).not.toHaveBeenCalled()
-    mocks.login.mockRejectedValueOnce(new Error('denied'))
-    await expect(login.authenticateWithPassword(credentials, 'tenant-a')).rejects.toThrow('denied')
     expect(mocks.publish).not.toHaveBeenCalled()
   })
 })

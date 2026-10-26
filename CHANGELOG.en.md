@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Generated `tenant_data` CRUD registrations declare create, update, and delete permissions for existing business-maintenance write protection. Resource manifests join the unified permission set so generated write buttons reuse maintenance protection; reads and `control_row` resources gain no additional restriction.
+
 - Simplify session tests by replacing fixed broadcast totals and random identifier encoding assertions with checks for the secure random source and valid message identifiers. Merge duplicate login-failure setup while retaining challenge invalidation, zero identity publication, and cross-tab session isolation safeguards; product behavior is unchanged.
 
 - The managed generated-page browser entry supports `--spec` to select one test file while retaining IPC, isolation, and failure cleanup; omitting it still runs the complete suite.

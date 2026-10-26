@@ -15,6 +15,8 @@ import {
 import { useServerStateMutation } from '@/shared/query/useServerStateMutation'
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
+import { useTenantContextStore } from '@/stores/tenantContext'
+import { HttpError } from '@/shared/http/client'
 import { hasPermission } from '@/shared/navigation/permissionAccess'
 import { confirmAction } from '@/utils/confirmAction'
 import type { PageQuery, PageResponse, Id } from '@/shared/http/types'
@@ -38,12 +40,15 @@ export function useFlatCrudResource<
   TUpdate extends object,
 >(resource: FlatCrudResource<TRecord, TQuery, TForm, TCreate, TUpdate>, readPermission: string) {
   const userStore = useUserStore()
+  const tenantContext = useTenantContextStore()
   const pageActive = ref(true)
   let pageGeneration = 0
   const authenticated = () =>
     pageActive.value &&
     userStore.sessionStatus === 'authenticated' &&
-    hasPermission(userStore.permissions, readPermission)
+    hasPermission(userStore.permissions, readPermission) &&
+    (resource.storage !== 'tenant_data' ||
+      (tenantContext.status === 'loaded' && tenantContext.businessData?.state === 'active'))
   const {
     appliedQuery,
     applyDraft,
@@ -59,10 +64,12 @@ export function useFlatCrudResource<
     authenticated,
     resource.key,
     () => ({ scope: 'list', filters: { ...appliedQuery.value } }),
-    (signal) =>
-      runAppliedQuery(signal, (query, requestSignal) =>
+    (signal) => {
+      if (!authenticated()) throw new HttpError('业务数据读取已暂停', { kind: 'cancelled' })
+      return runAppliedQuery(signal, (query, requestSignal) =>
         resource.adapter.list(query, requestSignal),
-      ),
+      )
+    },
   )
 
   const editingRecord = shallowRef<TRecord>()
@@ -77,6 +84,7 @@ export function useFlatCrudResource<
     resource.key,
     () => ({ scope: 'detail', id: currentEditId.value }),
     async (signal) => {
+      if (!authenticated()) throw new HttpError('业务数据读取已暂停', { kind: 'cancelled' })
       const id = currentEditId.value
       if (!id) throw new Error(resource.messages.detailMissing)
       return resource.adapter.detail(id, signal)

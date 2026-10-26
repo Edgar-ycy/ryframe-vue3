@@ -23,6 +23,7 @@ export function resourceDefinition(resource, mappings) {
     resource.fields.find(readableString)
   return renderTemplate({
     name: resource.name,
+    storage: resource.storage === 'tenant_data' ? '    storage: "tenant_data",\n' : '',
     pascal: resource.pascal_name,
     zh: resource.labels.zh_cn,
     en: resource.labels.en,

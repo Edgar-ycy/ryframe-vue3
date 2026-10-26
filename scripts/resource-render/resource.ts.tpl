@@ -6,7 +6,7 @@ function {name}Resource(translate: Translate) {{
     {pascal}CreateInput,
     {pascal}UpdateInput
   >({{
-    key: {name:?},
+{storage}    key: {name:?},
     initialQuery: (): {pascal}Query => ({{
       page: 1,
       page_size: 10,

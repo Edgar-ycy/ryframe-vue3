@@ -61,6 +61,8 @@ After changing a backend endpoint, first run `cargo xtask generate api --write` 
 
 Generated `tenant_data` resources declare create/update/delete `businessWritePermissions` in their registration manifest. These join domain-page and optional-feature manifests and reuse the existing business-maintenance write protection. This generation rule does not restrict read permissions or `control_row` resources.
 
+The resource definition also marks `tenant_data` storage. Automatic list/detail queries and explicit refreshes require the existing page, authentication, and read-permission qualifications plus a loaded tenant context with active business data. Maintenance, provisioning, and failed states pause reads; a new active scope resumes queries on the same page. Old-scope requests remain cancelled and cannot write results back. Control-row resources retain their existing read behavior, and the global business-state banner explains the pause.
+
 In standard forms, text, numeric, and enumeration fields that cannot change after creation accept input during creation, but are disabled during editing and prevent update events from writing values back; fields that allow updates remain editable.
 
 The public CRUD contract and renderer enforce the same widget type constraints: text accepts strings, integers, or Decimal; textarea accepts strings; number accepts integers; switch accepts booleans; and date, date_time, and json accept their corresponding types. Select requires a valid finite enumeration, and hidden fields cannot be edited. Exact numeric values transported as strings still reject number controls, JSON retains native JSON transport, and nullable and optional create/update semantics remain strictly validated.

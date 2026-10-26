@@ -17,6 +17,7 @@ test('生成状态枚举及筛选使用字符串次序，必填提示不误加�
   status.usage.filter = true
   const code = resource.fields.find((field) => field.name === 'code')
   const presentation = execute(resource, renderResourceAssets([resource], '1.3.0'))
+  assert.equal(Object.hasOwn(presentation.resource, 'storage'), false)
   assert.equal(presentation.columns.find((field) => field.key === 'status').positiveValue, '2')
   assert.deepEqual(
     Array.from(

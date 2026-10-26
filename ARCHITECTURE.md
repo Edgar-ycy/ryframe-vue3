@@ -61,6 +61,8 @@ API 生成的暂存目录始终位于当前前端工作区的 `target/`。Window
 
 `tenant_data` 生成资源在注册清单中声明 create/update/delete 三项 `businessWritePermissions`，与领域页面和可选能力清单汇总后复用既有业务维护停写规则；读取权限及 `control_row` 资源不因该生成规则受限。
 
+`tenant_data` 的资源定义同时标记 storage。列表、详情的自动查询和显式刷新仅在原页面、认证及读取权限有效且租户上下文 loaded、业务数据 active 时执行；维护、准备和失败状态暂停读取，active 的新 scope 在原页面恢复查询。旧 scope 请求仍取消且不得回写，控制库资源保持原读取行为；暂停原因使用全局业务状态横幅说明。
+
 标准表单中创建后不可修改的文本、数字和枚举字段在新建时可以输入，编辑时禁用并阻止更新事件回写；允许更新的字段仍可编辑。
 
 公共 CRUD 契约与渲染器使用相同的控件类型约束：text 用于字符串、整数或 Decimal，textarea 用于字符串，number 用于整数，switch 用于布尔值，date、date_time、json 分别用于对应类型；select 必须提供有效有限枚举，hidden 不可编辑。字符串传输的精确数值仍禁止 number，JSON 保持原生 JSON 传输，nullable 与创建、更新的可选语义继续严格校验。

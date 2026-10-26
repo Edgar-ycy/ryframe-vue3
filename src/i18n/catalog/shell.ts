@@ -88,7 +88,7 @@ export const shellMessages = {
       },
       businessData: {
         provisioning: '业务数据正在准备，业务操作暂不可用；系统管理仍可使用。',
-        maintenance: '业务数据正在维护，业务写操作已暂停；系统管理仍可使用。',
+        maintenance: '业务数据正在维护，业务读取与写入已暂停；系统管理仍可使用。',
         failed: '业务数据放置失败，业务操作不可用；请联系平台管理员。',
         placementGeneration: '数据放置代次：{generation}',
       },
@@ -190,7 +190,7 @@ export const shellMessages = {
         provisioning:
           'Business data is being provisioned. Business operations are unavailable; system administration remains available.',
         maintenance:
-          'Business data is under maintenance. Business writes are paused; system administration remains available.',
+          'Business data is under maintenance. Business reads and writes are paused; system administration remains available.',
         failed:
           'Business data placement failed. Business operations are unavailable; contact a platform administrator.',
         placementGeneration: 'Data placement generation: {generation}',

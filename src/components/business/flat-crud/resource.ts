@@ -36,6 +36,7 @@ export interface FlatCrudResource<
   emptyForm: () => TForm
   initialQuery: () => TQuery
   key: string
+  storage?: 'control_row' | 'tenant_data'
   messages: FlatCrudMessages<TRecord>
   recordId: (record: TRecord) => Id
   updateInput: (form: Readonly<TForm>) => TUpdate

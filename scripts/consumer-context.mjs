@@ -3,7 +3,8 @@ import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { checkApplicationPath } from './application-config-paths.mjs'
 import { fileHash, optionalManagedFile, readManagedJson } from './application-config-files.mjs'
-import { bindWorkerTool } from '../tests/browser-real/worker-tool.mjs'
+import { createHash } from 'node:crypto'
+import { Buffer } from 'node:buffer'
 
 const configurationPaths = ['config/tools.toml', '.local-tests/tools.toml']
 const argumentKeys = [
@@ -106,6 +107,64 @@ function consumerArguments(values) {
   return result
 }
 
+function executableSnapshot(file, expected) {
+  absolutePath(file, 'origin.executable.path')
+  const identity = (stat) =>
+    ['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs'].map((field) => String(stat[field]))
+  let descriptor
+  try {
+    const before = identity(fs.statSync(file, { bigint: true }))
+    descriptor = fs.openSync(file, 'r')
+    const hash = createHash('sha256')
+    const buffer = Buffer.alloc(64 * 1024)
+    let count
+    while ((count = fs.readSync(descriptor, buffer)) !== 0) hash.update(buffer.subarray(0, count))
+    if (!isDeepStrictEqual(before, identity(fs.fstatSync(descriptor, { bigint: true })))) {
+      fail('origin.executable', '读取期间身份漂移')
+    }
+    absolutePath(file, 'origin.executable.path')
+    if (
+      hash.digest('hex') !== expected ||
+      !isDeepStrictEqual(before, identity(fs.statSync(file, { bigint: true })))
+    ) {
+      fail('origin.executable', '身份或摘要漂移')
+    }
+    return before
+  } catch {
+    fail('origin.executable', '无法确认普通程序文件的身份与摘要')
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor)
+  }
+}
+
+function originDescription(value) {
+  exactKeys(value, ['format_version', 'kind', 'executable', 'sources'], 'origin')
+  if (value.format_version !== 1 || value.kind !== 'frontend-origin-tool') {
+    fail('origin', '工具种类或版本不匹配')
+  }
+  exactKeys(value.executable, ['path', 'sha256'], 'origin.executable')
+  digest(value.executable.sha256, 'origin.executable.sha256')
+  if (!Array.isArray(value.sources) || !value.sources.length) fail('origin.sources', '必须为非空数组')
+  for (const [index, item] of value.sources.entries()) {
+    exactKeys(item, ['path', 'sha256'], 'origin.sources')
+    digest(item.sha256, 'origin.sources.sha256')
+    if (
+      typeof item.path !== 'string' ||
+      !item.path ||
+      /[\\:\0\r\n]/u.test(item.path) ||
+      item.path.split('/').some((part) => ['', '.', '..'].includes(part)) ||
+      (index > 0 &&
+        Buffer.compare(Buffer.from(value.sources[index - 1].path), Buffer.from(item.path)) >= 0)
+    ) {
+      fail('origin.sources', '必须为安全相对路径且按 UTF-8 字节有序、唯一')
+    }
+  }
+  if (!value.sources.some((item) => item.path === 'xtask/source-inventory.json')) {
+    fail('origin.sources', '缺少完整来源规则项')
+  }
+  return value
+}
+
 function verifyBinding(context) {
   const binding = context.origin_tool_binding
   exactKeys(binding, ['path', 'bytes', 'sha256'], 'origin_tool_binding')
@@ -113,17 +172,23 @@ function verifyBinding(context) {
   if (!samePath(file, path.join(context.backend_root, '.local-tests/frontend-origin-tool.json'))) {
     fail('origin_tool_binding.path', '必须绑定后端固定的工具来源文件')
   }
-  if (!Number.isSafeInteger(binding.bytes) || binding.bytes <= 0) {
-    fail('origin_tool_binding.bytes', '必须为正安全整数')
+  if (
+    !Number.isSafeInteger(binding.bytes) ||
+    binding.bytes <= 0 ||
+    binding.bytes > 4 * 1024 * 1024
+  ) {
+    fail('origin_tool_binding.bytes', '必须为不超过 4 MiB 的正安全整数')
   }
   digest(binding.sha256, 'origin_tool_binding.sha256')
-  if (
-    !isDeepStrictEqual(fileFact(file, 'origin_tool_binding'), {
-      bytes: binding.bytes,
-      sha256: binding.sha256,
-    })
-  )
+  const input = readManagedJson(path.dirname(file), path.basename(file), '消费上下文 origin')
+  if (!input || input.bytes.length !== binding.bytes || fileHash(input.bytes) !== binding.sha256) {
     fail('origin_tool_binding', '字节数或摘要漂移')
+  }
+  absolutePath(file, 'origin_tool_binding.path')
+  const description = originDescription(input.value)
+  const identity = executableSnapshot(description.executable.path, description.executable.sha256)
+  // 完整来源数组保留在固定绑定中；内容、集合与编译根由父 Rust 和原生入口核验。
+  return { description, identity }
 }
 
 function verifyConfiguration(context) {
@@ -158,9 +223,9 @@ function readSnapshot(file, frontendRoot) {
   const frontend = absolutePath(context.frontend_root, 'frontend_root', { directory: true })
   if (!samePath(frontend, frontendRoot)) fail('frontend_root', '必须等于当前工作目录')
   const argumentsMap = consumerArguments(context.arguments)
-  verifyBinding(context)
+  const origin = verifyBinding(context)
   verifyConfiguration(context)
-  return { context, arguments: argumentsMap, sha256: fileHash(input.bytes) }
+  return { context, arguments: argumentsMap, sha256: fileHash(input.bytes), origin }
 }
 
 /** 固定原始上下文摘要，并在每次任务前后重验文件、来源绑定和配置存在性集合。 */
@@ -170,12 +235,16 @@ export function readConsumerContext(raw, { frontendRoot = process.cwd() } = {}) 
   }
   const file = path.isAbsolute(raw) ? raw : `${process.cwd()}${path.sep}${raw}`
   const before = readSnapshot(file, frontendRoot)
-  const originTool = bindWorkerTool(before.context.backend_root)
   const verifyUnchanged = () => {
     const after = readSnapshot(file, frontendRoot)
     if (before.sha256 !== after.sha256) fail('file', '上下文字节摘要漂移')
-    originTool.verifyUnchanged()
+    if (!isDeepStrictEqual(before.origin, after.origin)) fail('origin', '程序身份或固定描述漂移')
   }
   verifyUnchanged()
-  return { context: before.context, arguments: before.arguments, originTool, verifyUnchanged }
+  return {
+    context: before.context,
+    arguments: before.arguments,
+    originTool: { executable: before.origin.description.executable.path },
+    verifyUnchanged,
+  }
 }

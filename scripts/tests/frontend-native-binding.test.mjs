@@ -38,7 +38,6 @@ test('绑定输入漂移在派发前拒绝；派发中漂移覆盖返回成功�
     value.file,
     value.binding,
     value.executable,
-    path.join(value.backend, 'xtask/src/main.rs'),
     path.join(value.backend, 'config/tools.toml'),
   ]
   let calls = 0
@@ -101,4 +100,27 @@ test('过大 stdin 在派发前拒绝，输出超限不接受截断结果也不�
     /不采信部分输出/u,
   )
   assert.equal(calls, 1)
+})
+
+test('相同字节替换原生程序仍拒绝派发，不把摘要相同当作身份相同', (t) => {
+  const value = selectedFixture(t)
+  const original = value.executable + '.original'
+  fs.renameSync(value.executable, original)
+  let calls = 0
+  try {
+    fs.copyFileSync(original, value.executable)
+    assert.throws(() =>
+      value.selected.invoke(
+        value.frontend,
+        { frontend_inventories: [], backend_inventories: [] },
+        () => {
+          calls += 1
+        },
+      ),
+    )
+    assert.equal(calls, 0)
+  } finally {
+    fs.rmSync(value.executable)
+    fs.renameSync(original, value.executable)
+  }
 })

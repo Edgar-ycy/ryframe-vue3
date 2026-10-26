@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Cross-repository consumer contexts remove repeated full-source scans from frequent Node hooks while retaining fixed descriptions, configuration, and executable identity checks. Existing parent Rust read protection and the native entry retain complete source verification.
+
 - Cross-repository build proofs align with the four current frontend tool-file root sections: unused sections bind the complete file digest without exposing values, and changed bytes still reject old receipts.
 
 - Formal frontend build proofs use the fixed-bound Rust native consumer. Consumer contexts remove interpreter fields and manual bypasses while retaining complete sources, executable identity, and before/after drift guards.

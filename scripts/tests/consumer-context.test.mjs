@@ -241,12 +241,12 @@ test('只接受正式上下文，拒绝旧解释器字段与手动旁路或重�
     safeFailure(() => receiptBinding(args))
 })
 
-test('重新绑定描述文件不能省略实际源码或接受未知工具字段', (t) => {
+test('重新绑定描述文件仍拒绝来源数组乱序和未知工具字段', (t) => {
   const value = consumerFixture(t)
   const original = fs.readFileSync(value.binding)
   for (const mutate of [
     (binding) => {
-      binding.sources.pop()
+      binding.sources.reverse()
     },
     (binding) => {
       binding.private = sentinel

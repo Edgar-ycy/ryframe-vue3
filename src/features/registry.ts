@@ -83,7 +83,7 @@ export const registeredPermissionRouteKeys = Object.freeze(permissionRoutes)
 
 const businessWritePermissions = new Set<PermissionCode>([
   ...featureManifests.flatMap((feature) => feature.businessWritePermissions),
-  ...Object.values(domainPageModules).flatMap(
+  ...Object.values({ ...domainPageModules, ...resourcePageModules }).flatMap(
     (module) => module.pageManifest.businessWritePermissions ?? [],
   ),
 ])

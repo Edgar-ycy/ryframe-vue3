@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Generated `tenant_data` CRUD registrations declare create, update, and delete permissions for existing business-maintenance write protection. Resource manifests join the unified permission set so generated write buttons reuse maintenance protection; reads and `control_row` resources gain no additional restriction.
+
 - The managed generated-page browser entry supports `--spec` to select one test file while retaining IPC, isolation, and failure cleanup; omitting it still runs the complete suite.
 - Add independent generated Catalog page acceptance for the system administrator, checking exact JSON strings, nullable-object clearing, boolean toggling, and complete-preimage cleanup through the existing generated entry without expanding business migration receipts.
 

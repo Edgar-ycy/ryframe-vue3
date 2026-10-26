@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 
 import { renderTransport } from '../resource-render/transport.mjs'
+import { order } from './fixtures/resource-render/order-ir.mjs'
 
 const generatorVersion = '1.3.0'
 const assetNames = ['api.ts', 'page.vue', 'registration.ts', 'index.ts']
@@ -32,6 +35,34 @@ for (const name of ['post', 'notice']) {
 
 const fixture = (name = 'post') => structuredClone(fixtures.get(name))
 const golden = (name, file) => goldens.get(name).get(file).toString('utf8')
+
+test('tenant_data 注册精确三写权限，control_row 不进入业务维护限制', () => {
+  const resource = order()
+  const { create, update, delete: remove, list, read } = resource.access.permissions
+  for (const storage of ['tenant_data', 'control_row']) {
+    resource.storage = storage
+    const source = renderTransport(resource, generatorVersion).get('registration.ts')
+    const code = ts.transpileModule(source, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+    }).outputText
+    const module = { exports: {} }
+    vm.runInThisContext(`(function(require, module, exports) { ${code}\n})`)(
+      (name) => {
+        assert.equal(name, '@/features/pages')
+        return { definePageManifest: (value) => value }
+      },
+      module,
+      module.exports,
+    )
+    const manifest = module.exports.pageManifest
+    assert.equal(manifest.pages[0].permissionCode, list)
+    if (storage === 'tenant_data') {
+      assert.deepEqual(manifest.businessWritePermissions, [create, update, remove])
+      assert.ok(!manifest.businessWritePermissions.includes(read))
+      assert.ok(!manifest.businessWritePermissions.includes(list))
+    } else assert.equal(Object.hasOwn(manifest, 'businessWritePermissions'), false)
+  }
+})
 
 function freeze(value) {
   if (value && typeof value === 'object') {

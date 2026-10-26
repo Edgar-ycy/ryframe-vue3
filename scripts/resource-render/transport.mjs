@@ -69,10 +69,15 @@ function renderRegistration(resource, header) {
   const systemTenant = resource.access.system_tenant_only
     ? '      requiresSystemTenant: true,\n'
     : ''
+  const permissions = resource.access.permissions
+  const businessWrites =
+    resource.storage === 'tenant_data'
+      ? `  businessWritePermissions: ${JSON.stringify([permissions.create, permissions.update, permissions.delete])},\n`
+      : ''
   return `${header}import { definePageManifest } from '@/features/pages'
 
 export const pageManifest = definePageManifest({
-  pages: [
+${businessWrites}  pages: [
     {
       routeKey: ${JSON.stringify(resource.route.key)},
       permissionCode: ${JSON.stringify(resource.access.permissions.list)},

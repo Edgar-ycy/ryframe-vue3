@@ -59,6 +59,8 @@ API 生成的暂存目录始终位于当前前端工作区的 `target/`。Window
 
 `/business/` 接口及引用模型归入延迟加载的 `system` 分片，业务请求使用该领域的 typed caller。标准资源整数的位宽、符号和传输类型来自后端契约；生成前验证范围约束和有限枚举，越界或非规范十进制值会阻止生成。字符串传输的 `i64/u64` 使用文本或枚举控件，正文与查询保留十进制字符串，不经过 Number；数字控件在生成前被拒绝。此类字段的非空 minimum/maximum 也使用规范十进制字符串，生成前以 BigInt 校验完整类型范围及大小关系，数字边界和非法字符串均拒绝。Decimal 使用文本控件和十进制字符串，保留后端声明的精确值；超出列容量由服务端拒绝，禁止转换为 Number 或自动舍入。业务模型改变后通过后端生成器同步本次候选契约及页面，类型和 lint 通过后统一写入；业务页面 ownership 保存在 `.ryframe/generated.toml`，路由沿用生成目录的注册发现。默认页面使用同目录的 page.vue，`frontend_page` 可指定手写扩展页面。
 
+`tenant_data` 生成资源在注册清单中声明 create/update/delete 三项 `businessWritePermissions`，与领域页面和可选能力清单汇总后复用既有业务维护停写规则；读取权限及 `control_row` 资源不因该生成规则受限。
+
 标准表单中创建后不可修改的文本、数字和枚举字段在新建时可以输入，编辑时禁用并阻止更新事件回写；允许更新的字段仍可编辑。
 
 公共 CRUD 契约与渲染器使用相同的控件类型约束：text 用于字符串、整数或 Decimal，textarea 用于字符串，number 用于整数，switch 用于布尔值，date、date_time、json 分别用于对应类型；select 必须提供有效有限枚举，hidden 不可编辑。字符串传输的精确数值仍禁止 number，JSON 保持原生 JSON 传输，nullable 与创建、更新的可选语义继续严格校验。

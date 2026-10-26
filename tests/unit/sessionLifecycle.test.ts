@@ -216,7 +216,7 @@ describe('会话生命周期', () => {
     expect(mocks.error).toHaveBeenCalledExactlyOnceWith('shell.session.forbidden')
   })
 
-  it.each([401, 403, 404, 423, 503, 500, undefined])('全局错误 %s 恰好显示一次', (status) => {
+  it.each([401, 404, 423, 503, 500, undefined])('全局错误 %s 恰好显示一次', (status) => {
     lifecycle.installSessionCoordinator()
     const reporter = mocks.configureReporter.mock.calls[0]![0]
     reporter(new HttpError('', { status }))

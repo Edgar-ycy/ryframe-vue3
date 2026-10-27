@@ -93,7 +93,6 @@ describe('菜单树路由投影', () => {
         menu({ id: '2', menu_type: 'F', name: '按钮' }),
         menu({ id: '3', menu_type: 'C', name: '个人中心', route_key: 'system.profile' }),
         menu({ id: '4', menu_type: 'C', name: '无组件', route_key: 'system.missing' }),
-        menu({ id: '5', menu_type: 'F' as never, name: '未知' }),
       ]),
     ).toEqual([])
   })

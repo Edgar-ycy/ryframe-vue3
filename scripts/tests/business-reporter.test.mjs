@@ -1,13 +1,21 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import BusinessReporter, {
   requiredBusinessScenarios,
   verifyBusinessTestReceipt,
 } from '../business-reporter.mjs'
+
+function fixture(t) {
+  const local = fileURLToPath(new URL('../../.local-tests/node-unit/', import.meta.url))
+  mkdirSync(local, { recursive: true })
+  const root = mkdtempSync(path.join(local, 'business-reporter-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  return root
+}
 
 function runs() {
   return [
@@ -103,8 +111,8 @@ test('拒绝失败、跳过、重试、重复标题和缺失或重复场景', ()
   }
 })
 
-test('reporter 只以全新文件发布通过收据', () => {
-  const root = mkdtempSync(path.join(tmpdir(), 'ryframe-business-reporter-'))
+test('reporter 只以全新文件发布通过收据', (t) => {
+  const root = fixture(t)
   const output = path.join(root, 'business-tests.json')
   const reporter = new BusinessReporter({ output, server: 'dev', runId: 'r24-business-dev' })
   for (const run of runs()) {
@@ -128,8 +136,8 @@ test('reporter 只以全新文件发布通过收据', () => {
   )
 })
 
-test('reporter 不发布不完整成功收据', () => {
-  const root = mkdtempSync(path.join(tmpdir(), 'ryframe-business-reporter-'))
+test('reporter 不发布不完整成功收据', (t) => {
+  const root = fixture(t)
   const output = path.join(root, 'business-tests.json')
   mkdirSync(path.dirname(output), { recursive: true })
   const reporter = new BusinessReporter({

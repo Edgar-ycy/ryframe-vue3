@@ -182,7 +182,7 @@ test('外部构建在写产物前拒绝错误 SHA、脏源码和已有收据', (
 
 test('真实 preview 在创建报告目录前验证生产构建收据', () => {
   const source = readFileSync(path.resolve('playwright.real.config.ts'), 'utf8')
-  const environmentCheck = source.indexOf('validateRealBrowserEnvironment()')
+  const environmentCheck = source.indexOf('loadRealBrowserEnvironment()')
   const verify = source.indexOf("if (serverMode === 'preview' && !externalBaseUrl)")
   const selection = source.indexOf('realTestSelection(')
   const directory = source.indexOf('mkdirSync(directory')

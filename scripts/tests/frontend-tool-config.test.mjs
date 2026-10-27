@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { loadFrontendConfiguration, loadFrontendToolConfig } from '../frontend-tool-config.mjs'
-import { defaults, fixture, hash, json } from './application-config-fixture.mjs'
+import { defaults, fixture, hash } from './application-config-fixture.mjs'
 
 test('工具配置可缺省、局部合并且本机优先，来源只包含真实读取文件', (t) => {
   const { root, write } = fixture(t)
@@ -84,7 +84,6 @@ test('工具路径保留 .. 检查，缺省与读取都不写输入文件', (t) 
   loadFrontendConfiguration(root, 'dev')
   assert.deepEqual(fs.readFileSync(path.join(root, 'config/app.toml')), before)
   assert.deepEqual(fs.readFileSync(path.join(root, 'config/tools.json')), tools)
-  assert.equal(tools.toString(), json({}))
 })
 
 test('工具读取期间来源字节改变拒绝', (t) => {

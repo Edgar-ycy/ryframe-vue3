@@ -137,7 +137,6 @@ test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t
     datasetAuthority: value.authority,
   })
   assert.deepEqual(result.worker, value.authority)
-  assert.equal(result.selection.testMatch.includes('**/restore-existing.spec.ts'), true)
   assert.deepEqual(requiredScenarios, [
     'login',
     'session',

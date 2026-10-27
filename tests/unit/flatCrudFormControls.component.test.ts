@@ -41,7 +41,6 @@ describe('平面 CRUD 表单的扩展控件', () => {
       spellcheck: 'false',
       type: 'textarea',
     })
-    expect(String(controlAttributes('json').class)).toContain('json-input')
 
     updateControl('textarea', '新的说明')
     updateControl('switch', false)

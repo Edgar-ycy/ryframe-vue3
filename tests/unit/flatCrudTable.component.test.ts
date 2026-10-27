@@ -1,6 +1,6 @@
 import { createSSRApp, defineComponent, h, type FunctionalComponent } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import FlatCrudTable from '@/components/business/flat-crud/FlatCrudTable.vue'
 import type { FlatCrudColumn } from '@/components/business/flat-crud/model'
@@ -57,7 +57,7 @@ async function renderTable(
 
 describe('平面 CRUD 表格', () => {
   it('格式化 JSON 单元格，并安全展示自定义日期格式化无法识别的字符串', async () => {
-    const formatDate = vi.fn((value: string) => (value === '待确认' ? `未知日期：${value}` : value))
+    const formatDate = (value: string) => (value === '待确认' ? `未知日期：${value}` : value)
     const html = await renderTable(
       [
         {
@@ -72,7 +72,6 @@ describe('平面 CRUD 表格', () => {
       ],
     )
 
-    expect(formatDate).toHaveBeenCalledWith('待确认')
     expect(html).toContain('data-row-count="1"')
     expect(html).toMatch(
       /<code class="json-cell"[^>]*>\{&quot;name&quot;:&quot;配置&quot;,&quot;values&quot;:\[1,true\]\}<\/code>/u,

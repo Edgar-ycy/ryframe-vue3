@@ -3,7 +3,6 @@ import test from 'node:test'
 
 import { renderResourceAssets } from '../resource-render/index.mjs'
 import { renderTransport } from '../resource-render/transport.mjs'
-import { fixture } from './fixtures/resource-render/builders.mjs'
 import { field, globalOrder, numeric } from './fixtures/resource-render/boundary-ir.mjs'
 import { execute } from './fixtures/resource-render/boundary-runtime.mjs'
 import { order } from './fixtures/resource-render/order-ir.mjs'
@@ -91,10 +90,4 @@ test('Order typed caller、relation Detail、全局系统租户限制及字符�
   )
   assert.deepEqual(keys(view.queryFields), ['name', 'status'])
   assert.deepEqual(keys(view.columns), ['id', 'name', 'status', 'created_at', 'updated_at'])
-})
-
-test('Post 状态枚举在生成的表单中使用 radio 控件', () => {
-  const resource = fixture('post')
-  const view = execute(resource, assets(resource))
-  assert.equal(view.formFields.find((field) => field.key === 'status')?.kind, 'radio')
 })

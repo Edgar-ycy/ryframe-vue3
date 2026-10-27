@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { bindWorkerTool } from './worker-tool.mjs'
 
 const XLSX_MEDIA_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 const MIN_LARGE_IMPORT_BYTES = 2 * 1024 * 1024
@@ -115,41 +116,45 @@ async function prepareFixture(
   const output = info.outputPath(`${username}.xlsx`)
   const templateContent = await readFile(template)
   const templateSha256 = sha256(templateContent)
-  const { backendDir: backend, python } = loadRealBrowserEnvironment()
-  const stdout = execFileSync(
-    python,
-    [
-      '-X',
-      'utf8',
-      path.join(backend, 'tools/python/user_import_fixture.py'),
-      'browser',
-      '--template',
-      template,
-      '--template-sha256',
+  const { backendDir: backend } = loadRealBrowserEnvironment()
+  const tool = bindWorkerTool(backend)
+  try {
+    const stdout = execFileSync(
+      tool.executable,
+      [
+        '__import-samples',
+        'browser',
+        '--template',
+        template,
+        '--template-sha256',
+        templateSha256,
+        '--output',
+        output,
+        '--username',
+        username,
+        ...(large ? ['--large'] : []),
+      ],
+      {
+        cwd: backend,
+        encoding: 'utf8',
+        maxBuffer: 1024 * 1024,
+        timeout: 10_000,
+        windowsHide: true,
+        env: toolProcessEnvironment(),
+      },
+    )
+    const receipt = parseUserImportFixtureReceipt(stdout, {
+      path: output,
       templateSha256,
-      '--output',
-      output,
-      '--username',
       username,
-      ...(large ? ['--large'] : []),
-    ],
-    {
-      encoding: 'utf8',
-      maxBuffer: 1024 * 1024,
-      timeout: 10_000,
-      windowsHide: true,
-      env: toolProcessEnvironment(),
-    },
-  )
-  const receipt = parseUserImportFixtureReceipt(stdout, {
-    path: output,
-    templateSha256,
-    username,
-    large,
-  })
-  const content = await readFile(output)
-  await attachVerifiedUserImportFixture(info, receipt, content)
-  return { content, receipt }
+      large,
+    })
+    const content = await readFile(output)
+    await attachVerifiedUserImportFixture(info, receipt, content)
+    return { content, receipt }
+  } finally {
+    tool.verifyUnchanged()
+  }
 }
 
 export async function createImport(page: Page, info: TestInfo, username: string, large = false) {

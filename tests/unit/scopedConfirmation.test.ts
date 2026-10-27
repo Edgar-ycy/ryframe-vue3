@@ -95,22 +95,13 @@ describe('服务端状态确认操作', () => {
     await expect(confirmServerStatePageOperation(async () => false)).resolves.toBeUndefined()
   })
 
-  it('旧表单校验返回后不允许调用 HTTP 或 UI 回写', async () => {
+  it('旧表单校验返回后不再提供可提交的操作', async () => {
     const validation = deferred<boolean>()
-    const http = vi.fn()
-    const ui = vi.fn()
     activate('user-a', 'authorization-a')
 
     const pending = validateServerStatePageOperation(() => validation.promise)
     activate('user-b', 'authorization-b')
     validation.resolve(true)
-    const operation = await pending
-    if (operation) {
-      http()
-      ui()
-    }
-
-    expect(http).not.toHaveBeenCalled()
-    expect(ui).not.toHaveBeenCalled()
+    await expect(pending).resolves.toBeUndefined()
   })
 })

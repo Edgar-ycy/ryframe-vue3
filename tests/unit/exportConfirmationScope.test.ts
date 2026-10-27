@@ -36,48 +36,34 @@ afterEach(() => {
 })
 
 describe('导出确认会话范围', () => {
-  it('同租户 A→B 后旧确认不触发 HTTP 或 UI 回写', async () => {
+  it('同租户 A→B 后旧确认不提交', async () => {
     const confirmation = deferred<boolean>()
     const http = vi.fn(async (_scope: ServerStateScope) => undefined)
-    const ui = vi.fn()
     activate('user-a', 'authorization-a')
 
-    const pending = confirmAndSubmitExportIntent(
-      { isEmpty: true },
-      async (scope) => {
-        await http(scope)
-        ui()
-      },
-      { requestConfirmation: () => confirmation.promise },
-    )
+    const pending = confirmAndSubmitExportIntent({ isEmpty: true }, http, {
+      requestConfirmation: () => confirmation.promise,
+    })
     activate('user-b', 'authorization-b')
     confirmation.resolve(true)
     await pending
 
     expect(http).not.toHaveBeenCalled()
-    expect(ui).not.toHaveBeenCalled()
   })
 
-  it('同主体 authorization epoch 变化后旧确认不触发 HTTP 或 UI 回写', async () => {
+  it('同主体 authorization epoch 变化后旧确认不提交', async () => {
     const confirmation = deferred<boolean>()
     const http = vi.fn(async (_scope: ServerStateScope) => undefined)
-    const ui = vi.fn()
     activate('user-a', 'authorization-a')
 
-    const pending = confirmAndSubmitExportIntent(
-      { isEmpty: true },
-      async (scope) => {
-        await http(scope)
-        ui()
-      },
-      { requestConfirmation: () => confirmation.promise },
-    )
+    const pending = confirmAndSubmitExportIntent({ isEmpty: true }, http, {
+      requestConfirmation: () => confirmation.promise,
+    })
     activate('user-a', 'authorization-b')
     confirmation.resolve(true)
     await pending
 
     expect(http).not.toHaveBeenCalled()
-    expect(ui).not.toHaveBeenCalled()
   })
 
   it('当前 scope 确认后只把预先捕获的 scope 交给提交入口', async () => {

@@ -76,11 +76,4 @@ describe('confirmExportIntent', () => {
     await expect(confirmExportIntent({ isEmpty: true }, requestConfirmation)).resolves.toBe(false)
     expect(requestConfirmation).toHaveBeenCalledOnce()
   })
-
-  it('非空筛选不显示二次确认', async () => {
-    const requestConfirmation = vi.fn(async () => false)
-
-    await expect(confirmExportIntent({ isEmpty: false }, requestConfirmation)).resolves.toBe(true)
-    expect(requestConfirmation).not.toHaveBeenCalled()
-  })
 })

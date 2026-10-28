@@ -8,20 +8,19 @@
 
 ## 选择代码位置
 
-```text
-src/
-├── views/        # 页面壳与页面交互
-├── components/   # 跨页面复用的展示组件
-├── hooks/        # 可复用的页面查询与交互编排
-├── app/          # 会话、消息、租户上下文、导出等跨页面流程
-├── stores/       # 客户端跨页面状态
-├── features/     # 页面、能力、权限和变体声明
-├── router/       # 导航守卫与运行时路由
-├── api/generated/operations/ # 按 core/system/platform/monitor 生成的 typed caller
-├── api/modules/  # 只组织规范化、幂等、分页、校验和 raw session 策略
-├── shared/       # HTTP、查询、安全和其他通用能力
-└── styles/       # 设计 token 与全局布局
-```
+| 目录                            | 职责                                                |
+| ------------------------------- | --------------------------------------------------- |
+| `src/views/`                    | 页面壳与页面交互                                    |
+| `src/components/`               | 跨页面复用的展示组件                                |
+| `src/hooks/`                    | 可复用的页面查询与交互编排                          |
+| `src/app/`                      | 会话、消息、租户上下文、导出等跨页面流程            |
+| `src/stores/`                   | 客户端跨页面状态                                    |
+| `src/features/`                 | 页面、能力、权限和变体声明                          |
+| `src/router/`                   | 导航守卫与运行时路由                                |
+| `src/api/generated/operations/` | 按 core/system/platform/monitor 生成的 typed caller |
+| `src/api/modules/`              | 只组织规范化、幂等、分页、校验和 raw session 策略   |
+| `src/shared/`                   | HTTP、查询、安全和其他通用能力                      |
+| `src/styles/`                   | 设计 token 与全局布局                               |
 
 开发页面时通常从 `views/` 开始。页面内可复用的异步流程放入同目录 composable 或
 `hooks/`，跨页面流程放入 `app/`，纯展示组件放入 `components/`。服务端请求从
@@ -121,15 +120,12 @@ Pinia 适合主题、标签页和客户端投影等跨页面状态。登录、�
 
 登录和刷新响应直接携带同构的 `SessionContext`；`GET /auth/context` 返回相同结构，用于恢复或重新
 校验当前会话。客户端只在完整快照校验通过后原子更新用户、租户、权限和动态路由。
-运行时路由由页面声明与服务端菜单共同投影：
+从 `SessionContext` 出发，运行时路由由页面声明与服务端菜单共同投影：
 
-```text
-SessionContext
-  -> 校验权限与 capability
-  -> 用 route key 查找页面声明
-  -> 构建菜单和动态路由
-  -> 注册路由并更新标签页
-```
+1. 校验权限与 capability。
+2. 用 route key 查找页面声明。
+3. 构建菜单和动态路由。
+4. 注册路由并更新标签页。
 
 会话流程位于 `src/app/session/`，路由投影位于 `src/features/navigation/`，运行时注册位于
 `src/router/`。开发身份或租户切换流程时，可在这些目录中分别定位会话编排、路由计算和路由

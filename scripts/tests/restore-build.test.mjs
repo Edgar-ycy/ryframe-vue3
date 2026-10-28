@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import { buildEnvironment, fixture } from './restore-build-fixture.mjs'
 import { buildSourceSnapshot } from '../build-source.mjs'
@@ -180,13 +181,90 @@ test('外部构建在写产物前拒绝错误 SHA、脏源码和已有收据', (
   assert.equal(builds, 0)
 })
 
-test('真实 preview 在创建报告目录前验证生产构建收据', () => {
-  const source = readFileSync(path.resolve('playwright.real.config.ts'), 'utf8')
-  const environmentCheck = source.indexOf('loadRealBrowserEnvironment()')
-  const verify = source.indexOf("if (serverMode === 'preview' && !externalBaseUrl)")
-  const selection = source.indexOf('realTestSelection(')
-  const directory = source.indexOf('mkdirSync(directory')
-  assert.ok(environmentCheck >= 0 && environmentCheck < verify)
-  assert.ok(verify < selection && selection < directory)
-  assert.match(source.slice(verify, selection), /verifyBuildReceipt\(/u)
+test('实际配置在创建报告目录前拒绝非法环境与本地 preview 收据', (t) => {
+  const configFile = fileURLToPath(new URL('../../playwright.real.config.ts', import.meta.url))
+  const helper = fileURLToPath(new URL('./real-preview-entry-fixture.mjs', import.meta.url))
+  const local = fileURLToPath(new URL('../../.local-tests/node-unit/', import.meta.url))
+  mkdirSync(local, { recursive: true })
+  for (const scenario of [
+    { serverMode: 'preview', environmentError: true, error: 'invalid environment' },
+    { serverMode: 'preview', receiptError: 'invalid', error: 'invalid receipt' },
+    { serverMode: 'preview' },
+    { serverMode: 'dev' },
+    { serverMode: 'preview', baseURL: 'http://127.0.0.1:6299' },
+  ]) {
+    const root = mkdtempSync(path.join(local, 'real-preview-entry-'))
+    t.after(() => rmSync(root, { recursive: true, force: true }))
+    const before = readdirSync(root, { recursive: true })
+    assert.deepEqual(before, [])
+    const observed = JSON.parse(
+      execFileSync(process.execPath, [helper, configFile, root], {
+        cwd: root,
+        input: JSON.stringify(scenario),
+        encoding: 'utf8',
+        windowsHide: true,
+        timeout: 30_000,
+      }),
+    )
+    const ports = observed.trace.map((entry) => entry.port)
+    const localPreview = scenario.serverMode === 'preview' && !scenario.baseURL
+    const early = scenario.environmentError ? ['environment'] : ['environment', 'receipt']
+    if (scenario.error) {
+      assert.equal(observed.error, `fixture: ${scenario.error}`)
+      assert.equal(observed.config, undefined)
+      assert.deepEqual(ports, early)
+      assert.deepEqual(readdirSync(root, { recursive: true }), before)
+      assert.deepEqual(observed.directories, { report: false, results: false })
+    } else {
+      assert.equal(observed.error, undefined)
+      assert.deepEqual(ports, [
+        'environment',
+        ...(localPreview ? ['receipt'] : []),
+        'selection',
+        'defineConfig',
+      ])
+      const config = observed.config
+      const baseURL = scenario.baseURL ?? 'http://127.0.0.1:5199'
+      assert.equal(config.use.baseURL, baseURL)
+      assert.equal(
+        config.outputDir,
+        `.local-tests/playwright-real/results/core/${scenario.serverMode}/entry-fixture`,
+      )
+      assert.deepEqual(observed.trace.find((entry) => entry.port === 'selection').args, [
+        null,
+        'core',
+        baseURL,
+      ])
+      if (localPreview)
+        assert.deepEqual(observed.trace.find((entry) => entry.port === 'receipt').args, [
+          path.dirname(configFile) + path.sep,
+        ])
+      if (scenario.baseURL) assert.equal(config.webServer, undefined)
+      else {
+        assert.equal(
+          config.webServer.command,
+          `node scripts/run-real-browser-server.mjs ${scenario.serverMode} 5199`,
+        )
+        assert.equal(config.webServer.url, `${baseURL}/login`)
+        assert.equal(config.webServer.reuseExistingServer, false)
+      }
+      const report = config.reporter.find(([name]) => name === 'html')[1].outputFolder
+      assert.equal(report, config.outputDir.replace('/results/', '/report/'))
+      const expected = new Set()
+      for (const directory of [report, config.outputDir]) {
+        let current = directory
+        while (current !== '.') {
+          expected.add(path.normalize(current))
+          current = path.dirname(current)
+        }
+      }
+      assert.deepEqual(readdirSync(root, { recursive: true }).sort(), [...expected].sort())
+      assert.deepEqual(observed.directories, { report: true, results: true })
+    }
+    for (const entry of observed.trace)
+      assert.deepEqual(entry.directories, {
+        report: entry.port === 'defineConfig',
+        results: entry.port === 'defineConfig',
+      })
+  }
 })

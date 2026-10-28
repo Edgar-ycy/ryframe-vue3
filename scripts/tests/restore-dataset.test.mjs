@@ -1,94 +1,18 @@
 import { toolProcessEnvironment } from '../tool-inputs.mjs'
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import {
-  datasetDigest,
   restoreDatasetAuthority,
   restoreDatasetEvidence,
   verifyRestoreDatasetAuthority,
   verifyRestoredDataset,
 } from '../restore-dataset.mjs'
 import { evidenceFile } from '../restore-verification.mjs'
-import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+import { fixture } from './restore-dataset-fixture.mjs'
 
-const temporaryRoots = []
-test.afterEach(() => {
-  for (const root of temporaryRoots.splice(0)) rmSync(root, { force: true, recursive: true })
-})
-
-function temporaryRoot() {
-  const parent = path.resolve('.local-tests', 'restore-dataset-unit')
-  mkdirSync(parent, { recursive: true })
-  const root = mkdtempSync(path.join(parent, 'authority-'))
-  temporaryRoots.push(root)
-  return root
-}
-
-function descriptor(filename) {
-  const bytes = readFileSync(filename)
-  return { path: filename, bytes: bytes.byteLength, sha256: datasetDigest(bytes) }
-}
-
-function fixture(options = {}) {
-  const directory = temporaryRoot()
-  const value = restoreRuntimeFixture({
-    directory,
-    backupSourceSha: 'a'.repeat(40),
-    backendProductSha: 'b'.repeat(40),
-    backendExecutionSha: 'c'.repeat(40),
-  })
-  const verifierRoot = path.join(directory, 'verifier')
-  for (const item of [verifierRoot, value.paths.backendExecutionRoot])
-    mkdirSync(item, { recursive: true })
-  const lineage = {
-    tenants: Array.from({ length: 11 }, (_, index) => ({ tenant_id: `tenant-${index}` })),
-    scale: { post_samples: 33, business_objects: 256 },
-    scopes: { origin_tenant_scope_id: 'source-lineage' },
-    verification: { request_interval_ms: 25 },
-  }
-  const generationFile = path.join(directory, 'source-generation.json')
-  const lineageFile = path.join(directory, 'dataset-lineage.json')
-  const runtimeFile = path.join(directory, 'runtime.json')
-  const targetPlanFile = path.join(directory, 'target-plan.json')
-  writeFileSync(generationFile, JSON.stringify({ status: 'seed_source_generation_published' }))
-  writeFileSync(lineageFile, JSON.stringify(lineage))
-  writeFileSync(runtimeFile, value.runtimeBytes)
-  writeFileSync(targetPlanFile, value.targetPlanBytes)
-  const authority = {
-    format_version: 1,
-    kind: 'restore-dataset-authority',
-    runtime: descriptor(runtimeFile),
-    target_plan: descriptor(targetPlanFile),
-    source_generation: descriptor(generationFile),
-    dataset_lineage: descriptor(lineageFile),
-    target: {
-      scope_id: value.binding.record.plan.scope_id,
-      api_url: new URL(value.runtime.endpoints.api).origin,
-      frontend_url: value.runtime.endpoints.frontend,
-    },
-    execution_backend: value.paths.backendExecutionRoot,
-  }
-  const python = path.join(directory, 'python.exe')
-  const calls = []
-  const execute = (program, args, settings) => {
-    calls.push({ program, args, settings })
-    if (options.failure) throw new Error(options.failure)
-    return JSON.stringify(options.authority ?? authority)
-  }
-  const input = {
-    bindingsBytes: value.bindingsBytes,
-    runtimeReceipt: runtimeFile,
-    targetPlan: targetPlanFile,
-    backendRoot: verifierRoot,
-    frontendEndpoint: value.runtime.endpoints.frontend,
-    python,
-  }
-  return { authority, calls, directory, execute, input, lineage, value, verifierRoot }
-}
-
-test('后端唯一预检以固定 Python 无 stdin 返回完整且递归冻结的权威', () => {
+test('正式 Cargo 只读预检绑定当前输入并返回递归冻结的权威', () => {
   const item = fixture()
   assert.deepEqual(restoreDatasetAuthority(item.authority), item.authority)
   const result = verifyRestoreDatasetAuthority(item.input, { execute: item.execute })
@@ -100,31 +24,21 @@ test('后端唯一预检以固定 Python 无 stdin 返回完整且递归冻结�
   assert.throws(() => {
     result.lineage.scale.post_samples = 1
   }, TypeError)
-  assert.deepEqual(item.calls, [
-    {
-      program: item.input.python,
-      args: [
-        '-X',
-        'utf8',
-        '-B',
-        path.join(item.verifierRoot, 'scripts/restore_business_proof.py'),
-        '--preflight',
-        '--backend-dir',
-        item.verifierRoot,
-        '--runtime-receipt',
-        item.input.runtimeReceipt,
-        '--target-plan',
-        item.input.targetPlan,
-      ],
-      settings: {
-        env: toolProcessEnvironment(),
-        encoding: 'utf8',
-        windowsHide: true,
-        timeout: 300_000,
-        maxBuffer: 1024 * 1024,
-      },
+  assert.equal(item.calls.length, 1)
+  const [call] = item.calls
+  assert.equal(call.program, 'cargo')
+  assert.deepEqual(call.args, ['xtask', '__source-evidence'])
+  assert.equal(call.settings.cwd, item.verifierRoot)
+  assert.deepEqual(JSON.parse(call.settings.input), {
+    operation: 'restore-dataset-authority',
+    arguments: {
+      backend_dir: item.verifierRoot,
+      runtime_receipt: item.input.runtimeReceipt,
+      target_plan: item.input.targetPlan,
     },
-  ])
+    write: false,
+  })
+  assert.deepEqual(call.settings.env, toolProcessEnvironment())
 })
 
 test('伪造链由后端失败关闭且不会产生可供登录使用的权威', () => {
@@ -159,7 +73,10 @@ test('输出必须精确绑定当前 runtime、target、目标与配置阶段权
     const changed = structuredClone(item.authority)
     mutate(changed)
     assert.throws(
-      () => verifyRestoreDatasetAuthority(item.input, { execute: () => JSON.stringify(changed) }),
+      () =>
+        verifyRestoreDatasetAuthority(item.input, {
+          execute: () => JSON.stringify({ ok: true, result: { value: changed } }),
+        }),
       /权威|不一致/u,
     )
   }
@@ -207,15 +124,67 @@ test('证据拒绝 canonical 路径不符和同文件同长度改写', () => {
   )
 })
 
-test('缺少绝对 python 会在执行预检前失败', () => {
-  for (const python of ['', 'python']) {
-    const item = fixture()
-    item.input.python = python
+test('错误或不完整的原生封装不能作为数据权威且不重试', () => {
+  const item = fixture()
+  for (const output of [
+    item.authority,
+    {
+      ok: false,
+      error: {
+        category: 'SourceEvidenceRejected',
+        message: 'rejected',
+        remote_write_may_have_occurred: false,
+        automatic_retry_permitted: false,
+      },
+    },
+    { ok: true, result: item.authority },
+    { ok: true, result: { value: item.authority, unknown: true } },
+    { ok: true, result: { value: item.authority }, unknown: true },
+  ]) {
+    let calls = 0
     assert.throws(
-      () => verifyRestoreDatasetAuthority(item.input, { execute: item.execute }),
-      /python/u,
+      () =>
+        verifyRestoreDatasetAuthority(item.input, {
+          execute: () => {
+            calls++
+            return JSON.stringify(output)
+          },
+        }),
+      /只读预检失败/u,
     )
-    assert.equal(item.calls.length, 0)
+    assert.equal(calls, 1)
+  }
+})
+
+test('原生调用错误保留原始原因；调用期间输入漂移不能接受成功', () => {
+  const item = fixture()
+  const failure = new Error('native rejected')
+  assert.throws(
+    () =>
+      verifyRestoreDatasetAuthority(item.input, {
+        execute: () => {
+          throw failure
+        },
+      }),
+    (error) => error.cause === failure,
+  )
+  for (const filename of [item.input.runtimeReceipt, item.input.targetPlan]) {
+    const before = readFileSync(filename)
+    try {
+      assert.throws(
+        () =>
+          verifyRestoreDatasetAuthority(item.input, {
+            execute: (...args) => {
+              const output = item.execute(...args)
+              writeFileSync(filename, Buffer.from(' '.repeat(before.byteLength)))
+              return output
+            },
+          }),
+        /预检期间.*发生变化/u,
+      )
+    } finally {
+      writeFileSync(filename, before)
+    }
   }
 })
 

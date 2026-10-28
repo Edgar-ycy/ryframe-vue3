@@ -7,6 +7,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { restoreProofBindings } from './restore-proof.mjs'
 import { inspectRestoreRuntimeReceipt, restoreRuntimeBinding } from './restore-runtime-receipt.mjs'
 import { evidenceDirectory, evidenceFile } from './restore-verification.mjs'
+import { parseXtaskJsonReceipt } from './xtask-receipt.mjs'
 
 const authorityFields = [
   'format_version',
@@ -163,36 +164,28 @@ function sameDescriptor(actual, expected, label) {
     throw new Error(`${label}与本次输入或已冻结权威不一致`)
 }
 
-function pythonPath(value) {
-  if (typeof value !== 'string' || !value || value !== value.trim() || !path.isAbsolute(value))
-    throw new Error('恢复数据预检必须显式绑定绝对 python')
-  return value
-}
-
 function authorityCommand(input, runtime, targetPlan, execute) {
-  return execute(
-    input.python,
-    [
-      '-X',
-      'utf8',
-      '-B',
-      path.join(input.backendRoot, 'scripts/restore_business_proof.py'),
-      '--preflight',
-      '--backend-dir',
-      input.backendRoot,
-      '--runtime-receipt',
-      runtime.path,
-      '--target-plan',
-      targetPlan.path,
-    ],
-    {
-      encoding: 'utf8',
-      windowsHide: true,
-      timeout: 300_000,
-      maxBuffer: 1024 * 1024,
-      env: toolProcessEnvironment(),
-    },
-  )
+  const output = execute('cargo', ['xtask', '__source-evidence'], {
+    cwd: input.backendRoot,
+    input: JSON.stringify({
+      operation: 'restore-dataset-authority',
+      arguments: {
+        backend_dir: input.backendRoot,
+        runtime_receipt: runtime.path,
+        target_plan: targetPlan.path,
+      },
+      write: false,
+    }),
+    encoding: 'utf8',
+    windowsHide: true,
+    timeout: 300_000,
+    maxBuffer: 1024 * 1024,
+    env: toolProcessEnvironment(),
+  })
+  const response = exactObject(parseXtaskJsonReceipt(output), ['ok', 'result'], '恢复数据原生响应')
+  if (response.ok !== true) throw new Error('恢复数据原生响应未确认成功')
+  const result = exactObject(response.result, ['value'], '恢复数据原生结果')
+  return result.value
 }
 
 /** 在任何业务会话前调用后端唯一只读 validator，并冻结当前目标与 C52 数据来源。 */
@@ -201,7 +194,6 @@ export function verifyRestoreDatasetAuthority(
   { expected, execute = execFileSync, read = evidenceFile } = {},
 ) {
   const root = evidenceDirectory(input.backendRoot, '恢复证明协调后端')
-  const python = pythonPath(input.python)
   const runtime = stableFile(input.runtimeReceipt, '恢复运行收据', read)
   const targetPlan = stableFile(input.targetPlan, '恢复目标计划', read)
   const { record, manifest } = restoreProofBindings(input.bindingsBytes)
@@ -218,15 +210,8 @@ export function verifyRestoreDatasetAuthority(
   })
   let output
   try {
-    output = evidence(
-      Buffer.from(
-        authorityCommand({ ...input, backendRoot: root, python }, runtime, targetPlan, execute),
-      ),
-      '恢复数据权威输出',
-    )
+    output = authorityCommand({ ...input, backendRoot: root }, runtime, targetPlan, execute)
   } catch (error) {
-    if (error instanceof Error && error.message === '恢复数据权威输出不是有效 UTF-8 JSON 对象')
-      throw error
     throw new Error('后端恢复数据只读预检失败', { cause: error })
   }
   const projected = restoreDatasetAuthority(output)

@@ -86,7 +86,6 @@ export function realTestSelection(
       targetPlan: target.path,
       backendRoot: verifierRoot,
       frontendEndpoint: baseURL,
-      python: inputs.python,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : '未知错误'

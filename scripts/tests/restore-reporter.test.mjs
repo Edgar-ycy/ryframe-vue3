@@ -169,7 +169,8 @@ test('reporter 开始与结束都重验配置阶段冻结的同一数据权威',
     (digest) => digest,
     undefined,
     (root) => root,
-    (authority, lineage) => (_input, options) => {
+    (authority, lineage) => (input, options) => {
+      assert.equal(Object.hasOwn(input, 'python'), false)
       observed.push(options.expected)
       return { authority, lineage: lineage.lineage }
     },

@@ -56,7 +56,6 @@ export function verifyRestoreDatasetAuthority(
     backendRoot: string
     bindingsBytes: Uint8Array
     frontendEndpoint: string
-    python: string
     runtimeReceipt: string
     targetPlan: string
   },

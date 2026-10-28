@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- 恢复数据权威预检改用协调后端正式 Cargo 入口的只读 `restore-dataset-authority` 操作，以标准输入绑定运行收据与目标计划；严格核验原生响应、八字段权威及文件前后像，移除该预检专属 Python 参数，保留运行核验仍使用的 Python 配置。
+
 - preview 早期校验测试改为在独立 Node 子进程中导入实际 Playwright 配置，检查非法环境与本地构建收据校验失败在报告目录创建前拒绝，并核对有效 preview、dev 与外部 preview 的端口调用顺序及配置输出；保留真实构建收据语义测试，不启动 Playwright 或浏览器。
 
 - 基础样式强制遵守普通 `hidden` 属性，避免 Element Plus 按钮的显示样式覆盖语义隐藏，并保留 `hidden="until-found"` 的浏览器语义；新增真实 CSS 隐藏与恢复的独立浏览器验收入口。

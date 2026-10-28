@@ -105,7 +105,7 @@ export default class RestoreReporter {
     if (configuredVerifierSha !== expected.verifierSha || verifierRoot !== expected.verifierRoot)
       throw new Error('恢复证明协调后端与配置预检结果不一致')
     const python = browser.restore.python
-    if (python !== expected.python) throw new Error('恢复数据预检 Python 与配置预检结果不一致')
+    if (python !== expected.python) throw new Error('恢复运行核验 Python 与配置预检结果不一致')
     const urls = new Set(config.projects.map((project) => project.use.baseURL))
     if (urls.size !== 1 || typeof [...urls][0] !== 'string' || ![...urls][0])
       throw new Error('恢复验收必须绑定运行产物收据与唯一浏览器地址')
@@ -132,7 +132,6 @@ export default class RestoreReporter {
         targetPlan: target.path,
         backendRoot: verifierRoot,
         frontendEndpoint: baseURL,
-        python,
       },
       { expected: expected.datasetAuthority },
     )
@@ -155,7 +154,6 @@ export default class RestoreReporter {
       targetPlan: target.path,
       backendRoot: verifierRoot,
       frontendEndpoint: baseURL,
-      python,
     }
     this.verification = {
       receipt: runtime.path,

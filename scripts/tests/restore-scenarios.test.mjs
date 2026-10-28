@@ -57,7 +57,10 @@ function restoreFixture(t, options = {}) {
   return {
     ...value,
     authority,
-    datasetAuthority: () => ({ authority, lineage: lineage.lineage }),
+    datasetAuthority: (input) => {
+      assert.equal(Object.hasOwn(input, 'python'), false)
+      return { authority, lineage: lineage.lineage }
+    },
     lineage,
     restore: {
       bindings: value.paths.bindings,

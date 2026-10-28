@@ -118,7 +118,6 @@ export async function seedOrders(
 export async function readCompleteOrders(page: Page, expected: OrderRow[]) {
   const all = await searchOrders(page, '')
   expect(all.total).toBe(expected.length)
-  expect(all.items).toHaveLength(expected.length)
   const byId = (rows: OrderRow[]) => [...rows].sort((a, b) => a.id.localeCompare(b.id))
   expect(byId(all.items)).toEqual(byId(expected))
   return all

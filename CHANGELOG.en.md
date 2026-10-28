@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Fix the dashboard session tag retaining a light background in dark mode. Use shared semantic theme colors and remove the scoped global selector that did not target the tag.
+
 - Restore dataset authority preflight now uses the coordinator backend's formal Cargo entry with the read-only `restore-dataset-authority` operation and binds the runtime receipt and target plan through standard input. Validate the native response, eight-field authority, and before/after file contents; remove the Python parameter specific to this preflight while retaining Python configuration still used by runtime verification.
 
 - Replace preview early-validation source assertions with imports of the actual Playwright configuration in isolated Node subprocesses. Check rejection of invalid environments and rejected local build receipts before report directories are created, plus port call order and configuration output for valid preview, dev, and external preview. Retain real build-receipt semantics tests without starting Playwright or a browser.

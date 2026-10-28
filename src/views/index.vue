@@ -148,16 +148,10 @@ function openLink(path: string): void {
 
 .workspace-header :deep(.session-tag.el-tag--success) {
   flex: 0 0 auto;
-  color: #166534;
-  background-color: #f0fdf4;
-  border-color: #86efac;
+  color: var(--color-success-readable);
+  background-color: var(--el-color-success-light-9);
+  border-color: var(--el-color-success-light-7);
   transition: none;
-}
-
-:global(html.dark) .workspace-header :deep(.session-tag.el-tag--success) {
-  color: var(--el-color-success-light-5);
-  background-color: var(--el-color-success-dark-2);
-  border-color: var(--el-color-success);
 }
 
 .workspace-label {

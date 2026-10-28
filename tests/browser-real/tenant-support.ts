@@ -7,19 +7,28 @@ function field(dialog: Locator, label: string): Locator {
     .filter({ has: dialog.page().locator('label', { hasText: label }) })
 }
 
-export async function createTenantWithPlan(page: Page, target = 'shared-control') {
-  const name = isolatedName('套餐')
-  const key = isolatedName('plan')
-  const tenant = isolatedName('tenant')
+export async function createTenantWithPlan(
+  page: Page,
+  target = 'shared-control',
+  identity?: { tenant: string; planKey: string; planName: string },
+  beforeWrite?: () => Promise<void>,
+) {
+  const name = identity?.planName ?? isolatedName('套餐')
+  const key = identity?.planKey ?? isolatedName('plan')
+  const tenant = identity?.tenant ?? isolatedName('tenant')
   const plansMenu = page.getByRole('menuitem', { name: '产品套餐', exact: true })
   if (!(await plansMenu.isVisible())) {
     await page.getByRole('menuitem', { name: '平台管理', exact: true }).click()
   }
-  await act(page, 'GET', '/api/v1/platform/product-plans', () => plansMenu.click())
-  await page.getByRole('button', { name: '新建套餐', exact: true }).click()
+  await plansMenu.click()
+  const newPlan = page.getByRole('button', { name: '新建套餐', exact: true })
+  await expect(newPlan).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  await newPlan.click()
   const planDialog = page.getByRole('dialog', { name: '新建套餐', exact: true })
   await field(planDialog, '套餐键/能力码').locator('input').fill(key)
   await field(planDialog, '套餐名称').locator('input').fill(name)
+  await beforeWrite?.()
   await act(page, 'POST', '/api/v1/platform/product-plans', () =>
     planDialog.getByRole('button', { name: '保存', exact: true }).click(),
   )
@@ -37,20 +46,23 @@ export async function createTenantWithPlan(page: Page, target = 'shared-control'
   })
   const version = page.getByRole('dialog', { name: '新建版本', exact: true })
   await field(version, '版本名称').locator('input').fill(`${name}-版本`)
+  await beforeWrite?.()
   const created = await act(page, 'POST', /\/product-plans\/\d+\/versions$/u, () =>
     version.getByRole('button', { name: '保存', exact: true }).click(),
   )
   expect(created.request().postDataJSON()).toMatchObject({ capabilities: [] })
   await page.getByRole('button', { name: '发布', exact: true }).click()
+  await beforeWrite?.()
   await act(page, 'POST', /\/versions\/\d+\/publish$/u, () =>
     page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click(),
   )
   await expect(page.getByText('已发布', { exact: true })).toBeVisible()
 
-  await act(page, 'GET', '/api/v1/platform/tenants/page', () =>
-    page.getByRole('menuitem', { name: '租户管理', exact: true }).click(),
-  )
-  await page.getByRole('button', { name: '创建租户', exact: true }).click()
+  await page.getByRole('menuitem', { name: '租户管理', exact: true }).click()
+  const newTenant = page.getByRole('button', { name: '创建租户', exact: true })
+  await expect(newTenant).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  await newTenant.click()
   const create = page.getByRole('dialog', { name: '创建租户', exact: true })
   await field(create, '租户标识').locator('input').fill(tenant)
   await field(create, '租户名称').locator('input').fill(tenant)
@@ -64,6 +76,7 @@ export async function createTenantWithPlan(page: Page, target = 'shared-control'
   await create.getByRole('spinbutton', { name: '最大角色数', exact: true }).fill('8')
   await create.getByRole('spinbutton', { name: '存储配额（MiB）', exact: true }).fill('64')
   await create.getByRole('spinbutton', { name: '每分钟请求数', exact: true }).fill('600')
+  await beforeWrite?.()
   const result = await act(page, 'POST', '/api/v1/platform/tenants', () =>
     create.getByRole('button', { name: '创建', exact: true }).click(),
   )

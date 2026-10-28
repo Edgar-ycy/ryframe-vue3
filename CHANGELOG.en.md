@@ -18,6 +18,7 @@
 
 - Simplify session tests by replacing fixed broadcast totals and random identifier encoding assertions with checks for the secure random source and valid message identifiers. Merge duplicate login-failure setup while retaining challenge invalidation, zero identity publication, and cross-tab session isolation safeguards; product behavior is unchanged.
 
+- Add targeted browser scenarios for generated-order tenant boundaries and two nonempty migrations, preserving the original owner page and session, exact amounts, and complete row images. Retain creation responses before assertions and disable automatic retries. Record resources for controller review without shortening source retention; no automatic cleanup consumer is currently bound.
 - The managed generated-page browser entry supports `--spec` to select one test file while retaining IPC, isolation, and failure cleanup; omitting it still runs the complete suite.
 - Add independent generated Catalog page acceptance for the system administrator, checking exact JSON strings, nullable-object clearing, boolean toggling, and complete-preimage cleanup through the existing generated entry without expanding business migration receipts.
 

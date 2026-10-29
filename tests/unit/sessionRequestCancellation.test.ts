@@ -122,9 +122,9 @@ describe('匿名和认证原始请求的代次取消', () => {
     const second = csrf.ensureCsrfToken()
     old.resolve(challenge('stale-csrf'))
     await rejected
-    expect(csrf.ensureCsrfToken()).toBe(second)
+    const joined = csrf.ensureCsrfToken()
     fresh.resolve(challenge('new-csrf'))
-    await expect(second).resolves.toBe('new-csrf')
+    await expect(Promise.all([second, joined])).resolves.toEqual(['new-csrf', 'new-csrf'])
     await expect(csrf.ensureCsrfToken()).resolves.toBe('new-csrf')
     expect(mocks.challenge).toHaveBeenCalledTimes(2)
   })

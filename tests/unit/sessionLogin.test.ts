@@ -28,8 +28,8 @@ afterEach(() => vi.useRealTimers())
 describe('登录前的 CSRF 挑战', () => {
   it('合并在途请求、复用有效值，在到期偏差边界主动更新', async () => {
     const first = csrf.ensureCsrfToken()
-    expect(csrf.ensureCsrfToken()).toBe(first)
-    await expect(first).resolves.toBe('challenge')
+    const second = csrf.ensureCsrfToken()
+    await expect(Promise.all([first, second])).resolves.toEqual(['challenge', 'challenge'])
     await expect(csrf.ensureCsrfToken()).resolves.toBe('challenge')
     expect(mocks.challenge).toHaveBeenCalledOnce()
     vi.setSystemTime(26_000)

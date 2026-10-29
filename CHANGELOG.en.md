@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Observe complete concurrent-call outcomes and side effects in session and runtime-capability tests instead of Promise reference identity. Preserve request and cleanup deduplication, retries after failure, settled-state behavior, and isolation of new CSRF requests from old finalization.
+
 - Narrow HTTP and import/export tests by removing fixed module-export sets, literal internal signatures, attachment JSON formatting and redundant permission exclusions while preserving transport, exact identifiers and receipt behavior. Cover export creation key reuse after unknown outcomes and rotation after success, plus API descriptor rejection of unsupported or ambiguous media.
 
 - Keep reactive-input, nested-edit isolation, submitted-field filtering and empty-capability safeguards in snapshot tests while removing Proxy representation assertions outside the public contract. Check only current domains in non-core bundle budgets and use a current-domain example for optional missing-chunk coverage.

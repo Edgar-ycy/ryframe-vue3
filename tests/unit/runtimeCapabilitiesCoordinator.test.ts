@@ -40,17 +40,17 @@ describe('运行能力协调器', () => {
     vi.unstubAllGlobals()
   })
 
-  it('并发调用复用同一 Promise 和一次 API 请求，加载成功后不重复探测', async () => {
+  it('并发调用共享一次 API 请求及加载结果，加载成功后不重复探测', async () => {
     const response = deferred<{ data: { multi_tenancy_enabled: boolean } }>()
     api.getApiVersion.mockReturnValue(response.promise)
 
     const first = ensureRuntimeCapabilitiesLoaded()
-    expect(ensureRuntimeCapabilitiesLoaded()).toBe(first)
+    const second = ensureRuntimeCapabilitiesLoaded()
     expect(api.getApiVersion).toHaveBeenCalledOnce()
     expect(useRuntimeCapabilitiesStore().loaded).toBe(false)
 
     response.resolve({ data: { multi_tenancy_enabled: true } })
-    await first
+    await Promise.all([first, second])
 
     expect(useRuntimeCapabilitiesStore().$state).toEqual({
       loaded: true,
@@ -66,10 +66,13 @@ describe('运行能力协调器', () => {
     api.getApiVersion.mockReturnValueOnce(response.promise)
 
     const first = ensureRuntimeCapabilitiesLoaded()
-    expect(ensureRuntimeCapabilitiesLoaded()).toBe(first)
-    const rejected = expect(first).rejects.toBe(failure)
+    const second = ensureRuntimeCapabilitiesLoaded()
+    const settled = Promise.allSettled([first, second])
     response.reject(failure)
-    await rejected
+    expect(await settled).toEqual([
+      { status: 'rejected', reason: failure },
+      { status: 'rejected', reason: failure },
+    ])
 
     expect(useRuntimeCapabilitiesStore().$state).toEqual({
       loaded: false,
@@ -80,7 +83,6 @@ describe('运行能力协调器', () => {
 
     api.getApiVersion.mockResolvedValueOnce({ data: { multi_tenancy_enabled: true } })
     const retry = ensureRuntimeCapabilitiesLoaded()
-    expect(retry).not.toBe(first)
     await retry
     expect(api.getApiVersion).toHaveBeenCalledTimes(2)
     expect(useRuntimeCapabilitiesStore().loaded).toBe(true)

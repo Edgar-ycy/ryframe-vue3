@@ -68,8 +68,8 @@ describe('会话生命周期', () => {
 
   it('合并并发初始化，在结束后释放 pending', async () => {
     const first = lifecycle.initializeSession()
-    expect(lifecycle.initializeSession()).toBe(first)
-    await first
+    const second = lifecycle.initializeSession()
+    await Promise.all([first, second])
     expect(mocks.refresh).toHaveBeenCalledOnce()
     await lifecycle.initializeSession()
     expect(mocks.refresh).toHaveBeenCalledTimes(2)
@@ -114,12 +114,12 @@ describe('会话生命周期', () => {
 
   it('clear 合并并发操作，先失效旧代次再清理 Store 和路由', async () => {
     const first = lifecycle.clearSession()
-    expect(lifecycle.clearSession()).toBe(first)
+    const second = lifecycle.clearSession()
     expect(mocks.clearEpoch).toHaveBeenCalledOnce()
     expect(mocks.clearChannel).toHaveBeenCalledOnce()
     expect(mocks.resetUser).not.toHaveBeenCalled()
     expect(mocks.user.sessionStatus).toBe('unknown')
-    await first
+    await Promise.all([first, second])
     for (const action of [
       mocks.clearObservation,
       mocks.resetTenant,

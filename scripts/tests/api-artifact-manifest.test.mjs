@@ -4,11 +4,52 @@ import { spawnSync } from 'node:child_process'
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { artifactPaths, parseArtifactManifest } from '../api-artifact-manifest.mjs'
-import { buildApiArtifacts, ownershipManifestPath } from '../api-artifacts.mjs'
+import {
+  buildApiArtifacts,
+  createOperationCallers,
+  ownershipManifestPath,
+} from '../api-artifacts.mjs'
 import { fileURLToPath } from 'node:url'
 import { createTemporaryDirectory } from '../temporary-directory.mjs'
 
 const frontend = fileURLToPath(new URL('../../', import.meta.url))
+
+for (const [name, requestMedia, responseMedia, diagnostic] of [
+  ['非法请求媒体', ['application/xml'], ['application/json'], /不支持请求媒体类型/u],
+  [
+    '并存请求媒体',
+    ['application/json', 'multipart/form-data'],
+    ['application/json'],
+    /请求媒体类型不唯一/u,
+  ],
+  ['非法响应媒体', ['application/json'], ['application/pdf'], /不支持成功响应媒体类型/u],
+  [
+    '并存成功响应媒体',
+    ['application/json'],
+    ['application/json', 'text/plain'],
+    /成功响应媒体类型必须唯一/u,
+  ],
+]) {
+  test(`${name}在返回可安装的 operation 描述前拒绝且保留输入`, () => {
+    const content = (media) => Object.fromEntries(media.map((type) => [type, { schema: {} }]))
+    const document = {
+      'x-ryframe-api-prefix': { version: 1, value: '/api/v1' },
+      paths: {
+        '/api/v1/system/posts/exports': {
+          post: {
+            operationId: 'post_system_posts_exports',
+            requestBody: { content: content(requestMedia) },
+            responses: { 202: { content: content(responseMedia) } },
+          },
+        },
+      },
+    }
+    const before = structuredClone(document)
+    // 正式描述生产者只在内存返回；拒绝路径不进入候选资产安装。
+    assert.throws(() => createOperationCallers(document), diagnostic)
+    assert.deepEqual(document, before)
+  })
+}
 
 async function isolatedGenerator(t) {
   const parent = path.join(frontend, '.local-tests', 'api-artifact-install')

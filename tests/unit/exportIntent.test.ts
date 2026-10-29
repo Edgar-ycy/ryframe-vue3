@@ -14,7 +14,6 @@ describe('normalizeExportIntent', () => {
 
     expect(intent.filter).toEqual({ username: 'alice' })
     expect(intent.isEmpty).toBe(false)
-    expect(intent.signature).toBe('users:{"filter":{"username":"alice"},"ids":[]}')
   })
 
   it('保留0和false并生成稳定意图', () => {
@@ -31,6 +30,7 @@ describe('normalizeExportIntent', () => {
 
     expect(first.filter).toEqual({ dept_id: 0, status: false, username: 'alice' })
     expect(first.signature).toBe(second.signature)
+    expect(first.signature).not.toBe(normalizeExportIntent('roles', first.filter).signature)
   })
 
   it('将仅含分页和空值的查询视为空筛选', () => {
@@ -43,7 +43,6 @@ describe('normalizeExportIntent', () => {
 
     expect(intent.filter).toEqual({})
     expect(intent.isEmpty).toBe(true)
-    expect(intent.signature).toBe('roles:{"filter":{},"ids":[]}')
   })
 
   it('选中行优先限制结果，字符串 ID 保留精度并固定快照', async () => {

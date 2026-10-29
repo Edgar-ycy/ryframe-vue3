@@ -38,7 +38,7 @@ const golden = (name, file) => goldens.get(name).get(file).toString('utf8')
 
 test('tenant_data 注册精确三写权限，control_row 不进入业务维护限制', () => {
   const resource = order()
-  const { create, update, delete: remove, list, read } = resource.access.permissions
+  const { create, update, delete: remove, list } = resource.access.permissions
   for (const storage of ['tenant_data', 'control_row']) {
     resource.storage = storage
     const source = renderTransport(resource, generatorVersion).get('registration.ts')
@@ -58,8 +58,6 @@ test('tenant_data 注册精确三写权限，control_row 不进入业务维护�
     assert.equal(manifest.pages[0].permissionCode, list)
     if (storage === 'tenant_data') {
       assert.deepEqual(manifest.businessWritePermissions, [create, update, remove])
-      assert.ok(!manifest.businessWritePermissions.includes(read))
-      assert.ok(!manifest.businessWritePermissions.includes(list))
     } else assert.equal(Object.hasOwn(manifest, 'businessWritePermissions'), false)
   }
 })

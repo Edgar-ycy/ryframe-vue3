@@ -23,8 +23,6 @@ import { get_monitor_metrics } from '@/api/generated/operations/monitor'
 import { getCsrfChallenge, login, logout } from '@/api/modules/auth'
 import { downloadFile, uploadFile } from '@/api/modules/common'
 import { getMetrics } from '@/api/modules/monitor'
-import * as postExtension from '@/api/modules/post'
-import * as generatedPostApi from '@/generated/resources/post/api'
 import { getApiVersion } from '@/api/modules/version'
 import { bindBlobOperation, bindTextOperation } from '@/api/operationRequest'
 
@@ -57,17 +55,6 @@ beforeEach(() => {
 })
 
 describe('operation 请求传输模式', () => {
-  it('岗位 CRUD 与导出扩展保持独立模块边界', () => {
-    expect(Object.keys(postExtension)).toEqual(['exportPost'])
-    expect(Object.keys(generatedPostApi).sort()).toEqual([
-      'createPost',
-      'deletePost',
-      'getPost',
-      'listPost',
-      'updatePost',
-    ])
-  })
-
   it('默认使用带会话的请求传输', async () => {
     httpClient.request.mockResolvedValue(versionResponse)
 

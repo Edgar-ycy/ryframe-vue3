@@ -78,10 +78,12 @@ describe('用户导入 fixture 收据', () => {
     }
 
     await attachVerifiedUserImportFixture(info, parsed, Buffer.from('fixture'))
-    expect(attachments).toEqual([
+    expect(
+      attachments.map(({ body, ...metadata }) => ({ ...metadata, body: JSON.parse(body) })),
+    ).toEqual([
       {
         name: 'import-1234abcd-fixture-receipt.json',
-        body: `${JSON.stringify(parsed, null, 2)}\n`,
+        body: parsed,
         contentType: 'application/json',
       },
     ])

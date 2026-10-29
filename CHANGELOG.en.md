@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Narrow HTTP and import/export tests by removing fixed module-export sets, literal internal signatures, attachment JSON formatting and redundant permission exclusions while preserving transport, exact identifiers and receipt behavior. Cover export creation key reuse after unknown outcomes and rotation after success, plus API descriptor rejection of unsupported or ambiguous media.
+
 - Keep reactive-input, nested-edit isolation, submitted-field filtering and empty-capability safeguards in snapshot tests while removing Proxy representation assertions outside the public contract. Check only current domains in non-core bundle budgets and use a current-domain example for optional missing-chunk coverage.
 
 - Add a managed ARIA patch for the locked Element Plus TreeSelect, removing conflicting listbox/tree/option roles and the unnamed tooltip when its tree popup opens. Retain tree nodes, selection states and keyboard implementation without changing ordinary Select behavior. Extend real permission-theme coverage for parent/root selection, clear/echo, expansion/collapse, keyboard and Escape/cancel, changing only an unsubmitted form.

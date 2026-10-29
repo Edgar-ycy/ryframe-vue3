@@ -12,6 +12,7 @@ vi.mock('element-plus', () => ({ ElMessage: message }))
 import type { ExportJob } from '@/api/modules/exportJob'
 import { exportJobListQueryKey } from '@/app/exports/exportJobCache'
 import { useExportJobRequest } from '@/hooks/useExportJobRequest'
+import { HttpError } from '@/shared/http/client'
 import type { ApiResponse } from '@/shared/http/types'
 import {
   deactivateServerStateScope,
@@ -95,6 +96,40 @@ describe('导出创建请求会话范围', () => {
     for (const scope of scopes) scope.stop()
     queryClient.clear()
     deactivateServerStateScope()
+  })
+
+  it.each([
+    ['network', new HttpError('网络结果未知', { kind: 'network' })],
+    ['HTTP 500', new HttpError('服务端结果未知', { kind: 'http', status: 500 })],
+  ])('%s 创建结果未知时复用原键，成功结算后相同意图使用新键', async (_name, failure) => {
+    const scope = activate('authorization-retry')
+    const create = vi
+      .fn<(key: string, signal: AbortSignal) => Promise<ApiResponse<ExportJob>>>()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(response(exportJob('job-recovered')))
+      .mockResolvedValueOnce(response(exportJob('job-next')))
+    const composable = runComposable(() => useExportJobRequest())
+    scopes.push(composable.scope)
+
+    await expect(composable.result.submitExport(scope, 'same-intent', create)).rejects.toBe(failure)
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(queryClient.getQueryData(exportJobListQueryKey(scope))).toBeUndefined()
+    expect(channel.publishExportJobEvent).not.toHaveBeenCalled()
+    expect(message).not.toHaveBeenCalled()
+    const originalKey = create.mock.calls[0]![0]
+    expect(originalKey).toMatch(/\S/u)
+
+    await expect(composable.result.submitExport(scope, 'same-intent', create)).resolves.toEqual(
+      exportJob('job-recovered'),
+    )
+    expect(create.mock.calls.map(([key]) => key)).toEqual([originalKey, originalKey])
+
+    await expect(composable.result.submitExport(scope, 'same-intent', create)).resolves.toEqual(
+      exportJob('job-next'),
+    )
+    expect(create).toHaveBeenCalledTimes(3)
+    expect(create.mock.calls[2]![0]).toMatch(/\S/u)
+    expect(create.mock.calls[2]![0]).not.toBe(originalKey)
   })
 
   it('同主体 epoch 变化后不复用旧 Promise，旧成功响应不产生任何副作用', async () => {

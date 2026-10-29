@@ -26,6 +26,8 @@ corepack pnpm dev
 
 The development server defaults to `http://localhost:5173` and proxies `/api` to file-configured `server.proxy_target`. Start the backend API before testing integration.
 
+Initialize and configure the backend in its separate repository by following [First run after downloading](https://github.com/Edgar-ycy/ryframe/blob/main/README.en.md#first-run-after-downloading). Frontend public TOML files contain only configuration safe to expose to browsers; keep backend plaintext credentials in the backend's private configuration directory.
+
 If login succeeds but the session contract is rejected, check that backend source, frontend OpenAPI and the database access catalog match. Invalid menu permission codes in an older development database may also fail strict session validation. Review the actual permission and menu differences before explicitly correcting them; refreshing the page is insufficient.
 
 ## Runtime configuration

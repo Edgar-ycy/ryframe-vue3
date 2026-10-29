@@ -36,7 +36,6 @@ describe('路由文案目录加载', () => {
 
     const first = coordinator.ensure(loader)
     const second = coordinator.ensure(loader)
-    expect(second).toBe(first)
     expect(load).toHaveBeenCalledTimes(1)
 
     finish?.(catalog)

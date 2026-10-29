@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Keep concurrent deduplication, failure retries, visible translations and initial catalog isolation in message-loading tests while removing Promise identity and unused catalog-array length assertions. Remove the array export with no production consumer; preserve the actual three-catalog message merge.
+
 - Observe complete concurrent-call outcomes and side effects in session and runtime-capability tests instead of Promise reference identity. Preserve request and cleanup deduplication, retries after failure, settled-state behavior, and isolation of new CSRF requests from old finalization.
 
 - Narrow HTTP and import/export tests by removing fixed module-export sets, literal internal signatures, attachment JSON formatting and redundant permission exclusions while preserving transport, exact identifiers and receipt behavior. Cover export creation key reuse after unknown outcomes and rotation after success, plus API descriptor rejection of unsupported or ambiguous media.

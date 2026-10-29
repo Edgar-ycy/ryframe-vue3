@@ -3,8 +3,6 @@ import { coreMessages } from './catalog/core'
 import { exportJobMessages } from './catalog/export-jobs'
 import { shellMessages } from './catalog/shell'
 
-export const initialMessageCatalogs = [coreMessages, shellMessages, exportJobMessages] as const
-
 export const messages = {
   'zh-CN': {
     ...shellMessages['zh-CN'],

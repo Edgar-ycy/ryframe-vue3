@@ -8,7 +8,7 @@ import {
 } from '@/i18n'
 import { getMenuPage } from '@/features/pageRegistry'
 import { ensureRouteMessageCatalogs } from '@/i18n/lazyCatalog'
-import { initialMessageCatalogs, messages } from '@/i18n/messages'
+import { messages } from '@/i18n/messages'
 
 vi.mock('@/views/system/role/index.vue', () => ({ default: { name: 'RolePageStub' } }))
 vi.mock('@/views/monitor/jobs/index.vue', () => ({ default: { name: 'JobPageStub' } }))
@@ -55,7 +55,6 @@ describe('菜单国际化目录', () => {
 
   it('首屏只同步安装 core、shell 与全局导出中心目录', () => {
     const initialZhCN = messages['zh-CN'] as Record<string, unknown>
-    expect(initialMessageCatalogs).toHaveLength(3)
     expect(initialZhCN.common).toBeDefined()
     expect(initialZhCN.shell).toBeDefined()
     expect(initialZhCN.exportCenter).toBeDefined()

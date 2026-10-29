@@ -1,4 +1,4 @@
-import { reactive, isProxy } from 'vue'
+import { reactive } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { snapshotCapabilityOverrides } from '@/views/platform/tenant/components/tenantProductChangeCommands'
 
@@ -27,7 +27,6 @@ describe('租户套餐提交快照', () => {
         config: { limits: { count: 0 }, options: [false, null] },
       },
     ])
-    expect(isProxy(snapshot[0]!.config)).toBe(false)
   })
 
   it('空能力目录形成合法空快照', () => {

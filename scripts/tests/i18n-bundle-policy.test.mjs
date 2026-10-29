@@ -40,7 +40,7 @@ test('initial graph permits only synchronous i18n catalogs', () => {
   assert.deepEqual(businessCatalogIsolationFailures(manifest, graph, businessCatalogSources), [])
   assert.equal(findNamedChunk(manifest, 'i18n-core').file, 'assets/i18n-core.js')
   assert.equal(findNamedChunk(manifest, 'api-core').file, 'assets/api-core.js')
-  assert.equal(findOptionalNamedChunk(manifest, 'api-agent'), undefined)
+  assert.equal(findOptionalNamedChunk(manifest, 'api-platform'), undefined)
 })
 
 test('initial graph rejects a business catalog chunk', () => {

@@ -80,7 +80,7 @@ async function collectCatalogSources(directory) {
 
 const catalogSources = await collectCatalogSources(path.resolve('src/i18n/catalog'))
 failures.push(...businessCatalogIsolationFailures(manifest, initialGraph, catalogSources))
-for (const domain of ['system', 'platform', 'monitor', 'agent']) {
+for (const domain of ['system', 'platform', 'monitor']) {
   const chunk = findOptionalNamedChunk(manifest, `api-${domain}`)
   if (chunk && initialFiles.has(chunk.file)) failures.push(`api-${domain} entered initial graph`)
 }

@@ -1,4 +1,4 @@
-import { isProxy, reactive } from 'vue'
+import { reactive } from 'vue'
 import { describe, expect, it } from 'vitest'
 import type { TenantDataMigrationPreview } from '@/api/modules/tenantData'
 import { snapshotTenantDataMigrationPreview } from '@/views/platform/tenant/components/tenantDataMigrationCommand'
@@ -32,7 +32,5 @@ describe('租户数据迁移创建快照', () => {
     current.plan_hash = 'plan-2'
 
     expect(snapshot).toEqual(preview())
-    expect(isProxy(snapshot)).toBe(false)
-    expect(isProxy(snapshot.impact)).toBe(false)
   })
 })

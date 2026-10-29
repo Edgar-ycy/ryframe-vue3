@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Keep reactive-input, nested-edit isolation, submitted-field filtering and empty-capability safeguards in snapshot tests while removing Proxy representation assertions outside the public contract. Check only current domains in non-core bundle budgets and use a current-domain example for optional missing-chunk coverage.
+
 - Add a managed ARIA patch for the locked Element Plus TreeSelect, removing conflicting listbox/tree/option roles and the unnamed tooltip when its tree popup opens. Retain tree nodes, selection states and keyboard implementation without changing ordinary Select behavior. Extend real permission-theme coverage for parent/root selection, clear/echo, expansion/collapse, keyboard and Escape/cancel, changing only an unsubmitted form.
 
 - Add real administrator permission-page theme acceptance using actual menus and permission-tree GET responses with the existing login, diagnostics and axe helpers. Check desktop/mobile diagnostic SVGs, visible-row and expanded-child actions, dark tags/trees and horizontal scrolling. Open and cancel the add dialog without submitting permission changes; wait for theme transitions before saving JPEGs and credential-free observations. Share pure layout/Canvas contrast checks with the retained mock scenarios while preserving their independent coverage.

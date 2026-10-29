@@ -123,6 +123,8 @@ corepack pnpm check --stage browser --real --fixture core --server dev --generat
 corepack pnpm check --stage browser --real --fixture business --server preview --plan
 ```
 
+`permission-theme.spec.ts` 使用现有真实 core 浏览器入口和管理员 `real_browser` 配置，不拦截或伪造 API：核对权限诊断菜单 SVG、成功的权限树 GET、可见行与展开子行的操作布局，以及桌面/手机暗黑标签和树的对比度、横向滚动和 axe。仅打开新增对话框、选择本地父项并取消，不提交新增、同步、修改或删除权限。主题过渡结束后，通过 Playwright `info.outputPath` 保存暗黑列表/树 JPEG 和无凭据观察 JSON；该真实后端连线验收与原 `tests/browser/permission-theme.spec.ts` 的固定 fixture 场景分别保留。
+
 `--spec` 只与 `browser --generated --real` 的 core 验收组合，接受小写字母、数字及连字符组成的单个 `.spec.ts` 文件名，不接受路径；省略时执行完整 generated 套件，无匹配测试仍失败。
 
 `--generated` 仅用于 `browser --real` 的 core 验收，通过 `playwright.generated.config.ts` 独立选择 `tests/browser-generated/`。使用提供所选生成页面及匹配 API 的隔离环境：订单场景需要包含精确金额和 owner 数据范围的 `order` 模型，目录场景需要包含 JSON、可空 JSON 和布尔字段的系统租户专用 `catalog` 模型；完整套件需要两种模型。core 文件提供当前凭据和实际限流配置，不配置 `restore` 或 `credentialEndpoint`。入口保留原受管控制器、网络约束、预算和身份清理；提供所选生成页面与租户边界的定向证据，不签发原 business 四场景的整套迁移或恢复证明，也不执行这些原场景。`--plan` 只检查参数并展示任务图，配置限制在实际执行前校验。

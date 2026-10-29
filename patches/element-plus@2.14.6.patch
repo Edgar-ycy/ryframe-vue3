@@ -1,0 +1,388 @@
+diff --git a/es/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.mjs b/es/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.mjs
+index c4e5bb0d889b27e92cb7ea1df10395de9ecf10dd..50fcec8d2c5e9f7546ce4ac396d77b0340a6b56f 100644
+--- a/es/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.mjs
++++ b/es/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.mjs
+@@ -0,0 +1 @@
++import { treeSelectAriaKey } from "../../select/src/token.mjs";
+@@ -18,0 +20 @@ var trigger_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineCo
++		const treeSelectAria = inject(treeSelectAriaKey, void 0);
+@@ -26,0 +29 @@ var trigger_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineCo
++			if (treeSelectAria && props.id === treeSelectAria.treeId) return void 0;
+@@ -120 +122,0 @@ export { trigger_vue_vue_type_script_setup_true_lang_default as default };
+-//# sourceMappingURL=trigger.vue_vue_type_script_setup_true_lang.mjs.map
+\ No newline at end of file
+diff --git a/es/components/select/src/option2.mjs b/es/components/select/src/option2.mjs
+index 1ce8521575abd8af05864cf4176bc374850685fd..fc66b658b2350ae5cf38ff40cba848a120029571 100644
+--- a/es/components/select/src/option2.mjs
++++ b/es/components/select/src/option2.mjs
+@@ -14,3 +14,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-		role: "option",
+-		"aria-disabled": _ctx.isDisabled || void 0,
+-		"aria-selected": _ctx.itemSelected
++		role: _ctx.$options.name === "ElTreeSelectOption" ? "none" : "option",
++		"aria-disabled": _ctx.$options.name === "ElTreeSelectOption" ? void 0 : _ctx.isDisabled || void 0,
++		"aria-selected": _ctx.$options.name === "ElTreeSelectOption" ? void 0 : _ctx.itemSelected
+@@ -26 +25,0 @@ export { option_default as default };
+-//# sourceMappingURL=option2.mjs.map
+\ No newline at end of file
+diff --git a/es/components/select/src/select.vue_vue_type_script_lang.mjs b/es/components/select/src/select.vue_vue_type_script_lang.mjs
+index 0748955c5375cb817d2291e07634ff282c603d09..87d7f813c81d35b832419dcf5ab7b782c3a16d14 100644
+--- a/es/components/select/src/select.vue_vue_type_script_lang.mjs
++++ b/es/components/select/src/select.vue_vue_type_script_lang.mjs
+@@ -10 +10 @@ import { useProps } from "../../select-v2/src/useProps.mjs";
+-import { selectKey } from "./token.mjs";
++import { selectKey, treeSelectAriaKey } from "./token.mjs";
+@@ -17 +17 @@ import option_group_default from "./option-group.mjs";
+-import { computed, defineComponent, getCurrentInstance, onBeforeUnmount, provide, reactive, toRefs, watch } from "vue";
++import { computed, defineComponent, getCurrentInstance, inject, onBeforeUnmount, provide, reactive, toRefs, watch } from "vue";
+@@ -61,0 +62,2 @@ var select_vue_vue_type_script_lang_default = defineComponent({
++		const inheritedTreeSelectAria = inject(treeSelectAriaKey, void 0);
++		const treeSelectAria = inheritedTreeSelectAria?.ownerUid === getCurrentInstance().parent?.uid ? inheritedTreeSelectAria : void 0;
+@@ -138,0 +141 @@ var select_vue_vue_type_script_lang_default = defineComponent({
++			treeSelectAria,
+@@ -155 +157,0 @@ export { select_vue_vue_type_script_lang_default as default };
+-//# sourceMappingURL=select.vue_vue_type_script_lang.mjs.map
+\ No newline at end of file
+diff --git a/es/components/select/src/select2.mjs b/es/components/select/src/select2.mjs
+index 441ca611981a786da5fe4f1e24211aa2ea5d08af..99dc8a7a1416a61e7480b9571e1632598e9d0157 100644
+--- a/es/components/select/src/select2.mjs
++++ b/es/components/select/src/select2.mjs
+@@ -34,0 +35,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
++		id: _ctx.treeSelectAria?.treeId,
++		role: _ctx.treeSelectAria ? "tree" : void 0,
++		"aria-label": _ctx.treeSelectAria?.label,
+@@ -211,2 +214,2 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-					"aria-activedescendant": _ctx.hoverOption?.id || "",
+-					"aria-controls": _ctx.contentId,
++					"aria-activedescendant": _ctx.treeSelectAria ? void 0 : _ctx.hoverOption?.id || "",
++					"aria-controls": _ctx.treeSelectAria?.treeId || _ctx.contentId,
+@@ -216 +219 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-					"aria-haspopup": "listbox",
++					"aria-haspopup": _ctx.treeSelectAria ? "tree" : "listbox",
+@@ -299,3 +302,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-					role: "listbox",
+-					"aria-label": _ctx.ariaLabel,
+-					"aria-orientation": "vertical",
++					role: _ctx.treeSelectAria ? "none" : "listbox",
++					"aria-label": _ctx.treeSelectAria ? void 0 : _ctx.ariaLabel,
++					"aria-orientation": _ctx.treeSelectAria ? void 0 : "vertical",
+@@ -353,0 +357,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
++		"id",
++		"role",
++		"aria-label",
+@@ -378 +383,0 @@ export { select_default as default };
+-//# sourceMappingURL=select2.mjs.map
+\ No newline at end of file
+diff --git a/es/components/select/src/token.d.ts b/es/components/select/src/token.d.ts
+index f2faf6e2afae5bf7897d9603af3e38cd731d5aab..af1e3456e70b9d89b191b733fcc247aaa5b8ae46 100644
+--- a/es/components/select/src/token.d.ts
++++ b/es/components/select/src/token.d.ts
+@@ -6,0 +7 @@ declare const selectKey: InjectionKey<SelectContext>;
++declare const treeSelectAriaKey: InjectionKey<{ ownerUid: number; treeId: string; readonly label: string; isSelected: (value: unknown) => boolean }>;
+@@ -8 +9 @@ declare const selectKey: InjectionKey<SelectContext>;
+-export { selectGroupKey, selectKey };
+\ No newline at end of file
++export { selectGroupKey, selectKey, treeSelectAriaKey };
+\ No newline at end of file
+diff --git a/es/components/select/src/token.mjs b/es/components/select/src/token.mjs
+index d870d97fa6bb2752220843fbbd066a11d696cebe..9437b2582ead88a6b2c6a79cc8514d026d8d45c9 100644
+--- a/es/components/select/src/token.mjs
++++ b/es/components/select/src/token.mjs
+@@ -3,0 +4 @@ const selectKey = Symbol("ElSelect");
++const treeSelectAriaKey = Symbol("ElTreeSelectAria");
+@@ -5 +6 @@ const selectKey = Symbol("ElSelect");
+-export { selectGroupKey, selectKey };
++export { selectGroupKey, selectKey, treeSelectAriaKey };
+@@ -7 +7,0 @@ export { selectGroupKey, selectKey };
+-//# sourceMappingURL=token.mjs.map
+\ No newline at end of file
+diff --git a/es/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.mjs b/es/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.mjs
+index 163e6cbdad20a970d75a054e330b72121e9376ee..eac4919485072a7c05f2053c67f9f7ba5e666b01 100644
+--- a/es/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.mjs
++++ b/es/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.mjs
+@@ -0,0 +1 @@
++import { treeSelectAriaKey } from "../../select/src/token.mjs";
+@@ -12 +13 @@ import content_default from "./content2.mjs";
+-import { computed, createBlock, createCommentVNode, createElementBlock, createVNode, defineComponent, onBeforeUnmount, onDeactivated, openBlock, provide, readonly, ref, renderSlot, toDisplayString, toRef, unref, watch, withCtx } from "vue";
++import { computed, createBlock, createCommentVNode, createElementBlock, createVNode, defineComponent, inject, onBeforeUnmount, onDeactivated, openBlock, provide, readonly, ref, renderSlot, toDisplayString, toRef, unref, watch, withCtx } from "vue";
+@@ -26 +27,2 @@ var tooltip_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineCo
+-		const id = useId();
++		const treeSelectAria = inject(treeSelectAriaKey, void 0);
++		const id = useId(computed(() => props.id === treeSelectAria?.treeId ? props.id : void 0));
+@@ -214 +215,0 @@ export { tooltip_vue_vue_type_script_setup_true_lang_default as default };
+-//# sourceMappingURL=tooltip.vue_vue_type_script_setup_true_lang.mjs.map
+\ No newline at end of file
+diff --git a/es/components/tree/src/tree-node.mjs b/es/components/tree/src/tree-node.mjs
+index 133927a9550c4fd72abf0909ad7fb16bed265a88..6c35e95a5b463eee7d4ca2a46bccb58db71b6259 100644
+--- a/es/components/tree/src/tree-node.mjs
++++ b/es/components/tree/src/tree-node.mjs
+@@ -5,0 +6,2 @@ const _hoisted_1 = [
++	"aria-selected",
++	"aria-label",
+@@ -31,0 +34,2 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
++		"aria-selected": _ctx.treeSelectAria ? _ctx.treeSelectAria.isSelected(_ctx.getNodeKey(_ctx.node)) : void 0,
++		"aria-label": _ctx.treeSelectAria ? _ctx.node.label : void 0,
+@@ -34,2 +38,2 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-		"aria-disabled": _ctx.node.disabled,
+-		"aria-checked": _ctx.node.checked,
++		"aria-disabled": _ctx.treeSelectAria ? !!_ctx.node.disabled : _ctx.node.disabled,
++		"aria-checked": _ctx.treeSelectAria && !_ctx.showCheckbox ? void 0 : _ctx.node.checked,
+@@ -118 +121,0 @@ export { tree_node_default as default };
+-//# sourceMappingURL=tree-node.mjs.map
+\ No newline at end of file
+diff --git a/es/components/tree/src/tree-node.vue_vue_type_script_lang.mjs b/es/components/tree/src/tree-node.vue_vue_type_script_lang.mjs
+index 336c037995b3ec5c30571155b494dee6edc85266..59af56d6dda9e8d5bc77873c3547595c2ecab544 100644
+--- a/es/components/tree/src/tree-node.vue_vue_type_script_lang.mjs
++++ b/es/components/tree/src/tree-node.vue_vue_type_script_lang.mjs
+@@ -9,0 +10 @@ import { NODE_INSTANCE_INJECTION_KEY, ROOT_TREE_INJECTION_KEY } from "./tokens.m
++import { treeSelectAriaKey } from "../../select/src/token.mjs";
+@@ -43,0 +45,2 @@ var tree_node_vue_vue_type_script_lang_default = defineComponent({
++		const inheritedTreeSelectAria = inject(treeSelectAriaKey, void 0);
++		const treeSelectAria = tree.ctx.attrs.id === inheritedTreeSelectAria?.treeId + "-content" ? inheritedTreeSelectAria : void 0;
+@@ -173,0 +177 @@ var tree_node_vue_vue_type_script_lang_default = defineComponent({
++			treeSelectAria,
+@@ -193 +196,0 @@ export { tree_node_vue_vue_type_script_lang_default as default };
+-//# sourceMappingURL=tree-node.vue_vue_type_script_lang.mjs.map
+\ No newline at end of file
+diff --git a/es/components/tree-select/src/tree-select-option.mjs b/es/components/tree-select/src/tree-select-option.mjs
+index 4897ca9a95bd84b378f1492a0bb51cb8cfb42583..dc94e80e40f7935befb503156568ca9541edc1b3 100644
+--- a/es/components/tree-select/src/tree-select-option.mjs
++++ b/es/components/tree-select/src/tree-select-option.mjs
+@@ -4,0 +5 @@ const component = defineComponent({
++	name: "ElTreeSelectOption",
+@@ -27 +27,0 @@ export { component as default };
+-//# sourceMappingURL=tree-select-option.mjs.map
+\ No newline at end of file
+diff --git a/es/components/tree-select/src/tree-select.vue_vue_type_script_lang.mjs b/es/components/tree-select/src/tree-select.vue_vue_type_script_lang.mjs
+index 57bb61ee49d29efabb32d2a1acf0a528ea8e46f1..8f7522807d2652ba911f1ce93967792c4486374d 100644
+--- a/es/components/tree-select/src/tree-select.vue_vue_type_script_lang.mjs
++++ b/es/components/tree-select/src/tree-select.vue_vue_type_script_lang.mjs
+@@ -8,2 +8,5 @@ import cache_options_default from "./cache-options.mjs";
+-import { pick } from "lodash-unified";
+-import { computed, defineComponent, h, onMounted, reactive, ref } from "vue";
++import { isEqual, pick } from "lodash-unified";
++import { computed, defineComponent, getCurrentInstance, h, onMounted, provide, reactive, ref } from "vue";
++import { treeSelectAriaKey } from "../../select/src/token.mjs";
++import { useId } from "../../../hooks/use-id/index.mjs";
++import { useLocale } from "../../../hooks/use-locale/index.mjs";
+@@ -33,0 +37,9 @@ var tree_select_vue_vue_type_script_lang_default = defineComponent({
++		const treeId = useId().value;
++		const { t } = useLocale();
++		const treeSelectAria = {
++			ownerUid: getCurrentInstance().uid,
++			treeId,
++			get label() { return props.ariaLabel || props.placeholder || t("el.select.placeholder"); },
++			isSelected: (value) => (Array.isArray(props.modelValue) ? props.modelValue : [props.modelValue]).some((selected) => isEqual(selected, value))
++		};
++		provide(treeSelectAriaKey, treeSelectAria);
+@@ -40 +52,2 @@ var tree_select_vue_vue_type_script_lang_default = defineComponent({
+-			key
++			key,
++			treeSelectAria
+@@ -49 +62,2 @@ var tree_select_vue_vue_type_script_lang_default = defineComponent({
+-			key
++			key,
++			treeSelectAria
+@@ -110 +123,0 @@ export { tree_select_vue_vue_type_script_lang_default as default };
+-//# sourceMappingURL=tree-select.vue_vue_type_script_lang.mjs.map
+\ No newline at end of file
+diff --git a/es/components/tree-select/src/tree.mjs b/es/components/tree-select/src/tree.mjs
+index 64bdcecdae3c9576eb12c3ca18cd08e5043deea2..4cc78f376b5e5c2b05153fdbc9b2899e18c20927 100644
+--- a/es/components/tree-select/src/tree.mjs
++++ b/es/components/tree-select/src/tree.mjs
+@@ -10 +10 @@ import { computed, nextTick, toRefs, watch } from "vue";
+-const useTree = (props, { attrs, slots, emit }, { select, tree, key }) => {
++const useTree = (props, { attrs, slots, emit }, { select, tree, key, treeSelectAria }) => {
+@@ -64,0 +65,2 @@ const useTree = (props, { attrs, slots, emit }, { select, tree, key }) => {
++		id: treeSelectAria.treeId + "-content",
++		role: "none",
+@@ -152 +153,0 @@ export { useTree };
+-//# sourceMappingURL=tree.mjs.map
+\ No newline at end of file
+diff --git a/lib/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.js b/lib/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.js
+index b1fa2f1c41713ba4afb181ba72e4b32a5e52da86..0b29d3c6ea4c06243fcb40594823f1eef49acc5e 100644
+--- a/lib/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.js
++++ b/lib/components/popper/src/trigger.vue_vue_type_script_setup_true_lang.js
+@@ -0,0 +1 @@
++const require_aria_token = require("../../select/src/token.js");
+@@ -18,0 +20 @@ var trigger_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ (0, vue.
++		const treeSelectAria = vue.inject(require_aria_token.treeSelectAriaKey, void 0);
+@@ -26,0 +29 @@ var trigger_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ (0, vue.
++			if (treeSelectAria && props.id === treeSelectAria.treeId) return void 0;
+@@ -120 +122,0 @@ exports.default = trigger_vue_vue_type_script_setup_true_lang_default;
+-//# sourceMappingURL=trigger.vue_vue_type_script_setup_true_lang.js.map
+\ No newline at end of file
+diff --git a/lib/components/select/src/option2.js b/lib/components/select/src/option2.js
+index 977c483751e72ca96e6a76ab3d1f2ea9e47ee8de..574968d23af6d32830779ea6e36f8c048a2be0aa 100644
+--- a/lib/components/select/src/option2.js
++++ b/lib/components/select/src/option2.js
+@@ -18,3 +18,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-		role: "option",
+-		"aria-disabled": _ctx.isDisabled || void 0,
+-		"aria-selected": _ctx.itemSelected
++		role: _ctx.$options.name === "ElTreeSelectOption" ? "none" : "option",
++		"aria-disabled": _ctx.$options.name === "ElTreeSelectOption" ? void 0 : _ctx.isDisabled || void 0,
++		"aria-selected": _ctx.$options.name === "ElTreeSelectOption" ? void 0 : _ctx.itemSelected
+@@ -30 +29,0 @@ exports.default = option_default;
+-//# sourceMappingURL=option2.js.map
+\ No newline at end of file
+diff --git a/lib/components/select/src/select.vue_vue_type_script_lang.js b/lib/components/select/src/select.vue_vue_type_script_lang.js
+index d0a7ec5297eb80bd8fdf21e54a778e70c4d6705e..c034ce7175e138cbc06c66835184b8eed2386a41 100644
+--- a/lib/components/select/src/select.vue_vue_type_script_lang.js
++++ b/lib/components/select/src/select.vue_vue_type_script_lang.js
+@@ -61,0 +62,2 @@ var select_vue_vue_type_script_lang_default = (0, vue.defineComponent)({
++		const inheritedTreeSelectAria = vue.inject(require_token.treeSelectAriaKey, void 0);
++		const treeSelectAria = inheritedTreeSelectAria?.ownerUid === vue.getCurrentInstance().parent?.uid ? inheritedTreeSelectAria : void 0;
+@@ -138,0 +141 @@ var select_vue_vue_type_script_lang_default = (0, vue.defineComponent)({
++			treeSelectAria,
+@@ -155 +157,0 @@ exports.default = select_vue_vue_type_script_lang_default;
+-//# sourceMappingURL=select.vue_vue_type_script_lang.js.map
+\ No newline at end of file
+diff --git a/lib/components/select/src/select2.js b/lib/components/select/src/select2.js
+index c16142731b9c466173f9f4e779d4cd2b8219739a..f46d0e67627c6ea986431b2576f536ecf854f82d 100644
+--- a/lib/components/select/src/select2.js
++++ b/lib/components/select/src/select2.js
+@@ -38,0 +39,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
++		id: _ctx.treeSelectAria?.treeId,
++		role: _ctx.treeSelectAria ? "tree" : void 0,
++		"aria-label": _ctx.treeSelectAria?.label,
+@@ -215,2 +218,2 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-					"aria-activedescendant": _ctx.hoverOption?.id || "",
+-					"aria-controls": _ctx.contentId,
++					"aria-activedescendant": _ctx.treeSelectAria ? void 0 : _ctx.hoverOption?.id || "",
++					"aria-controls": _ctx.treeSelectAria?.treeId || _ctx.contentId,
+@@ -220 +223 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-					"aria-haspopup": "listbox",
++					"aria-haspopup": _ctx.treeSelectAria ? "tree" : "listbox",
+@@ -303,3 +306,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-					role: "listbox",
+-					"aria-label": _ctx.ariaLabel,
+-					"aria-orientation": "vertical",
++					role: _ctx.treeSelectAria ? "none" : "listbox",
++					"aria-label": _ctx.treeSelectAria ? void 0 : _ctx.ariaLabel,
++					"aria-orientation": _ctx.treeSelectAria ? void 0 : "vertical",
+@@ -357,0 +361,3 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
++		"id",
++		"role",
++		"aria-label",
+@@ -382 +387,0 @@ exports.default = select_default;
+-//# sourceMappingURL=select2.js.map
+\ No newline at end of file
+diff --git a/lib/components/select/src/token.d.ts b/lib/components/select/src/token.d.ts
+index f2faf6e2afae5bf7897d9603af3e38cd731d5aab..af1e3456e70b9d89b191b733fcc247aaa5b8ae46 100644
+--- a/lib/components/select/src/token.d.ts
++++ b/lib/components/select/src/token.d.ts
+@@ -6,0 +7 @@ declare const selectKey: InjectionKey<SelectContext>;
++declare const treeSelectAriaKey: InjectionKey<{ ownerUid: number; treeId: string; readonly label: string; isSelected: (value: unknown) => boolean }>;
+@@ -8 +9 @@ declare const selectKey: InjectionKey<SelectContext>;
+-export { selectGroupKey, selectKey };
+\ No newline at end of file
++export { selectGroupKey, selectKey, treeSelectAriaKey };
+\ No newline at end of file
+diff --git a/lib/components/select/src/token.js b/lib/components/select/src/token.js
+index 5e13b91b03729f8ee8f8a2bb2d9c5ac322abe4ec..cb9858e0ad21fda908ffa47bc6ee9193a8ca39b7 100644
+--- a/lib/components/select/src/token.js
++++ b/lib/components/select/src/token.js
+@@ -4,0 +5 @@ const selectKey = Symbol("ElSelect");
++const treeSelectAriaKey = Symbol("ElTreeSelectAria");
+@@ -7,0 +9 @@ exports.selectKey = selectKey;
++exports.treeSelectAriaKey = treeSelectAriaKey;
+@@ -9 +10,0 @@ exports.selectKey = selectKey;
+-//# sourceMappingURL=token.js.map
+\ No newline at end of file
+diff --git a/lib/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.js b/lib/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.js
+index 87bff42eb8acaa547f4e4286f62977912f78feb5..929091c33f8e526cda00e0ef3025e2d10d9cfbf0 100644
+--- a/lib/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.js
++++ b/lib/components/tooltip/src/tooltip.vue_vue_type_script_setup_true_lang.js
+@@ -0,0 +1 @@
++const require_aria_token = require("../../select/src/token.js");
+@@ -26 +27,2 @@ var tooltip_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ (0, vue.
+-		const id = require_index$1.useId();
++		const treeSelectAria = vue.inject(require_aria_token.treeSelectAriaKey, void 0);
++		const id = require_index$1.useId(vue.computed(() => props.id === treeSelectAria?.treeId ? props.id : void 0));
+@@ -214 +215,0 @@ exports.default = tooltip_vue_vue_type_script_setup_true_lang_default;
+-//# sourceMappingURL=tooltip.vue_vue_type_script_setup_true_lang.js.map
+\ No newline at end of file
+diff --git a/lib/components/tree/src/tree-node.js b/lib/components/tree/src/tree-node.js
+index 0a6be75ef664d8970023aacc8d8afc180814fb09..980a8e61e4d37d140c0019943f74c578f1647939 100644
+--- a/lib/components/tree/src/tree-node.js
++++ b/lib/components/tree/src/tree-node.js
+@@ -9,0 +10,2 @@ const _hoisted_1 = [
++	"aria-selected",
++	"aria-label",
+@@ -35,0 +38,2 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
++		"aria-selected": _ctx.treeSelectAria ? _ctx.treeSelectAria.isSelected(_ctx.getNodeKey(_ctx.node)) : void 0,
++		"aria-label": _ctx.treeSelectAria ? _ctx.node.label : void 0,
+@@ -38,2 +42,2 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+-		"aria-disabled": _ctx.node.disabled,
+-		"aria-checked": _ctx.node.checked,
++		"aria-disabled": _ctx.treeSelectAria ? !!_ctx.node.disabled : _ctx.node.disabled,
++		"aria-checked": _ctx.treeSelectAria && !_ctx.showCheckbox ? void 0 : _ctx.node.checked,
+@@ -122 +125,0 @@ exports.default = tree_node_default;
+-//# sourceMappingURL=tree-node.js.map
+\ No newline at end of file
+diff --git a/lib/components/tree/src/tree-node.vue_vue_type_script_lang.js b/lib/components/tree/src/tree-node.vue_vue_type_script_lang.js
+index 70457905c32dadc66144e021cdc2bea37bf65859..0cf2a69db216750956b29f50537916dc34db4b69 100644
+--- a/lib/components/tree/src/tree-node.vue_vue_type_script_lang.js
++++ b/lib/components/tree/src/tree-node.vue_vue_type_script_lang.js
+@@ -8,0 +9 @@ const require_tokens = require("./tokens.js");
++const require_aria_token = require("../../select/src/token.js");
+@@ -43,0 +45,2 @@ var tree_node_vue_vue_type_script_lang_default = (0, vue.defineComponent)({
++		const inheritedTreeSelectAria = vue.inject(require_aria_token.treeSelectAriaKey, void 0);
++		const treeSelectAria = tree.ctx.attrs.id === inheritedTreeSelectAria?.treeId + "-content" ? inheritedTreeSelectAria : void 0;
+@@ -173,0 +177 @@ var tree_node_vue_vue_type_script_lang_default = (0, vue.defineComponent)({
++			treeSelectAria,
+@@ -193 +196,0 @@ exports.default = tree_node_vue_vue_type_script_lang_default;
+-//# sourceMappingURL=tree-node.vue_vue_type_script_lang.js.map
+\ No newline at end of file
+diff --git a/lib/components/tree-select/src/tree-select-option.js b/lib/components/tree-select/src/tree-select-option.js
+index d581d15ba38fedaef618bd05d8e4f1cd394c7c19..101ea26161b659ca442306574f5455ed43eea51b 100644
+--- a/lib/components/tree-select/src/tree-select-option.js
++++ b/lib/components/tree-select/src/tree-select-option.js
+@@ -8,0 +9 @@ const component = (0, vue.defineComponent)({
++	name: "ElTreeSelectOption",
+@@ -31 +31,0 @@ exports.default = component;
+-//# sourceMappingURL=tree-select-option.js.map
+\ No newline at end of file
+diff --git a/lib/components/tree-select/src/tree-select.vue_vue_type_script_lang.js b/lib/components/tree-select/src/tree-select.vue_vue_type_script_lang.js
+index a2b1a96771891b346c35f8f8b3d228b5d6c93ac7..997a99448440060f0176d5f907576249d44cc716 100644
+--- a/lib/components/tree-select/src/tree-select.vue_vue_type_script_lang.js
++++ b/lib/components/tree-select/src/tree-select.vue_vue_type_script_lang.js
+@@ -9,0 +10,3 @@ let vue = require("vue");
++const require_aria_token = require("../../select/src/token.js");
++const require_aria_id = require("../../../hooks/use-id/index.js");
++const require_aria_locale = require("../../../hooks/use-locale/index.js");
+@@ -33,0 +37,9 @@ var tree_select_vue_vue_type_script_lang_default = (0, vue.defineComponent)({
++		const treeId = require_aria_id.useId().value;
++		const { t } = require_aria_locale.useLocale();
++		const treeSelectAria = {
++			ownerUid: vue.getCurrentInstance().uid,
++			treeId,
++			get label() { return props.ariaLabel || props.placeholder || t("el.select.placeholder"); },
++			isSelected: (value) => (Array.isArray(props.modelValue) ? props.modelValue : [props.modelValue]).some((selected) => lodash_unified.isEqual(selected, value))
++		};
++		vue.provide(require_aria_token.treeSelectAriaKey, treeSelectAria);
+@@ -40 +52,2 @@ var tree_select_vue_vue_type_script_lang_default = (0, vue.defineComponent)({
+-			key
++			key,
++			treeSelectAria
+@@ -49 +62,2 @@ var tree_select_vue_vue_type_script_lang_default = (0, vue.defineComponent)({
+-			key
++			key,
++			treeSelectAria
+@@ -110 +123,0 @@ exports.default = tree_select_vue_vue_type_script_lang_default;
+-//# sourceMappingURL=tree-select.vue_vue_type_script_lang.js.map
+\ No newline at end of file
+diff --git a/lib/components/tree-select/src/tree.js b/lib/components/tree-select/src/tree.js
+index 2f7b503b6244a55a56f154a6c4d193d0540852ec..bcc8165b54f9711784e4b8b2db39a55f220a820e 100644
+--- a/lib/components/tree-select/src/tree.js
++++ b/lib/components/tree-select/src/tree.js
+@@ -12 +12 @@ let _vue_shared = require("@vue/shared");
+-const useTree = (props, { attrs, slots, emit }, { select, tree, key }) => {
++const useTree = (props, { attrs, slots, emit }, { select, tree, key, treeSelectAria }) => {
+@@ -66,0 +67,2 @@ const useTree = (props, { attrs, slots, emit }, { select, tree, key }) => {
++		id: treeSelectAria.treeId + "-content",
++		role: "none",
+@@ -154 +155,0 @@ exports.useTree = useTree;
+-//# sourceMappingURL=tree.js.map
+\ No newline at end of file

@@ -1,35 +1,9 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { expectNoSeriousAccessibilityViolations } from './support/accessibility'
 import { expectCleanDiagnostics, observeDiagnostics } from './support/diagnostics'
 import { loginWithFixture, openSidebarPage } from './support/navigation'
-import {
-  expectReadableSurface,
-  installPermissionThemeFixture,
-  permissionRows,
-} from './support/permissionThemeFixture'
-
-async function expectInlineActions(rows: Locator): Promise<void> {
-  await expect(rows).toHaveCount(permissionRows.length)
-  for (const row of await rows.all()) {
-    const boxes = []
-    for (const name of ['新增', '编辑', '删除']) {
-      const button = row.getByRole('button', { name, exact: true })
-      await expect(button).toBeVisible()
-      const box = await button.boundingBox()
-      if (!box) throw new Error(`权限行缺少${name}按钮布局`)
-      expect(box.width).toBeGreaterThan(0)
-      expect(box.height).toBeGreaterThan(0)
-      boxes.push(box)
-    }
-    const centers = boxes.map((box) => box.y + box.height / 2)
-    expect(
-      Math.max(...centers) - Math.min(...centers),
-      '每行操作按钮应水平对齐',
-    ).toBeLessThanOrEqual(2)
-    expect(boxes[0].x + boxes[0].width).toBeLessThanOrEqual(boxes[1].x)
-    expect(boxes[1].x + boxes[1].width).toBeLessThanOrEqual(boxes[2].x)
-  }
-}
+import { expectInlineActions, expectReadableSurface } from './support/permissionTheme'
+import { installPermissionThemeFixture, permissionRows } from './support/permissionThemeFixture'
 
 async function expectTreeAppearance(page: Page): Promise<void> {
   await page
@@ -55,7 +29,7 @@ async function expectTreeAppearance(page: Page): Promise<void> {
     await root.locator('> .el-tree-node__content .el-tree-node__expand-icon').click()
   }
   const node = tree.getByRole('treeitem', { name: permissionRows[0].name, exact: true })
-  const option = node.getByRole('option', { name: permissionRows[0].name, exact: true })
+  const option = node.locator('> .el-tree-node__content .el-select-dropdown__item')
   const label = option.locator('> span')
   await expectReadableSurface(label, '树节点普通状态')
   await label.hover()
@@ -71,7 +45,7 @@ async function expectTreeAppearance(page: Page): Promise<void> {
   await selectWrapper.click()
   await expect(select).toHaveAttribute('aria-expanded', 'true')
   await expect(tree).toBeVisible()
-  await expect(option).toHaveAttribute('aria-selected', 'true')
+  await expect(node).toHaveAttribute('aria-selected', 'true')
   await expect(option).toHaveClass(/\bis-selected\b/u)
   await page.mouse.move(0, 0)
   await expectReadableSurface(label, '树节点选中状态')
@@ -98,6 +72,7 @@ for (const viewport of [
     await expect(page.locator('html')).toHaveClass(/\bdark\b/u)
     const table = page.locator('.permission-table')
     const rows = table.locator('.el-table__body-wrapper tr.el-table__row')
+    await expect(rows).toHaveCount(permissionRows.length)
     await expectInlineActions(rows)
     expect(fixture.permissionRequests.length).toBeGreaterThan(0)
 
@@ -113,6 +88,7 @@ for (const viewport of [
         element.scrollLeft = element.scrollWidth
       })
       await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0)
+      await expect(rows).toHaveCount(permissionRows.length)
       await expectInlineActions(rows)
       await scroll.evaluate((element) => {
         element.scrollLeft = 0

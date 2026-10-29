@@ -173,6 +173,9 @@ overrides:
   postcss@^8.0.0: 8.5.23
   unplugin-element-plus>unplugin: 3.4.0
 
+patchedDependencies:
+  element-plus@2.14.6: 70b7c3a6b1bbca369c371b1b28c88e30a6717e4532988727cb72f60e60727457
+
 importers:
 
   .:
@@ -193,8 +196,8 @@ importers:
         specifier: 6.1.0
         version: 6.1.0
       element-plus:
-        specifier: ^2.14.6
-        version: 2.14.6(vue@3.5.43(typescript@6.0.3))
+        specifier: 2.14.6
+        version: 2.14.6(patch_hash=70b7c3a6b1bbca369c371b1b28c88e30a6717e4532988727cb72f60e60727457)(vue@3.5.43(typescript@6.0.3))
       markdown-it:
         specifier: ^15.0.2
         version: 15.0.2
@@ -3578,7 +3581,7 @@ snapshots:
       tslib: 2.3.0
       zrender: 6.1.0
 
-  element-plus@2.14.6(vue@3.5.43(typescript@6.0.3)):
+  element-plus@2.14.6(patch_hash=70b7c3a6b1bbca369c371b1b28c88e30a6717e4532988727cb72f60e60727457)(vue@3.5.43(typescript@6.0.3)):
     dependencies:
       '@ctrl/tinycolor': 4.2.1
       '@element-plus/icons-vue': 2.3.2(vue@3.5.43(typescript@6.0.3))

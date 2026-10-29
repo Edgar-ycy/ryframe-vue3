@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+- Add a managed ARIA patch for the locked Element Plus TreeSelect, removing conflicting listbox/tree/option roles and the unnamed tooltip when its tree popup opens. Retain tree nodes, selection states and keyboard implementation without changing ordinary Select behavior. Extend real permission-theme coverage for parent/root selection, clear/echo, expansion/collapse, keyboard and Escape/cancel, changing only an unsubmitted form.
+
+- Add real administrator permission-page theme acceptance using actual menus and permission-tree GET responses with the existing login, diagnostics and axe helpers. Check desktop/mobile diagnostic SVGs, visible-row and expanded-child actions, dark tags/trees and horizontal scrolling. Open and cancel the add dialog without submitting permission changes; wait for theme transitions before saving JPEGs and credential-free observations. Share pure layout/Canvas contrast checks with the retained mock scenarios while preserving their independent coverage.
+
 - Fix the dashboard session tag retaining a light background in dark mode. Use shared semantic theme colors and remove the scoped global selector that did not target the tag.
 
 - Restore dataset authority preflight now uses the coordinator backend's formal Cargo entry with the read-only `restore-dataset-authority` operation and binds the runtime receipt and target plan through standard input. Validate the native response, eight-field authority, and before/after file contents; remove the Python parameter specific to this preflight while retaining Python configuration still used by runtime verification.

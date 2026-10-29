@@ -175,3 +175,5 @@ Vite 直接或间接导入的公开配置、工具配置选择、身份及 JSON 
 `corepack pnpm check --stage unit` 执行工具测试、测试类型检查和单测覆盖率；
 `corepack pnpm check --stage browser` 执行确定性浏览器 smoke。真实环境按登记配置执行
 `corepack pnpm check --stage browser --real --fixture core --server dev`；恢复验收使用后端统一入口提供来源与资源绑定。
+
+Element Plus 通过 `pnpm-workspace.yaml` 的 `patchedDependencies` 应用精确版本的 TreeSelect ARIA 补丁，补丁摘要进入锁文件；安装继续使用 `corepack pnpm install --frozen-lockfile`，不手改依赖目录。补丁仅在 TreeSelect 私有实例上下文中启用：弹层为唯一 tree 根，combobox 控制该根，内层容器与节点内容不再重复声明 listbox/option，选中、禁用与展开状态保留在 treeitem。原 DOM 焦点及方向键/选择处理不变；普通 Select、Option、Tree 和其他 Tooltip 不启用该分支。ESM、CJS和私有类型同步，未发布的 Vue/TS 源码不另造副本，已改模块不再引用过期上游 source map；本项目不消费的 CDN 预打包入口不在补丁范围。

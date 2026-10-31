@@ -3,67 +3,6 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 
-const ordinaryJobs = ['static', 'unit', 'build', 'browser', 'windows-smoke']
-const requiredJobMatrix = {
-  push: { success: ordinaryJobs, skipped: [] },
-  pull_request: { success: ordinaryJobs, skipped: [] },
-}
-const requiredRequestKeys = ['event', 'needs', 'operation', 'version']
-const requiredNeedKeys = new Set(['outputs', 'result'])
-
-function isPlainObject(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
-function requireExactKeys(value, expected, label) {
-  const actual = Object.keys(value).sort()
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new Error(`${label} 字段必须精确为 ${expected.join('、')}`)
-  }
-}
-
-function requireProtocolString(value, label) {
-  if (typeof value !== 'string' || !value || /[\r\n\0]/u.test(value)) {
-    throw new Error(`${label} 必须是非空单行字符串`)
-  }
-  return value
-}
-
-/** 将 GitHub 的 event/needs 快照转换为 Required 节点的不可变参数。 */
-export function parseRequiredJobsRequest(raw) {
-  if (typeof raw !== 'string' || !raw.trim()) throw new Error('Required 环境请求不能为空')
-  let request
-  try {
-    request = JSON.parse(raw)
-  } catch {
-    throw new Error('Required 环境请求不是合法 JSON')
-  }
-  if (!isPlainObject(request)) throw new Error('Required 环境请求必须是对象')
-  requireExactKeys(request, requiredRequestKeys, 'Required 环境请求')
-  if (request.version !== 1) throw new Error('Required 环境协议版本必须为 1')
-  if (request.operation !== 'required-jobs')
-    throw new Error('Required 环境操作必须为 required-jobs')
-  const event = requireProtocolString(request.event, 'Required event')
-  if (!isPlainObject(request.needs)) throw new Error('Required needs 必须是对象')
-
-  const resultEntries = []
-  for (const [name, job] of Object.entries(request.needs)) {
-    requireProtocolString(name, 'Required job 名称')
-    if (!isPlainObject(job)) throw new Error(`Required job ${name} 必须是对象`)
-    if (
-      !Object.hasOwn(job, 'result') ||
-      Object.keys(job).some((key) => !requiredNeedKeys.has(key))
-    ) {
-      throw new Error(`Required job ${name} 只能包含 result 和可选 outputs`)
-    }
-    if (Object.hasOwn(job, 'outputs') && !isPlainObject(job.outputs)) {
-      throw new Error(`Required job ${name}.outputs 必须是对象`)
-    }
-    resultEntries.push([name, requireProtocolString(job.result, `Required job ${name}.result`)])
-  }
-  return Object.freeze({ event, results: Object.freeze(Object.fromEntries(resultEntries)) })
-}
-
 async function readDirectory(directory) {
   try {
     return await readdir(directory, { withFileTypes: true })
@@ -159,30 +98,6 @@ export function validateEnvironmentContexts(name, workflow) {
     }
   }
   return contextErrors
-}
-
-export function validateRequiredJobs(event, results) {
-  const errors = []
-  const matrix = requiredJobMatrix[event]
-  if (!matrix) return [`不支持的 GitHub 事件：${event}`]
-  for (const name of ordinaryJobs) {
-    if (!Object.hasOwn(results, name)) errors.push(`缺少 required job 结果：${name}`)
-  }
-  for (const name of Object.keys(results)) {
-    if (!ordinaryJobs.includes(name)) errors.push(`包含未知 required job：${name}`)
-  }
-  if (errors.length > 0) return errors
-
-  const expected = new Map([
-    ...matrix.success.map((name) => [name, 'success']),
-    ...matrix.skipped.map((name) => [name, 'skipped']),
-  ])
-  for (const name of ordinaryJobs) {
-    if (results[name] !== expected.get(name)) {
-      errors.push(`${name} 期望 ${expected.get(name)}，实际 ${results[name]}`)
-    }
-  }
-  return errors
 }
 
 function inspectWorkflowFile(root, absolute, source, document, isWorkflow) {

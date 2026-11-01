@@ -1,5 +1,7 @@
 import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
 import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
+import type { RealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
+import { bindWorkerTool } from './worker-tool.mjs'
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
@@ -14,6 +16,12 @@ export type ArtifactInspectionState = 'present' | 'pending' | 'deleted'
 interface ExportArtifactReceipt {
   bytes: number
   sha256: string
+}
+
+interface ArtifactInspectionDependencies {
+  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'workerTool'>
+  environment?: NodeJS.ProcessEnv
+  execute?: (invocation: ReturnType<typeof artifactInspectionInvocation>) => Promise<string>
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -107,14 +115,13 @@ export function verifyDownloadedExportContent(
   }
 }
 
-export function artifactInspectionArguments(
+function artifactInspectionArguments(
   runtime: string,
   operation: ArtifactInspectionOperation,
   jobId: string,
   receipt: string,
 ): string[] {
   return [
-    'xtask',
     'check',
     'recovery',
     'fixture',
@@ -129,7 +136,8 @@ export function artifactInspectionArguments(
   ]
 }
 
-export function artifactInspectionInvocation(
+function artifactInspectionInvocation(
+  executable: string,
   backend: string,
   runtime: string,
   operation: ArtifactInspectionOperation,
@@ -138,12 +146,12 @@ export function artifactInspectionInvocation(
   environment: NodeJS.ProcessEnv = process.env,
 ) {
   return {
-    executable: 'cargo',
+    executable,
     arguments: artifactInspectionArguments(runtime, operation, jobId, receipt),
     options: {
       cwd: backend,
       encoding: 'utf8' as const,
-      env: toolProcessEnvironment(environment),
+      env: { ...toolProcessEnvironment(environment), APP_ENV: 'test' },
       maxBuffer: 64 * 1024,
       timeout: 45_000,
       windowsHide: true,
@@ -151,22 +159,50 @@ export function artifactInspectionInvocation(
   }
 }
 
+async function executeInvocation(
+  value: ReturnType<typeof artifactInspectionInvocation>,
+): Promise<string> {
+  const { stdout } = await execute(value.executable, value.arguments, value.options)
+  return stdout
+}
+
 export async function inspectExportArtifact(
   operation: ArtifactInspectionOperation,
   jobId: string,
   receipt: string,
+  dependencies: ArtifactInspectionDependencies = {},
 ): Promise<ArtifactInspectionState> {
   if (!snowflakeId(jobId) || !path.isAbsolute(receipt)) {
     throw new Error('对象清理验收的任务或收据路径无效')
   }
-  const { backendDir: backend, runtimeDir: runtime } = loadRealBrowserEnvironment()
+  const binding = dependencies.binding ?? loadRealBrowserEnvironment()
+  const tool = bindWorkerTool(binding.workerTool)
   const invocation = artifactInspectionInvocation(
-    backend,
-    runtime,
+    tool.executable,
+    binding.backendDir,
+    binding.runtimeDir,
     operation,
     jobId,
     path.resolve(receipt),
+    dependencies.environment ?? process.env,
   )
-  const { stdout } = await execute(invocation.executable, invocation.arguments, invocation.options)
-  return parseArtifactInspection(stdout, operation, jobId)
+  let outcome: { ok: true; value: ArtifactInspectionState } | { ok: false; error: unknown }
+  try {
+    const stdout = await (dependencies.execute ?? executeInvocation)(invocation)
+    outcome = { ok: true, value: parseArtifactInspection(stdout, operation, jobId) }
+  } catch (error) {
+    outcome = { ok: false, error }
+  }
+  try {
+    tool.verifyUnchanged()
+  } catch (error) {
+    if (!outcome.ok) {
+      throw new AggregateError([outcome.error, error], '对象验收执行与工具来源核验均失败', {
+        cause: error,
+      })
+    }
+    throw error
+  }
+  if (!outcome.ok) throw outcome.error
+  return outcome.value
 }

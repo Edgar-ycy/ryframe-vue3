@@ -101,6 +101,14 @@ corepack pnpm generate
     "tenantId": "system",
     "username": "admin",
     "password": "<isolated-account-password>",
+    "workerTool": {
+      "root": "D:/project/rustProject/ryframe/tool-source",
+      "binding": {
+        "path": "D:/project/rustProject/ryframe/tool-source/.local-tests/frontend-origin-tool.json",
+        "bytes": 1234,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
     "backendDir": "D:/project/rustProject/ryframe/ryframe",
     "runtimeDir": "D:/project/rustProject/ryframe/ryframe/.local-tests/acceptance-local",
     "python": "D:/tools/python/python.exe",
@@ -114,6 +122,8 @@ corepack pnpm generate
   "browser_smoke": { "serverMode": "dev", "channel": "chrome" }
 }
 ```
+
+`real_browser.workerTool` 必须独立登记工具实际编译来源根 `root`，以及该根固定 `.local-tests/frontend-origin-tool.json` 的实际原始字节数 `binding.bytes` 和小写 SHA256 `binding.sha256`；示例的长度和摘要仅为格式示意，必须替换为主控登记文件的真实值，文件上限 4 MiB。工具来源可与业务后端不同；`backendDir`、`runtimeDir` 和 `scopeId` 始终指向被测业务环境。Worker 控制、导入 fixture、导出对象快照与删除复核、业务迁移门及历史保留期维护在调用前后复核完整工具源码、程序和固定绑定，并调用同一程序的原生来源核验以确认实际编译根；导出对象和迁移维护直接执行已绑定的原生程序，不隐式调用 Cargo 编译；长时间运行的迁移门先完成精确关闭，再复核来源。缺字段、漂移或未知结果均失败，不提供旧字段回退或自动重放。
 
 ```powershell
 corepack pnpm check --stage browser --real --fixture core --server dev

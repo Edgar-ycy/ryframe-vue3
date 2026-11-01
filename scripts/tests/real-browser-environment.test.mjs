@@ -10,7 +10,15 @@ function validEnvironment() {
     tenantId: 'system',
     username: 'admin',
     password: 'not-recorded',
-    backendDir: resolve('D 盘源码', '后端'),
+    workerTool: {
+      root: resolve('D 盘源码', '工具 N'),
+      binding: {
+        path: resolve('D 盘源码', '工具 N', '.local-tests/frontend-origin-tool.json'),
+        bytes: 256,
+        sha256: 'a'.repeat(64),
+      },
+    },
+    backendDir: resolve('D 盘源码', '后端 O'),
     runtimeDir: resolve('D 盘运行', '当前'),
     requestCapacity: 100,
     requestWindowSeconds: 60,
@@ -26,6 +34,10 @@ test('登记环境完整时返回脱敏绑定，并保留中文空格绝对路�
   const binding = validateRealBrowserEnvironment(environment)
   assert.equal(binding.scopeId, 'real-browser-unit')
   assert.equal(binding.backendDir, environment.backendDir)
+  assert.deepEqual(binding.workerTool, environment.workerTool)
+  assert.notEqual(binding.workerTool.root, binding.backendDir)
+  assert.equal(Object.isFrozen(binding.workerTool), true)
+  assert.equal(Object.isFrozen(binding.workerTool.binding), true)
   assert.equal(binding.loginBudgetState, environment.loginBudgetState)
   assert.equal(binding.baseURL, 'http://127.0.0.1:4174')
   assert.equal(binding.port, 4174)
@@ -206,5 +218,33 @@ test('外部服务只允许带明确端口的本机 HTTP 原点', () => {
     'http://127.0.0.1',
   ]) {
     assert.throws(() => validateRealBrowserEnvironment({ ...validEnvironment(), baseURL: value }))
+  }
+})
+
+test('Worker 双来源配置必须完整且固定位置、大小、摘要严格，不回退业务后端', () => {
+  const base = validEnvironment()
+  const tool = base.workerTool
+  for (const workerTool of [
+    undefined,
+    null,
+    {},
+    { ...tool, private: 'PRIVATE-SENTINEL' },
+    { ...tool, root: 'relative' },
+    { ...tool, binding: undefined },
+    { ...tool, binding: { ...tool.binding, path: resolve('other.json') } },
+    { ...tool, binding: { ...tool.binding, extra: true } },
+    ...[0, true, '256', 1.5, 4 * 1024 * 1024 + 1].map((bytes) => ({
+      ...tool,
+      binding: { ...tool.binding, bytes },
+    })),
+    ...['A'.repeat(64), 'a'.repeat(63), 'PRIVATE-SENTINEL'].map((sha256) => ({
+      ...tool,
+      binding: { ...tool.binding, sha256 },
+    })),
+  ]) {
+    assert.throws(
+      () => validateRealBrowserEnvironment({ ...base, workerTool }),
+      (error) => !error.message.includes('PRIVATE-SENTINEL'),
+    )
   }
 })

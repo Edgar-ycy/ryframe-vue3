@@ -1,4 +1,4 @@
-import { isAbsolute } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { loadToolInputs, toolObject } from './tool-inputs.mjs'
@@ -123,6 +123,26 @@ function restoreEnvironment(environment) {
   )
 }
 
+/** Worker 工具来源与业务后端分别登记；固定文件描述不得回退到业务目录。 */
+export function validateWorkerTool(value) {
+  toolObject(value, ['root', 'binding'], '真实浏览器 Worker 工具')
+  toolObject(value.binding, ['path', 'bytes', 'sha256'], '真实浏览器 Worker 工具绑定')
+  const root = absolutePath(value, 'root')
+  const bindingPath = absolutePath(value.binding, 'path')
+  if (
+    [root, bindingPath].some((file) => file.split(/[\\/]/u).includes('..')) ||
+    resolve(bindingPath) !== resolve(root, '.local-tests/frontend-origin-tool.json')
+  )
+    throw new Error('Worker 工具绑定必须位于来源根的 .local-tests/frontend-origin-tool.json')
+  const bytes = positiveInteger(value.binding, 'bytes', 4 * 1024 * 1024)
+  if (typeof value.binding.sha256 !== 'string' || !/^[a-f0-9]{64}$/u.test(value.binding.sha256))
+    throw new Error('Worker 工具绑定 sha256 必须为完整小写十六进制摘要')
+  return Object.freeze({
+    root,
+    binding: Object.freeze({ path: bindingPath, bytes, sha256: value.binding.sha256 }),
+  })
+}
+
 /** 在创建报告目录和服务前验证真实环境，只返回不含凭据的运行绑定。 */
 export function validateRealBrowserEnvironment(environment) {
   toolObject(
@@ -133,6 +153,7 @@ export function validateRealBrowserEnvironment(environment) {
       'username',
       'password',
       'credentialEndpoint',
+      'workerTool',
       'backendDir',
       'runtimeDir',
       'python',
@@ -191,6 +212,7 @@ export function validateRealBrowserEnvironment(environment) {
     scopeId,
     tenantId,
     username,
+    workerTool: validateWorkerTool(environment.workerTool),
     backendDir: absolutePath(environment, 'backendDir'),
     runtimeDir: absolutePath(environment, 'runtimeDir'),
     requestCapacity: positiveInteger(environment, 'requestCapacity', 2 ** 32 - 1),

@@ -1,6 +1,7 @@
 import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
 import type { RealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
+import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { createInterface } from 'node:readline'
@@ -26,7 +27,7 @@ type SpawnMigrationGate = (
 ) => MigrationGateProcess
 
 interface MigrationGateOptions {
-  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'scopeId'>
+  binding?: Pick<RealBrowserEnvironment, 'backendDir' | 'runtimeDir' | 'scopeId' | 'workerTool'>
   environment?: NodeJS.ProcessEnv
   forceCloseTimeoutMs?: number
   gracefulCloseTimeoutMs?: number
@@ -55,10 +56,10 @@ export async function holdMigrationGate(
   const runtime = binding.runtimeDir
   const scope = binding.scopeId
   if (!backend || !runtime || !scope) throw new Error('迁移 gate 缺少隔离运行配置')
+  const tool = bindWorkerTool(binding.workerTool)
   const child = spawnProcess(
-    environment.CARGO?.trim() || 'cargo',
+    tool.executable,
     [
-      'xtask',
       'check',
       'recovery',
       'fixture',
@@ -73,7 +74,7 @@ export async function holdMigrationGate(
     ],
     {
       cwd: path.resolve(backend),
-      env: toolProcessEnvironment(environment),
+      env: { ...toolProcessEnvironment(environment), APP_ENV: 'test' },
       stdio: 'pipe',
       windowsHide: true,
     },
@@ -207,6 +208,11 @@ export async function holdMigrationGate(
       attemptErrors.push(new Error('迁移 gate 强制关闭后仍未退出'))
     }
     if (closed) input.close()
+    try {
+      tool.verifyUnchanged()
+    } catch (error) {
+      attemptErrors.push(error instanceof Error ? error : new Error(String(error)))
+    }
     const failure = combinedError([
       primary,
       stdinEndError,

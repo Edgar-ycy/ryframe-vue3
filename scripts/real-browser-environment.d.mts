@@ -1,3 +1,9 @@
+export interface WorkerTool {
+  readonly root: string
+  readonly binding: Readonly<{ path: string; bytes: number; sha256: string }>
+}
+export function validateWorkerTool(value: unknown): Readonly<WorkerTool>
+
 export interface RealBrowserEnvironment {
   scopeId: string
   tenantId: string
@@ -7,6 +13,7 @@ export interface RealBrowserEnvironment {
   gateEndpoint: string | undefined
   credentialEndpoint?: string
   previewResponseAudit: string | undefined
+  workerTool: Readonly<WorkerTool>
   backendDir: string
   runtimeDir: string
   requestCapacity: number

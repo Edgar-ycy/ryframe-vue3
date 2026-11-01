@@ -52,9 +52,10 @@ export async function setRolePermissions(
   }
   const row = page.locator('.el-table__body tr').filter({ hasText: code })
   await expect(row).toHaveCount(1)
-  await act(page, 'GET', /\/system\/roles\/\d+\/permissions$/u, () =>
+  const permissionsResponse = await act(page, 'GET', /\/system\/roles\/\d+\/permissions$/u, () =>
     row.getByRole('button', { name: '权限', exact: true }).click(),
   )
+  const permissionsPath = new URL(permissionsResponse.url()).pathname
   const dialog = page.getByRole('dialog', { name: '分配权限', exact: true })
   const cascade = dialog.getByRole('checkbox', { name: '父子联动', exact: true })
   if (await cascade.isChecked()) await dialog.getByText('父子联动', { exact: true }).click()
@@ -76,7 +77,17 @@ export async function setRolePermissions(
       value.request().method() === 'GET' &&
       new URL(value.url()).pathname === '/api/v1/auth/context',
   )
-  // 修改权限会提升管理员看到的授权纪元；仅登记这个窗口内该角色的旧列表请求。
+  let permissionsChanged = false
+  let contextReceived = false
+  const observeResponse = (response: Response) => {
+    if (response.status() !== 200) return
+    const method = response.request().method()
+    const pathname = new URL(response.url()).pathname
+    if (method === 'PUT' && pathname === permissionsPath) permissionsChanged = true
+    if (permissionsChanged && method === 'GET' && pathname === '/api/v1/auth/context')
+      contextReceived = true
+  }
+  // 保留该角色旧列表登记；消息仅登记本次写入成功至新上下文响应前产生的请求。
   const observe = (request: Request) => {
     const url = new URL(request.url())
     if (
@@ -86,10 +97,20 @@ export async function setRolePermissions(
     ) {
       diagnostics.cancel(request)
     }
+    if (
+      permissionsChanged &&
+      !contextReceived &&
+      request.method() === 'GET' &&
+      (url.pathname === '/api/v1/system/messages' ||
+        url.pathname === '/api/v1/system/messages/unread-count')
+    ) {
+      diagnostics.cancel(request)
+    }
   }
+  page.on('response', observeResponse)
   page.on('request', observe)
   try {
-    const response = await act(page, 'PUT', /\/system\/roles\/\d+\/permissions$/u, () =>
+    const response = await act(page, 'PUT', permissionsPath, () =>
       dialog.getByRole('button', { name: '确定', exact: true }).click(),
     )
     expect((await refreshed).status()).toBe(200)
@@ -97,6 +118,7 @@ export async function setRolePermissions(
     await page.waitForLoadState('networkidle')
     return response
   } finally {
+    page.off('response', observeResponse)
     page.off('request', observe)
   }
 }

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Reserve the existing administrator request budget before permission changes in the permission-reduction test. Bind each role-permission PUT to the path returned by its permission GET, and register only message-list and unread-count GET requests created after that PUT succeeds and before the new context responds successfully as expected cancellations. Separately, when the observed page's main frame actually enters `/403`, register only those two message GETs still pending at that moment. Remove completed or failed requests from pending without retroactively accepting cancellations or registering new requests after the `/403` event. Both mechanisms retain the existing `ERR_ABORTED` check for each specific Request; other failures and requests outside their windows remain strictly checked. Add negative diagnostic coverage confirming that registration does not suppress other network or HTTP failures. During login setup, wait for the initial tenant query to finish after the tenant selector becomes visible and before opening it, preventing a new query from cancelling the unfinished initial query.
+
 - Keep concurrent deduplication, failure retries, visible translations and initial catalog isolation in message-loading tests while removing Promise identity and unused catalog-array length assertions. Remove the array export with no production consumer; preserve the actual three-catalog message merge.
 
 - Observe complete concurrent-call outcomes and side effects in session and runtime-capability tests instead of Promise reference identity. Preserve request and cleanup deduplication, retries after failure, settled-state behavior, and isolation of new CSRF requests from old finalization.

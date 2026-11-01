@@ -4,6 +4,7 @@ import { expect, type Page } from '@playwright/test'
 export async function selectLoginTenant(page: Page, tenantId: string) {
   const select = page.getByRole('combobox', { name: '请选择租户名称' })
   if (!(await select.isVisible())) return
+  await page.waitForLoadState('networkidle')
   await select.click()
   const option = page.getByTestId(`login-tenant-${tenantId}`)
   const more = page.getByRole('button', { name: '加载更多租户' })

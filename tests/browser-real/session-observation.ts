@@ -1,4 +1,4 @@
-import { expect, type Page, type Request } from '@playwright/test'
+import { expect, type Frame, type Page, type Request } from '@playwright/test'
 import { observeDiagnostics, expectCleanDiagnostics } from '../browser/support/diagnostics'
 
 export function observeSession(page: Page) {
@@ -10,6 +10,50 @@ export function observeSession(page: Page) {
       if (request) cancelled.add(request)
     },
     verify: () => expectCleanDiagnostics(page, diagnostics),
+  }
+}
+
+/** 仅登记主页面实际进入 403 时仍未完成的消息请求，不追认已发生的取消。 */
+export function watchForbiddenPageTeardown(
+  page: Page,
+  diagnostics: ReturnType<typeof observeSession>,
+) {
+  const pending = new Set<Request>()
+  let forbiddenPageReached = false
+  const observeRequest = (request: Request) => {
+    if (forbiddenPageReached || request.method() !== 'GET') return
+    const pathname = new URL(request.url()).pathname
+    if (
+      pathname === '/api/v1/system/messages' ||
+      pathname === '/api/v1/system/messages/unread-count'
+    ) {
+      pending.add(request)
+    }
+  }
+  const completeRequest = (request: Request) => {
+    pending.delete(request)
+  }
+  const observeNavigation = (frame: Frame) => {
+    if (
+      forbiddenPageReached ||
+      frame !== page.mainFrame() ||
+      new URL(frame.url()).pathname !== '/403'
+    )
+      return
+    forbiddenPageReached = true
+    for (const request of pending) diagnostics.cancel(request)
+    pending.clear()
+  }
+  page.on('request', observeRequest)
+  page.on('requestfinished', completeRequest)
+  page.on('requestfailed', completeRequest)
+  page.on('framenavigated', observeNavigation)
+  return () => {
+    page.off('request', observeRequest)
+    page.off('requestfinished', completeRequest)
+    page.off('requestfailed', completeRequest)
+    page.off('framenavigated', observeNavigation)
+    pending.clear()
   }
 }
 

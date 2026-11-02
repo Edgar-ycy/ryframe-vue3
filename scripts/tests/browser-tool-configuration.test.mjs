@@ -20,7 +20,15 @@ function configured(t) {
     tenantId: 'system',
     username: 'admin',
     credentialEndpoint: 'http://127.0.0.1:49152/v1/credentials',
-    backendDir: path.resolve('中文 后端'),
+    workerTool: {
+      root: path.resolve('中文 工具来源 N'),
+      binding: {
+        path: path.resolve('中文 工具来源 N', '.local-tests/frontend-origin-tool.json'),
+        bytes: 256,
+        sha256: 'a'.repeat(64),
+      },
+    },
+    backendDir: path.resolve('中文 业务后端 O'),
     runtimeDir: path.resolve('中文 运行目录'),
     python: path.resolve('工具/python.exe'),
     requestCapacity: 100,
@@ -42,6 +50,8 @@ test('业务凭据由受管代理读取且公开绑定和控制文件均不包�
   const close = createBrowserControl(root, { real: true, fixture: 'business', server: 'preview' })
   try {
     const binding = loadRealBrowserEnvironment(root)
+    assert.deepEqual(binding.workerTool, input.workerTool)
+    assert.notEqual(binding.workerTool.root, binding.backendDir)
     assert.equal(binding.serverMode, 'preview')
     assert.equal(binding.fixture, 'business')
     assert.equal(binding.channel, undefined)

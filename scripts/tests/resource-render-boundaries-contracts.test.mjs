@@ -52,6 +52,7 @@ test('Order typed caller、relation Detail、全局系统租户限制及字符�
   assert.ok(base.get('page.vue').includes('@/components/business/flat-crud'))
   assert.ok(!base.get('page.vue').includes('@/components/FlatCrudPage'))
   const api = base.get('api.ts')
+  assert.ok(api.includes("import type { Id } from '@/shared/http/types'"))
   assert.ok(api.includes('@/api/generated/operations/system'))
   assert.ok(!api.includes('requestOperation') && !api.includes('url:'))
   for (const operation of Object.values(resource.api.operations)) assert.ok(api.includes(operation))
@@ -81,7 +82,6 @@ test('Order typed caller、relation Detail、全局系统租户限制及字符�
     const view = execute(global, assets(global))
     const id = type === 'i64' ? '9223372036854775807' : '18446744073709551615'
     assert.equal(view.resource.recordId({ id }), id)
-    assert.ok(api.includes("import type { Id } from '@/shared/http/types'"))
   }
   const view = execute(order(), assets(order()))
   assert.equal(

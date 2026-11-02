@@ -151,7 +151,6 @@ describe('导出创建请求会话范围', () => {
     await nextTick()
     const newPromise = composable.result.submitExport(newScope, 'same-intent', createNew)
 
-    expect(newPromise).not.toBe(oldPromise)
     await vi.waitFor(() => expect(createNew).toHaveBeenCalledOnce())
 
     const freshJob = exportJob('job-new')

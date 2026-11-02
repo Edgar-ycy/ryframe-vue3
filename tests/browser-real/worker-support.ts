@@ -58,9 +58,14 @@ export async function controlWorker(
   operation: WorkerOperation,
   signal?: AbortSignal,
 ): Promise<'running' | 'stopped'> {
-  const { backendDir: backend, runtimeDir: runtime, scopeId: scope } = loadRealBrowserEnvironment()
+  const {
+    workerTool,
+    backendDir: backend,
+    runtimeDir: runtime,
+    scopeId: scope,
+  } = loadRealBrowserEnvironment()
   if (!backend || !runtime || !scope) throw new Error('Worker 测试缺少明确的后端、运行目录或 scope')
-  const tool = bindWorkerTool(backend)
+  const tool = bindWorkerTool(workerTool)
   const input = JSON.stringify({
     format_version: 1,
     kind: 'ryframe-full-stack-worker',

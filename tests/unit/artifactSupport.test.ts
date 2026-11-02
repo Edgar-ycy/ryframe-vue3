@@ -1,49 +1,145 @@
 import { createHash } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import path from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
 
 import {
-  artifactInspectionArguments,
-  artifactInspectionInvocation,
+  inspectExportArtifact,
   parseArtifactInspection,
   verifyDownloadedExportContent,
 } from '../browser-real/artifact-support'
 
-describe('导出物理对象验收结果', () => {
-  const backend = 'D:\\工作 空间\\backend'
-  const runtime = 'D:\\工作 空间\\.local-tests\\runtime'
-  const receipt = 'D:\\工作 空间\\.local-tests\\物理对象.json'
+vi.mock('../browser-real/worker-tool.mjs', () => ({ bindWorkerTool: vi.fn() }))
 
-  it.each(['snapshot', 'verify-deleted'] as const)(
-    '通过固定 cargo xtask 参数执行 %s 且不传公开写入参数',
-    (operation) => {
-      const args = artifactInspectionArguments(runtime, operation, '42', receipt)
-      expect(args).toEqual([
-        'xtask',
+const toolRoot = path.resolve('测试 空间/工具来源 N')
+const executable = path.join(toolRoot, 'verified-tool.exe')
+const verifyUnchanged = vi.fn()
+const binding = {
+  backendDir: path.resolve('测试 空间/backend P'),
+  runtimeDir: path.resolve('测试 空间/.local-tests/runtime P'),
+  workerTool: {
+    root: toolRoot,
+    binding: {
+      path: path.join(toolRoot, '.local-tests', 'frontend-origin-tool.json'),
+      bytes: 2,
+      sha256: 'a'.repeat(64),
+    },
+  },
+}
+const receiptPath = path.join(binding.runtimeDir, '物理对象.json')
+beforeEach(() => {
+  verifyUnchanged.mockReset()
+  vi.mocked(bindWorkerTool).mockReturnValue({ executable, verifyUnchanged })
+})
+
+describe('导出物理对象验收结果', () => {
+  it.each([
+    ['snapshot', 'present'],
+    ['verify-deleted', 'deleted'],
+  ] as const)('%s 执行绑定 N 程序并保留 P 参数和完整前后核验', async (operation, state) => {
+    const execute = vi.fn(async () => {
+      expect(bindWorkerTool).toHaveBeenCalledWith(binding.workerTool)
+      expect(verifyUnchanged).not.toHaveBeenCalled()
+      return JSON.stringify({ job_id: '42', state })
+    })
+    await expect(
+      inspectExportArtifact(operation, '42', receiptPath, {
+        binding,
+        environment: { PATH: 'fixed-path', APP_ENV: 'prod', APP_PASSWORD: 'must-not-pass' },
+        execute,
+      }),
+    ).resolves.toBe(state)
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(execute).toHaveBeenCalledWith({
+      executable,
+      arguments: [
         'check',
         'recovery',
         'fixture',
         'artifact',
         operation,
         '--runtime-dir',
-        runtime,
+        binding.runtimeDir,
         '--job-id',
         '42',
         '--receipt',
-        receipt,
-      ])
+        receiptPath,
+      ],
+      options: {
+        cwd: binding.backendDir,
+        encoding: 'utf8',
+        env: { PATH: 'fixed-path', APP_ENV: 'test' },
+        maxBuffer: 64 * 1024,
+        timeout: 45_000,
+        windowsHide: true,
+      },
+    })
+    expect(verifyUnchanged).toHaveBeenCalledTimes(1)
+  })
+
+  it('工具绑定缺失或漂移拒绝时不执行物理对象维护', async () => {
+    const failure = new Error('Worker 正式工具绑定无效或漂移')
+    vi.mocked(bindWorkerTool).mockImplementationOnce(() => {
+      throw failure
+    })
+    const execute = vi.fn()
+    await expect(
+      inspectExportArtifact('snapshot', '42', receiptPath, { binding, execute }),
+    ).rejects.toBe(failure)
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it.each(['snapshot', 'verify-deleted'] as const)(
+    '%s 执行失败仍核验来源且不重放',
+    async (operation) => {
+      const failure = new Error('native execution failed')
+      const execute = vi.fn().mockRejectedValue(failure)
+      await expect(
+        inspectExportArtifact(operation, '42', receiptPath, { binding, execute }),
+      ).rejects.toBe(failure)
+      expect(verifyUnchanged).toHaveBeenCalledTimes(1)
+      expect(execute).toHaveBeenCalledTimes(1)
     },
   )
 
-  it('固定 Cargo 调用使用后端 cwd 和受控环境', () => {
-    const invocation = artifactInspectionInvocation(backend, runtime, 'snapshot', '42', receipt, {
-      PATH: 'fixed-path',
+  it('执行成功后来源漂移拒绝且不重放 snapshot', async () => {
+    const drift = new Error('来源已漂移')
+    verifyUnchanged.mockImplementationOnce(() => {
+      throw drift
     })
-    expect(invocation.executable).toBe('cargo')
-    expect(invocation.arguments).toEqual(
-      artifactInspectionArguments(runtime, 'snapshot', '42', receipt),
-    )
-    expect(invocation.options.cwd).toBe(backend)
-    expect(invocation.options.env).toEqual({ PATH: 'fixed-path' })
+    const execute = vi.fn().mockResolvedValue(JSON.stringify({ job_id: '42', state: 'present' }))
+    await expect(
+      inspectExportArtifact('snapshot', '42', receiptPath, { binding, execute }),
+    ).rejects.toBe(drift)
+    expect(execute).toHaveBeenCalledTimes(1)
+  })
+
+  it('执行与来源核验双失败保留两个原因', async () => {
+    const primary = new Error('native execution failed')
+    const drift = new Error('来源已漂移')
+    verifyUnchanged.mockImplementationOnce(() => {
+      throw drift
+    })
+    const execute = vi.fn().mockRejectedValue(primary)
+    const failure: unknown = await inspectExportArtifact('snapshot', '42', receiptPath, {
+      binding,
+      execute,
+    }).catch((error: unknown) => error)
+    expect(failure).toBeInstanceOf(AggregateError)
+    if (!(failure instanceof AggregateError)) throw failure
+    expect(failure.errors[0]).toBe(primary)
+    expect(failure.errors[1]).toBe(drift)
+    expect(failure.cause).toBe(drift)
+    expect(execute).toHaveBeenCalledTimes(1)
+  })
+
+  it('非法收据失败后仍核验来源', async () => {
+    const execute = vi.fn().mockResolvedValue(JSON.stringify({ job_id: '43', state: 'present' }))
+    await expect(
+      inspectExportArtifact('snapshot', '42', receiptPath, { binding, execute }),
+    ).rejects.toThrow('对象清理验收返回了无效结果')
+    expect(verifyUnchanged).toHaveBeenCalledTimes(1)
+    expect(execute).toHaveBeenCalledTimes(1)
   })
 
   it.each([

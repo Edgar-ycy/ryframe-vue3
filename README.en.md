@@ -96,6 +96,14 @@ Put browser and tool inputs in `config/tools.json` or the higher-priority ignore
     "tenantId": "system",
     "username": "admin",
     "password": "<isolated-account-password>",
+    "workerTool": {
+      "root": "D:/project/rustProject/ryframe/tool-source",
+      "binding": {
+        "path": "D:/project/rustProject/ryframe/tool-source/.local-tests/frontend-origin-tool.json",
+        "bytes": 1234,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
     "backendDir": "D:/project/rustProject/ryframe/ryframe",
     "runtimeDir": "D:/project/rustProject/ryframe/ryframe/.local-tests/acceptance-local",
     "python": "D:/tools/python/python.exe",
@@ -109,6 +117,8 @@ Put browser and tool inputs in `config/tools.json` or the higher-priority ignore
   "browser_smoke": { "serverMode": "dev", "channel": "chrome" }
 }
 ```
+
+`real_browser.workerTool` must separately bind the tool's actual compilation source `root` and the raw byte length `binding.bytes` and lowercase SHA256 `binding.sha256` of that root's fixed `.local-tests/frontend-origin-tool.json`. The example length and digest illustrate the format; replace both with the actual coordinator-registered file values, up to 4 MiB. The tool source may differ from the business backend; `backendDir`, `runtimeDir`, and `scopeId` continue to select the tested business environment. Before and after Worker control, import-fixture, export-artifact snapshot and deletion-verification, business migration-gate and history-retention maintenance calls, the frontend checks the complete tool sources, executable and fixed binding and uses the same executable's native source verification to confirm its compilation root. Export-artifact and migration maintenance run the bound native executable directly without implicitly compiling through Cargo; long-lived migration gates complete precise cleanup before re-verifying sources. Missing fields, drift and unknown outcomes fail without legacy-field fallback or automatic replay.
 
 ```powershell
 corepack pnpm check --stage browser --real --fixture core --server dev

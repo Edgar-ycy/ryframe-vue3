@@ -3,7 +3,11 @@ import { test } from './session-fixture'
 import { act, credentials, isolatedName } from './support'
 import { holdResponse } from './response-gate'
 import { setRolePermissions } from './session-identities'
-import { watchCancellationToasts, watchStaleProjection } from './session-observation'
+import {
+  watchCancellationToasts,
+  watchForbiddenPageTeardown,
+  watchStaleProjection,
+} from './session-observation'
 import { createTenantWithPlan } from './tenant-support'
 import { changeInitialPassword } from './password-lifecycle-support'
 import {
@@ -23,6 +27,7 @@ test('真实权限降低后，已完成的旧查询不能回写授权与列表',
     (await fillNewPost(page, marker)).click(),
   )
   await searchPost(page, marker)
+  await actor.adminBudget.beforeAuthorizationChange()
   const gate = await holdResponse(page, 'GET', '/api/v1/system/posts', actor.clientAddress)
   let retainedAuthorizationEpoch: string
   try {
@@ -58,6 +63,8 @@ test('真实权限降低后，已完成的旧查询不能回写授权与列表',
 
   await expect(page.getByPlaceholder('请输入或选择岗位名称')).toBeVisible()
   await page.waitForLoadState('networkidle')
+  await actor.adminBudget.beforeAuthorizationChange()
+  const stopForbiddenTeardown = watchForbiddenPageTeardown(page, diagnostics)
   let postRequests = 0
   const observePosts = (request: Request) => {
     if (request.method() === 'GET' && new URL(request.url()).pathname === '/api/v1/system/posts') {
@@ -81,6 +88,7 @@ test('真实权限降低后，已完成的旧查询不能回写授权与列表',
     await actor.tabDiagnostics.verify()
     await actor.adminDiagnostics.verify()
   } finally {
+    stopForbiddenTeardown()
     page.off('request', observePosts)
   }
 })

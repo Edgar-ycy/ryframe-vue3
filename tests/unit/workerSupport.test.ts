@@ -9,18 +9,31 @@ const mocked = vi.hoisted(() => ({
   verify: vi.fn(),
   environment: vi.fn(),
 }))
-vi.mock('node:child_process', () => ({ execFile: mocked.execute }))
+vi.mock('node:child_process', async (original) => ({
+  ...(await original<object>()),
+  execFile: mocked.execute,
+}))
 vi.mock('../browser-real/worker-tool.mjs', async (original) => ({
   ...(await original<object>()),
   bindWorkerTool: mocked.bind,
 }))
-vi.mock('../../scripts/real-browser-environment.mjs', () => ({
+vi.mock('../../scripts/real-browser-environment.mjs', async (original) => ({
+  ...(await original<object>()),
   loadRealBrowserEnvironment: mocked.environment,
 }))
 
 const backend = path.resolve('.local-tests/Worker 中文/backend root')
 const runtime = path.resolve('.local-tests/Worker 中文/runtime root')
-const executable = path.join(backend, 'xtask.exe')
+const toolRoot = path.resolve('.local-tests/Worker 中文/tool source N')
+const executable = path.join(toolRoot, 'xtask.exe')
+const workerTool = {
+  root: toolRoot,
+  binding: {
+    path: path.join(toolRoot, '.local-tests/frontend-origin-tool.json'),
+    bytes: 128,
+    sha256: 'a'.repeat(64),
+  },
+}
 const scope = 'worker-caller-test'
 const secret = 'private-token-must-not-appear'
 
@@ -56,7 +69,12 @@ function respond(value: unknown, error: object | null = null) {
 
 beforeEach(() => {
   mocked.bind.mockReturnValue({ executable, verifyUnchanged: mocked.verify })
-  mocked.environment.mockReturnValue({ backendDir: backend, runtimeDir: runtime, scopeId: scope })
+  mocked.environment.mockReturnValue({
+    workerTool,
+    backendDir: backend,
+    runtimeDir: runtime,
+    scopeId: scope,
+  })
 })
 
 describe('浏览器 Worker 原生调用', () => {
@@ -69,7 +87,7 @@ describe('浏览器 Worker 原生调用', () => {
   ] as const)('%s 使用正式绑定、有界 stdin 和隔离环境', async (operation, state) => {
     const input = respond(receipt(operation, state))
     expect(await controlWorker(operation)).toBe(state)
-    expect(mocked.bind).toHaveBeenCalledWith(backend)
+    expect(mocked.bind).toHaveBeenCalledWith(workerTool)
     expect(mocked.execute).toHaveBeenCalledWith(
       executable,
       ['__full-stack-worker'],

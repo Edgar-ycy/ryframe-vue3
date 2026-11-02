@@ -116,8 +116,8 @@ async function prepareFixture(
   const output = info.outputPath(`${username}.xlsx`)
   const templateContent = await readFile(template)
   const templateSha256 = sha256(templateContent)
-  const { backendDir: backend } = loadRealBrowserEnvironment()
-  const tool = bindWorkerTool(backend)
+  const { workerTool, backendDir: backend } = loadRealBrowserEnvironment()
+  const tool = bindWorkerTool(workerTool)
   try {
     const stdout = execFileSync(
       tool.executable,

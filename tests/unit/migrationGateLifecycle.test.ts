@@ -1,8 +1,19 @@
 import { EventEmitter, once } from 'node:events'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { holdMigrationGate } from '../support/migration-gate'
+import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
+
+vi.mock('../browser-real/worker-tool.mjs', () => ({ bindWorkerTool: vi.fn() }))
+
+const toolRoot = path.resolve('.local-tests', '工具来源 N')
+const executable = path.join(toolRoot, 'verified-tool.exe')
+const verifyUnchanged = vi.fn()
+beforeEach(() => {
+  verifyUnchanged.mockReset()
+  vi.mocked(bindWorkerTool).mockReturnValue({ executable, verifyUnchanged })
+})
 
 const tenant = 'tenant-1'
 const migration = 'migration-1'
@@ -12,6 +23,14 @@ const binding = {
   backendDir: backend,
   runtimeDir: runtime,
   scopeId: 'scope-1',
+  workerTool: {
+    root: toolRoot,
+    binding: {
+      path: path.join(toolRoot, '.local-tests', 'frontend-origin-tool.json'),
+      bytes: 2,
+      sha256: 'a'.repeat(64),
+    },
+  },
 }
 
 type SpawnOptions = { cwd: string; env: NodeJS.ProcessEnv; stdio: 'pipe'; windowsHide: true }
@@ -77,17 +96,17 @@ function spawnFixture(
 }
 
 describe('业务迁移 gate 进程生命周期', () => {
-  it('传递固定调用参数并等待正常 close 后才完成释放', async () => {
+  it('绑定 N 程序与 O 运行目录并等待正常 close 后完成全部并发释放', async () => {
     const child = new FakeMigrationGateProcess()
     const captured: { arguments?: string[]; command?: string; options?: SpawnOptions } = {}
     const gate = await holdMigrationGate(tenant, migration, {
       binding,
-      environment: {},
+      environment: { PATH: 'fixed-path', APP_ENV: 'prod', APP_PASSWORD: 'must-not-pass' },
       spawnProcess: spawnFixture(child, captured),
     })
-    expect(captured.command).toBe('cargo')
+    expect(bindWorkerTool).toHaveBeenCalledWith(binding.workerTool)
+    expect(captured.command).toBe(executable)
     expect(captured.arguments).toEqual([
-      'xtask',
       'check',
       'recovery',
       'fixture',
@@ -100,23 +119,56 @@ describe('业务迁移 gate 进程生命周期', () => {
       '--migration',
       migration,
     ])
-    expect(captured.options).toEqual({ cwd: backend, env: {}, stdio: 'pipe', windowsHide: true })
+    expect(captured.options).toEqual({
+      cwd: backend,
+      env: { PATH: 'fixed-path', APP_ENV: 'test' },
+      stdio: 'pipe',
+      windowsHide: true,
+    })
 
     const finished = once(child.stdin, 'finish')
     let settled = false
     const firstRelease = gate.release()
     const secondRelease = gate.release()
-    expect(secondRelease).toBe(firstRelease)
-    const releasing = firstRelease.finally(() => (settled = true))
+    const releasing = Promise.all([firstRelease, secondRelease]).finally(() => (settled = true))
     await finished
     await Promise.resolve()
     expect(settled).toBe(false)
+    expect(verifyUnchanged).not.toHaveBeenCalled()
     child.close()
     await releasing
-    expect(gate.release()).toBe(firstRelease)
     await gate.release()
     expect(child.releaseRequests).toBe(1)
     expect(child.killSignals).toEqual([])
+    expect(verifyUnchanged).toHaveBeenCalledTimes(1)
+  })
+
+  it('来源绑定拒绝时不创建迁移 gate 子进程', async () => {
+    const failure = new Error('来源绑定拒绝')
+    vi.mocked(bindWorkerTool).mockImplementationOnce(() => {
+      throw failure
+    })
+    const spawnProcess = vi.fn()
+    await expect(holdMigrationGate(tenant, migration, { binding, spawnProcess })).rejects.toBe(
+      failure,
+    )
+    expect(spawnProcess).not.toHaveBeenCalled()
+  })
+
+  it('正常回收后来源漂移仍拒绝，且不重放释放请求', async () => {
+    const child = new FakeMigrationGateProcess()
+    const drift = new Error('来源已漂移')
+    child.stdin.once('finish', () => child.close())
+    verifyUnchanged.mockImplementationOnce(() => {
+      expect(child.closed).toBe(true)
+      throw drift
+    })
+    const gate = await holdMigrationGate(tenant, migration, {
+      binding,
+      spawnProcess: spawnFixture(child),
+    })
+    await expect(gate.release()).rejects.toBe(drift)
+    expect(child.releaseRequests).toBe(1)
   })
 
   it('宽限期结束后强制停止，并等待 close 完成后再报告超时', async () => {
@@ -169,14 +221,12 @@ describe('业务迁移 gate 进程生命周期', () => {
     expect(child.closed).toBe(false)
 
     const secondRelease = gate.release()
-    expect(secondRelease).not.toBe(firstRelease)
     await expect(secondRelease).rejects.toThrow('迁移 gate 关闭超时')
     expect(child.killSignals).toEqual(['SIGKILL', 'SIGKILL'])
     expect(child.closed).toBe(true)
     expect(child.releaseRequests).toBe(1)
 
     const terminalRelease = gate.release()
-    expect(terminalRelease).toBe(secondRelease)
     await expect(terminalRelease).rejects.toThrow('迁移 gate 关闭超时')
   })
 
@@ -203,6 +253,11 @@ describe('业务迁移 gate 进程生命周期', () => {
   it('初始化协议失败时完成强制回收并同时保留原始错误', async () => {
     const child = new FakeMigrationGateProcess()
     child.onKill = () => queueMicrotask(() => child.close(null, 'SIGKILL'))
+    const drift = new Error('来源已漂移')
+    verifyUnchanged.mockImplementationOnce(() => {
+      expect(child.closed).toBe(true)
+      throw drift
+    })
 
     let failure: unknown
     try {
@@ -223,6 +278,7 @@ describe('业务迁移 gate 进程生命周期', () => {
       '迁移 gate 收据与当前 scope、租户、任务或阶段不匹配',
     )
     expect(failure.errors[1]).toHaveProperty('message', '迁移 gate 关闭超时')
+    expect(failure.errors).toContain(drift)
     expect(child.closed).toBe(true)
   })
 })

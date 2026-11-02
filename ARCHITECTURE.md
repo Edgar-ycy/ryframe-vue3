@@ -152,6 +152,8 @@ CI 执行对应阶段，浏览器阶段单独运行。
 
 跨仓证明位于 `scripts/contract-tests/frontend-native-receipt.mjs`，不在 unit 通配符中；实际 Node 生产者→Rust 消费者场景保留配置、身份、完整产物、Unicode、畸形输入和链接边界。入口只接受 `--consumer-context`，使用已绑定程序执行 `__frontend-build-contract --frontend-dir <absolute-path>`，通过 stdin 传递 `frontend_inventories`、`backend_inventories`，上限 16 MiB。原生入口复核自身编译来源闭包；缺少来源绑定或发生漂移时失败，不跳过证明，不使用解释器、PATH 猜测或编译回退。全局真实浏览器恢复链的 Python 配置职责保持独立。
 
+真实浏览器的 `real_browser.workerTool={root,binding:{path,bytes,sha256}}` 单独标识工具来源；`binding.path` 只能位于该根的 `.local-tests/frontend-origin-tool.json`。业务 `backendDir/runtimeDir/scopeId` 不随工具根改变，Worker 请求的 `arguments.backend` 与 cwd 保持业务后端。`tests/browser-real/worker-tool.mjs` 在完整 policy 集合、普通无链接路径、文件身份和摘要双读之外，再核固定绑定的 raw bytes/SHA；用受限工具环境和 `APP_ENV=test` 执行绑定程序的 `__frontend-origin verify-sources`，stdin 为 `{format_version:1,root,sources}`，60 秒超时且响应有界。严格 token 字段、来源计数和前后相同 token 共同约束真实编译根及完整来源；`verifyUnchanged` 重做这些检查。控制仍使用原 Worker 协议，实际业务进程、配置、scope 与收据由 Rust runtime 核验；未知结果不重放。导出对象快照与删除复核、业务迁移门和历史保留期维护复用同一绑定程序，cwd、runtime 与 scope 保持业务来源；导出对象和历史操作每次执行前后核验，长活迁移门在 spawn 前绑定，并在精确关闭 child 后复核。来源核验与执行或清理同时失败时保留双方原因，不重放未知写入。协议单元 mock 仅证明前端边界，跨来源成功和同字节错根拒绝须有真实原生验收。
+
 ## 编写与运行测试
 
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。

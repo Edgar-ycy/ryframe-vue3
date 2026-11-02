@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Remove permission-theme declaration checks for trees, dropdown items, tags and hover variables already covered by browser measurements of dark backgrounds and text contrast, plus a redundant text assertion after locating the node by the same name. Retain existing declaration checks for primary-link interaction states, tables, dialogs, inputs and disabled backgrounds, along with mock scenarios and real permission-tree interaction, layout and accessibility coverage.
+
 - Keep concurrent deduplication, failure retries, visible translations and initial catalog isolation in message-loading tests while removing Promise identity and unused catalog-array length assertions. Remove the array export with no production consumer; preserve the actual three-catalog message merge.
 
 - Observe complete concurrent-call outcomes and side effects in session and runtime-capability tests instead of Promise reference identity. Preserve request and cleanup deduplication, retries after failure, settled-state behavior, and isolation of new CSRF requests from old finalization.

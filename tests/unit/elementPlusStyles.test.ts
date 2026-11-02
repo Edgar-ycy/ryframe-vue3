@@ -31,27 +31,18 @@ describe('Element Plus 全局样式', () => {
     expect(compiledStyles).toContain('color: var(--color-primary-readable);')
   })
 
-  it('暗色覆盖表格、树、选择器、弹窗、输入与标签', () => {
+  it('暗色表格、弹窗、输入与禁用底色保留样式声明', () => {
     const compiled = `${compiledStyles}\n${darkStyles}`
+    // 树、下拉项和标签由 permission-theme 浏览器用例检查实际明暗底色与文字对比度。
+    // 以下风险尚无等价渲染断言，继续保留声明检查。
     for (const selector of [
       'html.dark .el-table {',
-      'html.dark .el-tree {',
-      'html.dark .el-select-dropdown {',
-      'html.dark .el-select-dropdown__item {',
       'html.dark .el-dialog {',
       'html.dark .el-input__wrapper {',
-      'html.dark .el-tag {',
-      'html.dark .el-tag--success {',
-      'html.dark .el-tag--danger,',
     ]) {
       expect(compiled).toContain(selector)
     }
-    for (const variable of [
-      '--el-fill-color-lighter:',
-      '--el-disabled-bg-color:',
-      '--el-select-option-hover-background:',
-      '--el-tree-node-hover-bg-color:',
-    ]) {
+    for (const variable of ['--el-fill-color-lighter:', '--el-disabled-bg-color:']) {
       expect(compiled).toContain(variable)
     }
   })

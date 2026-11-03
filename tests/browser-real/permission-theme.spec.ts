@@ -43,9 +43,11 @@ for (const viewport of [
       permissionMutationRequests: permissionMutations,
     }
     try {
-      // 手机隐藏主题开关；先经桌面真实UI选择暗黑，再检查手机布局。
-      await page.setViewportSize({ width: 1440, height: 900 })
+      // 先按目标视口登录，分别核验桌面和手机登录页的真实 axe。
+      await page.setViewportSize(viewport)
       await login(page)
+      // 手机不显示主题开关；登录后切到桌面设置暗黑，再恢复目标视口。
+      await page.setViewportSize({ width: 1440, height: 900 })
       if (!(await page.locator('html').evaluate((element) => element.classList.contains('dark')))) {
         await page.locator('.theme-switch .el-switch__core').click()
       }

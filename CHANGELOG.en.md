@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Preserve the existing positive cache-variant checks for plan, migration and tenant-plan resource invalidation, and add counterexamples requiring caches for other tenants, subjects, session epochs and unrelated resources to retain their data without invalidation. Use the real QueryClient; this does not replace real cross-tenant page acceptance.
+
 - Add a real multi-tenant login scenario that publishes one empty-capability plan through the UI, reuses it to create 21 exclusive tenants, checks both search pages and their complete tenant IDs using a shared name prefix, then selects the second-page tenant and verifies that initial-owner login reaches the restricted password-change page. Retain fixed client addresses, request and login budgets, and the existing deadline; preserve creation records and page diagnostics on failure without automatic retries or resource deletion.
 
 - Run the existing real permission-theme scenarios' login axe checks at their target desktop or mobile viewport, then switch to desktop to set dark mode and restore the target viewport. Retain the existing permission-page interactions and diagnostic checks.

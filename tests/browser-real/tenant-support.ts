@@ -1,4 +1,5 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page, type Response } from '@playwright/test'
+import type { OperationJsonResponse } from '@/api/contract'
 import { act, isolatedName } from './support'
 
 function field(dialog: Locator, label: string): Locator {
@@ -16,6 +17,19 @@ export async function createTenantWithPlan(
   const name = identity?.planName ?? isolatedName('套餐')
   const key = identity?.planKey ?? isolatedName('plan')
   const tenant = identity?.tenant ?? isolatedName('tenant')
+  const plan = await createPublishedPlan(page, { planName: name, planKey: key }, beforeWrite)
+  await createTenantFromPlan(page, tenant, plan, target, beforeWrite)
+  return { tenant, planName: name, planKey: key }
+}
+
+/** 创建并发布空能力套餐，供单个或多个独占租户复用。 */
+export async function createPublishedPlan(
+  page: Page,
+  identity?: { planKey: string; planName: string },
+  beforeWrite?: () => Promise<void>,
+) {
+  const name = identity?.planName ?? isolatedName('套餐')
+  const key = identity?.planKey ?? isolatedName('plan')
   const plansMenu = page.getByRole('menuitem', { name: '产品套餐', exact: true })
   if (!(await plansMenu.isVisible())) {
     await page.getByRole('menuitem', { name: '平台管理', exact: true }).click()
@@ -57,7 +71,17 @@ export async function createTenantWithPlan(
     page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click(),
   )
   await expect(page.getByText('已发布', { exact: true })).toBeVisible()
+  return { planName: name, planKey: key }
+}
 
+/** 通过创建表单使用已有已发布套餐，保留配额和初始账号设置。 */
+export async function createTenantFromPlan(
+  page: Page,
+  tenant: string,
+  plan: { planName: string; planKey: string },
+  target = 'shared-control',
+  beforeWrite?: () => Promise<void>,
+) {
   await page.getByRole('menuitem', { name: '租户管理', exact: true }).click()
   const newTenant = page.getByRole('button', { name: '创建租户', exact: true })
   await expect(newTenant).toBeVisible()
@@ -69,7 +93,7 @@ export async function createTenantWithPlan(
   await field(create, '管理员账号').locator('input').fill('owner')
   await field(create, '初始密码').locator('input').fill('Valid!Owner123')
   await create.getByRole('combobox', { name: /产品套餐版本/u }).click()
-  await page.getByRole('option', { name: `${name} · v1`, exact: true }).click()
+  await page.getByRole('option', { name: `${plan.planName} · v1`, exact: true }).click()
   await create.getByRole('combobox', { name: /数据目标/u }).click()
   await page.getByRole('option').filter({ hasText: target }).click()
   await create.getByRole('spinbutton', { name: '最大用户数', exact: true }).fill('12')
@@ -89,7 +113,22 @@ export async function createTenantWithPlan(
     max_requests_per_min: 600,
   })
   await expect(create).not.toBeVisible()
-  return { tenant, planName: name, planKey: key }
+  return result
+}
+
+/** 核对真实租户名称查询的分页参数及返回数据。 */
+export async function readTenantSearchPage(response: Response, search: string, page: number) {
+  const query = new URL(response.url()).searchParams
+  const observed = {
+    search: query.get('search'),
+    page: query.get('page'),
+    page_size: query.get('page_size'),
+  }
+  expect(response.status()).toBe(200)
+  expect(observed).toEqual({ search, page: String(page), page_size: '20' })
+  const body: OperationJsonResponse<'get_auth_tenants'> = await response.json()
+  if (!body.data) throw new Error('租户名称查询未返回分页数据')
+  return { ...observed, status: response.status(), ...body.data }
 }
 
 export async function openTenantDetails(page: Page, tenant: string) {

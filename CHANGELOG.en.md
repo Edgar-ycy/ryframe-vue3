@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Add a real multi-tenant login scenario that publishes one empty-capability plan through the UI, reuses it to create 21 exclusive tenants, checks both search pages and their complete tenant IDs using a shared name prefix, then selects the second-page tenant and verifies that initial-owner login reaches the restricted password-change page. Retain fixed client addresses, request and login budgets, and the existing deadline; preserve creation records and page diagnostics on failure without automatic retries or resource deletion.
+
 - Run the existing real permission-theme scenarios' login axe checks at their target desktop or mobile viewport, then switch to desktop to set dark mode and restore the target viewport. Retain the existing permission-page interactions and diagnostic checks.
 
 - Remove permission-theme declaration checks for trees, dropdown items, tags and hover variables already covered by browser measurements of dark backgrounds and text contrast, plus a redundant text assertion after locating the node by the same name. Retain existing declaration checks for primary-link interaction states, tables, dialogs, inputs and disabled backgrounds, along with mock scenarios and real permission-tree interaction, layout and accessibility coverage.

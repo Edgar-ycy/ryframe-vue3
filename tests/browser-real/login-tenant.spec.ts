@@ -19,15 +19,17 @@ test.describe('真实租户名称查询与第二页登录', () => {
   }, info) => {
     const adminDiagnostics = observeDiagnostics(page)
     const adminBudget = observeRequestBudget(page)
-    const search = isolatedName('tenant-search')
+    // 查询词只出现在名称中，避免仅按标识匹配也通过。
+    const search = isolatedName('tenant-name')
+    const tenantIdPrefix = isolatedName('tenant-id')
     const plan = { planName: isolatedName('套餐'), planKey: isolatedName('plan') }
     const receipt = {
       search,
       plan,
-      planned_ids: Array.from(
-        { length: 21 },
-        (_, index) => `${search}-${String(index + 1).padStart(2, '0')}`,
-      ),
+      planned_tenants: Array.from({ length: 21 }, (_, index) => {
+        const suffix = String(index + 1).padStart(2, '0')
+        return { id: `${tenantIdPrefix}-${suffix}`, name: `${search}-${suffix}` }
+      }),
       created_ids: [] as string[],
       pages: [] as Awaited<ReturnType<typeof readTenantSearchPage>>[],
       selected: null as string | null,
@@ -89,11 +91,13 @@ test.describe('真实租户名称查询与第二页登录', () => {
         await adminBudget.beforeProvisioning()
       }
       const published = await createPublishedPlan(page, plan, beforeWrite)
-      for (const tenant of receipt.planned_ids) {
+      for (const tenant of receipt.planned_tenants) {
         await createTenantFromPlan(page, tenant, published, 'shared-control', beforeWrite)
       }
       await Promise.all(pending)
-      expect([...receipt.created_ids].sort()).toEqual([...receipt.planned_ids].sort())
+      expect([...receipt.created_ids].sort()).toEqual(
+        receipt.planned_tenants.map(({ id }) => id).sort(),
+      )
       receipt.phase = 'searching'
       await save()
 
@@ -128,8 +132,9 @@ test.describe('真实租户名称查询与第二页登录', () => {
       expect(second.items).toHaveLength(1)
       expect(second.has_more).toBe(false)
       const items: OperationData<'get_auth_tenants'>['items'] = [...first.items, ...second.items]
-      expect(items.map((item) => item.tenant_id).sort()).toEqual([...receipt.created_ids].sort())
-      expect(items.map((item) => item.name).sort()).toEqual([...receipt.planned_ids].sort())
+      expect(items.map(({ tenant_id, name }) => [tenant_id, name]).sort()).toEqual(
+        receipt.planned_tenants.map(({ id, name }) => [id, name]).sort(),
+      )
       await expect(more).not.toBeVisible()
       const selected = second.items[0]!.tenant_id
       receipt.selected = selected

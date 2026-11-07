@@ -18,7 +18,7 @@ export async function createTenantWithPlan(
   const key = identity?.planKey ?? isolatedName('plan')
   const tenant = identity?.tenant ?? isolatedName('tenant')
   const plan = await createPublishedPlan(page, { planName: name, planKey: key }, beforeWrite)
-  await createTenantFromPlan(page, tenant, plan, target, beforeWrite)
+  await createTenantFromPlan(page, { id: tenant, name: tenant }, plan, target, beforeWrite)
   return { tenant, planName: name, planKey: key }
 }
 
@@ -77,7 +77,7 @@ export async function createPublishedPlan(
 /** 通过创建表单使用已有已发布套餐，保留配额和初始账号设置。 */
 export async function createTenantFromPlan(
   page: Page,
-  tenant: string,
+  tenant: { id: string; name: string },
   plan: { planName: string; planKey: string },
   target = 'shared-control',
   beforeWrite?: () => Promise<void>,
@@ -88,8 +88,8 @@ export async function createTenantFromPlan(
   await page.waitForLoadState('networkidle')
   await newTenant.click()
   const create = page.getByRole('dialog', { name: '创建租户', exact: true })
-  await field(create, '租户标识').locator('input').fill(tenant)
-  await field(create, '租户名称').locator('input').fill(tenant)
+  await field(create, '租户标识').locator('input').fill(tenant.id)
+  await field(create, '租户名称').locator('input').fill(tenant.name)
   await field(create, '管理员账号').locator('input').fill('owner')
   await field(create, '初始密码').locator('input').fill('Valid!Owner123')
   await create.getByRole('combobox', { name: /产品套餐版本/u }).click()
@@ -105,7 +105,8 @@ export async function createTenantFromPlan(
     create.getByRole('button', { name: '创建', exact: true }).click(),
   )
   expect(result.request().postDataJSON()).toMatchObject({
-    tenant_id: tenant,
+    tenant_id: tenant.id,
+    name: tenant.name,
     admin_username: 'owner',
     max_users: 12,
     max_roles: 8,

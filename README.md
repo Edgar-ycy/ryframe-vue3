@@ -25,7 +25,7 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm dev
 ```
 
-开发服务器默认监听 `http://localhost:5173`，并将 `/api` 代理到文件配置的 `server.proxy_target`。联调前先启动后端 API。
+开发服务器默认监听 `http://localhost:5173`，并将 `/api` 代理到文件配置的 `server.proxy_target`。联调前先启动后端 API。安装、启动和日常联调无需预建任何 Git 忽略目录。
 
 后端初始化与文件配置请在其独立仓库按[下载后首次运行](https://github.com/Edgar-ycy/ryframe/blob/main/README.md#下载后首次运行)操作。本前端公共 TOML 仅放浏览器可公开配置；后端明文凭据留在后端私有配置目录。
 
@@ -92,7 +92,9 @@ corepack pnpm generate
 浏览器 smoke 使用 `corepack pnpm check --stage browser`；真实后端联调使用隔离资源与对应的 real 配置。每次 smoke 将 HTML 报告和测试附件分别保存在 `.local-tests/playwright/report/<dev或preview>/<代次UUID>/` 与 `.local-tests/playwright/results/<dev或preview>/<代次UUID>/`，失败时保留截图、视频和 trace，重跑不会覆盖之前的代次。
 仓库 CI 分别执行这些阶段，并保留 Windows 检查。
 
-真实浏览器与工具输入写入 `config/tools.json` 或优先级更高的忽略文件 `.local-tests/frontend-tools.json`，顶层字段按文件覆盖，嵌套配置整体替换。实际账号、密码和本机路径只放在后者；公开应用 TOML 不接收这些私有输入。下面的数值必须与所绑定后端的实际限流配置一致，路径指向已登记的隔离运行环境：
+### 框架维护验收
+
+下列真实浏览器验收配置使用已登记的隔离运行环境。工具读取 `config/tools.json` 及优先级更高的维护验收文件 `.local-tests/frontend-tools.json`，顶层字段按文件覆盖，嵌套配置整体替换。实际账号、密码和本机路径只放在后者。示例数值须与所绑定后端的实际限流配置一致：
 
 ```json
 {

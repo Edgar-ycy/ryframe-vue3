@@ -24,7 +24,7 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm dev
 ```
 
-The development server defaults to `http://localhost:5173` and proxies `/api` to file-configured `server.proxy_target`. Start the backend API before testing integration.
+The development server defaults to `http://localhost:5173` and proxies `/api` to file-configured `server.proxy_target`. Start the backend API before testing integration. Installation, startup, and routine integration require no Git-ignored directories to be created beforehand.
 
 Initialize and configure the backend in its separate repository by following [First run after downloading](https://github.com/Edgar-ycy/ryframe/blob/main/README.en.md#first-run-after-downloading). Frontend public TOML files contain only configuration safe to expose to browsers; keep backend plaintext credentials in the backend's private configuration directory.
 
@@ -87,7 +87,9 @@ corepack pnpm generate
 
 Cross-repository consumer checks explicitly use `corepack pnpm check --stage contract --consumer-context <file>` (also supported with `--full`), validating the contract before running actual Node→Rust receipt proofs. The context binds the selected frontend/backend directories, native backend tool and configuration digests. Ordinary single-repository checks require no backend or Python. `--plan` reads no context, writes no files, and starts no tasks.
 
-Put browser and tool inputs in `config/tools.json` or the higher-priority ignored `.local-tests/frontend-tools.json`. Top-level fields override earlier files; nested sections are replaced as a whole. Keep actual accounts, passwords, and machine paths only in the latter file; public application TOML does not accept these private inputs. The example limits must match the bound backend's actual configuration, and paths must identify a registered isolated runtime:
+### Framework maintainer acceptance
+
+The real-browser acceptance configuration below uses a registered isolated runtime. The tool reads `config/tools.json` and the higher-priority maintainer file `.local-tests/frontend-tools.json`. Top-level fields override earlier files, and nested sections are replaced as a whole. Keep actual accounts, passwords, and machine paths only in the latter file. The example limits must match the bound backend's actual configuration:
 
 ```json
 {

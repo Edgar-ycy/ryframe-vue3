@@ -52,7 +52,7 @@ Application TOML is parsed with `smol-toml` 1.9.1 and rejects unsafe keys. Integ
 
 The API prefix still comes exclusively from OpenAPI-generated `apiPrefix.generated.json`. The browser bundle contains only the public `{apiOrigin}` projection. Never include passwords or E2E, recovery, or contract-tool credentials.
 
-Public `config/tools.json` contains the empty object `{}`. Locally, ignored `.local-tests/frontend-tools.json` can set `{"application_config_dir":".local-tests/public-config"}`. Local settings override the public tool file; relative paths resolve from the frontend root. Both tool files are optional, but existing invalid files fail rather than being skipped. Store real deployment public TOML in such an ignored directory without changing tracked templates or mixing private credentials into public files.
+Public `config/tools.json` defaults to the empty object `{}`. To select different public application configuration, set `application_config_dir` in that file to a directory outside the working tree, for example `{"application_config_dir":"D:/deployments/ryframe/frontend-config"}`. Relative paths resolve from the frontend root. Public configuration contains only information that can be delivered to browsers. Framework maintainer acceptance may use the higher-priority `.local-tests/frontend-tools.json` file. Both tool files are optional, and invalid files cause an error.
 
 ```powershell
 $env:APP_ENV = "prod"

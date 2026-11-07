@@ -55,7 +55,7 @@ corepack pnpm dev
 
 API 前缀继续只由 OpenAPI 生成的 `apiPrefix.generated.json` 提供。浏览器包仅包含 `{apiOrigin}` 公开投影，不能放入密码、E2E、恢复或契约工具凭据。
 
-`config/tools.json` 为公开空对象 `{}`。本机可在忽略的 `.local-tests/frontend-tools.json` 设置 `{"application_config_dir":".local-tests/public-config"}`；本机文件优先于公共工具文件，相对路径从前端根解析。两份工具文件均可缺省，存在但非法时不会跳过。把真实部署公开 TOML 放在此类忽略目录中，不改 tracked 模板，也不要将任何私有凭据混入公开文件。
+`config/tools.json` 的默认值是公开空对象 `{}`。需要选择另一份公开应用配置时，可在该文件的 `application_config_dir` 中填写工作树外的目录，例如 `{"application_config_dir":"D:/deployments/ryframe/frontend-config"}`。相对路径从前端根解析，公开配置只填写可交付给浏览器的信息。框架维护验收可选用优先级更高的 `.local-tests/frontend-tools.json`。两份工具文件都可缺省，存在但内容无效时会报错。
 
 ```powershell
 $env:APP_ENV = "prod"

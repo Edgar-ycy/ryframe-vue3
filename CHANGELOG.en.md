@@ -10,7 +10,7 @@
 
 - Run the existing real permission-theme scenarios' login axe checks at their target desktop or mobile viewport, then switch to desktop to set dark mode and restore the target viewport. Retain the existing permission-page interactions and diagnostic checks.
 
-- Remove permission-theme declaration checks for trees, dropdown items, tags and hover variables already covered by browser measurements of dark backgrounds and text contrast, plus a redundant text assertion after locating the node by the same name. Retain existing declaration checks for primary-link interaction states, tables, dialogs, inputs and disabled backgrounds, along with mock scenarios and real permission-tree interaction, layout and accessibility coverage.
+- Remove permission-theme declaration checks for trees, dropdown items, tags and hover variables already covered by browser measurements of dark backgrounds and text contrast. Check the accessible name of the permission tree node and its visible text on hover separately. Retain declaration checks for primary-link interaction states, tables, dialogs, inputs and disabled backgrounds, along with real permission-tree interaction, layout and accessibility coverage.
 
 - Review existing import/export tests and remove a Promise-reference comparison already implied by public outcomes in the epoch-race case. Preserve fresh-request success, stale-request cancellation, and cache, event and notification isolation safeguards.
 

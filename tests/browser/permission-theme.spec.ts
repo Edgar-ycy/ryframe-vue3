@@ -33,6 +33,7 @@ async function expectTreeAppearance(page: Page): Promise<void> {
   const label = option.locator('> span')
   await expectReadableSurface(label, '树节点普通状态')
   await label.hover()
+  await expect(label).toHaveText(permissionRows[0].name, { useInnerText: true })
   await expect
     .poll(() =>
       node.locator('> .el-tree-node__content').evaluate((element) => element.matches(':hover')),

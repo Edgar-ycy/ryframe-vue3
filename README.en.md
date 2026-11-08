@@ -24,7 +24,7 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm dev
 ```
 
-The development server defaults to `http://localhost:5173` and proxies `/api` to file-configured `server.proxy_target`. Start the backend API before testing integration. Installation, startup, and routine integration require no Git-ignored directories to be created beforehand.
+The development server defaults to `http://localhost:5173` and proxies `/api` to file-configured `server.proxy_target`. Start the backend API before testing integration. Installation, startup, routine integration, and optional development checks require no manual creation of Git-ignored directories. The respective tools generate dependencies, build artifacts, and test reports.
 
 Initialize and configure the backend in its separate repository by following [First run after downloading](https://github.com/Edgar-ycy/ryframe/blob/main/README.en.md#first-run-after-downloading). Frontend public TOML files contain only configuration safe to expose to browsers; keep backend plaintext credentials in the backend's private configuration directory.
 

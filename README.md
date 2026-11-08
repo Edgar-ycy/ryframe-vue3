@@ -25,7 +25,7 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm dev
 ```
 
-开发服务器默认监听 `http://localhost:5173`，并将 `/api` 代理到文件配置的 `server.proxy_target`。联调前先启动后端 API。安装、启动和日常联调无需预建任何 Git 忽略目录。
+开发服务器默认监听 `http://localhost:5173`，并将 `/api` 代理到文件配置的 `server.proxy_target`。联调前先启动后端 API。安装、启动、日常联调和可选的开发检查都无需手工创建 Git 忽略目录。依赖、构建产物和测试报告由对应工具生成。
 
 后端初始化与文件配置请在其独立仓库按[下载后首次运行](https://github.com/Edgar-ycy/ryframe/blob/main/README.md#下载后首次运行)操作。本前端公共 TOML 仅放浏览器可公开配置；后端明文凭据留在后端私有配置目录。
 

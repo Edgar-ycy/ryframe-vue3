@@ -47,10 +47,7 @@ test('凭据客户端拒绝远端、错误路径、失败状态和无效响应',
     /拒绝请求/u,
   )
   await assert.rejects(
-    requestCredentials(
-      'http://127.0.0.1:49152/v1/credentials',
-      transport(200, '{"password":""}'),
-    ),
+    requestCredentials('http://127.0.0.1:49152/v1/credentials', transport(200, '{"password":""}')),
     /响应无效/u,
   )
 })

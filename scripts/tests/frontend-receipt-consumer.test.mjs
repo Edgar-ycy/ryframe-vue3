@@ -1,8 +1,21 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { sha256 } from '../build-source-inventory.mjs'
+import { backendSourceDomains } from '../build-receipt-schema.mjs'
 import { restoreRuntimeBinding, verifyRestoreRuntimeReceipt } from '../restore-runtime-receipt.mjs'
 import { jsonBytes, restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+
+test('后端来源域区分工具目录和历史脚本输入', () => {
+  const inventory = restoreRuntimeFixture().runtime.backend.sources.full
+  const legacy = 'scripts/check_architecture.py'
+  const requirements = 'scripts/requirements-ci.txt'
+  const tool = 'tools/python/check_architecture.py'
+  inventory.files = [legacy, requirements, tool].map((path) => ({ path, sha256: '1'.repeat(64) }))
+  const domains = backendSourceDomains(inventory)
+  assert.deepEqual(domains.product.api.files, [legacy, requirements])
+  assert.deepEqual(domains.product.worker.files, [legacy, requirements])
+  assert.deepEqual(domains.tools.files, [requirements, tool])
+})
 
 test('运行证明消费者保留权威 v2/runtime v3，仅内嵌前端构建升级 v3 并严格核验身份', () => {
   const value = restoreRuntimeFixture()

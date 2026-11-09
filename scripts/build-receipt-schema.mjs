@@ -33,7 +33,7 @@ function verifyBuildSource(sources, expectedSha) {
 function backendProductRoles(relative) {
   const parts = relative.split('/')
   const first = parts[0]
-  if (['scripts', 'xtask', 'tests', '.github', 'architecture', 'docs', 'deploy'].includes(first))
+  if (['tools', 'xtask', 'tests', '.github', 'architecture', 'docs', 'deploy'].includes(first))
     return []
   if (first === 'crates' && parts.length >= 3 && parts[2] === 'tests') return []
   if (parts[0] === 'crates' && parts[1] === 'ryframe-api') return ['api']
@@ -77,7 +77,8 @@ function backendProductRoles(relative) {
 function backendTool(relative) {
   const parts = relative.split('/')
   return (
-    ['scripts', 'xtask', 'tests', '.github', 'architecture'].includes(parts[0]) ||
+    ['tools', 'xtask', 'tests', '.github', 'architecture'].includes(parts[0]) ||
+    relative === 'scripts/requirements-ci.txt' ||
     (parts[0] === 'crates' && parts.length >= 3 && parts[2] === 'tests') ||
     ['deny.toml', 'rustfmt.toml'].includes(relative)
   )

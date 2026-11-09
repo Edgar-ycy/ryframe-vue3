@@ -59,7 +59,6 @@ test('恢复环境成组绑定 target plan、运行收据、协调器与当前 r
       coordinatorDir: resolve('D 盘源码', '协调器'),
       verifierSha: 'b'.repeat(40),
       runnerSha: 'a'.repeat(40),
-      python: resolve('D 盘工具', 'python.exe'),
     },
   }
   assert.deepEqual(validateRealBrowserEnvironment(environment).restore, {
@@ -69,16 +68,17 @@ test('恢复环境成组绑定 target plan、运行收据、协调器与当前 r
     coordinatorDir: environment.restore.coordinatorDir,
     verifierSha: environment.restore.verifierSha,
     runnerSha: environment.restore.runnerSha,
-    python: environment.restore.python,
   })
 })
 
 test('普通真实浏览器可单独固定 Python 而不会误启用恢复流程', () => {
   const environment = { ...validEnvironment(), python: resolve('python.exe') }
-  assert.equal(validateRealBrowserEnvironment(environment).restore, undefined)
+  const binding = validateRealBrowserEnvironment(environment)
+  assert.equal(binding.python, environment.python)
+  assert.equal(binding.restore, undefined)
 })
 
-test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭', () => {
+test('恢复环境拒绝缺项、相对路径、非完整 SHA 和已退休的嵌套字段', () => {
   const base = validEnvironment()
   assert.throws(
     () => validateRealBrowserEnvironment({ ...base, restore: { bindings: resolve('x') } }),
@@ -93,7 +93,6 @@ test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭',
       coordinatorDir: resolve('backend'),
       verifierSha: 'b'.repeat(40),
       runnerSha: 'a'.repeat(40),
-      python: resolve('python.exe'),
     },
   }
   assert.throws(() =>
@@ -114,11 +113,13 @@ test('恢复环境缺项、相对路径或非完整 runner SHA 时失败关闭',
       restore: { ...complete.restore, verifierSha: 'B'.repeat(40) },
     }),
   )
-  assert.throws(() =>
-    validateRealBrowserEnvironment({
-      ...complete,
-      restore: { ...complete.restore, python: 'python' },
-    }),
+  assert.throws(
+    () =>
+      validateRealBrowserEnvironment({
+        ...complete,
+        restore: { ...complete.restore, python: resolve('D 盘工具', 'python.exe') },
+      }),
+    /real_browser\.restore字段无效/u,
   )
 })
 

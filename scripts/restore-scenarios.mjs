@@ -35,7 +35,6 @@ function restoreInputs(value) {
     'coordinatorDir',
     'verifierSha',
     'runnerSha',
-    'python',
   ]
   if (
     !value ||
@@ -109,7 +108,6 @@ export function realTestSelection(
       ...evidence,
       verifierRoot,
       verifierSha: inputs.verifierSha,
-      python: inputs.python,
       runnerRoot,
       runnerSha: inputs.runnerSha,
       datasetAuthority: authority.authority,

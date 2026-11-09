@@ -7,7 +7,6 @@ export interface RestoreBrowserEnvironment {
   runtimeReceipt: string
   targetPlan: string
   verifierSha: string
-  python: string
 }
 
 export interface RestoreEvidenceDescriptor {
@@ -49,7 +48,6 @@ export function realTestSelection(
         target: RestoreEvidenceDescriptor
         verifierRoot: string
         verifierSha: string
-        python: string
         datasetAuthority: RestoreDatasetAuthorityRecord
       }
     | undefined

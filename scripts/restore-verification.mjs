@@ -306,7 +306,7 @@ function verificationResult(output, { runtime, binding, expected, roots }) {
 }
 
 export function verifyRuntime(
-  { receipt, bindings, targetPlan, backend, frontend, baseURL, python },
+  { receipt, bindings, targetPlan, backend, frontend, baseURL },
   execute = execFileSync,
   environment = process.env,
 ) {
@@ -337,14 +337,6 @@ export function verifyRuntime(
   if (!samePath(roots.frontend, frontendRoot))
     throw new Error('恢复目标计划没有绑定当前前端源码目录')
   const authority = expected.authority
-  absolutePath(python, '恢复运行核验 Python')
-  const childEnvironment = toolProcessEnvironment(environment)
-  for (const name of Object.keys(childEnvironment)) {
-    if (['PYTHONUTF8', 'PYTHONIOENCODING'].includes(name.toUpperCase()))
-      delete childEnvironment[name]
-  }
-  childEnvironment.PYTHONUTF8 = '1'
-  childEnvironment.PYTHONIOENCODING = 'utf-8'
   const result = execute(
     'cargo',
     [
@@ -373,7 +365,7 @@ export function verifyRuntime(
     {
       cwd: backendRoot,
       encoding: 'utf8',
-      env: childEnvironment,
+      env: toolProcessEnvironment(environment),
       windowsHide: true,
       timeout: 60_000,
       maxBuffer: 16 * 1024 * 1024,

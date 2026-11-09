@@ -2,11 +2,10 @@ import { toolProcessEnvironment } from './tool-inputs.mjs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
 import { restoreProofBindings } from './restore-proof.mjs'
 import { inspectRestoreRuntimeReceipt, restoreRuntimeBinding } from './restore-runtime-receipt.mjs'
-import { evidenceDirectory, evidenceFile } from './restore-verification.mjs'
+import { evidenceDirectory, evidenceFile, verifiedCheckout } from './restore-verification.mjs'
 import { parseXtaskJsonReceipt } from './xtask-receipt.mjs'
 
 const authorityFields = [
@@ -255,45 +254,64 @@ export function verifyRestoreDatasetAuthority(
   return deepFreeze({ authority, lineage: verified.lineage })
 }
 
-function exportedFunction(module, name) {
-  const value = module?.[name]
-  if (typeof value !== 'function') throw new Error(`恢复验证器缺少 ${name}`)
-  return value
-}
-
-/** 使用已冻结权威，在登记目标只读核验 C52 全部样本。 */
-export async function verifyRestoredDataset(
-  { authority: verified, verifierRoot },
-  load = (specifier) => import(specifier),
+/** 使用已冻结权威核验登记目标的全部已有数据，登录和注销由 Rust 控制。 */
+export function verifyRestoredDataset(
+  { authority: verified, verifierRoot, verifierSha },
+  { execute = execFileSync, checkout = verifiedCheckout } = {},
 ) {
   const value = exactObject(verified, ['authority', 'lineage'], '恢复数据核验输入')
-  const authority = restoreDatasetAuthority(value.authority)
-  const lineage = value.lineage
-  const root = evidenceDirectory(verifierRoot, '恢复证明协调后端')
-  const [sourceModule, targetModule] = await Promise.all([
-    load(pathToFileURL(path.join(root, 'scripts/restore_source_existing.mjs')).href),
-    load(pathToFileURL(path.join(root, 'scripts/restore_reference_existing.mjs')).href),
-  ])
-  exportedFunction(sourceModule, 'validateSourceLineage')(lineage)
-  const expected = { tenants: 11, posts: lineage.scale?.post_samples, files: 256 }
-  if (!Number.isSafeInteger(expected.posts) || expected.posts < 33)
-    throw new Error('恢复数据血缘没有登记完整岗位样本')
-  const counts = await exportedFunction(targetModule, 'verifyIdentitiesAt')(
-    authority.execution_backend,
-    lineage.tenants,
-    authority.target,
-    19,
-    lineage.verification.request_interval_ms,
+  const { authority, lineage } = restoreDatasetEvidence(value.authority)
+  if (!isDeepStrictEqual(lineage, value.lineage))
+    throw new Error('恢复数据血缘与配置阶段冻结内容不一致')
+  const root = checkout(verifierRoot, verifierSha, '恢复证明协调后端')
+  const posts = lineage.scale?.post_samples
+  const sourceScope = lineage.scopes?.origin_tenant_scope_id
+  if (
+    !Array.isArray(lineage.tenants) ||
+    lineage.tenants.length !== 11 ||
+    lineage.scale?.tenants !== 11 ||
+    !Number.isSafeInteger(posts) ||
+    posts < 33 ||
+    lineage.scale.business_objects !== 256 ||
+    typeof sourceScope !== 'string' ||
+    !sourceScope
   )
-  if (!isDeepStrictEqual(counts, expected)) throw new Error('恢复目标已有数据与 C52 血缘规模不同')
-  return deepFreeze({
+    throw new Error('恢复数据血缘没有登记完整租户、岗位及对象样本')
+  const expected = {
     format_version: 1,
     kind: 'restore-target-existing-verification',
     status: 'target_existing_data_verified',
     scope_id: authority.target.scope_id,
-    source_scope_id: lineage.scopes.origin_tenant_scope_id,
+    source_scope_id: sourceScope,
     actions: { business: 'read_only', objects: 'read_only', session: 'login_logout' },
     restore_success: false,
-    ...counts,
-  })
+    tenants: 11,
+    posts,
+    files: 256,
+  }
+
+  let output
+  try {
+    output = execute('cargo', ['xtask', '__restore-dataset-verify-existing'], {
+      cwd: root,
+      input: JSON.stringify({
+        format_version: 1,
+        kind: 'ryframe-restore-dataset-verification',
+        write: true,
+        authority,
+      }),
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 20 * 60_000,
+      maxBuffer: 1024 * 1024,
+      env: toolProcessEnvironment(),
+    })
+  } catch {
+    throw new Error('恢复已有数据核验失败。登录或注销可能已发生，请保留失败现场，禁止自动重放。')
+  }
+
+  const result = parseXtaskJsonReceipt(output)
+  if (!isDeepStrictEqual(result, expected))
+    throw new Error('恢复目标已有数据核验收据与冻结身份、操作或 C52 血缘规模不一致')
+  return deepFreeze(result)
 }

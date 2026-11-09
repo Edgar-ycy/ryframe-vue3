@@ -5,12 +5,17 @@ import test from 'node:test'
 import { sha256 } from '../build-source-inventory.mjs'
 import { restoreRuntimeBinding } from '../restore-runtime-receipt.mjs'
 import { evidenceFile, verifiedCheckout, verifyRuntime } from '../restore-verification.mjs'
-import { jsonBytes, restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+import {
+  b0BuildSources,
+  jsonBytes,
+  legacyB0FrontendBuild,
+  restoreRuntimeFixture,
+} from './build-receipt-fixture.mjs'
 
 function fixture(t, options = {}) {
   const local = path.resolve('.local-tests/node-unit')
   mkdirSync(local, { recursive: true })
-  const root = mkdtempSync(path.join(local, 'restore-verification-'))
+  const root = mkdtempSync(path.join(local, 'restore verification-'))
   t.after(() => rmSync(root, { recursive: true, force: true }))
   const value = restoreRuntimeFixture({ directory: root, ...options })
   const coordinator = path.join(root, 'coordinator')
@@ -24,7 +29,6 @@ function fixture(t, options = {}) {
   mkdirSync(path.join(coordinator, 'scripts'))
   const receipt = path.join(root, 'runtime.json')
   const targetPlanPath = path.join(root, 'target-plan.json')
-  const python = path.join(root, '工具 目录', 'python.exe')
   writeFileSync(value.paths.bindings, value.bindingsBytes)
   writeFileSync(receipt, value.runtimeBytes)
   writeFileSync(targetPlanPath, value.targetPlanBytes)
@@ -45,7 +49,6 @@ function fixture(t, options = {}) {
       backend: coordinator,
       frontend: value.paths.frontendRoot,
       baseURL: value.runtime.endpoints.frontend,
-      python,
     },
     receipt,
     root,
@@ -159,36 +162,30 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
     value.paths.bindings,
   ])
   assert.equal(command.options.cwd, value.coordinator)
+  assert.equal(command.options.windowsHide, true)
+  assert.equal(command.options.encoding, 'utf8')
   assert.equal(command.options.timeout, 60_000)
+  assert.equal(command.options.maxBuffer, 16 * 1024 * 1024)
   assert.deepEqual(JSON.parse(command.options.input), value.expected.authority)
-  assert.equal(command.options.env.PATH, 'fixed-path')
-  assert.equal(command.options.env.PYTHONUTF8, '1')
-  assert.equal(command.options.env.PYTHONIOENCODING, 'utf-8')
-  const controlledNames = Object.keys(command.options.env).map((name) => name.toUpperCase())
-  assert.equal(controlledNames.filter((name) => name === 'RYFRAME_DEVEX_TARGET_ROOT').length, 0)
-  assert.equal(controlledNames.filter((name) => name === 'RYFRAME_WORKSPACE_ROOT').length, 0)
-  assert.equal(controlledNames.filter((name) => name === 'RYFRAME_PYTHON').length, 0)
-  assert.equal(controlledNames.filter((name) => name === 'PYTHONUTF8').length, 1)
-  assert.equal(controlledNames.filter((name) => name === 'PYTHONIOENCODING').length, 1)
-  assert.equal(
-    controlledNames.some((name) => name.startsWith('RYFRAME_RESTORE_RUNTIME_')),
-    false,
-  )
-  assert.equal(controlledNames.includes('RYFRAME_RESTORE_SOURCE_PROTOCOL'), false)
+  assert.deepEqual(command.options.env, {
+    PATH: 'fixed-path',
+    pythonioencoding: 'ascii:strict',
+    pythonutf8: '0',
+  })
 })
 
 test('B0 适配核验保持备份、产品、执行和前端四类身份互不混用', (t) => {
   const value = fixture(t, {
     backupSourceSha: 'a'.repeat(40),
-    backendProductSha: 'b'.repeat(40),
-    backendExecutionSha: 'c'.repeat(40),
-    frontendSha: 'd'.repeat(40),
+    ...b0BuildSources,
+    frontendBuildReceipt: legacyB0FrontendBuild,
   })
   let command
-  verifyRuntime(value.input, (_executable, argv, options) => {
+  const digest = verifyRuntime(value.input, (_executable, argv, options) => {
     command = { argv, authority: JSON.parse(options.input) }
     return JSON.stringify(verificationOutput(value))
   })
+  assert.equal(digest, sha256(value.runtimeBytes))
   assert.deepEqual(
     {
       backup: command.authority.backup_source_sha,
@@ -198,9 +195,9 @@ test('B0 适配核验保持备份、产品、执行和前端四类身份互不�
     },
     {
       backup: 'a'.repeat(40),
-      product: 'b'.repeat(40),
-      execution: 'c'.repeat(40),
-      frontend: 'd'.repeat(40),
+      product: b0BuildSources.backendProductSha,
+      execution: b0BuildSources.backendExecutionSha,
+      frontend: b0BuildSources.frontendSha,
     },
   )
   assert.deepEqual(command.argv.slice(-4), [
@@ -209,9 +206,23 @@ test('B0 适配核验保持备份、产品、执行和前端四类身份互不�
     '--product-backend',
     value.paths.backendProductRoot,
   ])
+  for (const [mutate, message] of [
+    [(output) => (output.runtime_receipt_sha256 = '0'.repeat(64)), /外部核验器/u],
+    [(output) => (output.build_receipts.frontend.sha256 = '0'.repeat(64)), /构建收据/u],
+  ]) {
+    assert.throws(
+      () =>
+        verifyRuntime(value.input, () => {
+          const output = verificationOutput(value)
+          mutate(output)
+          return JSON.stringify(output)
+        }),
+      message,
+    )
+  }
 })
 
-test('非法运行收据和伪造目标计划在启动 Python 核验器前失败', (t) => {
+test('非法运行收据和伪造目标计划在启动 Rust 核验器前失败', (t) => {
   for (const mutate of [
     (value) => {
       value.runtime.restore.scope_id = 'scope-'

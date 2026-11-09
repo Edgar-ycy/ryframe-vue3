@@ -83,39 +83,26 @@ function localBaseUrl(value) {
 }
 
 function restoreEnvironment(environment) {
-  toolObject(
-    environment,
-    [
-      'bindings',
-      'runtimeReceipt',
-      'targetPlan',
-      'coordinatorDir',
-      'verifierSha',
-      'runnerSha',
-      'python',
-    ],
-    'real_browser.restore',
-  )
   const fields = [
-    ['bindings', 'bindings'],
-    ['runtimeReceipt', 'runtimeReceipt'],
-    ['targetPlan', 'targetPlan'],
-    ['coordinatorDir', 'coordinatorDir'],
-    ['verifierSha', 'verifierSha'],
-    ['runnerSha', 'runnerSha'],
-    ['python', 'python'],
+    'bindings',
+    'runtimeReceipt',
+    'targetPlan',
+    'coordinatorDir',
+    'verifierSha',
+    'runnerSha',
   ]
-  const configured = fields.slice(0, -1).filter(([, name]) => environment[name] !== undefined)
+  toolObject(environment, fields, 'real_browser.restore')
+  const configured = fields.filter((name) => environment[name] !== undefined)
   if (configured.length === 0) throw new Error('恢复浏览器环境缺少完整绑定')
-  if (configured.length !== fields.length - 1 || environment.python === undefined)
+  if (configured.length !== fields.length)
     throw new Error(
-      '恢复浏览器环境必须同时登记 bindings、target plan、运行收据、协调器、verifier SHA、runner SHA 和 Python',
+      '恢复浏览器环境必须同时登记 bindings、target plan、运行收据、协调器、verifier SHA 和 runner SHA',
     )
   return Object.freeze(
     Object.fromEntries(
-      fields.map(([field, name]) => [
-        field,
-        field === 'runnerSha' || field === 'verifierSha'
+      fields.map((name) => [
+        name,
+        name === 'runnerSha' || name === 'verifierSha'
           ? commitSha(environment, name)
           : absolutePath(environment, name),
       ]),

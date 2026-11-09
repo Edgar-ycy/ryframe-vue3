@@ -37,7 +37,7 @@ const adapterFields = [
   'adapter_paths',
   'patch',
 ]
-const b0AdapterContract = 'legacy-stable-readiness-b0-v1'
+export const b0AdapterContract = 'legacy-stable-readiness-b0-v1'
 
 function parseTargetPlan(bytes) {
   if (
@@ -150,7 +150,12 @@ export function restoreRuntimeBinding({ record, manifest, targetPlanBytes, front
   ]
   if (new Set(ports).size !== ports.length)
     throw new Error('恢复运行的 API、Worker 与前端端点必须互异')
-  return Object.freeze({ authority: Object.freeze(authority), builds, roots })
+  return Object.freeze({
+    authority: Object.freeze(authority),
+    builds,
+    roots,
+    comparisonArm: expectedArm,
+  })
 }
 
 export function endpointPort(value, expectedPath) {

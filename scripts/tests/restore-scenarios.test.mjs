@@ -6,11 +6,14 @@ import test from 'node:test'
 import { sha256 } from '../build-source-inventory.mjs'
 import { requiredScenarios } from '../restore-proof.mjs'
 import { realTestSelection, restoreSpecs } from '../restore-scenarios.mjs'
-import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+import {
+  b0BuildSources,
+  legacyB0FrontendBuild,
+  restoreRuntimeFixture,
+} from './build-receipt-fixture.mjs'
 import { restoreLineageFixture } from './restore-lineage-fixture.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
-const b0FrontendSha = '0087ea2ecf62530d042b9e52f5c950fb34c66d78'
 
 function restoreFixture(t, options = {}) {
   const local = path.resolve('.local-tests/node-unit')
@@ -69,7 +72,6 @@ function restoreFixture(t, options = {}) {
       coordinatorDir: coordinator,
       verifierSha: 'e'.repeat(40),
       runnerSha: 'f'.repeat(40),
-      python: path.join(directory, 'python.exe'),
     },
   }
 }
@@ -83,12 +85,11 @@ test('普通 core 与 业务 保留故障验收且不加载恢复旧数据场景
     })
 })
 
-test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t) => {
+test('B0 原产品前端与当前 runner 分离并绑定内嵌构建和全部运行预检证据', (t) => {
   const value = restoreFixture(t, {
     backupSourceSha: 'a'.repeat(40),
-    backendProductSha: 'b'.repeat(40),
-    backendExecutionSha: 'c'.repeat(40),
-    frontendSha: b0FrontendSha,
+    ...b0BuildSources,
+    frontendBuildReceipt: legacyB0FrontendBuild,
   })
   const calls = []
   const checkout = (directory, sha, label) => {
@@ -121,7 +122,7 @@ test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t
     },
     {
       directory: value.paths.frontendRoot,
-      sha: b0FrontendSha,
+      sha: b0BuildSources.frontendSha,
       label: '恢复产品前端源码',
     },
     { directory: root, sha: 'f'.repeat(40), label: '恢复测试 runner 源码' },
@@ -134,7 +135,6 @@ test('B0 产品前端与当前 runner 分离并绑定全部 v3 预检证据', (t
     datasetLineage: value.lineage.datasetLineage,
     verifierRoot: value.restore.coordinatorDir,
     verifierSha: value.restore.verifierSha,
-    python: value.restore.python,
     runnerRoot: root,
     runnerSha: value.restore.runnerSha,
     datasetAuthority: value.authority,
@@ -182,6 +182,11 @@ test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', 
     )
   assert.throws(() => select(value.restore, 'business'), /core/u)
   assert.throws(() => select({ ...value.restore, unknown: true }), /字段/u)
+  assert.throws(
+    () =>
+      select({ ...value.restore, python: path.join(value.restore.coordinatorDir, 'python.exe') }),
+    /字段/u,
+  )
   assert.throws(() => select({ ...value.restore, bindings: 'bindings.json' }), /绝对路径/u)
   writeFileSync(value.restore.targetPlan, '{invalid')
   assert.throws(() => select(value.restore), /JSON/u)

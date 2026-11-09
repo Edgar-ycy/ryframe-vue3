@@ -12,8 +12,8 @@ import {
 
 test('恢复前已有岗位与文件在全部参考租户中仍可读取', async ({ newClientContext }, info) => {
   test.setTimeout(20 * 60_000)
-  const verifierRoot = loadRealBrowserEnvironment().restore?.coordinatorDir
-  if (!verifierRoot) throw new Error('恢复旧数据验收缺少协调后端绑定')
+  const restore = loadRealBrowserEnvironment().restore
+  if (!restore) throw new Error('恢复旧数据验收缺少协调后端绑定')
   const frontendEndpoint = info.project.use.baseURL
   if (typeof frontendEndpoint !== 'string' || !frontendEndpoint)
     throw new Error('恢复旧数据验收缺少唯一前端地址')
@@ -47,9 +47,10 @@ test('恢复前已有岗位与文件在全部参考租户中仍可读取', async
     await expectCleanDiagnostics(page, diagnostics)
     await context.close()
   }
-  const verified = await verifyRestoredDataset({
+  const verified = verifyRestoredDataset({
     authority: restored,
-    verifierRoot,
+    verifierRoot: restore.coordinatorDir,
+    verifierSha: restore.verifierSha,
   })
   await info.attach('restored-existing-data', {
     body: Buffer.from(JSON.stringify(verified, null, 2) + '\n'),

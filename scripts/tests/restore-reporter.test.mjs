@@ -43,7 +43,6 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
     coordinatorDir: directory,
     verifierSha: 'e'.repeat(40),
     runnerSha: 'f'.repeat(40),
-    python: path.join(directory, 'python.exe'),
     scopeId: 'restore-unit',
   }
   const output = path.resolve(`.local-tests/playwright-real/restore-${id}.json`)
@@ -85,7 +84,10 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
   const reporter = new RestoreReporter({
     browserBinding: { scopeId: environment.scopeId, restore: environment },
     checkout,
-    verify: () => verify(digest),
+    verify: (input) => {
+      assert.equal(Object.hasOwn(input, 'python'), false)
+      return verify(digest)
+    },
     datasetAuthority,
     expectedRestore: {
       binding: {
@@ -100,7 +102,6 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
       verifierSha: 'e'.repeat(40),
       runnerRoot: process.cwd(),
       runnerSha: 'f'.repeat(40),
-      python: environment.python,
       datasetAuthority: authority,
     },
   })

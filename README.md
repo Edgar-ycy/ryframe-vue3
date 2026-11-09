@@ -145,7 +145,13 @@ corepack pnpm check --stage browser --real --fixture business --server preview -
 
 运行参数使用 `real_browser` 的 `fixture`、`serverMode`、`port`（默认 4174）、`runId`、`baseURL`、`gateEndpoint`、`previewResponseAudit` 和 `captchaCode`。业务套件必须提供全新的 `runId`；正式业务 preview 还必须提供绝对 `previewResponseAudit` 路径。`baseURL` 只接受带端口的本机 HTTP 原点，外部服务的 IPC 通过绝对 `gateEndpoint` 显式绑定。`channel` 可用 `chrome`、`msedge` 及其 beta/dev/canary 通道；`chromium` 选择 Playwright 内置浏览器，缺省本机用 Chrome、CI 用内置浏览器。
 
-恢复验收在 `real_browser.restore` 中完整提供 `bindings`、`runtimeReceipt`、`targetPlan`、`coordinatorDir`、`verifierSha`、`runnerSha`、`python`；路径必须绝对，两项 SHA 必须为完整小写提交。恢复租户密码放入 `real_browser.restorePasswords`，以租户 ID 为键。后端返回的旧密码环境字段不再用于读取环境变量。通过 Cargo 调用的后端核验与夹具从所选后端的工具文件选择 Python，须在后端忽略文件 `.local-tests/tools.toml` 的 `[verification].python_program` 登记与本次验收一致的解释器；前端不改写后端配置。
+恢复验收使用 `corepack pnpm check --stage browser --real --fixture core --server preview`。`real_browser.baseURL` 指向运行收据登记的受管生产站点。在 `real_browser.restore` 中完整提供 `bindings`、`runtimeReceipt`、`targetPlan`、`coordinatorDir`、`verifierSha` 和 `runnerSha`。路径必须为绝对路径，两项 SHA 必须为完整小写提交，对应的协调后端和测试 runner 工作树必须干净。恢复租户密码放入 `real_browser.restorePasswords`，以租户 ID 为键。
+
+登录前，测试 runner 使用协调后端的原生 `cargo xtask __source-evidence` 只读核验并冻结来源与目标的数据绑定。已有数据场景在 11 个参考租户中读取页面，然后调用原生 `cargo xtask __restore-dataset-verify-existing`，核验全部登记岗位样本和 256 个对象。核验仅读取业务数据和对象，登录和注销会修改会话。两个原生命令均由 runner 内部调用。
+
+测试 runner 通过已登记的同一协调后端运行 Rust 核验。在业务测试前后，`cargo xtask check recovery runtime verify` 核对运行收据、三端运行身份和完整前端产物。业务证明记录协调后端与前端测试 runner 的提交，由 `cargo xtask data restore verify` 独立核验。
+
+双侧恢复比较的 B0 基线使用原前端提交 `0087ea2ecf62530d042b9e52f5c950fb34c66d78`。测试 runner 通过同一恢复入口读取后端运行收据中登记的 `restore-legacy-b0-frontend-build`，由后端原生核验绑定目标计划、原基线来源和完整构建产物。B1 和普通正式前端构建仍使用 v3 构建收据。
 
 统一检查通过 `scripts/run-browser.mjs` 传递 CLI 选项，在固定忽略路径 `.local-tests/browser-control.json` 独占登记控制器、代次、工具文件摘要和无凭据参数。工具文件运行期间漂移即失败；任务结束只清理自己未被替换的控制文件，异常遗留文件须先核查任务身份。`--plan` 只显示任务，不创建控制文件或启动进程。旧项目环境变量与浏览器通道环境覆盖不再读取；`APP_ENV` 继续只选择应用配置，操作系统与第三方工具环境仍可使用。
 

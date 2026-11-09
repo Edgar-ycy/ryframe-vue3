@@ -3,7 +3,11 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { buildRestoreEvidence, requiredScenarios, restoreProofBindings } from '../restore-proof.mjs'
 import { sha256 } from '../build-source-inventory.mjs'
-import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+import {
+  b0BuildSources,
+  legacyB0FrontendBuild,
+  restoreRuntimeFixture,
+} from './build-receipt-fixture.mjs'
 
 function fixture(options = {}) {
   const value = restoreRuntimeFixture({
@@ -66,14 +70,14 @@ test('证明绑定完整真实测试结果、数据验证时刻、运行收据�
 test('B0 业务证明区分备份、产品、执行与适配来源', () => {
   const value = fixture({
     backupSourceSha: 'a'.repeat(40),
-    backendProductSha: 'b'.repeat(40),
-    backendExecutionSha: 'c'.repeat(40),
-    frontendSha: 'd'.repeat(40),
+    ...b0BuildSources,
+    frontendBuildReceipt: legacyB0FrontendBuild,
   })
   const proof = buildRestoreProof(value)
   assert.equal(proof.backup_source_sha, 'a'.repeat(40))
-  assert.equal(proof.backend_product_sha, 'b'.repeat(40))
-  assert.equal(proof.backend_execution_sha, 'c'.repeat(40))
+  assert.equal(proof.backend_product_sha, b0BuildSources.backendProductSha)
+  assert.equal(proof.backend_execution_sha, b0BuildSources.backendExecutionSha)
+  assert.equal(proof.frontend_sha, b0BuildSources.frontendSha)
   assert.equal(proof.backend_adapter_contract, 'legacy-stable-readiness-b0-v1')
 })
 

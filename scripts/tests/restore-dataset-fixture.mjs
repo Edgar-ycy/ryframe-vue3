@@ -35,7 +35,7 @@ export function fixture(options = {}) {
     mkdirSync(item, { recursive: true })
   const lineage = {
     tenants: Array.from({ length: 11 }, (_, index) => ({ tenant_id: `tenant-${index}` })),
-    scale: { post_samples: 33, business_objects: 256 },
+    scale: { tenants: 11, post_samples: 33, business_objects: 256 },
     scopes: { origin_tenant_scope_id: 'source-lineage' },
     verification: { request_interval_ms: 25 },
   }

@@ -120,7 +120,7 @@ function validateBackendSourceDomains(value) {
   return value
 }
 
-function backendCommand(role) {
+function backendCommand(role, jobs) {
   const [feature, name] = role === 'api' ? ['bin-api', 'ryframe'] : ['bin-worker', 'ryframe-worker']
   return [
     'cargo',
@@ -133,6 +133,8 @@ function backendCommand(role) {
     feature,
     '--bin',
     name,
+    '--jobs',
+    jobs,
     '--message-format=json',
   ]
 }
@@ -156,14 +158,22 @@ function validateBackendBuildContext(value) {
   )
   exactObject(value.commands, ['api', 'worker'], '后端构建命令字段无效')
   exactObject(value.toolchain, ['cargo', 'rustc'], '后端构建工具链字段无效')
+  const { jobs } = value
+  const jobCount = Number(jobs)
   if (
-    JSON.stringify(value.commands.api) !== JSON.stringify(backendCommand('api')) ||
-    JSON.stringify(value.commands.worker) !== JSON.stringify(backendCommand('worker')) ||
+    typeof jobs !== 'string' ||
+    jobCount < 1 ||
+    jobCount > 64 ||
+    String(jobCount) !== jobs ||
+    !Number.isInteger(jobCount)
+  )
+    throw new Error('后端构建 jobs 必须是 1 到 64 的规范整数文本')
+  if (
+    JSON.stringify(value.commands.api) !== JSON.stringify(backendCommand('api', jobs)) ||
+    JSON.stringify(value.commands.worker) !== JSON.stringify(backendCommand('worker', jobs)) ||
     value.profile !== 'dev' ||
     typeof value.target !== 'string' ||
     !value.target ||
-    typeof value.jobs !== 'string' ||
-    !value.jobs ||
     !Object.values(value.toolchain).every((item) => typeof item === 'string' && item)
   )
     throw new Error('后端构建命令或工具链上下文无效')

@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import {
+  datasetDigest,
   restoreDatasetAuthority,
   restoreDatasetEvidence,
   verifyRestoreDatasetAuthority,
@@ -188,52 +189,146 @@ test('原生调用错误保留原始原因；调用期间输入漂移不能接�
   }
 })
 
-test('目标读取使用 B0 执行后端和目标端点，不混用备份来源身份', async () => {
-  const item = fixture()
-  const verified = verifyRestoreDatasetAuthority(item.input, { execute: item.execute })
-  const calls = []
-  const load = async (specifier) => {
-    calls.push(specifier)
-    if (specifier.endsWith('/restore_source_existing.mjs'))
-      return { validateSourceLineage: (lineage) => assert.equal(lineage, verified.lineage) }
-    return {
-      verifyIdentitiesAt: async (backend, identities, target, network, pacing) => {
-        assert.equal(backend, item.value.paths.backendExecutionRoot)
-        assert.notEqual(backend, item.value.paths.backendProductRoot)
-        assert.equal(identities, verified.lineage.tenants)
-        assert.deepEqual(target, item.authority.target)
-        assert.equal(network, 19)
-        assert.equal(pacing, 25)
-        return { tenants: 11, posts: 33, files: 256 }
-      },
-    }
+function existingReceipt(item) {
+  return {
+    format_version: 1,
+    kind: 'restore-target-existing-verification',
+    status: 'target_existing_data_verified',
+    scope_id: item.authority.target.scope_id,
+    source_scope_id: item.lineage.scopes.origin_tenant_scope_id,
+    actions: { business: 'read_only', objects: 'read_only', session: 'login_logout' },
+    restore_success: false,
+    tenants: 11,
+    posts: 33,
+    files: 256,
   }
-  const result = await verifyRestoredDataset(
-    { authority: verified, verifierRoot: item.verifierRoot },
-    load,
-  )
-  assert.equal(result.scope_id, item.authority.target.scope_id)
-  assert.equal(result.source_scope_id, 'source-lineage')
-  assert.equal(calls.length, 2)
+}
+
+const verifierSha = 'f'.repeat(40)
+const acceptCheckout = (directory) => directory
+
+function existingInput(item, authority = restoreDatasetEvidence(item.authority)) {
+  return { authority, verifierRoot: item.verifierRoot, verifierSha }
+}
+
+test('恢复已有数据仅调用一次 Cargo，并将冻结权威完整交给登记协调器', () => {
+  const item = fixture()
+  const verified = restoreDatasetEvidence(item.authority)
+  const receipt = existingReceipt(item)
+  const checkouts = []
+  let calls = 0
+  const result = verifyRestoredDataset(existingInput(item, verified), {
+    checkout: (...args) => {
+      checkouts.push(args)
+      return item.verifierRoot
+    },
+    execute: (program, args, options) => {
+      calls++
+      assert.equal(program, 'cargo')
+      assert.deepEqual(args, ['xtask', '__restore-dataset-verify-existing'])
+      assert.equal(options.cwd, item.verifierRoot)
+      assert.deepEqual(options.env, toolProcessEnvironment())
+      assert.equal(options.encoding, 'utf8')
+      assert.equal(options.windowsHide, true)
+      assert.equal(options.timeout, 20 * 60_000)
+      assert.equal(options.maxBuffer, 1024 * 1024)
+      const input = JSON.parse(options.input)
+      assert.deepEqual(input, {
+        format_version: 1,
+        kind: 'ryframe-restore-dataset-verification',
+        write: true,
+        authority: verified.authority,
+      })
+      assert.equal(input.authority.execution_backend, item.value.paths.backendExecutionRoot)
+      assert.notEqual(input.authority.execution_backend, item.value.paths.backendProductRoot)
+      return '运行工具\n' + JSON.stringify(receipt) + '\n'
+    },
+  })
+  assert.equal(calls, 1)
+  assert.deepEqual(checkouts, [[item.verifierRoot, verifierSha, '恢复证明协调后端']])
+  assert.deepEqual(result, receipt)
+  assert.equal(Object.isFrozen(result.actions), true)
 })
 
-test('验证器导出缺失或目标规模不同会失败关闭', async () => {
+test('已有数据核验拒绝未绑定的血缘及不完整的登记样本', () => {
   const item = fixture()
-  const verified = verifyRestoreDatasetAuthority(item.input, { execute: item.execute })
-  const missing = async (specifier) =>
-    specifier.endsWith('/restore_source_existing.mjs')
-      ? {}
-      : { verifyIdentitiesAt: async () => ({ tenants: 11, posts: 33, files: 256 }) }
-  await assert.rejects(
-    verifyRestoredDataset({ authority: verified, verifierRoot: item.verifierRoot }, missing),
-    /validateSourceLineage/u,
+  const input = existingInput(item)
+  const execute = () => assert.fail('不得调用 Cargo')
+  const changed = structuredClone(input)
+  changed.authority.lineage.scale.post_samples = 1
+  assert.throws(
+    () => verifyRestoredDataset(changed, { execute, checkout: acceptCheckout }),
+    /冻结内容不一致/u,
   )
-  const wrong = async (specifier) =>
-    specifier.endsWith('/restore_source_existing.mjs')
-      ? { validateSourceLineage: () => {} }
-      : { verifyIdentitiesAt: async () => ({ tenants: 11, posts: 33, files: 255 }) }
-  await assert.rejects(
-    verifyRestoredDataset({ authority: verified, verifierRoot: item.verifierRoot }, wrong),
-    /规模/u,
+
+  const lineage = { ...item.lineage, scale: { ...item.lineage.scale, business_objects: 255 } }
+  const bytes = Buffer.from(JSON.stringify(lineage))
+  writeFileSync(item.authority.dataset_lineage.path, bytes)
+  const incomplete = {
+    ...item.authority,
+    dataset_lineage: {
+      ...item.authority.dataset_lineage,
+      bytes: bytes.byteLength,
+      sha256: datasetDigest(bytes),
+    },
+  }
+  assert.throws(
+    () =>
+      verifyRestoredDataset(existingInput(item, restoreDatasetEvidence(incomplete)), {
+        execute,
+        checkout: acceptCheckout,
+      }),
+    /没有登记完整/u,
   )
+})
+
+test('已有数据成功收据必须精确匹配冻结身份、操作和全部样本', () => {
+  const item = fixture()
+  const input = existingInput(item)
+  const receipt = existingReceipt(item)
+  for (const change of [
+    { format_version: 2 },
+    { kind: 'other' },
+    { status: 'other' },
+    { scope_id: 'other-target' },
+    { source_scope_id: 'other-source' },
+    { actions: { ...receipt.actions, session: 'read_only' } },
+    { restore_success: true },
+    { tenants: 10 },
+    { posts: 34 },
+    { files: 255 },
+    { unknown: 'unregistered' },
+  ]) {
+    let calls = 0
+    assert.throws(
+      () =>
+        verifyRestoredDataset(input, {
+          checkout: acceptCheckout,
+          execute: () => {
+            calls++
+            return JSON.stringify({ ...receipt, ...change })
+          },
+        }),
+      /收据与冻结身份/u,
+    )
+    assert.equal(calls, 1)
+  }
+})
+
+test('已有数据子进程失败不泄露原始输出，也不重试', () => {
+  const item = fixture()
+  const input = existingInput(item)
+  let calls = 0
+  const execute = () => {
+    calls++
+    throw Object.assign(new Error('模拟凭据正文'), { stderr: '模拟凭据正文' })
+  }
+  assert.throws(
+    () => verifyRestoredDataset(input, { execute, checkout: acceptCheckout }),
+    (error) =>
+      /禁止自动重放/u.test(error.message) &&
+      !error.message.includes('模拟凭据正文') &&
+      error.cause === undefined,
+  )
+  assert.equal(calls, 1)
 })

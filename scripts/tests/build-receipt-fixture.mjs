@@ -15,6 +15,8 @@ function inventory(head) {
   }
 }
 
+const backendBuildJobs = '1'
+
 function backendCommand(role) {
   const [feature, name] = role === 'api' ? ['bin-api', 'ryframe'] : ['bin-worker', 'ryframe-worker']
   return [
@@ -28,6 +30,8 @@ function backendCommand(role) {
     feature,
     '--bin',
     name,
+    '--jobs',
+    backendBuildJobs,
     '--message-format=json',
   ]
 }
@@ -45,7 +49,7 @@ export function backendBuild(head, artifact) {
       commands: { api: backendCommand('api'), worker: backendCommand('worker') },
       profile: 'dev',
       target: 'x86_64-pc-windows-msvc',
-      jobs: 'cargo-default',
+      jobs: backendBuildJobs,
       toolchain: { cargo: 'cargo 1.91.0', rustc: 'rustc 1.91.0\nhost: x86_64-pc-windows-msvc' },
       environment: { variables: [], sha256: canonicalDigest([]) },
     },
@@ -100,6 +104,47 @@ export function artifactFactory(directory = process.cwd()) {
 
 export const jsonBytes = (value) => Buffer.from(JSON.stringify(value))
 
+export const b0BuildSources = {
+  backendProductSha: '815c5eafb09d4b493319d255fb7ab88ddd02c8b6',
+  backendExecutionSha: 'c05114bcdf5c369cd74087db6317ce3c8f89bee8',
+  frontendSha: '0087ea2ecf62530d042b9e52f5c950fb34c66d78',
+}
+
+export function legacyB0FrontendBuild(head, files) {
+  const file = { path: path.resolve('fixture-tool'), bytes: 1, sha256: '0'.repeat(64) }
+  return {
+    format_version: 1,
+    kind: 'restore-legacy-b0-frontend-build',
+    adapter: { contract: 'legacy-stable-readiness-b0-frontend-v1', sources: [], program: file },
+    sources: frontendBuild(head, files).sources,
+    build: {
+      command: ['corepack', 'pnpm', 'build'],
+      mode: 'production',
+      toolchain: {
+        node: { version: 'v24.15.0', file },
+        corepack: { version: '0.36.0', entry: file, implementation: file, package: file },
+        pnpm: {
+          version: '11.20.0',
+          home: path.resolve('fixture-corepack-home'),
+          package: file,
+          entry: file,
+          implementation: file,
+          installation: [],
+        },
+        vite: { version: '8.1.5', package: file, entry: file },
+      },
+      configuration: {
+        api_origin: 'same-origin',
+        frontend_tree: '52fed4e1321ab4b4c04839a3a165c6bd1645e4b6',
+        inputs: [],
+        dependency_state: [],
+      },
+      identity: { frontend_commit: head, source_file: null },
+    },
+    files,
+  }
+}
+
 export function restoreRuntimeFixture({
   directory = process.cwd(),
   id = 'restore-v3',
@@ -109,6 +154,7 @@ export function restoreRuntimeFixture({
   backendProductSha = backupSourceSha,
   backendExecutionSha = backendProductSha,
   frontendSha = 'b'.repeat(40),
+  frontendBuildReceipt = frontendBuild,
   dataVerifiedAt = '2026-09-06T00:10:00Z',
 } = {}) {
   const candidate = backendProductSha === backendExecutionSha
@@ -150,7 +196,7 @@ export function restoreRuntimeFixture({
     { path: '.vite/manifest.json', bytes: 1, sha256: '5'.repeat(64) },
     { path: 'index.html', bytes: 1, sha256: '6'.repeat(64) },
   ]
-  const frontend = frontendBuild(frontendSha, frontendFiles)
+  const frontend = frontendBuildReceipt(frontendSha, frontendFiles)
   const paths = {
     backendProductRoot: productRoot,
     backendExecutionRoot: executionRoot,

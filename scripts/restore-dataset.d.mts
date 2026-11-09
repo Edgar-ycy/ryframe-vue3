@@ -1,3 +1,5 @@
+import type { ExecFileSyncOptionsWithStringEncoding } from 'node:child_process'
+
 export interface RestoreLineageTenant {
   tenant_id: string
   username: string
@@ -7,7 +9,7 @@ export interface RestoreLineageTenant {
 
 export interface RestoreDatasetLineageDocument {
   tenants: RestoreLineageTenant[]
-  scale: { post_samples: number; business_objects: number }
+  scale: { tenants: number; post_samples: number; business_objects: number }
   scopes: { origin_tenant_scope_id: string }
   verification: { request_interval_ms: number }
   [key: string]: unknown
@@ -61,7 +63,14 @@ export function verifyRestoreDatasetAuthority(
   },
   options?: { expected?: RestoreDatasetAuthorityRecord },
 ): Readonly<VerifiedRestoreDatasetAuthority>
-export function verifyRestoredDataset(input: {
-  authority: VerifiedRestoreDatasetAuthority
-  verifierRoot: string
-}): Promise<Readonly<RestoreDatasetVerification>>
+export function verifyRestoredDataset(
+  input: { authority: VerifiedRestoreDatasetAuthority; verifierRoot: string; verifierSha: string },
+  options?: {
+    execute?: (
+      program: string,
+      args: string[],
+      options: ExecFileSyncOptionsWithStringEncoding,
+    ) => string
+    checkout?: (directory: string, sha: string, label: string) => string
+  },
+): Readonly<RestoreDatasetVerification>

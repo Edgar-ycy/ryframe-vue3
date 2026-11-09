@@ -1,10 +1,15 @@
 import { isAbsolute } from 'node:path'
-import { compareSourcePaths, sha256 } from './build-source-inventory.mjs'
+import { isDeepStrictEqual } from 'node:util'
+import { compareSourcePaths, sha256, validateSourceDomains } from './build-source-inventory.mjs'
 import {
   validateBackendBuildSources,
   validateFrontendBuildSources,
 } from './build-receipt-schema.mjs'
-import { endpointPort, restoreRuntimeBinding } from './restore-runtime-binding.mjs'
+import {
+  b0AdapterContract,
+  endpointPort,
+  restoreRuntimeBinding,
+} from './restore-runtime-binding.mjs'
 import { isResourceScopeId } from './resource-scope.mjs'
 
 export { restoreRuntimeBinding }
@@ -45,6 +50,14 @@ const processFields = ['receipt_path', 'receipt_sha256', 'identity']
 const identityFields = ['pid', 'started', 'executable']
 const artifactFields = ['executable', 'command', 'bytes', 'sha256']
 const frontendFileFields = ['path', 'bytes', 'sha256']
+const legacyB0Frontend = {
+  kind: 'restore-legacy-b0-frontend-build',
+  contract: 'legacy-stable-readiness-b0-frontend-v1',
+  backendProduct: '815c5eafb09d4b493319d255fb7ab88ddd02c8b6',
+  backendExecution: 'c05114bcdf5c369cd74087db6317ce3c8f89bee8',
+  frontend: '0087ea2ecf62530d042b9e52f5c950fb34c66d78',
+  frontendTree: '52fed4e1321ab4b4c04839a3a165c6bd1645e4b6',
+}
 
 function exactObject(value, fields, message) {
   if (
@@ -135,24 +148,62 @@ function validFrontendPath(value) {
   )
 }
 
-function verifyFrontendBuild(receipt, expectedSha) {
-  exactObject(
-    receipt,
-    ['format_version', 'kind', 'sources', 'build', 'files'],
-    '运行产物收据内嵌前端构建字段无效',
-  )
-  validateFrontendBuildSources(receipt, expectedSha)
+function verifyLegacyB0FrontendBuild(receipt, { authority, comparisonArm }) {
+  // 工具链和旧构建配置的实际文件由原生核验器核对。
+  const message = '运行产物收据内嵌 B0 前端构建没有绑定原基线'
+  exactObject(receipt, ['format_version', 'kind', 'adapter', 'sources', 'build', 'files'], message)
+  const { adapter, build } = receipt
+  exactObject(adapter, ['contract', 'sources', 'program'], message)
+  exactObject(build, ['command', 'mode', 'toolchain', 'configuration', 'identity'], message)
+  const { toolchain, configuration, identity } = build
+  exactObject(toolchain, ['node', 'corepack', 'pnpm', 'vite'], message)
+  exactObject(configuration, ['api_origin', 'frontend_tree', 'inputs', 'dependency_state'], message)
+  exactObject(identity, ['frontend_commit', 'source_file'], message)
   if (
-    receipt.format_version !== 3 ||
-    receipt.kind !== 'restore-frontend-build' ||
-    !Array.isArray(receipt.files)
+    comparisonArm !== 'b0' ||
+    authority.backend_adapter_contract !== b0AdapterContract ||
+    authority.backend_product_sha !== legacyB0Frontend.backendProduct ||
+    authority.backend_execution_sha !== legacyB0Frontend.backendExecution ||
+    authority.frontend_sha !== legacyB0Frontend.frontend ||
+    receipt.format_version !== 1 ||
+    adapter.contract !== legacyB0Frontend.contract ||
+    !isDeepStrictEqual(build.command, ['corepack', 'pnpm', 'build']) ||
+    build.mode !== 'production' ||
+    toolchain.node?.version !== 'v24.15.0' ||
+    toolchain.pnpm?.version !== '11.20.0' ||
+    configuration.api_origin !== 'same-origin' ||
+    configuration.frontend_tree !== legacyB0Frontend.frontendTree ||
+    identity.frontend_commit !== authority.frontend_sha ||
+    identity.source_file !== null
   )
-    throw new Error('运行产物收据内嵌前端构建字段无效')
+    throw new Error(message)
+  const { full } = validateSourceDomains(receipt.sources)
+  if (
+    full.source.snapshot.head !== authority.frontend_sha ||
+    !full.source.snapshot.clean ||
+    full.source.snapshot.files.length !== 0
+  )
+    throw new Error(message)
+}
+
+function verifyFrontendBuild(receipt, expected) {
+  const legacy = receipt?.kind === legacyB0Frontend.kind
+  const message = '运行产物收据内嵌前端构建字段无效'
+  if (legacy) {
+    verifyLegacyB0FrontendBuild(receipt, expected)
+  } else {
+    exactObject(receipt, ['format_version', 'kind', 'sources', 'build', 'files'], message)
+    validateFrontendBuildSources(receipt, expected.authority.frontend_sha)
+    if (receipt.format_version !== 3 || receipt.kind !== 'restore-frontend-build')
+      throw new Error(message)
+  }
+  if (!Array.isArray(receipt.files)) throw new Error(message)
   let previous = ''
   for (const file of receipt.files) {
     exactObject(file, frontendFileFields, '运行产物收据前端文件字段无效')
     if (
       !validFrontendPath(file.path) ||
+      (legacy && (file.path.includes('\0') || /[\r\n:]/u.test(file.path))) ||
       (previous && compareSourcePaths(file.path, previous) <= 0) ||
       !Number.isInteger(file.bytes) ||
       file.bytes < 0 ||
@@ -236,7 +287,7 @@ export function inspectRestoreRuntimeReceipt({ bytes, bindingsBytes, expected })
   )
     throw new Error('运行产物收据与演练、源码、构建或进程集合不一致')
   verifyBackendBuild(receipt.backend, authority.backend_execution_sha)
-  verifyFrontendBuild(receipt.frontend, authority.frontend_sha)
+  verifyFrontendBuild(receipt.frontend, expected)
   verifyProcess(receipt.processes.api, 'api')
   verifyProcess(receipt.processes.worker, 'worker')
   verifyProcess(receipt.processes.frontend, 'frontend')

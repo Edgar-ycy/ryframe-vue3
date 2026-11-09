@@ -1,5 +1,6 @@
 export interface RestoreRuntimeExpectation {
   authority: RestoreRuntimeAuthority
+  comparisonArm: 'b0' | 'b1'
   builds: {
     backend: RestoreDocumentDescriptor
     frontend: RestoreDocumentDescriptor

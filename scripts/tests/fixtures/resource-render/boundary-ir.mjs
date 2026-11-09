@@ -8,7 +8,7 @@ export function threshold() {
   const status = field(resource, 'status')
   for (const value of ['2', '3', '4']) status.enum_values[value] = structuredClone(status.labels)
   status.widget = 'number'
-  status.validation.maximum = 4
+  status.validation.maximum = null
   for (const name of ['name', 'status', 'value_0', 'value_1']) {
     field(resource, name).validation.required = false
   }

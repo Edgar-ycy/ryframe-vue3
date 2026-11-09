@@ -174,6 +174,13 @@ export function validateBackendBuildSources(receipt, expectedSha) {
   validateBackendSourceDomains(receipt.sources)
   verifyBuildSource(receipt.sources, expectedSha)
   validateBackendBuildContext(receipt.build)
+  for (const role of ['api', 'worker']) {
+    if (
+      JSON.stringify(receipt.artifacts?.[role]?.command) !==
+      JSON.stringify(receipt.build.commands[role])
+    )
+      throw new Error('后端构建产物命令必须与构建上下文一致')
+  }
 }
 
 export function validateFrontendBuildSources(receipt, expectedSha) {

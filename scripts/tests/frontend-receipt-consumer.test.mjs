@@ -17,6 +17,33 @@ test('后端来源域区分工具目录和历史脚本输入', () => {
   assert.deepEqual(domains.tools.files, [requirements, tool])
 })
 
+test('恢复运行收据拒绝 API 或 Worker 产物命令与同角色构建命令不一致', () => {
+  const value = restoreRuntimeFixture()
+  const expected = restoreRuntimeBinding({
+    record: value.binding.record,
+    manifest: value.binding.manifest,
+    targetPlanBytes: value.targetPlanBytes,
+    frontendEndpoint: value.runtime.endpoints.frontend,
+  })
+
+  for (const role of ['api', 'worker']) {
+    const runtime = structuredClone(value.runtime)
+    runtime.backend.artifacts[role].command.splice(-1, 0, '--release')
+    const bytes = jsonBytes(runtime)
+    assert.throws(
+      () =>
+        verifyRestoreRuntimeReceipt({
+          bytes,
+          bindingsBytes: value.bindingsBytes,
+          expected,
+          verifiedDigest: sha256(bytes),
+        }),
+      /后端构建产物命令必须与构建上下文一致/u,
+      role,
+    )
+  }
+})
+
 test('运行证明消费者保留权威 v2/runtime v3，仅内嵌前端构建升级 v3 并严格核验身份', () => {
   const value = restoreRuntimeFixture()
   const expected = restoreRuntimeBinding({

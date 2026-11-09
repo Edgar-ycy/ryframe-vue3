@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Require the API and Worker artifact commands in a recovery runtime receipt to match the corresponding commands in its build context.
+
 - Match the Rust build tool's backend source classification in recovery runtime receipts. Classify `tools/` as tool sources and preserve the existing product-input classification of historical `scripts/` paths.
 
 - Preserve the existing positive cache-variant checks for plan, migration and tenant-plan resource invalidation, and add counterexamples requiring caches for other tenants, subjects, session epochs and unrelated resources to retain their data without invalidation. Use the real QueryClient; this does not replace real cross-tenant page acceptance.

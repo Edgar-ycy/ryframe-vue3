@@ -24,6 +24,7 @@ test('正式上下文固定原生工具、独立参数、stdin 和后端 cwd，�
     assert.deepEqual(JSON.parse(options.input), inventories)
     assert.equal(options.encoding, 'utf8')
     assert.equal(options.windowsHide, true)
+    assert.equal(options.timeout, 60_000)
     assert.equal(options.maxBuffer, 4 * 1024 * 1024)
     return { status: 0, stdout: '{}', stderr: '' }
   })
@@ -72,7 +73,7 @@ test('绑定输入漂移在派发前拒绝；派发中漂移覆盖返回成功�
   }
 })
 
-test('过大 stdin 在派发前拒绝，输出超限不接受截断结果也不重放', (t) => {
+test('过大 stdin 在派发前拒绝，传输错误分类且不泄露部分输出或重放', (t) => {
   const value = selectedFixture(t)
   let calls = 0
   const input = {
@@ -87,19 +88,36 @@ test('过大 stdin 在派发前拒绝，输出超限不接受截断结果也不�
     /输入超过 16 MiB/u,
   )
   assert.equal(calls, 0)
-  assert.throws(
-    () =>
-      value.selected.invoke(
-        value.frontend,
-        { frontend_inventories: [], backend_inventories: [] },
-        () => {
-          calls += 1
-          return { error: { code: 'ENOBUFS' }, status: null, stdout: '{', stderr: '' }
-        },
-      ),
-    /不采信部分输出/u,
-  )
-  assert.equal(calls, 1)
+  const sentinel = 'PRIVATE-TRANSPORT-DETAIL'
+  for (const [code, message] of [
+    ['ETIMEDOUT', /等待超过 60 秒/u],
+    ['ENOBUFS', /输出超过 4 MiB/u],
+    ['EACCES', /进程传输失败/u],
+  ]) {
+    assert.throws(
+      () =>
+        value.selected.invoke(
+          value.frontend,
+          { frontend_inventories: [], backend_inventories: [] },
+          () => {
+            calls += 1
+            return {
+              error: { code, message: sentinel },
+              status: null,
+              stdout: sentinel,
+              stderr: sentinel,
+            }
+          },
+        ),
+      (error) => {
+        assert.match(error.message, message)
+        assert.match(error.message, /不采信部分输出/u)
+        assert.ok(!error.message.includes(sentinel))
+        return true
+      },
+    )
+  }
+  assert.equal(calls, 3)
 })
 
 test('相同字节替换原生程序仍拒绝派发，不把摘要相同当作身份相同', (t) => {

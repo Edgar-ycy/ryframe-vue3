@@ -59,8 +59,14 @@ export function receiptBinding(args = process.argv.slice(2)) {
           },
         },
       )
+      if (result.error?.code === 'ETIMEDOUT') {
+        throw new Error('原生构建证明等待超过 60 秒；不采信部分输出，请保留现场核对')
+      }
+      if (result.error?.code === 'ENOBUFS') {
+        throw new Error('原生构建证明输出超过 4 MiB；不采信部分输出，请保留现场核对')
+      }
       if (result.error || result.signal || result.status === null) {
-        throw new Error('原生构建证明传输失败或输出超过 4 MiB；不采信部分输出，请保留现场核对')
+        throw new Error('原生构建证明进程传输失败；不采信部分输出，请保留现场核对')
       }
       return result
     } finally {

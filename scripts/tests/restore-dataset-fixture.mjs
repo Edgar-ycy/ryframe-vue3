@@ -62,7 +62,13 @@ export function fixture(options = {}) {
     execution_backend: value.paths.backendExecutionRoot,
   }
   const calls = []
+  const toolChecks = []
+  const tool = {
+    executable: path.join(verifierRoot, 'registered-xtask'),
+    verifyUnchanged: () => toolChecks.push('verify'),
+  }
   const execute = (program, args, settings) => {
+    toolChecks.push('execute')
     calls.push({ program, args, settings })
     if (options.failure) throw new Error(options.failure)
     return JSON.stringify({ ok: true, result: { value: options.authority ?? authority } })
@@ -73,6 +79,7 @@ export function fixture(options = {}) {
     targetPlan: targetPlanFile,
     backendRoot: verifierRoot,
     frontendEndpoint: value.runtime.endpoints.frontend,
+    tool,
   }
-  return { authority, calls, directory, execute, input, lineage, value, verifierRoot }
+  return { authority, calls, directory, execute, input, lineage, toolChecks, value, verifierRoot }
 }

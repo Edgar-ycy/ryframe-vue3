@@ -13,7 +13,7 @@ import {
 import { evidenceFile } from '../restore-verification.mjs'
 import { fixture } from './restore-dataset-fixture.mjs'
 
-test('正式 Cargo 只读预检绑定当前输入并返回递归冻结的权威', () => {
+test('登记原生工具只读预检绑定当前输入并返回递归冻结的权威', () => {
   const item = fixture()
   assert.deepEqual(restoreDatasetAuthority(item.authority), item.authority)
   const result = verifyRestoreDatasetAuthority(item.input, { execute: item.execute })
@@ -27,8 +27,9 @@ test('正式 Cargo 只读预检绑定当前输入并返回递归冻结的权威'
   }, TypeError)
   assert.equal(item.calls.length, 1)
   const [call] = item.calls
-  assert.equal(call.program, 'cargo')
-  assert.deepEqual(call.args, ['xtask', '__source-evidence'])
+  assert.equal(call.program, item.input.tool.executable)
+  assert.deepEqual(call.args, ['__source-evidence'])
+  assert.deepEqual(item.toolChecks, ['verify', 'execute', 'verify'])
   assert.equal(call.settings.cwd, item.verifierRoot)
   assert.deepEqual(JSON.parse(call.settings.input), {
     operation: 'restore-dataset-authority',
@@ -49,6 +50,7 @@ test('伪造链由后端失败关闭且不会产生可供登录使用的权威',
     /只读预检失败/u,
   )
   assert.equal(item.calls.length, 1)
+  assert.deepEqual(item.toolChecks, ['verify', 'execute', 'verify'])
 })
 
 test('worker 只消费配置冻结权威，不重读可替换的 target plan', () => {
@@ -208,10 +210,10 @@ const verifierSha = 'f'.repeat(40)
 const acceptCheckout = (directory) => directory
 
 function existingInput(item, authority = restoreDatasetEvidence(item.authority)) {
-  return { authority, verifierRoot: item.verifierRoot, verifierSha }
+  return { authority, verifierRoot: item.verifierRoot, verifierSha, tool: item.input.tool }
 }
 
-test('恢复已有数据仅调用一次 Cargo，并将冻结权威完整交给登记协调器', () => {
+test('恢复已有数据仅调用一次登记工具，并将冻结权威完整交给登记协调器', () => {
   const item = fixture()
   const verified = restoreDatasetEvidence(item.authority)
   const receipt = existingReceipt(item)
@@ -224,8 +226,9 @@ test('恢复已有数据仅调用一次 Cargo，并将冻结权威完整交给�
     },
     execute: (program, args, options) => {
       calls++
-      assert.equal(program, 'cargo')
-      assert.deepEqual(args, ['xtask', '__restore-dataset-verify-existing'])
+      item.toolChecks.push('execute')
+      assert.equal(program, item.input.tool.executable)
+      assert.deepEqual(args, ['__restore-dataset-verify-existing'])
       assert.equal(options.cwd, item.verifierRoot)
       assert.deepEqual(options.env, toolProcessEnvironment())
       assert.equal(options.encoding, 'utf8')
@@ -245,6 +248,7 @@ test('恢复已有数据仅调用一次 Cargo，并将冻结权威完整交给�
     },
   })
   assert.equal(calls, 1)
+  assert.deepEqual(item.toolChecks, ['verify', 'execute', 'verify'])
   assert.deepEqual(checkouts, [[item.verifierRoot, verifierSha, '恢复证明协调后端']])
   assert.deepEqual(result, receipt)
   assert.equal(Object.isFrozen(result.actions), true)
@@ -253,8 +257,8 @@ test('恢复已有数据仅调用一次 Cargo，并将冻结权威完整交给�
 test('已有数据核验拒绝未绑定的血缘及不完整的登记样本', () => {
   const item = fixture()
   const input = existingInput(item)
-  const execute = () => assert.fail('不得调用 Cargo')
-  const changed = structuredClone(input)
+  const execute = () => assert.fail('不得调用登记工具')
+  const changed = { ...input, authority: structuredClone(input.authority) }
   changed.authority.lineage.scale.post_samples = 1
   assert.throws(
     () => verifyRestoredDataset(changed, { execute, checkout: acceptCheckout }),

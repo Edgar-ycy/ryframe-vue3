@@ -3,9 +3,9 @@ import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { holdMigrationGate } from '../support/migration-gate'
-import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 
-vi.mock('../browser-real/worker-tool.mjs', () => ({ bindWorkerTool: vi.fn() }))
+vi.mock('../../scripts/worker-tool.mjs', () => ({ bindWorkerTool: vi.fn() }))
 
 const toolRoot = path.resolve('.local-tests', '工具来源 N')
 const executable = path.join(toolRoot, 'verified-tool.exe')

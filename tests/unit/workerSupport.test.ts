@@ -13,7 +13,7 @@ vi.mock('node:child_process', async (original) => ({
   ...(await original<object>()),
   execFile: mocked.execute,
 }))
-vi.mock('../browser-real/worker-tool.mjs', async (original) => ({
+vi.mock('../../scripts/worker-tool.mjs', async (original) => ({
   ...(await original<object>()),
   bindWorkerTool: mocked.bind,
 }))

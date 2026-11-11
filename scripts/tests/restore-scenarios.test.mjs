@@ -57,14 +57,17 @@ function restoreFixture(t, options = {}) {
     },
     execution_backend: value.paths.backendExecutionRoot,
   }
+  const tool = { executable: path.join(coordinator, 'registered-xtask'), verifyUnchanged() {} }
   return {
     ...value,
     authority,
     datasetAuthority: (input) => {
       assert.equal(Object.hasOwn(input, 'python'), false)
+      assert.equal(input.tool, tool)
       return { authority, lineage: lineage.lineage }
     },
     lineage,
+    tool,
     restore: {
       bindings: value.paths.bindings,
       targetPlan,
@@ -100,9 +103,15 @@ test('B0 原产品前端与当前 runner 分离并绑定内嵌构建和全部运
     value.restore,
     'core',
     value.runtime.endpoints.frontend,
+    value.tool,
     root,
     checkout,
-    value.datasetAuthority,
+    (input) => {
+      const result = value.datasetAuthority(input)
+      rmSync(result.authority.source_generation.path)
+      rmSync(result.authority.dataset_lineage.path)
+      return result
+    },
   )
   assert.deepEqual(result.selection, { testMatch: restoreSpecs })
   assert.deepEqual(restoreSpecs, [
@@ -176,6 +185,7 @@ test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', 
       restore,
       fixture,
       value.runtime.endpoints.frontend,
+      value.tool,
       source,
       (directory) => path.resolve(directory),
       value.datasetAuthority,
@@ -197,6 +207,7 @@ test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', 
         forged.restore,
         'core',
         forged.runtime.endpoints.frontend,
+        forged.tool,
         root,
         (directory) => path.resolve(directory),
         () => {
@@ -221,6 +232,7 @@ test('runner 核验失败会在报告目录和服务创建前传播', (t) => {
           value.restore,
           'core',
           value.runtime.endpoints.frontend,
+          value.tool,
           root,
           (_directory, _sha, label) => {
             if (label === '恢复测试 runner 源码') throw new Error(error)
@@ -241,6 +253,7 @@ test('真实浏览器配置先完成恢复选择，再创建报告目录', async
   assert.ok(selection >= 0 && selection < report && report < directory)
   assert.doesNotMatch(source, /process\.env\.(RYFRAME_|PLAYWRIGHT_CHANNEL)/u)
   assert.match(source, /if \(restore\.reporter\)[\s\S]+restore-reporter\.mjs/u)
+  assert.match(source, /environment\.restore \? bindWorkerTool\(environment\.workerTool\)/u)
   assert.match(source, /metadata: restore\.worker/u)
   assert.match(source, /actionTimeout: 15_000/u)
   assert.match(source, /navigationTimeout: 30_000/u)
@@ -253,8 +266,9 @@ test('restore worker 在首次登录前重验配置冻结的数据权威', async
   )
   const expected = source.indexOf('info.config.metadata.restoreDatasetAuthority')
   const authority = source.indexOf('restoreDatasetEvidence(expectedAuthority)')
+  const tool = source.indexOf('bindWorkerTool(workerTool)')
   const loginCall = source.indexOf('await login(')
-  assert.ok(expected >= 0 && expected < authority && authority < loginCall)
+  assert.ok(expected >= 0 && expected < authority && authority < tool && tool < loginCall)
   for (const name of [
     'RYFRAME_RESTORE_TARGET_PLAN',
     'RYFRAME_RESTORE_RUNTIME_RECEIPT',

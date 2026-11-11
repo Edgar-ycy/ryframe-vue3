@@ -81,14 +81,26 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
       }
       return { authority, lineage: lineage.lineage }
     })
+  const workerTool = { root: directory, binding: { path: path.join(directory, 'tool.json') } }
+  const boundTools = []
   const reporter = new RestoreReporter({
-    browserBinding: { scopeId: environment.scopeId, restore: environment },
+    browserBinding: { scopeId: environment.scopeId, restore: environment, workerTool },
     checkout,
+    bindTool: (selected) => {
+      assert.equal(selected, workerTool)
+      const tool = { executable: path.join(directory, 'registered-xtask'), verifyUnchanged() {} }
+      boundTools.push(tool)
+      return tool
+    },
     verify: (input) => {
       assert.equal(Object.hasOwn(input, 'python'), false)
+      assert.equal(input.tool, boundTools.at(-1))
       return verify(digest)
     },
-    datasetAuthority,
+    datasetAuthority: (input, options) => {
+      assert.equal(input.tool, boundTools.at(-1))
+      return datasetAuthority(input, options)
+    },
     expectedRestore: {
       binding: {
         path: value.paths.bindings,
@@ -123,6 +135,7 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
     targetPlan,
     output,
     digest,
+    boundTools,
     lineage,
     authority,
   }
@@ -135,8 +148,10 @@ test('全部测试完成后重新核验来源，并保存与证明摘要对应�
     return digest
   })
   assert.equal(calls, 1)
+  assert.equal(item.boundTools.length, 1)
   assert.equal(item.reporter.onEnd({ status: 'passed' }), undefined)
   assert.equal(calls, 2)
+  assert.equal(item.boundTools.length, 2)
   const proof = JSON.parse(readFileSync(item.output))
   const tests = JSON.parse(readFileSync(item.output.replace('.json', '-tests.json')))
   assert.equal(proof.runtime_receipt_sha256, item.digest)

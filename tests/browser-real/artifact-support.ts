@@ -1,7 +1,7 @@
 import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
 import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import type { RealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
-import { bindWorkerTool } from './worker-tool.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'

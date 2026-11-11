@@ -1,7 +1,7 @@
 import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
 import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import type { RealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
-import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { parseXtaskJsonReceipt } from '../../scripts/xtask-receipt.mjs'

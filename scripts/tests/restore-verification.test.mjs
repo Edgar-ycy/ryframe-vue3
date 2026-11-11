@@ -38,6 +38,7 @@ function fixture(t, options = {}) {
     targetPlanBytes: value.targetPlanBytes,
     frontendEndpoint: value.runtime.endpoints.frontend,
   })
+  const toolChecks = []
   return {
     ...value,
     coordinator,
@@ -49,10 +50,15 @@ function fixture(t, options = {}) {
       backend: coordinator,
       frontend: value.paths.frontendRoot,
       baseURL: value.runtime.endpoints.frontend,
+      tool: {
+        executable: path.join(coordinator, 'registered-xtask'),
+        verifyUnchanged: () => toolChecks.push('verify'),
+      },
     },
     receipt,
     root,
     targetPlanPath,
+    toolChecks,
   }
 }
 
@@ -139,15 +145,16 @@ test('候选核验使用 v2 权威、v3 收据和明确的三类源码路径', (
   const digest = verifyRuntime(
     value.input,
     (executable, argv, options) => {
+      value.toolChecks.push('execute')
       command = { executable, argv, options }
-      return `Compiling xtask\n${JSON.stringify(verificationOutput(value))}\n✓ 0.1s\n`
+      return JSON.stringify(verificationOutput(value))
     },
     inherited,
   )
   assert.equal(digest, expectedDigest)
-  assert.equal(command.executable, 'cargo')
+  assert.equal(command.executable, value.input.tool.executable)
+  assert.deepEqual(value.toolChecks, ['verify', 'execute', 'verify'])
   assert.deepEqual(command.argv, [
-    'xtask',
     'check',
     'recovery',
     'runtime',

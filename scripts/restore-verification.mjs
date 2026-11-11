@@ -10,6 +10,7 @@ import {
   verifyRestoreRuntimeReceipt,
 } from './restore-runtime-receipt.mjs'
 import { parseXtaskJsonReceipt } from './xtask-receipt.mjs'
+import { invokeWorkerTool } from './worker-tool.mjs'
 
 const verificationFields = [
   'format_version',
@@ -306,7 +307,7 @@ function verificationResult(output, { runtime, binding, expected, roots }) {
 }
 
 export function verifyRuntime(
-  { receipt, bindings, targetPlan, backend, frontend, baseURL },
+  { receipt, bindings, targetPlan, backend, frontend, baseURL, tool },
   execute = execFileSync,
   environment = process.env,
 ) {
@@ -337,10 +338,9 @@ export function verifyRuntime(
   if (!samePath(roots.frontend, frontendRoot))
     throw new Error('恢复目标计划没有绑定当前前端源码目录')
   const authority = expected.authority
-  const result = execute(
-    'cargo',
+  const result = invokeWorkerTool(
+    tool,
     [
-      'xtask',
       'check',
       'recovery',
       'runtime',
@@ -371,6 +371,7 @@ export function verifyRuntime(
       maxBuffer: 16 * 1024 * 1024,
       input: JSON.stringify(authority),
     },
+    execute,
   )
   const digest = verificationResult(result, {
     runtime,

@@ -11,6 +11,7 @@ import {
   verifiedCheckout,
   verifyRuntime,
 } from './restore-verification.mjs'
+import { bindWorkerTool } from './worker-tool.mjs'
 
 function proofPaths(restoreId) {
   const root = evidenceDirectory(path.resolve('.local-tests/playwright-real'), '恢复证明输出目录')
@@ -73,12 +74,14 @@ export default class RestoreReporter {
     verify = verifyRuntime,
     checkout = verifiedCheckout,
     datasetAuthority = verifyRestoreDatasetAuthority,
+    bindTool = bindWorkerTool,
     expectedRestore,
     browserBinding,
   } = {}) {
     this.verify = verify
     this.checkout = checkout
     this.datasetAuthority = datasetAuthority
+    this.bindTool = bindTool
     this.expectedRestore = expectedRestore
     this.browserBinding = browserBinding
   }
@@ -123,14 +126,16 @@ export default class RestoreReporter {
     const runnerRoot = this.checkout(process.cwd(), configuredRunnerSha, '恢复测试 runner 源码')
     if (configuredRunnerSha !== expected.runnerSha || runnerRoot !== expected.runnerRoot)
       throw new Error('恢复测试 runner 与配置预检结果不一致')
+    const tool = this.bindTool(browser.workerTool)
+    const datasetInputs = {
+      bindingsBytes: binding.bytes,
+      runtimeReceipt: runtime.path,
+      targetPlan: target.path,
+      backendRoot: verifierRoot,
+      frontendEndpoint: baseURL,
+    }
     const dataset = this.datasetAuthority(
-      {
-        bindingsBytes: binding.bytes,
-        runtimeReceipt: runtime.path,
-        targetPlan: target.path,
-        backendRoot: verifierRoot,
-        frontendEndpoint: baseURL,
-      },
+      { ...datasetInputs, tool },
       { expected: expected.datasetAuthority },
     )
     if (
@@ -146,13 +151,7 @@ export default class RestoreReporter {
     this.sourceGeneration = dataset.authority.source_generation
     this.datasetLineage = dataset.authority.dataset_lineage
     this.datasetAuthorityRecord = dataset.authority
-    this.datasetInputs = {
-      bindingsBytes: binding.bytes,
-      runtimeReceipt: runtime.path,
-      targetPlan: target.path,
-      backendRoot: verifierRoot,
-      frontendEndpoint: baseURL,
-    }
+    this.datasetInputs = datasetInputs
     this.verification = {
       receipt: runtime.path,
       bindings: binding.path,
@@ -166,7 +165,7 @@ export default class RestoreReporter {
     this.verifierRoot = verifierRoot
     this.verifierSha = configuredVerifierSha
     this.restoreId = record.plan.id
-    this.runtimeDigest = this.verify(this.verification)
+    this.runtimeDigest = this.verify({ ...this.verification, tool })
     if (this.runtimeDigest !== sha256(runtime.bytes))
       throw new Error('运行产物核验摘要与实际收据不一致')
   }
@@ -188,13 +187,17 @@ export default class RestoreReporter {
     try {
       this.checkout(this.runnerRoot, this.runnerSha, '恢复测试 runner 源码')
       this.checkout(this.verifierRoot, this.verifierSha, '恢复证明协调后端')
-      const digest = this.verify(this.verification)
+      const tool = this.bindTool(this.browserBinding.workerTool)
+      const digest = this.verify({ ...this.verification, tool })
       const runtime = evidenceFile(this.verification.receipt, '运行产物收据')
       const binding = evidenceFile(this.verification.bindings, '恢复绑定收据')
       const target = evidenceFile(this.verification.targetPlan, '恢复目标计划')
-      const dataset = this.datasetAuthority(this.datasetInputs, {
-        expected: this.datasetAuthorityRecord,
-      })
+      const dataset = this.datasetAuthority(
+        { ...this.datasetInputs, tool },
+        {
+          expected: this.datasetAuthorityRecord,
+        },
+      )
       if (
         digest !== this.runtimeDigest ||
         sha256(runtime.bytes) !== digest ||

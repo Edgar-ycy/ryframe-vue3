@@ -4,11 +4,11 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { Buffer } from 'node:buffer'
 import { isDeepStrictEqual } from 'node:util'
-import { checkApplicationPath } from '../../scripts/application-config-paths.mjs'
-import { readManagedJson, unchangedManagedJson } from '../../scripts/application-config-files.mjs'
-import { parseJson } from '../../scripts/resource-render/json.mjs'
-import { validateWorkerTool } from '../../scripts/real-browser-environment.mjs'
-import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
+import { checkApplicationPath } from './application-config-paths.mjs'
+import { readManagedJson, unchangedManagedJson } from './application-config-files.mjs'
+import { parseJson } from './resource-render/json.mjs'
+import { validateWorkerTool } from './real-browser-environment.mjs'
+import { toolProcessEnvironment } from './tool-inputs.mjs'
 export { parseJson as parseWorkerJson }
 
 const bindingFile = '.local-tests/frontend-origin-tool.json'
@@ -191,5 +191,14 @@ export function bindWorkerTool(workerTool) {
     return { executable: value.executable.path, verifyUnchanged }
   } catch {
     throw failure()
+  }
+}
+
+export function invokeWorkerTool(tool, args, options, execute = execFileSync) {
+  tool.verifyUnchanged()
+  try {
+    return execute(tool.executable, args, options)
+  } finally {
+    tool.verifyUnchanged()
   }
 }

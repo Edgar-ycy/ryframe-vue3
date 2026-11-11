@@ -1,5 +1,7 @@
-import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
-import { restorePassword } from '../../scripts/real-browser-environment.mjs'
+import {
+  loadRealBrowserEnvironment,
+  restorePassword,
+} from '../../scripts/real-browser-environment.mjs'
 import { expect } from '@playwright/test'
 import { test } from './fixture'
 import { act, credentials, login } from './support'
@@ -9,16 +11,18 @@ import {
   restoreDatasetEvidence,
   verifyRestoredDataset,
 } from '../../scripts/restore-dataset.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 
 test('恢复前已有岗位与文件在全部参考租户中仍可读取', async ({ newClientContext }, info) => {
   test.setTimeout(20 * 60_000)
-  const restore = loadRealBrowserEnvironment().restore
+  const { restore, workerTool } = loadRealBrowserEnvironment()
   if (!restore) throw new Error('恢复旧数据验收缺少协调后端绑定')
   const frontendEndpoint = info.project.use.baseURL
   if (typeof frontendEndpoint !== 'string' || !frontendEndpoint)
     throw new Error('恢复旧数据验收缺少唯一前端地址')
   const expectedAuthority = restoreDatasetAuthority(info.config.metadata.restoreDatasetAuthority)
   const restored = restoreDatasetEvidence(expectedAuthority)
+  const tool = bindWorkerTool(workerTool)
   const dataset = restored.lineage
   const passwords = new Map(
     dataset.tenants.map((tenant) => [tenant.tenant_id, restorePassword(tenant.tenant_id)]),
@@ -51,6 +55,7 @@ test('恢复前已有岗位与文件在全部参考租户中仍可读取', async
     authority: restored,
     verifierRoot: restore.coordinatorDir,
     verifierSha: restore.verifierSha,
+    tool,
   })
   await info.attach('restored-existing-data', {
     body: Buffer.from(JSON.stringify(verified, null, 2) + '\n'),

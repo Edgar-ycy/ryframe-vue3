@@ -50,6 +50,7 @@ export function realTestSelection(
   restore,
   fixture,
   baseURL,
+  tool,
   root = process.cwd(),
   checkout = verifiedCheckout,
   datasetAuthority = verifyRestoreDatasetAuthority,
@@ -85,6 +86,7 @@ export function realTestSelection(
       targetPlan: target.path,
       backendRoot: verifierRoot,
       frontendEndpoint: baseURL,
+      tool,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : '未知错误'
@@ -94,8 +96,6 @@ export function realTestSelection(
     binding: { path: binding.path, sha256: sha256(binding.bytes) },
     target: { path: target.path, sha256: sha256(target.bytes) },
     runtime: { path: runtime.path, sha256: sha256(runtime.bytes) },
-    sourceGeneration: authority.authority.source_generation,
-    datasetLineage: authority.authority.dataset_lineage,
   }
   verifyRestoreSpecs(path.resolve(root))
   for (const [label, item] of Object.entries(evidence)) {
@@ -106,6 +106,8 @@ export function realTestSelection(
     selection: { testMatch: [...restoreSpecs] },
     reporter: {
       ...evidence,
+      sourceGeneration: authority.authority.source_generation,
+      datasetLineage: authority.authority.dataset_lineage,
       verifierRoot,
       verifierSha: inputs.verifierSha,
       runnerRoot,

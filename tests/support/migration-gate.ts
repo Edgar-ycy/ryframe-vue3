@@ -1,7 +1,7 @@
 import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
 import type { RealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
-import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { createInterface } from 'node:readline'

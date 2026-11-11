@@ -6,6 +6,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { restoreProofBindings } from './restore-proof.mjs'
 import { inspectRestoreRuntimeReceipt, restoreRuntimeBinding } from './restore-runtime-receipt.mjs'
 import { evidenceDirectory, evidenceFile, verifiedCheckout } from './restore-verification.mjs'
+import { invokeWorkerTool } from './worker-tool.mjs'
 import { parseXtaskJsonReceipt } from './xtask-receipt.mjs'
 
 const authorityFields = [
@@ -164,23 +165,28 @@ function sameDescriptor(actual, expected, label) {
 }
 
 function authorityCommand(input, runtime, targetPlan, execute) {
-  const output = execute('cargo', ['xtask', '__source-evidence'], {
-    cwd: input.backendRoot,
-    input: JSON.stringify({
-      operation: 'restore-dataset-authority',
-      arguments: {
-        backend_dir: input.backendRoot,
-        runtime_receipt: runtime.path,
-        target_plan: targetPlan.path,
-      },
-      write: false,
-    }),
-    encoding: 'utf8',
-    windowsHide: true,
-    timeout: 300_000,
-    maxBuffer: 1024 * 1024,
-    env: toolProcessEnvironment(),
-  })
+  const output = invokeWorkerTool(
+    input.tool,
+    ['__source-evidence'],
+    {
+      cwd: input.backendRoot,
+      input: JSON.stringify({
+        operation: 'restore-dataset-authority',
+        arguments: {
+          backend_dir: input.backendRoot,
+          runtime_receipt: runtime.path,
+          target_plan: targetPlan.path,
+        },
+        write: false,
+      }),
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 300_000,
+      maxBuffer: 1024 * 1024,
+      env: toolProcessEnvironment(),
+    },
+    execute,
+  )
   const response = exactObject(parseXtaskJsonReceipt(output), ['ok', 'result'], '恢复数据原生响应')
   if (response.ok !== true) throw new Error('恢复数据原生响应未确认成功')
   const result = exactObject(response.result, ['value'], '恢复数据原生结果')
@@ -256,7 +262,7 @@ export function verifyRestoreDatasetAuthority(
 
 /** 使用已冻结权威核验登记目标的全部已有数据，登录和注销由 Rust 控制。 */
 export function verifyRestoredDataset(
-  { authority: verified, verifierRoot, verifierSha },
+  { authority: verified, verifierRoot, verifierSha, tool },
   { execute = execFileSync, checkout = verifiedCheckout } = {},
 ) {
   const value = exactObject(verified, ['authority', 'lineage'], '恢复数据核验输入')
@@ -292,20 +298,25 @@ export function verifyRestoredDataset(
 
   let output
   try {
-    output = execute('cargo', ['xtask', '__restore-dataset-verify-existing'], {
-      cwd: root,
-      input: JSON.stringify({
-        format_version: 1,
-        kind: 'ryframe-restore-dataset-verification',
-        write: true,
-        authority,
-      }),
-      encoding: 'utf8',
-      windowsHide: true,
-      timeout: 20 * 60_000,
-      maxBuffer: 1024 * 1024,
-      env: toolProcessEnvironment(),
-    })
+    output = invokeWorkerTool(
+      tool,
+      ['__restore-dataset-verify-existing'],
+      {
+        cwd: root,
+        input: JSON.stringify({
+          format_version: 1,
+          kind: 'ryframe-restore-dataset-verification',
+          write: true,
+          authority,
+        }),
+        encoding: 'utf8',
+        windowsHide: true,
+        timeout: 20 * 60_000,
+        maxBuffer: 1024 * 1024,
+        env: toolProcessEnvironment(),
+      },
+      execute,
+    )
   } catch {
     throw new Error('恢复已有数据核验失败。登录或注销可能已发生，请保留失败现场，禁止自动重放。')
   }

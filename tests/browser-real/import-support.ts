@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { bindWorkerTool } from './worker-tool.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 
 const XLSX_MEDIA_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 const MIN_LARGE_IMPORT_BYTES = 2 * 1024 * 1024

@@ -2,7 +2,7 @@ import { toolProcessEnvironment } from '../../scripts/tool-inputs.mjs'
 import { loadRealBrowserEnvironment } from '../../scripts/real-browser-environment.mjs'
 import { execFile } from 'node:child_process'
 import path from 'node:path'
-import { bindWorkerTool, parseWorkerJson } from './worker-tool.mjs'
+import { bindWorkerTool, parseWorkerJson } from '../../scripts/worker-tool.mjs'
 
 type WorkerOperation = 'start' | 'stop' | 'crash' | 'status'
 const limit = 1024 * 1024

@@ -1,4 +1,5 @@
 import type { RestoreDatasetAuthorityRecord } from './restore-dataset.mjs'
+import type { BoundWorkerTool } from './worker-tool.mjs'
 
 export interface RestoreBrowserEnvironment {
   bindings: string
@@ -23,6 +24,7 @@ export function realTestSelection(
   restore: RestoreBrowserEnvironment | undefined,
   fixture: string,
   baseURL?: string,
+  tool?: BoundWorkerTool,
   root?: string,
   checkout?: (directory: string, sha: string, label?: string) => string,
   datasetAuthority?: (input: {
@@ -31,6 +33,7 @@ export function realTestSelection(
     frontendEndpoint: string
     runtimeReceipt: string
     targetPlan: string
+    tool: BoundWorkerTool
   }) => {
     authority: RestoreDatasetAuthorityRecord
     lineage: object

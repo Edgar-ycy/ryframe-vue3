@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 
 import {
   migrationHistory,
@@ -8,7 +8,7 @@ import {
   parseMigrationHistoryReceipt,
 } from '../support/migration-history'
 
-vi.mock('../browser-real/worker-tool.mjs', () => ({ bindWorkerTool: vi.fn() }))
+vi.mock('../../scripts/worker-tool.mjs', () => ({ bindWorkerTool: vi.fn() }))
 
 const toolRoot = path.resolve('测试 空间/工具来源 N')
 const executable = path.join(toolRoot, 'verified-tool.exe')

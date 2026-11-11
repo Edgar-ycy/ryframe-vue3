@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
-import { bindWorkerTool } from '../browser-real/worker-tool.mjs'
+import { bindWorkerTool } from '../../scripts/worker-tool.mjs'
 import type { WorkerTool } from '../../scripts/real-browser-environment.mjs'
 
 const native = vi.hoisted(() => ({ verify: vi.fn() }))

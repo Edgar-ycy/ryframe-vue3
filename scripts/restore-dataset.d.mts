@@ -1,4 +1,5 @@
 import type { ExecFileSyncOptionsWithStringEncoding } from 'node:child_process'
+import type { BoundWorkerTool } from './worker-tool.mjs'
 
 export interface RestoreLineageTenant {
   tenant_id: string
@@ -60,11 +61,17 @@ export function verifyRestoreDatasetAuthority(
     frontendEndpoint: string
     runtimeReceipt: string
     targetPlan: string
+    tool: BoundWorkerTool
   },
   options?: { expected?: RestoreDatasetAuthorityRecord },
 ): Readonly<VerifiedRestoreDatasetAuthority>
 export function verifyRestoredDataset(
-  input: { authority: VerifiedRestoreDatasetAuthority; verifierRoot: string; verifierSha: string },
+  input: {
+    authority: VerifiedRestoreDatasetAuthority
+    verifierRoot: string
+    verifierSha: string
+    tool: BoundWorkerTool
+  },
   options?: {
     execute?: (
       program: string,

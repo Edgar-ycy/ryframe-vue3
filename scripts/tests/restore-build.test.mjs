@@ -234,6 +234,7 @@ test('实际配置在创建报告目录前拒绝非法环境与本地 preview �
         null,
         'core',
         baseURL,
+        null,
       ])
       if (localPreview)
         assert.deepEqual(observed.trace.find((entry) => entry.port === 'receipt').args, [

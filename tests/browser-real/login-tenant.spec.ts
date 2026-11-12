@@ -3,7 +3,7 @@ import { expect, type BrowserContext, type Response } from '@playwright/test'
 import { mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { OperationData, OperationJsonResponse } from '@/api/contract'
-import { act, credentials, isolatedName, login, submitLogin } from './support'
+import { credentials, isolatedName, login, submitLogin } from './support'
 import { createPublishedPlan, createTenantFromPlan, readTenantSearchPage } from './tenant-support'
 import { observeRequestBudget } from './request-budget'
 import { expectCleanDiagnostics, observeDiagnostics } from '../browser/support/diagnostics'
@@ -85,16 +85,20 @@ test.describe('真实租户名称查询与第二页登录', () => {
       await save()
       await adminBudget.beforePageBootstrap()
       await login(page)
-      const beforeWrite = async () => {
+      const settleWrites = async () => {
         await Promise.all(pending)
         if (failures.length) throw new AggregateError(failures, '创建收据未保存，禁止继续写入')
+      }
+      const published = await createPublishedPlan(page, plan, async () => {
+        await settleWrites()
         await adminBudget.beforeProvisioning()
-      }
-      const published = await createPublishedPlan(page, plan, beforeWrite)
+      })
       for (const tenant of receipt.planned_tenants) {
-        await createTenantFromPlan(page, tenant, published, 'shared-control', beforeWrite)
+        await settleWrites()
+        await adminBudget.beforeTenantCreation()
+        await createTenantFromPlan(page, tenant, published)
       }
-      await Promise.all(pending)
+      await settleWrites()
       expect([...receipt.created_ids].sort()).toEqual(
         receipt.planned_tenants.map(({ id }) => id).sort(),
       )
@@ -112,21 +116,13 @@ test.describe('真实租户名称查询与第二页登录', () => {
       await owner.waitForLoadState('networkidle')
       await select.click()
       await owner.waitForLoadState('networkidle')
-      const first = await readTenantSearchPage(
-        await act(owner, 'GET', '/api/v1/auth/tenants', () => select.fill(search)),
-        search,
-        1,
-      )
+      const first = await readTenantSearchPage(owner, search, 1, () => select.fill(search))
       receipt.pages.push(first)
       await save()
       expect(first.items).toHaveLength(20)
       expect(first.has_more).toBe(true)
       const more = owner.getByRole('button', { name: '加载更多租户', exact: true })
-      const second = await readTenantSearchPage(
-        await act(owner, 'GET', '/api/v1/auth/tenants', () => more.click()),
-        search,
-        2,
-      )
+      const second = await readTenantSearchPage(owner, search, 2, () => more.click())
       receipt.pages.push(second)
       await save()
       expect(second.items).toHaveLength(1)

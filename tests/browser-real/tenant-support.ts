@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, type Response } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import type { OperationJsonResponse } from '@/api/contract'
 import { act, isolatedName } from './support'
 
@@ -117,8 +117,25 @@ export async function createTenantFromPlan(
   return result
 }
 
-/** 核对真实租户名称查询的分页参数及返回数据。 */
-export async function readTenantSearchPage(response: Response, search: string, page: number) {
+/** 等待本次真实名称查询，再核对分页参数和返回数据。 */
+export async function readTenantSearchPage(
+  page: Page,
+  search: string,
+  pageNumber: number,
+  action: () => Promise<void>,
+) {
+  const [response] = await Promise.all([
+    page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        response.request().method() === 'GET' &&
+        url.pathname === '/api/v1/auth/tenants' &&
+        url.searchParams.get('search') === search &&
+        url.searchParams.get('page') === String(pageNumber)
+      )
+    }),
+    action(),
+  ])
   const query = new URL(response.url()).searchParams
   const observed = {
     search: query.get('search'),
@@ -126,7 +143,7 @@ export async function readTenantSearchPage(response: Response, search: string, p
     page_size: query.get('page_size'),
   }
   expect(response.status()).toBe(200)
-  expect(observed).toEqual({ search, page: String(page), page_size: '20' })
+  expect(observed).toEqual({ search, page: String(pageNumber), page_size: '20' })
   const body: OperationJsonResponse<'get_auth_tenants'> = await response.json()
   if (!body.data) throw new Error('租户名称查询未返回分页数据')
   return { ...observed, status: response.status(), ...body.data }

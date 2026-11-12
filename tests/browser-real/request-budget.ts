@@ -34,6 +34,8 @@ export function observeRequestBudget(page: Page) {
     // 完整页面启动还会请求刷新、菜单、消息和连接，不能只预留删除请求。
     beforePageBootstrap: () => budget.waitForAvailable(Math.ceil(capacity * 0.6)),
     beforeProvisioning: () => budget.waitForAvailable(Math.ceil(capacity * 0.6)),
+    // 租户表单发出五个查询，提交后刷新列表，另外预留首次列表和消息请求。
+    beforeTenantCreation: () => budget.waitForAvailable(Math.min(capacity, 10)),
     beforeCleanup: () => budget.waitForAvailable(Math.ceil(capacity * 0.2)),
   }
 }

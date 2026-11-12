@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Login form validation uses the active theme's high-contrast error text color.
+
 - Save real core browser reports and results in separate controller attempts when `runId` is omitted. The managed runner refuses to reuse an existing artifact directory before launch.
 
 - Verify recovery data lineage, the runtime receipt, all three runtime identities, and static artifacts through the Rust commands in the coordinator backend. B0 binds the original frontend build and its separately registered adapter, while B1 binds its v3 build receipt. The business proof records both the coordinator backend and frontend test runner commits.

@@ -10,7 +10,10 @@ test('登录后按会话权限投影首页与导航', async ({ page }) => {
 
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: 'RyFrame' })).toBeVisible()
-  await expectNoSeriousAccessibilityViolations(page, '登录页')
+  await page.getByPlaceholder('用户名').focus()
+  await page.getByPlaceholder('密码').focus()
+  await expect(page.getByRole('alert').filter({ hasText: '请输入用户名' })).toBeVisible()
+  await expectNoSeriousAccessibilityViolations(page, '登录页校验提示')
 
   await loginWithFixture(page)
   await expect(page.getByRole('heading', { name: /测试用户/u })).toBeVisible()

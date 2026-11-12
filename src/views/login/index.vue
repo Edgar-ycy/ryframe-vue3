@@ -305,6 +305,10 @@ onMounted(loadRuntimeCapabilities)
 </script>
 
 <style scoped>
+.auth-form :deep(.el-form-item__error) {
+  color: var(--color-danger-readable);
+}
+
 .tenant-option-id {
   float: right;
   margin-left: 16px;

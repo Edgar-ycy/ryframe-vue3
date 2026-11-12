@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createBrowserControl } from './browser-control.mjs'
+import { requireUnusedRealBrowserArtifacts } from './real-browser-artifacts.mjs'
 import {
   loadRealBrowserEnvironment,
   loadRealBrowserInput,
@@ -70,7 +71,7 @@ export async function runBrowser(options, root = process.cwd(), execute = spawn)
   }
   const close = createBrowserControl(root, options)
   try {
-    if (options.real) loadRealBrowserEnvironment(root)
+    if (options.real) requireUnusedRealBrowserArtifacts(root, loadRealBrowserEnvironment(root))
     const windows = process.platform === 'win32'
     const corepack = path.join(
       path.dirname(process.execPath),

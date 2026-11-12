@@ -1,12 +1,14 @@
 import { defineConfig, type ReporterDescription } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { realBrowserArtifactDirectories } from './scripts/real-browser-artifacts.mjs'
 import { loadRealBrowserEnvironment } from './scripts/real-browser-environment.mjs'
 import { verifyBuildReceipt } from './scripts/restore-build.mjs'
 import { realTestSelection } from './scripts/restore-scenarios.mjs'
 import { bindWorkerTool } from './scripts/worker-tool.mjs'
 
-export const environment = loadRealBrowserEnvironment()
+const root = process.cwd()
+export const environment = loadRealBrowserEnvironment(root)
 const { fixture, port, runId, serverMode } = environment
 const externalBaseUrl = environment.baseURL
 const baseURL = externalBaseUrl || `http://127.0.0.1:${port}`
@@ -20,9 +22,7 @@ const restore = realTestSelection(
   environment.restore ? bindWorkerTool(environment.workerTool) : undefined,
 )
 const channel = environment.channel
-const artifactSuffix = `${fixture}/${serverMode}${runId ? `/${runId}` : ''}`
-const reportDirectory = `.local-tests/playwright-real/report/${artifactSuffix}`
-const resultsDirectory = `.local-tests/playwright-real/results/${artifactSuffix}`
+const { reportDirectory, resultsDirectory } = realBrowserArtifactDirectories(root, environment)
 const reporters: ReporterDescription[] = [
   ['line'],
   ['html', { open: 'never', outputFolder: reportDirectory }],

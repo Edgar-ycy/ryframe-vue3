@@ -5,6 +5,7 @@ import { EventEmitter } from 'node:events'
 import test from 'node:test'
 import { fixture } from './application-config-fixture.mjs'
 import { createBrowserControl, readBrowserControl } from '../browser-control.mjs'
+import { realBrowserArtifactDirectories } from '../real-browser-artifacts.mjs'
 import { runBrowser, parseBrowserArguments } from '../run-browser.mjs'
 import { loadSmokeBrowserConfiguration } from '../smoke-browser-configuration.mjs'
 import {
@@ -161,17 +162,120 @@ test('普通真实浏览器仍从本机工具配置读取显式凭据', (t) => {
   assert.throws(() => restorePassword('unknown', root), /密码/u)
 })
 
+test('受管 core 复验按控制器代次保存报告与结果，保留原产物', async (t) => {
+  const { root, write, input } = configured(t)
+  write('.local-tests/frontend-tools.json', {
+    real_browser: {
+      ...input,
+      fixture: 'core',
+      runId: undefined,
+      credentialEndpoint: undefined,
+      password: 'CORE-PRIVATE',
+    },
+  })
+  const options = parseBrowserArguments(['--real', '--fixture', 'core', '--server', 'dev'])
+  const attempts = []
+  for (const sentinel of ['first', 'second']) {
+    await runBrowser(options, root, (_command, argv) => {
+      assert.ok(argv.includes('playwright.real.config.ts'))
+      const { attempt } = readBrowserControl(root)
+      const binding = loadRealBrowserEnvironment(root)
+      assert.equal(binding.runId, undefined)
+      const directories = realBrowserArtifactDirectories(root, binding)
+      assert.deepEqual(directories, {
+        reportDirectory: `.local-tests/playwright-real/report/core/dev/${attempt}`,
+        resultsDirectory: `.local-tests/playwright-real/results/core/dev/${attempt}`,
+      })
+      for (const directory of Object.values(directories)) {
+        fs.mkdirSync(path.join(root, directory), { recursive: true })
+        fs.writeFileSync(path.join(root, directory, 'sentinel'), sentinel, { flag: 'wx' })
+      }
+      attempts.push(directories)
+      const child = new EventEmitter()
+      queueMicrotask(() => child.emit('exit', 0, null))
+      return child
+    })
+    assert.equal(readBrowserControl(root), undefined)
+  }
+  assert.notEqual(attempts[0].reportDirectory, attempts[1].reportDirectory)
+  assert.notEqual(attempts[0].resultsDirectory, attempts[1].resultsDirectory)
+  for (const directory of Object.values(attempts[0]))
+    assert.equal(fs.readFileSync(path.join(root, directory, 'sentinel'), 'utf8'), 'first')
+  const binding = loadRealBrowserEnvironment(root)
+  const direct = realBrowserArtifactDirectories(root, binding)
+  assert.match(direct.reportDirectory, /\/core\/dev\/[a-f0-9-]{36}$/u)
+  assert.notEqual(
+    direct.reportDirectory,
+    realBrowserArtifactDirectories(root, binding).reportDirectory,
+  )
+})
+
+test('显式 runId 的已有产物和产物路径上的链接在 Playwright 启动前拒绝', async (t) => {
+  for (const location of ['report', 'results', 'link', 'ancestor']) {
+    const { root, write, input } = configured(t)
+    write('.local-tests/frontend-tools.json', {
+      real_browser: {
+        ...input,
+        fixture: 'core',
+        credentialEndpoint: undefined,
+        password: 'CORE-PRIVATE',
+      },
+    })
+    const ancestor = location === 'ancestor'
+    const isLink = location === 'link' || ancestor
+    const kind = isLink ? 'results' : location
+    const relative = `.local-tests/playwright-real/${kind}/core/dev/${input.runId}`
+    const destination = path.join(root, relative)
+    const link = ancestor ? path.dirname(destination) : destination
+    const target = path.join(root, 'artifact-link-target')
+    if (isLink) {
+      if (ancestor) {
+        fs.mkdirSync(target)
+        fs.writeFileSync(path.join(target, 'sentinel'), location)
+      }
+      fs.mkdirSync(path.dirname(link), { recursive: true })
+      fs.symlinkSync(target, link, process.platform === 'win32' ? 'junction' : 'dir')
+    } else {
+      fs.mkdirSync(destination, { recursive: true })
+      fs.writeFileSync(path.join(destination, 'sentinel'), location)
+    }
+    await assert.rejects(
+      runBrowser(parseBrowserArguments(['--real']), root, () =>
+        assert.fail('存在产物或链接时不得启动 Playwright'),
+      ),
+      ancestor
+        ? /真实浏览器产物目录.*(?:链接|重解析)/u
+        : (error) => error.message.includes(`真实浏览器产物目录已存在：${relative}`),
+    )
+    assert.equal(readBrowserControl(root), undefined)
+    if (isLink) assert.ok(fs.lstatSync(link).isSymbolicLink())
+    else assert.equal(fs.readFileSync(path.join(destination, 'sentinel'), 'utf8'), location)
+    if (ancestor) {
+      assert.deepEqual(fs.readdirSync(target), ['sentinel'])
+      assert.equal(fs.readFileSync(path.join(target, 'sentinel'), 'utf8'), location)
+    }
+  }
+})
+
 test('运行器保留失败语义和清理，使用假进程不启动浏览器或服务', async (t) => {
   const { root } = configured(t)
   for (const status of [0, 9]) {
-    const running = runBrowser(parseBrowserArguments(['--real']), root, (command, argv) => {
-      assert.ok(command)
-      assert.ok(argv.includes('playwright.real.config.ts'))
-      assert.ok(readBrowserControl(root))
-      const child = new EventEmitter()
-      queueMicrotask(() => child.emit('exit', status, null))
-      return child
-    })
+    const running = runBrowser(
+      parseBrowserArguments(['--real', '--server', 'preview']),
+      root,
+      (command, argv) => {
+        assert.ok(command)
+        assert.ok(argv.includes('playwright.real.config.ts'))
+        assert.ok(readBrowserControl(root))
+        assert.deepEqual(realBrowserArtifactDirectories(root, loadRealBrowserEnvironment(root)), {
+          reportDirectory: '.local-tests/playwright-real/report/business/preview/unit-run',
+          resultsDirectory: '.local-tests/playwright-real/results/business/preview/unit-run',
+        })
+        const child = new EventEmitter()
+        queueMicrotask(() => child.emit('exit', status, null))
+        return child
+      },
+    )
     if (status) await assert.rejects(running, /9/u)
     else await running
     assert.equal(readBrowserControl(root), undefined)
@@ -190,6 +294,7 @@ test('生成页面运行器独占执行专用 config，拒绝恢复和业务凭�
   const core = {
     ...input,
     fixture: 'core',
+    runId: undefined,
     credentialEndpoint: undefined,
     password: 'CORE-PRIVATE',
   }
@@ -246,7 +351,14 @@ test('生成页面运行器独占执行专用 config，拒绝恢复和业务凭�
             ])
               assert.doesNotMatch(other, filter)
           }
-          assert.equal(readBrowserControl(root).overrides.fixture, 'core')
+          const control = readBrowserControl(root)
+          const binding = loadRealBrowserEnvironment(root)
+          assert.equal(control.overrides.fixture, 'core')
+          assert.equal(binding.runId, undefined)
+          assert.equal(
+            realBrowserArtifactDirectories(root, binding).resultsDirectory,
+            `.local-tests/playwright-real/results/core/dev/${control.attempt}`,
+          )
           const child = new EventEmitter()
           queueMicrotask(() => child.emit('exit', status, null))
           return child

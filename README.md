@@ -139,11 +139,13 @@ corepack pnpm check --stage browser --real --fixture business --server preview -
 
 `--spec` 只与 `browser --generated --real` 的 core 验收组合，接受小写字母、数字及连字符组成的单个 `.spec.ts` 文件名，不接受路径；省略时执行完整 generated 套件，无匹配测试仍失败。
 
+真实浏览器验收将 HTML 报告与附件分别保存在 `.local-tests/playwright-real/report/<fixture>/<serverMode>/<产物代次>/` 和 `.local-tests/playwright-real/results/<fixture>/<serverMode>/<产物代次>/`。显式配置的 `runId` 用作产物代次，core 省略时使用本次运行控制器的 UUID。正式入口在启动 Playwright 前检查两个目录，已有目录或链接时停止并保留原产物。
+
 `--generated` 仅用于 `browser --real` 的 core 验收，通过 `playwright.generated.config.ts` 独立选择 `tests/browser-generated/`。使用提供所选生成页面及匹配 API 的隔离环境：订单场景需要包含精确金额和 owner 数据范围的 `order` 模型，目录场景需要包含 JSON、可空 JSON 和布尔字段的系统租户专用 `catalog` 模型；完整套件需要两种模型。core 文件提供当前凭据和实际限流配置，不配置 `restore` 或 `credentialEndpoint`。入口保留原受管控制器、网络约束、预算和身份清理；提供所选生成页面与租户边界的定向证据，不签发原 business 四场景的整套迁移或恢复证明，也不执行这些原场景。`--plan` 只检查参数并展示任务图，配置限制在实际执行前校验。
 
 `generated-tenant-migration.spec.ts` 需要多租户和已完成 up/verify 的 `shared-control`、`shared`、`dedicated-a`、`dedicated-b` 目标。它以原 owner 页面和会话核对三条完整订单的非空迁移，共享场景另验证跨租户拒绝及普通租户不能访问全局 Catalog。场景禁用自动重试，创建响应先留存再断言；新租户、套餐与迁移登记意图及实际标识，订单保留完整响应和行像。资源标记 `retained_for_fixture_teardown`，保留待主控核对，当前尚未绑定自动清理消费者；来源遵守自然 168 小时保留期及正式 finalize 的备份与归属条件，不自动重放未知写入、改时间或按前缀删除。
 
-运行参数使用 `real_browser` 的 `fixture`、`serverMode`、`port`（默认 4174）、`runId`、`baseURL`、`gateEndpoint`、`previewResponseAudit` 和 `captchaCode`。业务套件必须提供全新的 `runId`；正式业务 preview 还必须提供绝对 `previewResponseAudit` 路径。`baseURL` 只接受带端口的本机 HTTP 原点，外部服务的 IPC 通过绝对 `gateEndpoint` 显式绑定。`channel` 可用 `chrome`、`msedge` 及其 beta/dev/canary 通道；`chromium` 选择 Playwright 内置浏览器，缺省本机用 Chrome、CI 用内置浏览器。
+运行参数使用 `real_browser` 的 `fixture`、`serverMode`、`port`（默认 4174）、`runId`、`baseURL`、`gateEndpoint`、`previewResponseAudit` 和 `captchaCode`。业务套件和生成订单非空迁移验收都必须显式提供全新的 `runId`。正式业务 preview 还必须提供绝对 `previewResponseAudit` 路径。`baseURL` 只接受带端口的本机 HTTP 原点，外部服务的 IPC 通过绝对 `gateEndpoint` 显式绑定。`channel` 可用 `chrome`、`msedge` 及其 beta/dev/canary 通道；`chromium` 选择 Playwright 内置浏览器，缺省本机用 Chrome、CI 用内置浏览器。
 
 恢复验收使用 `corepack pnpm check --stage browser --real --fixture core --server preview`。`real_browser.baseURL` 指向运行收据登记的受管生产站点。在 `real_browser.restore` 中完整提供 `bindings`、`runtimeReceipt`、`targetPlan`、`coordinatorDir`、`verifierSha` 和 `runnerSha`。路径必须为绝对路径，两项 SHA 必须为完整小写提交，对应的协调后端和测试 runner 工作树必须干净。恢复租户密码放入 `real_browser.restorePasswords`，以租户 ID 为键。
 

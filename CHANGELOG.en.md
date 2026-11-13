@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Bind B0 recovery targets strictly to the original product, exact adapter execution commit, combined patch, and complete tree. Runtime receipts retain the original frontend build and reject mismatched source domains, old backend builds, and receipts from the other side.
+
 - Verify coordinator evidence, verification tools, and test runner sources separately during browser recovery acceptance, retain data and runtime checks in the original coordinator directory, and record each source in the test receipt.
 
 - Login form validation uses the active theme's high-contrast error text color.

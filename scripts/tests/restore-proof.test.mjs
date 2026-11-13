@@ -131,9 +131,8 @@ test('来源 STOP 与 C52 血缘必须使用不同的完整文件描述', () => 
 test('测试 sidecar 绑定运行副本、目标计划、五类来源和执行源码', () => {
   const value = fixture({
     backupSourceSha: 'a'.repeat(40),
-    backendProductSha: 'b'.repeat(40),
-    backendExecutionSha: 'c'.repeat(40),
-    frontendSha: 'd'.repeat(40),
+    ...b0BuildSources,
+    frontendBuildReceipt: legacyB0FrontendBuild,
   })
   const evidence = buildRestoreEvidence(value)
   assert.deepEqual(

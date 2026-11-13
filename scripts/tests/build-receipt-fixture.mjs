@@ -1,3 +1,4 @@
+import { b0Adapter, b0AdapterEvidence } from '../restore-b0-adapter.mjs'
 import path from 'node:path'
 
 import { canonicalDigest, sha256 } from '../build-source-inventory.mjs'
@@ -105,9 +106,9 @@ export function artifactFactory(directory = process.cwd()) {
 export const jsonBytes = (value) => Buffer.from(JSON.stringify(value))
 
 export const b0BuildSources = {
-  backendProductSha: '815c5eafb09d4b493319d255fb7ab88ddd02c8b6',
-  backendExecutionSha: 'c05114bcdf5c369cd74087db6317ce3c8f89bee8',
-  frontendSha: '0087ea2ecf62530d042b9e52f5c950fb34c66d78',
+  backendProductSha: b0Adapter.backendProduct,
+  backendExecutionSha: b0Adapter.backendExecution,
+  frontendSha: b0Adapter.frontend,
 }
 
 export function legacyB0FrontendBuild(head, files) {
@@ -213,18 +214,7 @@ export function restoreRuntimeFixture({
     frontendBuild: 'e'.repeat(64),
     launch: 'f'.repeat(64),
   }
-  const adapter = candidate
-    ? null
-    : {
-        contract: 'legacy-stable-readiness-b0-v1',
-        base_backend_sha: backendProductSha,
-        base_frontend_sha: frontendSha,
-        reference_adapter_sha: backendExecutionSha,
-        adapter_tree: '1'.repeat(40),
-        reconstructed_tree: '2'.repeat(40),
-        adapter_paths: ['scripts/restore_runtime.py'],
-        patch: { path: path.resolve(directory, 'adapter.patch'), bytes: 1, sha256: '3'.repeat(64) },
-      }
+  const adapter = candidate ? null : b0AdapterEvidence()
   const targetPlan = {
     format_version: 1,
     kind: 'restore-reference-target-plan',

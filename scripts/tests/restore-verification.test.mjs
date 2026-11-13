@@ -290,8 +290,8 @@ test('运行收据的 bindings 和三类源码路径必须对应本次目标计�
     },
   ]) {
     const value = fixture(t, {
-      backendProductSha: 'b'.repeat(40),
-      backendExecutionSha: 'c'.repeat(40),
+      ...b0BuildSources,
+      frontendBuildReceipt: legacyB0FrontendBuild,
     })
     mutate(value)
     writeFileSync(value.receipt, jsonBytes(value.runtime))

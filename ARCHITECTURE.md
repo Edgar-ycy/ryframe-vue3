@@ -169,6 +169,8 @@ Vite 直接或间接导入的公开配置、工具配置选择、身份及 JSON 
 
 构建身份由 `scripts/build-identity.mjs` 读取固定 `.local-tests/build/source.json`；普通 wrapper 原子写 development，显式 `--source-commit <SHA>` 核对干净 Git HEAD 后写正式值。v3 前端构建收据的上下文只含 `command/mode/target/toolchain/configuration/identity`；配置绑定环境、目录及实际公共/环境/工具文件的有序路径和摘要，身份绑定提交与来源文件。构建前后核对来源、配置与身份，产物 `build-identity.json` 必须匹配。核验按收据保存的环境重读文件并核对完整产物，不继承当前 shell 的环境选择，也不接受旧 v2 前端构建收据。其他运行收据版本保持其既有协议。
 
+恢复 B0 继续使用原前端源码和完整旧构建收据。测试 runner 将后端原产品身份与登记的精确适配执行身份分开核对，目标计划必须携带同一固定合同、组合补丁的路径标识、长度、摘要及完整重建树；内嵌后端构建的完整、产品与工具来源域必须与执行源码一致。旧后端构建或另一侧收据不能代替当前适配构建。
+
 真实 preview 先运行 `corepack pnpm build --real`，在类型检查和 Vite 构建前后核验来源，并把完整产物摘要写入忽略的生产目录。`corepack pnpm build --real --plan` 只展示同一任务图；普通 `corepack pnpm build` 保持类型检查与生产构建行为。
 
 - `tests/browser-real/`：在明确登记的隔离 API、MySQL、Redis 和对象存储环境中执行真实 Chrome 流程。

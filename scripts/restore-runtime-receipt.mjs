@@ -5,12 +5,9 @@ import {
   validateBackendBuildSources,
   validateFrontendBuildSources,
 } from './build-receipt-schema.mjs'
-import {
-  b0AdapterContract,
-  endpointPort,
-  restoreRuntimeBinding,
-} from './restore-runtime-binding.mjs'
+import { endpointPort, restoreRuntimeBinding } from './restore-runtime-binding.mjs'
 import { isResourceScopeId } from './resource-scope.mjs'
+import { isB0Authority } from './restore-b0-adapter.mjs'
 
 export { restoreRuntimeBinding }
 
@@ -53,9 +50,6 @@ const frontendFileFields = ['path', 'bytes', 'sha256']
 const legacyB0Frontend = {
   kind: 'restore-legacy-b0-frontend-build',
   contract: 'legacy-stable-readiness-b0-frontend-v1',
-  backendProduct: '815c5eafb09d4b493319d255fb7ab88ddd02c8b6',
-  backendExecution: 'c05114bcdf5c369cd74087db6317ce3c8f89bee8',
-  frontend: '0087ea2ecf62530d042b9e52f5c950fb34c66d78',
   frontendTree: '52fed4e1321ab4b4c04839a3a165c6bd1645e4b6',
 }
 
@@ -161,10 +155,7 @@ function verifyLegacyB0FrontendBuild(receipt, { authority, comparisonArm }) {
   exactObject(identity, ['frontend_commit', 'source_file'], message)
   if (
     comparisonArm !== 'b0' ||
-    authority.backend_adapter_contract !== b0AdapterContract ||
-    authority.backend_product_sha !== legacyB0Frontend.backendProduct ||
-    authority.backend_execution_sha !== legacyB0Frontend.backendExecution ||
-    authority.frontend_sha !== legacyB0Frontend.frontend ||
+    !isB0Authority(authority) ||
     receipt.format_version !== 1 ||
     adapter.contract !== legacyB0Frontend.contract ||
     !isDeepStrictEqual(build.command, ['corepack', 'pnpm', 'build']) ||

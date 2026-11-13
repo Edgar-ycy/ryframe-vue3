@@ -2,7 +2,11 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import path from 'node:path'
 import test from 'node:test'
 import { datasetDigest } from '../restore-dataset.mjs'
-import { restoreRuntimeFixture } from './build-receipt-fixture.mjs'
+import {
+  b0BuildSources,
+  legacyB0FrontendBuild,
+  restoreRuntimeFixture,
+} from './build-receipt-fixture.mjs'
 
 const temporaryRoots = []
 test.afterEach(() => {
@@ -27,8 +31,8 @@ export function fixture(options = {}) {
   const value = restoreRuntimeFixture({
     directory,
     backupSourceSha: 'a'.repeat(40),
-    backendProductSha: 'b'.repeat(40),
-    backendExecutionSha: 'c'.repeat(40),
+    ...b0BuildSources,
+    frontendBuildReceipt: legacyB0FrontendBuild,
   })
   const coordinatorRoot = path.join(directory, 'coordinator')
   const verifierRoot = path.join(directory, 'verifier')

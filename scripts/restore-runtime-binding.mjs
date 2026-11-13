@@ -1,6 +1,7 @@
 import { isAbsolute } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { canonicalDigest, exactObject, hex as validHex } from './build-source-inventory.mjs'
+import { b0Adapter, b0AdapterEvidence } from './restore-b0-adapter.mjs'
 
 const targetPlanFields = [
   'format_version',
@@ -37,7 +38,6 @@ const adapterFields = [
   'adapter_paths',
   'patch',
 ]
-export const b0AdapterContract = 'legacy-stable-readiness-b0-v1'
 
 function parseTargetPlan(bytes) {
   if (
@@ -81,13 +81,15 @@ function targetAdapter(execution) {
   }
   exactObject(execution.adapter, adapterFields, 'B0 恢复适配字段无效')
   if (
-    execution.adapter.contract !== b0AdapterContract ||
+    !Number.isInteger(execution.adapter.patch?.bytes) ||
+    execution.adapter.patch.bytes <= 0 ||
+    !isDeepStrictEqual(execution.adapter, b0AdapterEvidence()) ||
     execution.adapter.base_backend_sha !== execution.backend_product_sha ||
     execution.adapter.reference_adapter_sha !== execution.backend_execution_sha ||
     execution.adapter.base_frontend_sha !== execution.frontend_sha
   )
     throw new Error('B0 恢复适配没有绑定产品、执行与前端来源')
-  return b0AdapterContract
+  return b0Adapter.contract
 }
 
 /** 从显式登记的目标计划派生运行权威上下文，不信任待核验的运行收据自证来源。 */

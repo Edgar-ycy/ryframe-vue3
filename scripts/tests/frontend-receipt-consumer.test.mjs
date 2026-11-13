@@ -114,7 +114,7 @@ test('历史前端构建只允许精确的 B0 基线目标', () => {
   assert.throws(() => verifyFixture(candidate), /B0 前端构建/u)
   for (const field of Object.keys(b0BuildSources)) {
     const otherSource = restoreRuntimeFixture({ ...options, [field]: '0'.repeat(40) })
-    assert.throws(() => verifyFixture(otherSource), /B0 前端构建/u)
+    assert.throws(() => verifyFixture(otherSource), /B0 恢复适配/u)
   }
   const withoutAdapter = restoreRuntimeFixture({
     ...options,
@@ -123,6 +123,66 @@ test('历史前端构建只允许精确的 B0 基线目标', () => {
   withoutAdapter.targetPlan.target_side = 'base'
   withoutAdapter.targetPlan.comparison_arm = 'b0'
   assert.throws(() => verifyFixture(withoutAdapter), /B0 前端构建/u)
+})
+
+test('B0 目标拒绝错树、错补丁和其他执行收据替代', () => {
+  const options = { ...b0BuildSources, frontendBuildReceipt: legacyB0FrontendBuild }
+  const original = restoreRuntimeFixture(options)
+  verifyFixture(original)
+  for (const mutate of [
+    (value) => {
+      value.targetPlan.product_execution.adapter.adapter_tree = '0'.repeat(40)
+    },
+    (value) => {
+      value.targetPlan.product_execution.adapter.reconstructed_tree = '0'.repeat(40)
+    },
+    (value) => {
+      value.targetPlan.product_execution.adapter.patch.bytes++
+    },
+    (value) => {
+      value.targetPlan.product_execution.adapter.patch.sha256 = '0'.repeat(64)
+    },
+    (value) => {
+      value.targetPlan.product_execution.adapter.patch.path = 'other.patch'
+    },
+    (value) => {
+      value.targetPlan.product_execution.adapter.patch.unknown = true
+    },
+  ]) {
+    const value = structuredClone(original)
+    mutate(value)
+    assert.throws(() => verifyFixture(value), /B0 恢复适配/u)
+  }
+  for (const [mutate, message] of [
+    [
+      (value) => {
+        value.runtime.backend = restoreRuntimeFixture().runtime.backend
+      },
+      '运行产物收据内嵌构建未绑定精确干净源码',
+    ],
+    [
+      (value) => {
+        value.runtime.backend.sources.full.source.snapshot.head = b0BuildSources.backendProductSha
+      },
+      '完整来源 Git 内容无效',
+    ],
+    [
+      (value) => {
+        value.runtime.backend.sources.product.api.sha256 = '0'.repeat(64)
+      },
+      '后端构建来源分域与完整清单不一致',
+    ],
+    [
+      (value) => {
+        value.runtime.backend.sources.tools.sha256 = '0'.repeat(64)
+      },
+      '后端构建来源分域与完整清单不一致',
+    ],
+  ]) {
+    const value = structuredClone(original)
+    mutate(value)
+    assert.throws(() => verifyFixture(value), { message })
+  }
 })
 
 test('历史 B0 前端构建保留来源、命令、身份及 dist 清单检查', () => {

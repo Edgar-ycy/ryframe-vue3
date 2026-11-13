@@ -108,7 +108,6 @@ The real-browser acceptance configuration below uses a registered isolated runti
     },
     "backendDir": "D:/project/rustProject/ryframe/ryframe",
     "runtimeDir": "D:/project/rustProject/ryframe/ryframe/.local-tests/acceptance-local",
-    "python": "D:/tools/python/python.exe",
     "requestCapacity": 100,
     "requestWindowSeconds": 60,
     "loginCapacity": 5,

@@ -153,7 +153,6 @@ export function validateRealBrowserEnvironment(environment) {
       'workerTool',
       'backendDir',
       'runtimeDir',
-      'python',
       'requestCapacity',
       'requestWindowSeconds',
       'loginCapacity',
@@ -227,7 +226,6 @@ export function validateRealBrowserEnvironment(environment) {
         : localBaseUrl(required(environment, 'baseURL')),
     restore:
       environment.restore === undefined ? undefined : restoreEnvironment(environment.restore),
-    python: absolutePath(environment, 'python'),
     channel: browserChannel(environment.channel),
     gateEndpoint: optionalAbsolutePath(environment, 'gateEndpoint'),
     previewResponseAudit: optionalAbsolutePath(environment, 'previewResponseAudit'),

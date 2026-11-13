@@ -5,7 +5,6 @@ import { validateRealBrowserEnvironment } from '../real-browser-environment.mjs'
 
 function validEnvironment() {
   return {
-    python: resolve('工具', 'python.exe'),
     scopeId: 'real-browser-unit',
     tenantId: 'system',
     username: 'admin',
@@ -73,13 +72,6 @@ test('恢复环境成组绑定 target plan、运行收据、协调器与当前 r
     verifierSha: environment.restore.verifierSha,
     runnerSha: environment.restore.runnerSha,
   })
-})
-
-test('普通真实浏览器可单独固定 Python 而不会误启用恢复流程', () => {
-  const environment = { ...validEnvironment(), python: resolve('python.exe') }
-  const binding = validateRealBrowserEnvironment(environment)
-  assert.equal(binding.python, environment.python)
-  assert.equal(binding.restore, undefined)
 })
 
 test('恢复环境拒绝缺项、相对路径、非完整 SHA 和已退休的嵌套字段', () => {

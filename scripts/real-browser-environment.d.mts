@@ -8,7 +8,6 @@ export interface RealBrowserEnvironment {
   scopeId: string
   tenantId: string
   username: string
-  python: string
   channel: string | undefined
   gateEndpoint: string | undefined
   credentialEndpoint?: string

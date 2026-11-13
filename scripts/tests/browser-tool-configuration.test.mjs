@@ -31,7 +31,6 @@ function configured(t) {
     },
     backendDir: path.resolve('中文 业务后端 O'),
     runtimeDir: path.resolve('中文 运行目录'),
-    python: path.resolve('工具/python.exe'),
     requestCapacity: 100,
     requestWindowSeconds: 60,
     loginCapacity: 5,
@@ -87,6 +86,7 @@ test('工具文件运行中漂移即失败，未知字段和坏 JSON 不回显�
   for (const text of [
     '{"real_browser":{"credentialEndpoint":"PRIVATE-SENTINEL",',
     JSON.stringify({ real_browser: { ...input, wrong: 'PRIVATE-SENTINEL' } }),
+    JSON.stringify({ real_browser: { ...input, python: 'PRIVATE-SENTINEL' } }),
   ]) {
     fs.writeFileSync(file, text)
     assert.throws(

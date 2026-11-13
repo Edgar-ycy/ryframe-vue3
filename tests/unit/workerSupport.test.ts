@@ -68,7 +68,7 @@ function respond(value: unknown, error: object | null = null) {
 }
 
 beforeEach(() => {
-  mocked.bind.mockReturnValue({ executable, verifyUnchanged: mocked.verify })
+  mocked.bind.mockReturnValue({ root: workerTool.root, executable, verifyUnchanged: mocked.verify })
   mocked.environment.mockReturnValue({
     workerTool,
     backendDir: backend,

@@ -30,6 +30,8 @@ export interface RealBrowserEnvironment {
     | Readonly<{
         bindings: string
         coordinatorDir: string
+        coordinatorSha: string
+        verifierDir: string
         runnerSha: string
         runtimeReceipt: string
         targetPlan: string

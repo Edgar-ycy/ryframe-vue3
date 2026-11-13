@@ -57,6 +57,8 @@ test('恢复环境成组绑定 target plan、运行收据、协调器与当前 r
       runtimeReceipt: resolve('D 盘证据', 'runtime.json'),
       targetPlan: resolve('D 盘证据', 'target-plan.json'),
       coordinatorDir: resolve('D 盘源码', '协调器'),
+      coordinatorSha: 'c'.repeat(40),
+      verifierDir: validEnvironment().workerTool.root,
       verifierSha: 'b'.repeat(40),
       runnerSha: 'a'.repeat(40),
     },
@@ -66,6 +68,8 @@ test('恢复环境成组绑定 target plan、运行收据、协调器与当前 r
     runtimeReceipt: environment.restore.runtimeReceipt,
     targetPlan: environment.restore.targetPlan,
     coordinatorDir: environment.restore.coordinatorDir,
+    coordinatorSha: environment.restore.coordinatorSha,
+    verifierDir: environment.restore.verifierDir,
     verifierSha: environment.restore.verifierSha,
     runnerSha: environment.restore.runnerSha,
   })
@@ -91,6 +95,8 @@ test('恢复环境拒绝缺项、相对路径、非完整 SHA 和已退休的嵌
       runtimeReceipt: resolve('runtime.json'),
       targetPlan: resolve('target-plan.json'),
       coordinatorDir: resolve('backend'),
+      coordinatorSha: 'c'.repeat(40),
+      verifierDir: base.workerTool.root,
       verifierSha: 'b'.repeat(40),
       runnerSha: 'a'.repeat(40),
     },
@@ -248,4 +254,27 @@ test('Worker 双来源配置必须完整且固定位置、大小、摘要严格�
       (error) => !error.message.includes('PRIVATE-SENTINEL'),
     )
   }
+})
+
+test('恢复环境拒绝不规范的独立来源和错绑 Worker 来源根', () => {
+  const base = validEnvironment()
+  const restore = {
+    bindings: resolve('bindings.json'),
+    runtimeReceipt: resolve('runtime.json'),
+    targetPlan: resolve('target.json'),
+    coordinatorDir: resolve('coordinator'),
+    coordinatorSha: 'c'.repeat(40),
+    verifierDir: base.workerTool.root,
+    verifierSha: 'b'.repeat(40),
+    runnerSha: 'a'.repeat(40),
+  }
+  for (const change of [
+    { coordinatorSha: 'C'.repeat(40) },
+    { coordinatorDir: `${restore.coordinatorDir}/../coordinator` },
+    { verifierDir: `${restore.verifierDir}/.` },
+    { verifierDir: restore.coordinatorDir },
+  ])
+    assert.throws(() =>
+      validateRealBrowserEnvironment({ ...base, restore: { ...restore, ...change } }),
+    )
 })

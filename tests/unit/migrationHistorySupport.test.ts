@@ -23,7 +23,7 @@ const workerTool = {
 }
 beforeEach(() => {
   verifyUnchanged.mockReset()
-  vi.mocked(bindWorkerTool).mockReturnValue({ executable, verifyUnchanged })
+  vi.mocked(bindWorkerTool).mockReturnValue({ root: workerTool.root, executable, verifyUnchanged })
 })
 
 describe('迁移历史夹具命令', () => {

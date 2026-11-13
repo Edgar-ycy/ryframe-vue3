@@ -188,7 +188,7 @@ export function bindWorkerTool(workerTool) {
       }
     }
     verifyFiles()
-    return { executable: value.executable.path, verifyUnchanged }
+    return Object.freeze({ root, executable: value.executable.path, verifyUnchanged })
   } catch {
     throw failure()
   }

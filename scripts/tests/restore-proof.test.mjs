@@ -36,6 +36,8 @@ function fixture(options = {}) {
     },
     runnerRoot: path.resolve(value.paths.runtimeDir, 'runner'),
     runnerSha: 'f'.repeat(40),
+    coordinatorRoot: path.resolve(value.paths.runtimeDir, 'coordinator'),
+    coordinatorSha: 'd'.repeat(40),
     verifierRoot: path.resolve(value.paths.runtimeDir, 'verifier'),
     verifierSha: 'e'.repeat(40),
     started: 2000,
@@ -81,7 +83,7 @@ test('B0 业务证明区分备份、产品、执行与适配来源', () => {
   assert.equal(proof.backend_adapter_contract, 'legacy-stable-readiness-b0-v1')
 })
 
-test('runner 与 verifier 必须使用精确源码路径和 SHA', () => {
+test('runner、协调器与 verifier 必须使用精确源码路径和 SHA', () => {
   for (const change of [
     (value) => {
       value.runnerSha = 'a'.repeat(39)
@@ -92,10 +94,16 @@ test('runner 与 verifier 必须使用精确源码路径和 SHA', () => {
     (value) => {
       value.runnerRoot = 'runner'
     },
+    (value) => {
+      value.coordinatorRoot = 'coordinator'
+    },
+    (value) => {
+      value.coordinatorSha = 'D'.repeat(40)
+    },
   ]) {
     const value = fixture()
     change(value)
-    assert.throws(() => buildRestoreProof(value), /runner|verifier/u)
+    assert.throws(() => buildRestoreProof(value), /runner|verifier|coordinator/u)
   }
 })
 
@@ -178,6 +186,7 @@ test('测试 sidecar 绑定运行副本、目标计划、五类来源和执行�
     sources: {
       ...value.runtime.source,
       runner: { root: value.runnerRoot, sha: value.runnerSha },
+      coordinator: { root: value.coordinatorRoot, sha: value.coordinatorSha },
       verifier: { root: value.verifierRoot, sha: value.verifierSha },
     },
     frontend_url: value.frontendEndpoint,

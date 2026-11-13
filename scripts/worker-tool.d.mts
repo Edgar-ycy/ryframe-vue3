@@ -2,6 +2,7 @@ import type { ExecFileSyncOptionsWithStringEncoding } from 'node:child_process'
 import type { WorkerTool } from './real-browser-environment.mjs'
 
 export interface BoundWorkerTool {
+  readonly root: string
   executable: string
   verifyUnchanged: () => void
 }

@@ -30,11 +30,11 @@ test('登记原生工具只读预检绑定当前输入并返回递归冻结的�
   assert.equal(call.program, item.input.tool.executable)
   assert.deepEqual(call.args, ['__source-evidence'])
   assert.deepEqual(item.toolChecks, ['verify', 'execute', 'verify'])
-  assert.equal(call.settings.cwd, item.verifierRoot)
+  assert.equal(call.settings.cwd, item.coordinatorRoot)
   assert.deepEqual(JSON.parse(call.settings.input), {
     operation: 'restore-dataset-authority',
     arguments: {
-      backend_dir: item.verifierRoot,
+      backend_dir: item.coordinatorRoot,
       runtime_receipt: item.input.runtimeReceipt,
       target_plan: item.input.targetPlan,
     },
@@ -206,11 +206,19 @@ function existingReceipt(item) {
   }
 }
 
+const coordinatorSha = 'e'.repeat(40)
 const verifierSha = 'f'.repeat(40)
 const acceptCheckout = (directory) => directory
 
 function existingInput(item, authority = restoreDatasetEvidence(item.authority)) {
-  return { authority, verifierRoot: item.verifierRoot, verifierSha, tool: item.input.tool }
+  return {
+    authority,
+    coordinatorRoot: item.coordinatorRoot,
+    coordinatorSha,
+    verifierRoot: item.verifierRoot,
+    verifierSha,
+    tool: item.input.tool,
+  }
 }
 
 test('恢复已有数据仅调用一次登记工具，并将冻结权威完整交给登记协调器', () => {
@@ -222,14 +230,14 @@ test('恢复已有数据仅调用一次登记工具，并将冻结权威完整�
   const result = verifyRestoredDataset(existingInput(item, verified), {
     checkout: (...args) => {
       checkouts.push(args)
-      return item.verifierRoot
+      return args[0]
     },
     execute: (program, args, options) => {
       calls++
       item.toolChecks.push('execute')
       assert.equal(program, item.input.tool.executable)
       assert.deepEqual(args, ['__restore-dataset-verify-existing'])
-      assert.equal(options.cwd, item.verifierRoot)
+      assert.equal(options.cwd, item.coordinatorRoot)
       assert.deepEqual(options.env, toolProcessEnvironment())
       assert.equal(options.encoding, 'utf8')
       assert.equal(options.windowsHide, true)
@@ -249,7 +257,12 @@ test('恢复已有数据仅调用一次登记工具，并将冻结权威完整�
   })
   assert.equal(calls, 1)
   assert.deepEqual(item.toolChecks, ['verify', 'execute', 'verify'])
-  assert.deepEqual(checkouts, [[item.verifierRoot, verifierSha, '恢复证明协调后端']])
+  assert.deepEqual(checkouts, [
+    [item.coordinatorRoot, coordinatorSha, '恢复证明协调后端'],
+    [item.verifierRoot, verifierSha, '恢复证明核验源码'],
+    [item.coordinatorRoot, coordinatorSha, '恢复证明协调后端'],
+    [item.verifierRoot, verifierSha, '恢复证明核验源码'],
+  ])
   assert.deepEqual(result, receipt)
   assert.equal(Object.isFrozen(result.actions), true)
 })
@@ -335,4 +348,34 @@ test('已有数据子进程失败不泄露原始输出，也不重试', () => {
       error.cause === undefined,
   )
   assert.equal(calls, 1)
+})
+
+test('恢复已有数据拒绝错绑工具根及核验期间任一源码漂移', () => {
+  const item = fixture()
+  const wrongTool = {
+    ...existingInput(item),
+    tool: { ...item.input.tool, root: item.coordinatorRoot },
+  }
+  assert.throws(
+    () =>
+      verifyRestoredDataset(wrongTool, {
+        checkout: acceptCheckout,
+        execute: () => assert.fail('错根时不得启动核验'),
+      }),
+    /Worker 工具来源根不同/u,
+  )
+  for (const changedLabel of ['恢复证明协调后端', '恢复证明核验源码']) {
+    let checks = 0
+    assert.throws(
+      () =>
+        verifyRestoredDataset(existingInput(item), {
+          checkout: (root, _sha, label) => {
+            if (label === changedLabel && ++checks === 2) throw new Error(`${label}漂移`)
+            return root
+          },
+          execute: () => JSON.stringify(existingReceipt(item)),
+        }),
+      /漂移/u,
+    )
+  }
 })

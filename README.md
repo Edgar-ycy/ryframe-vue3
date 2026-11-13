@@ -147,11 +147,11 @@ corepack pnpm check --stage browser --real --fixture business --server preview -
 
 运行参数使用 `real_browser` 的 `fixture`、`serverMode`、`port`（默认 4174）、`runId`、`baseURL`、`gateEndpoint`、`previewResponseAudit` 和 `captchaCode`。业务套件和生成订单非空迁移验收都必须显式提供全新的 `runId`。正式业务 preview 还必须提供绝对 `previewResponseAudit` 路径。`baseURL` 只接受带端口的本机 HTTP 原点，外部服务的 IPC 通过绝对 `gateEndpoint` 显式绑定。`channel` 可用 `chrome`、`msedge` 及其 beta/dev/canary 通道；`chromium` 选择 Playwright 内置浏览器，缺省本机用 Chrome、CI 用内置浏览器。
 
-恢复验收使用 `corepack pnpm check --stage browser --real --fixture core --server preview`。`real_browser.baseURL` 指向运行收据登记的受管生产站点。在 `real_browser.restore` 中完整提供 `bindings`、`runtimeReceipt`、`targetPlan`、`coordinatorDir`、`verifierSha` 和 `runnerSha`。路径必须为绝对路径，两项 SHA 必须为完整小写提交，对应的协调后端和测试 runner 工作树必须干净。恢复租户密码放入 `real_browser.restorePasswords`，以租户 ID 为键。
+恢复验收使用 `corepack pnpm check --stage browser --real --fixture core --server preview`。`real_browser.baseURL` 指向运行收据登记的受管生产站点。在 `real_browser.restore` 中完整提供 `bindings`、`runtimeReceipt`、`targetPlan`、`coordinatorDir`、`coordinatorSha`、`verifierDir`、`verifierSha` 和 `runnerSha`。路径必须为规范绝对路径，三项 SHA 必须为完整小写提交。协调后端、核验源码和测试 runner 分别核对各自的干净工作树；`verifierDir` 必须与 `real_browser.workerTool.root` 一致。协调后端保留原运行账本和证据，核验工具可以来自另一工作树。恢复租户密码放入 `real_browser.restorePasswords`，以租户 ID 为键。
 
 登录前，测试 runner 使用 `real_browser.workerTool` 绑定的原生程序执行 `__source-evidence`，只读核验并冻结来源与目标的数据绑定。已有数据场景在 11 个参考租户中读取页面，再调用同一程序的 `__restore-dataset-verify-existing` 核验全部登记岗位样本和 256 个对象。核验仅读取业务数据和对象，登录和注销会修改会话。
 
-业务测试前后，报告器重新绑定 `real_browser.workerTool`，在已登记的协调后端目录执行该程序的 `check recovery runtime verify`，核对运行收据、三端运行身份和完整前端产物。每次原生调用前后复核工具绑定。业务证明记录协调后端与前端测试 runner 的提交，由 `cargo xtask data restore verify` 独立核验。
+业务测试前后，报告器重新绑定 `real_browser.workerTool`，在已登记的协调后端目录执行该程序的 `check recovery runtime verify`，核对运行收据、三端运行身份和完整前端产物。每次原生调用前后复核工具绑定。测试收据分别记录协调后端、核验源码与前端测试 runner 的根目录和提交，业务证明绑定该收据摘要；`verifier_sha` 指向核验源码提交。使用 `cargo xtask data restore verify`，通过 `--coordinator-root` 和 `--coordinator-sha` 绑定原协调证据，由登记的核验源码独立核验。
 
 双侧恢复比较的 B0 基线使用原前端提交 `0087ea2ecf62530d042b9e52f5c950fb34c66d78`。测试 runner 通过同一恢复入口读取后端运行收据中登记的 `restore-legacy-b0-frontend-build`，由后端原生核验绑定目标计划、原基线来源和完整构建产物。B1 和普通正式前端构建仍使用 v3 构建收据。
 

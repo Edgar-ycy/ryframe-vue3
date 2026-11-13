@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Verify coordinator evidence, verification tools, and test runner sources separately during browser recovery acceptance, retain data and runtime checks in the original coordinator directory, and record each source in the test receipt.
+
 - Login form validation uses the active theme's high-contrast error text color.
 
 - Save real core browser reports and results in separate controller attempts when `runId` is omitted. The managed runner refuses to reuse an existing artifact directory before launch.

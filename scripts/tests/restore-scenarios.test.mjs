@@ -22,8 +22,10 @@ function restoreFixture(t, options = {}) {
   t.after(() => rmSync(directory, { recursive: true, force: true }))
   const value = restoreRuntimeFixture({ directory, ...options })
   const coordinator = path.join(directory, 'coordinator')
+  const verifier = path.join(directory, 'verifier')
   for (const item of [
     coordinator,
+    verifier,
     value.paths.backendProductRoot,
     value.paths.backendExecutionRoot,
     value.paths.frontendRoot,
@@ -57,13 +59,18 @@ function restoreFixture(t, options = {}) {
     },
     execution_backend: value.paths.backendExecutionRoot,
   }
-  const tool = { executable: path.join(coordinator, 'registered-xtask'), verifyUnchanged() {} }
+  const tool = {
+    root: verifier,
+    executable: path.join(verifier, 'registered-xtask'),
+    verifyUnchanged() {},
+  }
   return {
     ...value,
     authority,
     datasetAuthority: (input) => {
       assert.equal(Object.hasOwn(input, 'python'), false)
       assert.equal(input.tool, tool)
+      assert.equal(input.backendRoot, coordinator)
       return { authority, lineage: lineage.lineage }
     },
     lineage,
@@ -73,6 +80,8 @@ function restoreFixture(t, options = {}) {
       targetPlan,
       runtimeReceipt,
       coordinatorDir: coordinator,
+      coordinatorSha: 'd'.repeat(40),
+      verifierDir: verifier,
       verifierSha: 'e'.repeat(40),
       runnerSha: 'f'.repeat(40),
     },
@@ -126,8 +135,13 @@ test('B0 原产品前端与当前 runner 分离并绑定内嵌构建和全部运
   assert.deepEqual(calls, [
     {
       directory: value.restore.coordinatorDir,
-      sha: value.restore.verifierSha,
+      sha: value.restore.coordinatorSha,
       label: '恢复证明协调后端',
+    },
+    {
+      directory: value.restore.verifierDir,
+      sha: value.restore.verifierSha,
+      label: '恢复证明核验源码',
     },
     {
       directory: value.paths.frontendRoot,
@@ -142,7 +156,9 @@ test('B0 原产品前端与当前 runner 分离并绑定内嵌构建和全部运
     runtime: { path: value.restore.runtimeReceipt, sha256: sha256(value.runtimeBytes) },
     sourceGeneration: value.lineage.sourceGeneration,
     datasetLineage: value.lineage.datasetLineage,
-    verifierRoot: value.restore.coordinatorDir,
+    coordinatorRoot: value.restore.coordinatorDir,
+    coordinatorSha: value.restore.coordinatorSha,
+    verifierRoot: value.restore.verifierDir,
     verifierSha: value.restore.verifierSha,
     runnerRoot: root,
     runnerSha: value.restore.runnerSha,
@@ -218,7 +234,16 @@ test('恢复输入、fixture 与场景来源在配置副作用前失败关闭', 
   )
   const another = restoreFixture(t)
   assert.throws(
-    () => select(another.restore, 'core', path.dirname(another.restore.bindings)),
+    () =>
+      realTestSelection(
+        another.restore,
+        'core',
+        another.runtime.endpoints.frontend,
+        another.tool,
+        path.dirname(another.restore.bindings),
+        (directory) => path.resolve(directory),
+        another.datasetAuthority,
+      ),
     /场景不存在/u,
   )
 })
@@ -234,9 +259,9 @@ test('runner 核验失败会在报告目录和服务创建前传播', (t) => {
           value.runtime.endpoints.frontend,
           value.tool,
           root,
-          (_directory, _sha, label) => {
+          (directory, _sha, label) => {
             if (label === '恢复测试 runner 源码') throw new Error(error)
-            return value.paths.frontendRoot
+            return directory
           },
           value.datasetAuthority,
         ),
@@ -275,4 +300,22 @@ test('restore worker 在首次登录前重验配置冻结的数据权威', async
     'RYFRAME_RESTORE_BINDINGS',
   ])
     assert.doesNotMatch(source, new RegExp(name, 'u'))
+})
+
+test('恢复选择在调用数据核验前拒绝错绑的工具来源根', (t) => {
+  const value = restoreFixture(t)
+  const tool = { ...value.tool, root: value.restore.coordinatorDir }
+  assert.throws(
+    () =>
+      realTestSelection(
+        value.restore,
+        'core',
+        value.runtime.endpoints.frontend,
+        tool,
+        root,
+        (directory) => path.resolve(directory),
+        () => assert.fail('错根时不得核验数据'),
+      ),
+    /Worker 工具来源根不同/u,
+  )
 })

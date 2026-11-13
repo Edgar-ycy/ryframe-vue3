@@ -4,6 +4,8 @@ import type { BoundWorkerTool } from './worker-tool.mjs'
 export interface RestoreBrowserEnvironment {
   bindings: string
   coordinatorDir: string
+  coordinatorSha: string
+  verifierDir: string
   runnerSha: string
   runtimeReceipt: string
   targetPlan: string
@@ -49,6 +51,8 @@ export function realTestSelection(
         runtime: RestoreEvidenceDescriptor
         sourceGeneration: RestoreLineageDescriptor
         target: RestoreEvidenceDescriptor
+        coordinatorRoot: string
+        coordinatorSha: string
         verifierRoot: string
         verifierSha: string
         datasetAuthority: RestoreDatasetAuthorityRecord

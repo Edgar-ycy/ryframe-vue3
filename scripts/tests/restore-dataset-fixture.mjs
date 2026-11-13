@@ -30,8 +30,9 @@ export function fixture(options = {}) {
     backendProductSha: 'b'.repeat(40),
     backendExecutionSha: 'c'.repeat(40),
   })
+  const coordinatorRoot = path.join(directory, 'coordinator')
   const verifierRoot = path.join(directory, 'verifier')
-  for (const item of [verifierRoot, value.paths.backendExecutionRoot])
+  for (const item of [coordinatorRoot, verifierRoot, value.paths.backendExecutionRoot])
     mkdirSync(item, { recursive: true })
   const lineage = {
     tenants: Array.from({ length: 11 }, (_, index) => ({ tenant_id: `tenant-${index}` })),
@@ -64,6 +65,7 @@ export function fixture(options = {}) {
   const calls = []
   const toolChecks = []
   const tool = {
+    root: verifierRoot,
     executable: path.join(verifierRoot, 'registered-xtask'),
     verifyUnchanged: () => toolChecks.push('verify'),
   }
@@ -77,9 +79,20 @@ export function fixture(options = {}) {
     bindingsBytes: value.bindingsBytes,
     runtimeReceipt: runtimeFile,
     targetPlan: targetPlanFile,
-    backendRoot: verifierRoot,
+    backendRoot: coordinatorRoot,
     frontendEndpoint: value.runtime.endpoints.frontend,
     tool,
   }
-  return { authority, calls, directory, execute, input, lineage, toolChecks, value, verifierRoot }
+  return {
+    authority,
+    calls,
+    directory,
+    execute,
+    input,
+    lineage,
+    toolChecks,
+    value,
+    coordinatorRoot,
+    verifierRoot,
+  }
 }

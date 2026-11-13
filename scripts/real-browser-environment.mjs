@@ -88,6 +88,8 @@ function restoreEnvironment(environment) {
     'runtimeReceipt',
     'targetPlan',
     'coordinatorDir',
+    'coordinatorSha',
+    'verifierDir',
     'verifierSha',
     'runnerSha',
   ]
@@ -96,13 +98,21 @@ function restoreEnvironment(environment) {
   if (configured.length === 0) throw new Error('恢复浏览器环境缺少完整绑定')
   if (configured.length !== fields.length)
     throw new Error(
-      '恢复浏览器环境必须同时登记 bindings、target plan、运行收据、协调器、verifier SHA 和 runner SHA',
+      '恢复浏览器环境必须同时登记 bindings、target plan、运行收据、协调器及其 SHA、核验器及其 SHA 和 runner SHA',
     )
+  for (const name of ['coordinatorDir', 'verifierDir']) {
+    if (
+      absolutePath(environment, name)
+        .split(/[\\/]/u)
+        .some((part) => part === '.' || part === '..')
+    )
+      throw new Error(`${name} 必须是规范绝对目录`)
+  }
   return Object.freeze(
     Object.fromEntries(
       fields.map((name) => [
         name,
-        name === 'runnerSha' || name === 'verifierSha'
+        ['runnerSha', 'verifierSha', 'coordinatorSha'].includes(name)
           ? commitSha(environment, name)
           : absolutePath(environment, name),
       ]),
@@ -222,6 +232,8 @@ export function validateRealBrowserEnvironment(environment) {
     gateEndpoint: optionalAbsolutePath(environment, 'gateEndpoint'),
     previewResponseAudit: optionalAbsolutePath(environment, 'previewResponseAudit'),
   }
+  if (binding.restore && resolve(binding.restore.verifierDir) !== resolve(binding.workerTool.root))
+    throw new Error('恢复核验源码目录与 Worker 工具来源根不同')
   return Object.freeze(binding)
 }
 

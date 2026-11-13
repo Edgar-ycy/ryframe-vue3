@@ -262,14 +262,17 @@ export function verifyRestoreDatasetAuthority(
 
 /** 使用已冻结权威核验登记目标的全部已有数据，登录和注销由 Rust 控制。 */
 export function verifyRestoredDataset(
-  { authority: verified, verifierRoot, verifierSha, tool },
+  { authority: verified, coordinatorRoot, coordinatorSha, verifierRoot, verifierSha, tool },
   { execute = execFileSync, checkout = verifiedCheckout } = {},
 ) {
   const value = exactObject(verified, ['authority', 'lineage'], '恢复数据核验输入')
   const { authority, lineage } = restoreDatasetEvidence(value.authority)
   if (!isDeepStrictEqual(lineage, value.lineage))
     throw new Error('恢复数据血缘与配置阶段冻结内容不一致')
-  const root = checkout(verifierRoot, verifierSha, '恢复证明协调后端')
+  const root = checkout(coordinatorRoot, coordinatorSha, '恢复证明协调后端')
+  const verifier = checkout(verifierRoot, verifierSha, '恢复证明核验源码')
+  if (evidenceDirectory(tool.root, '恢复核验工具来源') !== verifier)
+    throw new Error('恢复核验源码目录与 Worker 工具来源根不同')
   const posts = lineage.scale?.post_samples
   const sourceScope = lineage.scopes?.origin_tenant_scope_id
   if (
@@ -321,6 +324,8 @@ export function verifyRestoredDataset(
     throw new Error('恢复已有数据核验失败。登录或注销可能已发生，请保留失败现场，禁止自动重放。')
   }
 
+  checkout(coordinatorRoot, coordinatorSha, '恢复证明协调后端')
+  checkout(verifierRoot, verifierSha, '恢复证明核验源码')
   const result = parseXtaskJsonReceipt(output)
   if (!isDeepStrictEqual(result, expected))
     throw new Error('恢复目标已有数据核验收据与冻结身份、操作或 C52 血缘规模不一致')

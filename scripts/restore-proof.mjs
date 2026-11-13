@@ -220,6 +220,8 @@ export function buildRestoreEvidence({
   datasetLineage,
   runnerRoot,
   runnerSha,
+  coordinatorRoot,
+  coordinatorSha,
   verifierRoot,
   verifierSha,
   started,
@@ -238,6 +240,7 @@ export function buildRestoreEvidence({
     manifest,
   )
   const runner = sourceDescriptor(runnerRoot, runnerSha, 'runner')
+  const coordinator = sourceDescriptor(coordinatorRoot, coordinatorSha, 'coordinator')
   const verifier = sourceDescriptor(verifierRoot, verifierSha, 'verifier')
   const verifiedAt = instant(record.data_verified_at, '恢复业务验收必须绑定包含时区的数据验证时刻')
   if (
@@ -277,6 +280,7 @@ export function buildRestoreEvidence({
     backend_adapter_contract: source.backend_adapter_contract,
     frontend_sha: source.frontend_sha,
     runner,
+    coordinator,
     verifier,
   }
   const testsReceipt = {

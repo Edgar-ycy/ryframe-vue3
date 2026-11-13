@@ -96,6 +96,8 @@ describe('Worker 跨仓正式工具绑定', () => {
   it('接受完整来源绑定并支持中文、空格路径', () => {
     const tool = bindWorkerTool(workerTool)
     expect(tool.executable).toBe(executable)
+    expect(tool.root).toBe(workerTool.root)
+    expect(Object.isFrozen(tool)).toBe(true)
     expect(native.verify).toHaveBeenCalledWith(
       executable,
       ['__frontend-origin', 'verify-sources'],

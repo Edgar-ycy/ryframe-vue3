@@ -15,6 +15,8 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
   mkdirSync(path.resolve('.local-tests/playwright-real'), { recursive: true })
   const directory = mkdtempSync(path.join(local, 'restore-reporter-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
+  const verifierRoot = path.join(directory, 'verifier')
+  mkdirSync(verifierRoot)
   const id = `proof-${randomUUID()}`
   const value = restoreRuntimeFixture({
     directory,
@@ -41,6 +43,8 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
     runtimeReceipt: runtime,
     targetPlan: targetPlan,
     coordinatorDir: directory,
+    coordinatorSha: 'd'.repeat(40),
+    verifierDir: verifierRoot,
     verifierSha: 'e'.repeat(40),
     runnerSha: 'f'.repeat(40),
     scopeId: 'restore-unit',
@@ -81,24 +85,30 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
       }
       return { authority, lineage: lineage.lineage }
     })
-  const workerTool = { root: directory, binding: { path: path.join(directory, 'tool.json') } }
+  const workerTool = { root: verifierRoot, binding: { path: path.join(verifierRoot, 'tool.json') } }
   const boundTools = []
   const reporter = new RestoreReporter({
     browserBinding: { scopeId: environment.scopeId, restore: environment, workerTool },
     checkout,
     bindTool: (selected) => {
       assert.equal(selected, workerTool)
-      const tool = { executable: path.join(directory, 'registered-xtask'), verifyUnchanged() {} }
+      const tool = {
+        root: selected.root,
+        executable: path.join(verifierRoot, 'registered-xtask'),
+        verifyUnchanged() {},
+      }
       boundTools.push(tool)
       return tool
     },
     verify: (input) => {
       assert.equal(Object.hasOwn(input, 'python'), false)
       assert.equal(input.tool, boundTools.at(-1))
+      assert.equal(input.backend, directory)
       return verify(digest)
     },
     datasetAuthority: (input, options) => {
       assert.equal(input.tool, boundTools.at(-1))
+      assert.equal(input.backendRoot, directory)
       return datasetAuthority(input, options)
     },
     expectedRestore: {
@@ -110,7 +120,9 @@ function fixture(t, verify, expectedDigest, checkout = (root) => root, authority
       runtime: { path: runtime, sha256: digest },
       sourceGeneration: lineage.sourceGeneration,
       datasetLineage: lineage.datasetLineage,
-      verifierRoot: directory,
+      coordinatorRoot: directory,
+      coordinatorSha: 'd'.repeat(40),
+      verifierRoot,
       verifierSha: 'e'.repeat(40),
       runnerRoot: process.cwd(),
       runnerSha: 'f'.repeat(40),
@@ -168,6 +180,12 @@ test('全部测试完成后重新核验来源，并保存与证明摘要对应�
   assert.equal(tests.kind, 'restore-browser-tests')
   assert.equal(tests.sources.runner.sha, proof.runner_sha)
   assert.equal(tests.sources.verifier.sha, proof.verifier_sha)
+  assert.deepEqual(tests.sources.coordinator, {
+    root: item.reporter.coordinatorRoot,
+    sha: 'd'.repeat(40),
+  })
+  assert.notEqual(tests.sources.coordinator.root, tests.sources.verifier.root)
+  assert.notEqual(tests.sources.runner.root, tests.sources.verifier.root)
   assert.equal(tests.runtime.sha256, proof.runtime_receipt_sha256)
   assert.equal(tests.target_plan.sha256, proof.target_plan_sha256)
   assert.deepEqual(tests.source_generation, item.lineage.sourceGeneration)
@@ -235,7 +253,7 @@ test('测试结束时进程或源码核验失败不会写成功证明', (t) => {
 
 test('测试结束时 runner 或 verifier 源码变化会拒绝证明', (t) => {
   t.mock.method(console, 'error', () => {})
-  for (const changedLabel of ['恢复测试 runner 源码', '恢复证明协调后端']) {
+  for (const changedLabel of ['恢复测试 runner 源码', '恢复证明协调后端', '恢复证明核验源码']) {
     let checks = 0
     const item = fixture(
       t,
@@ -295,4 +313,34 @@ test('恢复输入必须使用绝对普通文件且 scope 必须精确匹配', (
 
 test('reporter 拒绝与配置预检不一致的恢复绑定', (t) => {
   assert.throws(() => fixture(t, (digest) => digest, '0'.repeat(64)), /预检结果/u)
+})
+
+test('reporter 分别拒绝协调器、核验器与 runner 的根或 SHA 错配', (t) => {
+  for (const [field, changed] of [
+    ['coordinatorDir', (item) => item.reporter.verifierRoot],
+    ['coordinatorSha', () => '1'.repeat(40)],
+    ['verifierDir', (item) => item.reporter.coordinatorRoot],
+    ['verifierSha', () => '2'.repeat(40)],
+    ['runnerSha', () => '3'.repeat(40)],
+  ]) {
+    const item = fixture(t, (digest) => digest)
+    item.reporter.browserBinding.restore[field] = changed(item)
+    assert.throws(
+      () => item.reporter.onBegin({ projects: [{ use: { baseURL: 'http://127.0.0.1:4174' } }] }),
+      /预检结果不一致/u,
+    )
+    assert.equal(existsSync(item.output), false)
+  }
+})
+
+test('reporter 拒绝与已登记核验源码不同的实际工具根', (t) => {
+  const item = fixture(t, (digest) => digest)
+  item.reporter.browserBinding.workerTool.root = item.reporter.coordinatorRoot
+  assert.throws(
+    () => item.reporter.onBegin({ projects: [{ use: { baseURL: 'http://127.0.0.1:4174' } }] }),
+    /Worker 工具来源根不同/u,
+  )
+  t.mock.method(console, 'error', () => {})
+  assert.deepEqual(item.reporter.onEnd({ status: 'passed' }), { status: 'failed' })
+  assert.equal(existsSync(item.output), false)
 })

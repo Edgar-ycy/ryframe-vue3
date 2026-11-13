@@ -53,7 +53,9 @@ test('恢复前已有岗位与文件在全部参考租户中仍可读取', async
   }
   const verified = verifyRestoredDataset({
     authority: restored,
-    verifierRoot: restore.coordinatorDir,
+    coordinatorRoot: restore.coordinatorDir,
+    coordinatorSha: restore.coordinatorSha,
+    verifierRoot: restore.verifierDir,
     verifierSha: restore.verifierSha,
     tool,
   })

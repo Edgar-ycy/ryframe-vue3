@@ -68,6 +68,8 @@ export function verifyRestoreDatasetAuthority(
 export function verifyRestoredDataset(
   input: {
     authority: VerifiedRestoreDatasetAuthority
+    coordinatorRoot: string
+    coordinatorSha: string
     verifierRoot: string
     verifierSha: string
     tool: BoundWorkerTool

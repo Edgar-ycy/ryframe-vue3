@@ -33,6 +33,8 @@ function restoreInputs(value) {
     'runtimeReceipt',
     'targetPlan',
     'coordinatorDir',
+    'coordinatorSha',
+    'verifierDir',
     'verifierSha',
     'runnerSha',
   ]
@@ -64,12 +66,15 @@ export function realTestSelection(
   }
   const inputs = restoreInputs(restore)
   if (fixture !== 'core') throw new Error('恢复业务证明必须使用完整 core 业务套件')
-  let binding, target, runtime, verifierRoot, runnerRoot, authority
+  let binding, target, runtime, coordinatorRoot, verifierRoot, runnerRoot, authority
   try {
     binding = evidenceFile(inputs.bindings, '恢复绑定收据')
     target = evidenceFile(inputs.targetPlan, '恢复目标计划')
     runtime = evidenceFile(inputs.runtimeReceipt, '恢复运行收据')
-    verifierRoot = checkout(inputs.coordinatorDir, inputs.verifierSha, '恢复证明协调后端')
+    coordinatorRoot = checkout(inputs.coordinatorDir, inputs.coordinatorSha, '恢复证明协调后端')
+    verifierRoot = checkout(inputs.verifierDir, inputs.verifierSha, '恢复证明核验源码')
+    if (!tool || evidenceDirectory(tool.root, '恢复核验工具来源') !== verifierRoot)
+      throw new Error('恢复核验源码目录与 Worker 工具来源根不同')
     const { record, manifest } = restoreProofBindings(binding.bytes)
     const expected = restoreRuntimeBinding({
       record,
@@ -84,7 +89,7 @@ export function realTestSelection(
       bindingsBytes: binding.bytes,
       runtimeReceipt: runtime.path,
       targetPlan: target.path,
-      backendRoot: verifierRoot,
+      backendRoot: coordinatorRoot,
       frontendEndpoint: baseURL,
       tool,
     })
@@ -108,6 +113,8 @@ export function realTestSelection(
       ...evidence,
       sourceGeneration: authority.authority.source_generation,
       datasetLineage: authority.authority.dataset_lineage,
+      coordinatorRoot,
+      coordinatorSha: inputs.coordinatorSha,
       verifierRoot,
       verifierSha: inputs.verifierSha,
       runnerRoot,

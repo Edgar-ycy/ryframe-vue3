@@ -99,14 +99,25 @@ export default class RestoreReporter {
     const scope = browser.scopeId
     if (!scope || scope !== record.plan.scope_id)
       throw new Error('恢复验收 scope 或后端源码目录未显式绑定')
-    const configuredVerifierSha = browser.restore.verifierSha
-    const verifierRoot = this.checkout(
+    const configuredCoordinatorSha = browser.restore.coordinatorSha
+    const coordinatorRoot = this.checkout(
       browser.restore.coordinatorDir,
-      configuredVerifierSha,
+      configuredCoordinatorSha,
       '恢复证明协调后端',
     )
-    if (configuredVerifierSha !== expected.verifierSha || verifierRoot !== expected.verifierRoot)
+    if (
+      configuredCoordinatorSha !== expected.coordinatorSha ||
+      coordinatorRoot !== expected.coordinatorRoot
+    )
       throw new Error('恢复证明协调后端与配置预检结果不一致')
+    const configuredVerifierSha = browser.restore.verifierSha
+    const verifierRoot = this.checkout(
+      browser.restore.verifierDir,
+      configuredVerifierSha,
+      '恢复证明核验源码',
+    )
+    if (configuredVerifierSha !== expected.verifierSha || verifierRoot !== expected.verifierRoot)
+      throw new Error('恢复证明核验源码与配置预检结果不一致')
     const urls = new Set(config.projects.map((project) => project.use.baseURL))
     if (urls.size !== 1 || typeof [...urls][0] !== 'string' || ![...urls][0])
       throw new Error('恢复验收必须绑定运行产物收据与唯一浏览器地址')
@@ -127,11 +138,13 @@ export default class RestoreReporter {
     if (configuredRunnerSha !== expected.runnerSha || runnerRoot !== expected.runnerRoot)
       throw new Error('恢复测试 runner 与配置预检结果不一致')
     const tool = this.bindTool(browser.workerTool)
+    if (evidenceDirectory(tool.root, '恢复核验工具来源') !== verifierRoot)
+      throw new Error('恢复核验源码目录与 Worker 工具来源根不同')
     const datasetInputs = {
       bindingsBytes: binding.bytes,
       runtimeReceipt: runtime.path,
       targetPlan: target.path,
-      backendRoot: verifierRoot,
+      backendRoot: coordinatorRoot,
       frontendEndpoint: baseURL,
     }
     const dataset = this.datasetAuthority(
@@ -156,12 +169,14 @@ export default class RestoreReporter {
       receipt: runtime.path,
       bindings: binding.path,
       targetPlan: target.path,
-      backend: verifierRoot,
+      backend: coordinatorRoot,
       frontend: frontendRoot,
       baseURL,
     }
     this.runnerRoot = runnerRoot
     this.runnerSha = configuredRunnerSha
+    this.coordinatorRoot = coordinatorRoot
+    this.coordinatorSha = configuredCoordinatorSha
     this.verifierRoot = verifierRoot
     this.verifierSha = configuredVerifierSha
     this.restoreId = record.plan.id
@@ -186,8 +201,11 @@ export default class RestoreReporter {
     if (!this.bindings) return
     try {
       this.checkout(this.runnerRoot, this.runnerSha, '恢复测试 runner 源码')
-      this.checkout(this.verifierRoot, this.verifierSha, '恢复证明协调后端')
+      this.checkout(this.coordinatorRoot, this.coordinatorSha, '恢复证明协调后端')
+      this.checkout(this.verifierRoot, this.verifierSha, '恢复证明核验源码')
       const tool = this.bindTool(this.browserBinding.workerTool)
+      if (evidenceDirectory(tool.root, '恢复核验工具来源') !== this.verifierRoot)
+        throw new Error('恢复核验源码目录与 Worker 工具来源根不同')
       const digest = this.verify({ ...this.verification, tool })
       const runtime = evidenceFile(this.verification.receipt, '运行产物收据')
       const binding = evidenceFile(this.verification.bindings, '恢复绑定收据')
@@ -222,6 +240,8 @@ export default class RestoreReporter {
         datasetLineage: dataset.authority.dataset_lineage,
         runnerRoot: this.runnerRoot,
         runnerSha: this.runnerSha,
+        coordinatorRoot: this.coordinatorRoot,
+        coordinatorSha: this.coordinatorSha,
         verifierRoot: this.verifierRoot,
         verifierSha: this.verifierSha,
         started: this.started,

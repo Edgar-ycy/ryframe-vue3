@@ -12,7 +12,11 @@ const executable = path.join(toolRoot, 'verified-tool.exe')
 const verifyUnchanged = vi.fn()
 beforeEach(() => {
   verifyUnchanged.mockReset()
-  vi.mocked(bindWorkerTool).mockReturnValue({ executable, verifyUnchanged })
+  vi.mocked(bindWorkerTool).mockReturnValue({
+    root: binding.workerTool.root,
+    executable,
+    verifyUnchanged,
+  })
 })
 
 const tenant = 'tenant-1'

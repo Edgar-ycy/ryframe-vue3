@@ -29,7 +29,11 @@ const binding = {
 const receiptPath = path.join(binding.runtimeDir, '物理对象.json')
 beforeEach(() => {
   verifyUnchanged.mockReset()
-  vi.mocked(bindWorkerTool).mockReturnValue({ executable, verifyUnchanged })
+  vi.mocked(bindWorkerTool).mockReturnValue({
+    root: binding.workerTool.root,
+    executable,
+    verifyUnchanged,
+  })
 })
 
 describe('导出物理对象验收结果', () => {

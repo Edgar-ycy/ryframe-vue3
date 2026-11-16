@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- DevEx frontend fast checks use the same nine logical tasks and source-size rules on both arms. B0 retains its separate operation check and B1 retains its combined AST scan.
+
 - Remove the unused Python path requirement from real browser acceptance. Native fixture bindings and frontend configuration register only consumed tools while retaining login budgets, Worker provenance, and artifact verification.
 
 - Bind B0 recovery targets strictly to the original product, exact adapter execution commit, combined patch, and complete tree. Runtime receipts retain the original frontend build and reject mismatched source domains, old backend builds, and receipts from the other side.

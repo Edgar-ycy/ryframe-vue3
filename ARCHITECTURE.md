@@ -154,6 +154,8 @@ CI 执行对应阶段，浏览器阶段单独运行。
 
 真实浏览器的 `real_browser.workerTool={root,binding:{path,bytes,sha256}}` 单独标识工具来源；`binding.path` 只能位于该根的 `.local-tests/frontend-origin-tool.json`。业务 `backendDir/runtimeDir/scopeId` 不随工具根改变，Worker 请求的 `arguments.backend` 与 cwd 保持业务后端。`scripts/worker-tool.mjs` 在完整 policy 集合、普通无链接路径、文件身份和摘要双读之外，再核固定绑定的 raw bytes/SHA；用受限工具环境和 `APP_ENV=test` 执行绑定程序的 `__frontend-origin verify-sources`，stdin 为 `{format_version:1,root,sources}`，60 秒超时且响应有界。严格 token 字段、来源计数和前后相同 token 共同约束真实编译根及完整来源；`verifyUnchanged` 重做这些检查。控制仍使用原 Worker 协议，实际业务进程、配置、scope 与收据由 Rust runtime 核验；未知结果不重放。导出对象快照与删除复核、业务迁移门和历史保留期维护复用同一绑定程序，cwd、runtime 与 scope 保持业务来源；导出对象和历史操作每次执行前后核验，长活迁移门在 spawn 前绑定，并在精确关闭 child 后复核。来源核验与执行或清理同时失败时保留双方原因，不重放未知写入。协议单元 mock 仅证明前端边界，跨来源成功和同字节错根拒绝须有真实原生验收。 恢复选择预检、报告器开始和结束阶段以及已有数据 worker 分别根据可信浏览器配置绑定该工具。绑定结果携带只读工具来源根，`restore.verifierDir/verifierSha` 必须匹配该根及其干净提交；`restore.coordinatorDir/coordinatorSha` 独立绑定协调证据，测试 runner 保持第三份来源。测试收据的 `sources.coordinator`、`sources.verifier` 和 `sources.runner` 分别记录根与 SHA，业务证明通过测试收据摘要绑定全部来源，顶层 `verifier_sha` 只表示核验源码。恢复数据权威、已有数据和运行产物核验直接调用登记程序，在原协调后端目录保留原输入和超时，每次调用前后复核工具来源。
 
+DevEx 前端快速检查可对已登记的 B0 测量副本和 B1 运行同一入口 `node scripts/devex-fast.mjs`。为 `--root` 和 `--cache-root` 传入绝对路径，并用 `--arm b0` 或 `--arm b1` 选择已登记的检查布局。`--plan` 只输出任务 JSON，执行时会在该工作树的 `.local-tests` 子目录按需创建独立缓存。两侧覆盖同一九项逻辑检查，使用相同的源码规模规则。B1 的导入检查在同一次 AST 扫描中核验 operation 规则。
+
 ## 编写与运行测试
 
 - `tests/unit/`：纯模型、composable、Store、应用用例和组件测试。

@@ -7,11 +7,14 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 const cli = fileURLToPath(new URL('../devex-source-size.mjs', import.meta.url))
+const repository = path.resolve(import.meta.dirname, '../..')
 const ownership = 'src/api/generated/ownership.json'
 const lines = (count, newline = '\n') => `line${newline}`.repeat(count)
 
 function fixture(t, files, owned = []) {
-  const directory = mkdtempSync(path.resolve(import.meta.dirname, '../../.devex-source-size-'))
+  const parent = path.join(repository, '.local-tests')
+  mkdirSync(parent, { recursive: true })
+  const directory = mkdtempSync(path.join(parent, 'devex-source-size-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
   const root = path.join(directory, 'frontend')
   mkdirSync(root)
@@ -51,6 +54,9 @@ test('当前上限包含等号，工作树实际字节按 LF、CRLF、CR 计算'
     'scripts/helper.mjs': lines(501),
     'README.md': lines(150),
     '.github/template.md': lines(900),
+  })
+  execFileSync('git', ['-C', repository, 'check-ignore', '-q', '--', f.directory], {
+    windowsHide: true,
   })
   f.write('local.vue', lines(601))
   const accepted = f.run()

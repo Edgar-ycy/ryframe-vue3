@@ -6,6 +6,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { loadFrontendConfiguration } from './frontend-tool-config.mjs'
 import { readBuildIdentity } from './build-identity.mjs'
 import { captureSourceInventory, sourceDomains } from './build-source-inventory.mjs'
+import { bundledCorepackPath } from './tool-inputs.mjs'
 
 export { validateBuildContext } from './build-context-schema.mjs'
 
@@ -66,10 +67,7 @@ export function observedToolchain(root, environment = process.env) {
 /** 外部历史工作树不运行 package script；直接核验当前 Node 附带的 Corepack 与目标锁定版本。 */
 export function observedExternalToolchain(root) {
   const pinned = pinnedPnpm(root)
-  const corepack = path.join(
-    path.dirname(process.execPath),
-    'node_modules/corepack/dist/corepack.js',
-  )
+  const corepack = bundledCorepackPath()
   if (!pinned || !lstatSync(corepack).isFile() || lstatSync(corepack).isSymbolicLink()) {
     throw new Error('外部真实构建缺少固定 pnpm 或受信任 Corepack 入口')
   }

@@ -1,7 +1,21 @@
+import path from 'node:path'
 import { readManagedJson, unchangedManagedJson } from './application-config-files.mjs'
 
 const inputs = ['config/tools.json', '.local-tests/frontend-tools.json']
 const fields = new Set(['application_config_dir', 'api_contract', 'real_browser', 'browser_smoke'])
+
+export function bundledCorepackPath(
+  nodeExecutable = process.execPath,
+  platform = process.platform,
+) {
+  const windows = platform === 'win32'
+  const paths = windows ? path.win32 : path.posix
+  return paths.join(
+    paths.dirname(nodeExecutable),
+    windows ? 'node_modules' : '../lib/node_modules',
+    'corepack/dist/corepack.js',
+  )
+}
 
 export function loadToolInputs(root) {
   const before = inputs.map((file) => readManagedJson(root, file, `前端工具配置 ${file}`))

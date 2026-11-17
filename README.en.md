@@ -85,6 +85,8 @@ corepack pnpm generate
 
 `corepack pnpm check --full` runs contract checks, static checks, test type checks, unit coverage and production builds. Select an individual stage with `--stage contract|static|unit|build`. `--plan` prints the same task graph without executing tasks. Browser smoke uses `corepack pnpm check --stage browser`; real-backend acceptance uses isolated resources and its matching real configuration. Each smoke attempt writes its HTML report to `.local-tests/playwright/report/<dev-or-preview>/<attempt-UUID>/` and test attachments to `.local-tests/playwright/results/<dev-or-preview>/<attempt-UUID>/`. Failed attempts retain screenshots, videos and traces; reruns keep earlier attempts intact. CI runs these stages and retains Windows checks. The static stage also validates Chinese and English document pairs, language links, local section references and command examples.
 
+`unit` and `--full` include homepage browser tests that use a temporary local HTTP fixture. Windows uses installed Chrome. On Linux, first run `corepack pnpm exec playwright install --with-deps chromium` to install the pinned Chromium version and its system dependencies.
+
 Cross-repository consumer checks explicitly use `corepack pnpm check --stage contract --consumer-context <file>` (also supported with `--full`), validating the contract before running actual Node→Rust receipt proofs. The context binds the selected frontend/backend directories, native backend tool and configuration digests. Ordinary single-repository checks require no backend or Python. `--plan` reads no context, writes no files, and starts no tasks.
 
 ### Framework maintainer acceptance

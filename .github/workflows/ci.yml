@@ -32,6 +32,7 @@ jobs:
         with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm exec playwright install --with-deps chromium
       - run: corepack pnpm check --stage unit
 
   build:

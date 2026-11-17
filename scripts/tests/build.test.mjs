@@ -2,6 +2,18 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { buildTasks, parseBuildArguments, runBuild } from '../build.mjs'
 import { packageManagerInvocation } from '../build-source.mjs'
+import { bundledCorepackPath } from '../tool-inputs.mjs'
+
+test('构建从宿主 Node 的实际发行目录定位 Corepack', () => {
+  assert.equal(
+    bundledCorepackPath('/opt/node/bin/node', 'linux'),
+    '/opt/node/lib/node_modules/corepack/dist/corepack.js',
+  )
+  assert.equal(
+    bundledCorepackPath('D:/Program Files/nodejs/node.exe', 'win32').replaceAll('\\', '/'),
+    'D:/Program Files/nodejs/node_modules/corepack/dist/corepack.js',
+  )
+})
 
 test('固定 pnpm 的原生入口由操作系统执行，JavaScript 入口由 Node 执行', () => {
   for (const cli of ['/tools/pnpm-native', 'D:/tools/pnpm-native.exe'])

@@ -7,6 +7,7 @@ import { buildSourceSnapshot } from './build-source.mjs'
 import { loadFrontendConfiguration, requireSameOrigin } from './frontend-tool-config.mjs'
 import { prepareBuildIdentity } from './build-identity.mjs'
 import { writeBuildReceipt } from './restore-build.mjs'
+import { bundledCorepackPath } from './tool-inputs.mjs'
 
 export function parseBuildArguments(argv) {
   const options = { real: false, plan: false }
@@ -36,11 +37,7 @@ export function buildTasks() {
 }
 
 function executeTask(root, task, environment) {
-  const corepack = path.join(
-    path.dirname(process.execPath),
-    'node_modules/corepack/dist/corepack.js',
-  )
-  execFileSync(process.execPath, [corepack, 'pnpm', ...task.arguments], {
+  execFileSync(process.execPath, [bundledCorepackPath(), 'pnpm', ...task.arguments], {
     cwd: root,
     env: environment,
     stdio: 'inherit',

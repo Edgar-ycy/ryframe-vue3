@@ -242,6 +242,36 @@ export const crudResourceCatalog = [
         "value_type": "date_time",
         "widget": "date_time",
         "wire_type": "date_time"
+      },
+      {
+        "enum_values": {},
+        "labels": {
+          "en": "Notice Revision",
+          "zh_cn": "公告版本"
+        },
+        "name": "revision",
+        "nullable": false,
+        "order": 110,
+        "usage": {
+          "create": false,
+          "create_optional": false,
+          "filter": false,
+          "list": true,
+          "read": true,
+          "sort": false,
+          "update": false,
+          "update_optional": false
+        },
+        "validation": {
+          "max_length": null,
+          "maximum": null,
+          "min_length": null,
+          "minimum": "0",
+          "required": false
+        },
+        "value_type": "u64",
+        "widget": "hidden",
+        "wire_type": "string"
       }
     ],
     "labels": {

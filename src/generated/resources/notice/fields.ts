@@ -29,6 +29,7 @@ export interface NoticeForm {
   content_markdown: string
   notice_type: string | null
   status: string
+  readonly revision?: NoticeRecord['revision']
 }
 
 export interface NoticePresentation {
@@ -117,6 +118,10 @@ export function createNoticePresentation(
       display: 'datetime',
       format: formatDate,
     },
+    {
+      key: "revision",
+      label: translate("公告版本", "Notice Revision"),
+    },
   ] as const satisfies readonly FlatCrudColumn<NoticeRecord>[]
 
   const formFields = [
@@ -160,6 +165,14 @@ export function createNoticePresentation(
 }
 
 function noticeResource(translate: Translate) {
+  function expectedRevision(form: Readonly<NoticeForm>): string {
+    const revision = form.revision
+    if (typeof revision !== 'string' || !revision) {
+      throw new Error(translate("无法确认记录版本，请重新打开编辑", "The record version could not be verified. Reopen the editor."))
+    }
+    return revision
+  }
+
   return defineFlatCrudResource<
     NoticeRecord,
     NoticeQuery,
@@ -186,6 +199,7 @@ function noticeResource(translate: Translate) {
       content_markdown: record.content_markdown,
       notice_type: record.notice_type ?? null,
       status: record.status,
+      revision: record.revision,
     }),
     createInput: form => ({
       title: form.title,
@@ -197,6 +211,7 @@ function noticeResource(translate: Translate) {
       content_markdown: form.content_markdown,
       notice_type: form.notice_type,
       status: form.status,
+      expected_revision: expectedRevision(form),
     }),
     recordId: record => String(record.id),
     messages: {

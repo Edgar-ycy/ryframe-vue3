@@ -1,5 +1,5 @@
 function {name}Resource(translate: Translate) {{
-  return defineFlatCrudResource<
+{revision_guard}  return defineFlatCrudResource<
     {pascal}Record,
     {pascal}Query,
     {pascal}Form,
@@ -14,11 +14,11 @@ function {name}Resource(translate: Translate) {{
     emptyForm: (): {pascal}Form => ({{
 {empty_form}    }}),
     editForm: record => ({{
-{edit_form}    }}),
+{edit_form}{revision_edit}    }}),
     createInput: form => ({{
 {create_input}    }}),
     updateInput: form => ({{
-{update_input}    }}),
+{update_input}{revision_update}    }}),
     recordId: record => String(record.{record_id}),
     messages: {{
       addSuccess: translate("新增成功", "Created"),

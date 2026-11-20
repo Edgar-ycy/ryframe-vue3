@@ -257,6 +257,8 @@ export const systemZhCNMessages = {
       markdownPreview: '公告 Markdown 预览',
       previewEmpty: '预览会在这里显示',
       detailMissing: '公告详情响应缺少数据',
+      revisionMissing: '无法确认公告版本，请重新打开公告',
+      editConflict: '公告已被修改。当前输入已保留，请留存后重新打开公告查看最新内容',
       deleteConfirm: '确认删除公告“{name}”吗？',
       publishToMessageCenter: '发布到消息中心',
       publishMessageConfirm: '确定将“{title}”发布到消息中心吗？',

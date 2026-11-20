@@ -10,9 +10,9 @@ const [frontend, root] = process.argv.slice(2)
 const require = createRequire(path.join(frontend, 'package.json'))
 const ts = require('typescript')
 const resource = JSON.parse(fs.readFileSync(path.join(root, 'resource.json'), 'utf8'))
-const { fields, pascal_name: pascal, name, api } = resource
+const { fields, pascal_name: pascal, name, api, revision_field: revisionField } = resource
 const generated = `src/generated/resources/${name}`
-verifyContract({ frontend, root, ts, fields, pascal, api, generated })
+verifyContract({ frontend, root, ts, fields, pascal, api, generated, revisionField })
 // 执行相同 TS 源码，核验聚合没有遗漏、重复、乱序或改变值类型。
 const modules = new Map()
 function load(file) {
@@ -68,10 +68,6 @@ assert.deepEqual(
   Object.keys(zh.resource.createInput(form)),
   fields.filter((field) => field.usage.create).map((field) => field.name),
 )
-assert.deepEqual(
-  Object.keys(zh.resource.updateInput(form)),
-  fields.filter((field) => field.usage.update).map((field) => field.name),
-)
 const sampleRecordValue = (field) => {
   if (field.nullable) return null
   if (field.wire_type === 'string') return '12345678901234567890.125000'
@@ -85,7 +81,18 @@ const sampleRecordValue = (field) => {
 const recordValues = Object.fromEntries(
   fields.map((field) => [field.name, sampleRecordValue(field)]),
 )
+const revision = '18446744073709551615'
+if (revisionField) recordValues.revision = revision
 const editForm = zh.resource.editForm(recordValues)
+const updateForm = revisionField ? { ...form, revision } : form
+const updateKeys = fields.filter((field) => field.usage.update).map((field) => field.name)
+if (revisionField) {
+  updateKeys.push('expected_revision')
+  assert.equal(editForm.revision, revision)
+  assert.equal(zh.resource.updateInput(editForm).expected_revision, revision)
+  assert.throws(() => zh.resource.updateInput(form), /无法确认记录版本/u)
+}
+assert.deepEqual(Object.keys(zh.resource.updateInput(updateForm)), updateKeys)
 for (const field of formFields) {
   if (['date', 'date_time'].includes(field.value_type)) {
     const present = field.value_type === 'date' ? '2026-10-18' : '2026-10-18T08:30:00.000Z'
@@ -93,14 +100,15 @@ for (const field of formFields) {
     for (const action of ['create', 'update']) {
       if (!field.usage[action]) continue
       const convert = zh.resource[`${action}Input`]
-      assert.equal(convert({ ...form, [field.name]: present })[field.name], present)
+      const input = action === 'update' ? updateForm : form
+      assert.equal(convert({ ...input, [field.name]: present })[field.name], present)
       assert.equal(
-        convert({ ...form, [field.name]: '' })[field.name],
+        convert({ ...input, [field.name]: '' })[field.name],
         field.nullable ? null : field.usage[`${action}_optional`] ? undefined : '',
       )
       if (field.nullable || field.usage[`${action}_optional`])
         assert.equal(
-          convert({ ...form, [field.name]: null })[field.name],
+          convert({ ...input, [field.name]: null })[field.name],
           field.nullable ? null : undefined,
         )
     }
@@ -183,13 +191,14 @@ for (const field of fields) {
   }
   if (['decimal', 'i64', 'u64'].includes(field.value_type) && field.wire_type === 'string') {
     assert.equal(form[field.name], '')
-    const precise = { ...form, [field.name]: '18446744073709551615.125000' }
     for (const action of ['create', 'update']) {
       if (!field.usage[action]) continue
       const convert = zh.resource[`${action}Input`]
+      const input = action === 'update' ? updateForm : form
+      const precise = { ...input, [field.name]: '18446744073709551615.125000' }
       assert.equal(convert(precise)[field.name], precise[field.name])
       assert.equal(
-        convert(form)[field.name],
+        convert(input)[field.name],
         field.nullable ? null : field.usage[`${action}_optional`] ? undefined : '',
       )
     }

@@ -84,7 +84,9 @@ export function splitForm(modules) {
   )
   modules.add(
     'model.ts',
-    `import type { emptyForm } from './form'\n\nexport type ${pascal}Form = ReturnType<typeof emptyForm>\n`,
+    resource.revision_field == null
+      ? `import type { emptyForm } from './form'\n\nexport type ${pascal}Form = ReturnType<typeof emptyForm>\n`
+      : `import type { ${pascal}Record } from './api'\nimport type { emptyForm } from './form'\n\nexport type ${pascal}Form = ReturnType<typeof emptyForm> & {\n  readonly revision?: ${pascal}Record['revision']\n}\n`,
   )
   queryDefaults(modules)
 }

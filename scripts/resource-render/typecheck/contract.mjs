@@ -1,7 +1,16 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export function verifyContract({ frontend, root, ts, fields, pascal, api, generated }) {
+export function verifyContract({
+  frontend,
+  root,
+  ts,
+  fields,
+  pascal,
+  api,
+  generated,
+  revisionField,
+}) {
   const hasDateColumn = fields.some(
     (field) =>
       field.usage.list &&
@@ -36,7 +45,7 @@ export function verifyContract({ frontend, root, ts, fields, pascal, api, genera
       })
       .join('\n')
   const record = properties(
-    (field) => field.usage.read || field.usage.list,
+    (field) => field.name !== revisionField && (field.usage.read || field.usage.list),
     () => false,
   )
   const query = properties(
@@ -55,10 +64,10 @@ export function verifyContract({ frontend, root, ts, fields, pascal, api, genera
   write(
     'src/api/generated/schema.ts',
     `
-export interface RecordVo {\n${record}\n}
+export interface RecordVo {\n${record}${revisionField ? '\n  revision: string' : ''}\n}
 export interface Query { page?: number; page_size?: number;\n${query}\n}
 export interface Create {\n${create}\n}
-export interface Update {\n${update}\n}
+export interface Update {\n${update}${revisionField ? '\n  expected_revision: string' : ''}\n}
 export interface components { schemas: { ${pascal}Vo: RecordVo } }
 export interface operations {
   ${operations.list}: { parameters: { query?: Query } }
@@ -94,6 +103,16 @@ form.value_2 = 18446744073709551615
 export { decimal, signed, unsigned }
 `
     : ''
+  const revisionChecks = revisionField
+    ? `
+const expectedRevision: string = presentation.resource.updateInput(form).expected_revision
+// @ts-expect-error 编辑版本只能从详情复制，不接受表单控件赋值。
+form.revision = '123'
+// @ts-expect-error 创建请求不能携带期望版本。
+presentation.resource.createInput(form).expected_revision
+export { expectedRevision }
+`
+    : ''
   write(
     'contract-check.ts',
     `
@@ -102,6 +121,7 @@ const presentation = create${pascal}Presentation((zh, _en) => zh${hasDateColumn 
 const form: ${pascal}Form = presentation.resource.emptyForm()
 export { form }
 ${precisionChecks}
+${revisionChecks}
 `,
   )
   const compilerOptions = {

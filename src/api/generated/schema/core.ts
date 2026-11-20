@@ -2050,6 +2050,7 @@ export interface components {
             created_by?: string | null;
             id: string;
             notice_type?: string | null;
+            revision: string;
             status: string;
             title: string;
         };

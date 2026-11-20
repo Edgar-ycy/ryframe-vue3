@@ -29,7 +29,8 @@ test('真实公告完成新增、修改、发布消息和删除', async ({ page 
   const path = new URL(detail.url()).pathname
   await expect(dialog.locator('textarea')).toHaveValue(`# ${title}\n\n真实业务消息`)
   await dialog.locator('textarea').fill(`# ${title}\n\n修改后的消息`)
-  await dialog.getByRole('radio', { name: '已发布', exact: true }).check()
+  await dialog.getByText('已发布', { exact: true }).click()
+  await expect(dialog.getByRole('radio', { name: '已发布', exact: true })).toBeChecked()
   await act(page, 'PUT', path, () =>
     dialog.getByRole('button', { name: '确定', exact: true }).click(),
   )

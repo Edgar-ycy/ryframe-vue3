@@ -259,6 +259,9 @@ export const systemEnUSMessages = {
       markdownPreview: 'Notice Markdown preview',
       previewEmpty: 'The preview will appear here',
       detailMissing: 'The notice detail response is missing data',
+      revisionMissing: 'The notice version could not be verified. Reopen the notice.',
+      editConflict:
+        'The notice was changed. Your edits are still here. Copy them before reopening the notice to view the latest content.',
       deleteConfirm: 'Delete notice “{name}”?',
       publishToMessageCenter: 'Publish to message center',
       publishMessageConfirm: 'Publish “{title}” to the message center?',

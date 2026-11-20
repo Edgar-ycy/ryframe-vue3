@@ -1450,6 +1450,7 @@ export interface components {
                 created_by?: string | null;
                 id: string;
                 notice_type?: string | null;
+                revision: string;
                 status: string;
                 title: string;
             };
@@ -2332,6 +2333,7 @@ export interface components {
                 created_by?: string | null;
                 id: string;
                 notice_type?: string | null;
+                revision: string;
                 status: string;
                 title: string;
             }[];
@@ -2674,6 +2676,7 @@ export interface components {
         };
         UpdateNoticeDto: {
             content_markdown: string;
+            expected_revision: string;
             notice_type?: string | null;
             status: string;
             title: string;
@@ -4167,6 +4170,21 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponse_NoticeVo"];
                 };
+            };
+            /** @description 记录版本冲突 */
+            409: {
+                headers: {
+                    /** @description 本次响应所依据的租户授权纪元 */
+                    "X-Authorization-Epoch"?: string;
+                    /** @description 本次响应所依据的租户数据放置代次 */
+                    "X-Tenant-Data-Generation"?: string;
+                    /** @description 本次响应所依据的租户业务数据状态 */
+                    "X-Tenant-Data-State"?: string;
+                    /** @description 本次响应所依据的租户产品运行纪元 */
+                    "X-Tenant-Runtime-Epoch"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

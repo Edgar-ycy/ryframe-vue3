@@ -13,10 +13,13 @@ import {
   type NoticeUpdateInput,
 } from '@/generated/resources/notice/api'
 import { publishNoticeToMessageCenter } from '@/api/modules/noticeMessage'
-import { requireOperationData } from '@/shared/http/client'
+import { HttpError, requireOperationData } from '@/shared/http/client'
 import type { Id, PageResponse } from '@/shared/http/types'
 import { renderMarkdown } from '@/shared/markdown/render'
-import { beginServerStatePageOperation } from '@/shared/query/pageOperationScope'
+import {
+  beginServerStatePageOperation,
+  propagateServerStatePageOperationError,
+} from '@/shared/query/pageOperationScope'
 import {
   confirmServerStatePageOperation,
   validateServerStatePageOperation,
@@ -34,6 +37,11 @@ interface NoticeDialogState {
   visible: boolean
   title: string
   isEdit: boolean
+}
+
+interface NoticeEdit {
+  readonly id: Id
+  readonly revision?: NoticeRecord['revision']
 }
 
 type SaveNoticeCommand =
@@ -93,8 +101,7 @@ export function useNoticeManagement() {
 
   const dialog = ref<NoticeDialogState>({ visible: false, title: '', isEdit: false })
   const formRef = ref<FormInstance>()
-  const currentEditId = ref<Id | null>(null)
-  const editingNotice = ref<NoticeRecord | null>(null)
+  const editingNotice = shallowRef<NoticeEdit | null>(null)
   const form = ref<NoticeForm>(createEmptyNoticeForm())
   const renderedContent = computed(() => renderMarkdown(form.value.content_markdown))
   const rules = computed(() => createNoticeRules(t))
@@ -106,7 +113,6 @@ export function useNoticeManagement() {
 
   function resetDialog() {
     resetForm()
-    currentEditId.value = null
     editingNotice.value = null
     dialog.value = { visible: false, title: '', isEdit: false }
   }
@@ -128,6 +134,7 @@ export function useNoticeManagement() {
   )
 
   const saveMutation = useServerStateMutation<void, SaveNoticeCommand>('notices', {
+    meta: { errorMode: 'silent' },
     mutationFn: async (command) => {
       if (command.kind === 'create') {
         await createNotice(command.data)
@@ -157,7 +164,6 @@ export function useNoticeManagement() {
   )
 
   function handleAdd() {
-    currentEditId.value = null
     editingNotice.value = null
     dialog.value.title = t('system.notice.addTitle')
     dialog.value.isEdit = false
@@ -169,9 +175,9 @@ export function useNoticeManagement() {
     if (saveMutation.pending.value) return
     const operation = beginServerStatePageOperation()
     const ownsPage = pageLifecycle.captureOwnership()
-    const ownsEdit = () => ownsPage() && editingNotice.value?.id === row.id
-    currentEditId.value = row.id
-    editingNotice.value = row
+    const selection: NoticeEdit = { id: row.id }
+    const ownsEdit = () => ownsPage() && editingNotice.value === selection
+    editingNotice.value = selection
     dialog.value.title = t('system.notice.editTitle')
     dialog.value.isEdit = true
     resetForm()
@@ -181,25 +187,33 @@ export function useNoticeManagement() {
     operation.assertCurrent(ownsEdit)
     const detail = result.data
     if (!detail) throw new Error(t('system.notice.detailMissing'))
+    if (detail.id !== selection.id || typeof detail.revision !== 'string' || !detail.revision) {
+      propagateServerStatePageOperationError(
+        new HttpError(t('system.notice.revisionMissing'), { kind: 'invalid_response' }),
+        operation,
+        ownsEdit,
+      )
+    }
     form.value = {
       title: detail.title,
       notice_type: detail.notice_type || 'notice',
       content_markdown: detail.content_markdown,
       status: detail.status,
     }
+    editingNotice.value = { id: selection.id, revision: detail.revision }
     dialog.value.visible = true
   }
 
   async function handleSubmit() {
     if (saveMutation.pending.value) return
     const ownsPage = pageLifecycle.captureOwnership()
-    const expectedEditId = currentEditId.value
+    const edit = editingNotice.value
     const expectedIsEdit = dialog.value.isEdit
     const ownsDialog = () =>
       ownsPage() &&
       dialog.value.visible &&
       dialog.value.isEdit === expectedIsEdit &&
-      currentEditId.value === expectedEditId
+      editingNotice.value === edit
     const operation = await validateServerStatePageOperation(
       () => formRef.value?.validate().catch(() => false) ?? Promise.resolve(false),
       ownsDialog,
@@ -210,14 +224,31 @@ export function useNoticeManagement() {
       content_markdown: form.value.content_markdown,
       notice_type: form.value.notice_type,
     }
-    if (dialog.value.isEdit) {
-      await saveMutation.mutateAsync({
-        kind: 'update',
-        id: currentEditId.value!,
-        data: { ...data, status: form.value.status },
-      })
-    } else {
-      await saveMutation.mutateAsync({ kind: 'create', data })
+    try {
+      if (expectedIsEdit) {
+        if (!edit?.revision) {
+          throw new HttpError(t('system.notice.revisionMissing'), { kind: 'invalid_response' })
+        }
+        await saveMutation.mutateAsync({
+          kind: 'update',
+          id: edit.id,
+          data: { ...data, status: form.value.status, expected_revision: edit.revision },
+        })
+      } else {
+        await saveMutation.mutateAsync({ kind: 'create', data })
+      }
+    } catch (error) {
+      if (
+        expectedIsEdit &&
+        error instanceof HttpError &&
+        error.status === 409 &&
+        error.errorKey === 'conflict' &&
+        operation.isCurrent(ownsDialog)
+      ) {
+        ElMessage.warning(t('system.notice.editConflict'))
+        return
+      }
+      propagateServerStatePageOperationError(error, operation, ownsDialog)
     }
     operation.assertCurrent(ownsDialog)
     ElMessage.success(

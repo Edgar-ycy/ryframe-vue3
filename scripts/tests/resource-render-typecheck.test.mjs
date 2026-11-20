@@ -64,7 +64,9 @@ function replaceGenerated(root, resource, assets, before, after) {
 for (const [name, resource] of [
   ['post', fixture('post')],
   ['notice', fixture('notice')],
+  ['notice-revision', { ...fixture('notice'), revision_field: 'revision' }],
   ['wide', wide(1000)],
+  ['wide-revision', { ...wide(40), revision_field: 'revision' }],
   ['empty', empty()],
   ['labels', labels()],
   ['common', common()],

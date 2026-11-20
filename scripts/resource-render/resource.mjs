@@ -13,6 +13,35 @@ function renderTemplate(values) {
   })
 }
 
+function revisionMappings(resource) {
+  if (resource.revision_field == null) {
+    return { revision_guard: '', revision_edit: '', revision_update: '' }
+  }
+  if (
+    resource.revision_field !== 'revision' ||
+    resource.fields.some(
+      (field) =>
+        field.name === 'expected_revision' ||
+        (field.name === 'revision' && (field.usage.create || field.usage.update)),
+    )
+  ) {
+    throw new Error('revision_field 必须声明不由表单编辑的 revision')
+  }
+  return {
+    revision_guard: `  function expectedRevision(form: Readonly<${resource.pascal_name}Form>): string {
+    const revision = form.revision
+    if (typeof revision !== 'string' || !revision) {
+      throw new Error(translate("无法确认记录版本，请重新打开编辑", "The record version could not be verified. Reopen the editor."))
+    }
+    return revision
+  }
+
+`,
+    revision_edit: '      revision: record.revision,\n',
+    revision_update: '      expected_revision: expectedRevision(form),\n',
+  }
+}
+
 export function resourceDefinition(resource, mappings) {
   const recordId =
     [...resource.primary_key].reverse().find((name) => name !== resource.tenant_field) ?? 'id'
@@ -29,6 +58,7 @@ export function resourceDefinition(resource, mappings) {
     en: resource.labels.en,
     record_id: recordId,
     record_label: label?.name ?? recordId,
+    ...revisionMappings(resource),
     ...mappings,
   })
 }

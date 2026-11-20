@@ -12,6 +12,8 @@ export function presentation(resource, version) {
   output += `import {\n  create${pascal},\n  delete${pascal},\n  get${pascal},\n  list${pascal},\n  update${pascal},\n  type ${pascal}CreateInput,\n  type ${pascal}Query,\n  type ${pascal}Record,\n  type ${pascal}UpdateInput,\n} from './api'\nimport { emptyPageResponse } from '@/shared/http/types'\n\n`
   output += `export interface ${pascal}Form {\n`
   for (const field of formFields) output += `  ${field.name}: ${formType(field)}\n`
+  if (resource.revision_field != null)
+    output += `  readonly revision?: ${pascal}Record['revision']\n`
   output += '}\n\n'
   const dateParameter = hasDateColumn(resource) ? '  formatDate: (value: string) => string,\n' : ''
   output += `export interface ${pascal}Presentation {\n  columns: readonly FlatCrudColumn<${pascal}Record>[]\n  formFields: readonly FlatCrudFormField<${pascal}Form>[]\n  labels: FlatCrudLabels\n  permissions: FlatCrudPermissions\n  queryFields: readonly FlatCrudQueryField<${pascal}Query>[]\n  resource: ReturnType<typeof ${resource.name}Resource>\n}\n\ntype Translate = (zhCN: string, en: string) => string\n\nexport function create${pascal}Presentation(\n  translate: Translate,\n${dateParameter}): ${pascal}Presentation {\n`

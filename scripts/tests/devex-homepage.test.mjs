@@ -87,7 +87,7 @@ test(
   { timeout: 60_000 },
   async (t) => {
     const server = await serverFixture(t)
-    const input = fixture(t, server.url)
+    const input = { ...fixture(t, server.url), timeout_ms: 10_000 }
     for (const cache of ['cold', 'warm']) {
       server.seen.static = 0
       const result =

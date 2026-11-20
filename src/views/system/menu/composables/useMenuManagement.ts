@@ -19,7 +19,7 @@ import { useServerStatePageLifecycle } from '@/shared/query/useServerStatePageLi
 import { useServerStateQuery } from '@/shared/query/useServerStateQuery'
 import { useUserStore } from '@/stores/user'
 import { confirmAction } from '@/utils/confirmAction'
-import { flattenPermissionOptions } from '../menuTree'
+import { flattenPermissionOptions, type PermissionOption } from '../menuTree'
 
 interface StatusCommand {
   menu: MenuTreeNode
@@ -59,6 +59,13 @@ export function useMenuManagement() {
   const permissionOptions = computed(() =>
     flattenPermissionOptions(permissionsQuery.data.value ?? []),
   )
+  const permissionsById = computed(() => {
+    const index = new Map<Id, PermissionOption>()
+    for (const option of permissionOptions.value) {
+      if (!index.has(option.id)) index.set(option.id, option)
+    }
+    return index
+  })
   const loading = menusQuery.isFetching
 
   const statusMutation = useServerStateMutation<void, StatusCommand>('menus', {
@@ -110,7 +117,7 @@ export function useMenuManagement() {
 
   function permissionLabel(menu: MenuTreeNode): string {
     if (menu.perm_id == null) return '-'
-    const permission = permissionOptions.value.find((option) => option.id === menu.perm_id)
+    const permission = permissionsById.value.get(menu.perm_id)
     return permission ? `${permission.name} (${permission.code})` : (menu.perm_code ?? '-')
   }
 

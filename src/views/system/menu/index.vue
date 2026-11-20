@@ -155,21 +155,21 @@ const {
   tableData,
 } = useMenuManagement()
 
-function findMenu(nodes: readonly MenuTreeNode[], id: Id): MenuTreeNode | undefined {
-  for (const node of nodes) {
-    if (node.id === id) return node
-    const child = findMenu(node.children, id)
-    if (child) return child
+const menusById = computed(() => {
+  const index = new Map<Id, MenuTreeNode>()
+  function collect(nodes: readonly MenuTreeNode[]): void {
+    for (const node of nodes) {
+      if (!index.has(node.id)) index.set(node.id, node)
+      collect(node.children)
+    }
   }
-  return undefined
-}
 
-function currentMenu(id: Id): MenuTreeNode | undefined {
-  return findMenu(tableData.value ?? [], id)
-}
+  collect(tableData.value ?? [])
+  return index
+})
 
 function permissionLabelById(id: Id): string {
-  const menu = currentMenu(id)
+  const menu = menusById.value.get(id)
   return menu ? permissionLabel(menu) : '—'
 }
 
@@ -177,17 +177,17 @@ async function changeMenuStatus(
   id: Id,
   value: string | number | boolean | undefined,
 ): Promise<void> {
-  const menu = currentMenu(id)
+  const menu = menusById.value.get(id)
   if (menu && (value === '0' || value === '1')) await handleChangeStatus(menu, value)
 }
 
 function editMenuById(id: Id): void {
-  const menu = currentMenu(id)
+  const menu = menusById.value.get(id)
   if (menu) handleEdit(menu)
 }
 
 async function deleteMenuById(id: Id): Promise<void> {
-  const menu = currentMenu(id)
+  const menu = menusById.value.get(id)
   if (menu) await handleDelete(menu)
 }
 </script>

@@ -10,8 +10,9 @@
   "table": "sys_notice",
   "primary_key": ["id"],
   "bootstrap_migration": false,
-  "schema_hash": "b68503cbce094b4575d4b533331cf0e09c0b3ea55291b17d2b06cfba23d80803",
-  "schema_revision": null,
+  "schema_hash": "2d6d15c82c119d68363d4808b0f2057ee385c5d969c119cf3a08f4be7c11370e",
+  "schema_revision": "m20261120_072911_notice_revision",
+  "revision_field": "revision",
   "indexes": [
     {
       "name": "idx_created_by",
@@ -390,6 +391,41 @@
       },
       "widget": "date_time",
       "enum_values": {}
+    },
+    {
+      "name": "revision",
+      "column": "revision",
+      "value_type": "u64",
+      "wire_type": "string",
+      "rust_type": "u64",
+      "typescript_type": "string",
+      "order": 110,
+      "nullable": false,
+      "default": 1,
+      "usage": {
+        "create": false,
+        "create_optional": false,
+        "update": false,
+        "update_optional": false,
+        "read": true,
+        "list": true,
+        "filter": false,
+        "sort": false
+      },
+      "validation": {
+        "min_length": null,
+        "max_length": null,
+        "minimum": null,
+        "maximum": null,
+        "pattern": null,
+        "required": false
+      },
+      "labels": {
+        "zh_cn": "公告版本",
+        "en": "Notice Revision"
+      },
+      "widget": "hidden",
+      "enum_values": {}
     }
   ],
   "relations": [],
@@ -438,5 +474,5 @@
     "page": "@/views/system/notice/index.vue"
   },
   "source_path": "catalog/resources/notice.toml",
-  "source_hash": "9c7717ecf319783c9296cc84459c3b661dcadc10a233acf1bf058176b737d151"
+  "source_hash": "23d70bd26947b5dc4a246a0f1d86b8237ce24dc4a6c3a656392570e0843556a9"
 }

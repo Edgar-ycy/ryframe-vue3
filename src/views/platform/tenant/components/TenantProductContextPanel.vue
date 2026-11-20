@@ -138,6 +138,7 @@ onBeforeUnmount(invalidatePage)
 async function handleApplied(
   updated: TenantProductContext,
   expectedScope: ServerStateScope,
+  runtimeChanged: boolean,
 ): Promise<void> {
   if (updated.tenant_id !== props.tenantId) return
   if (!isServerStateScopeCurrent(expectedScope)) return
@@ -147,9 +148,11 @@ async function handleApplied(
   const ownsOperation = () =>
     props.active && pageGeneration.value === generation && props.tenantId === tenantId
   operation.assertCurrent(ownsOperation)
-  await invalidateTenantProductContext(operation.scope)
-  operation.assertCurrent(ownsOperation)
-  await contextQuery.refetch({ throwOnError: true })
+  if (runtimeChanged) {
+    await invalidateTenantProductContext(operation.scope)
+    operation.assertCurrent(ownsOperation)
+    await contextQuery.refetch({ throwOnError: true })
+  }
   if (!operation.isCurrent(ownsOperation)) return
   ElMessage.success(t('productPlans.changeApplied'))
 }

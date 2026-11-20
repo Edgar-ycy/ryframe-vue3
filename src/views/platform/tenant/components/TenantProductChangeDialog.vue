@@ -120,7 +120,7 @@ const props = defineProps<{
   tenantId: string
 }>()
 const emit = defineEmits<{
-  applied: [context: TenantProductContext, scope: ServerStateScope]
+  applied: [context: TenantProductContext, scope: ServerStateScope, runtimeChanged: boolean]
 }>()
 const visible = defineModel<boolean>({ required: true })
 const { t } = useI18n()
@@ -307,9 +307,12 @@ async function handleApply(): Promise<void> {
     propagateServerStatePageOperationError(error, operation, ownsOperation)
   }
   operation.assertCurrent(ownsOperation)
-  await invalidateTenantProductContext(operation.scope)
-  operation.assertCurrent(ownsOperation)
-  emit('applied', context, operation.scope)
+  const runtimeChanged = context.runtime_epoch !== snapshot.runtime_epoch
+  if (runtimeChanged) {
+    await invalidateTenantProductContext(operation.scope)
+    operation.assertCurrent(ownsOperation)
+  }
+  emit('applied', context, operation.scope, runtimeChanged)
   visible.value = false
 }
 </script>

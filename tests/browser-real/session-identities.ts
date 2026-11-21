@@ -188,6 +188,7 @@ export async function createWriterRole(
   page: Page,
   diagnostics: ReturnType<typeof observeSession>,
   resources: SessionResources,
+  permissions = writerPermissions,
 ) {
   const code = isolatedName('session-role')
   await openIdentityPage(page, 'role')
@@ -209,7 +210,7 @@ export async function createWriterRole(
   } finally {
     refresh.stop()
   }
-  await setRolePermissions(page, code, writerPermissions, diagnostics)
+  await setRolePermissions(page, code, permissions, diagnostics)
   return code
 }
 

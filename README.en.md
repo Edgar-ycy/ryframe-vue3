@@ -2,19 +2,15 @@
 
 [简体中文](README.md)
 
-RyFrame's Vue 3 administration frontend uses TypeScript, Vite, Element Plus, Pinia and TanStack Query, connecting to the Rust backend through OpenAPI contracts.
+In the RyFrame Vue 3 frontend, administrators can manage users, grant roles access to menus and actions, and review changes in the operation log. When adding a business page, reuse the existing sign-in session, permission-aware buttons and list forms. OpenAPI contracts connect the frontend to the Rust backend.
 
-This is a `0.x` development version and requires the current backend contracts and a new database. It includes users, roles, menus, permissions, product plans, tenancy, monitoring, messages, scheduling, configuration transfer, data migration, imports and exports. The profile area provides personal information, passwords, avatars and login-session management. Basic administration follows RBAC. Notices and tenant message publishing may be enabled per plan; disabling them preserves history and does not disable system notifications, scheduling, imports, exports, backups or recovery.
+[Run locally](#install-and-run) · [Add a business page](ARCHITECTURE.en.md#adding-a-page) · [Rust backend](https://github.com/Edgar-ycy/ryframe)
 
-If someone else saves a newer version while you are editing a notice, saving reports a conflict and keeps your unsaved form changes. Review the latest notice and decide which changes to keep before editing and submitting again.
-
-Authorization diagnostics distinguish current, behind, unexpectedly ahead, missing, disabled and unavailable cache states. A disabled cache is not a failure warning. An ahead version requires checking database recovery and cache scope rather than treating it as behind.
-
-New ordinary users start with `123456`; administrators use the password explicitly supplied during backend initialization. First login requires a password change before business routes or message connections are loaded. Sign in again after changing the password. For an existing development account with an unknown password, an administrator can issue a one-time reset link from user management. The user chooses the new password; resetting it does not enable a disabled account, and a successful password change invalidates other outstanding reset links. Authentication pages use a two-column desktop layout, a single-column mobile layout and the current theme.
-
-Export-enabled lists support selecting rows or selecting the current page. Selection clears after pagination, refresh or session changes. Without a selection, export uses the last successfully applied filters. Empty applied filters require confirmation before exporting all matching records that the user may access.
+![The RyFrame permissions page showing the permission tree for users, roles and menus](.github/images/permissions.jpg)
 
 ## Install and run
+
+The `0.x` frontend requires matching backend contracts. Development releases may change APIs, configuration and database schemas. Use a fresh isolated database to try the project.
 
 First install the Node.js version specified by `.node-version` and ensure Corepack is available. If Corepack is missing, follow the [official Corepack installation instructions](https://github.com/nodejs/corepack#how-to-install). From the frontend repository root, run the version checks below: Node.js must match `.node-version`, and pnpm must match the version pinned by `package.json#packageManager`. Then use Corepack to install locked dependencies and start the development server.
 
@@ -73,6 +69,18 @@ An ordinary build atomically writes the `development` identity to managed `.loca
 Builds with an explicit `--source-commit` check complete source, configuration, identity, and toolchain before and after tasks, with or without `--real`; drift fails the build. The release command `corepack pnpm build --source-commit <SHA>` performs the same checks. Only `--real` issues a recovery build receipt.
 
 A real build issues a v3 receipt binding the three source domains, toolchain, actual configuration and tool-file paths/digests, identity source, and all artifacts. Failures issue no receipt; existing receipts cannot be overwritten; provenance drift during the build is rejected. Preview verifies existing artifacts without rebuilding. It reloads configuration using the receipt's saved `APP_ENV`, so the current shell need not select the same environment. Old v2 frontend build receipts are rejected and require rebuilding.
+
+## Using the administration interface
+
+The frontend uses TypeScript, Vite, Element Plus, Pinia and TanStack Query. It includes users, roles, menus, permissions, product plans, tenancy, monitoring, messages, scheduling, configuration transfer, data migration, imports and exports. The profile area provides personal information, passwords, avatars and login-session management. Basic administration follows RBAC. Notices and tenant message publishing may be enabled per plan; disabling them preserves history and does not disable system notifications, scheduling, imports, exports, backups or recovery.
+
+If someone else saves a newer version while you are editing a notice, saving reports a conflict and keeps your unsaved form changes. Review the latest notice and decide which changes to keep before editing and submitting again.
+
+Authorization diagnostics distinguish current, behind, unexpectedly ahead, missing, disabled and unavailable cache states. A disabled cache is not a failure warning. An ahead version requires checking database recovery and cache scope rather than treating it as behind.
+
+New ordinary users start with `123456`; administrators use the password explicitly supplied during backend initialization. First login requires a password change before business routes or message connections are loaded. Sign in again after changing the password. For an existing development account with an unknown password, an administrator can issue a one-time reset link from user management. The user chooses the new password; resetting it does not enable a disabled account, and a successful password change invalidates other outstanding reset links. Authentication pages use a two-column desktop layout, a single-column mobile layout and the current theme.
+
+Export-enabled lists support selecting rows or selecting the current page. Selection clears after pagination, refresh or session changes. Without a selection, export uses the last successfully applied filters. Empty applied filters require confirmation before exporting all matching records that the user may access.
 
 ## Development commands
 

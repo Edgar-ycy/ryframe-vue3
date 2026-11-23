@@ -6,6 +6,13 @@ export const operationNames = [
   'put_system_orders_by_id',
 ]
 
+export const orderPermissionMarkers = [
+  '"system:order:list"',
+  '"system:order:create"',
+  '"system:order:update"',
+  '"system:order:delete"',
+]
+
 export const componentMarker = 'export interface components {\n    schemas: {\n'
 
 export function missingContract() {
@@ -18,7 +25,7 @@ export function missingContract() {
 
 export function generatedContract({ detail = false } = {}) {
   return {
-    permissions: '"system:order:list"',
+    permissions: orderPermissionMarkers.join('\n'),
     operations: operationNames
       .map((name) => `export const ${name} = bindJsonOperation({})\n`)
       .join(''),

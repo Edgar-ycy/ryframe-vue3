@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs'
 
+const orderPermissionMarkers = ['list', 'create', 'update', 'delete'].map(
+  (action) => `"system:order:${action}"`,
+)
 const operationNames = [
   'delete_system_orders_by_id',
   'get_system_orders',
@@ -21,7 +24,7 @@ const fixtureSchemaMarkers = [
 const componentMarker = 'export interface components {\n    schemas: {\n'
 
 function orderFrontendContractState({ permissions, operations, schema }) {
-  const permissionPresent = permissions.includes('"system:order:list"')
+  const permissionsPresent = orderPermissionMarkers.map((marker) => permissions.includes(marker))
   const operationConstants = operationNames.map((name) =>
     operations.includes(`export const ${name} =`),
   )
@@ -29,7 +32,9 @@ function orderFrontendContractState({ permissions, operations, schema }) {
   const generatedSchema = generatedSchemaMarkers.map((marker) => schema.includes(marker))
   const fixtureSchema = fixtureSchemaMarkers.map((marker) => schema.includes(marker))
   const commonComplete =
-    permissionPresent && operationConstants.every(Boolean) && schemaOperations.every(Boolean)
+    permissionsPresent.every(Boolean) &&
+    operationConstants.every(Boolean) &&
+    schemaOperations.every(Boolean)
   const generatedComplete = generatedSchema.every(Boolean)
   const generatedAny = generatedSchema.some(Boolean)
   const fixtureComplete = fixtureSchema.every(Boolean)
@@ -40,7 +45,7 @@ function orderFrontendContractState({ permissions, operations, schema }) {
     return generatedDetailPresent ? 'complete' : 'generated-basic'
   }
   if (
-    permissionPresent ||
+    permissionsPresent.some(Boolean) ||
     operationConstants.some(Boolean) ||
     schemaOperations.some(Boolean) ||
     generatedAny ||
@@ -93,7 +98,7 @@ export function prepareOrderFrontendContract({ permissions, operations, schema }
   }
   permissions = permissions.replace(
     permissionMarker,
-    () => 'export const permissionCatalog = [\n  "system:order:list",\n',
+    () => permissionMarker + orderPermissionMarkers.map((marker) => `  ${marker},\n`).join(''),
   )
   operations += '\n' + readFixture('order_operations.ts.part')
   if (!schema.includes(componentMarker)) {

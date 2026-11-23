@@ -12,6 +12,7 @@ import {
   generatedContract,
   missingContract,
   operationNames,
+  orderPermissionMarkers,
 } from './fixtures/resource-workspace/builders.mjs'
 
 const fixtureDirectory = new URL('./fixtures/resource-workspace/', import.meta.url)
@@ -47,7 +48,9 @@ test('missing_order_frontend_contract_is_injected_once', async () => {
   const schema = await readFile(new URL('order_schema.ts.part', fixtureDirectory), 'utf8')
   assert.equal(
     injected.permissions,
-    'export const permissionCatalog = [\n  "system:order:list",\n]\n',
+    'export const permissionCatalog = [\n' +
+      orderPermissionMarkers.map((marker) => `  ${marker},\n`).join('') +
+      ']\n',
   )
   assert.equal(injected.operations, input.operations + '\n' + operations)
   assert(injected.schema.includes(schema))
@@ -99,7 +102,7 @@ test('完整 generated 契约直接返回零修改，保留原字节和对象', 
 test('每个缺失标记及混合 fixture/generated 契约都拒绝猜测', () => {
   const complete = generatedContract({ detail: true })
   const markers = [
-    ['permissions', '"system:order:list"'],
+    ...orderPermissionMarkers.map((marker) => ['permissions', marker]),
     ...operationNames.map((name) => ['operations', `export const ${name} =`]),
     ...operationNames.map((name) => ['schema', `    ${name}: {`]),
     ...[
@@ -150,7 +153,8 @@ test('首次替换保持 Rust replacen 语义，fixture 不改写 CRLF 或 JSON 
   const updated = prepareOrderFrontendContract(input)
   assert(updated.permissions.endsWith(missingContract().permissions))
   assert(updated.schema.endsWith(missingContract().schema))
-  assert.equal(updated.permissions.split('"system:order:list"').length - 1, 1)
+  for (const marker of orderPermissionMarkers)
+    assert.equal(updated.permissions.split(marker).length - 1, 1)
   assert.equal(updated.schema.split('type OrderContractRecord = {').length - 1, 1)
   assert(updated.operations.startsWith(input.operations + '\n'))
   assert.equal(prepareOrderFrontendContract(updated), null)
@@ -259,4 +263,7 @@ test('CLI 参数与部分契约在各自阶段失败，stdout 无部分结果也
     { ...request(), operations: 'must-not-appear', schema: 'OrderDetailVo: {}' },
     /装配契约失败：只发现部分/,
   )
+  const partial = generatedContract()
+  partial.permissions = partial.permissions.replace('"system:order:create"', 'must-not-appear')
+  assertRejected(request(partial), /装配契约失败：只发现部分/)
 })

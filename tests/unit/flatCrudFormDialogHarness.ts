@@ -1,11 +1,7 @@
-import {
-  ElInput,
-  ElInputNumber,
-  ElRadio,
-  ElRadioGroup,
-  type FormItemRule,
-  type FormRules,
-} from 'element-plus'
+import type { FormItemRule, FormRules } from 'element-plus'
+import { ElInput } from 'element-plus/es/components/input/index'
+import { ElInputNumber } from 'element-plus/es/components/input-number/index'
+import { ElRadio, ElRadioGroup } from 'element-plus/es/components/radio/index'
 import { createSSRApp, h, type Component, type FunctionalComponent } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { vi } from 'vitest'

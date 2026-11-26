@@ -11,8 +11,42 @@ permissions:
   contents: read
 
 jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-24.04
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: { node-version: '24.21.0', package-manager-cache: false }
+      - id: plan
+        run: node scripts/ci-plan.mjs plan
+
+  documentation:
+    name: Documentation (Node 24)
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'docs' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: { node-version: '24.21.0', package-manager-cache: false }
+      - uses: ./.github/actions/setup-pnpm
+      - run: corepack pnpm install --frozen-lockfile
+      - run: node scripts/check-documentation.mjs
+      - run: node --test scripts/tests/documentation.test.mjs
+      - run: corepack pnpm exec prettier --check '**/*.md'
+
   static:
     name: Static Gate (Node 24)
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -25,6 +59,8 @@ jobs:
 
   unit:
     name: Unit Tests (Node 24)
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -37,6 +73,8 @@ jobs:
 
   build:
     name: Production Build (Node 24)
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -48,6 +86,8 @@ jobs:
 
   browser:
     name: Browser Smoke (Node 24)
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -68,6 +108,8 @@ jobs:
 
   windows-smoke:
     name: Windows Smoke
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -81,7 +123,14 @@ jobs:
   required:
     name: Required
     if: always()
-    needs: [static, unit, build, browser, windows-smoke]
+    needs: [plan, documentation, static, unit, build, browser, windows-smoke]
     runs-on: ubuntu-24.04
     steps:
-      - run: test '${{ join(needs.*.result, ',') }}' = 'success,success,success,success,success'
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: { node-version: '24.21.0', package-manager-cache: false }
+      - run: node scripts/ci-plan.mjs required
+        env:
+          RYFRAME_CI_NEEDS: ${{ toJSON(needs) }}

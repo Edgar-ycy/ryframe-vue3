@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           fetch-depth: 0
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.ref }}
       - name: 验证标签属于 main
         shell: bash
         run: |
@@ -29,7 +29,8 @@ jobs:
           git fetch --no-tags origin +main:refs/remotes/origin/main
           git merge-base --is-ancestor HEAD origin/main
           test "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" = tag
-      - name: 等待同一标签的前端 CI 与扩展 CI
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/${GITHUB_REF_NAME}^{commit}")"
+      - name: 等待同一标签与源码 SHA 的前端 CI
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -37,30 +38,32 @@ jobs:
           set -euo pipefail
           sha="$(git rev-parse HEAD)"
           deadline="$((SECONDS + 5400))"
-          for workflow in ci.yml extended-ci.yml; do
-            while true; do
-              (( SECONDS < deadline )) || {
-                echo "Timed out waiting for ${workflow} on ${GITHUB_REF_NAME}." >&2
-                exit 1
-              }
-              run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${sha}&event=push&per_page=100" \
-                --jq '.workflow_runs | map(select(.head_branch == env.GITHUB_REF_NAME)) | max_by(.run_number) // empty')"
-              if [[ -z "$run" ]]; then
-                sleep 10
-                continue
-              fi
-              status="$(jq -r '.status' <<<"$run")"
-              conclusion="$(jq -r '.conclusion // empty' <<<"$run")"
-              if [[ "$status" != completed ]]; then
-                sleep 20
-                continue
-              fi
-              [[ "$conclusion" == success ]] || {
-                echo "${workflow} concluded ${conclusion}." >&2
-                exit 1
-              }
-              break
-            done
+          while true; do
+            (( SECONDS < deadline )) || {
+              echo "Timed out waiting for ci.yml on ${GITHUB_REF_NAME} at ${sha}." >&2
+              exit 1
+            }
+            run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&event=push&per_page=100" \
+              | jq -c --arg tag "$GITHUB_REF_NAME" --arg sha "$sha" '
+                  .workflow_runs
+                  | map(select(.head_branch == $tag and .head_sha == $sha and .event == "push"))
+                  | max_by([.run_number, .run_attempt]) // empty
+                ')"
+            if [[ -z "$run" ]]; then
+              sleep 10
+              continue
+            fi
+            status="$(jq -r '.status' <<<"$run")"
+            if [[ "$status" != completed ]]; then
+              sleep 20
+              continue
+            fi
+            conclusion="$(jq -r '.conclusion // empty' <<<"$run")"
+            [[ "$conclusion" == success ]] || {
+              echo "ci.yml concluded ${conclusion} on ${GITHUB_REF_NAME} at ${sha}." >&2
+              exit 1
+            }
+            break
           done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with: { node-version: '24.21.0', package-manager-cache: false }

@@ -1,4 +1,4 @@
-export function markdown(source) {
+export function markdown(source, { preserveShellComments = false } = {}) {
   const document = { prose: '', blocks: [], headings: [], bullets: 0 }
   let fence
   for (const line of source.split(/\r?\n/u)) {
@@ -11,6 +11,7 @@ export function markdown(source) {
         document.blocks.push([fence.language, fence.body])
         fence = undefined
       } else if (
+        preserveShellComments ||
         !['powershell', 'pwsh', 'sh', 'bash', 'shell'].includes(fence.language) ||
         !trimmed.startsWith('#')
       )

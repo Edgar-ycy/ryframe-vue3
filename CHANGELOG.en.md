@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- DevEx homepage measurements observe cold loads and warmup cache hits for same-origin static assets in the browser. Receipts retain only the counts.
+
 - Fix the parent menu selector to use the menu ID as the tree node value. Real browser coverage exercises permission changes, deletion, and tree refresh after the session scope changes.
 
 - DevEx frontend fast checks use the same nine logical tasks and source-size rules on both arms. B0 retains its separate operation check and B1 retains its combined AST scan.

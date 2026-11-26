@@ -198,6 +198,91 @@ function validateSession(session, identity) {
     fail('homepage_session_binding')
 }
 
+/** CDP 请求标识只用于合并事件，收据不包含任何资源 URL。 */
+export function observeHomepageStaticCache(session, origin, phase) {
+  const assetPrefix = '/assets/'
+  const requests = new Map()
+  const servedFromCache = new Set()
+  session.on('Network.requestWillBeSent', ({ requestId, request, redirectResponse, type }) => {
+    // 同一请求标识贯穿跳转链，目标响应也不能算作直接资源读取。
+    if (redirectResponse) {
+      requests.delete(requestId)
+      return
+    }
+    const stage = phase()
+    if (
+      !['warming', 'measuring'].includes(stage) ||
+      request.method !== 'GET' ||
+      type === 'Prefetch'
+    )
+      return
+    const url = URL.parse(request.url)
+    if (
+      url?.origin !== origin ||
+      url.username ||
+      url.password ||
+      !url.pathname.startsWith(assetPrefix) ||
+      /%2f|%5c/iu.test(url.pathname)
+    )
+      return
+    let relative
+    try {
+      relative = decodeURIComponent(url.pathname.slice(assetPrefix.length))
+    } catch {
+      return
+    }
+    const parts = relative.split('/')
+    if (
+      /[\\\p{Cc}]/u.test(relative) ||
+      (process.platform === 'win32' && relative.includes(':')) ||
+      parts.some((part) => part === '' || part === '.' || part === '..') ||
+      !/^.+\.(?:js|css|woff2?|ttf|svg|png|jpe?g|webp|ico)$/iu.test(parts.at(-1))
+    )
+      return
+    requests.set(requestId, { stage, url: url.href })
+  })
+  session.on('Network.requestServedFromCache', ({ requestId }) => {
+    servedFromCache.add(requestId)
+  })
+  session.on('Network.responseReceived', ({ requestId, response, type }) => {
+    const request = requests.get(requestId)
+    if (
+      request?.stage === phase() &&
+      request.url === response.url &&
+      response.status >= 200 &&
+      response.status < 300 &&
+      !response.fromServiceWorker &&
+      !response.fromPrefetchCache &&
+      type !== 'Prefetch'
+    )
+      request.response = { hit: response.fromDiskCache === true }
+  })
+  session.on('Network.loadingFinished', ({ requestId }) => {
+    const request = requests.get(requestId)
+    if (request?.stage === phase()) request.finished = true
+  })
+
+  return () => {
+    const primed = new Set()
+    const measured = new Set()
+    const hits = new Set()
+    for (const [id, entry] of requests) {
+      if (!entry.response || !entry.finished) continue
+      if (entry.stage === 'warming') primed.add(entry.url)
+      // 按请求起始顺序归因，避免同一测量导航稍后的缓存复用抬高首次读取。
+      else if (!measured.has(entry.url)) {
+        measured.add(entry.url)
+        if (entry.response.hit || servedFromCache.has(id)) hits.add(entry.url)
+      }
+    }
+    return {
+      responses: measured.size,
+      hits: hits.size,
+      primed_hits: [...hits].filter((url) => primed.has(url)).length,
+    }
+  }
+}
+
 /** CDP 拦截不使用 Playwright HTTP route，保留浏览器的真实 HTTP 缓存。 */
 async function preparePage(context, input, row, identity) {
   const page = await context.newPage()
@@ -206,6 +291,7 @@ async function preparePage(context, input, row, identity) {
   const session = await context.newCDPSession(page)
   await session.send('Network.enable')
   await session.send('Network.setCacheDisabled', { cacheDisabled: false })
+  const staticCache = observeHomepageStaticCache(session, input.frontend_url, () => row.phase)
   const pending = new Set()
   const note = (code) => {
     if (!row.diagnostics.includes(code)) row.diagnostics.push(code)
@@ -258,7 +344,7 @@ async function preparePage(context, input, row, identity) {
       for (const entry of list.getEntries()) globalThis.__ryframeHomepageLcp = entry.startTime
     }).observe({ type: 'largest-contentful-paint', buffered: true })
   })
-  return { page, settle: () => Promise.all([...pending]) }
+  return { page, staticCache, settle: () => Promise.all([...pending]) }
 }
 
 async function login(page, input, identity) {
@@ -320,12 +406,14 @@ async function cycle(browser, input, identity, index) {
     session_failure: false,
     preparation_requests: 0,
     measured_requests: 0,
+    static_cache: { responses: 0, hits: 0, primed_hits: 0 },
     diagnostics: [],
     preparation_duration_ms: 0,
     times: { navigation: 0, lcp: 0, content: 0 },
     duration_ms: 0,
   }
   let context
+  let staticCache
   try {
     if (!browser) fail('homepage_browser_launch_failed')
     context = await browser.newContext({
@@ -334,7 +422,9 @@ async function cycle(browser, input, identity, index) {
       serviceWorkers: 'block',
       extraHTTPHeaders: { 'X-Forwarded-For': identity.client_address },
     })
-    const { page, settle } = await preparePage(context, input, row, identity)
+    const prepared = await preparePage(context, input, row, identity)
+    const { page, settle } = prepared
+    staticCache = prepared.staticCache
     row.phase = 'login'
     await login(page, input, identity)
     await bounded(settle(), input.timeout_ms)
@@ -352,8 +442,14 @@ async function cycle(browser, input, identity, index) {
     row.times = await visit(page, input, identity)
     await bounded(settle(), input.timeout_ms)
     if (row.diagnostics.length || row.measured_requests < 1) fail('homepage_measurement_failed')
+    row.static_cache = staticCache()
+    if (input.cache === 'cold' && (row.static_cache.responses === 0 || row.static_cache.hits !== 0))
+      fail('homepage_cold_cache_unproven')
+    if (input.cache === 'warm' && row.static_cache.primed_hits === 0)
+      fail('homepage_warm_cache_unproven')
     row.succeeded = true
   } catch (error) {
+    if (staticCache) row.static_cache = staticCache()
     row.session_failure = row.phase === 'login'
     const timeout = error?.name === 'TimeoutError'
     row.failure = timeout

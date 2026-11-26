@@ -13,6 +13,7 @@ export const identity = {
   password: 'private-fixture-password',
   client_address: '198.18.0.1',
 }
+const asset = '/assets/vite-cache.js'
 
 export function fixture(t, frontendUrl = 'http://127.0.0.1:4678') {
   const parent = path.join(root, '.local-tests')
@@ -63,11 +64,13 @@ export async function serverFixture(t, options = {}) {
   const server = createServer((request, response) => {
     seen.addresses.add(request.headers['x-forwarded-for'])
     if (request.url === '/index' && ++seen.index === options.hangIndex) return
-    if (request.url === '/cache.js') {
+    if (request.url === asset) {
       seen.static += 1
       response.writeHead(200, {
         'Content-Type': 'text/javascript',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': options.disableStaticCache
+          ? 'no-store'
+          : 'public, max-age=31536000, immutable',
       })
       response.end('globalThis.fixtureAssetLoaded = true')
     } else if (request.url === '/api/v1/auth/login' || request.url === '/api/v1/auth/refresh') {
@@ -88,7 +91,7 @@ export async function serverFixture(t, options = {}) {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store',
       })
-      response.end(`<!doctype html><html lang="zh-CN"><head><script src="/cache.js"></script></head><body>
+      response.end(`<!doctype html><html lang="zh-CN"><head><script src="${asset}"></script></head><body>
         ${
           request.url === '/login'
             ? `<h1>RyFrame</h1><input placeholder="用户名"><input placeholder="密码" type="password"><button>登录</button>

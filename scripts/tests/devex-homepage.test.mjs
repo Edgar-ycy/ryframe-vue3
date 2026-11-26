@@ -3,7 +3,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { runHomepage, validateHomepageInput } from '../devex-homepage.mjs'
+import { EventEmitter } from 'node:events'
+import {
+  observeHomepageStaticCache,
+  runHomepage,
+  validateHomepageInput,
+} from '../devex-homepage.mjs'
 import { fixture, identity, root, runCli, serverFixture } from './devex-homepage-fixture.mjs'
 
 test('精确校验输入、身份独立性、收据与 runner 指纹，前后像均拒绝漂移', (t) => {
@@ -82,6 +87,75 @@ test('CLI 拒绝额外入口且不回显 stdin 凭据，stdout 不混入日志',
   assert.doesNotMatch(result.stderr, /secret-marker|private-fixture-password/u)
 })
 
+test('首页缓存合并 CDP 事件并按完整 URL 归因首个成功请求', () => {
+  const network = new EventEmitter()
+  const origin = 'http://127.0.0.1:4678'
+  let phase = 'warming'
+  const summary = observeHomepageStaticCache(network, origin, () => phase)
+  const start = (requestId, url, redirectResponse) =>
+    network.emit('Network.requestWillBeSent', {
+      requestId,
+      request: { method: 'GET', url },
+      redirectResponse,
+    })
+  const respond = (requestId, url, response = {}, finished = true) => {
+    network.emit('Network.responseReceived', {
+      requestId,
+      response: { url, status: 200, ...response },
+    })
+    if (finished) network.emit('Network.loadingFinished', { requestId })
+  }
+  const primed = `${origin}/assets/vite.js?build=1`
+  const other = `${origin}/assets/vite.js?build=2`
+  const prefetched = `${origin}/assets/prefetch.js`
+  const nested = `${origin}/assets/theme/fonts/vite-cache.woff2?version=1.txt`
+  start('prime', primed)
+  respond('prime', primed)
+  start('prefetch-warm', prefetched)
+  respond('prefetch-warm', prefetched, { fromPrefetchCache: true })
+  start('nested-warm', nested)
+  respond('nested-warm', nested)
+
+  phase = 'measuring'
+  start('memory', primed)
+  network.emit('Network.requestServedFromCache', { requestId: 'memory' })
+  respond('memory', primed)
+  start('duplicate', primed)
+  respond('duplicate', primed)
+  start('disk', other)
+  respond('disk', other, { fromDiskCache: true })
+  start('prefetch-later', prefetched)
+  respond('prefetch-later', prefetched, { fromDiskCache: true })
+  start('nested-network', nested)
+  start('nested-cache', nested)
+  respond('nested-cache', nested, { fromDiskCache: true })
+  respond('nested-network', nested)
+  for (const [id, url, status] of [
+    ['foreign', 'http://127.0.0.1:4679/assets/foreign.js'],
+    ['not-assets', `${origin}/ASSETS/vite.js`],
+    ['wrong-extension', `${origin}/assets/readme.txt?fake=vite.js`],
+    ['empty-segment', `${origin}/assets/theme//vite.js`],
+    ['encoded-slash', `${origin}/assets/theme%2Fvite.js`],
+    ['encoded-backslash', `${origin}/assets/theme%5Cvite.js`],
+    ['http-error', `${origin}/assets/missing.js`, 404],
+  ]) {
+    start(id, url)
+    respond(id, url, { status: status ?? 200, fromDiskCache: true })
+  }
+  const redirected = `${origin}/assets/redirect.js`
+  start('redirect', redirected)
+  start('redirect', `${origin}/assets/target.js`, { url: redirected, status: 302 })
+  respond('redirect', `${origin}/assets/target.js`, { fromDiskCache: true })
+  const worker = `${origin}/assets/worker.js`
+  start('worker', worker)
+  respond('worker', worker, { fromDiskCache: true, fromServiceWorker: true })
+  const unfinished = `${origin}/assets/unfinished.js`
+  start('unfinished', unfinished)
+  respond('unfinished', unfinished, { fromDiskCache: true }, false)
+
+  assert.deepEqual(summary(), { responses: 4, hits: 3, primed_hits: 1 })
+})
+
 test(
   '独立真实浏览器测量冷暖缓存与客户地址；暖缓存确实复用 HTTP 资源',
   { timeout: 60_000 },
@@ -94,11 +168,19 @@ test(
         cache === 'warm'
           ? await runCli({ ...input, cache })
           : await runHomepage({ ...input, cache })
+      assert.equal(result.format_version, 1)
       const [row] = result.cycles
       assert.equal(row.succeeded, true, JSON.stringify(row))
       assert.equal(row.phase, 'measuring')
       assert.equal(row.session_failure, false)
       assert.deepEqual(row.diagnostics, [])
+      assert.deepEqual(
+        row.static_cache,
+        cache === 'cold'
+          ? { responses: 1, hits: 0, primed_hits: 0 }
+          : { responses: 1, hits: 1, primed_hits: 1 },
+      )
+      assert.doesNotMatch(JSON.stringify(row), /vite-cache\.js/u)
       assert.ok(row.preparation_requests > 0 && row.measured_requests > 0)
       assert.ok(Object.values(row.times).every((value) => Number.isFinite(value) && value > 0))
       assert.ok(row.duration_ms >= row.preparation_duration_ms)
@@ -108,6 +190,18 @@ test(
     assert.deepEqual([...server.seen.addresses], [identity.client_address])
   },
 )
+
+test('暖场预热未形成实际缓存命中时保留失败采样', { timeout: 30_000 }, async (t) => {
+  const server = await serverFixture(t, { disableStaticCache: true })
+  const input = { ...fixture(t, server.url), cache: 'warm', timeout_ms: 10_000 }
+  const [row] = (await runHomepage(input)).cycles
+  assert.equal(row.phase, 'measuring')
+  assert.equal(row.succeeded, false, JSON.stringify(row))
+  assert.equal(row.session_failure, false)
+  assert.deepEqual(row.diagnostics, ['homepage_warm_cache_unproven'])
+  assert.deepEqual(row.static_cache, { responses: 1, hits: 0, primed_hits: 0 })
+  assert.equal(server.seen.static, 3)
+})
 
 test('登录身份不符保留 login 阶段且不会泄露凭据', { timeout: 30_000 }, async (t) => {
   const server = await serverFixture(t, { wrongIdentity: true })

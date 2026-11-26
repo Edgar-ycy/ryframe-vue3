@@ -147,6 +147,43 @@ test('改动文档的命令或代码示例时执行完整门禁', (t) => {
   }
 })
 
+test('引用、列表围栏和缩进代码正文有变化时执行完整门禁', (t) => {
+  const repo = repository(t)
+  const sections = [
+    '> 原说明\n>\n> ```bash\n> corepack pnpm check\n> ```\n',
+    '- ```bash\n  corepack pnpm check\n  ```\n\n原说明\n',
+    '1. > ~~~bash\n   > corepack pnpm check\n   > ~~~\n\n原说明\n',
+    '原说明\n\n    corepack pnpm check\n',
+    '# 原说明\n    corepack pnpm check\n',
+    '原说明\n\n\tcorepack pnpm check\n',
+    '原说明\n\n    > corepack pnpm check\n',
+    '> 原说明\n>\n>     corepack pnpm check\n',
+    '- 原说明\n\n      corepack pnpm check\n',
+  ]
+  for (const example of sections) {
+    repo.write('README.md', example)
+    const before = repo.commit()
+    const translated = example.replace('原说明', '修改说明')
+    repo.write('README.md', translated)
+    const after = repo.commit()
+    expectMode(repo.plan('push', repo.push(before)), 'docs')
+
+    repo.write('README.md', translated.replace('pnpm check', 'pnpm build'))
+    repo.commit()
+    expectMode(repo.plan('push', repo.push(after)), 'full')
+  }
+})
+
+test('引用与缩进的普通说明保留文档模式', (t) => {
+  const repo = repository(t)
+  const source = '> 原说明\n\n- 列表\n\n    原说明\n\n普通段落\n    原说明\n'
+  repo.write('README.md', source)
+  const before = repo.commit()
+  repo.write('README.md', source.replaceAll('原说明', '修改说明'))
+  repo.commit()
+  expectMode(repo.plan('push', repo.push(before)), 'docs')
+})
+
 test('标签、未知事件、无变更或不可核验的基线执行完整门禁', (t) => {
   const repo = repository(t)
   repo.write('README.md', 'New readme\n')

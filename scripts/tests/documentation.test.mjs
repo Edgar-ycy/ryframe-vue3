@@ -61,6 +61,60 @@ test('翻译脚本整行注释和参数占位符不改变实际命令', () => {
   assert.deepEqual(validateDocuments(files), [])
 })
 
+test('引用和列表围栏核对相同命令、允许翻译 shell 注释', () => {
+  const pairs = [
+    [
+      '> 运行示例\n>\n> ```bash\n> # 启动\n> cargo serve\n> > output.txt\n> ```\n',
+      '> Example\n>\n> ```bash\n> # Start\n> cargo serve\n> > output.txt\n> ```\n',
+    ],
+    ['- ```pwsh\n  # 启动\n  cargo serve\n  ```\n', '- ```pwsh\n  # Start\n  cargo serve\n  ```\n'],
+    [
+      '1. > ~~~bash\n   > # 启动\n   > cargo serve\n   > ~~~\n',
+      '1. > ~~~bash\n   > # Start\n   > cargo serve\n   > ~~~\n',
+    ],
+  ]
+  for (const [zh, en] of pairs) {
+    const files = fixture()
+    files.set('README.md', files.get('README.md') + '\n' + zh)
+    const translated = files.get('README.en.md') + '\n'
+    files.set('README.en.md', translated + en)
+    assert.deepEqual(validateDocuments(files), [])
+    files.set('README.en.md', translated + en.replace('cargo serve', 'cargo reset'))
+    assert.match(validateDocuments(files).join(), /代码示例不一致/u)
+  }
+})
+
+test('缩进代码和其中形似标题或链接的文字按代码示例比较', () => {
+  const pairs = [
+    [
+      '运行示例\n\n    cargo serve\n    # [literal](not-a-file.md)\n',
+      'Example\n\n\tcargo serve\n\t# [literal](not-a-file.md)\n',
+    ],
+    ['> 运行示例\n>\n>     cargo serve\n', '> Example\n>\n>     cargo serve\n'],
+    ['- 运行示例\n\n      cargo serve\n', '- Example\n\n      cargo serve\n'],
+  ]
+  for (const [zh, en] of pairs) {
+    const files = fixture()
+    files.set('README.md', files.get('README.md') + '\n' + zh)
+    const translated = files.get('README.en.md') + '\n'
+    files.set('README.en.md', translated + en)
+    assert.deepEqual(validateDocuments(files), [])
+    files.set('README.en.md', translated + en.replace('cargo serve', 'cargo reset'))
+    assert.match(validateDocuments(files).join(), /代码示例不一致/u)
+  }
+})
+
+test('引用和列表结束时仍检查未闭合围栏', () => {
+  for (const example of ['> ```sh\n> cargo serve\n', '- ```sh\n  cargo serve\n']) {
+    const files = fixture()
+    for (const [name, source] of files) {
+      files.set(name, source + '\n' + example + '\n正文\n')
+    }
+    const errors = validateDocuments(files)
+    assert.equal(errors.filter((error) => error.includes('围栏未闭合')).length, 2)
+  }
+})
+
 test('本地文件与目标章节不存在均报告准确引用', () => {
   const files = fixture()
   files.set(

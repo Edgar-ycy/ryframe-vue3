@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Fix the parent menu selector to use the menu ID as the tree node value. Real browser coverage exercises permission changes, deletion, and tree refresh after the session scope changes.
+
 - DevEx frontend fast checks use the same nine logical tasks and source-size rules on both arms. B0 retains its separate operation check and B1 retains its combined AST scan.
 
 - Remove the unused Python path requirement from real browser acceptance. Native fixture bindings and frontend configuration register only consumed tools while retaining login budgets, Worker provenance, and artifact verification.

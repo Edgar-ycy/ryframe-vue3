@@ -133,6 +133,26 @@ test('真实菜单编辑与删除的树读取取消归属', async ({ page, clien
     creationAttempted: false,
     deletion: 'not-started',
   }
+  async function cleanupOwnedMenu() {
+    const { id } = owned
+    if (id && owned.deletion !== 'confirmed-absent') {
+      await budget.beforeCleanup()
+      const located = flatten(await readCurrentMenuTree(page)).find((menu) => menu.id === id)
+      if (!located) owned.deletion = 'confirmed-absent'
+      else {
+        expect(located).toMatchObject({ id, name, menu_type: 'F' })
+        if (owned.deletion === 'submitted') throw new Error('原删除结果未确认且记录仍在，保留收据')
+        await page.keyboard.press('Escape')
+        const remove = await deleteButton(page, row, name)
+        owned.deletion = 'submitted'
+        await systemData<null>(await act(page, 'DELETE', `${menuPath}/${id}`, () => remove.click()))
+        expect(flatten(await readCurrentMenuTree(page)).some((menu) => menu.id === id)).toBe(false)
+        await expect(row).toHaveCount(0)
+        owned.deletion = 'confirmed-absent'
+      }
+    }
+  }
+
   try {
     const {
       data: { session_context: context },
@@ -217,28 +237,7 @@ test('真实菜单编辑与删除的树读取取消归属', async ({ page, clien
     await expect(page).toHaveURL(/\/system\/menu$/u)
   } finally {
     try {
-      const { id } = owned
-      if (id && owned.deletion !== 'confirmed-absent') {
-        await budget.beforeCleanup()
-        const located = flatten(await readCurrentMenuTree(page)).find((menu) => menu.id === id)
-        if (!located) owned.deletion = 'confirmed-absent'
-        else {
-          expect(located).toMatchObject({ id, name, menu_type: 'F' })
-          if (owned.deletion === 'submitted')
-            throw new Error('原删除结果未确认且记录仍在，保留收据')
-          await page.keyboard.press('Escape')
-          const remove = await deleteButton(page, row, name)
-          owned.deletion = 'submitted'
-          await systemData<null>(
-            await act(page, 'DELETE', `${menuPath}/${id}`, () => remove.click()),
-          )
-          expect(flatten(await readCurrentMenuTree(page)).some((menu) => menu.id === id)).toBe(
-            false,
-          )
-          await expect(row).toHaveCount(0)
-          owned.deletion = 'confirmed-absent'
-        }
-      }
+      await cleanupOwnedMenu()
     } finally {
       await info.attach('owned-menu-cleanup', {
         body: JSON.stringify({ name, ...owned }),

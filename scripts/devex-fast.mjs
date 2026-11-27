@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
+import { lstatSync, realpathSync } from 'node:fs'
 import { lstat, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -6,6 +7,8 @@ import { toolProcessEnvironment } from './tool-inputs.mjs'
 
 const sizeCheck = fileURLToPath(new URL('./devex-source-size.mjs', import.meta.url))
 const takesValue = new Set(['--root', '--arm', '--cache-root', '--pnpm-cache-dir'])
+const frozenImports = 'scripts/check-import-boundaries.mjs'
+const currentImports = 'scripts/check-import-boundaries.ts'
 
 export function parseDevexFastArguments(argv) {
   const options = new Map()
@@ -52,6 +55,48 @@ function absoluteOption(options, name) {
   return path.resolve(value)
 }
 
+function importBoundaryEntry(root, arm) {
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith('GIT_')),
+  )
+  const git = (...args) =>
+    execFileSync('git', ['--no-optional-locks', '--no-replace-objects', '-C', root, ...args], {
+      encoding: 'utf8',
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    })
+  const actualRoot = realpathSync.native(root)
+  const repository = realpathSync.native(git('rev-parse', '--show-toplevel').trim())
+  if (actualRoot !== repository) throw new Error('DevEx 导入检查须指定实际前端 Git 根目录')
+
+  // 两代源码各自使用 Git HEAD 登记的入口。B0 固定使用原入口。
+  const records = git('ls-tree', '-z', 'HEAD', '--', frozenImports, currentImports).split('\0')
+  const match =
+    records.length === 2 && records[1] === ''
+      ? /^100(?:644|755) blob ([0-9a-f]{40}|[0-9a-f]{64})\t(.+)$/u.exec(records[0])
+      : null
+  const entry = match?.[2]
+  if (!match || (entry !== frozenImports && entry !== currentImports)) {
+    throw new Error('DevEx Git HEAD 须登记唯一的普通导入检查入口')
+  }
+  if (arm === 'b0' && entry !== frozenImports) {
+    throw new Error('DevEx B0 须使用原导入检查入口')
+  }
+  const filename = path.join(actualRoot, entry)
+  const other = path.join(actualRoot, entry === frozenImports ? currentImports : frozenImports)
+  const status = lstatSync(filename, { throwIfNoEntry: false })
+  if (
+    !status?.isFile() ||
+    lstatSync(other, { throwIfNoEntry: false }) ||
+    realpathSync.native(filename) !== filename ||
+    git('hash-object', '--no-filters', '--', filename).trim() !== match[1]
+  ) {
+    throw new Error(`DevEx 导入检查入口与 Git HEAD 不一致：${entry}`)
+  }
+  return entry
+}
+
 export function devexFastTasks({ root, arm, cacheRoot }) {
   const cache = (name) => ['--cache', '--cache-location', path.join(cacheRoot, name, 'cache')]
   return [
@@ -72,7 +117,7 @@ export function devexFastTasks({ root, arm, cacheRoot }) {
     {
       id: 'imports',
       covers: arm === 'b0' ? ['imports'] : ['imports', 'api-operation-policy'],
-      node: ['scripts/check-import-boundaries.mjs'],
+      node: [importBoundaryEntry(root, arm)],
     },
     ...(arm === 'b0'
       ? [

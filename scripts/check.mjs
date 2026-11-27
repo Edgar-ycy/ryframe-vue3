@@ -155,7 +155,7 @@ export function checkTasks(stage, options = {}) {
     ],
     static: [
       { name: 'documentation', node: ['scripts/check-documentation.ts'] },
-      { name: 'import-boundaries', node: ['scripts/check-import-boundaries.mjs'] },
+      { name: 'import-boundaries', node: ['scripts/check-import-boundaries.ts'] },
       { name: 'workflows', node: ['scripts/check-workflows.ts'] },
       { name: 'eslint', args: ['exec', 'eslint', '.', '--max-warnings', '0'] },
       { name: 'prettier', args: ['exec', 'prettier', '--check', '.'] },

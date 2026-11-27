@@ -1,17 +1,20 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
-  boundaryViolation,
   containsDefineStoreCall,
-  externalPackageTarget,
   extractImportSpecifiers,
   hasApiOperationUsage,
   inspectApiOperationUsage,
+} from '../import-boundary-ast.ts'
+import {
+  boundaryViolation,
+  externalPackageTarget,
   moduleArea,
   resolveImportTarget,
   resolveInternalSpecifier,
   runtimeCycleEdges,
-} from '../import-boundary-contract.mjs'
+  type ImportEdge,
+} from '../import-boundary-contract.ts'
 
 test('区分运行时、类型和动态导入', () => {
   const imports = extractImportSpecifiers(`
@@ -67,6 +70,7 @@ test('ImportTypeNode 不能绕过 Store 的外部类型边界', () => {
   ])
   for (const dependency of imports) {
     const target = resolveImportTarget(source, dependency.specifier, new Set())
+    assert.ok(target)
     assert.equal(
       boundaryViolation({ ...dependency, source, target }),
       `stores 不得依赖外部包 ${dependency.specifier}`,
@@ -279,7 +283,7 @@ test('同一次源码扫描识别 API 模块的旧传输入口和手写请求', 
 
 test('SCC 只统计静态运行时导入', () => {
   const modules = new Set(['src/a.ts', 'src/b.ts', 'src/c.ts'])
-  const edges = [
+  const edges: ImportEdge[] = [
     { kind: 'runtime', source: 'src/a.ts', target: 'src/b.ts' },
     { kind: 'runtime', source: 'src/b.ts', target: 'src/a.ts' },
     { kind: 'dynamic', source: 'src/c.ts', target: 'src/c.ts' },

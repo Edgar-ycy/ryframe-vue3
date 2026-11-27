@@ -3,23 +3,27 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse as parseVue } from '@vue/compiler-sfc'
 import {
-  boundaryViolation,
-  edgeKey,
   hasApiOperationUsage,
   inspectModuleSource,
+  type ApiOperationUsage,
+} from './import-boundary-ast.ts'
+import {
+  boundaryViolation,
+  edgeKey,
   normalizeModulePath,
   resolveImportTarget,
   runtimeCycleEdges,
-} from './import-boundary-contract.mjs'
+  type ImportEdge,
+} from './import-boundary-contract.ts'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const sourceRoot = join(root, 'src')
 const commandArguments = process.argv.slice(2)
 if (commandArguments.length > 0) throw new Error(`未知参数：${commandArguments[0]}`)
 
-async function collectModules(directory) {
+async function collectModules(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true })
-  const modules = []
+  const modules: string[] = []
   for (const entry of entries) {
     const path = join(directory, entry.name)
     if (entry.isDirectory()) modules.push(...(await collectModules(path)))
@@ -33,7 +37,7 @@ async function collectModules(directory) {
   return modules
 }
 
-function moduleSource(path, content) {
+function moduleSource(path: string, content: string): string {
   if (!path.endsWith('.vue')) return content
   const { descriptor, errors } = parseVue(content, { filename: path })
   if (errors.length > 0) throw new Error(`无法解析 ${path}: ${String(errors[0])}`)
@@ -44,9 +48,9 @@ const absoluteModules = await collectModules(sourceRoot)
 const modulePaths = new Set(
   absoluteModules.map((path) => normalizeModulePath(relative(root, path))),
 )
-const edges = []
-const misplacedStores = []
-const apiOperationUsage = {}
+const edges: ImportEdge[] = []
+const misplacedStores: string[] = []
+const apiOperationUsage: Record<string, ApiOperationUsage> = {}
 
 for (const absolutePath of absoluteModules.sort()) {
   const source = normalizeModulePath(relative(root, absolutePath))
@@ -65,7 +69,7 @@ for (const absolutePath of absoluteModules.sort()) {
   }
 }
 
-function moduleAreaForStore(source) {
+function moduleAreaForStore(source: string): 'stores' | 'other' {
   return source.startsWith('src/stores/') ? 'stores' : 'other'
 }
 

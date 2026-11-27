@@ -2,7 +2,7 @@ import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promise
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { createTemporaryDirectory } from './temporary-directory.mjs'
+import { createTemporaryDirectory } from './temporary-directory.ts'
 
 import {
   buildApiArtifacts,

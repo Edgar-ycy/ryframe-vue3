@@ -10,7 +10,7 @@ import {
   ownershipManifestPath,
 } from '../api-artifacts.mjs'
 import { fileURLToPath } from 'node:url'
-import { createTemporaryDirectory } from '../temporary-directory.mjs'
+import { createTemporaryDirectory } from '../temporary-directory.ts'
 
 const frontend = fileURLToPath(new URL('../../', import.meta.url))
 

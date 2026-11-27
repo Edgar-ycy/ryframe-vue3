@@ -89,7 +89,7 @@ export async function startRealBrowserServer(options, dependencies = {}) {
     if (options.responseAudit) {
       const create =
         createAudit ??
-        (await import('./browser-static-response-audit.mjs')).createStaticResponseAudit
+        (await import('./browser-static-response-audit.ts')).createStaticResponseAudit
       audit = await create(options.responseAudit)
     }
     vite =

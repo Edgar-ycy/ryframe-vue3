@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Browser response delay controls and static response auditing use TypeScript and retain same-origin checks and redacted receipts.
+
 - The Vite manifest graph and locale bundle rules use TypeScript. The standard Node test entry point discovers existing JavaScript tests and migrated TypeScript tests together.
 
 - DevEx homepage measurements observe cold loads and warmup cache hits for same-origin static assets in the browser. Receipts retain only the counts.

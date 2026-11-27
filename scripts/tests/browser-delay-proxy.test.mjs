@@ -5,7 +5,7 @@ import net from 'node:net'
 import { test } from 'node:test'
 import { randomUUID } from 'node:crypto'
 import { startDelayProxy, localTarget } from '../browser-delay-proxy.mjs'
-import { createResponseGates } from '../browser-response-gates.mjs'
+import { createResponseGates } from '../browser-response-gates.ts'
 
 async function setup(t, endpoint) {
   const server = http.createServer((request, response) => {

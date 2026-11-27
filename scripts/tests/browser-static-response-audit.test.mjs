@@ -8,7 +8,7 @@ import { test } from 'node:test'
 import {
   classifyStaticRequest,
   createStaticResponseAudit,
-} from '../browser-static-response-audit.mjs'
+} from '../browser-static-response-audit.ts'
 import { startDelayProxy } from '../browser-delay-proxy.mjs'
 
 function request(url, destination) {

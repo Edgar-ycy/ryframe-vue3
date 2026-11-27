@@ -1,49 +1,98 @@
 import { createHash } from 'node:crypto'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
-const activeStates = new Set(['armed', 'captured', 'held'])
+type GateState =
+  | 'armed'
+  | 'captured'
+  | 'held'
+  | 'expired'
+  | 'discarded'
+  | 'oversized'
+  | 'upstream-failed'
+  | 'client-closed'
+  | 'released'
 
-function validClientAddress(value) {
-  const match = /^198\.(18|19)\.(\d{1,3})\.(\d{1,3})$/u.exec(value || '')
+interface Gate {
+  id: unknown
+  method: string
+  path: unknown
+  clientAddress: unknown
+  state: GateState
+  createdAt: number
+  capturedAt?: number
+  clientClosedAt?: number
+  upstreamAt?: number
+  status?: number
+  bytes?: number
+  sha256?: string
+  cookieCount?: number
+  releasedAt?: number
+  timer?: ReturnType<typeof setTimeout>
+  release?: () => void
+  cancel?: () => void
+}
+
+interface GateCommand {
+  action?: unknown
+  id?: unknown
+  match?: { method?: unknown; path?: unknown; clientAddress?: unknown } | null
+}
+
+interface GateOptions {
+  maximumBytes?: number
+  now?: () => number
+}
+
+const activeStates = new Set<GateState>(['armed', 'captured', 'held'])
+const proofKeys = [
+  'id',
+  'method',
+  'path',
+  'state',
+  'createdAt',
+  'capturedAt',
+  'clientClosedAt',
+  'upstreamAt',
+  'status',
+  'bytes',
+  'sha256',
+  'cookieCount',
+  'releasedAt',
+] as const
+type GateProof = Pick<Gate, (typeof proofKeys)[number]>
+
+function validClientAddress(value: unknown): boolean {
+  const match = /^198\.(18|19)\.(\d{1,3})\.(\d{1,3})$/u.exec((value || '') as string)
   return Boolean(match && Number(match[2]) <= 255 && Number(match[3]) <= 255)
 }
 
-function proof(gate) {
+function proof(gate: Gate): GateProof {
   return Object.fromEntries(
-    Object.entries(gate).filter(([key]) =>
-      [
-        'id',
-        'method',
-        'path',
-        'state',
-        'createdAt',
-        'capturedAt',
-        'clientClosedAt',
-        'upstreamAt',
-        'status',
-        'bytes',
-        'sha256',
-        'cookieCount',
-        'releasedAt',
-      ].includes(key),
-    ),
-  )
+    Object.entries(gate).filter(([key]) => proofKeys.some((field) => field === key)),
+  ) as GateProof
 }
 
 /** 只控制测试代理的传输时序，不修改产品响应，也不记录请求或响应正文。 */
-export function createResponseGates({ maximumBytes = 2 * 1024 * 1024, now = Date.now } = {}) {
+export function createResponseGates({
+  maximumBytes = 2 * 1024 * 1024,
+  now = Date.now,
+}: GateOptions = {}) {
   if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1) {
     throw new Error('响应门缓存上限必须是正整数')
   }
-  const gates = new Map()
+  const gates = new Map<unknown, Gate>()
 
-  function command(message) {
+  function command(input: unknown): GateProof {
+    const message = input as GateCommand | null | undefined
     const { action, id } = message ?? {}
-    if (!/^[a-z0-9-]{8,80}$/u.test(id || '')) throw new Error('无效的响应门标识')
+    // 保留原控制协议由正则执行的字符串转换，匹配时仍核对原值。
+    if (!/^[a-z0-9-]{8,80}$/u.test((id || '') as string)) throw new Error('无效的响应门标识')
     if (action === 'arm') {
-      const { method, path, clientAddress } = message.match ?? {}
+      const { method, path, clientAddress } = message?.match ?? {}
       if (
+        typeof method !== 'string' ||
         !['GET', 'POST', 'PUT', 'DELETE'].includes(method) ||
-        !/^\/api\/v1\/[a-z0-9/-]+$/u.test(path || '') ||
+        !/^\/api\/v1\/[a-z0-9/-]+$/u.test((path || '') as string) ||
         !validClientAddress(clientAddress)
       ) {
         throw new Error('响应门必须绑定精确业务路径与隔离客户地址')
@@ -68,14 +117,14 @@ export function createResponseGates({ maximumBytes = 2 * 1024 * 1024, now = Date
     } else if (action === 'discard') {
       gate.cancel?.()
       gates.delete(id)
-    } else if (!['arm', 'status'].includes(action)) {
+    } else if (action !== 'arm' && action !== 'status') {
       throw new Error('未知响应门操作')
     }
     return proof(gate)
   }
 
-  function claim(request) {
-    const path = new URL(request.url, 'http://127.0.0.1').pathname
+  function claim(request: Pick<IncomingMessage, 'url' | 'method' | 'headers'>): Gate | undefined {
+    const path = new URL(String(request.url), 'http://127.0.0.1').pathname
     const gate = [...gates.values()].find(
       (entry) =>
         entry.state === 'armed' &&
@@ -91,10 +140,14 @@ export function createResponseGates({ maximumBytes = 2 * 1024 * 1024, now = Date
     return gate
   }
 
-  function hold(gate, upstream, response) {
-    const chunks = []
+  function hold(
+    gate: Gate,
+    upstream: IncomingMessage & { statusCode: number },
+    response: ServerResponse,
+  ): void {
+    const chunks: Buffer[] = []
     let size = 0
-    const terminate = (state) => {
+    const terminate = (state: GateState) => {
       if (!activeStates.has(gate.state)) return
       gate.state = state
       clearTimeout(gate.timer)
@@ -107,7 +160,7 @@ export function createResponseGates({ maximumBytes = 2 * 1024 * 1024, now = Date
     response.on('close', () => {
       if (!response.writableEnded) gate.clientClosedAt = now()
     })
-    upstream.on('data', (chunk) => {
+    upstream.on('data', (chunk: Buffer) => {
       size += chunk.length
       if (size > maximumBytes) terminate('oversized')
       else chunks.push(chunk)

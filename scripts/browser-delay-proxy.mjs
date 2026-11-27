@@ -1,6 +1,6 @@
 import http from 'node:http'
 import net from 'node:net'
-import { createResponseGates } from './browser-response-gates.mjs'
+import { createResponseGates } from './browser-response-gates.ts'
 
 export function localTarget(value) {
   const url = new URL(value)

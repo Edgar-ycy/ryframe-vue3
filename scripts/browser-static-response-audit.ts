@@ -1,6 +1,29 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { link, lstat, open, readFile, unlink } from 'node:fs/promises'
+import { link, lstat, open, readFile, unlink, type FileHandle } from 'node:fs/promises'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { dirname, isAbsolute, resolve } from 'node:path'
+
+type StaticRequest = Pick<IncomingMessage, 'method' | 'headers' | 'url'>
+
+interface StaticSelection {
+  method: 'GET'
+  path: string
+  destination: string
+}
+
+interface StaticEntry extends StaticSelection {
+  sequence: number
+  status: number | undefined
+  bytes: number
+  sha256: string
+  representation: 'identity'
+}
+
+interface AuditOptions {
+  output: unknown
+  runId: unknown
+  scopeId: unknown
+}
 
 const MAX_ENTRIES = 10_000
 const MAX_BYTES = 8 * 1024 * 1024 * 1024
@@ -22,20 +45,22 @@ const DESTINATIONS = new Set([
   'worker',
 ])
 
-function validText(value, label) {
+function validText(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value || value !== value.trim() || /[\r\n\0]/u.test(value)) {
     throw new Error(`${label}无效`)
   }
   return value
 }
 
-function outputPath(value) {
-  validText(value, '静态响应审计输出路径')
-  if (!isAbsolute(value)) throw new Error('静态响应审计输出必须是绝对路径')
-  return resolve(value)
+function outputPath(value: unknown): string {
+  const path = validText(value, '静态响应审计输出路径')
+  if (!isAbsolute(path)) throw new Error('静态响应审计输出必须是绝对路径')
+  return resolve(path)
 }
 
-export function classifyStaticRequest(request) {
+export function classifyStaticRequest(
+  request: StaticRequest,
+): Readonly<StaticSelection> | undefined {
   if (request.method !== 'GET') return undefined
   const destination = request.headers['sec-fetch-dest']
   if (typeof destination !== 'string' || !DESTINATIONS.has(destination)) return undefined
@@ -51,10 +76,14 @@ export function classifyStaticRequest(request) {
   return Object.freeze({ method: 'GET', path: url.pathname, destination })
 }
 
-async function publishCreateOnly(path, value) {
+function isFileError(error: unknown, code: string): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code
+}
+
+async function publishCreateOnly(path: string, value: unknown): Promise<void> {
   const body = Buffer.from(`${JSON.stringify(value)}\n`, 'utf8')
   const temporary = `${path}.tmp-${process.pid}-${randomUUID()}`
-  let handle
+  let handle: FileHandle | undefined
   try {
     handle = await open(temporary, 'wx', 0o600)
     await handle.writeFile(body)
@@ -64,7 +93,7 @@ async function publishCreateOnly(path, value) {
     try {
       await link(temporary, path)
     } catch (error) {
-      if (error?.code === 'EEXIST') {
+      if (isFileError(error, 'EEXIST')) {
         throw new Error('静态响应审计输出已存在，拒绝覆盖或重放', { cause: error })
       }
       throw error
@@ -86,10 +115,14 @@ async function publishCreateOnly(path, value) {
   }
 }
 
-export async function createStaticResponseAudit({ output, runId, scopeId }) {
+export async function createStaticResponseAudit({
+  output,
+  runId: requestedRunId,
+  scopeId: requestedScopeId,
+}: AuditOptions) {
   const path = outputPath(output)
-  validText(runId, '静态响应审计 run id')
-  validText(scopeId, '静态响应审计 scope')
+  const runId = validText(requestedRunId, '静态响应审计 run id')
+  const scopeId = validText(requestedScopeId, '静态响应审计 scope')
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/u.test(runId)) {
     throw new Error('静态响应审计 run id 格式无效')
   }
@@ -101,21 +134,21 @@ export async function createStaticResponseAudit({ output, runId, scopeId }) {
     () => {
       throw new Error('静态响应审计输出已存在，拒绝覆盖或重放')
     },
-    (error) => {
-      if (error?.code !== 'ENOENT') throw error
+    (error: unknown) => {
+      if (!isFileError(error, 'ENOENT')) throw error
     },
   )
-  const entries = []
+  const entries: StaticEntry[] = []
   let active = 0
   let totalBytes = 0
-  let failure
+  let failure: Error | undefined
 
-  function fail(error) {
+  function fail(error: unknown): void {
     failure ??= error instanceof Error ? error : new Error('静态响应审计失败')
   }
 
   return Object.freeze({
-    classify(request) {
+    classify(request: StaticRequest) {
       try {
         return classifyStaticRequest(request)
       } catch (error) {
@@ -123,7 +156,11 @@ export async function createStaticResponseAudit({ output, runId, scopeId }) {
         throw error
       }
     },
-    track(selection, upstream, response) {
+    track(
+      selection: Readonly<StaticSelection>,
+      upstream: IncomingMessage,
+      response: ServerResponse,
+    ): void {
       const sequence = entries.length + active + 1
       const digest = createHash('sha256')
       let bytes = 0
@@ -134,7 +171,7 @@ export async function createStaticResponseAudit({ output, runId, scopeId }) {
       if (encoding !== undefined && String(encoding).toLowerCase() !== 'identity') {
         fail(new Error('静态响应审计只接受 identity Content-Encoding'))
       }
-      upstream.on('data', (chunk) => {
+      upstream.on('data', (chunk: Buffer) => {
         bytes += chunk.length
         totalBytes += chunk.length
         digest.update(chunk)

@@ -1,19 +1,27 @@
+import { Buffer } from 'node:buffer'
 import { access, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import type { Document } from 'yaml'
 
-async function readDirectory(directory) {
+type WorkflowOutput = Pick<Console, 'log' | 'error'>
+
+async function readDirectory(directory: string) {
   try {
     return await readdir(directory, { withFileTypes: true })
   } catch (error) {
-    if (error?.code === 'ENOENT') return []
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT')
+      return []
     throw error
   }
 }
 
-async function collectYamlFiles(directory, predicate = () => true) {
-  const files = []
+async function collectYamlFiles(
+  directory: string,
+  predicate: (name: string) => boolean = () => true,
+): Promise<string[]> {
+  const files: string[] = []
   for (const entry of await readDirectory(directory)) {
     const absolute = path.join(directory, entry.name)
     if (entry.isDirectory()) files.push(...(await collectYamlFiles(absolute, predicate)))
@@ -22,7 +30,7 @@ async function collectYamlFiles(directory, predicate = () => true) {
   return files
 }
 
-async function fileExists(absolute) {
+async function fileExists(absolute: string): Promise<boolean> {
   try {
     await access(absolute)
     return true
@@ -31,7 +39,7 @@ async function fileExists(absolute) {
   }
 }
 
-function collectLocalUses(value, uses = []) {
+function collectLocalUses(value: unknown, uses: string[] = []): string[] {
   if (Array.isArray(value)) {
     for (const child of value) collectLocalUses(child, uses)
   } else if (value && typeof value === 'object') {
@@ -43,7 +51,7 @@ function collectLocalUses(value, uses = []) {
   return uses
 }
 
-function collectRemoteUses(value, uses = []) {
+function collectRemoteUses(value: unknown, uses: string[] = []): string[] {
   if (Array.isArray(value)) {
     for (const child of value) collectRemoteUses(child, uses)
   } else if (value && typeof value === 'object') {
@@ -55,26 +63,31 @@ function collectRemoteUses(value, uses = []) {
   return uses
 }
 
-function relative(root, absolute) {
+function relative(root: string, absolute: string): string {
   return path.relative(root, absolute).split(path.sep).join('/')
 }
 
-function containsExpressionReference(value, name) {
+function containsExpressionReference(value: unknown, name: string): boolean {
   if (typeof value !== 'string' || !value.includes('${{')) return false
   return new RegExp(`(^|[^A-Za-z0-9_])${name}\\s*(?:\\.|\\[)`, 'u').test(value)
 }
 
-export function validateEnvironmentContexts(name, workflow) {
-  const contextErrors = []
-  const scopes = [
+function property(value: unknown, key: string): unknown {
+  if (typeof value !== 'object' || value === null) return undefined
+  return (value as Record<string, unknown>)[key]
+}
+
+export function validateEnvironmentContexts(name: string, workflow: unknown): string[] {
+  const contextErrors: string[] = []
+  const scopes: [location: string, environment: unknown, forbidden: string[]][] = [
     [
       'workflow env',
-      workflow?.env,
+      property(workflow, 'env'),
       ['runner', 'job', 'steps', 'env', 'needs', 'strategy', 'matrix'],
     ],
   ]
-  for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
-    scopes.push([`job ${jobName} env`, job?.env, ['runner', 'job', 'steps', 'env']])
+  for (const [jobName, job] of Object.entries(property(workflow, 'jobs') ?? {})) {
+    scopes.push([`job ${jobName} env`, property(job, 'env'), ['runner', 'job', 'steps', 'env']])
   }
   for (const [location, environment, forbidden] of scopes) {
     if (environment == null) continue
@@ -100,8 +113,14 @@ export function validateEnvironmentContexts(name, workflow) {
   return contextErrors
 }
 
-function inspectWorkflowFile(root, absolute, source, document, isWorkflow) {
-  const errors = []
+function inspectWorkflowFile(
+  root: string,
+  absolute: string,
+  source: Buffer,
+  document: Document.Parsed,
+  isWorkflow: boolean,
+) {
+  const errors: string[] = []
   const name = relative(root, absolute)
   if (source.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))) {
     errors.push(`${name}: must not contain a UTF-8 BOM`)
@@ -113,13 +132,17 @@ function inspectWorkflowFile(root, absolute, source, document, isWorkflow) {
   for (const error of document.errors) errors.push(`${name}: ${error.message}`)
   if (document.errors.length > 0) return { errors, name }
 
-  const workflow = document.toJS()
+  const workflow: unknown = document.toJS()
   if (isWorkflow) errors.push(...validateEnvironmentContexts(name, workflow))
   return { errors, name, workflow }
 }
 
-async function validateWorkflowReferences(root, name, workflow) {
-  const errors = []
+async function validateWorkflowReferences(
+  root: string,
+  name: string,
+  workflow: unknown,
+): Promise<string[]> {
+  const errors: string[] = []
   for (const localUse of collectLocalUses(workflow)) {
     if (localUse.includes('${{')) {
       errors.push(`${name}: local uses reference must be static (${localUse})`)
@@ -159,7 +182,7 @@ async function validateWorkflowReferences(root, name, workflow) {
   return errors
 }
 
-export async function inspectWorkflows(root) {
+export async function inspectWorkflows(root: string) {
   const { parseDocument } = await import('yaml')
   const workflowFiles = await collectYamlFiles(path.join(root, '.github', 'workflows'), (name) =>
     /\.ya?ml$/iu.test(name),
@@ -168,7 +191,7 @@ export async function inspectWorkflows(root) {
     /^action\.ya?ml$/iu.test(name),
   )
   const workflowSet = new Set(workflowFiles)
-  const errors = []
+  const errors: string[] = []
   for (const absolute of [...workflowFiles, ...actionFiles].sort()) {
     const source = await readFile(absolute)
     const document = parseDocument(source.toString('utf8'), {
@@ -185,7 +208,10 @@ export async function inspectWorkflows(root) {
   return { actionFiles, errors, workflowFiles }
 }
 
-export async function runWorkflowCheck(root = process.cwd(), output = console) {
+export async function runWorkflowCheck(
+  root = process.cwd(),
+  output: WorkflowOutput = console,
+): Promise<boolean> {
   const { actionFiles, errors, workflowFiles } = await inspectWorkflows(root)
   if (errors.length > 0) {
     output.error('Workflow check failed:')
@@ -198,7 +224,11 @@ export async function runWorkflowCheck(root = process.cwd(), output = console) {
   return true
 }
 
-export async function runWorkflowCli(argv, root = process.cwd(), output = console) {
+export async function runWorkflowCli(
+  argv: readonly string[],
+  root = process.cwd(),
+  output: WorkflowOutput = console,
+): Promise<boolean> {
   if (argv.length > 0) throw new Error(`未知参数：${argv[0]}`)
   return runWorkflowCheck(root, output)
 }
@@ -209,7 +239,7 @@ if (isMain) {
   try {
     if (!(await runWorkflowCli(process.argv.slice(2)))) process.exitCode = 1
   } catch (error) {
-    console.error(error.message)
+    console.error(error instanceof Error ? error.message : String(error))
     process.exitCode = 1
   }
 }

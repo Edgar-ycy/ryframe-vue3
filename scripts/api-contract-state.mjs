@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { requireApiPrefixContract } from './api-prefix-contract.mjs'
+import { requireApiPrefixContract } from './api-prefix-contract.ts'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 
 export const candidateMarkerRelativePath = 'openapi/candidate.json'

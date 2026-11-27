@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import openapiTS, { astToString } from 'openapi-typescript'
 
-import { requireApiPrefixContract } from './api-prefix-contract.mjs'
+import { requireApiPrefixContract } from './api-prefix-contract.ts'
 import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
 import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
 import { artifactPaths } from './api-artifact-manifest.mjs'

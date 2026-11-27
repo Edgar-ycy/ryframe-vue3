@@ -1,10 +1,35 @@
-import { enumEntries, enumValue, formWidget, quote } from './values.ts'
+import type { ResourceSource } from './format.ts'
+import type { Resource, ResourceField } from './resource.ts'
+import { enumEntries, enumValue, formWidget, quote, type EnumField, type Labels } from './values.ts'
 
-const label = (field) => `label: translate(${quote(field.labels.zh_cn)}, ${quote(field.labels.en)})`
-const enter = (field) =>
+export interface PresentationField extends ResourceField, EnumField {
+  typescript_type: string
+  labels: Labels
+  validation: {
+    required: boolean
+    minimum: number | null
+    maximum: number | null
+  }
+}
+
+export interface PresentationResource extends Resource, ResourceSource {
+  fields: readonly PresentationField[]
+  access: {
+    permissions: {
+      list: string
+      create: string
+      update: string
+      delete: string
+    }
+  }
+}
+
+const label = (field: PresentationField) =>
+  `label: translate(${quote(field.labels.zh_cn)}, ${quote(field.labels.en)})`
+const enter = (field: PresentationField) =>
   `translate(${quote(`请输入${field.labels.zh_cn}`)}, ${quote(`Enter ${field.labels.en}`)})`
 
-export function queryProperties(field) {
+export function queryProperties(field: PresentationField): string[] {
   const enumerated = Object.keys(field.enum_values).length > 0
   const properties = [
     `key: ${quote(field.name)}`,
@@ -16,14 +41,14 @@ export function queryProperties(field) {
   return properties
 }
 
-export function columnProperties(field) {
+export function columnProperties(field: PresentationField): string[] {
   const properties = [`key: ${quote(field.name)}`, label(field)]
-  const entries = enumEntries(field)
-  if (entries.length > 0) {
+  const positive = enumEntries(field).at(-1)
+  if (positive) {
     properties.push(
       "display: 'status'",
       `options: ${field.name}Options`,
-      `positiveValue: ${enumValue(entries.at(-1)[0], field)}`,
+      `positiveValue: ${enumValue(positive[0], field)}`,
     )
   } else if (field.value_type === 'date_time') {
     properties.push("display: 'datetime'", 'format: formatDate')
@@ -31,7 +56,7 @@ export function columnProperties(field) {
   return properties
 }
 
-export function formProperties(field) {
+export function formProperties(field: PresentationField): string[] {
   const properties = [
     `key: ${quote(field.name)}`,
     `kind: ${quote(formWidget(field))}`,
@@ -56,7 +81,7 @@ export function formProperties(field) {
   return properties
 }
 
-export function labels(resource) {
+export function labels(resource: PresentationResource): string {
   const permissions = resource.access.permissions
   return (
     `  const permissions = {\n    list: ${quote(permissions.list)},\n    create: ${quote(permissions.create)},\n    update: ${quote(permissions.update)},\n    remove: ${quote(permissions.delete)},\n  } as const\n\n` +

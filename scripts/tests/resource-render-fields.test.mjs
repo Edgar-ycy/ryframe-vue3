@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile, readdir } from 'node:fs/promises'
 import test from 'node:test'
 
-import { renderFields } from '../resource-render/fields.mjs'
+import { renderFields } from '../resource-render/fields.ts'
 
 const root = new URL('../../', import.meta.url)
 const fixtures = new Map(

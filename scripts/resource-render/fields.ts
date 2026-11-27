@@ -1,12 +1,12 @@
-import { hasDateColumn } from './format.mjs'
-import { Modules } from './modules.mjs'
-import { presentation } from './presentation.mjs'
-import { labels } from './properties.mjs'
+import { hasDateColumn } from './format.ts'
+import { Modules } from './modules.ts'
+import { presentation } from './presentation.ts'
+import { labels, type PresentationResource } from './properties.ts'
 import { resourceDefinition } from './resource.ts'
-import { splitForm } from './split-form.mjs'
-import { splitPresentation } from './split-presentation.mjs'
+import { splitForm } from './split-form.ts'
+import { splitPresentation } from './split-presentation.ts'
 
-function resourceModule(resource) {
+function resourceModule(resource: PresentationResource): string {
   const pascal = resource.pascal_name
   const imports = `import { defineFlatCrudResource } from '@/components/business/flat-crud'\nimport { emptyPageResponse } from '@/shared/http/types'\nimport {\n  create${pascal},\n  delete${pascal},\n  get${pascal},\n  list${pascal},\n  update${pascal},\n  type ${pascal}CreateInput,\n  type ${pascal}UpdateInput,\n  type ${pascal}Query,\n  type ${pascal}Record,\n} from './api'\nimport type { ${pascal}Form } from './model'\nimport type { Translate } from './common'\nimport { emptyForm, editForm, createInput, updateInput } from './form'\nimport { queryDefaults } from './query-defaults'\n\n`
   const definition = resourceDefinition(resource, {
@@ -19,7 +19,7 @@ function resourceModule(resource) {
   return imports + definition.replace('function ', 'export function ')
 }
 
-function presentationModule(resource) {
+function presentationModule(resource: PresentationResource): string {
   const pascal = resource.pascal_name
   const name = resource.name
   let output = `import type {\n  FlatCrudColumn,\n  FlatCrudFormField,\n  FlatCrudLabels,\n  FlatCrudPermissions,\n  FlatCrudQueryField,\n} from '@/components/business/flat-crud'\nimport type { ${pascal}Query, ${pascal}Record } from './api'\nimport type { ${pascal}Form } from './model'\nimport type { Translate } from './common'\nimport { columns } from './columns'\nimport { formFields } from './form-fields'\nimport { queryFields } from './query'\nimport { ${name}Resource } from './resource'\n\nexport type { ${pascal}Form } from './model'\n\nexport interface ${pascal}Presentation {\n  columns: readonly FlatCrudColumn<${pascal}Record>[]\n  formFields: readonly FlatCrudFormField<${pascal}Form>[]\n  labels: FlatCrudLabels\n  permissions: FlatCrudPermissions\n  queryFields: readonly FlatCrudQueryField<${pascal}Query>[]\n  resource: ReturnType<typeof ${name}Resource>\n}\n\n`
@@ -32,7 +32,7 @@ function presentationModule(resource) {
   )
 }
 
-export function renderFields(resource, version) {
+export function renderFields(resource: PresentationResource, version: string): Map<string, string> {
   const flat = presentation(resource, version)
   if (flat.replace(/\n$/, '').split('\n').length <= 300) return new Map([['fields.ts', flat]])
   const modules = new Modules(resource, version)

@@ -1,9 +1,15 @@
-import { hasDateColumn, header } from './format.mjs'
-import { columnProperties, formProperties, labels, queryProperties } from './properties.mjs'
+import { hasDateColumn, header } from './format.ts'
+import {
+  columnProperties,
+  formProperties,
+  labels,
+  queryProperties,
+  type PresentationResource,
+} from './properties.ts'
 import { crudResource } from './resource.ts'
 import { enumEntries, enumValue, formType, objectBlock, quote } from './values.ts'
 
-export function presentation(resource, version) {
+export function presentation(resource: PresentationResource, version: string): string {
   const pascal = resource.pascal_name
   const formFields = resource.fields.filter((field) => field.usage.create || field.usage.update)
   let output = header(resource, version)

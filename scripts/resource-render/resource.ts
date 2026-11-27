@@ -1,7 +1,7 @@
 import { editValue, formInput, quote, tsDefault } from './values.ts'
 import type { FieldValue, Labels, Widget } from './values.ts'
 
-interface ResourceField extends FieldValue {
+export interface ResourceField extends FieldValue {
   widget: Widget
   usage: {
     create: boolean
@@ -14,7 +14,7 @@ interface ResourceField extends FieldValue {
   }
 }
 
-interface Resource {
+export interface Resource {
   name: string
   pascal_name: string
   storage: 'control_row' | 'tenant_data'

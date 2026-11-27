@@ -1,15 +1,27 @@
-import { hasDateColumn } from './format.mjs'
-import { chunks } from './modules.mjs'
-import { columnProperties, formProperties, queryProperties } from './properties.mjs'
+import { hasDateColumn } from './format.ts'
+import { chunks, type Modules } from './modules.ts'
+import {
+  columnProperties,
+  formProperties,
+  queryProperties,
+  type PresentationField,
+  type PresentationResource,
+} from './properties.ts'
 import { enumEntries, enumValue, objectBlock, quote } from './values.ts'
 
 const descriptors = {
   query: ['queryFields', 'Query', 'FlatCrudQueryField'],
   columns: ['columns', 'Record', 'FlatCrudColumn'],
   'form-fields': ['formFields', 'Form', 'FlatCrudFormField'],
-}
+} as const
 
-function part(resource, kind, fields) {
+type DescriptorKind = keyof typeof descriptors
+
+function part(
+  resource: PresentationResource,
+  kind: DescriptorKind,
+  fields: readonly PresentationField[],
+): string {
   const [name, model, flatType] = descriptors[kind]
   const pascal = resource.pascal_name
   const modelPath = model === 'Form' ? 'model' : 'api'
@@ -43,7 +55,7 @@ function part(resource, kind, fields) {
   )
 }
 
-function options(modules) {
+function options(modules: Modules<PresentationResource>): void {
   for (const field of modules.resource.fields.filter(
     (field) => Object.keys(field.enum_values).length > 0,
   )) {
@@ -75,11 +87,11 @@ function options(modules) {
   }
 }
 
-export function splitPresentation(modules) {
+export function splitPresentation(modules: Modules<PresentationResource>): void {
   options(modules)
   const resource = modules.resource
   const pascal = resource.pascal_name
-  for (const kind of ['query', 'columns', 'form-fields']) {
+  for (const kind of ['query', 'columns', 'form-fields'] as const) {
     const fields = resource.fields.filter((field) =>
       kind === 'query'
         ? field.usage.filter && field.widget !== 'hidden'

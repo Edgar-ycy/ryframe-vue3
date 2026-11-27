@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Resource page field, presentation, and wide-table splitting tools use TypeScript and preserve generated output.
+
 - Resource page templates and field value rendering use TypeScript and preserve generated source and extension behavior.
 
 - Browser response delay controls and static response auditing use TypeScript and retain same-origin checks and redacted receipts.

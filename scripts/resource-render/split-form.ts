@@ -1,12 +1,13 @@
-import { chunks } from './modules.mjs'
+import { chunks, type Modules } from './modules.ts'
+import type { PresentationField, PresentationResource } from './properties.ts'
 import { editValue, formInput, formType, tsDefault } from './values.ts'
 
-function formPart(resource, fields) {
+function formPart(resource: PresentationResource, fields: readonly PresentationField[]): string {
   const pascal = resource.pascal_name
   let output = `import type {\n  ${pascal}CreateInput,\n  ${pascal}UpdateInput,\n  ${pascal}Record,\n} from '../api'\n\ninterface FormPart {\n`
   for (const field of fields) output += `  ${field.name}: ${formType(field)}\n`
   output += '}\n'
-  for (const mode of ['empty', 'edit', 'create', 'update']) {
+  for (const mode of ['empty', 'edit', 'create', 'update'] as const) {
     const [name, parameter, result] = {
       empty: ['emptyForm', '', 'FormPart'],
       edit: ['editForm', `record: ${pascal}Record`, 'FormPart'],
@@ -22,7 +23,7 @@ function formPart(resource, fields) {
       ],
     }[mode]
     const selected = fields.filter(
-      (field) => !['create', 'update'].includes(mode) || field.usage[mode],
+      (field) => mode === 'empty' || mode === 'edit' || field.usage[mode],
     )
     const properties = selected
       .map((field) => {
@@ -41,7 +42,7 @@ function formPart(resource, fields) {
   return output
 }
 
-function queryDefaults(modules) {
+function queryDefaults(modules: Modules<PresentationResource>): void {
   const fields = modules.resource.fields.filter(
     (field) => field.usage.filter && field.widget !== 'hidden' && field.value_type === 'string',
   )
@@ -58,7 +59,7 @@ function queryDefaults(modules) {
   )
 }
 
-export function splitForm(modules) {
+export function splitForm(modules: Modules<PresentationResource>): void {
   const resource = modules.resource
   const fields = resource.fields.filter((field) => field.usage.create || field.usage.update)
   const leaves = chunks(fields, 24).map((fields) => formPart(resource, fields))

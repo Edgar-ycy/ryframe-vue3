@@ -1,13 +1,26 @@
-import { header } from './format.mjs'
+import { header, type ResourceSource } from './format.ts'
 
-export function chunks(values, size) {
-  const result = []
+export function chunks<Value>(values: readonly Value[], size: number): Value[][] {
+  const result: Value[][] = []
   for (let start = 0; start < values.length; start += size)
     result.push(values.slice(start, start + size))
   return result
 }
 
-function combine(paths, functions, imports, directory) {
+interface AggregateFunction {
+  name: string
+  parameters: string
+  arguments: string
+  result: string
+  array: boolean
+}
+
+function combine(
+  paths: readonly string[],
+  functions: readonly AggregateFunction[],
+  imports: string,
+  directory: string,
+): string {
   let output = imports
   for (const [index, path] of paths.entries()) {
     const prefix = directory === '' ? '' : `${directory}/`
@@ -31,7 +44,7 @@ function combine(paths, functions, imports, directory) {
   return output
 }
 
-function liftImports(body) {
+function liftImports(body: string): string {
   let namedImport = false
   return body
     .replace(/\n$/, '')
@@ -52,19 +65,28 @@ function liftImports(body) {
     .join('')
 }
 
-export class Modules {
-  constructor(resource, version) {
+export class Modules<Resource extends ResourceSource> {
+  readonly resource: Resource
+  readonly version: string
+  readonly assets: Map<string, string>
+
+  constructor(resource: Resource, version: string) {
     this.resource = resource
     this.version = version
     this.assets = new Map()
   }
 
-  add(path, body) {
+  add(path: string, body: string): void {
     if (this.assets.has(path)) throw new Error(`生成模块路径重复：${path}`)
     this.assets.set(path, header(this.resource, this.version) + body)
   }
 
-  tree(stem, leaves, functions, imports) {
+  tree(
+    stem: string,
+    leaves: readonly string[],
+    functions: readonly AggregateFunction[],
+    imports: string,
+  ): void {
     if (leaves.length === 1) {
       this.add(`${stem}.ts`, liftImports(leaves[0]))
       return

@@ -1,4 +1,4 @@
-import { hasDateColumn, header, htmlHeader } from './format.mjs'
+import { hasDateColumn, header, htmlHeader } from './format.ts'
 
 // 输入直接使用已校验的 ResourceIr JSON；生成器版本由调用方显式绑定。
 export function renderTransport(resource, generatorVersion) {

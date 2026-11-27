@@ -16,7 +16,7 @@ export interface FieldValue {
   nullable: boolean
 }
 
-interface EnumField {
+export interface EnumField {
   enum_values: Readonly<Record<string, Labels>>
 }
 

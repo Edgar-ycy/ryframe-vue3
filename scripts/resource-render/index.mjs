@@ -1,4 +1,4 @@
-import { renderFields } from './fields.mjs'
+import { renderFields } from './fields.ts'
 import { renderTransport } from './transport.mjs'
 
 function validateAsset(asset) {

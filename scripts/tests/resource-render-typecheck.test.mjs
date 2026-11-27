@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { renderFields } from '../resource-render/fields.mjs'
+import { renderFields } from '../resource-render/fields.ts'
 import { renderTransport } from '../resource-render/transport.mjs'
 import { common, empty, fixture, labels, wide } from './fixtures/resource-render/builders.mjs'
 

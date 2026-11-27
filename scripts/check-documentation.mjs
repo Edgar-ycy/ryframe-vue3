@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { anchors, historyKeys, inlineCodes, links, markdown } from './documentation-markdown.mjs'
+import { anchors, historyKeys, inlineCodes, links, markdown } from './documentation-markdown.ts'
 
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right)
 

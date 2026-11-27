@@ -4,13 +4,19 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
-import test from 'node:test'
+import test, { type TestContext } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-const cli = fileURLToPath(new URL('../ci-plan.mjs', import.meta.url))
+type Mode = 'docs' | 'full'
+type JobResult = { result?: string; outputs?: { mode?: string } }
+type Needs = Record<string, JobResult> & {
+  plan: JobResult & { outputs: { mode?: string } }
+}
+
+const cli = fileURLToPath(new URL('../ci-plan.ts', import.meta.url))
 const fullJobs = ['static', 'unit', 'build', 'browser', 'windows-smoke']
 
-function repository(t) {
+function repository(t: TestContext) {
   const parent = realpathSync(tmpdir())
   const directory = mkdtempSync(join(parent, 'ryframe-ci-plan-'))
   t.after(() => {
@@ -20,13 +26,13 @@ function repository(t) {
 
   const cwd = join(directory, 'repo')
   mkdirSync(cwd)
-  const git = (...args) =>
+  const git = (...args: string[]) =>
     execFileSync('git', ['-c', 'commit.gpgSign=false', '-c', 'core.autocrlf=false', ...args], {
       cwd,
       encoding: 'utf8',
       windowsHide: true,
     }).trim()
-  const write = (path, content) => {
+  const write = (path: string, content: string) => {
     const file = join(cwd, path)
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, content)
@@ -47,7 +53,7 @@ function repository(t) {
   write('src/index.ts', 'export const value = 0\n')
   const base = commit()
 
-  function plan(event, payload, sha = head()) {
+  function plan(event: string, payload: string | object, sha = head()) {
     const eventPath = join(directory, 'event.json')
     const output = join(directory, 'output.txt')
     writeFileSync(eventPath, typeof payload === 'string' ? payload : JSON.stringify(payload))
@@ -76,7 +82,7 @@ function repository(t) {
   return { base, commit, git, head, plan, push, write }
 }
 
-function expectMode(actual, expected) {
+function expectMode(actual: string, expected: Mode) {
   assert.equal(actual, `existing=retained\nmode=${expected}\n`)
 }
 
@@ -105,7 +111,7 @@ test('产品源码、混合、未知 Markdown、CI 与删除均执行完整门�
     ['docs/extra.md', 'Unknown documentation\n', false],
     ['openapi/openapi.json', '{}\n', true],
     ['.github/workflows/ci.yml', 'name: CI\n', false],
-  ]) {
+  ] as const) {
     const before = repo.head()
     repo.write(path, contents)
     if (mixed) repo.write('README.md', `New readme at ${before}\n`)
@@ -139,7 +145,7 @@ test('改动文档的命令或代码示例时执行完整门禁', (t) => {
     ['Use `corepack pnpm install` once.\n', 'docs'],
     ['Use `corepack pnpm install` once.\n\n```bash\ncat <<EOF\n# output\nEOF\n```\n', 'full'],
     ['Use `corepack pnpm install` once.\n\n```bash\ncat <<EOF\n# updated\nEOF\n```\n', 'full'],
-  ]) {
+  ] as const) {
     const before = repo.head()
     repo.write('README.md', example)
     repo.commit()
@@ -208,12 +214,12 @@ test('标签、未知事件、无变更或不可核验的基线执行完整门�
     ['push', repo.push(head), head],
     ['push', '{broken', head],
     ['push', repo.push(repo.base, unrelated), head],
-  ]) {
+  ] as const) {
     expectMode(repo.plan(event, payload, sha), 'full')
   }
 })
 
-function successfulNeeds(mode) {
+function successfulNeeds(mode: Mode): Needs {
   return {
     plan: { result: 'success', outputs: { mode } },
     documentation: { result: mode === 'docs' ? 'success' : 'skipped' },
@@ -223,7 +229,7 @@ function successfulNeeds(mode) {
   }
 }
 
-function required(needs) {
+function required(needs: Needs | null) {
   return spawnSync(process.execPath, [cli, 'required'], {
     encoding: 'utf8',
     env: { ...process.env, RYFRAME_CI_NEEDS: JSON.stringify(needs) },
@@ -231,7 +237,7 @@ function required(needs) {
 }
 
 test('Required 接受两个计划中所有必需任务成功', () => {
-  for (const mode of ['docs', 'full']) {
+  for (const mode of ['docs', 'full'] as const) {
     const result = required(successfulNeeds(mode))
     assert.equal(result.status, 0, result.stderr)
   }
@@ -241,7 +247,7 @@ test('Required 接受两个计划中所有必需任务成功', () => {
 })
 
 test('Required 拒绝计划失败、漏传、必需任务漏跑或无效结果', () => {
-  for (const mutate of [
+  const invalidNeeds: ((needs: Needs) => void)[] = [
     (needs) => {
       needs.plan.result = 'failure'
     },
@@ -278,7 +284,8 @@ test('Required 拒绝计划失败、漏传、必需任务漏跑或无效结果',
     (needs) => {
       needs.unexpected = { result: 'success' }
     },
-  ]) {
+  ]
+  for (const mutate of invalidNeeds) {
     const needs = successfulNeeds('full')
     mutate(needs)
     const result = required(needs)

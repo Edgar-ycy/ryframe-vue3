@@ -3,20 +3,35 @@ const quoteMarker = /^[ \t]*>[ \t]?/u
 const containerMarker = /^[ \t]*(?:>[ \t]?|(?:[-+*]|\d{1,9}[.)])[ \t]+)/u
 const shellLanguages = new Set(['powershell', 'pwsh', 'sh', 'bash', 'shell'])
 
-function nextColumn(column, character) {
+interface MarkdownDocument {
+  prose: string
+  blocks: [language: string, body: string][]
+  headings: [level: number, heading: string][]
+  bullets: number
+}
+
+interface Fence {
+  marker: string
+  language: string
+  quotes: number
+  margin: number
+  body: string
+}
+
+function nextColumn(column: number, character: string): number {
   return column + (character === '\t' ? 4 - (column % 4) : 1)
 }
 
-function indentation(text) {
+function indentation(text: string): number {
   return [...text].reduce(nextColumn, 0)
 }
 
-function lineLayout(line) {
-  const prefix = /^[ \t]*/u.exec(line)[0]
+function lineLayout(line: string) {
+  const prefix = /^[ \t]*/u.exec(line)?.[0] ?? ''
   return { text: line.slice(prefix.length), column: indentation(prefix) }
 }
 
-function removeIndent(line, margin) {
+function removeIndent(line: string, margin: number): string {
   let column = 0
   let index = 0
   while (column < margin && /^[ \t]$/u.test(line[index] ?? '')) {
@@ -26,7 +41,7 @@ function removeIndent(line, margin) {
   return ' '.repeat(Math.max(0, column - margin)) + line.slice(index)
 }
 
-function exampleContainer(line, marker, quoteLimit = Infinity) {
+function exampleContainer(line: string, marker: RegExp, quoteLimit = Infinity) {
   let quotes = 0
   let margin = 0
   for (let match = marker.exec(line); match && quotes < quoteLimit; match = marker.exec(line)) {
@@ -42,7 +57,7 @@ function exampleContainer(line, marker, quoteLimit = Infinity) {
   return { line, quotes, margin }
 }
 
-function openFence(line, quoteDepth, listMargin) {
+function openFence(line: string, quoteDepth: number, listMargin: number): Fence | undefined {
   const container = exampleContainer(line, containerMarker)
   const opening = /^(`{3,}|~{3,})(.*)$/u.exec(container.line.trimStart())
   if (!opening) return undefined
@@ -55,7 +70,11 @@ function openFence(line, quoteDepth, listMargin) {
   }
 }
 
-function fenceLine(fence, line, preserveShellComments) {
+function fenceLine(
+  fence: Fence,
+  line: string,
+  preserveShellComments: boolean,
+): 'unclosed' | 'closed' | 'body' {
   const quote = exampleContainer(line, quoteMarker, fence.quotes)
   const { text, column } = lineLayout(quote.line)
   if (quote.quotes < fence.quotes || (text && column < fence.margin)) return 'unclosed'
@@ -68,14 +87,17 @@ function fenceLine(fence, line, preserveShellComments) {
   return 'body'
 }
 
-export function markdown(source, { preserveShellComments = false } = {}) {
-  const document = { prose: '', blocks: [], headings: [], bullets: 0 }
-  let fence
-  let indented
+export function markdown(
+  source: string,
+  { preserveShellComments = false }: { preserveShellComments?: boolean } = {},
+): MarkdownDocument {
+  const document: MarkdownDocument = { prose: '', blocks: [], headings: [], bullets: 0 }
+  let fence: Fence | undefined
+  let indented: string | undefined
   let gap = 0
   let depth = 0
   let boundary = true
-  const margins = []
+  const margins: number[] = []
   const closeIndented = () => {
     if (indented !== undefined) document.blocks.push(['indented', indented])
     indented = undefined
@@ -105,7 +127,7 @@ export function markdown(source, { preserveShellComments = false } = {}) {
       document.prose += line + '\n'
       continue
     }
-    while (margins.length && column < margins.at(-1)) margins.pop()
+    while (margins.length && column < margins[margins.length - 1]) margins.pop()
     const margin = margins.at(-1) ?? 0
     if (column >= margin + 4 && (boundary || indented !== undefined)) {
       indented = (indented ?? '') + '\n'.repeat(gap) + removeIndent(quote.line, margin + 4) + '\n'
@@ -133,23 +155,23 @@ export function markdown(source, { preserveShellComments = false } = {}) {
   return document
 }
 
-export function inlineCodes(prose) {
+export function inlineCodes(prose: string): string[] {
   const codes = [...prose.matchAll(/`([^`\n]+)`/gu)].map((match) =>
-    match[1].replace(/<([^>\n]+)>/gu, (value, inner) =>
+    match[1].replace(/<([^>\n]+)>/gu, (value, inner: string) =>
       /^\p{Lu}/u.test(inner) ? value : '<placeholder>',
     ),
   )
   return codes.sort()
 }
 
-export function links(prose) {
+export function links(prose: string): string[] {
   return [...prose.replace(/`[^`\n]+`/gu, '').matchAll(/\[[^\]\n]*\]\(([^)\n]+)\)/gu)].map(
     (match) => match[1].trim().replace(/^<|>$/gu, ''),
   )
 }
 
-export function anchors(document) {
-  const counts = new Map()
+export function anchors(document: MarkdownDocument): Set<string> {
+  const counts = new Map<string, number>()
   return new Set(
     document.headings.map(([, heading]) => {
       const base = heading
@@ -163,7 +185,7 @@ export function anchors(document) {
   )
 }
 
-export function historyKeys(document) {
+export function historyKeys(document: MarkdownDocument): string[][] {
   return document.headings
     .filter(([level]) => level === 2)
     .map(([, heading]) =>

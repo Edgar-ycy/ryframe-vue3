@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with: { node-version: '24.21.0', package-manager-cache: false }
       - id: plan
-        run: node scripts/ci-plan.mjs plan
+        run: node scripts/ci-plan.ts plan
 
   documentation:
     name: Documentation (Node 24)
@@ -131,6 +131,6 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with: { node-version: '24.21.0', package-manager-cache: false }
-      - run: node scripts/ci-plan.mjs required
+      - run: node scripts/ci-plan.ts required
         env:
           RYFRAME_CI_NEEDS: ${{ toJSON(needs) }}

@@ -1,4 +1,4 @@
-import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
+import { requirePermissionCatalog } from './permission-catalog-contract.ts'
 
 const resourceKeys = [
   'access',

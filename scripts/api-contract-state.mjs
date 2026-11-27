@@ -3,7 +3,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { requireApiPrefixContract } from './api-prefix-contract.ts'
-import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
+import { requirePermissionCatalog } from './permission-catalog-contract.ts'
 
 export const candidateMarkerRelativePath = 'openapi/candidate.json'
 export const defaultOpenApiPath = 'openapi/openapi.json'

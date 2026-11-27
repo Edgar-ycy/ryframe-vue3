@@ -5,7 +5,7 @@ import openapiTS, { astToString } from 'openapi-typescript'
 
 import { requireApiPrefixContract } from './api-prefix-contract.ts'
 import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
-import { requirePermissionCatalog } from './permission-catalog-contract.mjs'
+import { requirePermissionCatalog } from './permission-catalog-contract.ts'
 import { artifactPaths } from './api-artifact-manifest.mjs'
 import {
   createSchemaDomainDocuments,

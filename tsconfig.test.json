@@ -1,10 +1,13 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "tsBuildInfoFile": ".local-tests/types/test.tsbuildinfo"
+    "tsBuildInfoFile": ".local-tests/types/test.tsbuildinfo",
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src/**/*.d.ts",
+    "scripts/**/*.ts",
+    "scripts/**/*.mts",
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "tests/**/*.mts",

@@ -210,6 +210,6 @@ test('显式 ctx 追加一次 contract 证明，完整门禁保持原任务和 u
   for (const stage of ['unit', 'contract', 'full']) {
     assert.ok(!checkTasks(stage).some((task) => task.name === 'consumer-proof'))
   }
-  assert.deepEqual(checkTasks('unit')[0].node, ['--test', 'scripts/tests/*.test.mjs'])
+  assert.deepEqual(checkTasks('unit')[0].node, ['--test', 'scripts/tests/*.test.{mjs,ts,mts}'])
   assert.throws(() => checkTasks('unit', options), /consumer-context/u)
 })

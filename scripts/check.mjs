@@ -162,7 +162,7 @@ export function checkTasks(stage, options = {}) {
       { name: 'stylelint', args: ['exec', 'stylelint', 'src/**/*.{vue,scss}'] },
     ],
     unit: [
-      { name: 'script-tests', node: ['--test', 'scripts/tests/*.test.mjs'] },
+      { name: 'script-tests', node: ['--test', 'scripts/tests/*.test.{mjs,ts,mts}'] },
       { name: 'test-types', args: ['exec', 'vue-tsc', '-p', 'tsconfig.test.json'] },
       { name: 'unit-coverage', args: ['exec', 'vitest', 'run', '--coverage'] },
     ],

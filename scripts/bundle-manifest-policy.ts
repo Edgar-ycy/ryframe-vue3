@@ -5,11 +5,38 @@ const INITIAL_CATALOG_SOURCES = new Set([
 ])
 const CATALOG_SOURCE_PREFIX = 'src/i18n/catalog/'
 
-function normalizeSource(value) {
+type ManifestChunk = {
+  file?: string | null
+  name?: string | null
+  src?: string | null
+  imports?: readonly string[] | null
+  css?: readonly string[] | null
+  isEntry?: boolean | null
+  isDynamicEntry?: boolean | null
+}
+
+export type ViteManifest = Record<string, ManifestChunk>
+
+type CatalogModule =
+  | { source: string; isChild: false }
+  | { source: string; isChild: true; isCore: boolean; owner: string }
+
+type CatalogImport = {
+  source?: string | null
+  target?: string | null
+  kind: 'dynamic' | 'runtime' | 'type'
+}
+
+type InitialGraph = {
+  files: Set<string>
+  keys: Set<string>
+}
+
+function normalizeSource(value: string | null | undefined): string | undefined {
   return value?.replaceAll('\\', '/')
 }
 
-function catalogModule(rawSource) {
+function catalogModule(rawSource: string | null | undefined): CatalogModule | undefined {
   const source = normalizeSource(rawSource)
   if (!source?.startsWith(CATALOG_SOURCE_PREFIX)) return undefined
 
@@ -28,7 +55,7 @@ function catalogModule(rawSource) {
   }
 }
 
-export function businessCatalogImportViolation(edge) {
+export function businessCatalogImportViolation(edge: CatalogImport): string | undefined {
   const module = catalogModule(edge.target)
   if (!module?.isChild || module.isCore) return undefined
 
@@ -37,15 +64,15 @@ export function businessCatalogImportViolation(edge) {
   return `business catalog child must be statically imported by ${module.owner}: ${module.source}`
 }
 
-export function collectInitialGraph(manifest) {
+export function collectInitialGraph(manifest: ViteManifest): InitialGraph {
   const entryKeys = Object.entries(manifest)
     .filter(([, chunk]) => chunk.isEntry)
     .map(([key]) => key)
   if (entryKeys.length === 0) throw new Error('Vite manifest contains no entry chunk')
 
-  const files = new Set()
-  const keys = new Set()
-  function visit(key) {
+  const files = new Set<string>()
+  const keys = new Set<string>()
+  function visit(key: string) {
     if (keys.has(key)) return
     keys.add(key)
     const chunk = manifest[key]
@@ -58,12 +85,12 @@ export function collectInitialGraph(manifest) {
   return { files, keys }
 }
 
-export function staticImportCycles(manifest) {
-  const states = new Map()
-  const stack = []
-  const cycles = []
+export function staticImportCycles(manifest: ViteManifest): string[][] {
+  const states = new Map<string, 'visiting' | 'visited'>()
+  const stack: string[] = []
+  const cycles: string[][] = []
 
-  function visit(key) {
+  function visit(key: string) {
     const state = states.get(key)
     if (state === 'visiting') {
       const start = stack.indexOf(key)
@@ -86,8 +113,12 @@ export function staticImportCycles(manifest) {
   return cycles
 }
 
-export function businessCatalogIsolationFailures(manifest, initialGraph, catalogSources) {
-  const failures = []
+export function businessCatalogIsolationFailures(
+  manifest: ViteManifest,
+  initialGraph: InitialGraph,
+  catalogSources: readonly string[],
+): string[] {
+  const failures: string[] = []
   for (const rawSource of catalogSources) {
     const module = catalogModule(rawSource)
     if (!module || module.isChild) continue
@@ -99,20 +130,26 @@ export function businessCatalogIsolationFailures(manifest, initialGraph, catalog
       failures.push(`business catalog is not an isolated dynamic entry: ${source}`)
       continue
     }
-    if (initialGraph.keys.has(source) || initialGraph.files.has(chunk.file)) {
+    if (
+      initialGraph.keys.has(source) ||
+      (chunk.file != null && initialGraph.files.has(chunk.file))
+    ) {
       failures.push(`business catalog entered initial graph: ${source}`)
     }
   }
   return failures.sort()
 }
 
-export function findOptionalNamedChunk(manifest, name) {
+export function findOptionalNamedChunk(
+  manifest: ViteManifest,
+  name: string,
+): ManifestChunk | undefined {
   const chunks = Object.values(manifest).filter((chunk) => chunk.name === name)
   if (chunks.length > 1) throw new Error(`Vite manifest contains duplicate ${name} chunks`)
   return chunks[0]
 }
 
-export function findNamedChunk(manifest, name) {
+export function findNamedChunk(manifest: ViteManifest, name: string): ManifestChunk {
   const chunk = findOptionalNamedChunk(manifest, name)
   if (!chunk) throw new Error(`Vite manifest is missing the ${name} chunk`)
   return chunk

@@ -7,7 +7,7 @@ import {
   findNamedChunk,
   findOptionalNamedChunk,
   staticImportCycles,
-} from './bundle-manifest-policy.mjs'
+} from './bundle-manifest-policy.ts'
 
 const dist = path.resolve('dist')
 const manifest = JSON.parse(await readFile(path.join(dist, '.vite/manifest.json'), 'utf8'))

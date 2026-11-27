@@ -7,7 +7,8 @@ import {
   findNamedChunk,
   findOptionalNamedChunk,
   staticImportCycles,
-} from '../bundle-manifest-policy.mjs'
+  type ViteManifest,
+} from '../bundle-manifest-policy.ts'
 
 const businessCatalogSources = [
   'src/i18n/catalog/system.ts',
@@ -15,7 +16,7 @@ const businessCatalogSources = [
   'src/i18n/catalog/system/messages/zh-CN.ts',
 ]
 
-function manifestWithInitialImports(imports) {
+function manifestWithInitialImports(imports: string[]): ViteManifest {
   return {
     'index.html': { file: 'assets/index.js', isEntry: true, imports },
     '_api-core.js': { file: 'assets/api-core.js', name: 'api-core' },
@@ -34,9 +35,12 @@ function manifestWithInitialImports(imports) {
 }
 
 test('initial graph permits only synchronous i18n catalogs', () => {
-  const manifest = manifestWithInitialImports(['_i18n-core.js'])
+  const manifest = manifestWithInitialImports(['_i18n-core.js', '_metadata.js'])
+  manifest['_metadata.js'] = { file: null, imports: null, css: null }
   const graph = collectInitialGraph(manifest)
 
+  assert.ok(graph.keys.has('_metadata.js'))
+  assert.ok(!graph.files.has('_metadata.js'))
   assert.deepEqual(businessCatalogIsolationFailures(manifest, graph, businessCatalogSources), [])
   assert.equal(findNamedChunk(manifest, 'i18n-core').file, 'assets/i18n-core.js')
   assert.equal(findNamedChunk(manifest, 'api-core').file, 'assets/api-core.js')

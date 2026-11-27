@@ -1,6 +1,6 @@
 import { posix } from 'node:path'
 import ts from 'typescript'
-import { businessCatalogImportViolation } from './bundle-manifest-policy.mjs'
+import { businessCatalogImportViolation } from './bundle-manifest-policy.ts'
 
 const directHttpExports = new Set(['default', 'rawRequest', 'requestBlob', 'requestText'])
 const commonTargets = ['features', 'generated', 'i18n', 'shared']

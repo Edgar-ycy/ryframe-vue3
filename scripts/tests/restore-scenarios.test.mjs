@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import test from 'node:test'
-import { sha256 } from '../build-source-inventory.mjs'
+import { sha256 } from '../build-source-inventory.ts'
 import { requiredScenarios } from '../restore-proof.mjs'
 import { realTestSelection, restoreSpecs } from '../restore-scenarios.mjs'
 import {

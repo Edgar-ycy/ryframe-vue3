@@ -1,7 +1,7 @@
 import { b0Adapter, b0AdapterEvidence } from '../restore-b0-adapter.mjs'
 import path from 'node:path'
 
-import { canonicalDigest, sha256 } from '../build-source-inventory.mjs'
+import { canonicalDigest, sha256 } from '../build-source-inventory.ts'
 
 const emptyGroup = () => ({ sha256: canonicalDigest([]), files: [] })
 

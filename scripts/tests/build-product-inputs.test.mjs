@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { captureSourceInventory, sourceDomains } from '../build-source-inventory.mjs'
+import { captureSourceInventory } from '../build-source-inventory.ts'
+import { sourceDomains } from '../build-source-domains.ts'
 import { fixture } from './restore-build-fixture.mjs'
 
 test('Vite 配置与身份的完整本地模块依赖同时绑定产品和工具摘要', (t) => {
@@ -57,4 +58,29 @@ test('专用页面配置只影响工具，测试类型配置继续绑定产品�
   assert.notDeepEqual(changedTool.product, changedTypes.product)
   assert.notDeepEqual(changedTool.tools, changedTypes.tools)
   assert.notDeepEqual(changedTool.full, changedTypes.full)
+})
+
+test('冻结与现行 lint 和格式化配置都归入工具来源', () => {
+  const configurations = [
+    'eslint.config.js',
+    'eslint.config.ts',
+    'prettier.config.mjs',
+    'prettier.config.ts',
+    'stylelint.config.js',
+    'stylelint.config.ts',
+  ]
+  const head = 'a'.repeat(40)
+  const sha256 = 'b'.repeat(64)
+  const inventory = {
+    source: {
+      snapshot: { head, patch_sha256: sha256, files: [], clean: true },
+      worktree_fingerprint: `sha256:${sha256}`,
+    },
+    files: [...configurations, 'src/main.ts'].sort().map((path) => ({ path, sha256 })),
+    guard: { head, index_sha256: sha256, modes_sha256: sha256 },
+  }
+  const domains = sourceDomains(inventory)
+  assert.deepEqual(domains.tools.files, configurations)
+  assert.deepEqual(domains.product.frontend.files, ['src/main.ts'])
+  assert.deepEqual(domains.full, inventory)
 })

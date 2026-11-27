@@ -3,7 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildSourceSnapshot } from '../build-source.mjs'
-import { captureSourceInventory, sha256, sourceDomains } from '../build-source-inventory.mjs'
+import { captureSourceInventory, sha256 } from '../build-source-inventory.ts'
+import { sourceDomains } from '../build-source-domains.ts'
 import { receiptPath, writeBuildReceipt } from '../restore-build.mjs'
 
 const frontend = fileURLToPath(new URL('../../', import.meta.url))

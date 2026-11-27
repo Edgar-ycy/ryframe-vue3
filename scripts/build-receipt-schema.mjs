@@ -1,8 +1,5 @@
-import {
-  canonicalDigest,
-  validateSourceDomains as validateFrontendSourceDomains,
-  validateSourceInventory,
-} from './build-source-inventory.mjs'
+import { validateSourceDomains as validateFrontendSourceDomains } from './build-source-domains.ts'
+import { canonicalDigest, validateSourceInventory } from './build-source-inventory.ts'
 import { validateBuildContext as validateFrontendBuildContext } from './build-context-schema.mjs'
 
 const validHex = (value, size) =>

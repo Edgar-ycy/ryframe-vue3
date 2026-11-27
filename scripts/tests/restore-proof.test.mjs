@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { buildRestoreEvidence, requiredScenarios, restoreProofBindings } from '../restore-proof.mjs'
-import { sha256 } from '../build-source-inventory.mjs'
+import { sha256 } from '../build-source-inventory.ts'
 import {
   b0BuildSources,
   legacyB0FrontendBuild,

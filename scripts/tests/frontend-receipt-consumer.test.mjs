@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { sha256 } from '../build-source-inventory.mjs'
+import { sha256 } from '../build-source-inventory.ts'
 import { backendSourceDomains } from '../build-receipt-schema.mjs'
 import { restoreRuntimeBinding, verifyRestoreRuntimeReceipt } from '../restore-runtime-receipt.mjs'
 import {

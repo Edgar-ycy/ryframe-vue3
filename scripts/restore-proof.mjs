@@ -1,5 +1,5 @@
 import { isAbsolute } from 'node:path'
-import { sha256 } from './build-source-inventory.mjs'
+import { sha256 } from './build-source-inventory.ts'
 import {
   isResourceScopeId,
   isRestoreIdentifier,

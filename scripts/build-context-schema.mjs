@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
-import { exactObject, hex } from './build-source-inventory.mjs'
+import { exactObject, hex } from './build-source-inventory.ts'
 
 function sourcePath(value) {
   return (

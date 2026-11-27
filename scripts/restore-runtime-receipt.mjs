@@ -1,6 +1,7 @@
 import { isAbsolute } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
-import { compareSourcePaths, sha256, validateSourceDomains } from './build-source-inventory.mjs'
+import { compareSourcePaths, sha256 } from './build-source-inventory.ts'
+import { validateSourceDomains } from './build-source-domains.ts'
 import {
   validateBackendBuildSources,
   validateFrontendBuildSources,

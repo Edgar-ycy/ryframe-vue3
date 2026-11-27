@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url'
 
 import { buildEnvironment, fixture } from './restore-build-fixture.mjs'
 import { buildSourceSnapshot } from '../build-source.mjs'
-import { captureSourceInventory, sourceDomains } from '../build-source-inventory.mjs'
+import { captureSourceInventory } from '../build-source-inventory.ts'
+import { sourceDomains } from '../build-source-domains.ts'
 import {
   buildExternalReceipt,
   productionFiles,

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { sha256 } from './build-source-inventory.mjs'
+import { sha256 } from './build-source-inventory.ts'
 import { verifyRestoreDatasetAuthority } from './restore-dataset.mjs'
 import { restoreProofBindings } from './restore-proof.mjs'
 import { inspectRestoreRuntimeReceipt, restoreRuntimeBinding } from './restore-runtime-receipt.mjs'

@@ -5,7 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { chromium, expect } from '@playwright/test'
 import { selectLoginTenant } from '../tests/browser-real/login-tenant.ts'
 import { isolatedOrigin, isIsolatedRequest } from '../tests/browser-real/network.ts'
-import { captureSourceInventory, exactObject, localSourceFile } from './build-source-inventory.mjs'
+import { captureSourceInventory, exactObject, localSourceFile } from './build-source-inventory.ts'
 import { checkApplicationPath } from './application-config-paths.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')

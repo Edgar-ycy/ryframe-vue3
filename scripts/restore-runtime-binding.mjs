@@ -1,6 +1,6 @@
 import { isAbsolute } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
-import { canonicalDigest, exactObject, hex as validHex } from './build-source-inventory.mjs'
+import { canonicalDigest, exactObject, hex as validHex } from './build-source-inventory.ts'
 import { b0Adapter, b0AdapterEvidence } from './restore-b0-adapter.mjs'
 
 const targetPlanFields = [

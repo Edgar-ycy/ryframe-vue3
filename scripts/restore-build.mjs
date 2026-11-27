@@ -15,13 +15,8 @@ import {
   observedToolchain,
   validateBuildContext,
 } from './build-source.mjs'
-import {
-  captureSourceInventory,
-  compareSourcePaths,
-  sha256,
-  sourceDomains,
-  validateSourceDomains,
-} from './build-source-inventory.mjs'
+import { captureSourceInventory, compareSourcePaths, sha256 } from './build-source-inventory.ts'
+import { sourceDomains, validateSourceDomains } from './build-source-domains.ts'
 
 export const receiptPath = '.vite/restore-build.json'
 

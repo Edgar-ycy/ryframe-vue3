@@ -1,18 +1,54 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { lstatSync, readFileSync, realpathSync } from 'node:fs'
+import { lstatSync, readFileSync, realpathSync, type Stats } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
 
-export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex')
+export type InventoryFile = {
+  path: string
+  sha256: string
+}
 
-export const hex = (value, size) =>
+type SourceSnapshot = {
+  head: string
+  patch_sha256: string
+  files: InventoryFile[]
+  clean: boolean
+}
+
+type SourceGuard = {
+  head: string
+  index_sha256: string
+  modes_sha256: string
+}
+
+export type SourceInventory = {
+  source: {
+    snapshot: SourceSnapshot
+    worktree_fingerprint: string
+  }
+  files: InventoryFile[]
+  guard: SourceGuard
+}
+
+type SourceFileOptions = {
+  allowMissing?: boolean
+}
+
+export const sha256 = (bytes: string | NodeJS.ArrayBufferView): string =>
+  createHash('sha256').update(bytes).digest('hex')
+
+export const hex = (value: unknown, size: number): value is string =>
   typeof value === 'string' && new RegExp(`^[a-f0-9]{${size}}$`, 'u').test(value)
 
-function canonical(value) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical)
-  if (value && typeof value === 'object') {
+  if (isRecord(value)) {
     return Object.fromEntries(
       Object.keys(value)
         .sort()
@@ -22,22 +58,22 @@ function canonical(value) {
   return value
 }
 
-export const canonicalDigest = (value) => sha256(JSON.stringify(canonical(value)))
-export const compareSourcePaths = (left, right) =>
+export const canonicalDigest = (value: unknown): string => sha256(JSON.stringify(canonical(value)))
+export const compareSourcePaths = (left: string, right: string): number =>
   Buffer.compare(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8'))
-const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { windowsHide: true })
+const git = (root: string, ...args: string[]) =>
+  execFileSync('git', ['-C', root, ...args], { windowsHide: true })
 
-export function exactObject(value, fields, message) {
-  if (
-    !value ||
-    typeof value !== 'object' ||
-    Array.isArray(value) ||
-    Object.keys(value).sort().join('\0') !== [...fields].sort().join('\0')
-  )
+export function exactObject<Key extends string>(
+  value: unknown,
+  fields: readonly Key[],
+  message: string,
+): asserts value is Record<Key, unknown> {
+  if (!isRecord(value) || Object.keys(value).sort().join('\0') !== [...fields].sort().join('\0'))
     throw new Error(message)
 }
 
-function validRelative(relative) {
+function validRelative(relative: unknown): relative is string {
   return (
     typeof relative === 'string' &&
     Boolean(relative) &&
@@ -48,16 +84,33 @@ function validRelative(relative) {
   )
 }
 
-export function localSourceFile(root, relative, message, { allowMissing = false } = {}) {
+export function localSourceFile(
+  root: string,
+  relative: unknown,
+  message: string,
+  options?: { allowMissing?: false },
+): string
+export function localSourceFile(
+  root: string,
+  relative: unknown,
+  message: string,
+  options: SourceFileOptions,
+): string | null
+export function localSourceFile(
+  root: string,
+  relative: unknown,
+  message: string,
+  { allowMissing = false }: SourceFileOptions = {},
+): string | null {
   if (!validRelative(relative)) throw new Error(message)
   let cursor = root
-  let observed
+  let observed: Stats | undefined
   for (const part of relative.split('/')) {
     cursor = path.join(cursor, part)
     try {
       observed = lstatSync(cursor)
     } catch (error) {
-      if (allowMissing && error?.code === 'ENOENT') return null
+      if (allowMissing && isRecord(error) && error.code === 'ENOENT') return null
       throw new Error(message, { cause: error })
     }
     if (observed.isSymbolicLink()) throw new Error(message)
@@ -67,20 +120,20 @@ export function localSourceFile(root, relative, message, { allowMissing = false 
   const resolved = realpathSync(file)
   const normalizedRoot = process.platform === 'win32' ? resolvedRoot.toLowerCase() : resolvedRoot
   const normalized = process.platform === 'win32' ? resolved.toLowerCase() : resolved
-  if (!normalized.startsWith(normalizedRoot + path.sep) || !observed.isFile()) {
+  if (!normalized.startsWith(normalizedRoot + path.sep) || !observed?.isFile()) {
     throw new Error(message)
   }
   return file
 }
 
-function untracked(root) {
+function untracked(root: string): string[] {
   return git(root, 'ls-files', '--others', '--exclude-standard', '-z')
     .toString('utf8')
     .split('\0')
     .filter(Boolean)
 }
 
-export function sourceSnapshot(root) {
+export function sourceSnapshot(root: string): SourceSnapshot {
   if (
     realpathSync(git(root, 'rev-parse', '--show-toplevel').toString().trim()) !== realpathSync(root)
   )
@@ -99,9 +152,9 @@ export function sourceSnapshot(root) {
   }
 }
 
-function worktreeFingerprint(root, commit) {
+function worktreeFingerprint(root: string, commit: string): string {
   const digest = createHash('sha256')
-  const update = (value) => {
+  const update = (value: Buffer | string) => {
     const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value)
     const size = Buffer.alloc(8)
     size.writeBigUInt64LE(BigInt(bytes.length))
@@ -116,7 +169,7 @@ function worktreeFingerprint(root, commit) {
   return 'sha256:' + digest.digest('hex')
 }
 
-function fileInventory(root) {
+function fileInventory(root: string): SourceGuard & { files: InventoryFile[] } {
   const paths = [
     ...new Set(
       git(root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z')
@@ -125,8 +178,8 @@ function fileInventory(root) {
         .filter(Boolean),
     ),
   ].sort(compareSourcePaths)
-  const files = []
-  const modes = []
+  const files: InventoryFile[] = []
+  const modes: { path: string; executable: number }[] = []
   for (const relative of paths) {
     const file = localSourceFile(root, relative, '源码清单包含链接、越界路径或非普通文件', {
       allowMissing: true,
@@ -143,7 +196,7 @@ function fileInventory(root) {
   }
 }
 
-export function captureSourceInventory(root) {
+export function captureSourceInventory(root: string): SourceInventory {
   const before = sourceSnapshot(root)
   const fingerprint = worktreeFingerprint(root, before.head)
   const guard = fileInventory(root)
@@ -164,84 +217,15 @@ export function captureSourceInventory(root) {
   }
 }
 
-function frontendProduct(relative) {
-  const first = relative.split('/')[0]
-  if (['src', 'public', 'openapi'].includes(first)) return true
-  // Vite 直接或间接导入的配置与身份实现也会改变生产产物。
-  if (
-    [
-      'scripts/application-config.mjs',
-      'scripts/application-config-files.mjs',
-      'scripts/application-config-paths.mjs',
-      'scripts/application-config-toml.mjs',
-      'scripts/frontend-tool-config.mjs',
-      'scripts/build-identity.mjs',
-      'scripts/resource-render/json.ts',
-    ].includes(relative)
-  )
-    return true
-  if (relative === 'tsconfig.test.json') return true
-  if (
-    frontendTool(relative) ||
-    [
-      '.editorconfig',
-      '.gitattributes',
-      '.gitignore',
-      '.prettierignore',
-      'ARCHITECTURE.md',
-      'ARCHITECTURE.en.md',
-      'CHANGELOG.md',
-      'CHANGELOG.en.md',
-      'LICENSE',
-      'README.md',
-      'README.en.md',
-    ].includes(relative)
-  )
-    return false
-  return true
-}
-
-function frontendTool(relative) {
-  const first = relative.split('/')[0]
-  return (
-    relative === 'config/tools.json' ||
-    ['scripts', 'tests', '.github'].includes(first) ||
-    [
-      'eslint.config.js',
-      'playwright.config.ts',
-      'playwright.real.config.ts',
-      'playwright.generated.config.ts',
-      'tsconfig.test.json',
-      'prettier.config.mjs',
-      'stylelint.config.js',
-      'vitest.config.ts',
-    ].includes(relative)
-  )
-}
-
-function sourceGroup(files, selected) {
-  const byPath = new Map(files.map((item) => [item.path, item]))
-  const values = selected.map((relative) => byPath.get(relative))
-  return { sha256: canonicalDigest(values), files: selected }
-}
-
-export function sourceDomains(inventory) {
-  validateSourceInventory(inventory)
-  const product = inventory.files
-    .filter((item) => frontendProduct(item.path))
-    .map((item) => item.path)
-  const tools = inventory.files.filter((item) => frontendTool(item.path)).map((item) => item.path)
-  return {
-    product: { frontend: sourceGroup(inventory.files, product) },
-    tools: sourceGroup(inventory.files, tools),
-    full: structuredClone(inventory),
-  }
-}
-
-export function validateFiles(value, fields, message) {
+export function validateFiles(
+  value: unknown,
+  fields: readonly string[],
+  message: string,
+): asserts value is InventoryFile[] {
   if (!Array.isArray(value)) throw new Error(message)
   let previous = ''
-  for (const item of value) {
+  const items: readonly unknown[] = value
+  for (const item of items) {
     exactObject(item, fields, message)
     if (
       !validRelative(item.path) ||
@@ -254,7 +238,7 @@ export function validateFiles(value, fields, message) {
   }
 }
 
-export function validateSourceInventory(value) {
+export function validateSourceInventory(value: unknown): SourceInventory {
   exactObject(value, ['source', 'files', 'guard'], '完整来源清单字段无效')
   exactObject(value.source, ['snapshot', 'worktree_fingerprint'], '完整来源快照字段无效')
   exactObject(
@@ -268,7 +252,8 @@ export function validateSourceInventory(value) {
     !hex(snapshot.head, 40) ||
     !hex(snapshot.patch_sha256, 64) ||
     typeof snapshot.clean !== 'boolean' ||
-    !/^sha256:[a-f0-9]{64}$/u.test(value.source.worktree_fingerprint) ||
+    // 沿用历史收据正则的 JavaScript 字符串转换语义。
+    !/^sha256:[a-f0-9]{64}$/u.test(value.source.worktree_fingerprint as string) ||
     value.guard.head !== snapshot.head ||
     !hex(value.guard.index_sha256, 64) ||
     !hex(value.guard.modes_sha256, 64)
@@ -276,14 +261,5 @@ export function validateSourceInventory(value) {
     throw new Error('完整来源 Git 内容无效')
   validateFiles(snapshot.files, ['path', 'sha256'], '未跟踪来源文件无效')
   validateFiles(value.files, ['path', 'sha256'], '完整来源文件无效')
-  return value
-}
-
-export function validateSourceDomains(value) {
-  exactObject(value, ['product', 'tools', 'full'], '构建来源分域字段无效')
-  exactObject(value.product, ['frontend'], '前端产品来源角色无效')
-  if (!isDeepStrictEqual(value, sourceDomains(validateSourceInventory(value.full)))) {
-    throw new Error('构建来源分域与完整来源清单不一致')
-  }
-  return value
+  return value as SourceInventory
 }

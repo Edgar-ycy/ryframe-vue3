@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- 前端构建来源盘点、分域和收据校验改用 TypeScript，沿用原 Git 快照、文件摘要及来源收据格式。
+
 - OpenAPI 契约生成与严格 JSON 解析改用 TypeScript，生成归属清单记录实际入口，派生契约内容保持一致。
 
 - 前端分包预算检查改用 TypeScript，沿用原预算、基线和分包规则。

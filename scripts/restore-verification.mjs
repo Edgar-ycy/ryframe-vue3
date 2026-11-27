@@ -2,7 +2,7 @@ import { toolProcessEnvironment } from './tool-inputs.mjs'
 import { execFileSync } from 'node:child_process'
 import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
-import { sha256 } from './build-source-inventory.mjs'
+import { sha256 } from './build-source-inventory.ts'
 import { restoreProofBindings } from './restore-proof.mjs'
 import {
   inspectRestoreRuntimeReceipt,

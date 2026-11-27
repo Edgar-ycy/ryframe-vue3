@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'node:http'
 import { spawn } from 'node:child_process'
-import { captureSourceInventory } from '../build-source-inventory.mjs'
+import { captureSourceInventory } from '../build-source-inventory.ts'
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 export const identity = {

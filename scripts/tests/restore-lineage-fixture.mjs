@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { sha256 } from '../build-source-inventory.mjs'
+import { sha256 } from '../build-source-inventory.ts'
 
 function writeDescriptor(directory, name, value) {
   const filename = path.join(directory, name)

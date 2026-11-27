@@ -2,7 +2,7 @@ import { existsSync, unlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { buildRestoreEvidence, restoreProofBindings } from './restore-proof.mjs'
-import { sha256 } from './build-source-inventory.mjs'
+import { sha256 } from './build-source-inventory.ts'
 import { verifyRestoreDatasetAuthority } from './restore-dataset.mjs'
 import { restoreRuntimeBinding } from './restore-runtime-receipt.mjs'
 import {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { sha256 } from '../build-source-inventory.mjs'
+import { sha256 } from '../build-source-inventory.ts'
 import { restoreRuntimeBinding } from '../restore-runtime-receipt.mjs'
 import { evidenceFile, verifiedCheckout, verifyRuntime } from '../restore-verification.mjs'
 import {

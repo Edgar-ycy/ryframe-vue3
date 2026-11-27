@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Frontend build source inventory, source domains, and receipt validation use TypeScript and preserve the existing Git snapshots, file digests, and receipt format.
+
 - OpenAPI contract generation and strict JSON parsing use TypeScript. The ownership manifest records the actual generator entry, with identical derived contract contents.
 
 - The frontend bundle budget check uses TypeScript and retains the existing limits, baseline, and chunk rules.

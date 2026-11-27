@@ -9,7 +9,7 @@ import {
   classifyStaticRequest,
   createStaticResponseAudit,
 } from '../browser-static-response-audit.ts'
-import { startDelayProxy } from '../browser-delay-proxy.mjs'
+import { startDelayProxy } from '../browser-delay-proxy.ts'
 
 function request(url, destination) {
   return new Promise((resolveRequest, reject) => {

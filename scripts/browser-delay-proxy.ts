@@ -1,8 +1,21 @@
-import http from 'node:http'
-import net from 'node:net'
+import http, { type IncomingMessage, type OutgoingHttpHeaders } from 'node:http'
+import net, { type ListenOptions, type Server, type Socket } from 'node:net'
 import { createResponseGates } from './browser-response-gates.ts'
+import type { createStaticResponseAudit } from './browser-static-response-audit.ts'
 
-export function localTarget(value) {
+type ResponseAudit = Pick<
+  Awaited<ReturnType<typeof createStaticResponseAudit>>,
+  'classify' | 'track' | 'fail'
+>
+
+interface DelayProxyOptions {
+  target: string | URL
+  port?: number
+  endpoint?: string
+  audit?: ResponseAudit
+}
+
+export function localTarget(value: string | URL): URL {
   const url = new URL(value)
   if (
     url.protocol !== 'http:' ||
@@ -19,9 +32,9 @@ export function localTarget(value) {
   return url
 }
 
-function listen(instance, address) {
+function listen(instance: Server, address: string | ListenOptions): Promise<void> {
   return new Promise((resolve, reject) => {
-    const failed = (error) => reject(error)
+    const failed = (error: Error) => reject(error)
     instance.once('error', failed)
     instance.listen(address, () => {
       instance.off('error', failed)
@@ -30,15 +43,19 @@ function listen(instance, address) {
   })
 }
 
-function closeServer(instance) {
+function closeServer(instance: Server | undefined): Promise<void> {
   if (!instance?.listening) return Promise.resolve()
   return new Promise((resolve, reject) => {
     instance.close((error) => (error ? reject(error) : resolve()))
   })
 }
 
-function forwardedHeaders(request, upstream, audited = false) {
-  const headers = { ...request.headers, host: upstream.host }
+function forwardedHeaders(
+  request: Pick<IncomingMessage, 'headers'>,
+  upstream: URL,
+  audited = false,
+): OutgoingHttpHeaders {
+  const headers: OutgoingHttpHeaders = { ...request.headers, host: upstream.host }
   delete headers['x-ryframe-test-gate']
   if (audited) {
     headers['accept-encoding'] = 'identity'
@@ -49,11 +66,11 @@ function forwardedHeaders(request, upstream, audited = false) {
   return headers
 }
 
-export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
+export async function startDelayProxy({ target, port = 0, endpoint, audit }: DelayProxyOptions) {
   const upstream = localTarget(target)
   const gates = createResponseGates()
-  const sockets = new Set()
-  const remember = (socket) => {
+  const sockets = new Set<Socket>()
+  const remember = (socket: Socket) => {
     sockets.add(socket)
     socket.on('close', () => sockets.delete(socket))
   }
@@ -62,7 +79,7 @@ export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
       response.writeHead(400).end()
       return
     }
-    let audited
+    let audited: ReturnType<ResponseAudit['classify']> | undefined
     try {
       audited = audit?.classify(request)
     } catch {
@@ -77,10 +94,12 @@ export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
         path: request.url,
         headers: forwardedHeaders(request, upstream, Boolean(audited)),
       },
-      (result) => {
+      (message) => {
+        // HTTP 客户端收到响应时已解析状态行，IncomingMessage 也用于服务端请求。
+        const result = message as IncomingMessage & { statusCode: number }
         if (gate) gates.hold(gate, result, response)
         else {
-          if (audited) audit.track(audited, result, response)
+          if (audited) audit?.track(audited, result, response)
           response.writeHead(result.statusCode, result.rawHeaders)
           result.pipe(response)
         }
@@ -88,7 +107,7 @@ export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
     )
     forwarded.on('error', () => {
       if (gate) gate.state = 'upstream-failed'
-      if (audited) audit.fail(new Error('静态响应上游请求失败'))
+      if (audited) audit?.fail(new Error('静态响应上游请求失败'))
       response.destroy()
     })
     request.on('aborted', () => forwarded.destroy())
@@ -135,7 +154,8 @@ export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
           answered = true
           try {
             if (text.slice(newline + 1).trim()) throw new Error('响应门每次只接受一个命令')
-            const result = gates.command(JSON.parse(text.slice(0, newline)))
+            const command: unknown = JSON.parse(text.slice(0, newline))
+            const result = gates.command(command)
             socket.end(`${JSON.stringify({ data: result })}\n`)
           } catch {
             socket.end(`${JSON.stringify({ error: '测试响应门命令无效或状态不匹配' })}\n`)
@@ -144,7 +164,7 @@ export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
       })
     : undefined
 
-  if (control) await listen(control, endpoint)
+  if (endpoint && control) await listen(control, endpoint)
   try {
     await listen(server, { host: '127.0.0.1', port })
   } catch (error) {
@@ -156,7 +176,7 @@ export async function startDelayProxy({ target, port = 0, endpoint, audit }) {
     await Promise.all([closeServer(server), closeServer(control)])
     throw new Error('真实浏览器代理没有取得 TCP 监听地址')
   }
-  let closing
+  let closing: Promise<void> | undefined
   return {
     origin: `http://127.0.0.1:${address.port}`,
     command: gates.command,

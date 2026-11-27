@@ -79,7 +79,7 @@ async function closeVite(server, mode) {
 export async function startRealBrowserServer(options, dependencies = {}) {
   const viteApi = dependencies.viteApi ?? (await import('vite'))
   const startProxy =
-    dependencies.startProxy ?? (await import('./browser-delay-proxy.mjs')).startDelayProxy
+    dependencies.startProxy ?? (await import('./browser-delay-proxy.ts')).startDelayProxy
   const createAudit = dependencies.createAudit
   const listen = { host: '127.0.0.1', port: 0, strictPort: true }
   let vite

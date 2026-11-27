@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- 浏览器验收的延迟代理改用 TypeScript，保留 HTTP、WebSocket 和命名管道控制行为。
+
 - 资源页 API、页面及注册源码的生成工具迁移到 TypeScript，保留生成产物与配置行为。
 
 - 资源页的字段、展示和宽表拆分工具迁移到 TypeScript，保留原生成结果。

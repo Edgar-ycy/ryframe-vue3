@@ -10,6 +10,8 @@ const root = path.resolve('devex-plan-input')
 const cacheRoot = path.join(root, '.local-tests', 'profile')
 const legacyEntry = 'scripts/check-import-boundaries.mjs'
 const currentEntry = 'scripts/check-import-boundaries.ts'
+const legacyGenerator = 'scripts/generate-api-artifacts.mjs'
+const currentGenerator = 'scripts/generate-api-artifacts.ts'
 const logicalTasks = [
   'format',
   'source-size',
@@ -52,14 +54,26 @@ test('两侧计划覆盖同一九项，当前导入检查同时覆盖 operation 
   const root = repo.root
   const cacheRoot = path.join(root, '.local-tests', 'profile')
   repo.writeEntry(legacyEntry)
+  repo.writeEntry(legacyGenerator)
   repo.commit()
   const baseline = devexFastTasks({ root, arm: 'b0', cacheRoot })
   const frozenCandidate = devexFastTasks({ root, arm: 'b1', cacheRoot })
   assert.deepEqual(baseline.find((task) => task.id === 'imports').node, [legacyEntry])
   assert.deepEqual(frozenCandidate.find((task) => task.id === 'imports').node, [legacyEntry])
+  for (const tasks of [baseline, frozenCandidate]) {
+    assert.deepEqual(tasks.find((task) => task.id === 'api-artifacts').node, [
+      legacyGenerator,
+      '--check',
+    ])
+  }
   repo.git('mv', legacyEntry, currentEntry)
+  repo.git('mv', legacyGenerator, currentGenerator)
   repo.commit()
   const candidate = devexFastTasks({ root, arm: 'b1', cacheRoot })
+  assert.deepEqual(candidate.find((task) => task.id === 'api-artifacts').node, [
+    currentGenerator,
+    '--check',
+  ])
   assert.deepEqual(candidate.find((task) => task.id === 'imports').node, [currentEntry])
   assert.deepEqual(candidate.find((task) => task.id === 'imports').covers, [
     'imports',
@@ -102,6 +116,7 @@ test('计划拒绝缺失、存在两份或与 Git HEAD 不同的检查入口', (
     })
   // 只有没提交的 TypeScript 文件时，不能从工作树推断使用新入口。
   writeFileSync(path.join(repo.root, 'README.md'), '# Fixture\n')
+  repo.writeEntry(legacyGenerator)
   repo.commit()
   repo.writeEntry(currentEntry)
   assert.throws(plan, /Git HEAD 须登记唯一/u)
@@ -113,6 +128,25 @@ test('计划拒绝缺失、存在两份或与 Git HEAD 不同的检查入口', (
   assert.throws(plan, /与 Git HEAD 不一致/u)
   repo.commit()
   assert.throws(plan, /Git HEAD 须登记唯一/u)
+})
+
+test('生成计划拒绝缺失、影子、漂移和具有两个入口的检出', (t) => {
+  const repo = measurementRepository(t)
+  const cacheRoot = path.join(repo.root, '.local-tests', 'profile')
+  const plan = (arm = 'b1') => devexFastTasks({ root: repo.root, arm, cacheRoot })
+  repo.writeEntry(legacyEntry)
+  repo.commit()
+  repo.writeEntry(currentGenerator)
+  assert.throws(() => plan(), /Git HEAD 须登记唯一的普通OpenAPI 生成器入口/u)
+  repo.commit()
+  assert.throws(() => plan('b0'), /B0 须使用原OpenAPI 生成器入口/u)
+  writeFileSync(path.join(repo.root, currentGenerator), 'export const changed = true\n')
+  assert.throws(() => plan(), /OpenAPI 生成器入口与 Git HEAD 不一致/u)
+  repo.writeEntry(currentGenerator)
+  repo.writeEntry(legacyGenerator)
+  assert.throws(() => plan(), /OpenAPI 生成器入口与 Git HEAD 不一致/u)
+  repo.commit()
+  assert.throws(() => plan(), /Git HEAD 须登记唯一的普通OpenAPI 生成器入口/u)
 })
 
 test('计划参数可复用，拒绝重复选项及测量工作树之外的缓存', () => {

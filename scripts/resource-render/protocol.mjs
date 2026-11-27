@@ -1,5 +1,5 @@
 import { renderResourceAssets } from './index.mjs'
-import { parseJson } from './json.mjs'
+import { parseJson } from './json.ts'
 
 export const maxInputBytes = 16 * 1024 * 1024
 export const maxOutputBytes = 64 * 1024 * 1024

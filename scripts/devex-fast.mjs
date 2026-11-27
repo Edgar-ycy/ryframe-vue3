@@ -7,8 +7,6 @@ import { toolProcessEnvironment } from './tool-inputs.mjs'
 
 const sizeCheck = fileURLToPath(new URL('./devex-source-size.mjs', import.meta.url))
 const takesValue = new Set(['--root', '--arm', '--cache-root', '--pnpm-cache-dir'])
-const frozenImports = 'scripts/check-import-boundaries.mjs'
-const currentImports = 'scripts/check-import-boundaries.ts'
 
 export function parseDevexFastArguments(argv) {
   const options = new Map()
@@ -55,7 +53,7 @@ function absoluteOption(options, name) {
   return path.resolve(value)
 }
 
-function importBoundaryEntry(root, arm) {
+function devexEntries(root, arm) {
   const env = Object.fromEntries(
     Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith('GIT_')),
   )
@@ -69,22 +67,36 @@ function importBoundaryEntry(root, arm) {
   const actualRoot = realpathSync.native(root)
   const repository = realpathSync.native(git('rev-parse', '--show-toplevel').trim())
   if (actualRoot !== repository) throw new Error('DevEx 导入检查须指定实际前端 Git 根目录')
+  return {
+    imports: trackedEntry(git, actualRoot, arm, 'scripts/check-import-boundaries', '导入检查'),
+    artifacts: trackedEntry(
+      git,
+      actualRoot,
+      arm,
+      'scripts/generate-api-artifacts',
+      'OpenAPI 生成器',
+    ),
+  }
+}
 
+function trackedEntry(git, root, arm, base, label) {
+  const frozen = `${base}.mjs`
+  const current = `${base}.ts`
   // 两代源码各自使用 Git HEAD 登记的入口。B0 固定使用原入口。
-  const records = git('ls-tree', '-z', 'HEAD', '--', frozenImports, currentImports).split('\0')
+  const records = git('ls-tree', '-z', 'HEAD', '--', frozen, current).split('\0')
   const match =
     records.length === 2 && records[1] === ''
       ? /^100(?:644|755) blob ([0-9a-f]{40}|[0-9a-f]{64})\t(.+)$/u.exec(records[0])
       : null
   const entry = match?.[2]
-  if (!match || (entry !== frozenImports && entry !== currentImports)) {
-    throw new Error('DevEx Git HEAD 须登记唯一的普通导入检查入口')
+  if (!match || (entry !== frozen && entry !== current)) {
+    throw new Error(`DevEx Git HEAD 须登记唯一的普通${label}入口`)
   }
-  if (arm === 'b0' && entry !== frozenImports) {
-    throw new Error('DevEx B0 须使用原导入检查入口')
+  if (arm === 'b0' && entry !== frozen) {
+    throw new Error(`DevEx B0 须使用原${label}入口`)
   }
-  const filename = path.join(actualRoot, entry)
-  const other = path.join(actualRoot, entry === frozenImports ? currentImports : frozenImports)
+  const filename = path.join(root, entry)
+  const other = path.join(root, entry === frozen ? current : frozen)
   const status = lstatSync(filename, { throwIfNoEntry: false })
   if (
     !status?.isFile() ||
@@ -92,12 +104,13 @@ function importBoundaryEntry(root, arm) {
     realpathSync.native(filename) !== filename ||
     git('hash-object', '--no-filters', '--', filename).trim() !== match[1]
   ) {
-    throw new Error(`DevEx 导入检查入口与 Git HEAD 不一致：${entry}`)
+    throw new Error(`DevEx ${label}入口与 Git HEAD 不一致：${entry}`)
   }
   return entry
 }
 
 export function devexFastTasks({ root, arm, cacheRoot }) {
+  const entries = devexEntries(root, arm)
   const cache = (name) => ['--cache', '--cache-location', path.join(cacheRoot, name, 'cache')]
   return [
     {
@@ -117,7 +130,7 @@ export function devexFastTasks({ root, arm, cacheRoot }) {
     {
       id: 'imports',
       covers: arm === 'b0' ? ['imports'] : ['imports', 'api-operation-policy'],
-      node: [importBoundaryEntry(root, arm)],
+      node: [entries.imports],
     },
     ...(arm === 'b0'
       ? [
@@ -131,7 +144,7 @@ export function devexFastTasks({ root, arm, cacheRoot }) {
     {
       id: 'api-artifacts',
       covers: ['api-artifacts'],
-      node: ['scripts/generate-api-artifacts.mjs', '--check'],
+      node: [entries.artifacts, '--check'],
     },
     {
       id: 'eslint',

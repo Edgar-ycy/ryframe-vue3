@@ -8,8 +8,20 @@ import {
   buildApiArtifacts,
   generatedArtifactPaths,
   ownershipManifestPath,
-} from './api-artifacts.mjs'
+} from './api-artifacts.ts'
+
 class TaskUsageError extends Error {}
+
+type Artifacts = ReadonlyMap<string, string>
+
+function errorCode(error: unknown): string | undefined {
+  return typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+    ? error.code
+    : undefined
+}
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const legacyArtifactPaths = Object.freeze([
@@ -23,7 +35,7 @@ const sharedGeneratedPaths = new Set([
   'src/shared/config/apiPrefix.generated.json',
 ])
 
-function requireOwnedPath(relative) {
+function requireOwnedPath(relative: unknown): string {
   if (
     typeof relative !== 'string' ||
     relative.length === 0 ||
@@ -37,7 +49,7 @@ function requireOwnedPath(relative) {
   return relative
 }
 
-async function writeArtifacts(outputRoot, artifacts) {
+async function writeArtifacts(outputRoot: string, artifacts: Artifacts) {
   for (const [relative, content] of artifacts) {
     requireOwnedPath(relative)
     const output = path.join(outputRoot, relative)
@@ -48,37 +60,47 @@ async function writeArtifacts(outputRoot, artifacts) {
 
 async function readPreviousOwnership() {
   try {
-    const manifest = JSON.parse(await readFile(path.join(root, ownershipManifestPath), 'utf8'))
-    if (manifest?.version !== 1 || !Array.isArray(manifest.files)) {
+    const manifest: unknown = JSON.parse(
+      await readFile(path.join(root, ownershipManifestPath), 'utf8'),
+    )
+    if (
+      typeof manifest !== 'object' ||
+      manifest === null ||
+      !('version' in manifest) ||
+      manifest.version !== 1 ||
+      !('files' in manifest) ||
+      !Array.isArray(manifest.files)
+    ) {
       throw new Error('OpenAPI ownership manifest 必须是 version=1 且包含 files 数组')
     }
     return new Set([...manifest.files.map(requireOwnedPath), ...legacyArtifactPaths])
   } catch (error) {
-    if (error?.code !== 'ENOENT') throw error
+    if (errorCode(error) !== 'ENOENT') throw error
     return new Set([...legacyArtifactPaths, ...generatedArtifactPaths])
   }
 }
 
-async function existingFile(relative) {
+async function existingFile(relative: string) {
   try {
     return await readFile(path.join(root, relative))
   } catch (error) {
-    if (error?.code === 'ENOENT') return undefined
+    const code = errorCode(error)
+    if (code === 'ENOENT') return undefined
     const reason =
-      error?.code === 'EISDIR'
+      code === 'EISDIR'
         ? '路径是目录，不能作为受管文件读取'
-        : ['EACCES', 'EPERM'].includes(error?.code)
+        : code === 'EACCES' || code === 'EPERM'
           ? '没有读取受管文件的权限'
           : '读取受管文件失败'
     throw new Error(
-      `读取受管文件 ${relative} 失败：IO ${error?.code ?? 'UNKNOWN'}；${reason}；` +
+      `读取受管文件 ${relative} 失败：IO ${code ?? 'UNKNOWN'}；${reason}；` +
         '请检查文件类型和读取权限；保留未知目录及文件现场，确认后再处理',
       { cause: error },
     )
   }
 }
 
-function validateArtifacts(artifacts) {
+function validateArtifacts(artifacts: Artifacts) {
   const actual = new Set(artifacts.keys())
   for (const relative of generatedArtifactPaths) {
     if (!actual.has(relative)) throw new Error(`生成器遗漏正式资产：${relative}`)
@@ -90,7 +112,7 @@ function validateArtifacts(artifacts) {
   }
 }
 
-async function validateStaging(stagingRoot, artifacts) {
+async function validateStaging(stagingRoot: string, artifacts: Artifacts) {
   for (const [relative, content] of artifacts) {
     const staged = await readFile(path.join(stagingRoot, relative))
     if (!staged.equals(Buffer.from(content, 'utf8'))) {
@@ -99,7 +121,7 @@ async function validateStaging(stagingRoot, artifacts) {
   }
 }
 
-async function checkArtifacts(artifacts, previousOwnership) {
+async function checkArtifacts(artifacts: Artifacts, previousOwnership: ReadonlySet<string>) {
   const stale = []
   for (const [relative, content] of artifacts) {
     const committed = await existingFile(relative)
@@ -115,7 +137,7 @@ async function checkArtifacts(artifacts, previousOwnership) {
   }
 }
 
-async function installArtifacts(stagingRoot, previousOwnership) {
+async function installArtifacts(stagingRoot: string, previousOwnership: ReadonlySet<string>) {
   const backupRoot = path.join(stagingRoot, '.rollback')
   const installed = []
   const backedUp = []
@@ -150,8 +172,8 @@ async function installArtifacts(stagingRoot, previousOwnership) {
   }
 }
 
-async function sourceFiles(directory) {
-  const files = []
+async function sourceFiles(directory: string): Promise<string[]> {
+  const files: string[] = []
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const target = path.join(directory, entry.name)
     if (entry.isDirectory()) files.push(...(await sourceFiles(target)))
@@ -182,7 +204,7 @@ async function main() {
   const args = process.argv.slice(2)
   const mode = args[0] ?? '--check'
   if (args.length > 1 || !['--write', '--check'].includes(mode)) {
-    throw new TaskUsageError('用法：generate-api-artifacts.mjs [--check|--write]，默认只读检查')
+    throw new TaskUsageError('用法：generate-api-artifacts.ts [--check|--write]，默认只读检查')
   }
 
   const artifacts = await buildApiArtifacts(root)
@@ -208,7 +230,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error.message)
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : error)
   process.exitCode = error instanceof TaskUsageError ? 2 : 1
 })

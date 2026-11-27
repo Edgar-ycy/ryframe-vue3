@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url'
 const cli = fileURLToPath(new URL('../devex-source-size.mjs', import.meta.url))
 const repository = path.resolve(import.meta.dirname, '../..')
 const ownership = 'src/api/generated/ownership.json'
+const legacyGenerator = 'scripts/generate-api-artifacts.mjs'
+const currentGenerator = 'scripts/generate-api-artifacts.ts'
 const lines = (count, newline = '\n') => `line${newline}`.repeat(count)
 
-function fixture(t, files, owned = []) {
+function fixture(t, files, owned = [], generator = currentGenerator) {
   const parent = path.join(repository, '.local-tests')
   mkdirSync(parent, { recursive: true })
   const directory = mkdtempSync(path.join(parent, 'devex-source-size-'))
@@ -29,18 +31,19 @@ function fixture(t, files, owned = []) {
       ownership,
       JSON.stringify({
         version: 1,
-        generator: 'scripts/generate-api-artifacts.mjs',
+        generator,
         files: [ownership, ...files],
       }),
     )
   git('init', '-q')
   git('config', 'core.autocrlf', 'false')
+  write(generator, 'export {}\n')
   manifest(...owned)
   for (const [file, source] of Object.entries(files)) write(file, source)
   git('add', '--', '.')
   const run = (selected = root) =>
     spawnSync(process.execPath, [cli, '--root', selected], { encoding: 'utf8', windowsHide: true })
-  return { directory, root, write, manifest, run }
+  return { directory, root, git, write, manifest, run }
 }
 
 test('当前上限包含等号，工作树实际字节按 LF、CRLF、CR 计算', (t) => {
@@ -66,7 +69,7 @@ test('当前上限包含等号，工作树实际字节按 LF、CRLF、CR 计算'
     Object.values(groups).map(({ files, max_lines }) => [files, max_lines]),
     [
       [1, 600],
-      [4, 300],
+      [5, 300],
       [1, 300],
       [1, 501],
       [1, 150],
@@ -156,4 +159,24 @@ test('拒绝非 Git 根、越界参数及指向其他目录的源码路径', (t)
   assert.equal(result.status, 1)
   assert.equal(result.stdout, '')
   assert.match(result.stderr, /源码路径必须是原位置的普通目录：src\/model\/data\.ts/u)
+})
+
+test('OpenAPI 归属必须与冻结或当前索引中的唯一生成入口一致', (t) => {
+  const f = fixture(t, {}, [], legacyGenerator)
+  const baseline = f.run()
+  assert.equal(baseline.status, 0, baseline.stderr)
+  f.write(
+    ownership,
+    JSON.stringify({ version: 1, generator: currentGenerator, files: [ownership] }),
+  )
+  assert.match(f.run().stderr, /OpenAPI 归属清单无效/u)
+  f.manifest()
+  f.write(currentGenerator, 'export {}\n')
+  f.git('add', '--', currentGenerator)
+  assert.match(f.run().stderr, /OpenAPI 归属清单无效/u)
+  f.git('rm', '--cached', '--', currentGenerator)
+  const filename = path.join(f.root, legacyGenerator)
+  rmSync(filename)
+  mkdirSync(filename)
+  assert.match(f.run().stderr, /源码路径必须是原位置的普通文件/u)
 })

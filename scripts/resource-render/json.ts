@@ -1,6 +1,9 @@
+export type JsonValue =
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
+
 // 先由原生解析器验证语法，再遍历原始 token，防止重复键被静默覆盖。
-export function parseJson(source) {
-  let result
+export function parseJson(source: string): JsonValue {
+  let result: JsonValue
   try {
     result = JSON.parse(source)
   } catch {
@@ -10,20 +13,20 @@ export function parseJson(source) {
   const whitespace = () => {
     while (/\s/.test(source[position] ?? '') && position < source.length) position += 1
   }
-  const string = () => {
+  const string = (): string => {
     const start = position++
     while (source[position] !== '"') position += source[position] === '\\' ? 2 : 1
     position += 1
     return JSON.parse(source.slice(start, position))
   }
-  const value = (depth) => {
+  const value = (depth: number): void => {
     if (depth > 128) throw new Error('JSON 嵌套超过 128 层；请拆分资源配置')
     whitespace()
     const token = source[position]
     if (token === '{') {
       position += 1
       whitespace()
-      const keys = new Set()
+      const keys = new Set<string>()
       while (source[position] !== '}') {
         const key = string()
         if (keys.has(key)) throw new Error('JSON 对象包含重复字段；不接受覆盖后的资源配置')

@@ -59,7 +59,7 @@ test('实际 Vite define、产物与身份元信息隔离旧 VITE/env，APP_ENV 
     'scripts/application-config-paths.mjs',
     'scripts/application-config-files.mjs',
     'scripts/build-identity.mjs',
-    'scripts/resource-render/json.mjs',
+    'scripts/resource-render/json.ts',
     'src/shared/config/apiEndpoint.ts',
     'src/shared/config/runtimeConfig.ts',
     'src/shared/config/apiPrefix.generated.json',

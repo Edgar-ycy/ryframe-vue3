@@ -8,7 +8,7 @@ import { receiptPath, verifyBuildReceipt, writeBuildReceipt } from '../restore-b
 import { bindCurrentBytes, fixture, observe } from './frontend-native-receipt-fixture.mjs'
 import './frontend-native-paths.mjs'
 import { receiptBinding } from './frontend-native-binding.mjs'
-import { parseJson } from '../resource-render/json.mjs'
+import { parseJson } from '../resource-render/json.ts'
 
 const sentinel = 'PRIVATE-PARITY-SENTINEL'
 const selected = receiptBinding()

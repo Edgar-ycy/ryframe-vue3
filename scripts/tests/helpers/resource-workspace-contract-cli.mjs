@@ -1,4 +1,4 @@
-import { parseJson } from '../../resource-render/json.mjs'
+import { parseJson } from '../../resource-render/json.ts'
 import { readRequest } from '../../resource-render/protocol.mjs'
 import { prepareOrderFrontendContract } from './resource-workspace-contract.mjs'
 

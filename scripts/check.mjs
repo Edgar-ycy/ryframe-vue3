@@ -245,7 +245,7 @@ async function runContractCheck(consumer) {
       throw new Error('正式前端契约未锁定本次后端提交')
     }
   }
-  await runNodeScript('generate-api-artifacts.mjs', ['--check'])
+  await runNodeScript('generate-api-artifacts.ts', ['--check'])
   console.log(`契约门禁通过（${state.mode}）`)
 }
 

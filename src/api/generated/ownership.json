@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generator": "scripts/generate-api-artifacts.mjs",
+  "generator": "scripts/generate-api-artifacts.ts",
   "files": [
     "src/api/generated/crudResources.ts",
     "src/api/generated/menuRoutes.ts",

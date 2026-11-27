@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs'
-import { parseJson } from './resource-render/json.mjs'
+import { parseJson } from './resource-render/json.ts'
 
-export function parseArtifactManifest(source) {
+export function parseArtifactManifest(source: string): readonly string[] {
   const manifest = parseJson(source)
   if (
-    !manifest ||
+    manifest === null ||
+    typeof manifest !== 'object' ||
     Array.isArray(manifest) ||
     Object.keys(manifest).sort().join() !== 'files,format_version' ||
     manifest.format_version !== 1 ||
@@ -13,7 +14,7 @@ export function parseArtifactManifest(source) {
     manifest.files.length > 10000
   )
     throw new Error('API 派生清单必须使用版本 1 和非空 files 数组')
-  const seen = new Set()
+  const seen = new Set<string>()
   for (const file of manifest.files) {
     if (
       typeof file !== 'string' ||
@@ -26,7 +27,7 @@ export function parseArtifactManifest(source) {
     }
     seen.add(file)
   }
-  return Object.freeze([...manifest.files])
+  return Object.freeze([...seen])
 }
 
 export const artifactPaths = parseArtifactManifest(

@@ -176,7 +176,7 @@ function frontendProduct(relative) {
       'scripts/application-config-toml.mjs',
       'scripts/frontend-tool-config.mjs',
       'scripts/build-identity.mjs',
-      'scripts/resource-render/json.mjs',
+      'scripts/resource-render/json.ts',
     ].includes(relative)
   )
     return true

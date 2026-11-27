@@ -6,7 +6,7 @@ import { buildSourceSnapshot } from '../build-source.mjs'
 import { loadFrontendConfiguration } from '../frontend-tool-config.mjs'
 import { createWindowsAttributeCheck } from '../application-config-paths.mjs'
 import { receiptPath, verifyBuildReceipt, writeBuildReceipt } from '../restore-build.mjs'
-import { parseJson } from '../resource-render/json.mjs'
+import { parseJson } from '../resource-render/json.ts'
 import { receiptBinding } from './frontend-native-binding.mjs'
 import { bindCurrentBytes, fixture, observe } from './frontend-native-receipt-fixture.mjs'
 

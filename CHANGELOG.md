@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- OpenAPI 契约生成与严格 JSON 解析改用 TypeScript，生成归属清单记录实际入口，派生契约内容保持一致。
+
 - 前端分包预算检查改用 TypeScript，沿用原预算、基线和分包规则。
 
 - 浏览器验收的延迟代理改用 TypeScript，保留 HTTP、WebSocket 和命名管道控制行为。

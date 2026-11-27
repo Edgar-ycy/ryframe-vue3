@@ -13,7 +13,10 @@ import process from 'node:process'
 import { TextDecoder } from 'node:util'
 
 const ownershipPath = 'src/api/generated/ownership.json'
-const ownershipGenerator = 'scripts/generate-api-artifacts.mjs'
+const ownershipGenerators = [
+  'scripts/generate-api-artifacts.mjs',
+  'scripts/generate-api-artifacts.ts',
+]
 const sharedOpenapi = new Set([
   'src/shared/config/apiPrefix.generated.json',
   'src/shared/markdown/noticePolicy.generated.json',
@@ -134,11 +137,13 @@ function readSource(root, relative) {
 function openapiOwnership(root, tracked) {
   if (!tracked.has(ownershipPath)) throw new Error(`缺少 Git 管理的 OpenAPI 归属：${ownershipPath}`)
   const value = JSON.parse(readSource(root, ownershipPath))
+  const generators = ownershipGenerators.filter((file) => tracked.has(file))
   if (
     !value ||
     Object.keys(value).sort().join() !== 'files,generator,version' ||
     value.version !== 1 ||
-    value.generator !== ownershipGenerator ||
+    generators.length !== 1 ||
+    value.generator !== generators[0] ||
     !Array.isArray(value.files) ||
     !value.files.includes(ownershipPath) ||
     new Set(value.files).size !== value.files.length ||
@@ -153,6 +158,7 @@ function openapiOwnership(root, tracked) {
   ) {
     throw new Error(`OpenAPI 归属清单无效：${ownershipPath}`)
   }
+  readSource(root, generators[0])
   return new Set(value.files)
 }
 

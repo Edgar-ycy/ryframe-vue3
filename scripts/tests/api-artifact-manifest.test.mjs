@@ -3,12 +3,9 @@ import test from 'node:test'
 import { spawnSync } from 'node:child_process'
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { artifactPaths, parseArtifactManifest } from '../api-artifact-manifest.mjs'
-import {
-  buildApiArtifacts,
-  createOperationCallers,
-  ownershipManifestPath,
-} from '../api-artifacts.mjs'
+import { artifactPaths, parseArtifactManifest } from '../api-artifact-manifest.ts'
+import { buildApiArtifacts, ownershipManifestPath } from '../api-artifacts.ts'
+import { createOperationCallers } from '../api-operation-artifacts.ts'
 import { fileURLToPath } from 'node:url'
 import { createTemporaryDirectory } from '../temporary-directory.ts'
 
@@ -79,7 +76,7 @@ async function isolatedGenerator(t) {
 function runGenerator(root, mode) {
   const result = spawnSync(
     process.execPath,
-    [path.join(root, 'scripts', 'generate-api-artifacts.mjs'), mode],
+    [path.join(root, 'scripts', 'generate-api-artifacts.ts'), mode],
     { cwd: root, encoding: 'utf8', maxBuffer: 1024 * 1024 },
   )
   assert.ifError(result.error)

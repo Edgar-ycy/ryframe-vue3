@@ -11,7 +11,7 @@
     "dev": "vite",
     "check": "node scripts/check.mjs",
     "build": "node scripts/build.mjs",
-    "generate": "node scripts/generate-api-artifacts.mjs"
+    "generate": "node scripts/generate-api-artifacts.ts"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

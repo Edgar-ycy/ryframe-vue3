@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
 import { renderResourceAssets } from '../resource-render/index.mjs'
-import { parseJson } from '../resource-render/json.mjs'
+import { parseJson } from '../resource-render/json.ts'
 import { maxInputBytes, readRequest, renderRequest } from '../resource-render/protocol.mjs'
 
 const resource = JSON.parse(

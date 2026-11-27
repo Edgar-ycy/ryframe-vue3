@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { checkApplicationPath } from './application-config-paths.mjs'
-import { parseJson } from './resource-render/json.mjs'
+import { parseJson } from './resource-render/json.ts'
 
 export const fileHash = (bytes) => createHash('sha256').update(bytes).digest('hex')
 

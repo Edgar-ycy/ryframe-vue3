@@ -6,7 +6,7 @@ import { Buffer } from 'node:buffer'
 import { isDeepStrictEqual } from 'node:util'
 import { checkApplicationPath } from './application-config-paths.mjs'
 import { readManagedJson, unchangedManagedJson } from './application-config-files.mjs'
-import { parseJson } from './resource-render/json.mjs'
+import { parseJson } from './resource-render/json.ts'
 import { validateWorkerTool } from './real-browser-environment.mjs'
 import { toolProcessEnvironment } from './tool-inputs.mjs'
 export { parseJson as parseWorkerJson }

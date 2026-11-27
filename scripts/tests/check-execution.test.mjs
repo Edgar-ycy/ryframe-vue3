@@ -79,7 +79,7 @@ test('编排先校验内存来源夹具，再派生显式证明入口；拦截�
   const calls = interceptTasks(t)
   await runCheck(parseArguments(['--consumer-context', value.file]))
   assert.equal(calls.length, 2)
-  assert.ok(calls[0].args[0].endsWith('generate-api-artifacts.mjs'))
+  assert.ok(calls[0].args[0].endsWith('generate-api-artifacts.ts'))
   assert.deepEqual(calls[0].args.slice(1), ['--check'])
   assert.deepEqual(calls[1].args, [
     'scripts/contract-tests/frontend-native-receipt.mjs',

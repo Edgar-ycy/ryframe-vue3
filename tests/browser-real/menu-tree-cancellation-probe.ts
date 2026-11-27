@@ -24,7 +24,11 @@ type Recorder = {
   bind: (readScope: () => Scope | undefined) => void
   snapshot: () => Snapshot
 }
-type ProbeWindow = Window & { menuTreeCancellationProbe: Recorder }
+declare global {
+  interface Window {
+    menuTreeCancellationProbe: Recorder
+  }
+}
 
 function installRecorder(paths: { menu: string; context: string }) {
   const xhr = XMLHttpRequest.prototype
@@ -115,7 +119,7 @@ function installRecorder(paths: { menu: string; context: string }) {
     }
   }
 
-  ;(window as ProbeWindow).menuTreeCancellationProbe = {
+  window.menuTreeCancellationProbe = {
     bind: (reader) => {
       readScope = reader
     },
@@ -149,8 +153,7 @@ export async function observeMenuTreeCancellation(
     (request) => isSystemMenuRead(request) && active?.request() === request,
   )
   await page.addInitScript(installRecorder, { menu: menuTreePath, context: contextPath })
-  const snapshot = () =>
-    page.evaluate(() => (window as ProbeWindow).menuTreeCancellationProbe.snapshot())
+  const snapshot = () => page.evaluate(() => window.menuTreeCancellationProbe.snapshot())
 
   async function verify(write: MenuWrite, loginAuthorizationEpoch: string): Promise<Response> {
     const before = await snapshot()
@@ -291,7 +294,7 @@ export async function observeMenuTreeCancellation(
       await page.evaluate(async () => {
         const modulePath = '/src/shared/query/client.ts'
         const module: { getServerStateScope: () => Scope | undefined } = await import(modulePath)
-        ;(window as ProbeWindow).menuTreeCancellationProbe.bind(module.getServerStateScope)
+        window.menuTreeCancellationProbe.bind(module.getServerStateScope)
       })
     },
   }

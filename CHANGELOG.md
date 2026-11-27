@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- 资源页模板与字段值渲染迁移到 TypeScript，保留生成源码和现有扩展行为。
+
 - 浏览器响应延迟控制和静态响应审计迁移到 TypeScript，保留同源检查和脱敏收据。
 
 - Vite 清单图和多语言分包规则改用 TypeScript。正式 Node 测试入口统一发现现有 JavaScript 测试和已迁移的 TypeScript 测试。

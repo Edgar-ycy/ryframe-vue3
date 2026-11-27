@@ -2,7 +2,7 @@ import { hasDateColumn } from './format.mjs'
 import { Modules } from './modules.mjs'
 import { presentation } from './presentation.mjs'
 import { labels } from './properties.mjs'
-import { resourceDefinition } from './resource.mjs'
+import { resourceDefinition } from './resource.ts'
 import { splitForm } from './split-form.mjs'
 import { splitPresentation } from './split-presentation.mjs'
 

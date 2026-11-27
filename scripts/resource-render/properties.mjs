@@ -1,4 +1,4 @@
-import { enumEntries, enumValue, formWidget, quote } from './values.mjs'
+import { enumEntries, enumValue, formWidget, quote } from './values.ts'
 
 const label = (field) => `label: translate(${quote(field.labels.zh_cn)}, ${quote(field.labels.en)})`
 const enter = (field) =>

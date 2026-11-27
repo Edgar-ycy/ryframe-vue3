@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { renderResourceAssets } from '../resource-render/index.mjs'
-import { formType } from '../resource-render/values.mjs'
+import { formType } from '../resource-render/values.ts'
 import { common } from './fixtures/resource-render/builders.mjs'
 import { execute } from './fixtures/resource-render/boundary-runtime.mjs'
 

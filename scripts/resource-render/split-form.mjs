@@ -1,5 +1,5 @@
 import { chunks } from './modules.mjs'
-import { editValue, formInput, formType, tsDefault } from './values.mjs'
+import { editValue, formInput, formType, tsDefault } from './values.ts'
 
 function formPart(resource, fields) {
   const pascal = resource.pascal_name

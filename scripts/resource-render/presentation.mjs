@@ -1,7 +1,7 @@
 import { hasDateColumn, header } from './format.mjs'
 import { columnProperties, formProperties, labels, queryProperties } from './properties.mjs'
-import { crudResource } from './resource.mjs'
-import { enumEntries, enumValue, formType, objectBlock, quote } from './values.mjs'
+import { crudResource } from './resource.ts'
+import { enumEntries, enumValue, formType, objectBlock, quote } from './values.ts'
 
 export function presentation(resource, version) {
   const pascal = resource.pascal_name

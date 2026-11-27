@@ -4,7 +4,7 @@ import test from 'node:test'
 
 import { renderResourceAssets } from '../resource-render/index.mjs'
 import { execute } from './fixtures/resource-render/boundary-runtime.mjs'
-import { resourceDefinition } from '../resource-render/resource.mjs'
+import { resourceDefinition } from '../resource-render/resource.ts'
 
 const post = JSON.parse(
   await readFile(new URL('./fixtures/resource-render/post.json', import.meta.url), 'utf8'),

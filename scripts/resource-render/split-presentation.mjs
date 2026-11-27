@@ -1,7 +1,7 @@
 import { hasDateColumn } from './format.mjs'
 import { chunks } from './modules.mjs'
 import { columnProperties, formProperties, queryProperties } from './properties.mjs'
-import { enumEntries, enumValue, objectBlock, quote } from './values.mjs'
+import { enumEntries, enumValue, objectBlock, quote } from './values.ts'
 
 const descriptors = {
   query: ['queryFields', 'Query', 'FlatCrudQueryField'],

@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
-import http from 'node:http'
+import http, { type IncomingHttpHeaders } from 'node:http'
 import net from 'node:net'
-import { test } from 'node:test'
+import { test, type TestContext } from 'node:test'
 import { randomUUID } from 'node:crypto'
 import { startDelayProxy, localTarget } from '../browser-delay-proxy.ts'
 import { createResponseGates } from '../browser-response-gates.ts'
 
-async function setup(t, endpoint) {
+type DelayProxy = Awaited<ReturnType<typeof startDelayProxy>>
+
+async function setup(t: TestContext, endpoint?: string): Promise<DelayProxy> {
   const server = http.createServer((request, response) => {
     assert.equal(request.headers['x-ryframe-test-gate'], undefined)
     response.writeHead(200, {
@@ -19,8 +21,10 @@ async function setup(t, endpoint) {
   })
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
+  const address = server.address()
+  assert.ok(address && typeof address !== 'string')
   const proxy = await startDelayProxy({
-    target: `http://127.0.0.1:${server.address().port}`,
+    target: `http://127.0.0.1:${address.port}`,
     endpoint,
   })
   t.after(async () => {
@@ -31,16 +35,16 @@ async function setup(t, endpoint) {
   return proxy
 }
 
-async function held(proxy, id) {
+async function held(proxy: DelayProxy, id: string) {
   for (let attempt = 0; attempt < 200; attempt += 1) {
     const value = proxy.command({ action: 'status', id })
     if (value.state === 'held') return value
-    await new Promise((resolve) => setTimeout(resolve, 5))
+    await new Promise<void>((resolve) => setTimeout(resolve, 5))
   }
   throw new Error('真实响应未到达门限')
 }
 
-function control(endpoint, message) {
+function control(endpoint: string, message: unknown): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const socket = net.connect(endpoint)
     let value = ''
@@ -49,7 +53,10 @@ function control(endpoint, message) {
       value += data.toString('utf8')
     })
     socket.on('error', reject)
-    socket.on('end', () => resolve(JSON.parse(value)))
+    socket.on('end', () => {
+      const reply: unknown = JSON.parse(value)
+      resolve(reply)
+    })
   })
 }
 
@@ -62,7 +69,7 @@ test('整个真实响应和多个 Cookie 只在释放后到达客户端', async 
     match: { method: 'POST', path: '/api/v1/auth/refresh', clientAddress: '198.18.1.2' },
   })
   let receivedHeaders = false
-  const result = new Promise((resolve, reject) => {
+  const result = new Promise<{ headers: IncomingHttpHeaders; body: string }>((resolve, reject) => {
     const request = http.request(
       `${proxy.origin}/api/v1/auth/refresh`,
       {
@@ -76,7 +83,7 @@ test('整个真实响应和多个 Cookie 只在释放后到达客户端', async 
       (response) => {
         receivedHeaders = true
         let body = ''
-        response.on('data', (chunk) => {
+        response.on('data', (chunk: Buffer) => {
           body += chunk
         })
         response.on('end', () => resolve({ headers: response.headers, body }))
@@ -89,6 +96,7 @@ test('整个真实响应和多个 Cookie 只在释放后到达客户端', async 
   assert.equal(receivedHeaders, false)
   assert.equal(gate.cookieCount, 2)
   assert.equal(gate.status, 200)
+  assert.ok(typeof gate.sha256 === 'string')
   assert.match(gate.sha256, /^[0-9a-f]{64}$/u)
   assert.ok(!JSON.stringify(gate).includes('opaque'))
   assert.ok(!JSON.stringify(gate).includes('secret-input'))
@@ -96,7 +104,8 @@ test('整个真实响应和多个 Cookie 只在释放后到达客户端', async 
   const received = await result
   assert.deepEqual(received.headers['set-cookie'], ['refresh=opaque; HttpOnly', 'csrf=opaque'])
   assert.equal(received.headers['x-proof'], 'real-upstream')
-  assert.deepEqual(JSON.parse(received.body), { method: 'POST', path: '/api/v1/auth/refresh' })
+  const body: unknown = JSON.parse(received.body)
+  assert.deepEqual(body, { method: 'POST', path: '/api/v1/auth/refresh' })
   assert.throws(() => proxy.command({ action: 'release', id }))
 })
 
@@ -118,7 +127,7 @@ test('客户端已取消时不重新发送 Cookie，其他客户请求不受响�
   request.destroy()
   for (let attempt = 0; attempt < 200; attempt += 1) {
     if (proxy.command({ action: 'status', id }).clientClosedAt) break
-    await new Promise((resolve) => setTimeout(resolve, 5))
+    await new Promise<void>((resolve) => setTimeout(resolve, 5))
   }
   assert.ok(proxy.command({ action: 'status', id }).clientClosedAt)
   assert.equal(proxy.command({ action: 'release', id }).state, 'client-closed')
@@ -132,9 +141,13 @@ test('独立 IPC 只返回脱敏证明，未知或多个命令失败关闭', asy
   await setup(t, endpoint)
   const match = { method: 'GET', path: '/api/v1/system/posts', clientAddress: '198.19.1.2' }
   const armed = await control(endpoint, { action: 'arm', id: 'ipc-gate-0001', match })
-  assert.equal(armed.data.state, 'armed')
-  assert.equal(armed.data.clientAddress, undefined)
+  assert.ok(armed && typeof armed === 'object' && 'data' in armed)
+  const data = armed.data
+  assert.ok(data && typeof data === 'object' && 'state' in data)
+  assert.equal(data.state, 'armed')
+  assert.equal('clientAddress' in data ? data.clientAddress : undefined, undefined)
   const invalid = await control(endpoint, { action: 'status', id: 'missing-gate' })
+  assert.ok(invalid && typeof invalid === 'object' && 'error' in invalid)
   assert.equal(typeof invalid.error, 'string')
 })
 
@@ -173,10 +186,13 @@ test('响应门由标签、客户地址、方法和路径共同命中一次', ()
   )
   assert.equal(gates.claim({ ...request, method: 'POST' }), undefined)
   assert.equal(gates.claim({ ...request, url: '/api/v1/auth/context' }), undefined)
-  assert.equal(gates.claim(request).id, id)
+  const claimed = gates.claim(request)
+  assert.ok(claimed)
+  assert.equal(claimed.id, id)
   assert.equal(gates.claim(request), undefined)
   assert.throws(() => gates.command({ action: 'release', id }))
-  assert.equal(gates.command({ action: 'status', id }).clientAddress, undefined)
+  const proof = gates.command({ action: 'status', id })
+  assert.equal('clientAddress' in proof ? proof.clientAddress : undefined, undefined)
   gates.command({ action: 'discard', id })
   assert.throws(() => gates.command({ action: 'status', id }))
 })

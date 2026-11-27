@@ -11,11 +11,11 @@ import {
 } from '../browser-static-response-audit.ts'
 import { startDelayProxy } from '../browser-delay-proxy.ts'
 
-function request(url, destination) {
+function request(url: string, destination: string): Promise<Buffer> {
   return new Promise((resolveRequest, reject) => {
     const pending = http.get(url, { headers: { 'sec-fetch-dest': destination } }, (response) => {
-      const chunks = []
-      response.on('data', (chunk) => chunks.push(chunk))
+      const chunks: Buffer[] = []
+      response.on('data', (chunk: Buffer) => chunks.push(chunk))
       response.on('end', () => resolveRequest(Buffer.concat(chunks)))
     })
     pending.on('error', reject)
@@ -26,19 +26,26 @@ test('preview 代理只记录浏览器实际收到的 identity 静态响应', as
   const root = resolve('.local-tests', `static-response-audit-${randomUUID()}`)
   await mkdir(root, { recursive: true })
   t.after(() => rm(root, { recursive: true, force: true }))
-  const bodies = { '/login': Buffer.from('index'), '/assets/app.js': Buffer.from('script') }
+  const loginBody = Buffer.from('index')
+  const bodies: Readonly<Record<string, Buffer | undefined>> = {
+    '/login': loginBody,
+    '/assets/app.js': Buffer.from('script'),
+  }
   const upstream = http.createServer((incoming, response) => {
-    if (incoming.url in bodies) {
+    const body = incoming.url === undefined ? undefined : bodies[incoming.url]
+    if (body) {
       assert.equal(incoming.headers['accept-encoding'], 'identity')
       assert.equal(incoming.headers.range, undefined)
       response.writeHead(200, { 'content-type': 'application/octet-stream' })
-      response.end(bodies[incoming.url])
+      response.end(body)
       return
     }
     response.writeHead(200).end('excluded')
   })
   upstream.listen(0, '127.0.0.1')
   await once(upstream, 'listening')
+  const address = upstream.address()
+  assert.ok(address && typeof address !== 'string')
   const output = resolve(root, 'responses.json')
   const audit = await createStaticResponseAudit({
     output,
@@ -46,7 +53,7 @@ test('preview 代理只记录浏览器实际收到的 identity 静态响应', as
     scopeId: 'fixture-source',
   })
   const proxy = await startDelayProxy({
-    target: `http://127.0.0.1:${upstream.address().port}`,
+    target: `http://127.0.0.1:${address.port}`,
     audit,
   })
   t.after(async () => {
@@ -70,11 +77,9 @@ test('preview 代理只记录浏览器实际收到的 identity 静态响应', as
       { sequence: 3, path: '/assets/app.js', destination: 'script' },
     ],
   )
-  assert.equal(
-    receipt.entries[0].sha256,
-    createHash('sha256').update(bodies['/login']).digest('hex'),
-  )
-  assert.deepEqual(JSON.parse(await readFile(output, 'utf8')), receipt)
+  assert.equal(receipt.entries[0].sha256, createHash('sha256').update(loginBody).digest('hex'))
+  const persisted: unknown = JSON.parse(await readFile(output, 'utf8'))
+  assert.deepEqual(persisted, receipt)
   await assert.rejects(audit.publish(), /已存在/u)
 })
 
@@ -128,6 +133,8 @@ test('编码或未完整传送的响应不能发布成功收据', async (t) => {
   })
   upstream.listen(0, '127.0.0.1')
   await once(upstream, 'listening')
+  const address = upstream.address()
+  assert.ok(address && typeof address !== 'string')
   const output = resolve(root, 'responses.json')
   const audit = await createStaticResponseAudit({
     output,
@@ -135,7 +142,7 @@ test('编码或未完整传送的响应不能发布成功收据', async (t) => {
     scopeId: 'fixture-source',
   })
   const proxy = await startDelayProxy({
-    target: `http://127.0.0.1:${upstream.address().port}`,
+    target: `http://127.0.0.1:${address.port}`,
     audit,
   })
   t.after(async () => {
@@ -146,5 +153,9 @@ test('编码或未完整传送的响应不能发布成功收据', async (t) => {
   await request(`${proxy.origin}/assets/app.js`, 'script')
   await proxy.close()
   await assert.rejects(audit.publish(), /Content-Encoding/u)
-  await assert.rejects(readFile(output), (error) => error.code === 'ENOENT')
+  await assert.rejects(
+    readFile(output),
+    (error: unknown) =>
+      typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT',
+  )
 })

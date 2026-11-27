@@ -1,20 +1,25 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { anchors, historyKeys, inlineCodes, links, markdown } from './documentation-markdown.ts'
 
-const same = (left, right) => JSON.stringify(left) === JSON.stringify(right)
+const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right)
 
 // 检查技术内容与结构一致性；翻译语义由提交审查核对。
-export function validateDocuments(files, exists = (name) => files.has(name)) {
-  const errors = []
+export function validateDocuments(
+  files: ReadonlyMap<string, string>,
+  exists: (name: string) => boolean = (name) => files.has(name),
+): string[] {
+  const errors: string[] = []
   for (const [name, source] of files) {
     const english = name.endsWith('.en.md')
     const counterpart = english
       ? name.replace(/\.en\.md$/u, '.md')
       : name.replace(/\.md$/u, '.en.md')
-    if (!files.has(counterpart)) {
+    const counterpartSource = files.get(counterpart)
+    if (counterpartSource === undefined) {
       errors.push(`文档缺少另一语言：${name} -> ${counterpart}`)
       continue
     }
@@ -29,7 +34,7 @@ export function validateDocuments(files, exists = (name) => files.has(name)) {
     for (const target of targets) {
       if (target.includes('://') || target.startsWith('mailto:')) continue
       const [file, fragment] = target.split('#', 2)
-      let decoded
+      let decoded: string
       try {
         decoded = decodeURIComponent(file)
       } catch {
@@ -40,21 +45,23 @@ export function validateDocuments(files, exists = (name) => files.has(name)) {
         ? path.posix.normalize(path.posix.join(path.posix.dirname(name), decoded))
         : name
       if (!exists(local)) errors.push(`文档本地引用不存在：${name} -> ${target}`)
-      else if (fragment && files.has(local)) {
-        let anchor
+      else if (fragment) {
+        const linkedSource = files.get(local)
+        if (linkedSource === undefined) continue
+        let anchor: string
         try {
           anchor = decodeURIComponent(fragment)
         } catch {
           errors.push(`文档章节编码无效：${name} -> ${target}`)
           continue
         }
-        if (!anchors(markdown(files.get(local))).has(anchor)) {
+        if (!anchors(markdown(linkedSource)).has(anchor)) {
           errors.push(`文档章节引用不存在：${name} -> ${target}`)
         }
       }
     }
     if (english) continue
-    const translated = markdown(files.get(counterpart))
+    const translated = markdown(counterpartSource)
     if (
       !same(
         document.headings.map(([level]) => level),
@@ -77,7 +84,7 @@ export function validateDocuments(files, exists = (name) => files.has(name)) {
   return errors
 }
 
-export function checkDocumentation(root) {
+export function checkDocumentation(root: string): void {
   const listed = execFileSync(
     'git',
     ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
@@ -106,7 +113,7 @@ if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === imp
   try {
     checkDocumentation(fileURLToPath(new URL('../', import.meta.url)))
   } catch (error) {
-    console.error(error.message)
+    console.error(error instanceof Error ? error.message : String(error))
     process.exitCode = 1
   }
 }

@@ -1,12 +1,18 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { validateDocuments } from '../check-documentation.mjs'
+import { validateDocuments } from '../check-documentation.ts'
 
-function fixture() {
+function fixture(): Map<string, string> {
   return new Map([
     ['README.md', '# 说明\n\n[English](README.en.md)\n\n## 启动\n\n`cargo serve`\n'],
     ['README.en.md', '# Guide\n\n[简体中文](README.md)\n\n## Start\n\n`cargo serve`\n'],
   ])
+}
+
+function fixtureSource(files: ReadonlyMap<string, string>, name: string): string {
+  const source = files.get(name)
+  assert.ok(source !== undefined, `缺少文档测试夹具：${name}`)
+  return source
 }
 
 test('两版相同但均未闭合的代码围栏仍然失败', () => {
@@ -17,8 +23,8 @@ test('两版相同但均未闭合的代码围栏仍然失败', () => {
 
 test('双语文档允许翻译标题和说明，保留相同命令与有效章节链接', () => {
   const files = fixture()
-  files.set('README.md', files.get('README.md') + '[启动](#启动)\n')
-  files.set('README.en.md', files.get('README.en.md') + '[Start](#start)\n')
+  files.set('README.md', fixtureSource(files, 'README.md') + '[启动](#启动)\n')
+  files.set('README.en.md', fixtureSource(files, 'README.en.md') + '[Start](#start)\n')
   assert.deepEqual(validateDocuments(files), [])
 })
 
@@ -33,16 +39,19 @@ test('缺失任一语言或语言切换链接都不能通过', () => {
 
 test('命令参数、完整条目或围栏代码变化均报告不同步', () => {
   const files = fixture()
-  files.set('README.en.md', files.get('README.en.md').replace('cargo serve', 'cargo reset'))
+  files.set(
+    'README.en.md',
+    fixtureSource(files, 'README.en.md').replace('cargo serve', 'cargo reset'),
+  )
   assert.match(validateDocuments(files).join(), /技术标识不一致/u)
-  files.set('README.en.md', fixture().get('README.en.md') + '- Additional promise\n')
+  files.set('README.en.md', fixtureSource(fixture(), 'README.en.md') + '- Additional promise\n')
   assert.match(validateDocuments(files).join(), /条目不一致/u)
   for (const [name, source] of fixture())
     files.set(name, source + '```powershell\ncargo serve\n```\n')
   assert.deepEqual(validateDocuments(files), [])
   files.set(
     'README.en.md',
-    files.get('README.en.md').replace('cargo serve\n```', 'cargo reset\n```'),
+    fixtureSource(files, 'README.en.md').replace('cargo serve\n```', 'cargo reset\n```'),
   )
   assert.match(validateDocuments(files).join(), /代码示例不一致/u)
 })
@@ -51,11 +60,12 @@ test('翻译脚本整行注释和参数占位符不改变实际命令', () => {
   const files = fixture()
   files.set(
     'README.md',
-    files.get('README.md') + '`--target <目标键>`\n```powershell\n# 启动\ncargo serve\n```\n',
+    fixtureSource(files, 'README.md') +
+      '`--target <目标键>`\n```powershell\n# 启动\ncargo serve\n```\n',
   )
   files.set(
     'README.en.md',
-    files.get('README.en.md') +
+    fixtureSource(files, 'README.en.md') +
       '`--target <target-key>`\n```powershell\n# Start\ncargo serve\n```\n',
   )
   assert.deepEqual(validateDocuments(files), [])
@@ -75,8 +85,8 @@ test('引用和列表围栏核对相同命令、允许翻译 shell 注释', () =
   ]
   for (const [zh, en] of pairs) {
     const files = fixture()
-    files.set('README.md', files.get('README.md') + '\n' + zh)
-    const translated = files.get('README.en.md') + '\n'
+    files.set('README.md', fixtureSource(files, 'README.md') + '\n' + zh)
+    const translated = fixtureSource(files, 'README.en.md') + '\n'
     files.set('README.en.md', translated + en)
     assert.deepEqual(validateDocuments(files), [])
     files.set('README.en.md', translated + en.replace('cargo serve', 'cargo reset'))
@@ -95,8 +105,8 @@ test('缩进代码和其中形似标题或链接的文字按代码示例比较',
   ]
   for (const [zh, en] of pairs) {
     const files = fixture()
-    files.set('README.md', files.get('README.md') + '\n' + zh)
-    const translated = files.get('README.en.md') + '\n'
+    files.set('README.md', fixtureSource(files, 'README.md') + '\n' + zh)
+    const translated = fixtureSource(files, 'README.en.md') + '\n'
     files.set('README.en.md', translated + en)
     assert.deepEqual(validateDocuments(files), [])
     files.set('README.en.md', translated + en.replace('cargo serve', 'cargo reset'))
@@ -119,7 +129,7 @@ test('本地文件与目标章节不存在均报告准确引用', () => {
   const files = fixture()
   files.set(
     'README.en.md',
-    files.get('README.en.md') + '[Missing](missing.md)\n[Start](#missing)\n',
+    fixtureSource(files, 'README.en.md') + '[Missing](missing.md)\n[Start](#missing)\n',
   )
   assert.match(validateDocuments(files).join(), /README.en.md -> missing.md/u)
   assert.match(validateDocuments(files).join(), /README.en.md -> #missing/u)

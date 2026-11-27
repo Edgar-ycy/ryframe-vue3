@@ -39,8 +39,8 @@ jobs:
         with: { node-version: '24.21.0', package-manager-cache: false }
       - uses: ./.github/actions/setup-pnpm
       - run: corepack pnpm install --frozen-lockfile
-      - run: node scripts/check-documentation.mjs
-      - run: node --test scripts/tests/documentation.test.mjs
+      - run: node scripts/check-documentation.ts
+      - run: node --test scripts/tests/documentation.test.ts
       - run: corepack pnpm exec prettier --check '**/*.md'
 
   static:

@@ -1,5 +1,5 @@
 import { renderFields } from './fields.ts'
-import { renderTransport } from './transport.mjs'
+import { renderTransport } from './transport.ts'
 
 function validateAsset(asset) {
   const maxLines = asset.path.endsWith('.vue') ? 600 : 300

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Resource page API, page, and registration generators use TypeScript and preserve generated files and configuration behavior.
+
 - Resource page field, presentation, and wide-table splitting tools use TypeScript and preserve generated output.
 
 - Resource page templates and field value rendering use TypeScript and preserve generated source and extension behavior.

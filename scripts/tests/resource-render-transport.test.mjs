@@ -4,7 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 
-import { renderTransport } from '../resource-render/transport.mjs'
+import { renderTransport } from '../resource-render/transport.ts'
 import { order } from './fixtures/resource-render/order-ir.mjs'
 
 const generatorVersion = '1.3.0'

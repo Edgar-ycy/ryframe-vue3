@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { renderResourceAssets } from '../resource-render/index.mjs'
-import { renderTransport } from '../resource-render/transport.mjs'
+import { renderTransport } from '../resource-render/transport.ts'
 import { field, globalOrder, numeric } from './fixtures/resource-render/boundary-ir.mjs'
 import { execute } from './fixtures/resource-render/boundary-runtime.mjs'
 import { order } from './fixtures/resource-render/order-ir.mjs'

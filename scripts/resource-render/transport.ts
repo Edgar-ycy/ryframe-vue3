@@ -1,7 +1,25 @@
-import { hasDateColumn, header, htmlHeader } from './format.ts'
+import { hasDateColumn, header, htmlHeader, type ResourceSource } from './format.ts'
+import type { PresentationResource } from './properties.ts'
+import type { Resource } from './resource.ts'
+
+interface TransportResource extends ResourceSource, Pick<Resource, 'pascal_name' | 'storage'> {
+  module: string
+  fields: Parameters<typeof hasDateColumn>[0]['fields']
+  relations: readonly unknown[]
+  api: { operations: PresentationResource['access']['permissions'] & { read: string } }
+  access: PresentationResource['access'] & {
+    capability?: string | null
+    system_tenant_only?: boolean
+  }
+  route: { key: string; path: string }
+  frontend_extensions: Readonly<Record<string, unknown>>
+}
 
 // 输入直接使用已校验的 ResourceIr JSON；生成器版本由调用方显式绑定。
-export function renderTransport(resource, generatorVersion) {
+export function renderTransport(
+  resource: TransportResource,
+  generatorVersion: unknown,
+): Map<string, string> {
   if (typeof generatorVersion !== 'string' || generatorVersion.length === 0) {
     throw new TypeError('必须显式提供生成器版本')
   }
@@ -17,7 +35,7 @@ export function renderTransport(resource, generatorVersion) {
   ])
 }
 
-function renderApi(resource, header) {
+function renderApi(resource: TransportResource, header: string): string {
   const pascal = resource.pascal_name
   const domain = resource.module === 'business' ? 'system' : resource.module
   const { create, read, list, update, delete: remove } = resource.api.operations
@@ -61,7 +79,7 @@ export function delete${pascal}(id: Id) {
 `
 }
 
-function renderRegistration(resource, header) {
+function renderRegistration(resource: TransportResource, header: string): string {
   const extension = resource.frontend_extensions.page
   const page = typeof extension === 'string' ? extension : './page.vue'
   const capability = resource.access.capability
@@ -90,7 +108,7 @@ ${systemTenant}      page: () => import(${JSON.stringify(page)}),
 `
 }
 
-function renderPage(resource, header) {
+function renderPage(resource: TransportResource, header: string): string {
   const pascal = resource.pascal_name
   const hasDate = hasDateColumn(resource)
   const dateImport = hasDate ? "import { formatLocalizedDate } from '@/i18n'\n" : ''

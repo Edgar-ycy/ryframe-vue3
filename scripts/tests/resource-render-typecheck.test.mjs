@@ -6,7 +6,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { renderFields } from '../resource-render/fields.ts'
-import { renderTransport } from '../resource-render/transport.mjs'
+import { renderTransport } from '../resource-render/transport.ts'
 import { common, empty, fixture, labels, wide } from './fixtures/resource-render/builders.mjs'
 
 const frontend = fileURLToPath(new URL('../../', import.meta.url))

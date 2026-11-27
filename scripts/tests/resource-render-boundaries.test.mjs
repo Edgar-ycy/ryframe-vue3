@@ -4,7 +4,7 @@ import test from 'node:test'
 import { renderFields } from '../resource-render/fields.ts'
 import { renderResourceAssets } from '../resource-render/index.mjs'
 import { presentation } from '../resource-render/presentation.ts'
-import { renderTransport } from '../resource-render/transport.mjs'
+import { renderTransport } from '../resource-render/transport.ts'
 import { fixture } from './fixtures/resource-render/builders.mjs'
 import {
   dated,

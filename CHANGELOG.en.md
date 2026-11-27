@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- The frontend bundle budget check uses TypeScript and retains the existing limits, baseline, and chunk rules.
+
 - The browser acceptance delay proxy uses TypeScript and preserves HTTP, WebSocket, and named-pipe controls.
 
 - Resource page API, page, and registration generators use TypeScript and preserve generated files and configuration behavior.

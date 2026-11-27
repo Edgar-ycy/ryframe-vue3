@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- 前端分包预算检查改用 TypeScript，沿用原预算、基线和分包规则。
+
 - 浏览器验收的延迟代理改用 TypeScript，保留 HTTP、WebSocket 和命名管道控制行为。
 
 - 资源页 API、页面及注册源码的生成工具迁移到 TypeScript，保留生成产物与配置行为。

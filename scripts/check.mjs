@@ -168,7 +168,7 @@ export function checkTasks(stage, options = {}) {
     ],
     build: [
       { name: 'production-build', args: ['build'] },
-      { name: 'bundle-budget', node: ['scripts/check-bundle-budget.mjs'] },
+      { name: 'bundle-budget', node: ['scripts/check-bundle-budget.ts'] },
     ],
     browser: [{ name: 'browser-smoke', node: ['scripts/run-browser.mjs'] }],
   }

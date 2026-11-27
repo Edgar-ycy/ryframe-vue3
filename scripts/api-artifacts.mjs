@@ -4,7 +4,7 @@ import path from 'node:path'
 import openapiTS, { astToString } from 'openapi-typescript'
 
 import { requireApiPrefixContract } from './api-prefix-contract.ts'
-import { requireCrudResourceCatalog } from './crud-resource-contract.mjs'
+import { requireCrudResourceCatalog } from './crud-resource-contract.ts'
 import { requirePermissionCatalog } from './permission-catalog-contract.ts'
 import { artifactPaths } from './api-artifact-manifest.mjs'
 import {

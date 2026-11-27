@@ -2,9 +2,26 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import { requireCrudResourceCatalog } from '../crud-resource-contract.mjs'
+import { requireCrudResourceCatalog } from '../crud-resource-contract.ts'
 
-const source = JSON.parse(
+interface FixtureField {
+  value_type: string
+  wire_type: string
+  nullable: boolean
+  widget: string
+  usage: Record<string, boolean>
+  validation: Record<string, unknown>
+  labels: unknown
+  enum_values: Record<string, unknown>
+}
+
+interface FixtureResource {
+  storage: string
+  access: { system_tenant_only?: unknown }
+  fields: FixtureField[]
+}
+
+const source: { 'x-ryframe-crud-resources': { resources: FixtureResource[] } } = JSON.parse(
   await readFile(new URL('../../openapi/openapi.json', import.meta.url), 'utf8'),
 )
 
@@ -19,7 +36,9 @@ function globalCatalog() {
 
 test('控制库全局访问标志进入当前 CRUD 契约', () => {
   const { document, catalog, resource } = globalCatalog()
-  assert.ok(requireCrudResourceCatalog(catalog, document).includes(resource))
+  assert.ok(
+    requireCrudResourceCatalog(catalog, document).some((entry) => Object.is(entry, resource)),
+  )
 })
 
 test('全局访问标志拒绝无效取值和租户数据范围', () => {
@@ -39,9 +58,13 @@ const integerKinds = [
   ['u8', 0, 255],
   ['u16', 0, 65535],
   ['u32', 0, 4294967295],
-]
+] as const
 
-function integerCatalog(kind, minimum, maximum) {
+function integerCatalog(
+  kind: string,
+  minimum: string | number | null,
+  maximum: string | number | null,
+) {
   const fixture = globalCatalog()
   const field = fixture.resource.fields.find((item) => item.usage.create)
   assert.ok(field, '当前标准资源必须包含可编辑测试字段')
@@ -60,7 +83,7 @@ function integerCatalog(kind, minimum, maximum) {
   return { ...fixture, field }
 }
 
-function editableCatalog(kind, widget, nullable = false) {
+function editableCatalog(kind: string, widget: string, nullable = false) {
   const fixture = integerCatalog(kind, null, null)
   const { field } = fixture
   field.wire_type = ['i64', 'u64', 'decimal'].includes(kind) ? 'string' : kind
@@ -135,7 +158,7 @@ test('64位范围以精确字符串校验，拒绝舍入、非法格式、溢出
   for (const [kind, minimum, maximum] of [
     ['i64', '-9223372036854775808', '9223372036854775807'],
     ['u64', '0', '18446744073709551615'],
-  ]) {
+  ] as const) {
     const { document, catalog, field } = integerCatalog(kind, minimum, maximum)
     field.wire_type = 'string'
     assert.ok(requireCrudResourceCatalog(catalog, document))
@@ -183,12 +206,14 @@ test('公共契约接受现有渲染器的类型匹配控件并保留输入', ()
     ['string', 'text'],
     ['i32', 'number'],
     ['i32', 'text'],
-  ]) {
+  ] as const) {
     const { document, catalog, resource, field } = editableCatalog(type, widget, nullable)
     field.usage.create_optional = true
     field.usage.update_optional = !nullable
     const before = structuredClone(catalog)
-    assert(requireCrudResourceCatalog(catalog, document).includes(resource))
+    assert(
+      requireCrudResourceCatalog(catalog, document).some((entry) => Object.is(entry, resource)),
+    )
     assert.deepEqual(catalog, before)
   }
   const { document, catalog, field } = editableCatalog('bool', 'select')
@@ -213,7 +238,7 @@ test('控件不能跨类型使用，未知控件及可编辑 hidden 仍拒绝', 
     ['string', 'number'],
     ['string', 'unsupported'],
     ['string', 'hidden'],
-  ]) {
+  ] as const) {
     const { document, catalog } = editableCatalog(type, widget)
     assert.throws(() => requireCrudResourceCatalog(catalog, document), /\.widget:/u)
   }
@@ -223,7 +248,7 @@ test('控件不能跨类型使用，未知控件及可编辑 hidden 仍拒绝', 
 })
 
 test('新增编辑控件仍校验传输、有限枚举及 nullable 和动作语义', () => {
-  for (const [type, widget, mutate, diagnostic] of [
+  const mutations: [string, string, (field: FixtureField) => unknown, RegExp][] = [
     ['json', 'json', (f) => (f.wire_type = 'string'), /wire_type/u],
     ['bool', 'switch', (f) => (f.wire_type = 'string'), /wire_type/u],
     ['json', 'json', (f) => (f.nullable = true), /required=true/u],
@@ -234,7 +259,8 @@ test('新增编辑控件仍校验传输、有限枚举及 nullable 和动作语�
     ['bool', 'select', (f) => (f.enum_values = { 0: f.labels }), /false\/true/u],
     ['bool', 'switch', (f) => (f.enum_values = { true: f.labels }), /只能配合 select/u],
     ['bool', 'select', () => {}, /必须声明有限枚举/u],
-  ]) {
+  ]
+  for (const [type, widget, mutate, diagnostic] of mutations) {
     const { document, catalog, field } = editableCatalog(type, widget)
     field.usage.create_optional = field.usage.update_optional = true
     mutate(field)

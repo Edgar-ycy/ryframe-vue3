@@ -1,5 +1,23 @@
-const domainNames = Object.freeze(['core', 'system', 'platform', 'monitor'])
+const domainNames = Object.freeze(['core', 'system', 'platform', 'monitor'] as const)
 const httpMethods = new Set(['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace'])
+
+type SchemaDomain = (typeof domainNames)[number]
+type OpenApiPaths = Record<string, unknown>
+type ComponentInventory = Record<string, Record<string, unknown>>
+
+interface OpenApiDocument {
+  openapi?: string
+  info?: unknown
+  jsonSchemaDialect?: string
+  servers?: unknown
+  paths?: OpenApiPaths | null
+  components?: Record<string, Record<string, unknown> | null | undefined> | null
+}
+
+interface SchemaDomainDocument extends OpenApiDocument {
+  paths: OpenApiPaths
+  components: ComponentInventory
+}
 
 export const schemaDomainNames = domainNames
 export const schemaArtifactPaths = Object.freeze([
@@ -7,16 +25,16 @@ export const schemaArtifactPaths = Object.freeze([
   'src/api/generated/schema/index.ts',
 ])
 
-function compareText(left, right) {
+function compareText(left: string, right: string): number {
   if (left === right) return 0
   return left < right ? -1 : 1
 }
 
-function sortedObject(entries) {
+function sortedObject<T>(entries: [string, T][]): Record<string, T> {
   return Object.fromEntries(entries.sort(([left], [right]) => compareText(left, right)))
 }
 
-export function schemaDomainForPath(routePath, apiPrefix) {
+export function schemaDomainForPath(routePath: string, apiPrefix: string): SchemaDomain {
   const relative =
     routePath === apiPrefix
       ? '/'
@@ -25,24 +43,24 @@ export function schemaDomainForPath(routePath, apiPrefix) {
         : routePath
   const segment = relative.split('/').filter(Boolean)[0]
   if (segment === 'business') return 'system'
-  return domainNames.includes(segment) && segment !== 'core' ? segment : 'core'
+  return domainNames.find((domain) => domain === segment) ?? 'core'
 }
 
-function collectReferences(value, references) {
+function collectReferences(value: unknown, references: Set<string>): void {
   if (Array.isArray(value)) {
     for (const item of value) collectReferences(item, references)
     return
   }
   if (!value || typeof value !== 'object') return
-  if (typeof value.$ref === 'string') references.add(value.$ref)
+  if ('$ref' in value && typeof value.$ref === 'string') references.add(value.$ref)
   for (const nested of Object.values(value)) collectReferences(nested, references)
 }
 
-function decodePointerSegment(segment) {
+function decodePointerSegment(segment: string): string {
   return decodeURIComponent(segment).replaceAll('~1', '/').replaceAll('~0', '~')
 }
 
-function componentReference(reference) {
+function componentReference(reference: string) {
   const match = /^#\/components\/([^/]+)\/(.+)$/u.exec(reference)
   if (!match) return undefined
   return {
@@ -51,7 +69,7 @@ function componentReference(reference) {
   }
 }
 
-function componentAt(document, reference) {
+function componentAt(document: OpenApiDocument, reference: string) {
   const pointer = componentReference(reference)
   if (!pointer) return undefined
   const value = document.components?.[pointer.section]?.[pointer.name]
@@ -61,11 +79,14 @@ function componentAt(document, reference) {
   return { ...pointer, value }
 }
 
-function collectComponentClosure(document, selectedPaths) {
-  const pending = new Set()
+function collectComponentClosure(
+  document: OpenApiDocument,
+  selectedPaths: unknown,
+): ComponentInventory {
+  const pending = new Set<string>()
   collectReferences(selectedPaths, pending)
-  const visited = new Set()
-  const components = new Map()
+  const visited = new Set<string>()
+  const components = new Map<string, Map<string, unknown>>()
   while (pending.size > 0) {
     const reference = [...pending].sort(compareText)[0]
     pending.delete(reference)
@@ -73,7 +94,7 @@ function collectComponentClosure(document, selectedPaths) {
     visited.add(reference)
     const component = componentAt(document, reference)
     if (!component) continue
-    const section = components.get(component.section) ?? new Map()
+    const section = components.get(component.section) ?? new Map<string, unknown>()
     section.set(component.name, component.value)
     components.set(component.section, section)
     collectReferences(component.value, pending)
@@ -83,7 +104,7 @@ function collectComponentClosure(document, selectedPaths) {
   )
 }
 
-function mergeComponents(left, right) {
+function mergeComponents(left: ComponentInventory, right: ComponentInventory): ComponentInventory {
   const sections = new Set([...Object.keys(left), ...Object.keys(right)])
   return sortedObject(
     [...sections].map((section) => [
@@ -96,14 +117,22 @@ function mergeComponents(left, right) {
   )
 }
 
-export function createSchemaDomainDocuments(document, apiPrefix) {
-  const pathsByDomain = new Map(domainNames.map((domain) => [domain, []]))
-  for (const entry of Object.entries(document.paths ?? {})) {
-    pathsByDomain.get(schemaDomainForPath(entry[0], apiPrefix)).push(entry)
+export function createSchemaDomainDocuments(
+  document: OpenApiDocument,
+  apiPrefix: string,
+): Map<SchemaDomain, SchemaDomainDocument> {
+  const pathsByDomain: Record<SchemaDomain, [string, unknown][]> = {
+    core: [],
+    system: [],
+    platform: [],
+    monitor: [],
   }
-  const domains = new Map()
+  for (const entry of Object.entries(document.paths ?? {})) {
+    pathsByDomain[schemaDomainForPath(entry[0], apiPrefix)].push(entry)
+  }
+  const domains = new Map<SchemaDomain, SchemaDomainDocument>()
   for (const domain of domainNames) {
-    const paths = sortedObject(pathsByDomain.get(domain))
+    const paths = sortedObject(pathsByDomain[domain])
     domains.set(domain, {
       openapi: document.openapi,
       info: document.info,
@@ -120,8 +149,8 @@ export function createSchemaDomainDocuments(document, apiPrefix) {
     .filter((name) => !ownedSchemas.has(name))
     .sort(compareText)
     .map((name) => ({ $ref: `#/components/schemas/${name}` }))
-  if (compatibilityRoots.length > 0) {
-    const core = domains.get('core')
+  const core = domains.get('core')
+  if (core && compatibilityRoots.length > 0) {
     core.components = mergeComponents(
       core.components,
       collectComponentClosure(document, compatibilityRoots),
@@ -131,8 +160,8 @@ export function createSchemaDomainDocuments(document, apiPrefix) {
   return domains
 }
 
-function operationKeys(paths) {
-  const keys = new Set()
+function operationKeys(paths: OpenApiDocument['paths']): Set<string> {
+  const keys = new Set<string>()
   for (const [routePath, pathItem] of Object.entries(paths ?? {})) {
     for (const method of Object.keys(pathItem ?? {})) {
       if (httpMethods.has(method)) keys.add(`${method.toUpperCase()} ${routePath}`)
@@ -141,8 +170,12 @@ function operationKeys(paths) {
   return keys
 }
 
-function validateClosedReferences(document, domain, errors) {
-  const references = new Set()
+function validateClosedReferences(
+  document: OpenApiDocument,
+  domain: SchemaDomain,
+  errors: string[],
+): void {
+  const references = new Set<string>()
   collectReferences(document.paths, references)
   collectReferences(document.components, references)
   for (const reference of references) {
@@ -154,12 +187,15 @@ function validateClosedReferences(document, domain, errors) {
   }
 }
 
-export function validateSchemaDomainDocuments(document, domains) {
+export function validateSchemaDomainDocuments(
+  document: OpenApiDocument,
+  domains: ReadonlyMap<SchemaDomain, OpenApiDocument>,
+): void {
   const expected = operationKeys(document.paths)
-  const actual = new Set()
+  const actual = new Set<string>()
   const expectedSchemas = new Set(Object.keys(document.components?.schemas ?? {}))
-  const actualSchemas = new Set()
-  const errors = []
+  const actualSchemas = new Set<string>()
+  const errors: string[] = []
   for (const domain of domainNames) {
     const domainDocument = domains.get(domain)
     if (!domainDocument) {
@@ -192,7 +228,7 @@ export function validateSchemaDomainDocuments(document, domains) {
   }
 }
 
-export function renderSchemaIndex(header) {
+export function renderSchemaIndex(header: string): string {
   const imports = domainNames
     .map(
       (domain) =>

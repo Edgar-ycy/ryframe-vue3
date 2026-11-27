@@ -12,7 +12,7 @@ import {
   renderSchemaIndex,
   schemaDomainForPath,
   schemaDomainNames,
-} from './openapi-schema-domains.mjs'
+} from './openapi-schema-domains.ts'
 
 export const ownershipManifestPath = 'src/api/generated/ownership.json'
 export const generatedArtifactPaths = artifactPaths
